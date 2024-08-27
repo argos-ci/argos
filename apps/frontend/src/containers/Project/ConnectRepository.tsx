@@ -11,7 +11,7 @@ import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelec
 import { GithubRepositoryList } from "@/containers/GithubRepositoryList";
 import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
 import { DocumentType, graphql } from "@/gql";
-import { AccountPermission } from "@/gql/graphql";
+import { AccountPermission, GitHubAppType } from "@/gql/graphql";
 import {
   Button,
   ButtonIcon,
@@ -84,15 +84,18 @@ type GitlabNamespace = NonNullable<
 
 type GithubInstallationsProps = {
   installations: GithubInstallation[];
-  onSelectRepository: (repo: {
-    name: string;
-    owner_login: string;
-    id: string;
-  }) => void;
+  onSelectRepository: (
+    repo: {
+      name: string;
+      owner_login: string;
+      id: string;
+    },
+    app: GitHubAppType,
+  ) => void;
   disabled?: boolean;
   connectButtonLabel: string;
   onSwitch: () => void;
-  app: "main" | "light";
+  app: GitHubAppType;
 };
 
 function GithubInstallations(props: GithubInstallationsProps) {
@@ -112,7 +115,7 @@ function GithubInstallations(props: GithubInstallationsProps) {
       <GithubRepositoryList
         installationId={value}
         disabled={props.disabled}
-        onSelectRepository={props.onSelectRepository}
+        onSelectRepository={(repo) => props.onSelectRepository(repo, props.app)}
         connectButtonLabel={props.connectButtonLabel}
         app={props.app}
       />
@@ -327,7 +330,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             disabled={props.disabled}
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
-            app="main"
+            app={GitHubAppType.Main}
           />
         );
       }
@@ -342,7 +345,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             disabled={props.disabled}
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
-            app="light"
+            app={GitHubAppType.Light}
           />
         );
       }

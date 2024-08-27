@@ -35,9 +35,10 @@ const LinkGithubRepositoryMutation = graphql(`
     $projectId: ID!
     $repo: String!
     $owner: String!
+    $app: GitHubAppType!
   ) {
     linkGithubRepository(
-      input: { projectId: $projectId, repo: $repo, owner: $owner }
+      input: { projectId: $projectId, repo: $repo, owner: $owner, app: $app }
     ) {
       id
       ...ProjectGitRepository_Project
@@ -174,12 +175,13 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
       variant="link"
       accountSlug={props.accountSlug}
       disabled={loading}
-      onSelectRepository={(repo) => {
+      onSelectRepository={(repo, app) => {
         linkGithubRepository({
           variables: {
             projectId: props.projectId,
             repo: repo.name,
             owner: repo.owner_login,
+            app,
           },
         });
       }}

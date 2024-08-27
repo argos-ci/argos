@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
@@ -17,6 +18,7 @@ import {
   resolveProjectName,
 } from "@/database/services/project.js";
 import { notifyDiscord } from "@/discord/index.js";
+import { getInstallationOctokit, getTokenOctokit } from "@/github/client.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
 
@@ -36,6 +38,11 @@ export const typeDefs = gql`
     always
     never
     auto
+  }
+
+  enum GitHubAppType {
+    main
+    light
   }
 
   type GithubRepository implements Node {
@@ -131,6 +138,7 @@ export const typeDefs = gql`
     repo: String!
     owner: String!
     accountSlug: String!
+    app: GitHubAppType!
   }
 
   input ImportGitlabProjectInput {
@@ -156,6 +164,7 @@ export const typeDefs = gql`
     projectId: ID!
     repo: String!
     owner: String!
+    app: GitHubAppType!
   }
 
   input UnlinkGithubRepositoryInput {
@@ -253,22 +262,52 @@ ${input.account.slug} / ${input.project.name}
   });
 }
 
-const importGithubProject = async (props: {
+async function getGitHubOctokitFromAppType(input: {
+  account: Account;
+  creator: User;
+  app: "main" | "light";
+}) {
+  switch (input.app) {
+    case "main":
+      return getTokenOctokit(input.creator.accessToken);
+    case "light":
+      invariant(
+        input.account.githubLightInstallationId,
+        "GitHub Light installation not found",
+      );
+      return getInstallationOctokit(input.account.githubLightInstallationId);
+    default:
+      assertNever(input.app);
+  }
+}
+
+async function importGithubProject(props: {
   accountSlug: string;
   creator: User;
   repo: string;
   owner: string;
-}) => {
+  app: "main" | "light";
+}) {
   const account = await Account.query()
     .findOne({ slug: props.accountSlug })
     .throwIfNotFound();
+
   const permissions = await account.$getPermissions(props.creator);
+
   if (!permissions.includes("admin")) {
     throw forbidden();
   }
 
+  const octokit = await getGitHubOctokitFromAppType({
+    account,
+    creator: props.creator,
+    app: props.app,
+  });
+
+  invariant(octokit, "Octokit not found");
+
   const ghRepo = await getOrCreateGithubRepository({
-    accessToken: props.creator.accessToken,
+    octokit,
     repo: props.repo,
     owner: props.owner,
   });
@@ -292,7 +331,7 @@ const importGithubProject = async (props: {
   });
 
   return project;
-};
+}
 
 const getOrCreateGitlabProject = async (props: {
   account: Account;
@@ -548,6 +587,7 @@ export const resolvers: IResolvers = {
         repo: args.input.repo,
         owner: args.input.owner,
         creator: ctx.auth.user,
+        app: args.input.app,
       });
     },
     importGitlabProject: async (_root, args, ctx) => {
@@ -598,10 +638,21 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.projectId,
         user: ctx.auth.user,
+        withGraphFetched: "account",
       });
 
+      invariant(project.account, "account not fetched");
+
+      const octokit = await getGitHubOctokitFromAppType({
+        account: project.account,
+        creator: ctx.auth.user,
+        app: args.input.app,
+      });
+
+      invariant(octokit, "Octokit not found");
+
       const ghRepo = await getOrCreateGithubRepository({
-        accessToken: ctx.auth.user.accessToken,
+        octokit,
         owner: args.input.owner,
         repo: args.input.repo,
       });

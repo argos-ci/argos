@@ -279,6 +279,11 @@ export type IGhApiRepositoryConnection = IConnection & {
   pageInfo: IPageInfo;
 };
 
+export enum IGitHubAppType {
+  Light = 'light',
+  Main = 'main'
+}
+
 export type IGithubAccount = INode & {
   __typename?: 'GithubAccount';
   avatar: IAccountAvatar;
@@ -359,6 +364,7 @@ export type IGlApiProjectConnection = IConnection & {
 
 export type IImportGithubProjectInput = {
   accountSlug: Scalars['String']['input'];
+  app: IGitHubAppType;
   owner: Scalars['String']['input'];
   repo: Scalars['String']['input'];
 };
@@ -381,6 +387,7 @@ export type ILeaveTeamInput = {
 };
 
 export type ILinkGithubRepositoryInput = {
+  app: IGitHubAppType;
   owner: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
   repo: Scalars['String']['input'];
@@ -1265,6 +1272,7 @@ export type IResolversTypes = ResolversObject<{
   GhApiInstallationConnection: ResolverTypeWrapper<Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<IResolversTypes['GhApiInstallation']> }>;
   GhApiRepository: ResolverTypeWrapper<GhApiRepository>;
   GhApiRepositoryConnection: ResolverTypeWrapper<Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<IResolversTypes['GhApiRepository']> }>;
+  GitHubAppType: IGitHubAppType;
   GithubAccount: ResolverTypeWrapper<GithubAccount>;
   GithubInstallation: ResolverTypeWrapper<GithubInstallation>;
   GithubPullRequest: ResolverTypeWrapper<GithubPullRequest>;

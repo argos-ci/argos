@@ -265,6 +265,11 @@ type GhApiRepositoryConnection implements Connection {
   pageInfo: PageInfo!
 }
 
+enum GitHubAppType {
+  light
+  main
+}
+
 type GithubAccount implements Node {
   avatar: AccountAvatar!
   id: ID!
@@ -336,6 +341,7 @@ type GlApiProjectConnection implements Connection {
 
 input ImportGithubProjectInput {
   accountSlug: String!
+  app: GitHubAppType!
   owner: String!
   repo: String!
 }
@@ -358,6 +364,7 @@ input LeaveTeamInput {
 }
 
 input LinkGithubRepositoryInput {
+  app: GitHubAppType!
   owner: String!
   projectId: ID!
   repo: String!
