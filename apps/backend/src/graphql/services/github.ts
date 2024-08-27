@@ -180,12 +180,11 @@ export async function getOrCreateGithubAccount(
 }
 
 export async function getOrCreateGithubRepository(args: {
-  accessToken: string;
+  octokit: Octokit;
   repo: string;
   owner: string;
 }): Promise<GithubRepository> {
-  const octokit = getTokenOctokit(args.accessToken);
-  const ghApiRepo = await octokit.repos
+  const ghApiRepo = await args.octokit.repos
     .get({
       owner: args.owner,
       repo: args.repo,
