@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Argos, please report it privately by emailing us at [security@argos.com](mailto:security@argos.com). We will work with you to assess and address the issue promptly.
+If you discover a security vulnerability in Argos, please report it privately by emailing us at [security@argos-ci.com](mailto:security@argos-ci.com). We will work with you to assess and address the issue promptly.
 
 ### Reporting Guidelines
 
