@@ -1,15 +1,6 @@
 # Security Policy
 
-## Supported Versions
-
-We maintain and support the following versions of Argos:
-
-- Latest stable release
-- Previous stable release
-
-Please ensure you are using one of these versions to receive security updates.
-
-## Reporting a VulnerabilityÂ
+## Reporting a Vulnerability
 
 If you discover a security vulnerability in Argos, please report it privately by emailing us at [security@argos.com](mailto:security@argos.com). We will work with you to assess and address the issue promptly.
 
