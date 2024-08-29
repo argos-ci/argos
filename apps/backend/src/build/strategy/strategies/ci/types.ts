@@ -12,6 +12,7 @@ export type MergeBaseStrategy<TCtx> = {
   }) => Promise<string | null>;
   listParentCommitShas: (args: {
     project: Project;
+    build: Build;
     ctx: TCtx;
     sha: string;
   }) => Promise<string[]>;
