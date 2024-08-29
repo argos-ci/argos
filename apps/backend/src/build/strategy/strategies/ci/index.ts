@@ -87,6 +87,7 @@ async function getBaseScreenshotBucket(build: Build) {
   if (mergeBaseCommitSha === head) {
     const shas = await strategy.listParentCommitShas({
       project,
+      build,
       ctx,
       sha: mergeBaseCommitSha,
     });
@@ -106,6 +107,7 @@ async function getBaseScreenshotBucket(build: Build) {
   // If we don't have a bucket for the merge base commit, then we have to found an ancestor
   const shas = await strategy.listParentCommitShas({
     project,
+    build,
     ctx,
     sha: mergeBaseCommitSha,
   });

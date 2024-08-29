@@ -8,6 +8,7 @@ import {
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
+import { queryBaseBucket } from "../query.js";
 import { MergeBaseStrategy } from "../types.js";
 
 type Octokit = NonNullable<Awaited<ReturnType<typeof getInstallationOctokit>>>;
@@ -76,6 +77,22 @@ export const GithubStrategy: MergeBaseStrategy<{
     }
   },
   listParentCommitShas: async (args) => {
+    // If the app is light, we just find the last bucket ancest on the reference branch.
+    // We can't know for sure that it's a parent, but it's the best we can do.
+    // It can result into diffs that includes changes more recent than the current branch.
+    if (args.ctx.installation.app === "light") {
+      if (!args.build.referenceBranch) {
+        return [];
+      }
+
+      const lastBucket = await queryBaseBucket(args.build)
+        .where("branch", args.build.referenceBranch)
+        .orderBy("id", "desc")
+        .first();
+
+      return lastBucket ? [lastBucket.commit] : [];
+    }
+
     try {
       const response = await args.ctx.octokit.repos.listCommits({
         owner: args.ctx.owner,
