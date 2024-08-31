@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import type {
   ErrorRequestHandler,
   NextFunction,
@@ -6,8 +7,12 @@ import type {
   Response,
   Router,
 } from "express";
+import express from "express";
 import { z, ZodError, ZodType } from "zod";
-import { ZodOpenApiOperationObject } from "zod-openapi";
+import {
+  ZodOpenApiOperationObject,
+  ZodOpenApiPathItemObject,
+} from "zod-openapi";
 
 import { asyncHandler } from "@/web/util.js";
 
@@ -16,6 +21,12 @@ import { zodSchema } from "./schema.js";
 type paths = typeof zodSchema.paths;
 
 type Path = keyof paths;
+
+type ExtractRequestType<TRequestBody, TDefault = never> = TRequestBody extends {
+  content: { "application/json": { schema: ZodType } };
+}
+  ? z.infer<TRequestBody["content"]["application/json"]["schema"]>
+  : TDefault;
 
 type ExtractResponseType<TResponses, TDefault = Record<string, never>> =
   TResponses extends Record<string, infer R>
@@ -39,7 +50,7 @@ type OperationRequestHandler<TOperation extends ZodOpenApiOperationObject> = (
       ? z.input<TOperation["requestParams"]["path"]>
       : Record<string, never>,
     ExtractResponseType<TOperation["responses"]>,
-    never,
+    ExtractRequestType<TOperation["requestBody"]>,
     TOperation["requestParams"] extends { query: any }
       ? z.input<TOperation["requestParams"]["query"]>
       : Record<string, never>,
@@ -55,7 +66,21 @@ type OperationRequestHandler<TOperation extends ZodOpenApiOperationObject> = (
 ) => void;
 
 type GetOperationHandler<TPath extends Path> = OperationRequestHandler<
-  paths[TPath]["get"]
+  paths[TPath] extends { get: ZodOpenApiOperationObject }
+    ? paths[TPath]["get"]
+    : never
+>;
+
+type PostOperationHandler<TPath extends Path> = OperationRequestHandler<
+  paths[TPath] extends { post: ZodOpenApiOperationObject }
+    ? paths[TPath]["post"]
+    : never
+>;
+
+type PutOperationHandler<TPath extends Path> = OperationRequestHandler<
+  paths[TPath] extends { put: ZodOpenApiOperationObject }
+    ? paths[TPath]["put"]
+    : never
 >;
 
 /**
@@ -72,7 +97,6 @@ export const errorHandler: ErrorRequestHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next,
 ) => {
-  console.log(error);
   if (
     error instanceof Error &&
     "statusCode" in error &&
@@ -92,21 +116,37 @@ type Context = {
     path: TPath,
     ...handlers: HandlerParams<GetOperationHandler<TPath>>
   ): void;
+  post<TPath extends Path>(
+    path: TPath,
+    ...handlers: HandlerParams<PostOperationHandler<TPath>>
+  ): void;
+  put<TPath extends Path>(
+    path: TPath,
+    ...handlers: HandlerParams<PutOperationHandler<TPath>>
+  ): void;
 };
 
 /**
  * Register a GET handler.
  */
-function get(router: Router) {
-  const apiHandler: Context["get"] = (path, ...handlers) => {
-    const operation: ZodOpenApiOperationObject = zodSchema.paths[path].get;
+function handler<TMethod extends "get" | "post" | "put">(
+  router: Router,
+  method: TMethod,
+) {
+  const apiHandler = (path: Path, ...handlers: RequestHandler[]) => {
+    const pathItem: ZodOpenApiPathItemObject = zodSchema.paths[path];
+    const operation = pathItem[method];
+    if (!operation) {
+      throw new Error(`Method ${method} not allowed for path ${path}`);
+    }
     const wrappedHandlers = handlers.map((handler) =>
       typeof handler === "function"
         ? asyncHandler(handler as RequestHandler)
         : (handler as RequestHandler[]),
     );
-    router.get(
+    router[method](
       convertPath(path),
+      express.json(),
       asyncHandler((req, res, next) => {
         const ctx: RequestCtx<ZodOpenApiOperationObject> = {
           params: null,
@@ -125,6 +165,14 @@ function get(router: Router) {
               req.query,
             ) as RequestCtx<ZodOpenApiOperationObject>["query"];
           }
+          if (
+            operation.requestBody?.content?.["application/json"]?.schema &&
+            "parse" in operation.requestBody.content["application/json"].schema
+          ) {
+            operation.requestBody.content["application/json"].schema.parse(
+              req.body,
+            );
+          }
         } catch (error) {
           if (error instanceof ZodError) {
             const errorMessages = error.errors.map((issue: any) => ({
@@ -141,6 +189,19 @@ function get(router: Router) {
         next();
       }),
       ...wrappedHandlers,
+      Sentry.expressErrorHandler({
+        shouldHandleError: (error) => {
+          if (
+            "statusCode" in error &&
+            typeof error.statusCode === "number" &&
+            error.statusCode < 500
+          ) {
+            return false;
+          }
+          return true;
+        },
+      }),
+      errorHandler,
     );
   };
   return apiHandler;
@@ -152,6 +213,10 @@ export type CreateAPIHandler = (context: Context) => void;
  * Register an API handler.
  */
 export function registerHandler(router: Router, create: CreateAPIHandler) {
-  const context: Context = { get: get(router) };
+  const context: Context = {
+    get: handler(router, "get"),
+    post: handler(router, "post"),
+    put: handler(router, "put"),
+  };
   return create(context);
 }

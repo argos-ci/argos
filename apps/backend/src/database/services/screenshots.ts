@@ -8,9 +8,9 @@ import {
   BuildShard,
   File,
   Screenshot,
-  ScreenshotMetadata,
   Test,
 } from "@/database/models/index.js";
+import { ScreenshotMetadata } from "@/database/models/ScreenshotMetadata.js";
 
 import { getUnknownFileKeys } from "./file.js";
 
@@ -50,13 +50,13 @@ type InsertFilesAndScreenshotsParams = {
   screenshots: {
     key: string;
     name: string;
-    metadata?: ScreenshotMetadata | null;
-    pwTraceKey?: string | null;
-    threshold?: number | null;
-    baseName?: string | null;
+    metadata?: ScreenshotMetadata | null | undefined;
+    pwTraceKey?: string | null | undefined;
+    threshold?: number | null | undefined;
+    baseName?: string | null | undefined;
   }[];
   build: Build;
-  shard?: BuildShard | null;
+  shard?: BuildShard | null | undefined;
   trx?: TransactionOrKnex;
 };
 

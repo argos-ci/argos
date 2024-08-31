@@ -4,8 +4,6 @@ import { rateLimit } from "express-rate-limit";
 import { openAPIRouter } from "@/api/index.js";
 import { createRedisStore } from "@/util/rate-limit.js";
 
-import builds from "./builds/index.js";
-
 const router = express.Router();
 
 const limiter = rateLimit({
@@ -18,6 +16,5 @@ const limiter = rateLimit({
 
 router.use(limiter);
 router.use(openAPIRouter);
-router.use(builds);
 
 export default router;

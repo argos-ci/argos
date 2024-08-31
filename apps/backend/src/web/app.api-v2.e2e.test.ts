@@ -38,8 +38,20 @@ describe("api v2", () => {
           .post("/v2/builds")
           .set("Host", "api.argos-ci.dev")
           .set("Authorization", "Bearer nop")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshotKeys: [
+              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+              "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            ],
+            branch: "main",
+            name: "current",
+            prNumber: 12,
+            mode: null,
+          })
           .expect((res) => {
-            expect(res.body.error.message).toBe(
+            console.log(res.body);
+            expect(res.body.error).toBe(
               `Project not found in Argos. If the issue persists, verify your token. (token: "nop").`,
             );
           })
@@ -102,7 +114,15 @@ describe("api v2", () => {
         expect(res.body).toMatchObject({
           build: {
             id: build.id,
-            url: await build.getUrl(),
+            url: "http://localhost:3000/argos-ci/argos/builds/1",
+            number: 1,
+            status: "pending",
+            notification: {
+              context: "argos/current",
+              description: "Build is queued",
+              github: { state: "pending" },
+              gitlab: { state: "pending" },
+            },
           },
           screenshots: [
             {
@@ -265,7 +285,15 @@ describe("api v2", () => {
         expect(updateResult.body).toEqual({
           build: {
             id: build.id,
-            url: await build.getUrl(),
+            url: "http://localhost:3000/argos-ci/argos/builds/1",
+            number: 1,
+            status: "pending",
+            notification: {
+              context: "argos/current",
+              description: "Build is queued",
+              github: { state: "pending" },
+              gitlab: { state: "pending" },
+            },
           },
         });
       });
@@ -361,7 +389,15 @@ describe("api v2", () => {
         expect(updateResult.body).toEqual({
           build: {
             id: build.id,
-            url: await build.getUrl(),
+            url: "http://localhost:3000/argos-ci/argos/builds/1",
+            number: 1,
+            status: "pending",
+            notification: {
+              context: "argos/current",
+              description: "Build is queued",
+              github: { state: "pending" },
+              gitlab: { state: "pending" },
+            },
           },
         });
       });
@@ -494,13 +530,19 @@ describe("api v2", () => {
         expect(build.compareScreenshotBucket!.branch).toBe("main");
         expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
 
-        const buildUrl = await build.getUrl();
-
         updateBodies.forEach((body) => {
           expect(body).toEqual({
             build: {
               id: build.id,
-              url: buildUrl,
+              url: "http://localhost:3000/argos-ci/argos/builds/1",
+              number: 1,
+              status: "pending",
+              notification: {
+                context: "argos/current",
+                description: "Build is queued",
+                github: { state: "pending" },
+                gitlab: { state: "pending" },
+              },
             },
           });
         });
@@ -566,7 +608,7 @@ describe("api v2", () => {
         expect(updateResults[0]!.statusCode).toBe(200);
         expect(updateResults[1]!.statusCode).toBe(400);
         // @ts-ignore
-        expect(JSON.parse(updateResults[1]!.error.text).error.message).toBe(
+        expect(JSON.parse(updateResults[1]!.error.text).error).toBe(
           "`parallelTotal` must be the same on every batch",
         );
       });

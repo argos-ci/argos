@@ -33,7 +33,7 @@ describe("getAuthProjectBuilds", () => {
         .get("/project/builds")
         .set("Authorization", "Bearer invalid-token")
         .expect((res) => {
-          expect(res.text).toBe(
+          expect(res.body.error).toBe(
             `Project not found in Argos. If the issue persists, verify your token. (token: "invalid-token").`,
           );
         })

@@ -1,7 +1,11 @@
+import { ZodOpenApiOperationObject } from "zod-openapi";
+
 import { GithubRepository } from "@/database/models/GithubRepository.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
+import { ProjectSchema } from "../schema/primitives/project.js";
+import { serverError, unauthorized } from "../schema/util/error.js";
 import { CreateAPIHandler } from "../util.js";
 
 export const getAuthProject: CreateAPIHandler = ({ get }) => {
@@ -30,3 +34,19 @@ export const getAuthProject: CreateAPIHandler = ({ get }) => {
     });
   });
 };
+
+export const getAuthProjectOperation = {
+  operationId: "getAuthProject",
+  responses: {
+    "200": {
+      description: "Project",
+      content: {
+        "application/json": {
+          schema: ProjectSchema,
+        },
+      },
+    },
+    "401": unauthorized,
+    "500": serverError,
+  },
+} satisfies ZodOpenApiOperationObject;
