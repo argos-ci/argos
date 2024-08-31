@@ -60,21 +60,28 @@ const BuildProgress = memo(
         </div>
         {parallel && (
           <div className="w-80">
-            <Progress
-              className="mb-2"
-              value={parallel.received}
-              max={parallel.total}
-              min={0}
-            />
+            {parallel.total > 0 && (
+              <Progress
+                className="mb-2"
+                value={parallel.received}
+                max={parallel.total}
+                min={0}
+              />
+            )}
             <div className="mb-0.5 flex justify-between font-medium tabular-nums">
               <div>
                 {parallel.received} batch{parallel.received > 1 ? "es" : ""}
               </div>
-              <div className="text-low">/ {parallel.total}</div>
+              {parallel.total > 0 && (
+                <div className="text-low">/ {parallel.total}</div>
+              )}
             </div>
             <div className="text-low mb-1 font-mono text-xs">
               {parallel.nonce}
             </div>
+            {parallel.total === -1 && (
+              <div className="text-sm">Waiting for build to be finalized.</div>
+            )}
           </div>
         )}
       </div>

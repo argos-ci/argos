@@ -37,6 +37,16 @@ export const BuildStatusDescription = (props: {
 
   if (build.status === "expired") {
     if (build.parallel) {
+      if (build.parallel.total === -1) {
+        return (
+          <>
+            The build was aborted because it took too long to be finalized.
+            <br />
+            Received {build.parallel.received} batches with nonce{" "}
+            <span className="font-mono">{build.parallel.nonce}</span>.
+          </>
+        );
+      }
       return (
         <>
           The build was aborted because it took too long to receive all the

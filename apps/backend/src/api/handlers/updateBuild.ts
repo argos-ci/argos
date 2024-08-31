@@ -135,10 +135,10 @@ type Context = {
  */
 async function handleUpdateParallel(ctx: Context) {
   const { body, build } = ctx;
+  const parallelTotal =
+    typeof body.parallelTotal === "number" ? body.parallelTotal : null;
   const expectedTotal =
-    typeof body.parallelTotal === "number" && body.parallelTotal > 0
-      ? body.parallelTotal
-      : null;
+    parallelTotal !== null && parallelTotal > 0 ? parallelTotal : null;
 
   if (expectedTotal && build.totalBatch && build.totalBatch !== expectedTotal) {
     throw boom(400, "`parallelTotal` must be the same on every batch");
@@ -159,7 +159,7 @@ async function handleUpdateParallel(ctx: Context) {
           Build.query(trx)
             .patchAndFetchById(build.id, {
               batchCount: raw('"batchCount" + 1'),
-              totalBatch: expectedTotal || null,
+              totalBatch: parallelTotal,
             })
             .select("batchCount"),
         ]);
