@@ -190,8 +190,9 @@ function handler<TMethod extends "get" | "post" | "put">(
       }),
       ...wrappedHandlers,
       Sentry.expressErrorHandler({
-        shouldHandleError: (error) => {
+        shouldHandleError: (error: unknown) => {
           if (
+            error instanceof Error &&
             "statusCode" in error &&
             typeof error.statusCode === "number" &&
             error.statusCode < 500
