@@ -11,6 +11,7 @@ import {
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
+import { finalizeBuild } from "./finalizeBuild.js";
 import { job as buildJob } from "./job.js";
 
 /**
@@ -132,7 +133,8 @@ export async function finalizePartialBuilds(input: {
     .where("runAttempt", input.runAttempt)
     .where("ciProvider", "github-actions")
     .where("jobStatus", "pending")
-    .where("partial", true);
+    .where("partial", true)
+    .whereNotNull("totalBatch");
 
   await Promise.all(
     builds.map(async (build) => {
@@ -195,14 +197,7 @@ export async function finalizePartialBuilds(input: {
         }),
       );
 
-      const screenshotCount = await Screenshot.query()
-        .where("screenshotBucketId", build.compareScreenshotBucketId)
-        .resultSize();
-
-      await build
-        .$relatedQuery("compareScreenshotBucket")
-        .patch({ complete: true, screenshotCount });
-
+      await finalizeBuild({ build });
       await buildJob.push(build.id);
     }),
   );

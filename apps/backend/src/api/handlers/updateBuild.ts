@@ -2,14 +2,10 @@ import { invariant } from "@argos/util/invariant";
 import express from "express";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import { finalizeBuild } from "@/build/finalizeBuild.js";
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
-import {
-  Build,
-  BuildShard,
-  Project,
-  Screenshot,
-} from "@/database/models/index.js";
+import { Build, BuildShard, Project } from "@/database/models/index.js";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { getRedisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
@@ -87,7 +83,7 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
         throw boom(401, "Unauthorized");
       }
 
-      const buildId = req.params["buildId"];
+      const buildId = req.ctx.params["buildId"];
 
       const build = await Build.query()
         .findById(buildId)
@@ -139,13 +135,9 @@ type Context = {
  */
 async function handleUpdateParallel(ctx: Context) {
   const { body, build } = ctx;
-  if (!body.parallelTotal) {
-    throw boom(400, "`parallelTotal` is required when `parallel` is `true`");
-  }
-
   const parallelTotal = body.parallelTotal;
 
-  if (build.totalBatch && build.totalBatch !== parallelTotal) {
+  if (parallelTotal && build.totalBatch && build.totalBatch !== parallelTotal) {
     throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
@@ -164,7 +156,7 @@ async function handleUpdateParallel(ctx: Context) {
           Build.query(trx)
             .patchAndFetchById(build.id, {
               batchCount: raw('"batchCount" + 1'),
-              totalBatch: parallelTotal,
+              totalBatch: parallelTotal || null,
             })
             .select("batchCount"),
         ]);
@@ -176,14 +168,9 @@ async function handleUpdateParallel(ctx: Context) {
           trx,
         });
 
-        if (parallelTotal === patchedBuild.batchCount) {
-          const screenshotCount = await Screenshot.query(trx)
-            .where("screenshotBucketId", build.compareScreenshotBucketId)
-            .resultSize();
+        if (parallelTotal && parallelTotal === patchedBuild.batchCount) {
           await Promise.all([
-            build
-              .$relatedQuery("compareScreenshotBucket", trx)
-              .patch({ complete: true, screenshotCount }),
+            finalizeBuild({ build, trx }),
             // If the build was marked as partial, then it was obviously an error, we unmark it.
             build.partial
               ? Build.query(trx).where("id", build.id).patch({ partial: false })

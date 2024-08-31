@@ -3,6 +3,7 @@ import { Router } from "express";
 import { stringify } from "yaml";
 
 import { createBuild } from "./handlers/createBuild.js";
+import { finalizeBuild } from "./handlers/finalizeBuild.js";
 import { getAuthProject } from "./handlers/getAuthProject.js";
 import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds.js";
 import { updateBuild } from "./handlers/updateBuild.js";
@@ -31,6 +32,7 @@ registerHandler(router, getAuthProject);
 registerHandler(router, getAuthProjectBuilds);
 registerHandler(router, createBuild);
 registerHandler(router, updateBuild);
+registerHandler(router, finalizeBuild);
 
 // Error handlers
 router.use(errorHandler);
