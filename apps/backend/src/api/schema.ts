@@ -4,7 +4,7 @@ import { createDocument, ZodOpenApiObject } from "zod-openapi";
 import config from "@/config";
 
 import { createBuildOperation } from "./handlers/createBuild";
-import { finalizeBuildOperation } from "./handlers/finalizeBuild";
+import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getAuthProjectBuildsOperation } from "./handlers/getAuthProjectBuilds";
 import { updateBuildOperation } from "./handlers/updateBuild";
@@ -36,11 +36,11 @@ export const zodSchema = {
     "/builds": {
       post: createBuildOperation,
     },
+    "/builds/finalize": {
+      post: finalizeBuildsOperation,
+    },
     "/builds/{buildId}": {
       put: updateBuildOperation,
-    },
-    "/builds/{buildId}/finalize": {
-      post: finalizeBuildOperation,
     },
     "/project": {
       get: getAuthProjectOperation,

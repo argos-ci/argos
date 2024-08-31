@@ -28,7 +28,7 @@ const RequestBodySchema = z
   .object({
     screenshots: z.array(ScreenshotInputSchema),
     parallel: z.boolean().nullable().optional(),
-    parallelTotal: z.number().int().min(1).nullable().optional(),
+    parallelTotal: z.number().int().min(-1).nullable().optional(),
     parallelIndex: z.number().int().min(1).nullable().optional(),
   })
   .strict();
@@ -135,9 +135,12 @@ type Context = {
  */
 async function handleUpdateParallel(ctx: Context) {
   const { body, build } = ctx;
-  const parallelTotal = body.parallelTotal;
+  const expectedTotal =
+    typeof body.parallelTotal === "number" && body.parallelTotal > 0
+      ? body.parallelTotal
+      : null;
 
-  if (parallelTotal && build.totalBatch && build.totalBatch !== parallelTotal) {
+  if (expectedTotal && build.totalBatch && build.totalBatch !== expectedTotal) {
     throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
@@ -156,7 +159,7 @@ async function handleUpdateParallel(ctx: Context) {
           Build.query(trx)
             .patchAndFetchById(build.id, {
               batchCount: raw('"batchCount" + 1'),
-              totalBatch: parallelTotal || null,
+              totalBatch: expectedTotal || null,
             })
             .select("batchCount"),
         ]);
@@ -168,7 +171,7 @@ async function handleUpdateParallel(ctx: Context) {
           trx,
         });
 
-        if (parallelTotal && parallelTotal === patchedBuild.batchCount) {
+        if (expectedTotal && expectedTotal === patchedBuild.batchCount) {
           await Promise.all([
             finalizeBuild({ build, trx }),
             // If the build was marked as partial, then it was obviously an error, we unmark it.
