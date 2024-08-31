@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
 
@@ -107,4 +108,5 @@ export const installAppRouter = async (app: express.Application) => {
   });
 
   app.use(subdomain(router, "app"));
+  Sentry.setupExpressErrorHandler(router);
 };
