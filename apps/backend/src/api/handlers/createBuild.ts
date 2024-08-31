@@ -206,9 +206,11 @@ async function handleCreateSingle(ctx: BuildContext): Promise<CreateResult> {
  */
 async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
   const { body, project } = ctx;
+
   if (!body.parallelNonce) {
     throw boom(400, "`parallelNonce` is required when `parallel` is `true`");
   }
+
   const { screenshots, pwTraces } = await getScreenshotAndPwTraces(body);
   const buildName = getBuildName(body.name);
   const { parallelNonce } = body;
