@@ -7,11 +7,11 @@ import config from "@/config/index.js";
 import { createRedisLock } from "./lock.js";
 
 function createResolvablePromise() {
+  let resolve: (value: any) => void;
   const promise = new Promise((r) => {
-    setTimeout(() => {
-      promise.resolve = r;
-    });
+    resolve = r;
   }) as Promise<any> & { resolve: (value: any) => void };
+  promise.resolve = resolve!;
   return promise;
 }
 
@@ -33,8 +33,8 @@ describe("redis-lock", () => {
     const p1 = createResolvablePromise();
     const spy1 = vi.fn();
     const spy2 = vi.fn();
-    lock.acquire(["x"], async () => p1).then(spy1);
-    lock
+    const l1 = lock.acquire(["x"], async () => p1).then(spy1);
+    const l2 = lock
       .acquire(["x"], async () => "second", {
         retryDelay: { min: 30, max: 40 },
       })
@@ -48,5 +48,36 @@ describe("redis-lock", () => {
     expect(spy2).not.toHaveBeenCalledWith("second");
     await delay(50);
     expect(spy2).toHaveBeenCalledWith("second");
+    await l1;
+    await l2;
+  });
+
+  it("handles errors", async () => {
+    const lock = createRedisLock(client);
+    const spy1 = vi.fn();
+    const spy2 = vi.fn();
+    const l1 = lock
+      .acquire(["x"], async () => "first", {
+        retryDelay: { min: 30, max: 40 },
+      })
+      .then(spy1);
+    const l2 = lock
+      .acquire(["x"], async () => "second", {
+        retryDelay: { min: 30, max: 40 },
+      })
+      .then(spy2);
+    await expect(() =>
+      lock.acquire(
+        ["x"],
+        async () => {
+          throw new Error("Expected to fail");
+        },
+        {
+          retryDelay: { min: 30, max: 40 },
+        },
+      ),
+    ).rejects.toThrow("Expected to fail");
+    await l1;
+    await l2;
   });
 });

@@ -53,22 +53,25 @@ export const createRedisLock = (client: RedisClient) => {
       retryDelay,
     });
     let timer: NodeJS.Timeout | null = null;
-    const result = (await Promise.race([
-      task(),
-      new Promise((_resolve, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error(`Lock timeout "${hash}" after ${timeout}ms`));
-        }, timeout);
-      }),
-    ])) as T;
-    if (timer) {
-      clearTimeout(timer);
+    try {
+      const result = (await Promise.race([
+        task(),
+        new Promise((_resolve, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error(`Lock timeout "${hash}" after ${timeout}ms`));
+          }, timeout);
+        }),
+      ])) as T;
+      return result;
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      const value = await client.get(fullName);
+      if (value === id) {
+        await client.del(fullName);
+      }
     }
-    const value = await client.get(fullName);
-    if (value === id) {
-      await client.del(fullName);
-    }
-    return result;
   }
 
   return { acquire };
