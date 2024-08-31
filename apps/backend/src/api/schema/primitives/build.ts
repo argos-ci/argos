@@ -15,7 +15,10 @@ import { z } from "../util/zod.js";
 
 export const BuildSchema = z
   .object({
-    id: z.string(),
+    id: z.string().openapi({
+      description: "A unique identifier for the build",
+      example: "12345",
+    }),
     number: z.number().min(1),
     status: BuildAggregatedStatusSchema,
     url: z.string().url(),

@@ -28,7 +28,7 @@ type ExtractRequestType<TRequestBody, TDefault = never> = TRequestBody extends {
   ? z.infer<TRequestBody["content"]["application/json"]["schema"]>
   : TDefault;
 
-type ExtractResponseType<TResponses, TDefault = Record<string, never>> =
+type ExtractResponseType<TResponses, TDefault = never> =
   TResponses extends Record<string, infer R>
     ? R extends { content: { "application/json": { schema: ZodType } } }
       ? z.infer<R["content"]["application/json"]["schema"]>
@@ -49,8 +49,8 @@ type OperationRequestHandler<TOperation extends ZodOpenApiOperationObject> = (
     TOperation["requestParams"] extends { path: any }
       ? z.input<TOperation["requestParams"]["path"]>
       : Record<string, never>,
-    ExtractResponseType<TOperation["responses"]>,
-    ExtractRequestType<TOperation["requestBody"]>,
+    ExtractResponseType<TOperation["responses"], never>,
+    ExtractRequestType<TOperation["requestBody"], never>,
     TOperation["requestParams"] extends { query: any }
       ? z.input<TOperation["requestParams"]["query"]>
       : Record<string, never>,
