@@ -1,8 +1,12 @@
+import { assertNever } from "@argos/util/assertNever";
+import { CheckIcon } from "lucide-react";
+
 import {
   BuildModeDescription,
   BuildModeLabel,
 } from "@/containers/BuildModeIndicator";
 import { FragmentType, graphql, useFragment } from "@/gql";
+import { TestReportStatus } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
@@ -77,6 +81,47 @@ function BuildLink({
   );
 }
 
+function TestReportStatusLabel(props: { status: TestReportStatus }) {
+  switch (props.status) {
+    case TestReportStatus.Passed:
+      return (
+        <>
+          <div>
+            <CheckIcon
+              className="text-success-low mr-1 inline-block"
+              size="1em"
+            />
+            Passed
+          </div>
+          <Description>
+            All tests passed successfully. This build is eligible to be used as
+            a baseline.
+          </Description>
+        </>
+      );
+    case TestReportStatus.Failed:
+    case TestReportStatus.Timedout:
+    case TestReportStatus.Interrupted:
+      return (
+        <>
+          <>
+            <CheckIcon
+              className="text-danger-low mr-1 inline-block"
+              size="1em"
+            />
+            Failed
+          </>
+          <Description>
+            Some tests failed. This build is not eligible to be used as a
+            baseline.
+          </Description>
+        </>
+      );
+    default:
+      assertNever(props.status);
+  }
+}
+
 const BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
@@ -101,14 +146,25 @@ const BuildFragment = graphql(`
       url
       number
     }
+    metadata {
+      testReport {
+        status
+      }
+    }
   }
 `);
 
-export const BuildInfos = (props: {
+function Description(props: { children: React.ReactNode }) {
+  return (
+    <p className="text-low mt-0.5 text-xs font-normal">{props.children}</p>
+  );
+}
+
+export function BuildInfos(props: {
   repoUrl: string | null;
   build: FragmentType<typeof BuildFragment>;
   params: BuildParams;
-}) => {
+}) {
   const build = useFragment(BuildFragment, props.build);
   return (
     <dl>
@@ -121,9 +177,9 @@ export const BuildInfos = (props: {
       <Dt>Mode</Dt>
       <Dd>
         <BuildModeLabel mode={build.mode} />
-        <div className="text-low mt-0.5 text-xs font-normal">
+        <Description>
           <BuildModeDescription mode={build.mode} />
-        </div>
+        </Description>
       </Dd>
 
       <Dt>Total screenshots count</Dt>
@@ -194,6 +250,15 @@ export const BuildInfos = (props: {
           "-"
         )}
       </Dd>
+
+      {build.metadata?.testReport?.status && (
+        <>
+          <Dt>Tests status</Dt>
+          <Dd>
+            <TestReportStatusLabel status={build.metadata.testReport.status} />
+          </Dd>
+        </>
+      )}
     </dl>
   );
-};
+}

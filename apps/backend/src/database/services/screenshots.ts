@@ -10,8 +10,8 @@ import {
   Screenshot,
   Test,
 } from "@/database/models/index.js";
-import { ScreenshotMetadata } from "@/database/models/ScreenshotMetadata.js";
 
+import { ScreenshotMetadata } from "../schemas/ScreenshotMetadata.js";
 import { getUnknownFileKeys } from "./file.js";
 
 const getOrCreateTests = async ({

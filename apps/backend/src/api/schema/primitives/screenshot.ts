@@ -1,4 +1,4 @@
-import { ScreenshotMetadataSchema } from "@/database/models/ScreenshotMetadata.js";
+import { ScreenshotMetadataSchema } from "@/database/schemas/index.js";
 import { SHA256_REGEX } from "@/web/constants.js";
 
 import { z } from "../util/zod.js";

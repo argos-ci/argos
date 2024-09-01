@@ -96,6 +96,32 @@ export const typeDefs = gql`
     parallel: BuildParallel
     "Mode"
     mode: BuildMode!
+    "Aggregated metadata"
+    metadata: BuildMetadata
+  }
+
+  type BuildMetadata {
+    testReport: TestReport
+  }
+
+  type TestReport {
+    status: TestReportStatus!
+    stats: TestReportStats
+  }
+
+  type TestReportStats {
+    startTime: DateTime
+    duration: Int
+    tests: Int
+    expected: Int
+    unexpected: Int
+  }
+
+  enum TestReportStatus {
+    passed
+    failed
+    timedout
+    interrupted
   }
 
   type BuildParallel {

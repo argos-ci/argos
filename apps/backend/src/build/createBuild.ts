@@ -52,17 +52,17 @@ export async function createBuild(params: {
   project: Project;
   commit: string;
   branch: string;
-  buildName?: string | null;
-  parallel?: { nonce: string } | null;
-  prNumber?: number | null;
-  prHeadCommit?: string | null;
-  referenceCommit?: string | null;
-  referenceBranch?: string | null;
-  mode?: BuildMode | null;
-  ciProvider?: string | null;
-  argosSdk?: string | null;
-  runId?: string | null;
-  runAttempt?: number | null;
+  buildName: string | null;
+  parallel: { nonce: string } | null;
+  prNumber: number | null;
+  prHeadCommit: string | null;
+  referenceCommit: string | null;
+  referenceBranch: string | null;
+  mode: BuildMode | null;
+  ciProvider: string | null;
+  argosSdk: string | null;
+  runId: string | null;
+  runAttempt: number | null;
 }) {
   const account = await params.project.$relatedQuery("account");
   invariant(account, "Account should be fetched");
@@ -135,6 +135,7 @@ export async function createBuild(params: {
           branch: params.branch,
           projectId: params.project.id,
           complete: false,
+          valid: false,
           mode,
         });
 

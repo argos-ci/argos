@@ -1,10 +1,14 @@
 import { invariant } from "@argos/util/invariant";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { finalizeBuild } from "@/build/finalizeBuild.js";
+import {
+  checkIsBucketValidFromMetadata,
+  finalizeBuild,
+} from "@/build/finalizeBuild.js";
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
 import { Build, BuildShard, Project } from "@/database/models/index.js";
+import { BuildMetadataSchema } from "@/database/schemas/BuildMetadata.js";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
 import { getRedisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
@@ -29,6 +33,7 @@ const RequestBodySchema = z
     parallel: z.boolean().nullable().optional(),
     parallelTotal: z.number().int().min(-1).nullable().optional(),
     parallelIndex: z.number().int().min(1).nullable().optional(),
+    metadata: BuildMetadataSchema.optional(),
   })
   .strict();
 
@@ -146,6 +151,7 @@ async function handleUpdateParallel(ctx: Context) {
             ? BuildShard.query(trx).insert({
                 buildId: build.id,
                 index: body.parallelIndex,
+                metadata: body.metadata ?? null,
               })
             : null,
           Build.query(trx)
@@ -190,15 +196,22 @@ async function handleUpdateParallel(ctx: Context) {
 async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
   await transaction(async (trx) => {
-    const screenshotCount = await insertFilesAndScreenshots({
-      screenshots: body.screenshots,
-      build,
-      trx,
-    });
+    const [screenshotCount] = await Promise.all([
+      insertFilesAndScreenshots({
+        screenshots: body.screenshots,
+        build,
+        trx,
+      }),
+      ctx.body.metadata
+        ? build.$clone().$query(trx).patch({ metadata: ctx.body.metadata })
+        : null,
+    ]);
 
-    await build
-      .compareScreenshotBucket!.$query(trx)
-      .patchAndFetch({ complete: true, screenshotCount });
+    await build.compareScreenshotBucket!.$query(trx).patchAndFetch({
+      complete: true,
+      valid: checkIsBucketValidFromMetadata(build.metadata),
+      screenshotCount,
+    });
   });
   await buildJob.push(build.id);
 }

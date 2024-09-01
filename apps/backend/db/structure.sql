@@ -166,7 +166,8 @@ CREATE TABLE public.build_shards (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "buildId" bigint NOT NULL,
-    index integer
+    index integer,
+    metadata jsonb
 );
 
 
@@ -222,6 +223,7 @@ CREATE TABLE public.builds (
     "runId" character varying(255),
     "runAttempt" integer,
     partial boolean DEFAULT false NOT NULL,
+    metadata jsonb,
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -933,6 +935,7 @@ CREATE TABLE public.screenshot_buckets (
     "projectId" bigint NOT NULL,
     "screenshotCount" integer,
     mode text DEFAULT 'ci'::text NOT NULL,
+    valid boolean NOT NULL,
     CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL))),
     CONSTRAINT screenshot_buckets_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text])))
 );
@@ -2829,3 +2832,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240630151704_screenshot-threshold.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240706121810_screenshot-base-name.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240822082247_github-light.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240901150444_build-metadata.js', 1, NOW());

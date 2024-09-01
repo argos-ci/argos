@@ -1,14 +1,14 @@
 import type { RelationMappings } from "objection";
 
+import {
+  ScreenshotMetadata,
+  ScreenshotMetadataJsonSchema,
+} from "../schemas/ScreenshotMetadata.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { BuildShard } from "./BuildShard.js";
 import { File } from "./File.js";
 import { ScreenshotBucket } from "./ScreenshotBucket.js";
-import {
-  ScreenshotMetadata,
-  ScreenshotMetadataJsonSchema,
-} from "./ScreenshotMetadata.js";
 import { Test } from "./Test.js";
 
 export class Screenshot extends Model {
