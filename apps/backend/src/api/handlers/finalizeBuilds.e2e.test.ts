@@ -60,15 +60,30 @@ describe("finalizeBuilds", () => {
       await compareScreenshotBucket.$query().patch({ complete: true });
     });
 
-    it("returns 409 status code", async () => {
+    it("returns 200 with the finalized build", async () => {
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")
         .send({ parallelNonce: "123" })
         .expect((res) => {
-          expect(res.body.error).toBe(`Build is already finalized`);
+          expect(res.body).toEqual({
+            builds: [
+              {
+                id: build.id,
+                number: 1,
+                status: "stable",
+                url: "http://localhost:3000/awesome-team/awesome-project/builds/1",
+                notification: {
+                  description: "Everything's good!",
+                  context: "argos",
+                  github: { state: "success" },
+                  gitlab: { state: "success" },
+                },
+              },
+            ],
+          });
         })
-        .expect(409);
+        .expect(200);
     });
   });
 
@@ -77,17 +92,15 @@ describe("finalizeBuilds", () => {
       await build.$query().patch({ totalBatch: null });
     });
 
-    it("returns 404 status code", async () => {
+    it("returns 200 with an empty array", async () => {
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")
         .send({ parallelNonce: "123" })
         .expect((res) => {
-          expect(res.body.error).toBe(
-            `No build found with the given parallel.nonce`,
-          );
+          expect(res.body.builds).toEqual([]);
         })
-        .expect(404);
+        .expect(200);
     });
   });
 

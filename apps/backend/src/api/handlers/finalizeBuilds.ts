@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild.js";
@@ -61,28 +62,18 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
     const builds = await Build.query()
       .withGraphFetched("compareScreenshotBucket")
       .where("builds.projectId", req.authProject.id)
-      .where("externalId", parallelNonce)
-      .where("totalBatch", -1);
-
-    if (builds.length === 0) {
-      throw boom(404, "No build found with the given parallel.nonce");
-    }
-
-    builds.forEach((build) => {
-      if (!build.compareScreenshotBucket) {
-        throw boom(500, "Could not find compareScreenshotBucket for build");
-      }
-
-      if (build.compareScreenshotBucket.complete) {
-        throw boom(409, "Build is already finalized");
-      }
-    });
+      .where("builds.externalId", parallelNonce)
+      .where("builds.totalBatch", -1);
 
     await transaction(async (trx) => {
       await Promise.all(
         builds.map(async (build) => {
+          invariant(build.compareScreenshotBucket);
+
           await Promise.all([
-            finalizeBuildService({ build, trx }),
+            !build.compareScreenshotBucket.complete
+              ? finalizeBuildService({ build, trx })
+              : null,
             // If the build was marked as partial, then it was obviously an error, we unmark it.
             build.partial
               ? Build.query(trx).where("id", build.id).patch({ partial: false })
