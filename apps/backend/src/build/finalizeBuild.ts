@@ -10,16 +10,6 @@ export function checkIsBucketValidFromMetadata(metadata: BuildMetadata | null) {
   return !metadata?.testReport || metadata.testReport.status === "passed";
 }
 
-function add(a: number | undefined, b: number | undefined) {
-  if (!a) {
-    return b;
-  }
-  if (!b) {
-    return a;
-  }
-  return a + b;
-}
-
 /**
  * Aggregate metadata from multiple shards.
  */
@@ -52,27 +42,24 @@ function aggregateMetadata(allMetatada: (BuildMetadata | null)[]) {
         : accStartTime;
     })();
 
+    const duration = (() => {
+      const accDuration = acc.testReport?.stats?.duration;
+      const itemDuration = item.testReport?.stats?.duration;
+      if (accDuration == null) {
+        return itemDuration;
+      }
+      if (itemDuration == null) {
+        return accDuration;
+      }
+      return itemDuration + accDuration;
+    })();
+
     return {
       testReport: {
         status,
         stats: {
           startTime,
-          duration: add(
-            acc.testReport?.stats?.duration,
-            item.testReport?.stats?.duration,
-          ),
-          tests: add(
-            acc.testReport?.stats?.tests,
-            item.testReport?.stats?.tests,
-          ),
-          expected: add(
-            acc.testReport?.stats?.expected,
-            item.testReport?.stats?.expected,
-          ),
-          unexpected: add(
-            acc.testReport?.stats?.unexpected,
-            item.testReport?.stats?.unexpected,
-          ),
+          duration,
         },
       },
     };

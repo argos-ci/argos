@@ -112,9 +112,6 @@ export const typeDefs = gql`
   type TestReportStats {
     startTime: DateTime
     duration: Int
-    tests: Int
-    expected: Int
-    unexpected: Int
   }
 
   enum TestReportStatus {

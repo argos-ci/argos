@@ -1073,10 +1073,7 @@ export type ITestReport = {
 export type ITestReportStats = {
   __typename?: 'TestReportStats';
   duration?: Maybe<Scalars['Int']['output']>;
-  expected?: Maybe<Scalars['Int']['output']>;
   startTime?: Maybe<Scalars['DateTime']['output']>;
-  tests?: Maybe<Scalars['Int']['output']>;
-  unexpected?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum ITestReportStatus {
@@ -2037,10 +2034,7 @@ export type ITestReportResolvers<ContextType = Context, ParentType extends IReso
 
 export type ITestReportStatsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestReportStats'] = IResolversParentTypes['TestReportStats']> = ResolversObject<{
   duration?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  expected?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   startTime?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  tests?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  unexpected?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

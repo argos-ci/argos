@@ -33,7 +33,10 @@ const RequestBodySchema = z
     parallel: z.boolean().nullable().optional(),
     parallelTotal: z.number().int().min(-1).nullable().optional(),
     parallelIndex: z.number().int().min(1).nullable().optional(),
-    metadata: BuildMetadataSchema.optional(),
+    metadata: BuildMetadataSchema.optional().openapi({
+      description: "Build metadata",
+      ref: "BuildMetadata",
+    }),
   })
   .strict();
 

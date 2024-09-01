@@ -9,6 +9,7 @@ import {
   PageParamsSchema,
   paginated,
 } from "../schema/primitives/pagination.js";
+import { Sha1HashSchema } from "../schema/primitives/sha.js";
 import {
   invalidParameters,
   serverError,
@@ -16,6 +17,46 @@ import {
 } from "../schema/util/error.js";
 import { z } from "../schema/util/zod.js";
 import { CreateAPIHandler } from "../util.js";
+
+const GetAuthProjectBuildsParams = PageParamsSchema.extend({
+  commit: Sha1HashSchema.optional(),
+  distinctName: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === "true") {
+        return true;
+      }
+      if (v === "false") {
+        return false;
+      }
+      return null;
+    })
+    .openapi({
+      description:
+        "Only return the latest builds created, unique by name and commit.",
+    }),
+}).strict();
+
+export const getAuthProjectBuildsOperation = {
+  operationId: "getAuthProjectBuilds",
+  requestParams: {
+    query: GetAuthProjectBuildsParams,
+  },
+  responses: {
+    "200": {
+      description: "List of builds",
+      content: {
+        "application/json": {
+          schema: paginated(BuildSchema),
+        },
+      },
+    },
+    "401": unauthorized,
+    "400": invalidParameters,
+    "500": serverError,
+  },
+} satisfies ZodOpenApiOperationObject;
 
 export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
   return get("/project/builds", repoAuth, async (req, res) => {
@@ -61,45 +102,3 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
     });
   });
 };
-
-const GetAuthProjectBuildsParams = PageParamsSchema.extend({
-  commit: z.string().optional().openapi({
-    description: "Commit hash.",
-  }),
-  distinctName: z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === "true") {
-        return true;
-      }
-      if (v === "false") {
-        return false;
-      }
-      return null;
-    })
-    .openapi({
-      description:
-        "Only return the latest builds created, unique by name and commit.",
-    }),
-});
-
-export const getAuthProjectBuildsOperation = {
-  operationId: "getAuthProjectBuilds",
-  requestParams: {
-    query: GetAuthProjectBuildsParams,
-  },
-  responses: {
-    "200": {
-      description: "List of builds",
-      content: {
-        "application/json": {
-          schema: paginated(BuildSchema),
-        },
-      },
-    },
-    "401": unauthorized,
-    "400": invalidParameters,
-    "500": serverError,
-  },
-} satisfies ZodOpenApiOperationObject;

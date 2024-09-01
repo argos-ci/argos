@@ -1068,10 +1068,7 @@ export type TestReport = {
 export type TestReportStats = {
   __typename?: 'TestReportStats';
   duration?: Maybe<Scalars['Int']['output']>;
-  expected?: Maybe<Scalars['Int']['output']>;
   startTime?: Maybe<Scalars['DateTime']['output']>;
-  tests?: Maybe<Scalars['Int']['output']>;
-  unexpected?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum TestReportStatus {

@@ -851,10 +851,7 @@ type TestReport {
 
 type TestReportStats {
   duration: Int
-  expected: Int
   startTime: DateTime
-  tests: Int
-  unexpected: Int
 }
 
 enum TestReportStatus {

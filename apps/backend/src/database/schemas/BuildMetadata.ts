@@ -1,21 +1,22 @@
 import { z } from "zod";
 
-export const BuildMetadataSchema = z.object({
-  testReport: z
-    .object({
-      status: z.enum(["passed", "failed", "timedout", "interrupted"]),
-      stats: z
-        .object({
-          startTime: z.string().optional(),
-          duration: z.number().optional(),
-          tests: z.number().optional(),
-          expected: z.number().optional(),
-          unexpected: z.number().optional(),
-        })
-        .optional(),
-    })
-    .optional(),
-});
+export const BuildMetadataSchema = z
+  .object({
+    testReport: z
+      .object({
+        status: z.enum(["passed", "failed", "timedout", "interrupted"]),
+        stats: z
+          .object({
+            startTime: z.string().optional(),
+            duration: z.number().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
 
 export type BuildMetadata = z.infer<typeof BuildMetadataSchema>;
 
@@ -36,15 +37,6 @@ export const BuildMetadataJsonSchema = {
               type: "string",
             },
             duration: {
-              type: "number",
-            },
-            tests: {
-              type: "number",
-            },
-            expected: {
-              type: "number",
-            },
-            unexpected: {
               type: "number",
             },
           },
