@@ -1,5 +1,9 @@
 import type { RelationMappings } from "objection";
 
+import {
+  BuildMetadata,
+  BuildMetadataJsonSchema,
+} from "../schemas/BuildMetadata.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Build } from "./Build.js";
@@ -13,11 +17,15 @@ export class BuildShard extends Model {
     properties: {
       buildId: { type: "string" },
       index: { type: ["integer", "null"] },
+      metadata: {
+        oneOf: [BuildMetadataJsonSchema, { type: "null" }],
+      },
     },
   });
 
   buildId!: string;
   index!: number | null;
+  metadata!: BuildMetadata | null;
 
   static override get relationMappings(): RelationMappings {
     return {

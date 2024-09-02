@@ -6,6 +6,8 @@ const baseData = {
   name: "878",
   branch: "BUGS-130",
   commit: "ff4474843ccab36e72814e321cbf6ab6a6303385",
+  valid: true,
+  complete: true,
 };
 
 describe("ScreenshotBucket", () => {

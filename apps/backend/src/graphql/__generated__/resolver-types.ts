@@ -125,6 +125,8 @@ export type IBuild = INode & {
   commit: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  /** Aggregated metadata */
+  metadata?: Maybe<IBuildMetadata>;
   /** Mode */
   mode: IBuildMode;
   /** Build name */
@@ -160,6 +162,11 @@ export type IBuildConnection = IConnection & {
   __typename?: 'BuildConnection';
   edges: Array<IBuild>;
   pageInfo: IPageInfo;
+};
+
+export type IBuildMetadata = {
+  __typename?: 'BuildMetadata';
+  testReport?: Maybe<ITestReport>;
 };
 
 export enum IBuildMode {
@@ -1057,6 +1064,25 @@ export type ITestConnection = IConnection & {
   pageInfo: IPageInfo;
 };
 
+export type ITestReport = {
+  __typename?: 'TestReport';
+  stats?: Maybe<ITestReportStats>;
+  status: ITestReportStatus;
+};
+
+export type ITestReportStats = {
+  __typename?: 'TestReportStats';
+  duration?: Maybe<Scalars['Int']['output']>;
+  startTime?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export enum ITestReportStatus {
+  Failed = 'failed',
+  Interrupted = 'interrupted',
+  Passed = 'passed',
+  Timedout = 'timedout'
+}
+
 export enum ITestStatus {
   Flaky = 'flaky',
   Pending = 'pending',
@@ -1253,6 +1279,7 @@ export type IResolversTypes = ResolversObject<{
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
+  BuildMetadata: ResolverTypeWrapper<IBuildMetadata>;
   BuildMode: IBuildMode;
   BuildParallel: ResolverTypeWrapper<IBuildParallel>;
   BuildStats: ResolverTypeWrapper<IBuildStats>;
@@ -1336,6 +1363,9 @@ export type IResolversTypes = ResolversObject<{
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
   TestConnection: ResolverTypeWrapper<Omit<ITestConnection, 'edges'> & { edges: Array<IResolversTypes['Test']> }>;
+  TestReport: ResolverTypeWrapper<ITestReport>;
+  TestReportStats: ResolverTypeWrapper<ITestReportStats>;
+  TestReportStatus: ITestReportStatus;
   TestStatus: ITestStatus;
   Time: ResolverTypeWrapper<Scalars['Time']['output']>;
   TransferProjectInput: ITransferProjectInput;
@@ -1360,6 +1390,7 @@ export type IResolversParentTypes = ResolversObject<{
   Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
+  BuildMetadata: IBuildMetadata;
   BuildParallel: IBuildParallel;
   BuildStats: IBuildStats;
   Connection: IResolversInterfaceTypes<IResolversParentTypes>['Connection'];
@@ -1429,6 +1460,8 @@ export type IResolversParentTypes = ResolversObject<{
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
   TestConnection: Omit<ITestConnection, 'edges'> & { edges: Array<IResolversParentTypes['Test']> };
+  TestReport: ITestReport;
+  TestReportStats: ITestReportStats;
   Time: Scalars['Time']['output'];
   TransferProjectInput: ITransferProjectInput;
   UninstallSlackInput: IUninstallSlackInput;
@@ -1491,6 +1524,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<IResolversTypes['BuildMetadata']>, ParentType, ContextType>;
   mode?: Resolver<IResolversTypes['BuildMode'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
@@ -1509,6 +1543,11 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
 export type IBuildConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildConnection'] = IResolversParentTypes['BuildConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['Build']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IBuildMetadataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildMetadata'] = IResolversParentTypes['BuildMetadata']> = ResolversObject<{
+  testReport?: Resolver<Maybe<IResolversTypes['TestReport']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1987,6 +2026,18 @@ export type ITestConnectionResolvers<ContextType = Context, ParentType extends I
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ITestReportResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestReport'] = IResolversParentTypes['TestReport']> = ResolversObject<{
+  stats?: Resolver<Maybe<IResolversTypes['TestReportStats']>, ParentType, ContextType>;
+  status?: Resolver<IResolversTypes['TestReportStatus'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITestReportStatsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestReportStats'] = IResolversParentTypes['TestReportStats']> = ResolversObject<{
+  duration?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  startTime?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export interface ITimeScalarConfig extends GraphQLScalarTypeConfig<IResolversTypes['Time'], any> {
   name: 'Time';
 }
@@ -2040,6 +2091,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   Build?: IBuildResolvers<ContextType>;
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
+  BuildMetadata?: IBuildMetadataResolvers<ContextType>;
   BuildParallel?: IBuildParallelResolvers<ContextType>;
   BuildStats?: IBuildStatsResolvers<ContextType>;
   Connection?: IConnectionResolvers<ContextType>;
@@ -2092,6 +2144,8 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;
   Test?: ITestResolvers<ContextType>;
   TestConnection?: ITestConnectionResolvers<ContextType>;
+  TestReport?: ITestReportResolvers<ContextType>;
+  TestReportStats?: ITestReportStatsResolvers<ContextType>;
   Time?: GraphQLScalarType;
   User?: IUserResolvers<ContextType>;
   UserConnection?: IUserConnectionResolvers<ContextType>;

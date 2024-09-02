@@ -172,6 +172,7 @@ export async function finalizePartialBuilds(input: {
             return {
               buildId: build.id,
               index: shard.index,
+              metadata: shard.metadata,
             };
           }),
         )

@@ -24,6 +24,8 @@ const RequestBodySchema = z
   .object({ parallelNonce: z.string().min(1) })
   .strict();
 
+const ResponseSchema = z.object({ builds: z.array(BuildSchema) }).strict();
+
 export const finalizeBuildsOperation = {
   operationId: "finalizeBuilds",
   requestBody: {
@@ -38,7 +40,7 @@ export const finalizeBuildsOperation = {
       description: "Result of build finalization",
       content: {
         "application/json": {
-          schema: z.object({ builds: z.array(BuildSchema) }).strict(),
+          schema: ResponseSchema,
         },
       },
     },

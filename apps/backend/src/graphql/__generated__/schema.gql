@@ -97,6 +97,9 @@ type Build implements Node {
   createdAt: DateTime!
   id: ID!
 
+  """Aggregated metadata"""
+  metadata: BuildMetadata
+
   """Mode"""
   mode: BuildMode!
 
@@ -137,6 +140,10 @@ type Build implements Node {
 type BuildConnection implements Connection {
   edges: [Build!]!
   pageInfo: PageInfo!
+}
+
+type BuildMetadata {
+  testReport: TestReport
 }
 
 enum BuildMode {
@@ -835,6 +842,23 @@ type Test implements Node {
 type TestConnection implements Connection {
   edges: [Test!]!
   pageInfo: PageInfo!
+}
+
+type TestReport {
+  stats: TestReportStats
+  status: TestReportStatus!
+}
+
+type TestReportStats {
+  duration: Int
+  startTime: DateTime
+}
+
+enum TestReportStatus {
+  failed
+  interrupted
+  passed
+  timedout
 }
 
 enum TestStatus {

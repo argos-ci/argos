@@ -8,6 +8,22 @@ import { ProjectSchema } from "../schema/primitives/project.js";
 import { serverError, unauthorized } from "../schema/util/error.js";
 import { CreateAPIHandler } from "../util.js";
 
+export const getAuthProjectOperation = {
+  operationId: "getAuthProject",
+  responses: {
+    "200": {
+      description: "Project",
+      content: {
+        "application/json": {
+          schema: ProjectSchema,
+        },
+      },
+    },
+    "401": unauthorized,
+    "500": serverError,
+  },
+} satisfies ZodOpenApiOperationObject;
+
 export const getAuthProject: CreateAPIHandler = ({ get }) => {
   return get("/project", repoAuth, async (req, res) => {
     if (!req.authProject) {
@@ -34,19 +50,3 @@ export const getAuthProject: CreateAPIHandler = ({ get }) => {
     });
   });
 };
-
-export const getAuthProjectOperation = {
-  operationId: "getAuthProject",
-  responses: {
-    "200": {
-      description: "Project",
-      content: {
-        "application/json": {
-          schema: ProjectSchema,
-        },
-      },
-    },
-    "401": unauthorized,
-    "500": serverError,
-  },
-} satisfies ZodOpenApiOperationObject;

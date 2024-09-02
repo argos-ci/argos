@@ -149,6 +149,7 @@ export const seed = async (knex) => {
     createdAt: "2016-12-08T22:59:55Z",
     updatedAt: "2016-12-08T22:59:55Z",
     complete: true,
+    valid: true,
     screenshotCount: 0,
   };
 

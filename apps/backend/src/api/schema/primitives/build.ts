@@ -18,11 +18,20 @@ export const BuildSchema = z
     id: z.string().openapi({
       description: "A unique identifier for the build",
       example: "12345",
+      ref: "BuildId",
     }),
-    number: z.number().min(1),
-    status: BuildAggregatedStatusSchema,
-    url: z.string().url(),
-    notification: NotificationPayloadSchema.nullable(),
+    number: z.number().min(1).openapi({
+      description: "The build number",
+    }),
+    status: BuildAggregatedStatusSchema.openapi({
+      description: "The status of the build",
+    }),
+    url: z.string().url().openapi({
+      description: "The URL of the build",
+    }),
+    notification: NotificationPayloadSchema.nullable().openapi({
+      description: "The notification payload for the build",
+    }),
   })
   .openapi({
     description: "Build",

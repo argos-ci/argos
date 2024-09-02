@@ -9,11 +9,14 @@ import { getUnknownFileKeys } from "@/database/services/file.js";
 import { getS3Client } from "@/storage/s3.js";
 import { getSignedPutObjectUrl } from "@/storage/signed-url.js";
 import { getRedisLock } from "@/util/redis/index.js";
-import { SHA1_REGEX, SHA256_REGEX } from "@/web/constants.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
 import { BuildSchema, serializeBuilds } from "../schema/primitives/build.js";
+import {
+  Sha1HashSchema,
+  UniqueSha256HashArraySchema,
+} from "../schema/primitives/sha.js";
 import {
   conflict,
   invalidParameters,
@@ -25,19 +28,10 @@ import { CreateAPIHandler } from "../util.js";
 
 const RequestBodySchema = z
   .object({
-    commit: z.string().regex(SHA1_REGEX),
+    commit: Sha1HashSchema,
     branch: z.string(),
-    screenshotKeys: z
-      .array(z.string().regex(SHA256_REGEX))
-      .refine((items) => new Set(items).size === items.length, {
-        message: "Must be an array of unique strings",
-      }),
-    pwTraceKeys: z
-      .array(z.string().regex(SHA256_REGEX))
-      .refine((items) => new Set(items).size === items.length, {
-        message: "Must be an array of unique strings",
-      })
-      .optional(),
+    screenshotKeys: UniqueSha256HashArraySchema,
+    pwTraceKeys: UniqueSha256HashArraySchema.optional(),
     name: z.string().nullable().optional(),
     parallel: z.boolean().nullable().optional(),
     parallelNonce: z.string().nullable().optional(),
@@ -55,12 +49,22 @@ const RequestBodySchema = z
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
-const UploadSchema = z.object({
-  key: z.string(),
-  putUrl: z.string().url(),
-});
+const UploadSchema = z
+  .object({
+    key: z.string(),
+    putUrl: z.string().url(),
+  })
+  .strict();
 
 type Upload = z.infer<typeof UploadSchema>;
+
+const ResponseSchema = z
+  .object({
+    build: BuildSchema,
+    screenshots: z.array(UploadSchema),
+    pwTraces: z.array(UploadSchema),
+  })
+  .strict();
 
 export const createBuildOperation = {
   operationId: "createBuild",
@@ -76,13 +80,7 @@ export const createBuildOperation = {
       description: "Result of build creation",
       content: {
         "application/json": {
-          schema: z
-            .object({
-              build: BuildSchema,
-              screenshots: z.array(UploadSchema),
-              pwTraces: z.array(UploadSchema),
-            })
-            .strict(),
+          schema: ResponseSchema,
         },
       },
     },
