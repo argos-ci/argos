@@ -1,5 +1,4 @@
 import { invariant } from "@argos/util/invariant";
-import express from "express";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { finalizeBuild } from "@/build/finalizeBuild.js";
@@ -72,56 +71,49 @@ export const updateBuildOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 export const updateBuild: CreateAPIHandler = ({ put }) => {
-  return put(
-    "/builds/{buildId}",
-    repoAuth,
-    // Temporary increase the limit
-    // we should find a way to split the upload in several requests
-    express.json({ limit: "1mb" }),
-    async (req, res) => {
-      if (!req.authProject) {
-        throw boom(401, "Unauthorized");
-      }
+  return put("/builds/{buildId}", repoAuth, async (req, res) => {
+    if (!req.authProject) {
+      throw boom(401, "Unauthorized");
+    }
 
-      const buildId = req.ctx.params["buildId"];
+    const buildId = req.ctx.params["buildId"];
 
-      const build = await Build.query()
-        .findById(buildId)
-        .withGraphFetched("compareScreenshotBucket");
+    const build = await Build.query()
+      .findById(buildId)
+      .withGraphFetched("compareScreenshotBucket");
 
-      if (!build) {
-        throw boom(404, "Build not found");
-      }
+    if (!build) {
+      throw boom(404, "Build not found");
+    }
 
-      if (!build.compareScreenshotBucket) {
-        throw boom(500, "Could not find compareScreenshotBucket for build");
-      }
+    if (!build.compareScreenshotBucket) {
+      throw boom(500, "Could not find compareScreenshotBucket for build");
+    }
 
-      if (build.compareScreenshotBucket.complete) {
-        throw boom(409, "Build is already finalized");
-      }
+    if (build.compareScreenshotBucket.complete) {
+      throw boom(409, "Build is already finalized");
+    }
 
-      if (build.projectId !== req.authProject!.id) {
-        throw boom(403, "Build does not belong to project");
-      }
+    if (build.projectId !== req.authProject!.id) {
+      throw boom(403, "Build does not belong to project");
+    }
 
-      const ctx = {
-        project: req.authProject,
-        build,
-        body: req.body,
-      } satisfies Context;
-      if (req.body.parallel) {
-        await handleUpdateParallel(ctx);
-      } else {
-        await handleUpdateSingle(ctx);
-      }
+    const ctx = {
+      project: req.authProject,
+      build,
+      body: req.body,
+    } satisfies Context;
+    if (req.body.parallel) {
+      await handleUpdateParallel(ctx);
+    } else {
+      await handleUpdateSingle(ctx);
+    }
 
-      const [buildResponse] = await serializeBuilds([build]);
-      invariant(buildResponse);
+    const [buildResponse] = await serializeBuilds([build]);
+    invariant(buildResponse);
 
-      res.send({ build: buildResponse });
-    },
-  );
+    res.send({ build: buildResponse });
+  });
 };
 
 type Context = {
