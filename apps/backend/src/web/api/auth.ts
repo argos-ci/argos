@@ -1,8 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import axios from "axios";
-import bodyParser from "body-parser";
 import cors from "cors";
-import { Router } from "express";
+import express, { Router } from "express";
 
 import { createJWT } from "@/auth/jwt.js";
 import config from "@/config/index.js";
@@ -65,7 +64,7 @@ function handleOAuth(retrieveAccount: (body: any) => Promise<Account>) {
 
 router.post(
   "/auth/github",
-  bodyParser.json(),
+  express.json(),
   handleOAuth(async (body) => {
     const result = await retrieveGithubOAuthToken({
       clientId: config.get("github.clientId"),
@@ -97,7 +96,7 @@ router.post(
 
 router.post(
   "/auth/gitlab",
-  bodyParser.json(),
+  express.json(),
   handleOAuth(async (body) => {
     const response = await retrieveGitlabOAuthToken({
       clientId: config.get("gitlab.appId"),
@@ -124,7 +123,7 @@ router.post(
 
 router.post(
   "/auth/google",
-  bodyParser.json(),
+  express.json(),
   handleOAuth(async (body) => {
     const oAuth2Client = await getGoogleAuthenticatedClient({
       code: body.code,

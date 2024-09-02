@@ -66,21 +66,12 @@ export const installAppRouter = async (app: express.Application) => {
 
   const distDir = join(import.meta.dirname, "../../../frontend/dist");
 
-  // Static directory
-  router.use(
-    serveStatic(distDir, {
-      etag: true,
-      lastModified: false,
-      maxAge: "1 year",
-      index: false,
-    }),
-  );
-
   if (config.get("env") !== "production") {
     router.use("/email-preview", emailPreview);
   }
 
   await apolloServer.start();
+
   router.use("/graphql", express.json(), createApolloMiddleware());
 
   router.use(auth);
@@ -102,6 +93,16 @@ export const installAppRouter = async (app: express.Application) => {
   });
 
   router.use(slackMiddleware);
+
+  // Static directory
+  router.use(
+    serveStatic(distDir, {
+      etag: true,
+      lastModified: false,
+      maxAge: "1 year",
+      index: false,
+    }),
+  );
 
   router.get("*", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));
