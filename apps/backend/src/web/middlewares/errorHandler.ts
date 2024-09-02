@@ -15,7 +15,15 @@ export function errorHandler() {
         "statusCode" in error &&
         typeof error.statusCode === "number"
           ? error.statusCode
-          : 500;
+          : error instanceof Error &&
+              "status" in error &&
+              typeof error.status === "number"
+            ? error.status
+            : error instanceof Error &&
+                "code" in error &&
+                typeof error.code === "number"
+              ? error.code
+              : 500;
       const message =
         error instanceof Error ? error.message : "Internal Server Error";
       const code =

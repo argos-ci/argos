@@ -219,7 +219,7 @@ type BuildMatchParams = {
   diffId?: string;
 };
 const matchBuildPath = match<BuildMatchParams>(
-  "/:accountSlug/:projectName/builds/:buildNumber{/:diffId}?",
+  "/:accountSlug/:projectName/builds/:buildNumber{/:diffId}",
 );
 
 async function unfurlBuild(
