@@ -1,5 +1,4 @@
 import { invariant } from "@argos/util/invariant";
-import express from "express";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { createBuild as createBuildService } from "@/build/createBuild.js";
@@ -95,40 +94,33 @@ export const createBuildOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 export const createBuild: CreateAPIHandler = ({ post }) => {
-  return post(
-    "/builds",
-    repoAuth,
-    // Temporary increase the limit
-    // we should find a way to split the upload in several requests
-    express.json({ limit: "1mb" }),
-    async (req, res) => {
-      if (!req.authProject) {
-        throw boom(401, "Unauthorized");
+  return post("/builds", repoAuth, async (req, res) => {
+    if (!req.authProject) {
+      throw boom(401, "Unauthorized");
+    }
+
+    const ctx = {
+      body: req.body,
+      project: req.authProject,
+    } satisfies BuildContext;
+
+    const { build, screenshots, pwTraces } = await (async () => {
+      if (ctx.body.parallel) {
+        return handleCreateParallel(ctx);
+      } else {
+        return handleCreateSingle(ctx);
       }
+    })();
 
-      const ctx = {
-        body: req.body,
-        project: req.authProject,
-      } satisfies BuildContext;
+    const [buildResponse] = await serializeBuilds([build]);
+    invariant(buildResponse);
 
-      const { build, screenshots, pwTraces } = await (async () => {
-        if (ctx.body.parallel) {
-          return handleCreateParallel(ctx);
-        } else {
-          return handleCreateSingle(ctx);
-        }
-      })();
-
-      const [buildResponse] = await serializeBuilds([build]);
-      invariant(buildResponse);
-
-      res.status(201).send({
-        build: buildResponse,
-        screenshots,
-        pwTraces,
-      });
-    },
-  );
+    res.status(201).send({
+      build: buildResponse,
+      screenshots,
+      pwTraces,
+    });
+  });
 };
 
 type BuildContext = {
