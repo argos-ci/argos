@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
-import bodyParser from "body-parser";
 import express from "express";
 
 import config from "@/config/index.js";
@@ -36,7 +35,7 @@ async function parseStripeEvent(req: express.Request) {
 
 router.post(
   "/stripe/event-handler",
-  bodyParser.raw({ type: "application/json" }),
+  express.raw({ type: "application/json" }),
   asyncHandler(async (req, res) => {
     const event = await parseStripeEvent(req);
     try {
@@ -55,7 +54,7 @@ router.post(
 router.post(
   "/stripe/create-customer-portal-session",
   auth,
-  bodyParser.json(),
+  express.json(),
   asyncHandler(async (req, res) => {
     try {
       const { stripeCustomerId, accountId } = req.body;
@@ -98,7 +97,7 @@ router.post(
 router.post(
   "/stripe/create-checkout-session",
   auth,
-  bodyParser.json(),
+  express.json(),
   asyncHandler(async (req, res) => {
     try {
       const { accountId, successUrl, cancelUrl } = req.body;

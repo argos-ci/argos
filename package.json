@@ -29,10 +29,10 @@
   "engines": {
     "node": "20"
   },
-  "packageManager": "npm@10.5.0",
+  "packageManager": "npm@10.8.3",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.13",
-    "@argos-ci/playwright": "^3.5.2",
+    "@argos-ci/playwright": "^3.6.0",
     "@graphql-codegen/cli": "^5.0.2",
     "@graphql-codegen/client-preset": "^4.3.3",
     "@graphql-codegen/fragment-matcher": "^5.0.2",
@@ -43,19 +43,19 @@
     "@parcel/watcher": "^2.4.1",
     "@playwright/test": "^1.46.1",
     "@swc/cli": "^0.4.0",
-    "@swc/core": "^1.7.11",
+    "@swc/core": "^1.7.22",
     "@types/node": "^20.16.0",
-    "@typescript-eslint/eslint-plugin": "^8.1.0",
-    "@typescript-eslint/parser": "^8.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.4.0",
+    "@typescript-eslint/parser": "^8.4.0",
     "eslint": "^8.56.0",
     "eslint-plugin-tailwindcss": "^3.17.4",
     "eslint-plugin-vitest": "^0.4",
-    "knip": "^5.27.2",
+    "knip": "^5.29.1",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.6",
     "smee-client": "^2.0.3",
-    "turbo": "^2.0.14",
-    "typescript": "5.4.5",
+    "turbo": "^2.1.1",
+    "typescript": "5.5.4",
     "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^2.0.5"
   }

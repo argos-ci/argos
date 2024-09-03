@@ -8,24 +8,11 @@ import config from "@/config/index.js";
  * a function that wraps it in a `try/catch`. Caught
  * exceptions are forwarded to the `next` handler.
  */
-export const asyncHandler = (requestHandler: RequestHandler) => {
-  const wrappedHandler: RequestHandler = async (req, res, next) => {
-    try {
-      await requestHandler(req, res, next);
-    } catch (err: any) {
-      // Handle all kinds of errors
-      err.status = Number.isInteger(err.status)
-        ? err.status
-        : Number.isInteger(err.statusCode)
-          ? err.statusCode
-          : Number.isInteger(err.code)
-            ? err.code
-            : 500;
-      next(err);
-    }
+export const asyncHandler =
+  (requestHandler: RequestHandler): RequestHandler =>
+  (req, res, next) => {
+    Promise.resolve(requestHandler(req, res, next)).catch(next);
   };
-  return wrappedHandler;
-};
 
 export const subdomain =
   (requestHandler: RequestHandler, subdomain: string): RequestHandler =>
