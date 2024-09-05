@@ -52,7 +52,7 @@ export async function deleteAccount(args: {
   const manager = account.$getSubscriptionManager();
   const subscription = await manager.getActiveSubscription();
 
-  await transaction(async (trx) => {
+  const { stripeSubscriptionId } = await transaction(async (trx) => {
     await Promise.all([
       // Remove all projects
       ...projects.map(async (project) => {
@@ -64,15 +64,8 @@ export async function deleteAccount(args: {
         ? uninstallSlackInstallation(account.slackInstallation, trx)
         : null,
 
-      // Handle subscriptions
-      (async () => {
-        // Cancel the Stripe subscription if it exists
-        if (subscription?.stripeSubscriptionId) {
-          await cancelStripeSubscription(subscription.stripeSubscriptionId);
-        }
-        // Remove all subscriptions linkedto the account
-        await Subscription.query(trx).where("accountId", account.id).delete();
-      })(),
+      // Remove all subscriptions linkedto the account
+      Subscription.query(trx).where("accountId", account.id).delete(),
     ]);
 
     // Delete the account
@@ -87,7 +80,7 @@ export async function deleteAccount(args: {
         // Delete the team
         await Team.query(trx).where("id", account.teamId).delete();
 
-        return;
+        break;
       }
       case "user": {
         await Promise.all([
@@ -103,10 +96,17 @@ export async function deleteAccount(args: {
         // Delete the user
         await User.query(trx).where("id", account.userId).delete();
 
-        return;
+        break;
       }
       default:
         assertNever(account.type);
     }
+
+    return { stripeSubscriptionId: subscription?.stripeSubscriptionId ?? null };
   });
+
+  // Cancel the stripe subscription if it exists
+  if (stripeSubscriptionId) {
+    await cancelStripeSubscription(stripeSubscriptionId);
+  }
 }
