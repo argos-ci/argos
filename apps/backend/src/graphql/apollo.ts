@@ -20,26 +20,34 @@ const apolloSentryPlugin: ApolloServerPlugin = {
             continue;
           }
 
-          if (error.path && error.name === "GraphQLError") {
-            Sentry.withScope((scope) => {
-              scope.setTag("graphql", "exec_error");
-              scope.setExtras({
-                source: error.source && error.source.body,
-                positions: error.positions,
-                path: error.path,
-              });
-              Sentry.captureException(error);
+          Sentry.withScope((scope) => {
+            // Annotate the scope with the query and variables
+            scope.setExtras({
+              operationName: ctx.operationName,
+              variables: ctx.request.variables,
             });
-          } else {
-            Sentry.withScope((scope) => {
-              scope.setTag("graphql", "wrong_query");
-              scope.setExtras({
-                source: error.source && error.source.body,
-                positions: error.positions,
+
+            if (error.path && error.name === "GraphQLError") {
+              Sentry.withScope((scope) => {
+                scope.setTag("graphql", "exec_error");
+                scope.setExtras({
+                  source: error.source && error.source.body,
+                  positions: error.positions,
+                  path: error.path,
+                });
+                Sentry.captureException(error);
               });
-              Sentry.captureMessage(`GraphQLWrongQuery: ${error.message}`);
-            });
-          }
+            } else {
+              Sentry.withScope((scope) => {
+                scope.setTag("graphql", "wrong_query");
+                scope.setExtras({
+                  source: error.source && error.source.body,
+                  positions: error.positions,
+                });
+                Sentry.captureMessage(`GraphQLWrongQuery: ${error.message}`);
+              });
+            }
+          });
         }
       },
     };
