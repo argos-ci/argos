@@ -67,25 +67,32 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
       .where("builds.externalId", parallelNonce)
       .where("builds.totalBatch", -1);
 
-    await transaction(async (trx) => {
-      await Promise.all(
+    const finalized = await transaction(async (trx) => {
+      return Promise.all(
         builds.map(async (build) => {
           invariant(build.compareScreenshotBucket);
+          const willFinalize = !build.compareScreenshotBucket.complete;
 
           await Promise.all([
-            !build.compareScreenshotBucket.complete
-              ? finalizeBuildService({ build, trx })
-              : null,
+            willFinalize ? finalizeBuildService({ build, trx }) : null,
             // If the build was marked as partial, then it was obviously an error, we unmark it.
             build.partial
               ? Build.query(trx).where("id", build.id).patch({ partial: false })
               : null,
           ]);
+
+          return willFinalize;
         }),
       );
     });
 
-    await Promise.all(builds.map((build) => buildJob.push(build.id)));
+    await Promise.all(
+      builds.map(async (build, index) => {
+        if (finalized[index]) {
+          await buildJob.push(build.id);
+        }
+      }),
+    );
 
     const buildResponses = await serializeBuilds(builds);
     res.send({ builds: buildResponses });
