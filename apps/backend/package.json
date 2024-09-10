@@ -74,7 +74,7 @@
     "odiff-bin": "^3.1.1",
     "p-retry": "^6.2.0",
     "p-timeout":"^6.1.2",
-    "path-to-regexp": "^8.0.0",
+    "path-to-regexp": "^8.1.0",
     "pg": "^8.12.0",
     "rate-limit-redis": "^4.2.0",
     "react": "^18.3.1",
