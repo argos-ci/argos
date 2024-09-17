@@ -139,14 +139,12 @@ export async function finalizePartialBuilds(input: {
   await Promise.all(
     builds.map(async (build) => {
       const previousBuild = await Build.query()
-        .joinRelated("compareScreenshotBucket")
         .withGraphFetched("shards.screenshots")
         .where("builds.runId", build.runId)
         .where("builds.projectId", build.projectId)
         .where("builds.name", build.name)
         .where("builds.ciProvider", "github-actions")
         .where("builds.runAttempt", "<", build.runAttempt)
-        .where("compareScreenshotBucket.complete", true)
         .orderBy("builds.runAttempt", "desc")
         .first();
 
