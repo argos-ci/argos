@@ -105,7 +105,7 @@ pnpm run --filter @argos/backend db:truncate && pnpm run --filter @argos/backend
 ## Develop
 
 ```sh
-npm run dev
+pnpm run dev
 ```
 
 ## Run E2E locally
@@ -119,13 +119,13 @@ npx playwright install --with-deps
 Run E2E setup:
 
 ```
-npm run e2e:setup
+pnpm run e2e:setup
 ```
 
 Run E2E in debug mode:
 
 ```
-npm run e2e:start -- --debug
+pnpm run e2e:start -- --debug
 ```
 
 ## GraphQL
@@ -175,7 +175,7 @@ NODE_ENV=test pnpm run --filter @argos/backend db:reset
 ## Coding style
 
 Please follow the coding style of the current code base. argos uses eslint, so if possible, enable linting in your editor to get realtime feedback.
-Linting can be run manually with `npm run lint`.
+Linting can be run manually with `pnpm run lint`.
 
 Finally, when you submit a pull request, linting is run again by Continuous Integration testing, but hopefully by then your code is already clean!
 
