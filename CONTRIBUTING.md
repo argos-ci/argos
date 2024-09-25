@@ -31,6 +31,10 @@ When adding new features or modifying existing code, please attempt to include t
 All stable releases are tagged ([view tags](https://github.com/argos-ci/argos/tags)).
 At any given time, `main` represents the latest development version of the library.
 
+## Package manager
+
+This project uses [pnpm](https://pnpm.io/), be sure to install it using [corepack](https://nodejs.org/api/corepack.html) or another method.
+
 ## Getting started
 
 Please create a new branch from an up to date `main` on your fork. (Note, urgent hotfixes should be branched off the latest stable release rather than `main`)
@@ -48,14 +52,10 @@ git remote add upstream git@github.com:argos-ci/argos.git
 git checkout main
 git pull upstream main
 git checkout -b my-topic-branch
-npm install
+pnpm install
 ```
 
 ## Install
-
-### Install Volta
-
-Install [volta](https://volta.sh/) to be sure to use the correct Node.js version.
 
 ### Setup your .env file
 
@@ -91,7 +91,7 @@ Two files should be generated at the root of the project.
 
 ```sh
 docker-compose up -d
-npm run setup
+pnpm run setup
 ```
 
 ### Use the seed
@@ -99,7 +99,7 @@ npm run setup
 You can fill the database with some development data with the following command:
 
 ```sh
-npm run -w @argos/backend db:truncate && npm run -w @argos/backend db:seed
+pnpm run --filter @argos/backend db:truncate && pnpm run --filter @argos/backend db:seed
 ```
 
 ## Develop
@@ -149,19 +149,19 @@ const mappers = {
 #### Create a migration
 
 ```sh
-npm run -w @argos/backend db:migrate:make my_migration
+pnpm run --filter @argos/backend db:migrate:make my_migration
 ```
 
 #### Dump database
 
 ```sh
-npm run -w @argos/backend db:dump
+pnpm run --filter @argos/backend db:dump
 ```
 
 #### Execute the latest migration
 
 ```sh
-npm run -w @argos/backend db:migrate:latest
+pnpm run --filter @argos/backend db:migrate:latest
 ```
 
 ### Running the test suite
@@ -169,7 +169,7 @@ npm run -w @argos/backend db:migrate:latest
 You can reset the test database using:
 
 ```sh
-NODE_ENV=test npm run -w @argos/backend db:reset
+NODE_ENV=test pnpm run --filter @argos/backend db:reset
 ```
 
 ## Coding style
