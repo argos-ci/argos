@@ -41,7 +41,7 @@
     "@graphql-codegen/typescript-resolvers": "^4.2.1",
     "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
     "@parcel/watcher": "^2.4.1",
-    "@playwright/test": "^1.46.1",
+    "@playwright/test": "^1.47.2",
     "@swc/cli": "^0.4.0",
     "@swc/core": "^1.7.22",
     "@types/node": "^20.16.0",
