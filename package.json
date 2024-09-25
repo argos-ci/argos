@@ -1,10 +1,6 @@
 {
   "name": "@argos/root",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "build": "turbo run build",
