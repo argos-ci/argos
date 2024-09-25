@@ -1,7 +1,5 @@
-import * as Sentry from "@sentry/node";
 import { Application, Router } from "express";
 
-import { errorHandler } from "../middlewares/errorHandler.js";
 import { apiMiddleware as githubApiMiddleware } from "../middlewares/github.js";
 import { subdomain } from "../util.js";
 import auth from "./auth.js";
@@ -19,9 +17,6 @@ export const installApiRouter = (app: Application) => {
   router.use(builds);
   router.use(auth);
   router.use(stripe);
-
-  Sentry.setupExpressErrorHandler(router);
-  router.use(errorHandler());
 
   app.use(subdomain(router, "api"));
 };

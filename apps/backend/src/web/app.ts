@@ -11,6 +11,7 @@ import config from "@/config/index.js";
 
 import { installApiRouter } from "./api/index.js";
 import { installAppRouter } from "./app-router.js";
+import { jsonErrorHandler } from "./middlewares/errorHandler.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -89,6 +90,9 @@ export const createApp = async () => {
 
   installApiRouter(app);
   await installAppRouter(app);
+
+  Sentry.setupExpressErrorHandler(app);
+  app.use(jsonErrorHandler());
 
   return app;
 };
