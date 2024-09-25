@@ -12,8 +12,8 @@
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^3.11.5",
-    "@argos/tsconfig": "*",
-    "@argos/util": "*",
+    "@argos/tsconfig": "workspace:*",
+    "@argos/util": "workspace:*",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@primer/octicons-react": "^19.11.0",
     "@radix-ui/colors": "^3.0.0",

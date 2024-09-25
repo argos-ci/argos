@@ -3,12 +3,15 @@ description: "Install Node.js and dependencies"
 runs:
   using: "composite"
   steps:
+    - uses: pnpm/action-setup@v4
+      name: Install pnpm
+
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
-        cache: npm
+        node-version-file: .nvmrc
+        cache: pnpm
 
     - name: Install dependencies
       shell: bash
-      run: npm ci
+      run: pnpm install --frozen-lockfile

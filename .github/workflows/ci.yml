@@ -24,19 +24,19 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - name: Build
-        run: npm exec -- turbo run build --filter=\!@argos/frontend
+        run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Check types
-        run: npm run check-types
+        run: pnpm run check-types
 
       - name: Check Prettier
-        run: npm run check-format
+        run: pnpm run check-format
 
       - name: Knip
-        run: npm run knip
+        run: pnpm run knip
 
   unit-test:
     runs-on: ubuntu-latest
@@ -55,10 +55,10 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - name: Build
-        run: npm exec -- turbo run build --filter=\!@argos/frontend
+        run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Run unit tests
-        run: npm exec -- vitest -c vitest.unit.config.mts
+        run: pnpm exec -- vitest -c vitest.unit.config.mts
 
   integration-test:
     runs-on: ubuntu-latest
@@ -116,7 +116,7 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - name: Setup
-        run: npm run setup
+        run: pnpm run setup
         env:
           BUILD_MODE: production
 
@@ -168,15 +168,15 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - name: Setup
-        run: npm run setup
+        run: pnpm run setup
         env:
           BUILD_MODE: production
 
       - name: Truncate and seed database
-        run: npm run e2e:setup
+        run: pnpm run e2e:setup
 
       - name: Run Playwright tests
-        uses: docker://mcr.microsoft.com/playwright:v1.46.1-jammy
+        uses: docker://mcr.microsoft.com/playwright:v1.47.2-jammy
         with:
           # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500
