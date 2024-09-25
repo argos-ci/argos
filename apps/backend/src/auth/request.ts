@@ -10,7 +10,7 @@ export class AuthError extends Error {}
 const getTokenFromAuthHeader = (authHeader: string) => {
   const auth = authorization.parse(authHeader);
   if (auth.scheme !== "Bearer") {
-    throw new AuthError("Invalid auth scheme");
+    throw new AuthError(`Invalid auth scheme: ${auth.scheme || "no scheme"}`);
   }
   if (typeof auth.token !== "string" || !auth.token) {
     throw new AuthError("Invalid auth token");
