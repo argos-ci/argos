@@ -148,7 +148,7 @@ function handler<TMethod extends "get" | "post" | "put">(
       convertPath(path),
       // Temporary increase the limit
       // we should find a way to split the upload in several requests
-      express.json({ limit: "2mb" }),
+      express.json({ limit: "3mb" }),
       asyncHandler((req, res, next) => {
         const ctx: RequestCtx<ZodOpenApiOperationObject> = {
           params: null,
