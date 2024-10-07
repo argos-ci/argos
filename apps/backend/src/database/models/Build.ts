@@ -81,8 +81,10 @@ export class Build extends Model {
       batchCount: { type: ["integer", "null"] },
       totalBatch: { type: ["integer", "null"] },
       type: {
-        type: ["string", "null"],
-        enum: ["reference", "check", "orphan"],
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["reference", "check", "orphan"] },
+        ],
       },
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
@@ -90,8 +92,10 @@ export class Build extends Model {
       referenceCommit: { type: ["string", "null"] },
       baseBranch: { type: ["string", "null"] },
       baseBranchResolvedFrom: {
-        type: ["string", "null"],
-        enum: ["user", "pull-request", "default"],
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["user", "pull-request", "project"] },
+        ],
       },
       mode: { type: "string", enum: ["ci", "monitoring"] },
       ciProvider: { type: ["string", "null"] },
