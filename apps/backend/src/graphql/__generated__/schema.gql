@@ -82,7 +82,24 @@ input AddContributorToProjectInput {
   userAccountId: ID!
 }
 
+enum BaseBranchResolution {
+  """Base branch is resolved from the project settings"""
+  project
+
+  """Base branch is resolved from the pull request"""
+  pullRequest
+
+  """Base branch specified by the user through the API / SDK"""
+  user
+}
+
 type Build implements Node {
+  """Base branch used to resolve the base build"""
+  baseBranch: String
+
+  """Base branch resolved from"""
+  baseBranchResolvedFrom: BaseBranchResolution
+
   """The base build that contains the base screeenshot bucket"""
   baseBuild: Build
 
@@ -476,9 +493,6 @@ type Project implements Node {
   """Owner of the repository"""
   account: Account!
 
-  """Override branch name"""
-  baselineBranch: String
-
   """A single build linked to the repository"""
   build(number: Int!): Build
 
@@ -493,6 +507,15 @@ type Project implements Node {
 
   """Current month used screenshots"""
   currentPeriodScreenshots: Int!
+
+  """Default base branch edited by the user"""
+  customDefaultBaseBranch: String
+
+  """Reference branch glob edited by the user"""
+  customReferenceBranchGlob: String
+
+  """Default base branch"""
+  defaultBaseBranch: String!
   id: ID!
 
   """Latest build"""
@@ -514,8 +537,8 @@ type Project implements Node {
   """Check if the project is public or not"""
   public: Boolean!
 
-  """Reference branch"""
-  referenceBranch: String!
+  """Reference branch glob"""
+  referenceBranchGlob: String!
 
   """Repository associated to the project"""
   repository: Repository
@@ -649,13 +672,11 @@ type ScreenshotDiff implements Node {
   baseScreenshot: Screenshot
   compareScreenshot: Screenshot
   createdAt: DateTime!
-  flakyDetected: Boolean! @deprecated(reason: "Remove in future release")
   group: String
   height: Int
   id: ID!
   name: String!
   status: ScreenshotDiffStatus!
-  test: Test @deprecated(reason: "Remove in future release")
   threshold: Float
   url: String
   validationStatus: String
@@ -823,27 +844,6 @@ enum TeamUserLevel {
   owner
 }
 
-type Test implements Node {
-  buildName: String!
-  dailyChanges: [dailyCount!]!
-  id: ID!
-  lastSeen: DateTime
-  mute: Boolean!
-  muteUntil: DateTime
-  name: String!
-  resolvedDate: DateTime
-  screenshot: Screenshot
-  stabilityScore: Int
-  status: TestStatus!
-  totalBuilds: Int!
-  unstable: Boolean!
-}
-
-type TestConnection implements Connection {
-  edges: [Test!]!
-  pageInfo: PageInfo!
-}
-
 type TestReport {
   stats: TestReportStats
   status: TestReportStatus!
@@ -859,12 +859,6 @@ enum TestReportStatus {
   interrupted
   passed
   timedout
-}
-
-enum TestStatus {
-  flaky
-  pending
-  resolved
 }
 
 scalar Time
@@ -895,10 +889,11 @@ input UpdateAccountInput {
 }
 
 input UpdateProjectInput {
-  baselineBranch: String
+  defaultBaseBranch: String
   id: ID!
   name: String
   private: Boolean
+  referenceBranchGlob: String
   summaryCheck: SummaryCheck
 }
 
@@ -946,9 +941,4 @@ enum ValidationStatus {
   accepted
   rejected
   unknown
-}
-
-type dailyCount {
-  count: Int!
-  date: Date!
 }

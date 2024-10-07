@@ -22,6 +22,11 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
           throw new Error(`${Model.name} not found`);
         }
 
+        if (model.jobStatus === "complete") {
+          logger.info(`${Model.name} ${id} already complete`);
+          return;
+        }
+
         await model.$query().patch({ jobStatus: "progress" }).returning("*");
         await perform(model);
       },

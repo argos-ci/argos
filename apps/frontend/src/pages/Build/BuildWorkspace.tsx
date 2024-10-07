@@ -37,7 +37,7 @@ const BuildFragment = graphql(`
 const ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
     ...BuildStatusDescription_Project
-    referenceBranch
+    referenceBranchGlob
     slug
     repository {
       id
@@ -122,7 +122,7 @@ export const BuildWorkspace = (props: {
                   {build.type === "orphan" &&
                     build.status === BuildStatus.DiffDetected && (
                       <BuildOrphanDialog
-                        referenceBranch={project.referenceBranch}
+                        referenceBranchGlob={project.referenceBranchGlob}
                         projectSlug={project.slug}
                         mode={build.mode}
                       />

@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, Build, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, Build, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { Context } from '../context.js';
@@ -113,8 +113,21 @@ export type IAddContributorToProjectInput = {
   userAccountId: Scalars['ID']['input'];
 };
 
+export enum IBaseBranchResolution {
+  /** Base branch is resolved from the project settings */
+  Project = 'project',
+  /** Base branch is resolved from the pull request */
+  PullRequest = 'pullRequest',
+  /** Base branch specified by the user through the API / SDK */
+  User = 'user'
+}
+
 export type IBuild = INode & {
   __typename?: 'Build';
+  /** Base branch used to resolve the base build */
+  baseBranch?: Maybe<Scalars['String']['output']>;
+  /** Base branch resolved from */
+  baseBranchResolvedFrom?: Maybe<IBaseBranchResolution>;
   /** The base build that contains the base screeenshot bucket */
   baseBuild?: Maybe<IBuild>;
   /** The screenshot bucket that serves as base for comparison */
@@ -601,8 +614,6 @@ export type IProject = INode & {
   __typename?: 'Project';
   /** Owner of the repository */
   account: IAccount;
-  /** Override branch name */
-  baselineBranch?: Maybe<Scalars['String']['output']>;
   /** A single build linked to the repository */
   build?: Maybe<IBuild>;
   /** Build names */
@@ -613,6 +624,12 @@ export type IProject = INode & {
   contributors: IProjectContributorConnection;
   /** Current month used screenshots */
   currentPeriodScreenshots: Scalars['Int']['output'];
+  /** Default base branch edited by the user */
+  customDefaultBaseBranch?: Maybe<Scalars['String']['output']>;
+  /** Reference branch glob edited by the user */
+  customReferenceBranchGlob?: Maybe<Scalars['String']['output']>;
+  /** Default base branch */
+  defaultBaseBranch: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** Latest build */
   latestBuild?: Maybe<IBuild>;
@@ -627,8 +644,8 @@ export type IProject = INode & {
   private?: Maybe<Scalars['Boolean']['output']>;
   /** Check if the project is public or not */
   public: Scalars['Boolean']['output'];
-  /** Reference branch */
-  referenceBranch: Scalars['String']['output'];
+  /** Reference branch glob */
+  referenceBranchGlob: Scalars['String']['output'];
   /** Repository associated to the project */
   repository?: Maybe<IRepository>;
   /** Project slug */
@@ -830,15 +847,11 @@ export type IScreenshotDiff = INode & {
   baseScreenshot?: Maybe<IScreenshot>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
-  /** @deprecated Remove in future release */
-  flakyDetected: Scalars['Boolean']['output'];
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   status: IScreenshotDiffStatus;
-  /** @deprecated Remove in future release */
-  test?: Maybe<ITest>;
   threshold?: Maybe<Scalars['Float']['output']>;
   url?: Maybe<Scalars['String']['output']>;
   validationStatus?: Maybe<Scalars['String']['output']>;
@@ -1041,29 +1054,6 @@ export enum ITeamUserLevel {
   Owner = 'owner'
 }
 
-export type ITest = INode & {
-  __typename?: 'Test';
-  buildName: Scalars['String']['output'];
-  dailyChanges: Array<IDailyCount>;
-  id: Scalars['ID']['output'];
-  lastSeen?: Maybe<Scalars['DateTime']['output']>;
-  mute: Scalars['Boolean']['output'];
-  muteUntil?: Maybe<Scalars['DateTime']['output']>;
-  name: Scalars['String']['output'];
-  resolvedDate?: Maybe<Scalars['DateTime']['output']>;
-  screenshot?: Maybe<IScreenshot>;
-  stabilityScore?: Maybe<Scalars['Int']['output']>;
-  status: ITestStatus;
-  totalBuilds: Scalars['Int']['output'];
-  unstable: Scalars['Boolean']['output'];
-};
-
-export type ITestConnection = IConnection & {
-  __typename?: 'TestConnection';
-  edges: Array<ITest>;
-  pageInfo: IPageInfo;
-};
-
 export type ITestReport = {
   __typename?: 'TestReport';
   stats?: Maybe<ITestReportStats>;
@@ -1081,12 +1071,6 @@ export enum ITestReportStatus {
   Interrupted = 'interrupted',
   Passed = 'passed',
   Timedout = 'timedout'
-}
-
-export enum ITestStatus {
-  Flaky = 'flaky',
-  Pending = 'pending',
-  Resolved = 'resolved'
 }
 
 export type ITransferProjectInput = {
@@ -1115,10 +1099,11 @@ export type IUpdateAccountInput = {
 };
 
 export type IUpdateProjectInput = {
-  baselineBranch?: InputMaybe<Scalars['String']['input']>;
+  defaultBaseBranch?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   private?: InputMaybe<Scalars['Boolean']['input']>;
+  referenceBranchGlob?: InputMaybe<Scalars['String']['input']>;
   summaryCheck?: InputMaybe<ISummaryCheck>;
 };
 
@@ -1182,12 +1167,6 @@ export enum IValidationStatus {
   Rejected = 'rejected',
   Unknown = 'unknown'
 }
-
-export type IDailyCount = {
-  __typename?: 'dailyCount';
-  count: Scalars['Int']['output'];
-  date: Scalars['Date']['output'];
-};
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
@@ -1261,8 +1240,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping of interface types */
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
-  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestConnection, 'edges'> & { edges: Array<_RefType['Test']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Account );
+  Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
+  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GlApiNamespace ) | ( GlApiProject ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1276,6 +1255,7 @@ export type IResolversTypes = ResolversObject<{
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  BaseBranchResolution: IBaseBranchResolution;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
   BuildConnection: ResolverTypeWrapper<Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversTypes['Build']> }>;
@@ -1361,12 +1341,9 @@ export type IResolversTypes = ResolversObject<{
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
   TeamUserLevel: ITeamUserLevel;
-  Test: ResolverTypeWrapper<Test>;
-  TestConnection: ResolverTypeWrapper<Omit<ITestConnection, 'edges'> & { edges: Array<IResolversTypes['Test']> }>;
   TestReport: ResolverTypeWrapper<ITestReport>;
   TestReportStats: ResolverTypeWrapper<ITestReportStats>;
   TestReportStatus: ITestReportStatus;
-  TestStatus: ITestStatus;
   Time: ResolverTypeWrapper<Scalars['Time']['output']>;
   TransferProjectInput: ITransferProjectInput;
   UninstallSlackInput: IUninstallSlackInput;
@@ -1378,7 +1355,6 @@ export type IResolversTypes = ResolversObject<{
   User: ResolverTypeWrapper<Account>;
   UserConnection: ResolverTypeWrapper<Omit<IUserConnection, 'edges'> & { edges: Array<IResolversTypes['User']> }>;
   ValidationStatus: IValidationStatus;
-  dailyCount: ResolverTypeWrapper<IDailyCount>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -1458,8 +1434,6 @@ export type IResolversParentTypes = ResolversObject<{
   TeamGithubMemberConnection: Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamGithubMember']> };
   TeamMember: TeamUser;
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
-  Test: Test;
-  TestConnection: Omit<ITestConnection, 'edges'> & { edges: Array<IResolversParentTypes['Test']> };
   TestReport: ITestReport;
   TestReportStats: ITestReportStats;
   Time: Scalars['Time']['output'];
@@ -1472,7 +1446,6 @@ export type IResolversParentTypes = ResolversObject<{
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: Account;
   UserConnection: Omit<IUserConnection, 'edges'> & { edges: Array<IResolversParentTypes['User']> };
-  dailyCount: IDailyCount;
 }>;
 
 export type IAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Account'] = IResolversParentTypes['Account']> = ResolversObject<{
@@ -1518,6 +1491,8 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
 }>;
 
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
+  baseBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  baseBranchResolvedFrom?: Resolver<Maybe<IResolversTypes['BaseBranchResolution']>, ParentType, ContextType>;
   baseBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
   branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -1570,7 +1545,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamMemberConnection' | 'TestConnection' | 'UserConnection', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamMemberConnection' | 'UserConnection', ParentType, ContextType>;
   edges?: Resolver<Array<IResolversTypes['Node']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
@@ -1730,7 +1705,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GlApiNamespace' | 'GlApiProject' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -1751,12 +1726,14 @@ export type IPlanResolvers<ContextType = Context, ParentType extends IResolversP
 
 export type IProjectResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Project'] = IResolversParentTypes['Project']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
-  baselineBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
   buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
   contributors?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IProjectContributorsArgs, 'after' | 'first'>>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  customDefaultBaseBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  customReferenceBranchGlob?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  defaultBaseBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
@@ -1765,7 +1742,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   prCommentEnabled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  referenceBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  referenceBranchGlob?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;
@@ -1862,13 +1839,11 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
-  flakyDetected?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['ScreenshotDiffStatus'], ParentType, ContextType>;
-  test?: Resolver<Maybe<IResolversTypes['Test']>, ParentType, ContextType>;
   threshold?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   validationStatus?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2003,29 +1978,6 @@ export type ITeamMemberConnectionResolvers<ContextType = Context, ParentType ext
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type ITestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Test'] = IResolversParentTypes['Test']> = ResolversObject<{
-  buildName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  dailyChanges?: Resolver<Array<IResolversTypes['dailyCount']>, ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  lastSeen?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  mute?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  muteUntil?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  resolvedDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  screenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
-  stabilityScore?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  status?: Resolver<IResolversTypes['TestStatus'], ParentType, ContextType>;
-  totalBuilds?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  unstable?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type ITestConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestConnection'] = IResolversParentTypes['TestConnection']> = ResolversObject<{
-  edges?: Resolver<Array<IResolversTypes['Test']>, ParentType, ContextType>;
-  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type ITestReportResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestReport'] = IResolversParentTypes['TestReport']> = ResolversObject<{
   stats?: Resolver<Maybe<IResolversTypes['TestReportStats']>, ParentType, ContextType>;
   status?: Resolver<IResolversTypes['TestReportStatus'], ParentType, ContextType>;
@@ -2076,12 +2028,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
 export type IUserConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['UserConnection'] = IResolversParentTypes['UserConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['User']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IDailyCountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['dailyCount'] = IResolversParentTypes['dailyCount']> = ResolversObject<{
-  count?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  date?: Resolver<IResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2142,13 +2088,10 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   TeamGithubMemberConnection?: ITeamGithubMemberConnectionResolvers<ContextType>;
   TeamMember?: ITeamMemberResolvers<ContextType>;
   TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;
-  Test?: ITestResolvers<ContextType>;
-  TestConnection?: ITestConnectionResolvers<ContextType>;
   TestReport?: ITestReportResolvers<ContextType>;
   TestReportStats?: ITestReportStatsResolvers<ContextType>;
   Time?: GraphQLScalarType;
   User?: IUserResolvers<ContextType>;
   UserConnection?: IUserConnectionResolvers<ContextType>;
-  dailyCount?: IDailyCountResolvers<ContextType>;
 }>;
 

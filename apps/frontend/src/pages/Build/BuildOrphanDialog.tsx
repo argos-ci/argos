@@ -15,11 +15,11 @@ import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
 
 export function BuildOrphanDialog({
-  referenceBranch,
+  referenceBranchGlob,
   projectSlug,
   mode,
 }: {
-  referenceBranch: string;
+  referenceBranchGlob: string;
   projectSlug: string;
   mode: BuildMode;
 }) {
@@ -41,8 +41,8 @@ export function BuildOrphanDialog({
                 return (
                   <>
                     <p>
-                      To begin visual comparisons, run Argos on your reference
-                      branch <Code>{referenceBranch}</Code> to create a{" "}
+                      To begin visual comparisons, run Argos on a branch that
+                      matches <Code>{referenceBranchGlob}</Code> to create a{" "}
                       <strong className="font-semibold">reference build</strong>
                       . This will be your baseline for all future comparisons.
                     </p>
@@ -59,9 +59,9 @@ export function BuildOrphanDialog({
                       Keep your baseline updated
                     </h3>
                     <p>
-                      Set your CI pipeline to run Argos on{" "}
-                      <Code>{referenceBranch}</Code> updates. This keeps your
-                      comparison baseline fresh and reliable.
+                      Set your CI pipeline to run Argos on push, on a branch
+                      that matches <Code>{referenceBranchGlob}</Code>. This
+                      keeps your comparison baseline fresh and reliable.
                     </p>
                   </>
                 );

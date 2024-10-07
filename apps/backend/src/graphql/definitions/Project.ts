@@ -94,10 +94,14 @@ export const typeDefs = gql`
     account: Account!
     "Repository associated to the project"
     repository: Repository
-    "Override branch name"
-    baselineBranch: String
-    "Reference branch"
-    referenceBranch: String!
+    "Default base branch"
+    defaultBaseBranch: String!
+    "Default base branch edited by the user"
+    customDefaultBaseBranch: String
+    "Reference branch glob"
+    referenceBranchGlob: String!
+    "Reference branch glob edited by the user"
+    customReferenceBranchGlob: String
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -148,7 +152,8 @@ export const typeDefs = gql`
 
   input UpdateProjectInput {
     id: ID!
-    baselineBranch: String
+    defaultBaseBranch: String
+    referenceBranchGlob: String
     private: Boolean
     name: String
     summaryCheck: SummaryCheck
@@ -469,8 +474,17 @@ export const resolvers: IResolvers = {
       }
       return null;
     },
-    referenceBranch: async (project) => {
-      return project.$getReferenceBranch();
+    defaultBaseBranch: async (project) => {
+      return project.$getDefaultBaseBranch();
+    },
+    customDefaultBaseBranch: (project) => {
+      return project.defaultBaseBranch;
+    },
+    referenceBranchGlob: async (project) => {
+      return project.$getReferenceBranchGlob();
+    },
+    customReferenceBranchGlob: (project) => {
+      return project.referenceBranchGlob;
     },
     public: async (project, _args, ctx) => {
       project.githubRepository = project.githubRepositoryId
@@ -608,8 +622,12 @@ export const resolvers: IResolvers = {
 
       const data: PartialModelObject<Project> = {};
 
-      if (args.input.baselineBranch !== undefined) {
-        data.baselineBranch = args.input.baselineBranch ?? null;
+      if (args.input.defaultBaseBranch !== undefined) {
+        data.defaultBaseBranch = args.input.defaultBaseBranch ?? null;
+      }
+
+      if (args.input.referenceBranchGlob !== undefined) {
+        data.referenceBranchGlob = args.input.referenceBranchGlob ?? null;
       }
 
       if (args.input.private !== undefined) {

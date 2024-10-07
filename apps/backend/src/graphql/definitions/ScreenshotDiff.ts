@@ -32,8 +32,6 @@ export const typeDefs = gql`
     height: Int
     status: ScreenshotDiffStatus!
     validationStatus: String
-    flakyDetected: Boolean! @deprecated(reason: "Remove in future release")
-    test: Test @deprecated(reason: "Remove in future release")
     group: String
     threshold: Float
   }

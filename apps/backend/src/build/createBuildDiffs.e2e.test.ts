@@ -243,12 +243,12 @@ describe("#createBuildDiffs", () => {
       ).toMatchObject(["pending"]);
     });
 
-    describe("when compare branch equal reference branch", () => {
+    describe("when compare branch that matches reference branch glob", () => {
       beforeEach(async () => {
-        const referenceBranch = await project.$getReferenceBranch();
-        invariant(referenceBranch, "reference branch not found");
+        const referenceBranchGlob = await project.$getReferenceBranchGlob();
+        invariant(referenceBranchGlob, "reference branch not found");
         await ScreenshotBucket.query().findById(compareBucket.id).patch({
-          branch: referenceBranch,
+          branch: referenceBranchGlob,
         });
       });
 

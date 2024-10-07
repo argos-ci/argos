@@ -43,7 +43,8 @@ export class Project extends Model {
       },
       token: { type: "string" },
       private: { type: ["null", "boolean"] },
-      baselineBranch: { type: ["null", "string"] },
+      defaultBaseBranch: { type: ["null", "string"] },
+      referenceBranchGlob: { type: ["null", "string"] },
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
       gitlabProjectId: { type: ["null", "string"] },
@@ -55,7 +56,8 @@ export class Project extends Model {
   name!: string;
   token!: string;
   private!: boolean | null;
-  baselineBranch!: string | null;
+  defaultBaseBranch!: string | null;
+  referenceBranchGlob!: string | null;
   accountId!: string;
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
@@ -67,9 +69,15 @@ export class Project extends Model {
     if (json["name"]) {
       json["name"] = json["name"].trim();
     }
-    if (json["baselineBranch"]) {
-      json["baselineBranch"] = json["baselineBranch"].trim();
+
+    if (json["defaultBaseBranch"]) {
+      json["defaultBaseBranch"] = json["defaultBaseBranch"].trim();
     }
+
+    if (json["referenceBranchGlob"]) {
+      json["referenceBranchGlob"] = json["referenceBranchGlob"].trim();
+    }
+
     return json;
   }
 
@@ -215,9 +223,15 @@ export class Project extends Model {
     return generateRandomHexString();
   }
 
-  async $getReferenceBranch() {
-    if (this.baselineBranch) {
-      return this.baselineBranch;
+  /**
+   * Get the default base branch for the project.
+   * It's the branch used by default as base if other strategies are not available.
+   * A `defaultBaseBranch` that is null means that the default
+   * branch of the repository should be used.
+   */
+  async $getDefaultBaseBranch() {
+    if (this.defaultBaseBranch) {
+      return this.defaultBaseBranch;
     }
     await this.$fetchGraph("[githubRepository, gitlabProject]", {
       skipFetched: true,
@@ -229,6 +243,19 @@ export class Project extends Model {
       return this.gitlabProject.defaultBranch;
     }
     return "main";
+  }
+
+  /**
+   * Get the reference branch glob for the project.
+   * All branches that match this will be considered as reference branches.
+   * A `referenceBranchGlob` that is null means that the default
+   * branch of the repository should be used.
+   */
+  async $getReferenceBranchGlob() {
+    if (this.referenceBranchGlob) {
+      return this.referenceBranchGlob;
+    }
+    return this.$getDefaultBaseBranch();
   }
 
   async getUrl() {

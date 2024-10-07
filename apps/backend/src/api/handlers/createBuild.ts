@@ -257,7 +257,7 @@ async function createBuildFromRequest(ctx: BuildContext) {
     prNumber: body.prNumber ?? null,
     prHeadCommit: body.prHeadCommit ?? null,
     referenceCommit: body.referenceCommit ?? null,
-    referenceBranch: body.referenceBranch ?? null,
+    baseBranch: body.referenceBranch ?? null,
     runId: body.runId ?? null,
     runAttempt: body.runAttempt ?? null,
     ciProvider: body.ciProvider ?? null,

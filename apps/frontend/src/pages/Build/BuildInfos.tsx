@@ -5,8 +5,8 @@ import {
   BuildModeDescription,
   BuildModeLabel,
 } from "@/containers/BuildModeIndicator";
-import { FragmentType, graphql, useFragment } from "@/gql";
-import { TestReportStatus } from "@/gql/graphql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
@@ -151,6 +151,8 @@ const BuildFragment = graphql(`
         status
       }
     }
+    baseBranch
+    baseBranchResolvedFrom
   }
 `);
 
@@ -169,7 +171,9 @@ export function BuildInfos(props: {
   return (
     <dl>
       <Dt>Created</Dt>
-      <Dd>{build ? <Time date={build.createdAt} format="LLL" /> : "-"}</Dd>
+      <Dd>
+        <Time date={build.createdAt} format="LLL" />
+      </Dd>
 
       <Dt>Name</Dt>
       <Dd>{build.name}</Dd>
@@ -185,20 +189,18 @@ export function BuildInfos(props: {
       <Dt>Total screenshots count</Dt>
       <Dd>{build ? build.stats.total : "-"}</Dd>
 
-      {build?.pullRequest ? (
+      {build.pullRequest ? (
         <>
           <Dt>Pull request</Dt>
           <Dd>
-            <Link className="font-mono" href={build.pullRequest.url}>
-              #{build.pullRequest.number}
-            </Link>
+            <PullRequestLink pullRequest={build.pullRequest} />
           </Dd>
         </>
       ) : null}
 
       <Dt>Baseline build</Dt>
       <Dd>
-        {build?.baseBuild ? (
+        {build.baseBuild ? (
           <BuildLink
             accountSlug={props.params.accountSlug}
             projectName={props.params.projectName}
@@ -209,21 +211,27 @@ export function BuildInfos(props: {
         )}
       </Dd>
 
-      <Dt>Baseline branch</Dt>
-      <Dd>
-        {build?.baseScreenshotBucket ? (
-          <BranchLink
-            repoUrl={props.repoUrl}
-            branch={build.baseScreenshotBucket.branch}
-          />
-        ) : (
-          "-"
-        )}
-      </Dd>
+      {build.baseBranch ? (
+        <>
+          <Dt>Base branch</Dt>
+          <Dd>
+            {build.baseBranch}
+            {build.baseBranchResolvedFrom ? (
+              <div className="text-low mt-1 text-xs font-normal">
+                <BaseBranchResolvedFrom
+                  projectUrl={`/${props.params.accountSlug}/${props.params.projectName}`}
+                  resolvedFrom={build.baseBranchResolvedFrom}
+                  pullRequest={build.pullRequest}
+                />
+              </div>
+            ) : null}
+          </Dd>
+        </>
+      ) : null}
 
       <Dt>Baseline commit</Dt>
       <Dd>
-        {build?.baseScreenshotBucket ? (
+        {build.baseScreenshotBucket ? (
           <CommitLink
             repoUrl={props.repoUrl}
             commit={build.baseScreenshotBucket.commit}
@@ -235,20 +243,12 @@ export function BuildInfos(props: {
 
       <Dt>Changes branch</Dt>
       <Dd>
-        {build ? (
-          <BranchLink repoUrl={props.repoUrl} branch={build.branch} />
-        ) : (
-          "-"
-        )}
+        <BranchLink repoUrl={props.repoUrl} branch={build.branch} />
       </Dd>
 
       <Dt>Changes commit</Dt>
       <Dd>
-        {build ? (
-          <CommitLink repoUrl={props.repoUrl} commit={build.commit} />
-        ) : (
-          "-"
-        )}
+        <CommitLink repoUrl={props.repoUrl} commit={build.commit} />
       </Dd>
 
       {build.metadata?.testReport?.status && (
@@ -260,5 +260,49 @@ export function BuildInfos(props: {
         </>
       )}
     </dl>
+  );
+}
+
+function BaseBranchResolvedFrom(props: {
+  resolvedFrom: BaseBranchResolution;
+  projectUrl: string;
+  pullRequest: DocumentType<typeof BuildFragment>["pullRequest"];
+}) {
+  const { resolvedFrom, pullRequest } = props;
+  switch (resolvedFrom) {
+    case BaseBranchResolution.Project:
+      return (
+        <>
+          Resolved from default base branch set in{" "}
+          <Link href={props.projectUrl}>project settings</Link>.
+        </>
+      );
+    case BaseBranchResolution.PullRequest:
+      return (
+        <>
+          Resolved from base branch of the pull-request
+          {pullRequest ? (
+            <>
+              {" "}
+              <PullRequestLink pullRequest={pullRequest} />
+            </>
+          ) : null}
+          .
+        </>
+      );
+    case BaseBranchResolution.User:
+      return "Resolved from user-defined base branch in SDK.";
+    default:
+      assertNever(resolvedFrom);
+  }
+}
+
+function PullRequestLink(props: {
+  pullRequest: NonNullable<DocumentType<typeof BuildFragment>["pullRequest"]>;
+}) {
+  return (
+    <Link className="font-mono" href={props.pullRequest.url}>
+      #{props.pullRequest.number}
+    </Link>
   );
 }

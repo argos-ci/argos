@@ -1,9 +1,10 @@
 import { invariant } from "@argos/util/invariant";
+import { minimatch } from "minimatch";
 
 import { Build } from "@/database/models/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 
-import { BuildStrategy } from "../../types.js";
+import { BuildStrategy, GetBaseResult } from "../../types.js";
 import { getBaseBucketForBuildAndCommit, queryBaseBucket } from "./query.js";
 import { GithubStrategy } from "./strategies/github.js";
 import { GitlabStrategy } from "./strategies/gitlab.js";
@@ -33,10 +34,10 @@ const strategies: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
 /**
  * Get the base bucket for a build.
  */
-async function getBaseScreenshotBucket(build: Build) {
+async function getBase(build: Build): GetBaseResult {
   const richBuild = await build
     .$query()
-    .withGraphFetched("[project,compareScreenshotBucket]");
+    .withGraphFetched("[project,compareScreenshotBucket,pullRequest]");
 
   const project = richBuild.project;
   const compareScreenshotBucket = richBuild.compareScreenshotBucket;
@@ -54,32 +55,71 @@ async function getBaseScreenshotBucket(build: Build) {
   // specified by the user in the build.
   if (!strategy) {
     if (richBuild.referenceCommit) {
-      return getBaseBucketForBuildAndCommit(build, richBuild.referenceCommit);
+      const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
+        build,
+        richBuild.referenceCommit,
+      );
+      return {
+        baseScreenshotBucket,
+        baseBranch: null,
+        baseBranchResolvedFrom: null,
+      };
     }
-    return null;
+
+    return {
+      baseScreenshotBucket: null,
+      baseBranch: null,
+      baseBranchResolvedFrom: null,
+    };
   }
 
-  const referenceBranch =
-    richBuild.referenceBranch ?? (await project.$getReferenceBranch());
-  const base = referenceBranch;
+  const { baseBranch, baseBranchResolvedFrom } = await (async () => {
+    if (richBuild.baseBranch) {
+      return {
+        baseBranch: richBuild.baseBranch,
+        baseBranchResolvedFrom: richBuild.baseBranchResolvedFrom,
+      };
+    }
+
+    if (richBuild.pullRequest?.baseRef) {
+      return {
+        baseBranch: richBuild.pullRequest.baseRef,
+        baseBranchResolvedFrom: "pull-request" as const,
+      };
+    }
+
+    return {
+      baseBranch: await project.$getDefaultBaseBranch(),
+      baseBranchResolvedFrom: "project" as const,
+    };
+  })();
+
   const head = compareScreenshotBucket.commit;
 
   const ctx = await strategy.getContext(project);
 
   if (!ctx) {
-    return null;
+    return {
+      baseScreenshotBucket: null,
+      baseBranch,
+      baseBranchResolvedFrom,
+    };
   }
 
   const mergeBaseCommitSha = await strategy.getMergeBaseCommitSha({
     project,
     ctx,
-    base,
+    base: baseBranch,
     head,
     build,
   });
 
   if (!mergeBaseCommitSha) {
-    return null;
+    return {
+      baseScreenshotBucket: null,
+      baseBranch,
+      baseBranchResolvedFrom,
+    };
   }
 
   // If the merge base is the same as the head, then we have to found an ancestor
@@ -91,7 +131,15 @@ async function getBaseScreenshotBucket(build: Build) {
       ctx,
       sha: mergeBaseCommitSha,
     });
-    return getBucketFromCommits({ shas: shas.slice(1), build: richBuild });
+    const baseScreenshotBucket = await getBucketFromCommits({
+      shas: shas.slice(1),
+      build: richBuild,
+    });
+    return {
+      baseScreenshotBucket,
+      baseBranch,
+      baseBranchResolvedFrom,
+    };
   }
 
   const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
@@ -101,7 +149,11 @@ async function getBaseScreenshotBucket(build: Build) {
 
   // A bucket exists for the merge base commit
   if (mergeBaseBucket) {
-    return mergeBaseBucket;
+    return {
+      baseScreenshotBucket: mergeBaseBucket,
+      baseBranch,
+      baseBranchResolvedFrom,
+    };
   }
 
   // If we don't have a bucket for the merge base commit, then we have to found an ancestor
@@ -111,11 +163,21 @@ async function getBaseScreenshotBucket(build: Build) {
     ctx,
     sha: mergeBaseCommitSha,
   });
-  return getBucketFromCommits({ shas: shas.slice(1), build: richBuild });
+
+  const baseScreenshotBucket = await getBucketFromCommits({
+    shas: shas.slice(1),
+    build: richBuild,
+  });
+
+  return {
+    baseScreenshotBucket,
+    baseBranch,
+    baseBranchResolvedFrom,
+  };
 }
 
 type CIStrategyContext = {
-  projectReferenceBranch: string;
+  checkIsReferenceBranch: (branch: string) => boolean;
 };
 
 export const CIStrategy: BuildStrategy<CIStrategyContext> = {
@@ -123,11 +185,14 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
   getContext: async (build) => {
     await build.$fetchGraph("project", { skipFetched: true });
     invariant(build.project, "no project found", UnretryableError);
-    const projectReferenceBranch = await build.project.$getReferenceBranch();
-    return { projectReferenceBranch };
+    const referenceBranchGlob = await build.project.$getReferenceBranchGlob();
+    return {
+      checkIsReferenceBranch: (branch: string) =>
+        minimatch(branch, referenceBranchGlob),
+    };
   },
   getBuildType: (input, ctx) => {
-    if (input.compareScreenshotBucket.branch === ctx.projectReferenceBranch) {
+    if (ctx.checkIsReferenceBranch(input.compareScreenshotBucket.branch)) {
       return "reference";
     }
     if (!input.baseScreenshotBucket) {
@@ -135,5 +200,5 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
     }
     return "check";
   },
-  getBaseScreenshotBucket,
+  getBase,
 };

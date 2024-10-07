@@ -27,7 +27,6 @@ import * as ScreenshotBucket from "./ScreenshotBucket.js";
 import * as ScreenshotDiff from "./ScreenshotDiff.js";
 import * as SlackInstallation from "./SlackInstallation.js";
 import * as Team from "./Team.js";
-import * as Test from "./Test.js";
 import * as User from "./User.js";
 import * as ValidationStatus from "./ValidationStatus.js";
 
@@ -59,7 +58,6 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   ScreenshotBucket,
   ScreenshotDiff,
   Team,
-  Test,
   User,
   ValidationStatus,
 ];

@@ -8,7 +8,6 @@ import {
   Tabs,
 } from "react-aria-components";
 
-import { checkIsBuildEmpty } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
@@ -95,9 +94,7 @@ export const BuildSidebar = React.memo(
     );
     return (
       <Tabs
-        defaultSelectedKey={
-          build && checkIsBuildEmpty(build) ? "info" : "screenshots"
-        }
+        defaultSelectedKey={build.stats.total === 0 ? "info" : "screenshots"}
         className="group/sidebar flex w-[295px] shrink-0 flex-col border-r"
       >
         <div className="flex shrink-0 items-center border-b px-2">

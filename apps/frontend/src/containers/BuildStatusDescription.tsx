@@ -4,8 +4,6 @@ import { FragmentType, graphql, useFragment } from "@/gql";
 import { BuildMode } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 
-import { checkIsBuildEmpty } from "./Build";
-
 const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
     type
@@ -24,7 +22,7 @@ const BuildFragment = graphql(`
 
 const ProjectFragment = graphql(`
   fragment BuildStatusDescription_Project on Project {
-    referenceBranch
+    referenceBranchGlob
   }
 `);
 
@@ -78,18 +76,16 @@ export const BuildStatusDescription = (props: {
                     It may happens because:
                     <ul className="ml-8 mt-2 list-disc space-y-1">
                       <li>
-                        There is no Argos build on the{" "}
-                        <Code>{project.referenceBranch}</Code> branch yet
+                        No Argos build has been performed on a branch that
+                        matches <Code>{project.referenceBranchGlob}</Code>{" "}
+                        pattern.
                       </li>
                       <li>
-                        Your pull-request is not rebased on{" "}
-                        <Code>{project.referenceBranch}</Code> branch
+                        Argos can't find any commit ancestor that matches a
+                        reference build. You may need to rebase your branch.
                       </li>
                     </ul>
                   </div>
-                  To perform comparison, make sure that you have an Argos build
-                  on <Code>{project.referenceBranch}</Code> branch and that your
-                  pull-request is rebased.
                 </>
               );
             case BuildMode.Monitoring:
@@ -118,7 +114,7 @@ export const BuildStatusDescription = (props: {
     case "check": {
       switch (build.status) {
         case "stable": {
-          if (checkIsBuildEmpty(build)) {
+          if (build.stats.total === 0) {
             return (
               <>
                 No screenshot has been uploaded. Be sure to specify a directory

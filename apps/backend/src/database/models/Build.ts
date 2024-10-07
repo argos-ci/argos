@@ -88,7 +88,11 @@ export class Build extends Model {
       prHeadCommit: { type: ["string", "null"] },
       githubPullRequestId: { type: ["string", "null"] },
       referenceCommit: { type: ["string", "null"] },
-      referenceBranch: { type: ["string", "null"] },
+      baseBranch: { type: ["string", "null"] },
+      baseBranchResolvedFrom: {
+        type: ["string", "null"],
+        enum: ["user", "pull-request", "default"],
+      },
       mode: { type: "string", enum: ["ci", "monitoring"] },
       ciProvider: { type: ["string", "null"] },
       argosSdk: { type: ["string", "null"] },
@@ -115,7 +119,8 @@ export class Build extends Model {
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;
   referenceCommit!: string | null;
-  referenceBranch!: string | null;
+  baseBranch!: string | null;
+  baseBranchResolvedFrom!: "user" | "pull-request" | "project" | null;
   mode!: BuildMode;
   ciProvider!: string | null;
   argosSdk!: string | null;

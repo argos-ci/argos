@@ -81,12 +81,12 @@ export const GithubStrategy: MergeBaseStrategy<{
     // We can't know for sure that it's a parent, but it's the best we can do.
     // It can result into diffs that includes changes more recent than the current branch.
     if (args.ctx.installation.app === "light") {
-      if (!args.build.referenceBranch) {
+      if (!args.build.baseBranch) {
         return [];
       }
 
       const lastBucket = await queryBaseBucket(args.build)
-        .where("branch", args.build.referenceBranch)
+        .where("branch", args.build.baseBranch)
         .orderBy("id", "desc")
         .first();
 

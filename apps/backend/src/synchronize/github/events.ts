@@ -19,6 +19,7 @@ import {
   getOrCreateGithubAccountMember,
   joinSSOTeams,
 } from "@/database/services/account.js";
+import { parsePullRequestData } from "@/github-pull-request/pull-request.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
@@ -191,17 +192,7 @@ export async function handleGitHubEvents(
         await pr
           .$clone()
           .$query()
-          .patch({
-            title: payload.pull_request.title,
-            baseRef: payload.pull_request.base.ref,
-            baseSha: payload.pull_request.base.sha,
-            state: payload.pull_request.state,
-            date: payload.pull_request.created_at,
-            closedAt: payload.pull_request.closed_at ?? null,
-            mergedAt: payload.pull_request.merged_at ?? null,
-            merged: payload.pull_request.merged ?? null,
-            draft: payload.pull_request.draft ?? null,
-          });
+          .patch(parsePullRequestData(payload.pull_request));
         return;
       }
 

@@ -204,9 +204,3 @@ export const getBuildLabel = (
       assertNever(type);
   }
 };
-
-export const checkIsBuildEmpty = (build: {
-  stats: { total: number };
-}): boolean => {
-  return build.stats.total === 0;
-};

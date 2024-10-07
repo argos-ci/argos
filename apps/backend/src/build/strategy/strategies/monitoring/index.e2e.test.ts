@@ -80,8 +80,10 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
   });
 
   it("picks the latest approved builds of the same name", async () => {
-    const bucket =
-      await MonitoringStrategy.getBaseScreenshotBucket(sourceBuild);
-    expect(bucket!.id).toBe(matchedBuild.compareScreenshotBucketId);
+    const { baseScreenshotBucket } =
+      await MonitoringStrategy.getBase(sourceBuild);
+    expect(baseScreenshotBucket!.id).toBe(
+      matchedBuild.compareScreenshotBucketId,
+    );
   });
 });

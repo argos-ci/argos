@@ -57,7 +57,7 @@ export async function createBuild(params: {
   prNumber: number | null;
   prHeadCommit: string | null;
   referenceCommit: string | null;
-  referenceBranch: string | null;
+  baseBranch: string | null;
   mode: BuildMode | null;
   ciProvider: string | null;
   argosSdk: string | null;
@@ -150,7 +150,8 @@ export async function createBuild(params: {
           prHeadCommit: params.prHeadCommit ?? null,
           githubPullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
           referenceCommit: params.referenceCommit ?? null,
-          referenceBranch: params.referenceBranch ?? null,
+          baseBranch: params.baseBranch ?? null,
+          baseBranchResolvedFrom: params.baseBranch ? "user" : null,
           compareScreenshotBucketId: bucket.id,
           mode,
           ciProvider: params.ciProvider ?? null,
