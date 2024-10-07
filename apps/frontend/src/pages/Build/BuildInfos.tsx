@@ -7,7 +7,6 @@ import {
 } from "@/containers/BuildModeIndicator";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
-import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
