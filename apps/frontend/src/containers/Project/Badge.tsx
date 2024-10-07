@@ -50,7 +50,7 @@ export const ProjectBadge = (props: {
         <CardParagraph>
           Embed Argos' badge in your{" "}
           <span className="font-medium">README.md</span> to have a quick link to
-          the latest reference build of your project.
+          the latest auto-approved build of your project.
         </CardParagraph>
         <div className="flex gap-4">
           <BadgeBlock

@@ -6,10 +6,13 @@ import { NotFound } from "@/pages/NotFound";
 import { Container } from "@/ui/Container";
 
 const ProjectQuery = graphql(`
-  query ProjectReference_project($accountSlug: String!, $projectName: String!) {
+  query ProjectLatestAutoApproved_project(
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      latestReferenceBuild {
+      latestAutoApprovedBuild {
         id
         number
       }
@@ -17,7 +20,7 @@ const ProjectQuery = graphql(`
   }
 `);
 
-function ProjectReference({
+function NavigateToLatestAutoApproved({
   accountSlug,
   projectName,
 }: {
@@ -37,7 +40,7 @@ function ProjectReference({
     return <NotFound />;
   }
 
-  if (!project.latestReferenceBuild) {
+  if (!project.latestAutoApprovedBuild) {
     return (
       <Navigate to={`/${accountSlug}/${projectName}/builds`} replace={true} />
     );
@@ -45,7 +48,7 @@ function ProjectReference({
 
   return (
     <Navigate
-      to={`/${accountSlug}/${projectName}/builds/${project.latestReferenceBuild.number}`}
+      to={`/${accountSlug}/${projectName}/builds/${project.latestAutoApprovedBuild.number}`}
       replace={true}
     />
   );
@@ -61,7 +64,10 @@ export function Component() {
 
   return (
     <Container>
-      <ProjectReference accountSlug={accountSlug} projectName={projectName} />
+      <NavigateToLatestAutoApproved
+        accountSlug={accountSlug}
+        projectName={projectName}
+      />
     </Container>
   );
 }

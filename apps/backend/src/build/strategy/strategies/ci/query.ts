@@ -11,7 +11,7 @@ export async function getBaseBucketForBuildAndCommit(
     // Try to find a bucket for the commit
     qb.where("commit", commit)
       // Try to find a build by "prHeadCommit"
-      // If reference build is triggered by a pull request,
+      // If build is triggered by a pull request,
       // then the relevant commit is "prHeadCommit"
       .orWhereIn(
         "id",

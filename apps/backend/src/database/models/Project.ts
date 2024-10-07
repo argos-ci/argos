@@ -44,7 +44,7 @@ export class Project extends Model {
       token: { type: "string" },
       private: { type: ["null", "boolean"] },
       defaultBaseBranch: { type: ["null", "string"] },
-      referenceBranchGlob: { type: ["null", "string"] },
+      autoApprovedBranchGlob: { type: ["null", "string"] },
       accountId: { type: "string" },
       githubRepositoryId: { type: ["null", "string"] },
       gitlabProjectId: { type: ["null", "string"] },
@@ -57,7 +57,7 @@ export class Project extends Model {
   token!: string;
   private!: boolean | null;
   defaultBaseBranch!: string | null;
-  referenceBranchGlob!: string | null;
+  autoApprovedBranchGlob!: string | null;
   accountId!: string;
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
@@ -74,8 +74,8 @@ export class Project extends Model {
       json["defaultBaseBranch"] = json["defaultBaseBranch"].trim();
     }
 
-    if (json["referenceBranchGlob"]) {
-      json["referenceBranchGlob"] = json["referenceBranchGlob"].trim();
+    if (json["autoApprovedBranchGlob"]) {
+      json["autoApprovedBranchGlob"] = json["autoApprovedBranchGlob"].trim();
     }
 
     return json;
@@ -246,14 +246,14 @@ export class Project extends Model {
   }
 
   /**
-   * Get the reference branch glob for the project.
-   * All branches that match this will be considered as reference branches.
-   * A `referenceBranchGlob` that is null means that the default
+   * Get the auto-approved branch glob for the project.
+   * All branches that match this will be considered as auto-approved branches.
+   * A `autoApprovedBranchGlob` that is null means that the default
    * branch of the repository should be used.
    */
-  async $getReferenceBranchGlob() {
-    if (this.referenceBranchGlob) {
-      return this.referenceBranchGlob;
+  async $getAutoApprovedBranchGlob() {
+    if (this.autoApprovedBranchGlob) {
+      return this.autoApprovedBranchGlob;
     }
     return this.$getDefaultBaseBranch();
   }

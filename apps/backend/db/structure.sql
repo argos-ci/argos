@@ -213,7 +213,7 @@ CREATE TABLE public.builds (
     "totalBatch" integer,
     "prNumber" integer,
     "projectId" bigint NOT NULL,
-    "referenceCommit" character varying(255),
+    "baseCommit" character varying(255),
     "baseBranch" character varying(255),
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
@@ -895,7 +895,7 @@ CREATE TABLE public.projects (
     "prCommentEnabled" boolean DEFAULT true NOT NULL,
     "gitlabProjectId" bigint,
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
-    "referenceBranchGlob" character varying(255),
+    "autoApprovedBranchGlob" character varying(255),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
 

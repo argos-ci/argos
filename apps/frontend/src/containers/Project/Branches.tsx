@@ -12,38 +12,38 @@ import { Link } from "@/ui/Link";
 
 import { getRepositoryLabel } from "../Repository";
 
-const UpdateBaselineBranchMutation = graphql(`
-  mutation ProjectReferenceBranch_updateProject(
+const UpdateBranchesMutation = graphql(`
+  mutation ProjectBranches_updateProject(
     $id: ID!
     $defaultBaseBranch: String
-    $referenceBranchGlob: String
+    $autoApprovedBranchGlob: String
   ) {
     updateProject(
       input: {
         id: $id
         defaultBaseBranch: $defaultBaseBranch
-        referenceBranchGlob: $referenceBranchGlob
+        autoApprovedBranchGlob: $autoApprovedBranchGlob
       }
     ) {
       id
       customDefaultBaseBranch
-      customReferenceBranchGlob
+      customAutoApprovedBranchGlob
     }
   }
 `);
 
 type Inputs = {
-  autoDefaultBaseBranch: boolean;
+  noCustomDefaultBaseBranch: boolean;
   defaultBaseBranch: string;
-  autoReferenceBranch: boolean;
-  referenceBranchGlob: string;
+  noCustomApprovedBranchGlob: boolean;
+  autoApprovedBranchGlob: string;
 };
 
 const ProjectFragment = graphql(`
-  fragment ProjectReferenceBranch_Project on Project {
+  fragment ProjectBranches_Project on Project {
     id
     customDefaultBaseBranch
-    customReferenceBranchGlob
+    customAutoApprovedBranchGlob
     repository {
       __typename
       id
@@ -52,7 +52,7 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export const ProjectReferenceBranch = (props: {
+export const ProjectBranches = (props: {
   project: FragmentType<typeof ProjectFragment>;
 }) => {
   const project = useFragment(ProjectFragment, props.project);
@@ -62,11 +62,11 @@ export const ProjectReferenceBranch = (props: {
     "main";
   const form = useForm<Inputs>({
     defaultValues: {
-      autoDefaultBaseBranch: project.customDefaultBaseBranch === null,
+      noCustomDefaultBaseBranch: project.customDefaultBaseBranch === null,
       defaultBaseBranch: defaultDefaultBaseBranch,
-      autoReferenceBranch: project.customReferenceBranchGlob === null,
-      referenceBranchGlob:
-        project.customReferenceBranchGlob || defaultDefaultBaseBranch,
+      noCustomApprovedBranchGlob: project.customAutoApprovedBranchGlob === null,
+      autoApprovedBranchGlob:
+        project.customAutoApprovedBranchGlob || defaultDefaultBaseBranch,
     },
   });
 
@@ -74,32 +74,35 @@ export const ProjectReferenceBranch = (props: {
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     await client.mutate({
-      mutation: UpdateBaselineBranchMutation,
+      mutation: UpdateBranchesMutation,
       variables: {
         id: project.id,
-        defaultBaseBranch: data.autoDefaultBaseBranch
+        defaultBaseBranch: data.noCustomDefaultBaseBranch
           ? null
           : data.defaultBaseBranch,
-        referenceBranchGlob: data.autoReferenceBranch
+        autoApprovedBranchGlob: data.noCustomApprovedBranchGlob
           ? null
-          : data.referenceBranchGlob,
+          : data.autoApprovedBranchGlob,
       },
     });
   };
 
   const defaultBaseBranch = form.watch("defaultBaseBranch");
-  const autoDefaultBaseBranch = form.watch("autoDefaultBaseBranch");
-  const autoReferenceBranch = form.watch("autoReferenceBranch");
+  const noCustomDefaultBaseBranch = form.watch("noCustomDefaultBaseBranch");
+  const noCustomApprovedBranchGlob = form.watch("noCustomApprovedBranchGlob");
 
   const defaultBaseBranchFieldProps = form.register("defaultBaseBranch", {
     required: { message: "Branch required", value: true },
   });
 
-  const referenceBranchGlobFieldProps = form.register("referenceBranchGlob", {
-    required: { message: "Pattern required", value: true },
-  });
+  const autoApprovedBranchGlobFieldProps = form.register(
+    "autoApprovedBranchGlob",
+    {
+      required: { message: "Pattern required", value: true },
+    },
+  );
 
-  const dynamicDefaultBaseBranch = autoDefaultBaseBranch
+  const dynamicDefaultBaseBranch = noCustomDefaultBaseBranch
     ? defaultDefaultBaseBranch
     : defaultBaseBranch;
 
@@ -110,20 +113,23 @@ export const ProjectReferenceBranch = (props: {
           <CardBody>
             <CardTitle>Branches</CardTitle>
             <CardParagraph>
-              Choose how Argos will determine the reference branch for your
-              builds in Continuous Integration (CI) mode.
+              Choose Argos default base branch and auto-approved branches used
+              in{" "}
+              <Link external href="https://argos-ci.com/docs/monitoring-mode">
+                Continous Integration (CI) builds
+              </Link>
+              .
             </CardParagraph>
             <div className="mb-4 rounded border p-4">
               <h3 className="mb-1 font-semibold">Default base branch</h3>
               <p className="text-low text-sm">
-                Argos will compare the Git history between the base branch and
-                the head branch. If a pull request specifies a base branch, that
-                branch will be used. Otherwise, Argos defaults to the
-                repository's main branch.
+                Argos will find the first ancestor commit on base branch in Git
+                history. It uses pull-request base branch if avaible, else it
+                defaults to the project default branch specified here.
               </p>
               <div className="mt-4">
                 <FormCheckbox
-                  {...form.register("autoDefaultBaseBranch")}
+                  {...form.register("noCustomDefaultBaseBranch")}
                   label={
                     project.repository ? (
                       <>
@@ -136,16 +142,17 @@ export const ProjectReferenceBranch = (props: {
                     )
                   }
                 />
-                {!autoDefaultBaseBranch && (
+                {!noCustomDefaultBaseBranch && (
                   <FormTextInput
                     {...defaultBaseBranchFieldProps}
                     ref={(element) => {
                       defaultBaseBranchFieldProps.ref(element);
                       if (element) {
                         if (
-                          !autoDefaultBaseBranch &&
+                          !noCustomDefaultBaseBranch &&
                           form.formState.defaultValues
-                            ?.autoDefaultBaseBranch !== autoDefaultBaseBranch
+                            ?.noCustomDefaultBaseBranch !==
+                            noCustomDefaultBaseBranch
                         ) {
                           element.focus();
                         }
@@ -158,15 +165,14 @@ export const ProjectReferenceBranch = (props: {
               </div>
             </div>
             <div className="rounded border p-4">
-              <h3 className="mb-1 font-semibold">Reference branches</h3>
+              <h3 className="mb-1 font-semibold">Auto-approved branches</h3>
               <p className="text-low text-sm">
                 Any branch that matches the specified pattern will be
-                automatically approved as a reference build and won’t need
-                manual approval.
+                automatically approved and have a success status check.
               </p>
               <div className="mt-4">
                 <FormCheckbox
-                  {...form.register("autoReferenceBranch")}
+                  {...form.register("noCustomApprovedBranchGlob")}
                   label={
                     dynamicDefaultBaseBranch ? (
                       <>
@@ -178,28 +184,30 @@ export const ProjectReferenceBranch = (props: {
                     )
                   }
                 />
-                {!autoReferenceBranch && (
+                {!noCustomApprovedBranchGlob && (
                   <>
                     <FormTextInput
-                      {...referenceBranchGlobFieldProps}
+                      {...autoApprovedBranchGlobFieldProps}
                       ref={(element) => {
-                        referenceBranchGlobFieldProps.ref(element);
+                        autoApprovedBranchGlobFieldProps.ref(element);
                         if (element) {
                           if (
-                            !autoReferenceBranch &&
+                            !noCustomApprovedBranchGlob &&
                             form.formState.defaultValues
-                              ?.autoReferenceBranch !== autoReferenceBranch
+                              ?.noCustomApprovedBranchGlob !==
+                              noCustomApprovedBranchGlob
                           ) {
                             element.focus();
                           }
                         }
                       }}
-                      label="Reference branch pattern"
+                      label="Auto-approved branch pattern"
                       className="mt-4"
                     />
                     <p className="text-low mt-2 text-sm">
                       Use patterns like <Code>main</Code>,{" "}
-                      <Code>release/*</Code>, or <Code>feature/**</Code>.
+                      <Code>{`{main,production}`}</Code>, or{" "}
+                      <Code>release/**</Code>.
                     </p>
                   </>
                 )}
@@ -209,10 +217,10 @@ export const ProjectReferenceBranch = (props: {
           <FormCardFooter>
             Learn more about{" "}
             <Link
-              href="https://argos-ci.com/docs/reference-build"
+              href="https://argos-ci.com/docs/baseline-build"
               target="_blank"
             >
-              reference build
+              baseline builds
             </Link>
             .
           </FormCardFooter>

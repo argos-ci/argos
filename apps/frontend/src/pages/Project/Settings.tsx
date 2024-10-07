@@ -4,11 +4,11 @@ import { useParams } from "react-router-dom";
 import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";
+import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
-import { ProjectReferenceBranch } from "@/containers/Project/ReferenceBranch";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
@@ -39,7 +39,7 @@ const ProjectQuery = graphql(`
       ...ProjectBadge_Project
       ...ProjectChangeName_Project
       ...ProjectToken_Project
-      ...ProjectReferenceBranch_Project
+      ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
       ...ProjectVisibility_Project
       ...ProjectTransfer_Project
@@ -101,9 +101,7 @@ export function Component() {
               {hasAdminPermission && <ProjectChangeName project={project} />}
               {hasReviewPermission && <ProjectToken project={project} />}
               {hasAdminPermission && <ProjectGitRepository project={project} />}
-              {hasAdminPermission && (
-                <ProjectReferenceBranch project={project} />
-              )}
+              {hasAdminPermission && <ProjectBranches project={project} />}
               {hasAdminPermission && <ProjectStatusChecks project={project} />}
               <ProjectBadge project={project} />
               {hasAdminPermission && <ProjectVisibility project={project} />}

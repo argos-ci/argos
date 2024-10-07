@@ -36,7 +36,6 @@ const ProjectQuery = graphql(`
       }
       buildNames
       ...GettingStarted_Project
-      ...BuildStatusChip_Project
     }
   }
 `);
@@ -144,7 +143,7 @@ const BuildRow = React.memo(
           </div>
         </div>
         <div className="flex w-[12.5rem] shrink-0 items-start">
-          <BuildStatusChip build={build} project={project} />
+          <BuildStatusChip build={build} />
         </div>
         <div className="flex grow">
           <div className="hidden lg:flex">

@@ -53,9 +53,9 @@ export const GithubStrategy: MergeBaseStrategy<{
   },
 
   getMergeBaseCommitSha: async (args) => {
-    // If the app is light, then we rely on the reference commit provided by the user in CLI.
+    // If the app is light, then we rely on the base commit provided by the user in CLI.
     if (args.ctx.installation.app === "light") {
-      return args.build.referenceCommit;
+      return args.build.baseCommit;
     }
 
     try {
@@ -77,7 +77,7 @@ export const GithubStrategy: MergeBaseStrategy<{
     }
   },
   listParentCommitShas: async (args) => {
-    // If the app is light, we just find the last bucket ancest on the reference branch.
+    // If the app is light, we just find the last bucket ancest on the base branch.
     // We can't know for sure that it's a parent, but it's the best we can do.
     // It can result into diffs that includes changes more recent than the current branch.
     if (args.ctx.installation.app === "light") {

@@ -13,24 +13,13 @@ const BuildFragment = graphql(`
   }
 `);
 
-const ProjectFragment = graphql(`
-  fragment BuildStatusChip_Project on Project {
-    ...BuildStatusDescription_Project
-  }
-`);
-
 export const BuildStatusChip = (props: {
   build: FragmentType<typeof BuildFragment>;
-  project: FragmentType<typeof ProjectFragment>;
   scale?: ChipProps["scale"];
 }) => {
   const build = useFragment(BuildFragment, props.build);
-  const project = useFragment(ProjectFragment, props.project);
   return (
-    <Tooltip
-      variant="info"
-      content={<BuildStatusDescription build={build} project={project} />}
-    >
+    <Tooltip variant="info" content={<BuildStatusDescription build={build} />}>
       <Chip
         icon={getBuildIcon(build.type, build.status)}
         color={getBuildColor(build.type, build.status)}

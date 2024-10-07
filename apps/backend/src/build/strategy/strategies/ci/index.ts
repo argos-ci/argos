@@ -51,13 +51,13 @@ async function getBase(build: Build): GetBaseResult {
 
   const strategy = strategies.find((s) => s.detect(project));
 
-  // If we don't have a strategy then we could only count on referenceCommit
+  // If we don't have a strategy then we could only count on baseCommit
   // specified by the user in the build.
   if (!strategy) {
-    if (richBuild.referenceCommit) {
+    if (richBuild.baseCommit) {
       const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
         build,
-        richBuild.referenceCommit,
+        richBuild.baseCommit,
       );
       return {
         baseScreenshotBucket,
@@ -123,7 +123,7 @@ async function getBase(build: Build): GetBaseResult {
   }
 
   // If the merge base is the same as the head, then we have to found an ancestor
-  // It happens when we are on the reference branch.
+  // It happens when we are on a auto-approved branch.
   if (mergeBaseCommitSha === head) {
     const shas = await strategy.listParentCommitShas({
       project,
@@ -177,7 +177,7 @@ async function getBase(build: Build): GetBaseResult {
 }
 
 type CIStrategyContext = {
-  checkIsReferenceBranch: (branch: string) => boolean;
+  checkIsAutoApproved: (branch: string) => boolean;
 };
 
 export const CIStrategy: BuildStrategy<CIStrategyContext> = {
@@ -185,14 +185,13 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
   getContext: async (build) => {
     await build.$fetchGraph("project", { skipFetched: true });
     invariant(build.project, "no project found", UnretryableError);
-    const referenceBranchGlob = await build.project.$getReferenceBranchGlob();
+    const branchGlob = await build.project.$getAutoApprovedBranchGlob();
     return {
-      checkIsReferenceBranch: (branch: string) =>
-        minimatch(branch, referenceBranchGlob),
+      checkIsAutoApproved: (branch: string) => minimatch(branch, branchGlob),
     };
   },
   getBuildType: (input, ctx) => {
-    if (ctx.checkIsReferenceBranch(input.compareScreenshotBucket.branch)) {
+    if (ctx.checkIsAutoApproved(input.compareScreenshotBucket.branch)) {
       return "reference";
     }
     if (!input.baseScreenshotBucket) {

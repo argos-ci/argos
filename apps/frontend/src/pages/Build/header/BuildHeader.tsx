@@ -113,9 +113,7 @@ function LoggedReviewButton(props: {
     return <DisabledBuildReviewButton tooltip="No changes to review" />;
   }
   if (props.build.type === BuildType.Reference) {
-    return (
-      <DisabledBuildReviewButton tooltip="No need to review reference builds" />
-    );
+    return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
   }
   const reviewComplete =
     progression.reviewed.length === progression.toReview.length;
@@ -175,7 +173,6 @@ const ConditionalBuildReviewButton = memo(
 
 const ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
-    ...BuildStatusChip_Project
     ...BuildReviewButton_Project
   }
 `);
@@ -217,16 +214,14 @@ export const BuildHeader = memo(
               />
             </div>
           </div>
-          {build && project ? (
-            <BuildStatusChip build={build} project={project} />
-          ) : null}
+          {build && project ? <BuildStatusChip build={build} /> : null}
         </div>
         <div className="flex min-w-0 items-center gap-4">
           {build?.pullRequest ? (
             <PullRequestButton pullRequest={build.pullRequest} size="small" />
           ) : null}
-          {project && build && (
-            <ConditionalBuildReviewButton project={project} build={build} />
+          {build && project && (
+            <ConditionalBuildReviewButton build={build} project={project} />
           )}
           <NavUserControl />
         </div>

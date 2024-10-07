@@ -89,7 +89,7 @@ export class Build extends Model {
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
       githubPullRequestId: { type: ["string", "null"] },
-      referenceCommit: { type: ["string", "null"] },
+      baseCommit: { type: ["string", "null"] },
       baseBranch: { type: ["string", "null"] },
       baseBranchResolvedFrom: {
         oneOf: [
@@ -122,7 +122,7 @@ export class Build extends Model {
   prNumber!: number | null;
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;
-  referenceCommit!: string | null;
+  baseCommit!: string | null;
   baseBranch!: string | null;
   baseBranchResolvedFrom!: "user" | "pull-request" | "project" | null;
   mode!: BuildMode;

@@ -18,11 +18,11 @@ const { gql } = gqlTag;
 
 export const typeDefs = gql`
   enum BuildType {
-    "Build on reference branch"
+    "Build auto-approved"
     reference
     "Comparison build"
     check
-    "No reference build to compare"
+    "No baseline build found"
     orphan
   }
 
@@ -58,7 +58,7 @@ export const typeDefs = gql`
   }
 
   enum BuildMode {
-    "Build is compared with a baseline based on reference branch and Git history"
+    "Build is compared with a baseline found by analyzing Git history"
     ci
     "Build is compared with the latest approved build"
     monitoring

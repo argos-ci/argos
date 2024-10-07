@@ -11,7 +11,7 @@ import {
 
 export async function getAggregatedNotification(
   commit: string,
-  isReference: boolean,
+  isAutoApproved: boolean,
   summaryCheckConfig: Project["summaryCheck"],
 ): Promise<NotificationPayload | null> {
   if (summaryCheckConfig === "never") {
@@ -74,7 +74,7 @@ export async function getAggregatedNotification(
 
   const states = getNotificationStates({
     buildNotificationType: type,
-    isReference,
+    isAutoApproved,
   });
   const base = {
     context: "argos/summary",
@@ -100,7 +100,7 @@ export async function getAggregatedNotification(
     case "diff-detected":
       return {
         ...base,
-        description: isReference ? "Used as new baseline" : "Diff detected",
+        description: isAutoApproved ? "Auto-approved" : "Diff detected",
       };
     case "diff-accepted":
       return { ...base, description: "Diff accepted" };
@@ -109,7 +109,7 @@ export async function getAggregatedNotification(
     case "no-diff-detected":
       return {
         ...base,
-        description: isReference ? "Used as new baseline" : "No diff detected",
+        description: isAutoApproved ? "Auto-approved" : "No diff detected",
       };
     default:
       assertNever(type);

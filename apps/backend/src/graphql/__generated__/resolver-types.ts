@@ -183,7 +183,7 @@ export type IBuildMetadata = {
 };
 
 export enum IBuildMode {
-  /** Build is compared with a baseline based on reference branch and Git history */
+  /** Build is compared with a baseline found by analyzing Git history */
   Ci = 'ci',
   /** Build is compared with the latest approved build */
   Monitoring = 'monitoring'
@@ -231,9 +231,9 @@ export enum IBuildStatus {
 export enum IBuildType {
   /** Comparison build */
   Check = 'check',
-  /** No reference build to compare */
+  /** No baseline build found */
   Orphan = 'orphan',
-  /** Build on reference branch */
+  /** Build auto-approved */
   Reference = 'reference'
 }
 
@@ -614,6 +614,8 @@ export type IProject = INode & {
   __typename?: 'Project';
   /** Owner of the repository */
   account: IAccount;
+  /** Glob pattern for auto-approved branches */
+  autoApprovedBranchGlob: Scalars['String']['output'];
   /** A single build linked to the repository */
   build?: Maybe<IBuild>;
   /** Build names */
@@ -624,17 +626,17 @@ export type IProject = INode & {
   contributors: IProjectContributorConnection;
   /** Current month used screenshots */
   currentPeriodScreenshots: Scalars['Int']['output'];
+  /** Glob pattern for auto-approved branches edited by the user */
+  customAutoApprovedBranchGlob?: Maybe<Scalars['String']['output']>;
   /** Default base branch edited by the user */
   customDefaultBaseBranch?: Maybe<Scalars['String']['output']>;
-  /** Reference branch glob edited by the user */
-  customReferenceBranchGlob?: Maybe<Scalars['String']['output']>;
   /** Default base branch */
   defaultBaseBranch: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  /** Latest auto-approved build */
+  latestAutoApprovedBuild?: Maybe<IBuild>;
   /** Latest build */
   latestBuild?: Maybe<IBuild>;
-  /** Reference build */
-  latestReferenceBuild?: Maybe<IBuild>;
   name: Scalars['String']['output'];
   /** Determine permissions of the current user */
   permissions: Array<IProjectPermission>;
@@ -644,8 +646,6 @@ export type IProject = INode & {
   private?: Maybe<Scalars['Boolean']['output']>;
   /** Check if the project is public or not */
   public: Scalars['Boolean']['output'];
-  /** Reference branch glob */
-  referenceBranchGlob: Scalars['String']['output'];
   /** Repository associated to the project */
   repository?: Maybe<IRepository>;
   /** Project slug */
@@ -1099,11 +1099,11 @@ export type IUpdateAccountInput = {
 };
 
 export type IUpdateProjectInput = {
+  autoApprovedBranchGlob?: InputMaybe<Scalars['String']['input']>;
   defaultBaseBranch?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   private?: InputMaybe<Scalars['Boolean']['input']>;
-  referenceBranchGlob?: InputMaybe<Scalars['String']['input']>;
   summaryCheck?: InputMaybe<ISummaryCheck>;
 };
 
@@ -1726,23 +1726,23 @@ export type IPlanResolvers<ContextType = Context, ParentType extends IResolversP
 
 export type IProjectResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Project'] = IResolversParentTypes['Project']> = ResolversObject<{
   account?: Resolver<IResolversTypes['Account'], ParentType, ContextType>;
+  autoApprovedBranchGlob?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
   buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
   contributors?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IProjectContributorsArgs, 'after' | 'first'>>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  customAutoApprovedBranchGlob?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   customDefaultBaseBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  customReferenceBranchGlob?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   defaultBaseBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  latestAutoApprovedBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
-  latestReferenceBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['ProjectPermission']>, ParentType, ContextType>;
   prCommentEnabled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  referenceBranchGlob?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;

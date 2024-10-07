@@ -164,7 +164,7 @@ export const getBuildLabel = (
       }
     }
     case "reference":
-      return "Reference build";
+      return "Auto-approved build";
     case "check": {
       switch (status) {
         case "stable":

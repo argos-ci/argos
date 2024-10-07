@@ -164,9 +164,7 @@ type BuildMetadata {
 }
 
 enum BuildMode {
-  """
-  Build is compared with a baseline based on reference branch and Git history
-  """
+  """Build is compared with a baseline found by analyzing Git history"""
   ci
 
   """Build is compared with the latest approved build"""
@@ -222,10 +220,10 @@ enum BuildType {
   """Comparison build"""
   check
 
-  """No reference build to compare"""
+  """No baseline build found"""
   orphan
 
-  """Build on reference branch"""
+  """Build auto-approved"""
   reference
 }
 
@@ -493,6 +491,9 @@ type Project implements Node {
   """Owner of the repository"""
   account: Account!
 
+  """Glob pattern for auto-approved branches"""
+  autoApprovedBranchGlob: String!
+
   """A single build linked to the repository"""
   build(number: Int!): Build
 
@@ -508,21 +509,21 @@ type Project implements Node {
   """Current month used screenshots"""
   currentPeriodScreenshots: Int!
 
+  """Glob pattern for auto-approved branches edited by the user"""
+  customAutoApprovedBranchGlob: String
+
   """Default base branch edited by the user"""
   customDefaultBaseBranch: String
-
-  """Reference branch glob edited by the user"""
-  customReferenceBranchGlob: String
 
   """Default base branch"""
   defaultBaseBranch: String!
   id: ID!
 
+  """Latest auto-approved build"""
+  latestAutoApprovedBuild: Build
+
   """Latest build"""
   latestBuild: Build
-
-  """Reference build"""
-  latestReferenceBuild: Build
   name: String!
 
   """Determine permissions of the current user"""
@@ -536,9 +537,6 @@ type Project implements Node {
 
   """Check if the project is public or not"""
   public: Boolean!
-
-  """Reference branch glob"""
-  referenceBranchGlob: String!
 
   """Repository associated to the project"""
   repository: Repository
@@ -889,11 +887,11 @@ input UpdateAccountInput {
 }
 
 input UpdateProjectInput {
+  autoApprovedBranchGlob: String
   defaultBaseBranch: String
   id: ID!
   name: String
   private: Boolean
-  referenceBranchGlob: String
   summaryCheck: SummaryCheck
 }
 

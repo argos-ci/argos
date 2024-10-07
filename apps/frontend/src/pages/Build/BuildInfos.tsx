@@ -7,6 +7,7 @@ import {
 } from "@/containers/BuildModeIndicator";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
+import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
@@ -52,7 +53,7 @@ function BranchLink({
   branch: string;
 }) {
   if (!repoUrl) {
-    return <>{branch}</>;
+    return <span className="font-mono">{branch}</span>;
   }
   return (
     <Link
@@ -215,21 +216,21 @@ export function BuildInfos(props: {
         <>
           <Dt>Base branch</Dt>
           <Dd>
-            {build.baseBranch}
+            <BranchLink repoUrl={props.repoUrl} branch={build.baseBranch} />
             {build.baseBranchResolvedFrom ? (
-              <div className="text-low mt-1 text-xs font-normal">
+              <Description>
                 <BaseBranchResolvedFrom
                   projectUrl={`/${props.params.accountSlug}/${props.params.projectName}`}
                   resolvedFrom={build.baseBranchResolvedFrom}
                   pullRequest={build.pullRequest}
                 />
-              </div>
+              </Description>
             ) : null}
           </Dd>
         </>
       ) : null}
 
-      <Dt>Baseline commit</Dt>
+      <Dt>Base commit</Dt>
       <Dd>
         {build.baseScreenshotBucket ? (
           <CommitLink

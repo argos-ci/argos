@@ -84,8 +84,8 @@ export const typeDefs = gql`
     builds(first: Int = 30, after: Int = 0, buildName: String): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
-    "Reference build"
-    latestReferenceBuild: Build
+    "Latest auto-approved build"
+    latestAutoApprovedBuild: Build
     "Latest build"
     latestBuild: Build
     "Determine permissions of the current user"
@@ -98,10 +98,10 @@ export const typeDefs = gql`
     defaultBaseBranch: String!
     "Default base branch edited by the user"
     customDefaultBaseBranch: String
-    "Reference branch glob"
-    referenceBranchGlob: String!
-    "Reference branch glob edited by the user"
-    customReferenceBranchGlob: String
+    "Glob pattern for auto-approved branches"
+    autoApprovedBranchGlob: String!
+    "Glob pattern for auto-approved branches edited by the user"
+    customAutoApprovedBranchGlob: String
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -153,7 +153,7 @@ export const typeDefs = gql`
   input UpdateProjectInput {
     id: ID!
     defaultBaseBranch: String
-    referenceBranchGlob: String
+    autoApprovedBranchGlob: String
     private: Boolean
     name: String
     summaryCheck: SummaryCheck
@@ -421,8 +421,8 @@ export const resolvers: IResolvers = {
       }
       return project.token;
     },
-    latestReferenceBuild: async (project) => {
-      const latestReferenceBuild = await Build.query()
+    latestAutoApprovedBuild: async (project) => {
+      const latestAutoApprovedBuild = await Build.query()
         .where("projectId", project.id)
         .where("type", "reference")
         .orderBy([
@@ -430,7 +430,7 @@ export const resolvers: IResolvers = {
           { column: "number", order: "desc" },
         ])
         .first();
-      return latestReferenceBuild ?? null;
+      return latestAutoApprovedBuild ?? null;
     },
     latestBuild: async (project, _args, ctx) => {
       return ctx.loaders.LatestProjectBuild.load(project.id);
@@ -480,11 +480,11 @@ export const resolvers: IResolvers = {
     customDefaultBaseBranch: (project) => {
       return project.defaultBaseBranch;
     },
-    referenceBranchGlob: async (project) => {
-      return project.$getReferenceBranchGlob();
+    autoApprovedBranchGlob: async (project) => {
+      return project.$getAutoApprovedBranchGlob();
     },
-    customReferenceBranchGlob: (project) => {
-      return project.referenceBranchGlob;
+    customAutoApprovedBranchGlob: (project) => {
+      return project.autoApprovedBranchGlob;
     },
     public: async (project, _args, ctx) => {
       project.githubRepository = project.githubRepositoryId
@@ -626,8 +626,8 @@ export const resolvers: IResolvers = {
         data.defaultBaseBranch = args.input.defaultBaseBranch ?? null;
       }
 
-      if (args.input.referenceBranchGlob !== undefined) {
-        data.referenceBranchGlob = args.input.referenceBranchGlob ?? null;
+      if (args.input.autoApprovedBranchGlob !== undefined) {
+        data.autoApprovedBranchGlob = args.input.autoApprovedBranchGlob ?? null;
       }
 
       if (args.input.private !== undefined) {

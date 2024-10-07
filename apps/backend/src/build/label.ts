@@ -41,7 +41,7 @@ export function getBuildLabel(
     case "orphan":
       return "🔘 Orphan build";
     case "reference":
-      return "✅ Reference build";
+      return "✅ Auto-approved build";
     case "check": {
       return getBuildStatusLabel(status);
     }
