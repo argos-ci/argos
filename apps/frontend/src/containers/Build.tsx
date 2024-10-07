@@ -176,7 +176,7 @@ export const getBuildLabel = (
         case "progress":
           return "Build in progress";
         case "error":
-          return "An error happened";
+          return "Build failed";
         case "aborted":
           return "Build aborted";
         case "expired":
@@ -196,7 +196,7 @@ export const getBuildLabel = (
         case "expired":
           return "Build expired";
         case "error":
-          return "An error happened";
+          return "Build failed";
         default:
           return "Build scheduled";
       }

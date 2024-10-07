@@ -1,7 +1,8 @@
+/* eslint-disable no-fallthrough */
 import { assertNever } from "@argos/util/assertNever";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { BuildMode } from "@/gql/graphql";
+import { BuildMode, BuildStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 
 const BuildFragment = graphql(`
@@ -111,7 +112,7 @@ export const BuildStatusDescription = (props: {
 
     case "check": {
       switch (build.status) {
-        case "stable": {
+        case BuildStatus.Stable: {
           if (build.stats.total === 0) {
             return (
               <>
@@ -123,13 +124,13 @@ export const BuildStatusDescription = (props: {
           return <>This build is stable: no changes found.</>;
         }
 
-        case "error":
+        case BuildStatus.Error:
           return <>The build has failed to be processed.</>;
 
-        case "aborted":
+        case BuildStatus.Aborted:
           return <>This build has been voluntarily aborted.</>;
 
-        case "diffDetected":
+        case BuildStatus.DiffDetected:
           return (
             <>
               Some changes have been detected between baseline and current
@@ -137,19 +138,24 @@ export const BuildStatusDescription = (props: {
             </>
           );
 
-        case "progress":
+        case BuildStatus.Progress:
           return <>This build is in progress.</>;
-        case "accepted":
+        case BuildStatus.Accepted:
           return <>Changes have been accepted by a user.</>;
-        case "rejected":
+        case BuildStatus.Rejected:
           return <>Changes have been rejected by a user.</>;
+        case BuildStatus.Pending:
+          return <>This build is scheduled to be processed.</>;
         default:
-          return null;
+          assertNever(build.status);
       }
     }
     case null: {
-      if (build.status === "pending") {
-        return <>This build is in progress.</>;
+      switch (build.status) {
+        case BuildStatus.Error:
+          return <>The build has failed to be processed.</>;
+        case BuildStatus.Pending:
+          return <>This build is scheduled to be processed.</>;
       }
       return null;
     }
