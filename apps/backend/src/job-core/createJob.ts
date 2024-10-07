@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/node";
 import { memoize } from "lodash-es";
 
 import logger from "@/logger/index.js";
+import { getRedisLock } from "@/util/redis/index.js";
 
 import { connect } from "./amqp.js";
 import { checkIsRetryable } from "./error.js";
@@ -28,8 +29,21 @@ const parseMessage = <TValue>(message: Buffer) => {
 };
 
 export interface Job<TValue> {
+  /**
+   * The name of the queue.
+   */
   queue: string;
+  /**
+   * Push a job to the queue.
+   */
   push: (...values: TValue[]) => Promise<void>;
+  /**
+   * Run a job on a single value.
+   */
+  run: (value: TValue) => Promise<void>;
+  /**
+   * Process all job.
+   */
   process: () => Promise<void>;
 }
 
@@ -37,7 +51,7 @@ export interface JobParams {
   prefetch?: number;
 }
 
-export const createJob = <TValue>(
+export const createJob = <TValue extends string | number>(
   queue: string,
   consumer: {
     perform: (value: TValue) => void | Promise<void>;
@@ -84,6 +98,13 @@ export const createJob = <TValue>(
         sendAll();
       });
     },
+    async run(id: TValue) {
+      const lock = await getRedisLock();
+      await lock.acquire([queue, id], async () => {
+        await consumer.perform(id);
+        await consumer.complete(id);
+      });
+    },
     process() {
       return new Promise((resolve, reject) => {
         const run = async () => {
@@ -103,8 +124,7 @@ export const createJob = <TValue>(
             try {
               payload = parseMessage<TValue>(msg.content);
               try {
-                await consumer.perform(payload.args[0]);
-                await consumer.complete(payload.args[0]);
+                await this.run(payload.args[0]);
               } catch (error) {
                 if (checkIsRetryable(error) && payload.attempts < 2) {
                   channel.ack(msg);

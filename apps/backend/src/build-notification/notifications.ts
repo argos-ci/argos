@@ -237,7 +237,7 @@ export const processBuildNotification = async (
     buildNotification.build.prHeadCommit ??
     buildNotification.build.compareScreenshotBucket.commit;
 
-  const isReference = buildNotification.build.type === "reference";
+  const isAutoApproved = buildNotification.build.type === "reference";
   const summaryCheckConfig = buildNotification.build.project.summaryCheck;
 
   const [buildUrl, projectUrl, notification, aggregatedNotification] =
@@ -250,7 +250,7 @@ export const processBuildNotification = async (
       }),
       getAggregatedNotification(
         buildNotification.build.compareScreenshotBucket.commit,
-        isReference,
+        isAutoApproved,
         summaryCheckConfig,
       ),
     ]);

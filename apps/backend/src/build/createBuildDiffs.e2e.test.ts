@@ -243,12 +243,13 @@ describe("#createBuildDiffs", () => {
       ).toMatchObject(["pending"]);
     });
 
-    describe("when compare branch equal reference branch", () => {
+    describe("when compare branch that matches auto-approved branch glob", () => {
       beforeEach(async () => {
-        const referenceBranch = await project.$getReferenceBranch();
-        invariant(referenceBranch, "reference branch not found");
+        const autoApprovedBranchGlob =
+          await project.$getAutoApprovedBranchGlob();
+        invariant(autoApprovedBranchGlob);
         await ScreenshotBucket.query().findById(compareBucket.id).patch({
-          branch: referenceBranch,
+          branch: autoApprovedBranchGlob,
         });
       });
 
@@ -259,7 +260,7 @@ describe("#createBuildDiffs", () => {
       });
     });
 
-    describe("with compare branch different than reference branch", () => {
+    describe("with compare branch different than auto-approved branch", () => {
       it("should update build type to 'check'", async () => {
         await createBuildDiffs(build);
         const updatedBuild = await Build.query().findById(build.id);

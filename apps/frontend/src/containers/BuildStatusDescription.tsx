@@ -1,16 +1,16 @@
+/* eslint-disable no-fallthrough */
 import { assertNever } from "@argos/util/assertNever";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { BuildMode } from "@/gql/graphql";
+import { BuildMode, BuildStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
-
-import { checkIsBuildEmpty } from "./Build";
 
 const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
     type
     status
     mode
+    baseBranch
     stats {
       total
     }
@@ -22,18 +22,10 @@ const BuildFragment = graphql(`
   }
 `);
 
-const ProjectFragment = graphql(`
-  fragment BuildStatusDescription_Project on Project {
-    referenceBranch
-  }
-`);
-
 export const BuildStatusDescription = (props: {
   build: FragmentType<typeof BuildFragment>;
-  project: FragmentType<typeof ProjectFragment>;
 }) => {
   const build = useFragment(BuildFragment, props.build);
-  const project = useFragment(ProjectFragment, props.project);
 
   if (build.status === "expired") {
     if (build.parallel) {
@@ -72,24 +64,27 @@ export const BuildStatusDescription = (props: {
             case BuildMode.Ci:
               return (
                 <>
-                  Comparing screenshot is not possible because no reference
-                  build was found.
+                  Comparing screenshot is not possible because no baseline build
+                  was found.
                   <div className="my-4">
                     It may happens because:
                     <ul className="ml-8 mt-2 list-disc space-y-1">
                       <li>
-                        There is no Argos build on the{" "}
-                        <Code>{project.referenceBranch}</Code> branch yet
+                        No Argos build has been performed on the base branch
+                        {build.baseBranch ? (
+                          <>
+                            {" "}
+                            : <Code>{build.baseBranch}</Code>
+                          </>
+                        ) : null}
+                        .
                       </li>
                       <li>
-                        Your pull-request is not rebased on{" "}
-                        <Code>{project.referenceBranch}</Code> branch
+                        Argos can't find any commit ancestor that matches an
+                        approved build. You may need to rebase your branch.
                       </li>
                     </ul>
                   </div>
-                  To perform comparison, make sure that you have an Argos build
-                  on <Code>{project.referenceBranch}</Code> branch and that your
-                  pull-request is rebased.
                 </>
               );
             case BuildMode.Monitoring:
@@ -110,15 +105,15 @@ export const BuildStatusDescription = (props: {
     case "reference":
       return (
         <>
-          This build was performed on the reference branch. Screenshots will be
-          used as a comparison baseline in next Argos builds.
+          This build was auto-approved because the branch is identified as an
+          auto-approved one in project settings.
         </>
       );
 
     case "check": {
       switch (build.status) {
-        case "stable": {
-          if (checkIsBuildEmpty(build)) {
+        case BuildStatus.Stable: {
+          if (build.stats.total === 0) {
             return (
               <>
                 No screenshot has been uploaded. Be sure to specify a directory
@@ -129,33 +124,38 @@ export const BuildStatusDescription = (props: {
           return <>This build is stable: no changes found.</>;
         }
 
-        case "error":
+        case BuildStatus.Error:
           return <>The build has failed to be processed.</>;
 
-        case "aborted":
+        case BuildStatus.Aborted:
           return <>This build has been voluntarily aborted.</>;
 
-        case "diffDetected":
+        case BuildStatus.DiffDetected:
           return (
             <>
-              Some differences have been detected between baseline branch and
-              head.
+              Some changes have been detected between baseline and current
+              screenshots.
             </>
           );
 
-        case "progress":
+        case BuildStatus.Progress:
           return <>This build is in progress.</>;
-        case "accepted":
+        case BuildStatus.Accepted:
           return <>Changes have been accepted by a user.</>;
-        case "rejected":
+        case BuildStatus.Rejected:
           return <>Changes have been rejected by a user.</>;
+        case BuildStatus.Pending:
+          return <>This build is scheduled to be processed.</>;
         default:
-          return null;
+          assertNever(build.status);
       }
     }
     case null: {
-      if (build.status === "pending") {
-        return <>This build is in progress.</>;
+      switch (build.status) {
+        case BuildStatus.Error:
+          return <>The build has failed to be processed.</>;
+        case BuildStatus.Pending:
+          return <>This build is scheduled to be processed.</>;
       }
       return null;
     }

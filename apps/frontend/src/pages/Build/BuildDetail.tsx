@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { DownloadIcon } from "lucide-react";
 
-import { checkIsBuildEmpty } from "@/containers/Build";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
@@ -713,7 +712,7 @@ export function BuildDetail(props: {
             </BuildDiffFitStateProvider>
           </BuildDiffVisibleStateProvider>
         </ZoomerSyncProvider>
-      ) : checkIsBuildEmpty(build) ? (
+      ) : build.stats.total === 0 ? (
         <div className="flex h-full min-h-0 flex-1 items-center justify-center">
           <div className="border-info bg-info-app text-info-low m-4 max-w-2xl rounded-lg border p-8 text-center">
             <div className="mb-2 text-lg font-semibold">

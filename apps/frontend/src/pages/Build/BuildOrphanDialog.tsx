@@ -1,6 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { LightBulbIcon } from "@primer/octicons-react";
 
+import { FragmentType, graphql, useFragment } from "@/gql";
 import { BuildMode } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import {
@@ -14,15 +15,29 @@ import {
 import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
 
-export function BuildOrphanDialog({
-  referenceBranch,
-  projectSlug,
-  mode,
-}: {
-  referenceBranch: string;
-  projectSlug: string;
-  mode: BuildMode;
+const BuildFragment = graphql(`
+  fragment BuildOrphanDialog_Build on Build {
+    baseBranch
+    mode
+  }
+`);
+
+const ProjectFragment = graphql(`
+  fragment BuildOrphanDialog_Project on Project {
+    slug
+  }
+`);
+
+export function BuildOrphanDialog(props: {
+  build: FragmentType<typeof BuildFragment>;
+  project: FragmentType<typeof ProjectFragment>;
 }) {
+  const build = useFragment(BuildFragment, props.build);
+  const project = useFragment(ProjectFragment, props.project);
+
+  if (!build.baseBranch) {
+    return null;
+  }
   return (
     <Modal defaultOpen>
       <Dialog size="medium">
@@ -36,32 +51,31 @@ export function BuildOrphanDialog({
 
           <h3 className="mb-1 mt-4 text-base font-medium">Next Steps?</h3>
           {(() => {
-            switch (mode) {
+            switch (build.mode) {
               case BuildMode.Ci: {
                 return (
                   <>
                     <p>
-                      To begin visual comparisons, run Argos on your reference
-                      branch <Code>{referenceBranch}</Code> to create a{" "}
-                      <strong className="font-semibold">reference build</strong>
-                      . This will be your baseline for all future comparisons.
-                    </p>
-
-                    <p className="text-low mt-2">
-                      <LightBulbIcon /> You can change your reference branch on{" "}
-                      <Link href={`/${projectSlug}/settings`}>
-                        project's settings
-                      </Link>
-                      .
+                      To begin visual comparisons, run Argos on the base branch
+                      of this build: <Code>{build.baseBranch}</Code>.
                     </p>
 
                     <h3 className="mb-1 mt-4 text-base font-medium">
-                      Keep your baseline updated
+                      Create baseline for future builds
                     </h3>
                     <p>
-                      Set your CI pipeline to run Argos on{" "}
-                      <Code>{referenceBranch}</Code> updates. This keeps your
-                      comparison baseline fresh and reliable.
+                      Set your CI pipeline to run Argos on push, on a branch
+                      that matches <Code>{build.baseBranch}</Code>. This creates
+                      a <strong>baseline</strong> to compare with future builds.
+                    </p>
+
+                    <p className="text-low mt-2">
+                      <LightBulbIcon /> You can configure auto-approved branches
+                      in{" "}
+                      <Link href={`/${project.slug}/settings`}>
+                        project's settings
+                      </Link>
+                      .
                     </p>
                   </>
                 );
@@ -70,14 +84,14 @@ export function BuildOrphanDialog({
                 return (
                   <p>
                     To begin visual comparisons, approve this build. This will
-                    create a{" "}
-                    <strong className="font-semibold">reference build</strong>{" "}
-                    to compare with future builds.
+                    be used as a{" "}
+                    <strong className="font-semibold">baseline</strong> to
+                    compare with future builds.
                   </p>
                 );
               }
               default:
-                assertNever(mode);
+                assertNever(build.mode);
             }
           })()}
         </DialogBody>

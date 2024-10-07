@@ -164,7 +164,7 @@ export const getBuildLabel = (
       }
     }
     case "reference":
-      return "Reference build";
+      return "Auto-approved build";
     case "check": {
       switch (status) {
         case "stable":
@@ -176,7 +176,7 @@ export const getBuildLabel = (
         case "progress":
           return "Build in progress";
         case "error":
-          return "An error happened";
+          return "Build failed";
         case "aborted":
           return "Build aborted";
         case "expired":
@@ -196,17 +196,11 @@ export const getBuildLabel = (
         case "expired":
           return "Build expired";
         case "error":
-          return "An error happened";
+          return "Build failed";
         default:
           return "Build scheduled";
       }
     default:
       assertNever(type);
   }
-};
-
-export const checkIsBuildEmpty = (build: {
-  stats: { total: number };
-}): boolean => {
-  return build.stats.total === 0;
 };

@@ -37,7 +37,9 @@ const RequestBodySchema = z
     parallelNonce: z.string().nullable().optional(),
     prNumber: z.number().int().min(1).nullable().optional(),
     prHeadCommit: z.string().nullable().optional(),
+    // To avoid breaking change, we keep referenceCommit instead of baseCommit
     referenceCommit: z.string().nullable().optional(),
+    // To avoid breaking change, we keep referenceBranch instead of baseBranch
     referenceBranch: z.string().nullable().optional(),
     mode: z.enum(["ci", "monitoring"]).nullable().optional(),
     ciProvider: z.string().nullable().optional(),
@@ -256,8 +258,8 @@ async function createBuildFromRequest(ctx: BuildContext) {
         : null,
     prNumber: body.prNumber ?? null,
     prHeadCommit: body.prHeadCommit ?? null,
-    referenceCommit: body.referenceCommit ?? null,
-    referenceBranch: body.referenceBranch ?? null,
+    baseCommit: body.referenceCommit ?? null,
+    baseBranch: body.referenceBranch ?? null,
     runId: body.runId ?? null,
     runAttempt: body.runAttempt ?? null,
     ciProvider: body.ciProvider ?? null,

@@ -66,16 +66,16 @@ async function getStatusContext(build: Build): Promise<string> {
 
 /**
  * Get the notification status for each platform based on the build
- * notification type and if it's a reference build.
+ * notification type and if it's an auto-approved build.
  */
 export function getNotificationStates(input: {
   buildNotificationType: BuildNotification["type"];
-  isReference: boolean;
+  isAutoApproved: boolean;
 }): {
   github: NotificationPayload["github"]["state"];
   gitlab: NotificationPayload["gitlab"]["state"];
 } {
-  const { buildNotificationType, isReference } = input;
+  const { buildNotificationType, isAutoApproved } = input;
   switch (buildNotificationType) {
     case "queued": {
       return {
@@ -97,8 +97,8 @@ export function getNotificationStates(input: {
     }
     case "diff-detected": {
       return {
-        github: isReference ? "success" : "failure",
-        gitlab: isReference ? "success" : "failed",
+        github: isAutoApproved ? "success" : "failure",
+        gitlab: isAutoApproved ? "success" : "failed",
       };
     }
     case "diff-accepted": {
@@ -125,14 +125,14 @@ export function getNotificationStates(input: {
 
 /**
  * Get the notification description for each platform based on the build
- * notification type and if it's a reference build.
+ * notification type and if it's a auto-approved build.
  */
 async function getNotificationDescription(input: {
   buildNotificationType: BuildNotification["type"];
   buildId: string;
-  isReference: boolean;
+  isAutoApproved: boolean;
 }): Promise<string> {
-  const { buildNotificationType, buildId, isReference } = input;
+  const { buildNotificationType, buildId, isAutoApproved } = input;
   switch (buildNotificationType) {
     case "queued":
       return "Build is queued";
@@ -141,20 +141,20 @@ async function getNotificationDescription(input: {
     case "no-diff-detected": {
       const statsMessage = await getStatsMessage(buildId);
       if (!statsMessage) {
-        if (isReference) {
-          return "Used as comparison baseline, no changes found";
+        if (isAutoApproved) {
+          return "Auto-approved, no changes found";
         }
         return "Everything's good!";
       }
-      if (isReference) {
-        return `Used a comparison baseline, no changes found — ${statsMessage}`;
+      if (isAutoApproved) {
+        return `Auto-approved, no changes found — ${statsMessage}`;
       }
       return `${statsMessage} — no changes found`;
     }
     case "diff-detected": {
       const statsMessage = await getStatsMessage(buildId);
-      if (isReference) {
-        return `${statsMessage}, automatically approved and used as comparison baseline`;
+      if (isAutoApproved) {
+        return `${statsMessage}, automatically approved`;
       }
       return `${statsMessage} — waiting for your decision`;
     }
@@ -183,13 +183,13 @@ export async function getNotificationPayload(input: {
     getNotificationDescription({
       buildNotificationType: input.buildNotification.type,
       buildId: input.build.id,
-      isReference: input.build.type === "reference",
+      isAutoApproved: input.build.type === "reference",
     }),
     getStatusContext(input.build),
   ]);
   const states = getNotificationStates({
     buildNotificationType: input.buildNotification.type,
-    isReference: input.build.type === "reference",
+    isAutoApproved: input.build.type === "reference",
   });
 
   return {

@@ -62,52 +62,6 @@ function createLatestProjectBuildLoader() {
   });
 }
 
-function createLastScreenshotDiffLoader() {
-  return new DataLoader<string, ScreenshotDiff | null>(async (testIds) => {
-    const lastScreenshotDiffs = await ScreenshotDiff.query()
-      .select("*")
-      .whereIn("testId", testIds as string[])
-      .distinctOn("testId")
-      .orderBy("testId")
-      .orderBy("createdAt", "desc");
-    const lastScreenshotDiffMap: Record<string, ScreenshotDiff> = {};
-    for (const lastScreenshotDiff of lastScreenshotDiffs) {
-      lastScreenshotDiffMap[lastScreenshotDiff.testId!] = lastScreenshotDiff;
-    }
-    return testIds.map((id) => lastScreenshotDiffMap[id] ?? null);
-  });
-}
-
-function createLastScreenshotLoader() {
-  return new DataLoader<string, Screenshot | null>(async (testIds) => {
-    const project = await Project.query()
-      .whereIn(
-        "id",
-        Test.query()
-          .select("projectId")
-          .where("id", testIds[0] as string),
-      )
-      .first();
-    const referenceBranch = await project!.$getReferenceBranch();
-    const lastScreenshots = await Screenshot.query()
-      .select("screenshots.*", "screenshotBucket.branch")
-      .whereIn("testId", testIds as string[])
-      .distinctOn("testId")
-      .joinRelated("screenshotBucket")
-      .orderBy("testId")
-      .orderByRaw(
-        `CASE WHEN "screenshotBucket".branch = ? THEN 0 ELSE 1 END`,
-        referenceBranch,
-      )
-      .orderBy("screenshots.createdAt", "desc");
-    const lastScreenshotMap: Record<string, Screenshot> = {};
-    for (const lastScreenshot of lastScreenshots) {
-      lastScreenshotMap[lastScreenshot.testId!] = lastScreenshot;
-    }
-    return testIds.map((id) => lastScreenshotMap[id] ?? null);
-  });
-}
-
 function createAccountFromRelationLoader() {
   return new DataLoader<{ userId?: string; teamId?: string }, Account | null>(
     async (relations) => {
@@ -261,8 +215,6 @@ export const createLoaders = () => ({
   GithubRepository: createModelLoader(GithubRepository),
   GitlabProject: createModelLoader(GitlabProject),
   LatestProjectBuild: createLatestProjectBuildLoader(),
-  LastScreenshot: createLastScreenshotLoader(),
-  LastScreenshotDiff: createLastScreenshotDiffLoader(),
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),
   SlackInstallation: createModelLoader(SlackInstallation),

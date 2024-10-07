@@ -5,16 +5,6 @@ const config: CodegenConfig = {
   documents: ["apps/frontend/src/**/*.tsx", "apps/frontend/src/**/*.ts"],
   ignoreNoDocuments: true, // for better experience with the watcher
   generates: {
-    "apps/frontend/src/gql/": {
-      preset: "client",
-      plugins: [],
-      config: {
-        dedupeFragments: true,
-      },
-    },
-    "apps/frontend/src/gql-fragments.json": {
-      plugins: ["fragment-matcher"],
-    },
     "apps/backend/src/graphql/__generated__/schema.gql": {
       plugins: ["schema-ast"],
     },
@@ -49,10 +39,19 @@ const config: CodegenConfig = {
           TeamMember: "../../database/models/index.js#TeamUser",
           TeamGithubMember:
             "../../database/models/index.js#GithubAccountMember",
-          Test: "../../database/models/index.js#Test",
           User: "../../database/models/index.js#Account",
         },
       },
+    },
+    "apps/frontend/src/gql/": {
+      preset: "client",
+      plugins: [],
+      config: {
+        dedupeFragments: true,
+      },
+    },
+    "apps/frontend/src/gql-fragments.json": {
+      plugins: ["fragment-matcher"],
     },
   },
 };

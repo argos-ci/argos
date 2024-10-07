@@ -18,20 +18,21 @@ async function getOrRetrieveBaseScreenshotBucket(input: {
     return build.baseScreenshotBucket;
   }
 
-  const baseScreenshotBucket = await strategy.getBaseScreenshotBucket(build);
+  const { baseBranch, baseBranchResolvedFrom, baseScreenshotBucket } =
+    await strategy.getBase(build);
 
-  if (baseScreenshotBucket) {
-    await Promise.all([
-      Build.query()
-        .findById(build.id)
-        .patch({ baseScreenshotBucketId: baseScreenshotBucket.id }),
-      baseScreenshotBucket.$fetchGraph("screenshots"),
-    ]);
+  await Promise.all([
+    Build.query()
+      .findById(build.id)
+      .patch({
+        baseBranch,
+        baseBranchResolvedFrom,
+        baseScreenshotBucketId: baseScreenshotBucket?.id ?? null,
+      }),
+    baseScreenshotBucket?.$fetchGraph("screenshots"),
+  ]);
 
-    return baseScreenshotBucket;
-  }
-
-  return null;
+  return baseScreenshotBucket;
 }
 
 function getJobStatus({

@@ -2,9 +2,9 @@ import { invariant } from "@argos/util/invariant";
 
 import { Build, ScreenshotDiff } from "@/database/models";
 
-import { BuildStrategy } from "../../types";
+import { BuildStrategy, GetBaseResult } from "../../types";
 
-async function getBaseScreenshotBucket(build: Build) {
+async function getBase(build: Build): GetBaseResult {
   const lastApprovedBuild = await Build.query()
     .withGraphFetched("compareScreenshotBucket")
     .where("projectId", build.projectId)
@@ -22,7 +22,11 @@ async function getBaseScreenshotBucket(build: Build) {
     .first();
 
   if (!lastApprovedBuild) {
-    return null;
+    return {
+      baseScreenshotBucket: null,
+      baseBranch: null,
+      baseBranchResolvedFrom: null,
+    };
   }
 
   invariant(
@@ -30,13 +34,17 @@ async function getBaseScreenshotBucket(build: Build) {
     "No compareScreenshotBucket found",
   );
 
-  return lastApprovedBuild.compareScreenshotBucket;
+  return {
+    baseScreenshotBucket: lastApprovedBuild.compareScreenshotBucket,
+    baseBranch: null,
+    baseBranchResolvedFrom: null,
+  };
 }
 
 export const MonitoringStrategy: BuildStrategy<null> = {
   detect: (build) => build.mode === "monitoring",
   getContext: () => null,
-  getBaseScreenshotBucket,
+  getBase,
   getBuildType: (input) => {
     if (!input.baseScreenshotBucket) {
       return "orphan";

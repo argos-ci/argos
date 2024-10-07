@@ -1,4 +1,6 @@
-import type { GithubPullRequest } from "@/database/models/GithubPullRequest.js";
+import { PartialModelObject } from "objection";
+
+import { GithubPullRequest } from "@/database/models/GithubPullRequest.js";
 import { GithubRepository } from "@/database/models/index.js";
 import {
   getGhAccountType,
@@ -8,12 +10,16 @@ import {
   checkErrorStatus,
   getInstallationOctokit,
   Octokit,
+  RestEndpointMethodTypes,
 } from "@/github/client.js";
 import { unretryable } from "@/job-core/error.js";
 import logger from "@/logger/index.js";
 
+type GitHubApiPullRequest =
+  RestEndpointMethodTypes["pulls"]["get"]["response"]["data"];
+
 /**
- * Fetches a pull request from GitHub.
+ * Fetch a pull request from GitHub.
  */
 async function fetchPullRequest(
   octokit: Octokit,
@@ -22,7 +28,7 @@ async function fetchPullRequest(
     repo: string;
     pull_number: number;
   },
-) {
+): Promise<GitHubApiPullRequest | null> {
   try {
     const { data } = await octokit.rest.pulls.get(params);
     return data;
@@ -34,10 +40,40 @@ async function fetchPullRequest(
   }
 }
 
+/**
+ * Parse the pull request data from GitHub.
+ */
+export function parsePullRequestData(data: {
+  title: string;
+  base: { ref: string; sha: string };
+  state: "open" | "closed";
+  created_at: string;
+  closed_at: string | null;
+  merged_at: string | null;
+  merged?: boolean | null;
+  draft?: boolean;
+}) {
+  return {
+    title: data.title,
+    baseRef: data.base.ref,
+    baseSha: data.base.sha,
+    state: data.state,
+    date: data.created_at,
+    closedAt: data.closed_at ?? null,
+    mergedAt: data.merged_at ?? null,
+    merged: data.merged ?? false,
+    draft: data.draft ?? false,
+  } satisfies PartialModelObject<GithubPullRequest>;
+}
+
+/**
+ * Fetch the pull request data from GitHub and update the database.
+ */
 export async function processPullRequest(pullRequest: GithubPullRequest) {
   await pullRequest.$fetchGraph(
     "githubRepository.[repoInstallations.installation,githubAccount]",
   );
+
   unretryable(
     pullRequest.githubRepository,
     "`githubRepository` relation not found",
@@ -88,15 +124,7 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     .$clone()
     .$query()
     .patch({
-      title: pullRequestData.title,
-      baseRef: pullRequestData.base.ref,
-      baseSha: pullRequestData.base.sha,
-      state: pullRequestData.state,
-      date: pullRequestData.created_at,
-      closedAt: pullRequestData.closed_at ?? null,
-      mergedAt: pullRequestData.merged_at ?? null,
-      merged: pullRequestData.merged,
-      draft: pullRequestData.draft ?? false,
+      ...parsePullRequestData(pullRequestData),
       creatorId: githubAccount.id,
     });
 }

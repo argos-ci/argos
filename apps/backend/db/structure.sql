@@ -213,8 +213,8 @@ CREATE TABLE public.builds (
     "totalBatch" integer,
     "prNumber" integer,
     "projectId" bigint NOT NULL,
-    "referenceCommit" character varying(255),
-    "referenceBranch" character varying(255),
+    "baseCommit" character varying(255),
+    "baseBranch" character varying(255),
     "githubPullRequestId" bigint,
     "prHeadCommit" character varying(255),
     mode text DEFAULT 'ci'::text NOT NULL,
@@ -224,6 +224,8 @@ CREATE TABLE public.builds (
     "runAttempt" integer,
     partial boolean DEFAULT false NOT NULL,
     metadata jsonb,
+    "baseBranchResolvedFrom" text,
+    CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['sdk'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -887,12 +889,13 @@ CREATE TABLE public.projects (
     name character varying(255) NOT NULL,
     token character varying(255) NOT NULL,
     private boolean,
-    "baselineBranch" character varying(255),
+    "defaultBaseBranch" character varying(255),
     "accountId" bigint NOT NULL,
     "githubRepositoryId" bigint,
     "prCommentEnabled" boolean DEFAULT true NOT NULL,
     "gitlabProjectId" bigint,
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
+    "autoApprovedBranchGlob" character varying(255),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
 
@@ -2833,3 +2836,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024063
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240706121810_screenshot-base-name.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240822082247_github-light.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240901150444_build-metadata.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241006153157_reference-branch.js', 1, NOW());

@@ -11,7 +11,7 @@ export function BuildModeDescription(props: { mode: BuildMode }) {
     case BuildMode.Ci:
       return (
         <>
-          Compared with a build ran on the reference branch and identified using
+          Compared with an approved build found on the base branch by analyzing
           the Git history.
         </>
       );

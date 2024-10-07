@@ -125,7 +125,7 @@ export const seed = async (knex) => {
         name: "awesome",
         token: "awesome-xxx",
         accountId: helloAccount.id,
-        baselineBranch: "main",
+        defaultBaseBranch: "main",
       },
       {
         ...timeStamps,

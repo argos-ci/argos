@@ -34,7 +34,7 @@ export const getAuthProject: CreateAPIHandler = ({ get }) => {
       "[githubRepository.repoInstallations.installation,gitlabProject]",
     );
 
-    const referenceBranch = await req.authProject.$getReferenceBranch();
+    const defaultBaseBranch = await req.authProject.$getDefaultBaseBranch();
 
     const installation = req.authProject.githubRepository
       ? GithubRepository.pickBestInstallation(req.authProject.githubRepository)
@@ -45,7 +45,7 @@ export const getAuthProject: CreateAPIHandler = ({ get }) => {
 
     res.send({
       id: req.authProject.id,
-      defaultBaseBranch: referenceBranch,
+      defaultBaseBranch,
       hasRemoteContentAccess,
     });
   });

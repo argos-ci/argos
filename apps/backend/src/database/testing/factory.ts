@@ -99,7 +99,6 @@ export const TeamAccount = defineFactory(models.Account, () => ({
 
 export const Project = defineFactory(models.Project, () => ({
   name: "awesome-project",
-  baselineBranch: null,
   accountId: TeamAccount.associate("id"),
   githubRepositoryId: GithubRepository.associate("id"),
 }));

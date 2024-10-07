@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
+import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { createModelJob, UnretryableError } from "@/job-core/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
@@ -96,6 +97,12 @@ async function syncGitlabProject(project: Project) {
 }
 
 export async function performBuild(build: Build) {
+  // Ensure that the GitHub pull request has been processed
+  // to be sure we get the base branch name.
+  if (build.githubPullRequestId) {
+    await githubPullRequestJob.run(build.githubPullRequestId);
+  }
+
   const [project] = await Promise.all([
     Project.query()
       .findById(build.projectId)

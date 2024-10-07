@@ -1,12 +1,14 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, ScreenshotDiff } from "@/database/models/index.js";
 
-import type {
-  IBuildStatus,
-  IResolvers,
+import {
+  IBaseBranchResolution,
+  type IBuildStatus,
+  type IResolvers,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { forbidden, notFound, unauthenticated } from "../util.js";
@@ -16,11 +18,11 @@ const { gql } = gqlTag;
 
 export const typeDefs = gql`
   enum BuildType {
-    "Build on reference branch"
+    "Build auto-approved"
     reference
     "Comparison build"
     check
-    "No reference build to compare"
+    "No baseline build found"
     orphan
   }
 
@@ -56,10 +58,19 @@ export const typeDefs = gql`
   }
 
   enum BuildMode {
-    "Build is compared with a baseline based on reference branch and Git history"
+    "Build is compared with a baseline found by analyzing Git history"
     ci
     "Build is compared with the latest approved build"
     monitoring
+  }
+
+  enum BaseBranchResolution {
+    "Base branch specified by the user through the API / SDK"
+    user
+    "Base branch is resolved from the project settings"
+    project
+    "Base branch is resolved from the pull request"
+    pullRequest
   }
 
   type Build implements Node {
@@ -98,6 +109,10 @@ export const typeDefs = gql`
     mode: BuildMode!
     "Aggregated metadata"
     metadata: BuildMetadata
+    "Base branch used to resolve the base build"
+    baseBranch: String
+    "Base branch resolved from"
+    baseBranchResolvedFrom: BaseBranchResolution
   }
 
   type BuildMetadata {
@@ -212,6 +227,33 @@ export const resolvers: IResolvers = {
         received: build.batchCount,
         nonce: build.externalId,
       };
+    },
+    baseBranch: async (build, _args, ctx) => {
+      if (build.baseBranch) {
+        return build.baseBranch;
+      }
+      if (!build.baseScreenshotBucketId) {
+        return null;
+      }
+      const baseScreenshotBucket = await ctx.loaders.ScreenshotBucket.load(
+        build.baseScreenshotBucketId,
+      );
+      invariant(baseScreenshotBucket, "baseScreenshotBucket not found");
+      return baseScreenshotBucket.branch;
+    },
+    baseBranchResolvedFrom: (build) => {
+      switch (build.baseBranchResolvedFrom) {
+        case "user":
+          return IBaseBranchResolution.User;
+        case "project":
+          return IBaseBranchResolution.Project;
+        case "pull-request":
+          return IBaseBranchResolution.PullRequest;
+        case null:
+          return null;
+        default:
+          assertNever(build.baseBranchResolvedFrom);
+      }
     },
   },
   Mutation: {

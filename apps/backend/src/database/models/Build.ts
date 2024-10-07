@@ -81,14 +81,22 @@ export class Build extends Model {
       batchCount: { type: ["integer", "null"] },
       totalBatch: { type: ["integer", "null"] },
       type: {
-        type: ["string", "null"],
-        enum: ["reference", "check", "orphan"],
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["reference", "check", "orphan"] },
+        ],
       },
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
       githubPullRequestId: { type: ["string", "null"] },
-      referenceCommit: { type: ["string", "null"] },
-      referenceBranch: { type: ["string", "null"] },
+      baseCommit: { type: ["string", "null"] },
+      baseBranch: { type: ["string", "null"] },
+      baseBranchResolvedFrom: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["user", "pull-request", "project"] },
+        ],
+      },
       mode: { type: "string", enum: ["ci", "monitoring"] },
       ciProvider: { type: ["string", "null"] },
       argosSdk: { type: ["string", "null"] },
@@ -114,8 +122,9 @@ export class Build extends Model {
   prNumber!: number | null;
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;
-  referenceCommit!: string | null;
-  referenceBranch!: string | null;
+  baseCommit!: string | null;
+  baseBranch!: string | null;
+  baseBranchResolvedFrom!: "user" | "pull-request" | "project" | null;
   mode!: BuildMode;
   ciProvider!: string | null;
   argosSdk!: string | null;
