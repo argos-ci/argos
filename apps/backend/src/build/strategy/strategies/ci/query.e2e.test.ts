@@ -9,6 +9,7 @@ describe("#getBaseBucketForBuildAndCommit", () => {
   describe("when the build is triggered by a pull request", () => {
     let baseBucket: ScreenshotBucket;
     let build: Build;
+    let baseBucketBuild: Build;
 
     beforeEach(async () => {
       await setupDatabase();
@@ -29,10 +30,12 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         {
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: baseBucket.id,
-          jobStatus: "pending",
+          jobStatus: "complete",
           prHeadCommit: "766b744bc5fa27a330283dfd47ffafdaf905a941",
           name: "default",
           projectId: project.id,
+          type: "reference",
+          mode: "ci",
         },
         {
           baseScreenshotBucketId: null,
@@ -41,17 +44,75 @@ describe("#getBaseBucketForBuildAndCommit", () => {
           prHeadCommit: null,
           name: "default",
           projectId: project.id,
+          mode: "ci",
         },
       ]);
+      baseBucketBuild = builds[0]!;
       build = builds[1]!;
     });
 
-    it("returns the base bucket", async () => {
-      const result = await getBaseBucketForBuildAndCommit(
-        build,
-        "766b744bc5fa27a330283dfd47ffafdaf905a941",
-      );
-      expect(result).toEqual(baseBucket);
+    describe("if the associated build is pending", () => {
+      beforeEach(async () => {
+        await baseBucketBuild.$query().patch({ jobStatus: "pending" });
+      });
+
+      it("does not returns the bucket", async () => {
+        const result = await getBaseBucketForBuildAndCommit(
+          build,
+          "766b744bc5fa27a330283dfd47ffafdaf905a941",
+        );
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("if the associated build is a type check without any diff", () => {
+      beforeEach(async () => {
+        await baseBucketBuild.$query().patch({ type: "check" });
+      });
+
+      it("does not returns the bucket", async () => {
+        const result = await getBaseBucketForBuildAndCommit(
+          build,
+          "766b744bc5fa27a330283dfd47ffafdaf905a941",
+        );
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("if the associated build is a type check with unapproved diff", () => {
+      beforeEach(async () => {
+        await baseBucketBuild.$query().patch({ type: "check" });
+        await factory.ScreenshotDiff.create({
+          buildId: baseBucketBuild.id,
+          validationStatus: "rejected",
+        });
+      });
+
+      it("does not returns the bucket", async () => {
+        const result = await getBaseBucketForBuildAndCommit(
+          build,
+          "766b744bc5fa27a330283dfd47ffafdaf905a941",
+        );
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("if the associated build is a type check with approved diff", () => {
+      beforeEach(async () => {
+        await baseBucketBuild.$query().patch({ type: "check" });
+        await factory.ScreenshotDiff.create({
+          buildId: baseBucketBuild.id,
+          validationStatus: "accepted",
+        });
+      });
+
+      it("returns the bucket", async () => {
+        const result = await getBaseBucketForBuildAndCommit(
+          build,
+          "766b744bc5fa27a330283dfd47ffafdaf905a941",
+        );
+        expect(result).toEqual(baseBucket);
+      });
     });
   });
 
@@ -78,7 +139,8 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         {
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: baseBucket.id,
-          jobStatus: "pending",
+          jobStatus: "complete",
+          type: "reference",
           prHeadCommit: null,
           name: "default",
           projectId: project.id,

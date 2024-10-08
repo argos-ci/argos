@@ -1,4 +1,8 @@
-import { Build, ScreenshotBucket } from "@/database/models/index.js";
+import {
+  Build,
+  ScreenshotBucket,
+  ScreenshotDiff,
+} from "@/database/models/index.js";
 
 /**
  * Get the base bucket for a build and a commit.
@@ -30,11 +34,32 @@ export async function getBaseBucketForBuildAndCommit(
  * Query the base bucket from a build.
  */
 export function queryBaseBucket(build: Build) {
-  return ScreenshotBucket.query().where({
-    projectId: build.projectId,
-    name: build.name,
-    complete: true,
-    valid: true,
-    mode: build.mode,
-  });
+  const approvedBuilds = Build.query()
+    .select("compareScreenshotBucketId")
+    .where("projectId", build.projectId)
+    .where("name", build.name)
+    .where("mode", build.mode)
+    .where("jobStatus", "complete")
+    .whereNot("id", build.id)
+    .where((qb) => {
+      // Reference build or check build with accepted diffs
+      qb.where("type", "reference").orWhere((qb) => {
+        qb.where("type", "check").whereExists(
+          ScreenshotDiff.query()
+            .select(1)
+            .whereRaw('"buildId" = builds.id')
+            .where("validationStatus", "accepted"),
+        );
+      });
+    });
+
+  return ScreenshotBucket.query()
+    .where({
+      projectId: build.projectId,
+      name: build.name,
+      complete: true,
+      valid: true,
+      mode: build.mode,
+    })
+    .whereIn("id", approvedBuilds);
 }
