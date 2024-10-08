@@ -225,7 +225,7 @@ CREATE TABLE public.builds (
     partial boolean DEFAULT false NOT NULL,
     metadata jsonb,
     "baseBranchResolvedFrom" text,
-    CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['sdk'::text, 'pull-request'::text, 'project'::text]))),
+    CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -2837,3 +2837,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024070
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240822082247_github-light.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20240901150444_build-metadata.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241006153157_reference-branch.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241008035928_fix-enum.js', 1, NOW());
