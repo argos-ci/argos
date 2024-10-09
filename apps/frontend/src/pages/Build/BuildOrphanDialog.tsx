@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { LightBulbIcon } from "@primer/octicons-react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { BuildMode } from "@/gql/graphql";
+import { BuildMode, BuildType } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import {
   Dialog,
@@ -19,6 +19,7 @@ const BuildFragment = graphql(`
   fragment BuildOrphanDialog_Build on Build {
     baseBranch
     mode
+    type
   }
 `);
 
@@ -35,9 +36,10 @@ export function BuildOrphanDialog(props: {
   const build = useFragment(BuildFragment, props.build);
   const project = useFragment(ProjectFragment, props.project);
 
-  if (!build.baseBranch) {
+  if (build.type !== BuildType.Orphan || !build.baseBranch) {
     return null;
   }
+
   return (
     <Modal defaultOpen>
       <Dialog size="medium">
