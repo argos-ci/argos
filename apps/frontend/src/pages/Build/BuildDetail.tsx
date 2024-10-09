@@ -98,20 +98,22 @@ const BuildScreenshotHeader = memo(
     date,
   }: {
     label: string;
-    branch: string;
-    date: string;
+    branch: string | null;
+    date: string | null;
   }) => {
     return (
       <div className="text-low flex shrink-0 flex-col items-center gap-0.5">
         <div className="flex max-w-full items-center gap-1">
-          <div className="shrink-0 select-none text-xs font-medium">
-            {label} from
+          <div className="shrink-0 select-none text-xs font-medium leading-6">
+            {label}
           </div>
-          <Code className="truncate" title={branch}>
-            {branch}
-          </Code>
+          {branch && (
+            <Code className="truncate" title={branch}>
+              {branch}
+            </Code>
+          )}
         </div>
-        <Time date={date} className="text-xxs" />
+        {date && <Time date={date} className="text-xxs" />}
       </div>
     );
   },
@@ -628,27 +630,29 @@ const BuildScreenshots = memo(
 
     return (
       <div className={clsx("min-h-0 flex-1", "flex gap-4 px-4")}>
-        {props.build.baseScreenshotBucket ? (
-          <div
-            className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
-            hidden={!showBaseline}
-          >
+        <div
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
+          hidden={!showBaseline}
+        >
+          {props.build.baseScreenshotBucket ? (
             <BuildScreenshotHeader
-              label="Baseline"
+              label="Baseline from"
               branch={props.build.baseScreenshotBucket.branch}
               date={props.build.baseScreenshotBucket.createdAt}
             />
-            <div className="relative flex min-h-0 flex-1 justify-center">
-              <BaseScreenshot diff={props.diff} buildId={props.build.id} />
-            </div>
+          ) : (
+            <div className="h-[2.625rem]" />
+          )}
+          <div className="relative flex min-h-0 flex-1 justify-center">
+            <BaseScreenshot diff={props.diff} buildId={props.build.id} />
           </div>
-        ) : null}
+        </div>
         <div
           className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
           hidden={!showChanges}
         >
           <BuildScreenshotHeader
-            label="Changes"
+            label="Changes from"
             branch={props.build.branch}
             date={props.build.createdAt}
           />

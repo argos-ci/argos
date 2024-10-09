@@ -2,7 +2,6 @@ import { memo } from "react";
 
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
-import { BuildStatus } from "@/gql/graphql";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetail } from "./BuildDetail";
@@ -17,7 +16,6 @@ const BuildFragment = graphql(`
     ...BuildDetail_Build
     ...BuildOrphanDialog_Build
     status
-    type
     parallel {
       total
       received
@@ -107,10 +105,7 @@ export function BuildWorkspace(props: {
               build && (
                 <>
                   <BuildDetail build={build} repoUrl={repoUrl} />
-                  {build.type === "orphan" &&
-                    build.status === BuildStatus.DiffDetected && (
-                      <BuildOrphanDialog build={build} project={project} />
-                    )}
+                  <BuildOrphanDialog build={build} project={project} />
                 </>
               )
             );
