@@ -168,25 +168,44 @@ async function getIncludedScreenshotsFromStripeSubscription(
 ) {
   const firstItem = getFirstItemFromStripeSubscription(stripeSubscription);
   const price = firstItem.price;
-  if (price.billing_scheme !== "tiered") {
-    return null;
-  }
 
-  const { tiers } = await stripe.prices.retrieve(price.id, {
-    expand: ["tiers"],
-  });
-  invariant(tiers);
+  switch (price.billing_scheme) {
+    case "tiered": {
+      const { tiers } = await stripe.prices.retrieve(price.id, {
+        expand: ["tiers"],
+      });
+      invariant(tiers);
 
-  // Find the highest flat tier "up_to" value
-  return tiers.reduce(
-    (max, tier) => {
-      if (!checkIsFlatTier(tier)) {
-        return max;
+      // Find the highest flat tier "up_to" value
+      return tiers.reduce(
+        (max, tier) => {
+          if (!checkIsFlatTier(tier)) {
+            return max;
+          }
+          return Math.max(max ?? 0, tier.up_to);
+        },
+        null as null | number,
+      );
+    }
+    case "per_unit": {
+      if (!price.tiers_mode) {
+        if (
+          "includedScreenshots" in price.metadata &&
+          price.metadata["includedScreenshots"]
+        ) {
+          const includedScreenshots = Number(
+            price.metadata["includedScreenshots"],
+          );
+          if (Number.isInteger(includedScreenshots)) {
+            return includedScreenshots;
+          }
+        }
       }
-      return Math.max(max ?? 0, tier.up_to);
-    },
-    null as null | number,
-  );
+      return null;
+    }
+    default:
+      return null;
+  }
 }
 
 const getArgosSubscriptionDataFromStripe = async (
