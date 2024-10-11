@@ -179,15 +179,24 @@ export const getOrCreateUserAccountFromGhAccount = async (
   if (existingAccount) {
     invariant(existingAccount.user, "user not fetched");
 
+    const updateData: PartialModelObject<User> = {};
+
     if (
-      (accessToken !== undefined &&
-        existingAccount.user.accessToken !== accessToken) ||
-      existingAccount.user.email !== email
+      accessToken !== undefined &&
+      existingAccount.user.accessToken !== accessToken
     ) {
-      await existingAccount.user.$query().patchAndFetch({
-        accessToken: accessToken ?? existingAccount.user.accessToken,
-        email,
-      });
+      updateData.accessToken = accessToken;
+    }
+
+    if (existingAccount.user.email !== email) {
+      const existingEmailUser = await User.query().findOne("email", email);
+      if (!existingEmailUser) {
+        updateData.email = email;
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await existingAccount.user.$query().patchAndFetch(updateData);
     }
 
     return existingAccount;
