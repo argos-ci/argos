@@ -57,6 +57,7 @@ export async function createBuild(params: {
   prNumber: number | null;
   prHeadCommit: string | null;
   baseCommit: string | null;
+  parentCommits: string[] | null;
   baseBranch: string | null;
   mode: BuildMode | null;
   ciProvider: string | null;
@@ -146,18 +147,19 @@ export async function createBuild(params: {
           batchCount: params.parallel ? 0 : null,
           projectId: params.project.id,
           name: buildName,
-          prNumber: params.prNumber ?? null,
-          prHeadCommit: params.prHeadCommit ?? null,
+          prNumber: params.prNumber,
+          prHeadCommit: params.prHeadCommit,
           githubPullRequestId: pullRequest?.id ? String(pullRequest?.id) : null,
-          baseCommit: params.baseCommit ?? null,
-          baseBranch: params.baseBranch ?? null,
+          baseCommit: params.baseCommit,
+          parentCommits: params.parentCommits,
+          baseBranch: params.baseBranch,
           baseBranchResolvedFrom: params.baseBranch ? "user" : null,
           compareScreenshotBucketId: bucket.id,
           mode,
-          ciProvider: params.ciProvider ?? null,
-          argosSdk: params.argosSdk ?? null,
-          runId: params.runId ?? null,
-          runAttempt: params.runAttempt ?? null,
+          ciProvider: params.ciProvider,
+          argosSdk: params.argosSdk,
+          runId: params.runId,
+          runAttempt: params.runAttempt,
           partial: isPartial,
         });
 

@@ -41,6 +41,7 @@ const RequestBodySchema = z
     referenceCommit: z.string().nullable().optional(),
     // To avoid breaking change, we keep referenceBranch instead of baseBranch
     referenceBranch: z.string().nullable().optional(),
+    parentCommits: z.array(Sha1HashSchema).nullable().optional(),
     mode: z.enum(["ci", "monitoring"]).nullable().optional(),
     ciProvider: z.string().nullable().optional(),
     argosSdk: z.string().nullable().optional(),
@@ -259,6 +260,7 @@ async function createBuildFromRequest(ctx: BuildContext) {
     prNumber: body.prNumber ?? null,
     prHeadCommit: body.prHeadCommit ?? null,
     baseCommit: body.referenceCommit ?? null,
+    parentCommits: body.parentCommits ?? null,
     baseBranch: body.referenceBranch ?? null,
     runId: body.runId ?? null,
     runAttempt: body.runAttempt ?? null,

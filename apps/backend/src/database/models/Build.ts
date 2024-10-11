@@ -10,6 +10,7 @@ import type {
 import { z } from "zod";
 
 import config from "@/config/index.js";
+import { SHA1_REGEX } from "@/web/constants.js";
 
 import {
   BuildMetadata,
@@ -89,7 +90,21 @@ export class Build extends Model {
       prNumber: { type: ["integer", "null"] },
       prHeadCommit: { type: ["string", "null"] },
       githubPullRequestId: { type: ["string", "null"] },
-      baseCommit: { type: ["string", "null"] },
+      baseCommit: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", pattern: SHA1_REGEX.source },
+        ],
+      },
+      parentCommits: {
+        oneOf: [
+          { type: "null" },
+          {
+            type: "array",
+            items: { type: "string", pattern: SHA1_REGEX.source },
+          },
+        ],
+      },
       baseBranch: { type: ["string", "null"] },
       baseBranchResolvedFrom: {
         oneOf: [
@@ -123,6 +138,7 @@ export class Build extends Model {
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;
   baseCommit!: string | null;
+  parentCommits!: string[] | null;
   baseBranch!: string | null;
   baseBranchResolvedFrom!: "user" | "pull-request" | "project" | null;
   mode!: BuildMode;
