@@ -224,9 +224,9 @@ export function useBuildHotkey(
 
       callback(event);
     };
-    document.addEventListener("keydown", listener);
+    document.addEventListener("keydown", listener, { capture: true });
     return () => {
-      document.removeEventListener("keydown", listener);
+      document.removeEventListener("keydown", listener, { capture: true });
     };
   }, [hotkey, refs]);
   return hotkey;
