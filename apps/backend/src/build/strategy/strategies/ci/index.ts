@@ -34,7 +34,10 @@ const strategies: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
 /**
  * Get the base bucket for a build.
  */
-async function getBase(build: Build): GetBaseResult {
+async function getBase(
+  build: Build,
+  ciContext: CIStrategyContext,
+): GetBaseResult {
   const richBuild = await build
     .$query()
     .withGraphFetched("[project,compareScreenshotBucket,pullRequest]");
@@ -122,6 +125,8 @@ async function getBase(build: Build): GetBaseResult {
     };
   }
 
+  const isBaseBranchAutoApproved = ciContext.checkIsAutoApproved(baseBranch);
+
   // If the merge base is the same as the head, then we have to found an ancestor
   // It happens when we are on a auto-approved branch.
   if (mergeBaseCommitSha === head) {
@@ -145,6 +150,11 @@ async function getBase(build: Build): GetBaseResult {
   const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
     build,
     mergeBaseCommitSha,
+    {
+      // If the base branch is auto-approved, then we don't need to check if the build is approved.
+      // We assume that by merging the base branch, the user has approved the build.
+      approved: isBaseBranchAutoApproved ? undefined : true,
+    },
   );
 
   // A bucket exists for the merge base commit

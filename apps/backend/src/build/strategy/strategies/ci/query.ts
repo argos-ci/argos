@@ -10,8 +10,9 @@ import {
 export async function getBaseBucketForBuildAndCommit(
   build: Build,
   commit: string,
+  options?: QueryBaseBucketOptions,
 ) {
-  const bucket = await queryBaseBucket(build).findOne((qb) => {
+  const bucket = await queryBaseBucket(build, options).findOne((qb) => {
     // Try to find a bucket for the commit
     qb.where("commit", commit)
       // Try to find a build by "prHeadCommit"
@@ -30,36 +31,52 @@ export async function getBaseBucketForBuildAndCommit(
   return bucket ?? null;
 }
 
+type QueryBaseBucketOptions = {
+  /**
+   * Only return buckets from approved builds.
+   */
+  approved?: true | undefined;
+};
+
 /**
  * Query the base bucket from a build.
  */
-export function queryBaseBucket(build: Build) {
-  const approvedBuilds = Build.query()
-    .select("compareScreenshotBucketId")
-    .where("projectId", build.projectId)
-    .where("name", build.name)
-    .where("mode", build.mode)
-    .where("jobStatus", "complete")
-    .whereNot("id", build.id)
-    .where((qb) => {
-      // Reference build or check build with accepted diffs
-      qb.where("type", "reference").orWhere((qb) => {
-        qb.where("type", "check").whereExists(
-          ScreenshotDiff.query()
-            .select(1)
-            .whereRaw('"buildId" = builds.id')
-            .where("validationStatus", "accepted"),
-        );
-      });
-    });
+export function queryBaseBucket(
+  build: Build,
+  options?: QueryBaseBucketOptions,
+) {
+  const query = ScreenshotBucket.query().where({
+    projectId: build.projectId,
+    name: build.name,
+    complete: true,
+    valid: true,
+    mode: build.mode,
+  });
 
-  return ScreenshotBucket.query()
-    .where({
-      projectId: build.projectId,
-      name: build.name,
-      complete: true,
-      valid: true,
-      mode: build.mode,
-    })
-    .whereIn("id", approvedBuilds);
+  if (options?.approved) {
+    query.whereIn(
+      "id",
+      // List approved builds
+      Build.query()
+        .select("compareScreenshotBucketId")
+        .where("projectId", build.projectId)
+        .where("name", build.name)
+        .where("mode", build.mode)
+        .where("jobStatus", "complete")
+        .whereNot("id", build.id)
+        .where((qb) => {
+          // Reference build or check build with accepted diffs
+          qb.where("type", "reference").orWhere((qb) => {
+            qb.where("type", "check").whereExists(
+              ScreenshotDiff.query()
+                .select(1)
+                .whereRaw('"buildId" = builds.id')
+                .where("validationStatus", "accepted"),
+            );
+          });
+        }),
+    );
+  }
+
+  return query;
 }
