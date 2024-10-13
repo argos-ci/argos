@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import { invariant } from "@argos/util/invariant";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
 
@@ -78,17 +77,14 @@ export const installAppRouter = async (app: express.Application) => {
   router.get("/auth/logout", (req, res) => {
     // @ts-ignore
     req.logout();
-    if (config.get("env") !== "production") {
-      res.redirect("/");
-    } else {
-      res.redirect("https://www.argos-ci.com/");
-    }
+    const redirectTo =
+      config.get("env") !== "production" ? "/" : "https://www.argos-ci.com";
+    res.redirect(redirectTo);
   });
 
   router.get("/auth/google/login", (req, res) => {
-    const r = req.query["r"];
-    invariant(typeof r === "string", "Expected r to be a string");
-    res.redirect(getGoogleAuthUrl({ r }));
+    const redirect = checkIsPathname(req.query["r"]) ? req.query["r"] : "/";
+    res.redirect(getGoogleAuthUrl({ redirect }));
   });
 
   router.use(slackMiddleware);
@@ -109,3 +105,10 @@ export const installAppRouter = async (app: express.Application) => {
 
   app.use(subdomain(router, "app"));
 };
+
+/**
+ * Check if the input is a valid pathname.
+ */
+function checkIsPathname(input: unknown): input is string {
+  return typeof input === "string" && input.startsWith("/");
+}
