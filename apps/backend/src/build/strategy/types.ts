@@ -12,7 +12,7 @@ export type GetBaseResult = Promise<{
 export type BuildStrategy<TCtx> = {
   detect: (build: Build) => boolean;
   getContext: (build: Build) => Promise<TCtx | null> | TCtx | null;
-  getBase: (build: Build) => GetBaseResult;
+  getBase: (build: Build, ctx: TCtx) => GetBaseResult;
   getBuildType: (
     input: {
       baseScreenshotBucket: ScreenshotBucket | null;

@@ -60,6 +60,7 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         const result = await getBaseBucketForBuildAndCommit(
           build,
           "766b744bc5fa27a330283dfd47ffafdaf905a941",
+          { approved: true },
         );
         expect(result).toBeNull();
       });
@@ -74,6 +75,7 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         const result = await getBaseBucketForBuildAndCommit(
           build,
           "766b744bc5fa27a330283dfd47ffafdaf905a941",
+          { approved: true },
         );
         expect(result).toBeNull();
       });
@@ -92,6 +94,7 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         const result = await getBaseBucketForBuildAndCommit(
           build,
           "766b744bc5fa27a330283dfd47ffafdaf905a941",
+          { approved: true },
         );
         expect(result).toBeNull();
       });
@@ -110,6 +113,7 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         const result = await getBaseBucketForBuildAndCommit(
           build,
           "766b744bc5fa27a330283dfd47ffafdaf905a941",
+          { approved: true },
         );
         expect(result).toEqual(baseBucket);
       });
@@ -161,6 +165,7 @@ describe("#getBaseBucketForBuildAndCommit", () => {
       const result = await getBaseBucketForBuildAndCommit(
         build,
         "766b744bc5fa27a330283dfd47ffafdaf905a941",
+        { approved: true },
       );
       expect(result).toEqual(baseBucket);
     });

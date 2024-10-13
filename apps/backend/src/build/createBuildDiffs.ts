@@ -9,17 +9,18 @@ import { BuildStrategy, getBuildStrategy } from "./strategy/index.js";
 /**
  * Get the base screenshot bucket for a build, or retrieve it if it doesn't exist.
  */
-async function getOrRetrieveBaseScreenshotBucket(input: {
+async function getOrRetrieveBaseScreenshotBucket<T>(input: {
   build: Build;
-  strategy: BuildStrategy<unknown>;
+  strategy: BuildStrategy<T>;
+  ctx: T;
 }): Promise<ScreenshotBucket | null> {
-  const { build, strategy } = input;
+  const { build, strategy, ctx } = input;
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket;
   }
 
   const { baseBranch, baseBranchResolvedFrom, baseScreenshotBucket } =
-    await strategy.getBase(build);
+    await strategy.getBase(build, ctx);
 
   await Promise.all([
     Build.query()
@@ -93,10 +94,12 @@ export async function createBuildDiffs(build: Build) {
   const compareScreenshots = compareScreenshotBucket.screenshots;
   invariant(compareScreenshots, "no compare screenshots found for build");
 
-  const [ctx, baseScreenshotBucket] = await Promise.all([
-    strategy.getContext(richBuild),
-    getOrRetrieveBaseScreenshotBucket({ build: richBuild, strategy }),
-  ]);
+  const ctx = await strategy.getContext(richBuild);
+  const baseScreenshotBucket = await getOrRetrieveBaseScreenshotBucket({
+    build: richBuild,
+    strategy,
+    ctx,
+  });
 
   const sameBucket = Boolean(
     baseScreenshotBucket &&

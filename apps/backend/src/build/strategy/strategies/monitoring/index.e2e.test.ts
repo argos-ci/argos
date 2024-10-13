@@ -80,8 +80,11 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
   });
 
   it("picks the latest approved builds of the same name", async () => {
-    const { baseScreenshotBucket } =
-      await MonitoringStrategy.getBase(sourceBuild);
+    const ctx = await MonitoringStrategy.getContext(sourceBuild);
+    const { baseScreenshotBucket } = await MonitoringStrategy.getBase(
+      sourceBuild,
+      ctx,
+    );
     expect(baseScreenshotBucket!.id).toBe(
       matchedBuild.compareScreenshotBucketId,
     );
