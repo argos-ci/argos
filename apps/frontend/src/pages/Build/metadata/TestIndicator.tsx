@@ -11,7 +11,7 @@ export function TestIndicator({
   ...props
 }: {
   repoUrl: string | null;
-  branch: string | null;
+  branch: string | null | undefined;
   test: {
     id?: string | null;
     title: string;

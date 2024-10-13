@@ -107,7 +107,7 @@ type Build implements Node {
   baseScreenshotBucket: ScreenshotBucket
 
   """Branch"""
-  branch: String!
+  branch: String
 
   """Commit"""
   commit: String!
@@ -660,7 +660,7 @@ type Screenshot implements Node {
 }
 
 type ScreenshotBucket implements Node {
-  branch: String!
+  branch: String
   commit: String!
   createdAt: DateTime!
   id: ID!

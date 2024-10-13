@@ -102,7 +102,7 @@ export const typeDefs = gql`
     "Commit"
     commit: String!
     "Branch"
-    branch: String!
+    branch: String
     "Parallel infos"
     parallel: BuildParallel
     "Mode"
@@ -210,7 +210,7 @@ export const resolvers: IResolvers = {
     },
     branch: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
-      return compareBucket.branch;
+      return compareBucket.branch || null;
     },
     pullRequest: async (build, _args, ctx) => {
       if (!build.githubPullRequestId) {

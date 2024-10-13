@@ -243,7 +243,11 @@ export function BuildInfos(props: {
 
       <Dt>Changes branch</Dt>
       <Dd>
-        <BranchLink repoUrl={props.repoUrl} branch={build.branch} />
+        {build.branch ? (
+          <BranchLink repoUrl={props.repoUrl} branch={build.branch} />
+        ) : (
+          "-"
+        )}
       </Dd>
 
       <Dt>Changes commit</Dt>

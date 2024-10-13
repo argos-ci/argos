@@ -133,7 +133,7 @@ export type IBuild = INode & {
   /** The screenshot bucket that serves as base for comparison */
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Branch */
-  branch: Scalars['String']['output'];
+  branch?: Maybe<Scalars['String']['output']>;
   /** Commit */
   commit: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
@@ -836,7 +836,7 @@ export type IScreenshot = INode & {
 
 export type IScreenshotBucket = INode & {
   __typename?: 'ScreenshotBucket';
-  branch: Scalars['String']['output'];
+  branch?: Maybe<Scalars['String']['output']>;
   commit: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
@@ -1495,7 +1495,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   baseBranchResolvedFrom?: Resolver<Maybe<IResolversTypes['BaseBranchResolution']>, ParentType, ContextType>;
   baseBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
-  branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -1828,7 +1828,7 @@ export type IScreenshotResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotBucket'] = IResolversParentTypes['ScreenshotBucket']> = ResolversObject<{
-  branch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;

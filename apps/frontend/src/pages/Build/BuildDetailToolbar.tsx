@@ -36,7 +36,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   bordered: boolean;
   repoUrl: string | null;
   baseBranch: string | null;
-  compareBranch: string | null;
+  compareBranch: string | null | undefined;
   prMerged: boolean;
   buildType: BuildType | null;
 }) {
