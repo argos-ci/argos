@@ -98,7 +98,7 @@ const BuildScreenshotHeader = memo(
     date,
   }: {
     label: string;
-    branch: string | null;
+    branch: string | null | undefined;
     date: string | null;
   }) => {
     return (
@@ -106,6 +106,7 @@ const BuildScreenshotHeader = memo(
         <div className="flex max-w-full items-center gap-1">
           <div className="shrink-0 select-none text-xs font-medium leading-6">
             {label}
+            {branch ? " from" : null}
           </div>
           {branch && (
             <Code className="truncate" title={branch}>
@@ -636,7 +637,7 @@ const BuildScreenshots = memo(
         >
           {props.build.baseScreenshotBucket ? (
             <BuildScreenshotHeader
-              label="Baseline from"
+              label="Baseline"
               branch={props.build.baseScreenshotBucket.branch}
               date={props.build.baseScreenshotBucket.createdAt}
             />
@@ -652,7 +653,7 @@ const BuildScreenshots = memo(
           hidden={!showChanges}
         >
           <BuildScreenshotHeader
-            label="Changes from"
+            label="Changes"
             branch={props.build.branch}
             date={props.build.createdAt}
           />

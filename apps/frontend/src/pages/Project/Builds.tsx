@@ -164,19 +164,21 @@ const BuildRow = React.memo(
           )}
         </div>
         <div className="relative hidden w-32 md:block">
-          <div>
-            <FakeLink
-              className="inline-flex max-w-full items-center gap-2"
-              href={
-                project.repository
-                  ? `${project.repository.url}/tree/${build.branch}`
-                  : undefined
-              }
-            >
-              <GitBranchIcon className="size-3 shrink-0" />
-              <Truncable>{build.branch}</Truncable>
-            </FakeLink>
-          </div>
+          {build.branch && (
+            <div>
+              <FakeLink
+                className="inline-flex max-w-full items-center gap-2"
+                href={
+                  project.repository
+                    ? `${project.repository.url}/tree/${build.branch}`
+                    : undefined
+                }
+              >
+                <GitBranchIcon className="size-3 shrink-0" />
+                <Truncable>{build.branch}</Truncable>
+              </FakeLink>
+            </div>
+          )}
           <div>
             <FakeLink
               className="inline-flex max-w-full items-center gap-2"
