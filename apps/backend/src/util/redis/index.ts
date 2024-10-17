@@ -11,7 +11,13 @@ import logger from "@/logger/index.js";
 
 import { createRedisLock } from "./lock.js";
 
-export const redisClient = createClient({ url: config.get("redis.url") });
+export const redisClient = createClient({
+  url: config.get("redis.url"),
+  socket: {
+    tls: config.get("redis.url").match(/rediss:/) != null,
+    rejectUnauthorized: false,
+  },
+});
 redisClient.on("error", (error: unknown) => {
   // Ignore these errors, Redis will automatically reconnect
   if (error instanceof ConnectionTimeoutError) {
