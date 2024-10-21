@@ -3,6 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import {
   ConnectionTimeoutError,
   createClient,
+  RedisClientType,
   SocketClosedUnexpectedlyError,
 } from "redis";
 
@@ -11,10 +12,10 @@ import logger from "@/logger/index.js";
 
 import { createRedisLock } from "./lock.js";
 
-export const redisClient = createClient({
+export const redisClient: RedisClientType = createClient({
   url: config.get("redis.url"),
   socket: {
-    tls: config.get("redis.url").match(/rediss:/) != null,
+    tls: /rediss:/.test(config.get("redis.url")),
     rejectUnauthorized: false,
   },
 });
