@@ -3,7 +3,7 @@ import { z } from "./zod.js";
 const ErrorSchema = z
   .object({
     error: z.string(),
-    details: z.array(z.object({ message: z.string() })),
+    details: z.array(z.object({ message: z.string() })).optional(),
   })
   .openapi({
     description: "Error response",
