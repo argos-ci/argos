@@ -32,7 +32,7 @@ export function TestIndicator({
       <Tooltip content="View test on GitHub">
         <Chip icon={FlaskConical} scale="xs" {...props}>
           <Link
-            href={`${repoUrl}/blob/${branch}/${test.location.file.replace(/^\/workspace\/github\//, "")}#L${test.location.line}`}
+            href={`${repoUrl}/blob/${branch}/${test.location.file.replace(/^\/github\/workspace\//, "")}#L${test.location.line}`}
             target="_blank"
           >
             {title}
