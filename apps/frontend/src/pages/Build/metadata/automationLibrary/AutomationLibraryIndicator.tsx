@@ -5,12 +5,14 @@ import { Tooltip } from "@/ui/Tooltip";
 import cypressIcon from "./logos/cypress.svg";
 import playwrightIcon from "./logos/playwright.svg";
 import puppeteerIcon from "./logos/puppeteer.svg";
+import storybookIcon from "./logos/storybook.svg";
 
 const Icons: Record<string, string> = {
   playwright: playwrightIcon,
   "@playwright/test": playwrightIcon,
   cypress: cypressIcon,
   puppeteer: puppeteerIcon,
+  storybook: storybookIcon,
 };
 
 export function AutomationLibraryIndicator({

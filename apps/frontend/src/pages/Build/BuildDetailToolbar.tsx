@@ -113,7 +113,12 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
               <MediaTypeIndicator mediaType={mediaType} className="size-4" />
             )}
             {viewport && <ViewportIndicator viewport={viewport} />}
-            {url && <UrlIndicator url={url} />}
+            {url && (
+              <UrlIndicator
+                url={url}
+                isStorybook={automationLibrary?.name === "storybook"}
+              />
+            )}
             {test && (
               <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
             )}
