@@ -1,4 +1,3 @@
-import * as path from "node:path";
 import * as React from "react";
 import {
   Body,
@@ -74,7 +73,7 @@ export const WelcomeEmail = ({ baseUrl }: { baseUrl: string }) => {
         <Container style={container}>
           <Section style={{ marginTop: 32 }}>
             <Img
-              src={path.join(baseUrl, "/static/emails/argos-logo.png")}
+              src={String(new URL("/static/emails/argos-logo.png", baseUrl))}
               width="40"
               height="40"
               alt="Argos"
