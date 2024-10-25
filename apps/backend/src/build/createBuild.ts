@@ -127,7 +127,7 @@ export async function createBuild(params: {
   ]);
 
   const build = await lock.acquire(
-    ["create-build", params.project.id, buildName],
+    ["create-build", params.project.id],
     async () => {
       return transaction(async (trx) => {
         const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
