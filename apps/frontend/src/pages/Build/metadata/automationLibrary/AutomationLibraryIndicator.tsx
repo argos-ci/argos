@@ -8,11 +8,12 @@ import puppeteerIcon from "./logos/puppeteer.svg";
 import storybookIcon from "./logos/storybook.svg";
 
 const Icons: Record<string, string> = {
-  playwright: playwrightIcon,
   "@playwright/test": playwrightIcon,
+  playwright: playwrightIcon,
+  "playwright-core": playwrightIcon,
   cypress: cypressIcon,
   puppeteer: puppeteerIcon,
-  storybook: storybookIcon,
+  "@storybook/test-runner": storybookIcon,
 };
 
 export function AutomationLibraryIndicator({

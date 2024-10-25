@@ -116,7 +116,9 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             {url && (
               <UrlIndicator
                 url={url}
-                isStorybook={automationLibrary?.name === "storybook"}
+                isStorybook={
+                  automationLibrary?.name === "@storybook/test-runner"
+                }
               />
             )}
             {test && (
