@@ -62,7 +62,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   const playwrightTraceUrl =
     activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
-    buildType === BuildType.Check && checkCanBeReviewed(activeDiff.status);
+    buildType !== BuildType.Reference && checkCanBeReviewed(activeDiff.status);
   return (
     <div
       className={clsx(
