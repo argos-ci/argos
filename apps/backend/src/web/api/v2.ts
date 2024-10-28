@@ -1,10 +1,10 @@
-import express from "express";
+import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 
 import { openAPIRouter } from "@/api/index.js";
 import { createRedisStore } from "@/util/rate-limit.js";
 
-const router = express.Router();
+const router: Router = Router();
 
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes

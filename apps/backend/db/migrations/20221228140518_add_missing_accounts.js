@@ -36,9 +36,4 @@ export const up = async (knex) => {
   ]);
 };
 
-/**
- * @param {import('knex').Knex} knex
- */
-// @ts-ignore
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
-export const down = async (knex) => {};
+export const down = async () => {};

@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 import { invariant } from "@argos/util/invariant";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 

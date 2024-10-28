@@ -50,7 +50,7 @@ function getButtonClassName(options: ButtonOptions) {
     variantClassName,
     sizeClassName,
     "focus:outline-none data-[focus-visible]:ring-4",
-    "align-center data-[disabled]:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition data-[disabled]:cursor-default",
+    "items-center data-[disabled]:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition data-[disabled]:cursor-default",
   );
 }
 

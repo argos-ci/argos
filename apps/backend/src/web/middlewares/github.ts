@@ -34,29 +34,33 @@ function createWebhooksHandler(input: {
 
 const router = Router();
 
-router.use(
-  createNodeMiddleware(
-    createWebhooksHandler({
-      app: "main",
-      secret: config.get("github.webhookSecret"),
-    }),
-    {
-      path: "/github/event-handler",
-    },
-  ),
+const mainMiddleware = createNodeMiddleware(
+  createWebhooksHandler({
+    app: "main",
+    secret: config.get("github.webhookSecret"),
+  }),
+  {
+    path: "/github/event-handler",
+  },
 );
 
-router.use(
-  createNodeMiddleware(
-    createWebhooksHandler({
-      app: "light",
-      secret: config.get("githubLight.webhookSecret"),
-    }),
-    {
-      path: "/github-light/event-handler",
-    },
-  ),
+router.use((req, res, next) => {
+  mainMiddleware(req, res, next);
+});
+
+const lightMiddleware = createNodeMiddleware(
+  createWebhooksHandler({
+    app: "light",
+    secret: config.get("githubLight.webhookSecret"),
+  }),
+  {
+    path: "/github-light/event-handler",
+  },
 );
+
+router.use((req, res, next) => {
+  lightMiddleware(req, res, next);
+});
 
 const QuerySchema = z.object({
   installation_id: z.coerce.number(),
@@ -132,4 +136,4 @@ router.get(
   }),
 );
 
-export const apiMiddleware = router;
+export const apiMiddleware: Router = router;

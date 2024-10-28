@@ -6,7 +6,7 @@ import { asyncHandler } from "@/web/util.js";
 
 import { WelcomeEmail } from "./welcome.js";
 
-const router = Router();
+const router: Router = Router();
 
 router.get(
   "/welcome",

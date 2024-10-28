@@ -10,7 +10,7 @@ import { updateBuild } from "./handlers/updateBuild.js";
 import { schema } from "./schema.js";
 import { errorHandler, registerHandler } from "./util.js";
 
-const router = Router();
+const router: Router = Router();
 
 // CORS
 router.use(

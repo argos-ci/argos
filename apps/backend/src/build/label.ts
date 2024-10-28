@@ -45,7 +45,6 @@ export function getBuildLabel(
     case "check": {
       return getBuildStatusLabel(status);
     }
-    // eslint-disable-next-line no-fallthrough
     case null:
     case undefined:
       return getBuildStatusLabel(status);

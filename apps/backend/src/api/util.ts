@@ -7,14 +7,14 @@ import type {
   Response,
   Router,
 } from "express";
-import express from "express";
+import { json } from "express";
 import { z, ZodError, ZodType } from "zod";
 import {
   ZodOpenApiOperationObject,
   ZodOpenApiPathItemObject,
 } from "zod-openapi";
 
-import { asyncHandler } from "@/web/util.js";
+import { asyncHandler, boom } from "@/web/util.js";
 
 import { zodSchema } from "./schema.js";
 
@@ -90,6 +90,8 @@ function convertPath(path: string) {
   return path.replace(/{([^}]+)}/g, ":$1");
 }
 
+const DetailsSchema = z.array(z.object({ message: z.string() }));
+
 export const errorHandler: ErrorRequestHandler = (
   error: unknown,
   _req,
@@ -97,16 +99,22 @@ export const errorHandler: ErrorRequestHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next,
 ) => {
-  if (
+  const details =
+    error instanceof Error && "details" in error
+      ? DetailsSchema.safeParse(error.details).data
+      : undefined;
+
+  const statusCode =
     error instanceof Error &&
     "statusCode" in error &&
     typeof error.statusCode === "number"
-  ) {
-    res.status(error.statusCode).json({ error: error.message });
-    return;
-  }
+      ? error.statusCode
+      : 500;
 
-  res.status(500).json({ error: "Internal server error" });
+  const message =
+    error instanceof Error ? error.message : "Internal server error";
+
+  res.status(statusCode).json({ error: message, details });
 };
 
 type HandlerParams<T> = (T | T[])[];
@@ -148,8 +156,8 @@ function handler<TMethod extends "get" | "post" | "put">(
       convertPath(path),
       // Temporary increase the limit
       // we should find a way to split the upload in several requests
-      express.json({ limit: "3mb" }),
-      asyncHandler((req, res, next) => {
+      json({ limit: "3mb" }),
+      asyncHandler((req, _res, next) => {
         const ctx: RequestCtx<ZodOpenApiOperationObject> = {
           params: null,
           query: null,
@@ -180,10 +188,10 @@ function handler<TMethod extends "get" | "post" | "put">(
             const errorMessages = error.errors.map((issue: any) => ({
               message: `${issue.path.join(".")} is ${issue.message}`,
             }));
-            res
-              .status(400)
-              .json({ error: "Invalid request", details: errorMessages });
-            return;
+            throw boom(400, "Invalid request", {
+              cause: error,
+              details: errorMessages,
+            });
           }
           throw error;
         }
@@ -191,19 +199,7 @@ function handler<TMethod extends "get" | "post" | "put">(
         next();
       }),
       ...wrappedHandlers,
-      Sentry.expressErrorHandler({
-        // shouldHandleError: (error: unknown) => {
-        //   if (
-        //     error instanceof Error &&
-        //     "statusCode" in error &&
-        //     typeof error.statusCode === "number" &&
-        //     error.statusCode < 500
-        //   ) {
-        //     return false;
-        //   }
-        //   return true;
-        // },
-      }),
+      Sentry.expressErrorHandler(),
       errorHandler,
     );
   };

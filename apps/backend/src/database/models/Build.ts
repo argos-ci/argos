@@ -229,9 +229,8 @@ export class Build extends Model {
     }
   }
 
-  override $toDatabaseJson(...args: any[]) {
-    // @ts-ignore
-    const json = super.$toDatabaseJson(...args);
+  override $formatDatabaseJson(json: Pojo): Pojo {
+    json = super.$formatDatabaseJson(json);
     if (json["number"] === -1) {
       json["number"] = this.$knex().raw(
         '(select coalesce(max(number),0) + 1 as number from builds where "projectId" = ?)',

@@ -52,9 +52,7 @@ export const up = async (knex) => {
  */
 export const down = async (knex) => {
   await knex.schema.alterTable("accounts", function (table) {
-    // @ts-ignore
-    table.dropUnique("userId");
-    // @ts-ignore
-    table.dropUnique("organizationId");
+    table.dropUnique(["userId"]);
+    table.dropUnique(["organizationId"]);
   });
 };

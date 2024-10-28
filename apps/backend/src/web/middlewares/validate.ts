@@ -1,4 +1,5 @@
 import Ajv, { AnySchema, ValidateFunction } from "ajv";
+import type { RequestHandler } from "express";
 
 import { asyncHandler, boom } from "../util.js";
 
@@ -9,7 +10,7 @@ export const validate = (routeSchema: {
   body?: AnySchema;
   query?: AnySchema;
   params?: AnySchema;
-}) => {
+}): RequestHandler => {
   const validators: {
     query?: ValidateFunction;
     params?: ValidateFunction;

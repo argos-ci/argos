@@ -6,7 +6,7 @@
 /resources
 /tests
 .env.example
-.eslintrc.json
+eslint.config.js
 .prettierignore
 .prettierrc
 CONTRIBUTING.md

@@ -16,7 +16,7 @@ import type { Stripe } from "@/stripe/index.js";
 import { auth } from "../middlewares/auth.js";
 import { asyncHandler, boom } from "../util.js";
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 async function parseStripeEvent(req: express.Request) {
   try {

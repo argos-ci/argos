@@ -1,6 +1,7 @@
 import { ApolloServer, ApolloServerPlugin } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import * as Sentry from "@sentry/node";
+import { RequestHandler } from "express";
 
 import { getContext } from "./context.js";
 import { schema } from "./schema.js";
@@ -59,7 +60,7 @@ export const apolloServer = new ApolloServer({
   plugins: [apolloSentryPlugin],
 });
 
-export const createApolloMiddleware = () =>
+export const createApolloMiddleware = (): RequestHandler =>
   expressMiddleware(apolloServer, {
     context: async ({ req }) => getContext(req),
   });

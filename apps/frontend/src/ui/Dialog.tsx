@@ -6,6 +6,7 @@ import {
   Dialog as RACDialog,
   DialogProps as RACDialogProps,
 } from "react-aria-components";
+import type { OverlayTriggerState } from "react-stately";
 
 import { Button, ButtonProps } from "./Button";
 
@@ -69,7 +70,7 @@ export const DialogTitle = forwardRef<
   );
 });
 
-export function useOverlayTriggerState() {
+export function useOverlayTriggerState(): OverlayTriggerState {
   return useContext(OverlayTriggerStateContext);
 }
 

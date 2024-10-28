@@ -21,7 +21,7 @@ export const Card = ({ className, intent, ...props }: CardProps) => {
 };
 
 export const CardBody = (props: HTMLProps<HTMLDivElement>) => {
-  return <div className="font-ms p-4" {...props} />;
+  return <div className="p-4" {...props} />;
 };
 
 export const CardFooter = ({

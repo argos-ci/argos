@@ -1,5 +1,3 @@
-/* eslint-disable quotes */
-
 /**
  * @param {import('knex').Knex} knex
  */
@@ -44,7 +42,6 @@ export const down = async (knex) => {
     .raw(`DROP TYPE job_status`)
     .raw(`DROP TYPE service_type`)
     .table("repositories", (table) => {
-      // @ts-ignore
       table.dropForeign("organizationId");
     });
 };

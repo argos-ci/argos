@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Sentry from "@sentry/node";
@@ -15,7 +14,7 @@ import { jsonErrorHandler } from "./middlewares/errorHandler.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-export const createApp = async () => {
+export const createApp = async (): Promise<express.Express> => {
   const app = express();
 
   app.disable("x-powered-by");

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import * as Sentry from "@sentry/node";
 
 const logger = {

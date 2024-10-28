@@ -1,5 +1,3 @@
-/* eslint-env node */
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 const tailwindPlugin = require("tailwindcss/plugin");
 
 /** @type {import('tailwindcss').Config} */
@@ -151,6 +149,7 @@ module.exports = {
       },
       borderColor: {
         DEFAULT: "var(--mauve-6)",
+        base: "var(--mauve-6)",
         hover: "var(--mauve-8)",
         active: "var(--mauve-9)",
         primary: {

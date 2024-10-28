@@ -1,4 +1,3 @@
-import * as React from "react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";

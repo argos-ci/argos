@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import Bolt, { LinkUnfurls, MessageAttachment } from "@slack/bolt";
+import Bolt from "@slack/bolt";
 import Cookies from "cookies";
+import { Router } from "express";
 import { PartialModelObject, TransactionOrKnex } from "objection";
 import { match } from "path-to-regexp";
 
@@ -225,7 +226,7 @@ const matchBuildPath = match<BuildMatchParams>(
 async function unfurlBuild(
   params: BuildMatchParams,
   auth: { accountId: string },
-): Promise<MessageAttachment | null> {
+): Promise<Bolt.types.MessageAttachment | null> {
   const build = await Build.query()
     .withGraphJoined("project.account")
     .where("project.name", params.projectName)
@@ -256,7 +257,7 @@ async function unfurlBuild(
     screenshotDiff?.compareScreenshot || screenshotDiff?.baseScreenshot;
   const imageUrl = screenshot ? await getPublicImageUrl(screenshot.s3Id) : null;
 
-  const attachment: MessageAttachment = {
+  const attachment: Bolt.types.MessageAttachment = {
     title: `Build ${build.number} — ${build.name} — ${build.project.account.name || build.project.account.slug}/${build.project.name}`,
     fields: [
       { title: "Status", value: getBuildLabel(build.type, status) },
@@ -321,7 +322,7 @@ boltApp.event("link_shared", async ({ event, client, context }) => {
   const auth = { accountId: slackInstallation.account.id };
 
   const knownUrls = await Promise.all(
-    event.links.map<Promise<[string, MessageAttachment] | null>>(
+    event.links.map<Promise<[string, Bolt.types.MessageAttachment] | null>>(
       async (link) => {
         const urlObj = new URL(link.url);
         if (urlObj.origin !== config.get("server.url")) {
@@ -340,7 +341,7 @@ boltApp.event("link_shared", async ({ event, client, context }) => {
     ),
   );
 
-  const unfurls: LinkUnfurls = Object.fromEntries(
+  const unfurls: Bolt.types.LinkUnfurls = Object.fromEntries(
     knownUrls.filter(checkIsNonNullable),
   );
 
@@ -381,4 +382,4 @@ export async function uninstallSlackInstallation(
   ]);
 }
 
-export const slackMiddleware = receiver.router;
+export const slackMiddleware: Router = receiver.router;

@@ -1,4 +1,3 @@
-/* eslint-disable no-fallthrough */
 import { assertNever } from "@argos/util/assertNever";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -150,6 +149,7 @@ export const BuildStatusDescription = (props: {
           assertNever(build.status);
       }
     }
+    // eslint-disable-next-line no-fallthrough
     case null: {
       switch (build.status) {
         case BuildStatus.Error:

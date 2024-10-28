@@ -74,7 +74,6 @@ describe("#createBuildDiffs", () => {
       await build
         .$query()
         .patchAndFetch({ baseScreenshotBucketId: baseBucket.id });
-      // @ts-ignore
       [
         classicDiffBaseScreenshot,
         classicDiffCompareScreenshot,

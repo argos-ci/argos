@@ -337,7 +337,7 @@ const SuccessStep = (props: SuccessStepProps) => {
         <DialogTitle>Transfer Project</DialogTitle>
         <div className="my-8 flex justify-center">
           <CheckCircle2Icon
-            className="text-success-500"
+            className="text-success"
             style={{ width: 80, height: 80 }}
           />
         </div>

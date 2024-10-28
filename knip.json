@@ -30,13 +30,9 @@
       "vite": {
         "config": []
       }
-    },
-    "packages/tsconfig": {
-      "ignoreDependencies": ["@tsconfig/node20", "@tsconfig/strictest"]
     }
   },
   "exclude": ["classMembers"],
-  "ignore": ["playwright.config.mjs", "examples/**/*"],
-  "ignoreDependencies": ["@argos/tsconfig"],
+  "ignore": ["examples/**/*"],
   "ignoreBinaries": ["stripe", "sleep", "ngrok"]
 }

@@ -1,4 +1,3 @@
-// @ts-check
 import { getCSPScriptHash } from "@argos-ci/playwright";
 import { defineConfig, devices } from "@playwright/test";
 

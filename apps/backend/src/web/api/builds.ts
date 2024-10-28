@@ -1,8 +1,8 @@
-import express from "express";
+import { Router } from "express";
 
 import { asyncHandler, boom } from "../util.js";
 
-const router = express.Router();
+const router: Router = Router();
 
 router.post(
   "/builds",

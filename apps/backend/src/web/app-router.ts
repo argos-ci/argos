@@ -75,7 +75,7 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(auth);
 
   router.get("/auth/logout", (req, res) => {
-    // @ts-ignore
+    // @ts-expect-error logout is added dynamically
     req.logout();
     const redirectTo =
       config.get("env") !== "production" ? "/" : "https://www.argos-ci.com";
