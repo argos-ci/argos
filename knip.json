@@ -24,7 +24,7 @@
       ],
       "ignoreDependencies": [
         "@radix-ui/colors",
-        "@vitejs/plugin-react",
+        "@vitejs/plugin-react-swc",
         "@sentry/vite-plugin"
       ],
       "vite": {
