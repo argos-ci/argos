@@ -4,7 +4,6 @@ import type { ErrorRequestHandler } from "express";
  * A middleware that sends JSON responses for errors if request accepts JSON.
  */
 export function jsonErrorHandler(): ErrorRequestHandler {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   return (error: unknown, req, res, next) => {
     if (error instanceof Error && process.env["NODE_ENV"] !== "test") {
       console.log(error, error.stack);

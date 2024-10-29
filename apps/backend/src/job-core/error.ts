@@ -10,7 +10,6 @@ export function unretryable(
   condition: any,
   message?: string,
 ): asserts condition {
-  // @ts-ignore
   invariant(condition, message, UnretryableError);
 }
 

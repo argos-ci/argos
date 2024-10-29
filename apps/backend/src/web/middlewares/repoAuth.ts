@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 
+import type { RequestHandler } from "express";
+
 import { Project } from "@/database/models/index.js";
 
 import { asyncHandler, boom } from "../util.js";
@@ -16,7 +18,7 @@ declare global {
 
 const tokenlessStrategies = [githubActions];
 
-export const repoAuth = [
+export const repoAuth: RequestHandler[] = [
   bearerAuth,
   asyncHandler(async (req, _res, next) => {
     const { bearerToken } = req;

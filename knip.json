@@ -24,19 +24,15 @@
       ],
       "ignoreDependencies": [
         "@radix-ui/colors",
-        "@vitejs/plugin-react",
+        "@vitejs/plugin-react-swc",
         "@sentry/vite-plugin"
       ],
       "vite": {
         "config": []
       }
-    },
-    "packages/tsconfig": {
-      "ignoreDependencies": ["@tsconfig/node20", "@tsconfig/strictest"]
     }
   },
   "exclude": ["classMembers"],
-  "ignore": ["playwright.config.mjs", "examples/**/*"],
-  "ignoreDependencies": ["@argos/tsconfig"],
+  "ignore": ["playwright.config.mts"],
   "ignoreBinaries": ["stripe", "sleep", "ngrok"]
 }

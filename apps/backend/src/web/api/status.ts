@@ -1,11 +1,11 @@
-import express from "express";
+import { Router } from "express";
 
 import { knex } from "@/database";
 import { ScreenshotDiff } from "@/database/models/ScreenshotDiff.js";
 
 import { asyncHandler } from "../util.js";
 
-const router = express.Router();
+const router: Router = Router();
 
 router.get("/status", (_req, res) => {
   res.sendStatus(200);

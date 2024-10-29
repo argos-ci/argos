@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { invariant } from "@argos/util/invariant";
+import clsx from "clsx";
 import { pointer, select, Selection } from "d3-selection";
 import { zoom, ZoomBehavior, zoomIdentity } from "d3-zoom";
 import { MaximizeIcon, MinusIcon, PlusIcon } from "lucide-react";
@@ -35,6 +36,8 @@ const MAX_ZOOM_SCALE = 34;
 const isWrappedWithClass = (event: any, className: string | undefined) =>
   Boolean(event.target.closest(`.${className}`));
 
+const ZOOMER_CONTROLS_CLASS = "zoomer-controls";
+
 class Zoomer {
   zoom: ZoomBehavior<Element, unknown>;
   selection: Selection<Element, unknown, null, undefined>;
@@ -45,7 +48,7 @@ class Zoomer {
     this.zoom = zoom()
       .scaleExtent([MIN_ZOOM_SCALE, MAX_ZOOM_SCALE])
       .filter((event: any) => {
-        if (isWrappedWithClass(event, "zoomer-controls")) {
+        if (isWrappedWithClass(event, ZOOMER_CONTROLS_CLASS)) {
           return false;
         }
 
@@ -372,7 +375,12 @@ export function ZoomPane(props: {
       </div>
       {props.controls && (
         <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
-          <div className="zoomer-controls absolute bottom-2 right-2 flex flex-col items-center gap-1">
+          <div
+            className={clsx(
+              ZOOMER_CONTROLS_CLASS,
+              "absolute bottom-2 right-2 flex flex-col items-center gap-1",
+            )}
+          >
             {props.controls}
             <FitViewButton />
             <ZoomInButton disabled={transform.scale >= MAX_ZOOM_SCALE} />

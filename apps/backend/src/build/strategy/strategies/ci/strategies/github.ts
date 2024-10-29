@@ -95,8 +95,7 @@ export const GithubStrategy: MergeBaseStrategy<{
       if (checkErrorStatus(404, error)) {
         const notFoundError = new Error(
           `"${args.sha}" not found on repository "${args.ctx.repo}"`,
-        );
-        // @ts-ignore
+        ) as Error & { retryable: boolean };
         notFoundError.retryable = false;
         throw notFoundError;
       }

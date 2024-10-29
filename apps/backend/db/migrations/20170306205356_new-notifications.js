@@ -1,5 +1,3 @@
-/* eslint-disable quotes, max-len */
-
 /**
  * @param {import('knex').Knex} knex
  */

@@ -1,4 +1,3 @@
-/* eslint-disable default-case */
 import { invariant } from "@argos/util/invariant";
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 

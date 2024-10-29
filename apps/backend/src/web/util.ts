@@ -40,21 +40,38 @@ export const subdomain =
     }
   };
 
+type HttpErrorOptions = ErrorOptions & {
+  details?: {
+    message: string;
+  }[];
+};
+
 /**
  * HTTPError is a subclass of Error that includes an HTTP status code.
  */
 class HTTPError extends Error {
   public statusCode: number;
-  constructor(statusCode: number, message?: string, options?: ErrorOptions) {
+  public details:
+    | {
+        message: string;
+      }[]
+    | undefined;
+
+  constructor(
+    statusCode: number,
+    message?: string,
+    options?: HttpErrorOptions,
+  ) {
     super(message || STATUS_CODES[statusCode], options);
     this.statusCode = statusCode;
+    this.details = options?.details;
   }
 }
 
 export function boom(
   statusCode: number,
   message?: string,
-  options?: ErrorOptions,
+  options?: HttpErrorOptions,
 ) {
   return new HTTPError(statusCode, message, options);
 }

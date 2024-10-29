@@ -89,7 +89,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
         >
           <BuildReviewDialogProvider project={data?.project ?? null}>
             {hotkeysDialog && <BuildHotkeysDialog state={hotkeysDialog} />}
-            <div className="m flex h-screen min-h-0 flex-col">
+            <div className="flex h-screen min-h-0 flex-col">
               {data?.project?.account && (
                 <>
                   <PaymentBanner account={data.project.account} />

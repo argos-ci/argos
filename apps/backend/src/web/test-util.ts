@@ -2,7 +2,7 @@ import express from "express";
 
 export const createTestApp = (
   ...middlewares: (express.RequestHandler | express.RequestHandler[])[]
-) => {
+): express.Express => {
   const app = express();
   app.use(
     ...middlewares,

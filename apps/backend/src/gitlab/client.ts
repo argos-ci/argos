@@ -5,10 +5,12 @@ import type { Account } from "@/database/models/index.js";
 
 export type { ExpandedUserSchema } from "@gitbeaker/rest";
 
+export type GitlabClient = InstanceType<typeof Gitlab<false>>;
+
 export function getGitlabClient(params: {
   accessToken: string;
   baseUrl?: string | null;
-}) {
+}): GitlabClient {
   const client = new Gitlab({
     oauthToken: params.accessToken,
     host: params.baseUrl ?? "https://gitlab.com",
@@ -17,9 +19,9 @@ export function getGitlabClient(params: {
   if (params.baseUrl) {
     // Specify a special header to authenticate with ngrok
     Object.keys(client).forEach((key) => {
-      // @ts-ignore
+      // @ts-expect-error This is a hack to add a header to all requests
       if (client[key] && client[key].headers) {
-        // @ts-ignore
+        // @ts-expect-error This is a hack to add a header to all requests
         client[key].headers["X-Argos-Auth"] = config.get(
           "gitlab.argosAuthSecret",
         );
@@ -28,8 +30,6 @@ export function getGitlabClient(params: {
   }
   return client;
 }
-
-export type GitlabClient = ReturnType<typeof getGitlabClient>;
 
 export async function getGitlabClientFromAccount(
   account: Account,

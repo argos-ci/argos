@@ -50,7 +50,6 @@ describe("api v2", () => {
             mode: null,
           })
           .expect((res) => {
-            console.log(res.body);
             expect(res.body.error).toBe(
               `Project not found in Argos. If the issue persists, verify your token. (token: "nop").`,
             );
@@ -90,7 +89,6 @@ describe("api v2", () => {
             prNumber: 12,
             mode: null,
           })
-          // .end(console.log);
           .expect(201);
 
         const build = await Build.query()
@@ -607,7 +605,7 @@ describe("api v2", () => {
 
         expect(updateResults[0]!.statusCode).toBe(200);
         expect(updateResults[1]!.statusCode).toBe(400);
-        // @ts-ignore
+        // @ts-expect-error error.text is not defined
         expect(JSON.parse(updateResults[1]!.error.text).error).toBe(
           "`parallelTotal` must be the same on every batch",
         );

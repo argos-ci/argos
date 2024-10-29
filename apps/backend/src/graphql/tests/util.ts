@@ -9,7 +9,7 @@ export const createApolloServerApp = async (
   apolloServer: ApolloServer,
   getMiddleware: () => RequestHandler,
   auth: { user: User; account: Account } | null,
-) => {
+): Promise<express.Express> => {
   const app = express();
   app.use(((req, _res, next) => {
     (req as any).__MOCKED_AUTH__ = auth;

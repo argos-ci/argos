@@ -21,7 +21,7 @@ export const RadioField = forwardRef<
   return (
     <label className="flex items-baseline gap-4 text-left">
       <input type="radio" ref={ref} value={value} className="peer" {...props} />
-      <div className="hover:border-on-light peer-checked:border-on border-l px-2">
+      <div className="hover:border-base peer-checked:border-active border-l px-2">
         <div className={clsx(scaleClassName, "font-semibold")}>{label}</div>
         <p>{children}</p>
       </div>

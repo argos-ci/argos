@@ -221,7 +221,7 @@ const ListHeader = ({
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header border-t-border bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-4 text-left focus:outline-none",
+        "group/list-header border-t-base bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-4 text-left focus:outline-none",
       )}
       style={style}
       onPress={onClick}
@@ -444,7 +444,7 @@ const DiffCard = (props: {
       <div
         className={clsx(
           "pointer-events-none absolute inset-0 z-20 rounded-lg",
-          active && "ring-primary-highlight/90 ring-1 ring-inset",
+          active && "ring-primary-highlight ring-1 ring-inset",
         )}
       />
     </div>
@@ -854,7 +854,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="border-b-border flex shrink-0 items-center border-b px-2"
+          className="border-b-base flex shrink-0 items-center border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

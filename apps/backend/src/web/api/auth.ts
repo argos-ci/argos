@@ -29,7 +29,7 @@ import {
 
 import { asyncHandler } from "../util.js";
 
-const router = Router();
+const router: Router = Router();
 
 export default router;
 

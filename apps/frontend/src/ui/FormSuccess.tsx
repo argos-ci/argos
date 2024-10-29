@@ -17,7 +17,7 @@ export const FormSuccess = ({
       className={clsx(className, "flex items-center gap-2 font-medium")}
       {...props}
     >
-      <CheckIcon className="text-success-500 size-4" /> {children}
+      <CheckIcon className="text-success size-4" /> {children}
     </div>
   );
 };

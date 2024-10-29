@@ -132,7 +132,7 @@ const MissingScreenshotInfo = memo(
   }) => {
     return (
       <div className="w-full">
-        <div className="text-s bg-app flex flex-col items-center gap-4 rounded border p-8 text-center">
+        <div className="bg-app flex flex-col items-center gap-4 rounded border p-8 text-center">
           <div className="flex flex-col items-center gap-2">
             <div className="[&>*]:size-10">{icon}</div>
             <div className="text-base font-medium">{title}</div>

@@ -40,7 +40,7 @@ const PullRequestStatusIcon = (props: {
   }
   if (pullRequest.draft) {
     return (
-      <ButtonIcon className="text-secondary-low">
+      <ButtonIcon className="text-low">
         <GitPullRequestDraftIcon />
       </ButtonIcon>
     );
