@@ -33,6 +33,6 @@
     }
   },
   "exclude": ["classMembers"],
-  "ignore": ["examples/**/*"],
+  "ignore": ["playwright.config.mts"],
   "ignoreBinaries": ["stripe", "sleep", "ngrok"]
 }

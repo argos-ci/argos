@@ -28,7 +28,7 @@
   "packageManager": "pnpm@9.11.0+sha512.0a203ffaed5a3f63242cd064c8fb5892366c103e328079318f78062f24ea8c9d50bc6a47aa3567cabefd824d170e78fa2745ed1f16b132e16436146b7688f19b",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",
-    "@argos-ci/playwright": "^3.9.0",
+    "@argos-ci/playwright": "^3.9.1",
     "@eslint/js": "^9.13.0",
     "@graphql-codegen/cli": "^5.0.3",
     "@graphql-codegen/client-preset": "^4.5.0",
