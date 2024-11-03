@@ -76,6 +76,9 @@ export const createApp = async (): Promise<express.Express> => {
             ...config.get("csp.scriptSrc"),
           ],
           "connect-src": ["'self'", "*"],
+          "report-uri": [
+            "https://o62154.ingest.us.sentry.io/api/133417/security/?sentry_key=99a76614db104e739449ae705131fb9d",
+          ],
         },
       },
       crossOriginEmbedderPolicy: false,
