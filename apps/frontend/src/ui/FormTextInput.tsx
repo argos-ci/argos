@@ -2,7 +2,7 @@ import { forwardRef, useId } from "react";
 import { useFormContext } from "react-hook-form";
 
 import { FormError } from "./FormError";
-import { FormLabel } from "./FormLabel";
+import { Label } from "./Label";
 import { TextInput, TextInputProps } from "./TextInput";
 
 type FormTextInputProps = {
@@ -33,9 +33,9 @@ export const FormTextInput = forwardRef<HTMLInputElement, FormTextInputProps>(
     return (
       <div className={className}>
         {!hiddenLabel && (
-          <FormLabel htmlFor={id} invalid={invalid}>
+          <Label htmlFor={id} invalid={invalid}>
             {label}
-          </FormLabel>
+          </Label>
         )}
         <TextInput
           ref={ref}

@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/ui/Dialog";
-import { FormLabel } from "@/ui/FormLabel";
+import { Label } from "@/ui/Label";
 import { Modal } from "@/ui/Modal";
 import { StripeCheckoutButton } from "@/ui/StripeLink";
 
@@ -80,7 +80,7 @@ export function TeamSubscribeDialog({
             <DialogTitle>Subscribe to Pro plan</DialogTitle>
 
             <div className="my-4">
-              <FormLabel>Team to subscribe</FormLabel>
+              <Label>Team to subscribe</Label>
               <AccountSelector
                 accounts={sortedTeams}
                 disabledAccountIds={disabledAccountIds}

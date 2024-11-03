@@ -8,7 +8,9 @@ import type { Rect } from "./types";
 export function useColoredRects(input: { url: string }): null | Rect[] {
   const [rects, setRects] = useState<null | Rect[]>(null);
   useEffect(() => {
-    const worker = new Worker(new URL("./worker.ts", import.meta.url));
+    const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+      type: "module",
+    });
     worker.onmessage = (event) => {
       setRects(event.data);
     };

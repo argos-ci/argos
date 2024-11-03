@@ -183,6 +183,12 @@ export function useBuildHotkey(
         return;
       }
 
+      if (
+        document.getElementById("root")?.getAttribute("aria-hidden") === "true"
+      ) {
+        return;
+      }
+
       // Ignore key events from menu & menuitem elements
       if (
         event.target instanceof HTMLElement &&

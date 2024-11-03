@@ -30,8 +30,9 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Truncable } from "@/ui/Truncable";
-import { TwicPicture } from "@/ui/TwicPicture";
+import { TwicPicture, TwicPictureProps } from "@/ui/TwicPicture";
 
+import { useBuildDiffColorStyle } from "./BuildDiffColorState";
 import { getGroupLabel } from "./BuildDiffGroup";
 import {
   Diff,
@@ -309,10 +310,9 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             <TwicPicture
               key={compareKey}
               {...compareAttrs}
-              className="absolute w-full"
+              className="opacity-disabled absolute w-full"
             />
-            <div className="bg-app absolute inset-0 opacity-70" />
-            <TwicPicture
+            <DiffPicture
               key={diffKey}
               {...diffAttrs}
               className="relative z-10 max-h-full w-full"
@@ -325,6 +325,11 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
       return null;
   }
 });
+
+function DiffPicture(props: TwicPictureProps) {
+  const style = useBuildDiffColorStyle();
+  return <TwicPicture {...props} style={{ ...style, ...props.style }} />;
+}
 
 const CardStack = ({
   isFirst,

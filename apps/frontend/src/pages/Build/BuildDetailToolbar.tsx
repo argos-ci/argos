@@ -20,6 +20,7 @@ import { ViewportIndicator } from "./metadata/ViewportIndicator";
 import { FitToggle } from "./toolbar/FitToggle";
 import { NextButton, PreviousButton } from "./toolbar/NavButtons";
 import { OverlayToggle } from "./toolbar/OverlayToggle";
+import { SettingsButton } from "./toolbar/SettingsButton";
 import { TrackButtons } from "./toolbar/TrackButtons";
 import { SplitViewToggle, ViewToggle } from "./toolbar/ViewToggle";
 
@@ -145,6 +146,8 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             </>
           )}
         />
+        <Separator orientation="vertical" className="mx-1 !h-6" />
+        <SettingsButton />
       </div>
     </div>
   );
