@@ -6,7 +6,7 @@ import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
 import { Container } from "@/ui/Container";
 import { Details, Summary } from "@/ui/Details";
-import { FormLabel } from "@/ui/FormLabel";
+import { Label } from "@/ui/Label";
 import { RadioField } from "@/ui/Radio";
 import { TextInput } from "@/ui/TextInput";
 
@@ -90,9 +90,9 @@ const SignupPage = () => {
 
           {accountType && (
             <div>
-              <FormLabel htmlFor="name">
+              <Label htmlFor="name">
                 {proAccountSelected ? "Team Name" : "Your Name"}
-              </FormLabel>
+              </Label>
               <TextInput
                 ref={nameRef}
                 id="name"

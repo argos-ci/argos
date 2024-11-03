@@ -17,6 +17,10 @@ import { useColoredRects } from "@/util/color-detection/hook";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
 import {
+  useBuildDiffColorState,
+  useBuildDiffColorStyle,
+} from "./BuildDiffColorState";
+import {
   BuildDiffFitStateProvider,
   useBuildDiffFitState,
 } from "./BuildDiffFitState";
@@ -175,14 +179,17 @@ function getImageScale(element: HTMLImageElement) {
   return element.height / element.naturalHeight;
 }
 
-function ScreenshotPicture(
-  props: Omit<React.ComponentProps<typeof TwicPicture>, "width" | "height"> & {
-    src: string;
-    width?: number | null | undefined;
-    height?: number | null | undefined;
-    onScaleChange?: (scale: number | null) => void;
-  },
-) {
+type ScreenshotPictureProps = Omit<
+  React.ComponentProps<typeof TwicPicture>,
+  "width" | "height"
+> & {
+  src: string;
+  width?: number | null | undefined;
+  height?: number | null | undefined;
+  onScaleChange?: (scale: number | null) => void;
+};
+
+function ScreenshotPicture(props: ScreenshotPictureProps) {
   const { src, style, width, height, onScaleChange, ...attrs } = props;
   const transform = useZoomTransform();
   const ref = useRef<HTMLImageElement>(null);
@@ -413,7 +420,7 @@ const CompareScreenshot = ({
 }) => {
   const { visible } = useBuildDiffVisibleState();
   const { contained } = useBuildDiffFitState();
-  const opacity = visible ? "" : "opacity-0";
+  const opacity = visible ? "opacity-70" : "opacity-0";
   switch (diff.status) {
     case ScreenshotDiffStatus.Added: {
       return (
@@ -550,7 +557,7 @@ function CompareScreenshotChanged(props: {
             )}
             {...getScreenshotPictureProps(diff.compareScreenshot!)}
           />
-          <ScreenshotPicture
+          <ChangesScreenshotPicture
             className={clsx(
               opacity,
               "relative z-10",
@@ -572,6 +579,17 @@ function CompareScreenshotChanged(props: {
         visible={diffVisible}
       />
     </>
+  );
+}
+
+function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
+  const style = useBuildDiffColorStyle();
+  return (
+    <ScreenshotPicture
+      alt="Changes screenshot"
+      {...props}
+      style={{ ...props.style, ...style }}
+    />
   );
 }
 
@@ -607,9 +625,9 @@ function DiffIndicator(props: {
             style={{ transform: `scaleY(${props.scale})` }}
           >
             {rects.map((rect, index) => (
-              <div
+              <DiffIndicatorRect
                 key={index}
-                className="bg-danger-solid absolute w-1.5"
+                className="absolute w-1.5"
                 style={{
                   top: rect.y,
                   height: rect.height,
@@ -620,6 +638,19 @@ function DiffIndicator(props: {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function DiffIndicatorRect(props: React.ComponentPropsWithoutRef<"div">) {
+  const { color } = useBuildDiffColorState();
+  return (
+    <div
+      {...props}
+      style={{
+        backgroundColor: color,
+        ...props.style,
+      }}
+    />
   );
 }
 

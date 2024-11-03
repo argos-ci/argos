@@ -1,12 +1,14 @@
 import { forwardRef } from "react";
 
+export type TwicPictureProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+  src: string;
+  transforms?: string[];
+  original?: boolean;
+};
+
 export const TwicPicture = forwardRef(function TwicPicture(
-  props: React.ImgHTMLAttributes<HTMLImageElement> & {
-    src: string;
-    transforms?: string[];
-    original?: boolean;
-  },
-  ref: React.Ref<HTMLImageElement>,
+  props: TwicPictureProps,
+  ref: React.ForwardedRef<HTMLImageElement>,
 ) {
   const { src, transforms = [], original, ...rest } = props;
   if (original) {
