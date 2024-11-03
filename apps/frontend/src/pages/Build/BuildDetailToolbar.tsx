@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { clsx } from "clsx";
 
-import { BuildType } from "@/gql/graphql";
+import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { Separator } from "@/ui/Separator";
 
 import { checkCanBeReviewed, Diff } from "./BuildDiffState";
@@ -64,6 +64,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
     buildType !== BuildType.Reference && checkCanBeReviewed(activeDiff.status);
+  const isChanged = activeDiff.status === ScreenshotDiffStatus.Changed;
   return (
     <div
       className={clsx(
@@ -135,7 +136,13 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
         <ViewToggle />
         <SplitViewToggle />
         <FitToggle />
-        <OverlayToggle />
+        {isChanged && (
+          <>
+            <Separator orientation="vertical" className="mx-1 !h-6" />
+            <OverlayToggle />
+            <SettingsButton />
+          </>
+        )}
         <TrackButtons
           diff={activeDiff}
           disabled={!canBeReviewed}
@@ -146,8 +153,6 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             </>
           )}
         />
-        <Separator orientation="vertical" className="mx-1 !h-6" />
-        <SettingsButton />
       </div>
     </div>
   );

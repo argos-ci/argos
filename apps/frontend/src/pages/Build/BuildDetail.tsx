@@ -420,7 +420,6 @@ const CompareScreenshot = ({
 }) => {
   const { visible } = useBuildDiffVisibleState();
   const { contained } = useBuildDiffFitState();
-  const opacity = visible ? "opacity-70" : "opacity-0";
   switch (diff.status) {
     case ScreenshotDiffStatus.Added: {
       return (
@@ -523,7 +522,6 @@ const CompareScreenshot = ({
           buildId={buildId}
           contained={contained}
           diffVisible={visible}
-          opacity={opacity}
         />
       );
     }
@@ -537,9 +535,8 @@ function CompareScreenshotChanged(props: {
   buildId: string;
   diffVisible: boolean;
   contained: boolean;
-  opacity: string;
 }) {
-  const { diff, buildId, diffVisible, contained, opacity } = props;
+  const { diff, buildId, diffVisible, contained } = props;
   const [scale, setScale] = useState<number | null>(null);
   invariant(diff.url, "Expected diff.url to be defined");
   return (
@@ -558,16 +555,13 @@ function CompareScreenshotChanged(props: {
             {...getScreenshotPictureProps(diff.compareScreenshot!)}
           />
           <ChangesScreenshotPicture
-            className={clsx(
-              opacity,
-              "relative z-10",
-              contained && "max-h-full",
-            )}
+            className={clsx("relative z-10", contained && "max-h-full")}
             alt="Changes screenshot"
             src={diff.url}
             width={diff.width}
             height={diff.height}
             onScaleChange={setScale}
+            style={diffVisible ? undefined : { opacity: 0 }}
           />
         </ScreenshotContainer>
       </ZoomPane>
@@ -588,7 +582,7 @@ function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
     <ScreenshotPicture
       alt="Changes screenshot"
       {...props}
-      style={{ ...props.style, ...style }}
+      style={{ ...style, ...props.style }}
     />
   );
 }
