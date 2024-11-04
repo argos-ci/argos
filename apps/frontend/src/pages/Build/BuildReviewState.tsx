@@ -4,11 +4,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { BuildStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { useLiveRef } from "@/ui/useLiveRef";
 import { usePrevious } from "@/ui/usePrevious";
 import { useStorageState } from "@/util/useStorageState";
 
@@ -27,12 +29,15 @@ export enum EvaluationStatus {
   Pending = "pending",
 }
 
+type Listener = (value: { id: Diff["id"]; status: EvaluationStatus }) => void;
+
 type BuildReviewStateValue = {
   diffStatuses: Record<Diff["id"], EvaluationStatus>;
   setDiffStatuses: React.Dispatch<
     React.SetStateAction<Record<Diff["id"], EvaluationStatus>>
   >;
   buildStatus: BuildStatus | null;
+  listenersRef: React.MutableRefObject<Listener[]>;
 };
 
 const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
@@ -100,11 +105,30 @@ export function ReviewCompleteWatcher(props: { onReviewComplete: () => void }) {
   return null;
 }
 
+export function useWatchItemReview() {
+  const { listenersRef } = useBuildReviewState();
+  return useCallback(
+    (callback: Listener) => {
+      const listener: Listener = (value) => callback(value);
+      listenersRef.current.push(listener);
+      return () => {
+        listenersRef.current = listenersRef.current.filter(
+          (v) => v !== listener,
+        );
+      };
+    },
+    [listenersRef],
+  );
+}
+
 /**
  * Acknowledge the current diff and move to the next diff or show the review dialog.
  */
 export function useAcknowledgeMarkedDiff() {
-  const getNextDiff = useGetNextDiff();
+  const getDiffStatus = useGetDiffEvaluationStatus();
+  const getNextDiff = useGetNextDiff((diff) => {
+    return getDiffStatus(diff.id) === EvaluationStatus.Pending;
+  });
   const reviewStatus = useReviewStatus();
   const { setActiveDiff } = useBuildDiffState();
   const reviewDialog = useReviewDialog();
@@ -163,28 +187,35 @@ export function useGetDiffEvaluationStatus() {
 /**
  * Get the current evaluation status of the diff group.
  */
-export function useBuildDiffGroupStatus(diffGroup: string | null) {
+export function useGetDiffGroupEvaluationStatus() {
   const diffState = useBuildDiffState();
+  const diffStateRef = useLiveRef(diffState);
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
-  if (!diffGroup) {
-    return null;
-  }
-  const status = diffState.diffs.reduce(
-    (groupStatus, diff) => {
-      if (diff.group === diffGroup) {
-        const diffStatus = getDiffEvaluationStatus(diff.id);
-        if (groupStatus === undefined) {
-          return diffStatus;
-        }
-        if (groupStatus !== diffStatus) {
-          return null;
-        }
+  return useCallback(
+    (diffGroup: string | null) => {
+      if (!diffGroup) {
+        return null;
       }
-      return groupStatus;
+      const diffState = diffStateRef.current;
+      const status = diffState.diffs.reduce(
+        (groupStatus, diff) => {
+          if (diff.group === diffGroup) {
+            const diffStatus = getDiffEvaluationStatus(diff.id);
+            if (groupStatus === undefined) {
+              return diffStatus;
+            }
+            if (groupStatus !== diffStatus) {
+              return null;
+            }
+          }
+          return groupStatus;
+        },
+        undefined as EvaluationStatus | null | undefined,
+      );
+      return status ?? null;
     },
-    undefined as EvaluationStatus | null | undefined,
+    [diffStateRef, getDiffEvaluationStatus],
   );
-  return status ?? null;
 }
 
 /**
@@ -256,6 +287,7 @@ export function useBuildDiffStatusState(args: {
     });
     return true;
   });
+
   const setDiffStatus = useEventCallback((status: EvaluationStatus) => {
     if (setGroupStatus(status)) {
       return;
@@ -271,6 +303,7 @@ export function useBuildDiffStatusState(args: {
       });
     }
   });
+
   return [
     diffId ? getDiffEvaluationStatus(diffId) : EvaluationStatus.Pending,
     setDiffStatus,
@@ -290,9 +323,24 @@ export function BuildReviewStateProvider(props: {
   const [diffStatuses, setDiffStatuses] = useStorageState<
     Record<string, EvaluationStatus>
   >(storageKey, {});
+  const listenersRef = useRef<Listener[]>([]);
+  const previousDiffStatuses = usePrevious(diffStatuses);
+  useEffect(() => {
+    if (!previousDiffStatuses || diffStatuses === previousDiffStatuses) {
+      return;
+    }
+    for (const [id, status] of Object.entries(diffStatuses)) {
+      const previousStatus = previousDiffStatuses[id];
+      if (status !== previousStatus) {
+        listenersRef.current.forEach((callback) => {
+          callback({ id, status });
+        });
+      }
+    }
+  }, [diffStatuses, previousDiffStatuses]);
   const value = useMemo<BuildReviewStateValue>(
-    () => ({ diffStatuses, setDiffStatuses, buildStatus }),
-    [diffStatuses, setDiffStatuses, buildStatus],
+    () => ({ diffStatuses, setDiffStatuses, buildStatus, listenersRef }),
+    [diffStatuses, setDiffStatuses, buildStatus, listenersRef],
   );
   return (
     <BuildReviewStateContext.Provider value={value}>

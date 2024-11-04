@@ -1,4 +1,6 @@
 import {
+  ComponentPropsWithoutRef,
+  forwardRef,
   memo,
   useCallback,
   useEffect,
@@ -8,6 +10,7 @@ import {
   useState,
 } from "react";
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import {
   defaultRangeExtractor,
   Range,
@@ -22,15 +25,27 @@ import {
   ThumbsUpIcon,
 } from "lucide-react";
 import {
+  AriaButtonProps,
+  HoverProps,
+  useButton,
+  useObjectRef,
+} from "react-aria";
+import {
   Button as RACButton,
   ButtonProps as RACButtonProps,
+  Tooltip as RACTooltip,
+  TooltipProps as RACTooltipProps,
+  TooltipTrigger,
 } from "react-aria-components";
 
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { getTooltipAnimationClassName } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { TwicPicture, TwicPictureProps } from "@/ui/TwicPicture";
+import { useEventCallback } from "@/ui/useEventCallback";
+import { useLiveRef } from "@/ui/useLiveRef";
 
 import { useBuildDiffColorStyle } from "./BuildDiffColorState";
 import { getGroupLabel } from "./BuildDiffGroup";
@@ -45,8 +60,10 @@ import {
 import { useBuildHotkey } from "./BuildHotkeys";
 import {
   EvaluationStatus,
-  useBuildDiffGroupStatus,
   useBuildDiffStatusState,
+  useGetDiffEvaluationStatus,
+  useGetDiffGroupEvaluationStatus,
+  useWatchItemReview,
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 
@@ -136,12 +153,12 @@ const createGroupItemRow = ({
   group: [diff],
 });
 
-const getRows = (
+function getRows(
   groups: DiffGroup[],
   expandedGroups: string[],
   results: DiffResult[],
   searchMode: boolean,
-): ListRow[] => {
+): ListRow[] {
   return (
     groups
       // Filter out empty groups
@@ -204,7 +221,7 @@ const getRows = (
         }, initialRows as ListRow[]);
       })
   );
-};
+}
 
 const ListHeader = ({
   style,
@@ -406,12 +423,13 @@ function ShowSubItemToggle(
   );
 }
 
-const DiffCard = (props: {
+function DiffCard(props: {
   active: boolean;
   status: EvaluationStatus;
+  className?: string;
   children: React.ReactNode;
-}) => {
-  const { active, status, children } = props;
+}) {
+  const { active, status, children, className } = props;
   const ring = (() => {
     switch (status) {
       case EvaluationStatus.Accepted:
@@ -438,7 +456,12 @@ const DiffCard = (props: {
   })();
 
   return (
-    <div className="bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg">
+    <div
+      className={clsx(
+        "bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg",
+        className,
+      )}
+    >
       {children}
       <div
         className={clsx(
@@ -454,7 +477,7 @@ const DiffCard = (props: {
       />
     </div>
   );
-};
+}
 
 function EvaluationStatusIndicator(props: { status: EvaluationStatus }) {
   const value = (() => {
@@ -474,13 +497,58 @@ function EvaluationStatusIndicator(props: { status: EvaluationStatus }) {
   }
   const Icon = value.icon;
   return (
-    <div className={clsx("absolute right-4 top-3 z-30", value.color)}>
-      <Icon className="size-4" />
+    <div className={value.color}>
+      <Icon className="size-3" />
     </div>
   );
 }
 
-const ListItem = ({
+let warmup = false;
+let cooldownTimeout: NodeJS.Timeout | null = null;
+
+function useDelayedHover(props: {
+  delay: number;
+  cooldownDelay: number;
+  onHoverChange: (isHovered: boolean) => void;
+}) {
+  const [entered, setEntered] = useState(false);
+  const onHoverChangeRef = useLiveRef(props.onHoverChange);
+  useLayoutEffect(() => {
+    const onHoverChange = onHoverChangeRef.current;
+
+    if (entered) {
+      const timeout = setTimeout(
+        () => {
+          onHoverChange(true);
+          warmup = true;
+          if (cooldownTimeout) {
+            clearTimeout(cooldownTimeout);
+            cooldownTimeout = null;
+          }
+        },
+        warmup ? 0 : props.delay,
+      );
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+
+    onHoverChange(false);
+    cooldownTimeout = setTimeout(() => {
+      warmup = false;
+    }, props.cooldownDelay);
+    return undefined;
+  }, [entered, onHoverChangeRef, props.delay, props.cooldownDelay]);
+
+  return {
+    hoverProps: {
+      onMouseEnter: () => setEntered(true),
+      onMouseLeave: () => setEntered(false),
+    },
+  };
+}
+
+function ListItem({
   style,
   item,
   index,
@@ -488,6 +556,8 @@ const ListItem = ({
   setActiveDiff,
   onToggleGroupItem,
   observer,
+  isHovered,
+  onHoverChange,
 }: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
   item: ListItemRow | ListGroupItemRow;
@@ -496,9 +566,9 @@ const ListItem = ({
   setActiveDiff: (diff: Diff) => void;
   observer: IntersectionObserver | null;
   onToggleGroupItem: (groupId: string | null) => void;
-}) => {
-  const pt = item.first ? "pt-4" : "pt-2";
-  const pb = item.last ? "pb-4" : "pb-2";
+  isHovered: boolean;
+  onHoverChange: (isHovered: boolean) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -515,56 +585,47 @@ const ListItem = ({
     diffId: item.diff?.id ?? null,
     diffGroup: null,
   });
-  const groupStatus = useBuildDiffGroupStatus(item.diff?.group ?? null);
+  const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
+  const groupStatus = getDiffGroupStatus(item.diff?.group ?? null);
   const isGroupItem = item.type === "group-item";
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
+  const { hoverProps } = useDelayedHover({
+    onHoverChange,
+    delay: 1000,
+    cooldownDelay: 800,
+  });
 
-  return (
-    <div
+  const rowStyle = getRowStyle(item, status);
+
+  const button = (
+    <ListItemButton
       ref={ref}
-      role="button"
       data-index={index}
-      aria-disabled={!item.diff}
       className={clsx(
-        pt,
-        pb,
-        "group/item relative w-full cursor-default px-4 text-left focus:outline-none",
+        "group/item relative size-full cursor-default px-4 text-left focus:outline-none",
         isSubItem && "pl-10",
       )}
-      style={style}
-      onClick={() => {
+      onPress={() => {
         if (item.diff) {
           setActiveDiff(item.diff);
         }
       }}
+      isDisabled={!item.diff}
+      {...hoverProps}
     >
-      {isSubItem && (
-        <CornerDownRightIcon
-          size="1em"
-          className="text-low absolute left-4 top-4"
-        />
-      )}
-
-      {isGroupItem && (
-        <CardStack
-          isFirst={item.first}
-          isLast={item.last}
-          status={groupStatus}
-        />
-      )}
-
       <DiffCard active={active} status={status}>
         {item.diff ? (
           <>
-            <EvaluationStatusIndicator status={status} />
-            <DiffImage diff={item.diff} />{" "}
+            <DiffImage diff={item.diff} />
             <div
               className={clsx(
                 "bg-app absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 truncate px-2",
-                !searchMode &&
-                  "opacity-0 transition-opacity group-focus-within/item:opacity-100 group-hover/sidebar:opacity-100",
+                !searchMode && status === EvaluationStatus.Pending
+                  ? "opacity-0 transition-opacity group-focus-within/item:opacity-100 group-hover/sidebar:opacity-100"
+                  : null,
               )}
             >
+              <EvaluationStatusIndicator status={status} />
               <Truncable className="bg-app text-xxs flex-1 pb-1.5 pt-1 font-medium">
                 {item.result ? (
                   <>
@@ -606,9 +667,80 @@ const ListItem = ({
           </>
         ) : null}
       </DiffCard>
+    </ListItemButton>
+  );
+
+  const isEvaluated =
+    status === EvaluationStatus.Accepted ||
+    status === EvaluationStatus.Rejected;
+
+  return (
+    <div className="relative w-full" style={{ ...rowStyle, ...style }}>
+      {isGroupItem && (
+        <CardStack
+          isFirst={item.first}
+          isLast={item.last}
+          status={groupStatus}
+        />
+      )}
+      {isSubItem && (
+        <CornerDownRightIcon
+          size="1em"
+          className="text-low absolute"
+          style={{ top: 8, left: 16 }}
+        />
+      )}
+      {isEvaluated && item.diff && !active ? (
+        <TooltipTrigger delay={0} closeDelay={0} isOpen={isHovered}>
+          {button}
+          <DiffTooltip diff={item.diff} triggerRef={ref} />
+        </TooltipTrigger>
+      ) : (
+        button
+      )}
     </div>
   );
-};
+}
+
+function DiffTooltip(props: {
+  diff: Diff;
+  triggerRef: RACTooltipProps["triggerRef"];
+}) {
+  const { diff } = props;
+  return (
+    <RACTooltip
+      triggerRef={props.triggerRef}
+      placement="right"
+      offset={8}
+      className={(props) =>
+        clsx("pointer-events-none w-72", getTooltipAnimationClassName(props))
+      }
+    >
+      <DiffCard active={false} status={EvaluationStatus.Pending}>
+        <DiffImage diff={diff} />
+      </DiffCard>
+    </RACTooltip>
+  );
+}
+
+const ListItemButton = forwardRef(function ListItemButton(
+  props: Pick<AriaButtonProps<"div">, "onPress" | "isDisabled"> &
+    Pick<HoverProps, "onHoverChange"> &
+    ComponentPropsWithoutRef<"div">,
+  forwardedRef: React.ForwardedRef<HTMLDivElement>,
+) {
+  const ref = useObjectRef(forwardedRef);
+  const { onPress, isDisabled, ...rest } = props;
+  const { buttonProps } = useButton(
+    {
+      elementType: "div",
+      onPress,
+      isDisabled,
+    },
+    ref,
+  );
+  return <div ref={ref} {...rest} {...buttonProps} />;
+});
 
 const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
   const [observer, setObserver] = useState<IntersectionObserver | null>(null);
@@ -718,6 +850,68 @@ const preloadListItemRow = (row: ListItemRow | ListGroupItemRow) => {
   }
 };
 
+function useEstimateListItemHeight() {
+  const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
+  const getDiffStatus = useGetDiffEvaluationStatus();
+  return useCallback(
+    (row: ListItemRow | ListGroupItemRow) => {
+      const status = (() => {
+        switch (row.type) {
+          case "group-item":
+            invariant(row.diff?.group);
+            return getDiffGroupStatus(row.diff.group);
+          case "item":
+            invariant(row.diff);
+            return getDiffStatus(row.diff.id);
+          default:
+            assertNever(row);
+        }
+      })();
+
+      const style = getRowStyle(row, status);
+      return style.height;
+    },
+    [getDiffGroupStatus, getDiffStatus],
+  );
+}
+
+/**
+ * Get the height and padding of the row based on the row type and status.
+ */
+function getRowStyle(
+  row: ListItemRow | ListGroupItemRow,
+  status: EvaluationStatus | null,
+) {
+  const isEvaluated =
+    status === EvaluationStatus.Accepted ||
+    status === EvaluationStatus.Rejected;
+
+  const innerHeight = (() => {
+    if (isEvaluated) {
+      switch (row.type) {
+        case "group-item":
+          return 42;
+        case "item":
+          return 26;
+        default:
+          assertNever(row);
+      }
+    }
+
+    const dimensions = getDiffDimensions(row.diff);
+    return Math.max(dimensions.height, MIN_HEIGHT);
+  })();
+
+  const gap = 12;
+  const paddingTop = row.first ? gap : gap / 2;
+  const paddingBottom = row.last ? gap : gap / 2;
+  return {
+    height: innerHeight + paddingTop + paddingBottom,
+    paddingTop,
+    paddingBottom,
+  };
+}
+
 const InternalBuildDiffList = memo(() => {
   const {
     groups,
@@ -738,18 +932,17 @@ const InternalBuildDiffList = memo(() => {
     () => getRows(groups, expanded, results, searchMode),
     [groups, expanded, results, searchMode],
   );
-  const rowsRef = useRef(rows);
-  rowsRef.current = rows;
+  const rowsRef = useLiveRef(rows);
   const containerRef = useRef<HTMLDivElement>(null);
-  const getDiffIndex = useCallback((diff: Diff | null) => {
+  const getDiffIndex = useEventCallback((diff: Diff | null) => {
     if (!diff) {
       return -1;
     }
-    return rowsRef.current.findIndex(
+    return rows.findIndex(
       (row) =>
         (row.type === "item" || row.type === "group-item") && row.diff === diff,
     );
-  }, []);
+  });
 
   const openGroup = useCallback(
     (name: DiffGroup["name"]) => {
@@ -772,10 +965,9 @@ const InternalBuildDiffList = memo(() => {
   }, [rows]);
 
   const [activeStickyIndex, setActiveStickyIndex] = useState<number>(0);
-
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    estimateSize: (index) => {
+  const estimateListItemHeight = useEstimateListItemHeight();
+  const estimateSize = useCallback(
+    (index: number) => {
       const row = rows[index];
       if (!row) {
         return 0;
@@ -787,17 +979,18 @@ const InternalBuildDiffList = memo(() => {
         }
         case "item":
         case "group-item": {
-          const dimensions = getDiffDimensions(row.diff);
-          const height = Math.max(dimensions.height, MIN_HEIGHT);
-          const gap = 16;
-          const mt = row.first ? gap / 2 : 0;
-          const mb = row.last ? gap / 2 : 0;
-          return height + gap + mt + mb;
+          return estimateListItemHeight(row);
         }
         default:
           return 0;
       }
     },
+    [estimateListItemHeight, rows],
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    estimateSize,
     scrollPaddingStart: 30,
     getScrollElement: () => containerRef.current,
     overscan: 20,
@@ -820,6 +1013,27 @@ const InternalBuildDiffList = memo(() => {
       [stickyIndices],
     ),
   });
+
+  const { resizeItem } = rowVirtualizer;
+
+  const watchItemReview = useWatchItemReview();
+  useEffect(() => {
+    return watchItemReview((value) => {
+      const rows = rowsRef.current;
+      rows.forEach((row, index) => {
+        if (row.type === "item" && row.diff?.id === value.id) {
+          resizeItem(index, estimateSize(index));
+          return;
+        }
+        if (
+          row.type === "group-item" &&
+          row.group?.some((diff) => diff.id === value.id)
+        ) {
+          resizeItem(index, estimateSize(index));
+        }
+      });
+    });
+  }, [estimateSize, resizeItem, rowsRef, watchItemReview]);
 
   const { scrollToIndex } = rowVirtualizer;
   const scrollToIndexRef = useRef(scrollToIndex);
@@ -850,6 +1064,8 @@ const InternalBuildDiffList = memo(() => {
       });
     }
   }, [scrolledDiff, getDiffIndex, getIndicesInViewport]);
+
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (searchMode && search && !results.length && totalDiffCount > 0) {
     return <div className="p-4 text-sm">No results</div>;
@@ -931,6 +1147,10 @@ const InternalBuildDiffList = memo(() => {
                           toggleGroup(groupId);
                         }
                       }}
+                      onHoverChange={(isHovered) => {
+                        setHoveredIndex(isHovered ? virtualRow.index : null);
+                      }}
+                      isHovered={hoveredIndex === virtualRow.index}
                     />
                   );
                 }
@@ -944,10 +1164,10 @@ const InternalBuildDiffList = memo(() => {
   );
 });
 
-export const BuildDiffList = () => {
+export function BuildDiffList() {
   const { ready } = useBuildDiffState();
   if (!ready) {
     return null;
   }
   return <InternalBuildDiffList />;
-};
+}

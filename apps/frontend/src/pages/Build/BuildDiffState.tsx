@@ -186,7 +186,7 @@ export function useHasNextDiff() {
   return activeDiffIndex < diffs.length - 1;
 }
 
-export function useGetNextDiff() {
+export function useGetNextDiff(predicate?: (diff: Diff) => boolean) {
   const hasNextDiff = useHasNextDiff();
   const { searchMode } = useSearchModeState();
   const { diffs, activeDiff, expanded } = useBuildDiffState();
@@ -199,14 +199,17 @@ export function useGetNextDiff() {
     const isGroupExpanded =
       !activeDiff?.group || expanded.includes(activeDiff.group);
 
-    if (isGroupExpanded || searchMode) {
+    if ((isGroupExpanded || searchMode) && !predicate) {
       return diffs[activeDiffIndex + 1] ?? null;
     }
 
     const offsetIndex = activeDiffIndex + 1;
-    const nextDiffIndex = diffs
-      .slice(offsetIndex)
-      .findIndex((diff) => diff.group !== activeDiff.group);
+    const nextDiffIndex = diffs.slice(offsetIndex).findIndex((diff) => {
+      if (!isGroupExpanded && !searchMode && diff.group === activeDiff.group) {
+        return false;
+      }
+      return predicate ? predicate(diff) : true;
+    });
 
     if (nextDiffIndex !== -1) {
       return diffs[nextDiffIndex + offsetIndex] ?? null;
