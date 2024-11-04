@@ -37,8 +37,8 @@ const variantClassNames: Record<ButtonVariant, string> = {
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-  medium: "group/button-medium rounded-lg py-1.5 px-3 text-sm",
   small: "group/button-small rounded py-1 px-2 text-xs",
+  medium: "group/button-medium rounded-lg py-[calc(0.375rem-1px)] px-3 text-sm",
   large: "group/button-large rounded py-3 px-8 text-base",
 };
 
@@ -50,7 +50,7 @@ function getButtonClassName(options: ButtonOptions) {
     variantClassName,
     sizeClassName,
     "focus:outline-none data-[focus-visible]:ring-4",
-    "items-center data-[disabled]:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium transition data-[disabled]:cursor-default",
+    "items-center data-[disabled]:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium data-[disabled]:cursor-default",
   );
 }
 

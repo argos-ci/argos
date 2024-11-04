@@ -9,10 +9,12 @@ import {
 
 type IconButtonVariant = "contained" | "outline";
 type IconButtonColor = "danger" | "success" | "neutral";
+type IconButtonSize = "small" | "medium";
 
 type IconButtonOptions = {
   variant?: IconButtonVariant;
   color?: IconButtonColor;
+  size?: IconButtonSize;
 };
 
 const colorClassNames: Record<
@@ -36,14 +38,19 @@ const colorClassNames: Record<
 };
 
 function getIconButtonClassName(options: IconButtonOptions) {
-  const { variant = "outline", color = "neutral" } = options;
+  const { variant = "outline", color = "neutral", size = "medium" } = options;
   const variantClassName = colorClassNames[variant][color];
   return clsx(
     variantClassName,
     /* Group */
     "group-[]/button-group:rounded-none group-[]/button-group:first:rounded-l-lg group-[]/button-group:last:rounded-r-lg",
+    /* Size */
+    {
+      small: "p-[calc(0.25rem-1px)] *:size-4 rounded-md leading-4 text-sm",
+      medium: "p-[calc(0.5rem-1px)] *:size-4 rounded-lg leading-4 text-sm",
+    }[size],
     /* Base */
-    "data-[disabled]:opacity-disabled flex h-8 cursor-default items-center gap-2 rounded-lg border border-transparent p-[7px] text-sm transition [&>*]:size-4",
+    "data-[disabled]:opacity-disabled flex cursor-default border border-transparent text-sm",
     /* Focus */
     "focus:outline-none data-[focus-visible]:ring-4",
   );
@@ -52,13 +59,16 @@ function getIconButtonClassName(options: IconButtonOptions) {
 type IconButtonProps = RACButtonProps & IconButtonOptions;
 
 export const IconButton = forwardRef(function IconButton(
-  { className, color, variant, ...props }: IconButtonProps,
+  { className, color, variant, size, ...props }: IconButtonProps,
   ref: React.ForwardedRef<HTMLButtonElement>,
 ) {
   return (
     <RACButton
       ref={ref}
-      className={clsx(getIconButtonClassName({ color, variant }), className)}
+      className={clsx(
+        getIconButtonClassName({ color, variant, size }),
+        className,
+      )}
       {...props}
     />
   );

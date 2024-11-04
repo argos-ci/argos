@@ -91,7 +91,7 @@ function InteractiveStatCount({
         onPress={onActive}
         isDisabled={count === 0}
       >
-        <span className="[&>*]:size-4">{icon}</span>
+        <span className="*:size-4">{icon}</span>
         <span className="text-xs">{count}</span>
       </RACButton>
     </HotkeyTooltip>
@@ -115,7 +115,7 @@ function StatCount({ icon, count, color, tooltip }: StatCountProps) {
         count === 0 && "opacity-disabled",
       )}
     >
-      <span className="[&>*]:size-4">{icon}</span>
+      <span className="*:size-4">{icon}</span>
       <span className="text-xs">{count}</span>
     </div>
   );
