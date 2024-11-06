@@ -222,14 +222,14 @@ const ListHeader = ({
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header border-t-base bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-4 text-left focus:outline-none",
+        "group/list-header border-t-base bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-2 text-left focus:outline-none",
       )}
       style={style}
       onPress={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "text-low m-0.5 size-3 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-[focus-visible]/list-header:opacity-100",
+          "text-low m-[0.1875rem] size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-[focus-visible]/list-header:opacity-100",
           !item.expanded && "-rotate-90",
         )}
       />
@@ -859,7 +859,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="border-b-base flex shrink-0 items-center border-b px-2"
+          className="border-b-base flex shrink-0 items-center overflow-x-auto border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

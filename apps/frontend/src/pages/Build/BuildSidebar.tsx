@@ -1,4 +1,5 @@
 import * as React from "react";
+import clsx from "clsx";
 import { SearchIcon, XIcon } from "lucide-react";
 import {
   Tab as RACTab,
@@ -25,7 +26,11 @@ const Tab = React.forwardRef(function Tab(
   return (
     <RACTab
       ref={ref}
-      className="text-low data-[hovered]:text data-[selected]:text rac-focus cursor-default px-2 text-sm font-medium leading-10 transition"
+      className={clsx(
+        "text-low rac-focus cursor-default rounded px-2 text-sm font-medium leading-6",
+        "data-[hovered]:bg-ui",
+        "data-[selected]:text data-[selected]:bg-ui",
+      )}
       {...props}
     />
   );
@@ -44,20 +49,23 @@ const SearchInput = React.forwardRef<HTMLInputElement, object>(
   (_props, ref) => {
     const { search, setSearch } = useSearchState();
     return (
-      <input
-        ref={ref}
-        type="text"
-        autoFocus
-        placeholder="Find..."
-        className="text placeholder:text-low flex-1 bg-transparent p-2 text-xs leading-6 outline-none"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            event.preventDefault();
-          }
-        }}
-      />
+      <div className="relative flex-1">
+        <SearchIcon className="text-low pointer-events-none absolute my-3 size-4" />
+        <input
+          ref={ref}
+          type="text"
+          autoFocus
+          placeholder="Find..."
+          className="text placeholder:text-low w-full bg-transparent p-2 pl-6 text-xs leading-6 outline-none"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+            }
+          }}
+        />
+      </div>
     );
   },
 );
@@ -98,17 +106,6 @@ export const BuildSidebar = React.memo(
         className="group/sidebar flex w-[295px] shrink-0 flex-col border-r"
       >
         <div className="flex shrink-0 items-center border-b px-2">
-          <HotkeyTooltip
-            keys={searchModeHotKey.displayKeys}
-            description="Find..."
-          >
-            <IconButton
-              onPress={() => enterSearchMode()}
-              aria-pressed={searchMode}
-            >
-              <SearchIcon />
-            </IconButton>
-          </HotkeyTooltip>
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />
@@ -116,16 +113,33 @@ export const BuildSidebar = React.memo(
                 keys={leaveSearchModeHotKey.displayKeys}
                 description="Exit search mode"
               >
-                <IconButton onPress={() => setSearchMode(false)}>
+                <IconButton size="small" onPress={() => setSearchMode(false)}>
                   <XIcon />
                 </IconButton>
               </HotkeyTooltip>
             </>
           ) : (
-            <RACTabList className="flex shrink-0" aria-label="Build details">
-              <Tab id="screenshots">Screenshots</Tab>
-              <Tab id="info">Info</Tab>
-            </RACTabList>
+            <>
+              <RACTabList
+                className="flex flex-1 shrink-0 gap-2 py-2"
+                aria-label="Build details"
+              >
+                <Tab id="screenshots">Screenshots</Tab>
+                <Tab id="info">Info</Tab>
+              </RACTabList>
+              <HotkeyTooltip
+                keys={searchModeHotKey.displayKeys}
+                description="Find"
+              >
+                <IconButton
+                  onPress={() => enterSearchMode()}
+                  aria-pressed={searchMode}
+                  size="small"
+                >
+                  <SearchIcon />
+                </IconButton>
+              </HotkeyTooltip>
+            </>
           )}
         </div>
 
