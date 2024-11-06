@@ -31,7 +31,19 @@ import { Modal } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 
 const query = graphql(`
-  query ConfigureGitHubSSO_installations {
+  query ConfigureGitHubSSO_installations($teamAccountId: ID!) {
+    teamAccount: accountById(id: $teamAccountId) {
+      id
+      ... on Team {
+        githubLightInstallation {
+          id
+          ghInstallation {
+            id
+            ...GithubInstallationsSelect_GhApiInstallation
+          }
+        }
+      }
+    }
     me {
       id
       ghInstallations {
@@ -51,14 +63,28 @@ const query = graphql(`
   }
 `);
 
-function GitHubInstallationsSelectControl() {
-  const { data } = useQuery(query);
+function GitHubInstallationsSelectControl(props: { teamAccountId: string }) {
+  const { data, error } = useQuery(query, {
+    variables: { teamAccountId: props.teamAccountId },
+  });
+  if (error) {
+    throw error;
+  }
   const installations = (() => {
     if (!data) {
       return [];
     }
     invariant(data.me, "Expected me");
     return data.me.ghInstallations.edges;
+  })();
+
+  const installationType = (() => {
+    if (!data) {
+      return null;
+    }
+    invariant(installations, "Expected installations");
+    invariant(data.teamAccount?.__typename === "Team", "Expected teamAccount");
+    return data.teamAccount.githubLightInstallation ? "light" : "main";
   })();
   const form = useFormContext();
   const controller = useController({
@@ -90,9 +116,8 @@ function GitHubInstallationsSelectControl() {
           invariant(installation, "Expected installation");
           controller.field.onChange(installation.id);
         }}
-        // Could be wrong if the user use GitHub light
-        // @TODO use the correct app here
-        app="main"
+        disabled={!data}
+        app={installationType ?? "main"}
       />
       {controller.fieldState.error?.message && (
         <FormError className="mt-2">
@@ -157,7 +182,9 @@ function ActiveConfigureSSOForm(props: {
             from your GitHub organization will be automatically added to your
             Argos Team. You will be able to configure role for each Team member.
           </DialogText>
-          <GitHubInstallationsSelectControl />
+          <GitHubInstallationsSelectControl
+            teamAccountId={props.teamAccountId}
+          />
           {props.priced ? (
             <>
               <div className="my-8">
