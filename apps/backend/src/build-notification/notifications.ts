@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
+import Bolt from "@slack/bolt";
 
 import {
   Build,
@@ -16,6 +17,7 @@ import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 
+import { postMessageToSlackChannel } from "../slack/index.js";
 import { getAggregatedNotification } from "./aggregated.js";
 import { getCommentBody } from "./comment.js";
 import { job as buildNotificationJob } from "./job.js";
@@ -214,11 +216,91 @@ const sendGitlabNotification = async (ctx: Context) => {
   }
 };
 
+const sendSlackNotification = async (ctx: Context) => {
+  const { build, notification } = ctx;
+  invariant(build, "no build found", UnretryableError);
+
+  if (build.jobStatus !== "complete") {
+    return;
+  }
+
+  const { project, compareScreenshotBucket } = build;
+  invariant(
+    compareScreenshotBucket,
+    "no compare screenshot bucket found",
+    UnretryableError,
+  );
+  invariant(project, "no project found", UnretryableError);
+
+  const { account, slackChannelId } = project;
+
+  invariant(account, "no account found", UnretryableError);
+
+  if (!account.slackInstallation) {
+    return;
+  }
+
+  if (!slackChannelId) {
+    return;
+  }
+
+  const buildUrl = await build.getUrl();
+
+  await postMessageToSlackChannel({
+    installation: account.slackInstallation,
+    channel: slackChannelId,
+    text: notification.description,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*project ${project.name} | <${buildUrl}|Build ${build.number}: ${build.name}> of*\n*Visual Changes:* _${notification.description}_`,
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Review Changes",
+          },
+          url: buildUrl,
+          action_id: "build-link",
+        },
+      },
+      { type: "divider" },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: `*Type:* ${build.type}` },
+          { type: "mrkdwn", text: `*Commit:* ${ctx.commit.slice(0, 7)}` },
+          {
+            type: "mrkdwn",
+            text: `*Branch:* ${build.compareScreenshotBucket?.branch}`,
+          },
+          {
+            type: "mrkdwn",
+            text: `*Screenshots Compared:* ${build.compareScreenshotBucket?.screenshotCount}`,
+          },
+        ],
+      },
+      build.pullRequest?.number && {
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: `*Pull Request #<https://github.com/|#${build.pullRequest.number}:* ${build.pullRequest.title}>`,
+          },
+        ],
+      },
+    ].filter(Boolean) as Bolt.types.Block[],
+  });
+};
+
 export const processBuildNotification = async (
   buildNotification: BuildNotification,
 ) => {
   await buildNotification.$fetchGraph(
-    `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], account], compareScreenshotBucket]`,
+    `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], account.slackInstallation], compareScreenshotBucket]`,
   );
 
   invariant(buildNotification.build, "No build found", UnretryableError);
@@ -265,5 +347,9 @@ export const processBuildNotification = async (
     aggregatedNotification,
   };
 
-  await Promise.all([sendGithubNotification(ctx), sendGitlabNotification(ctx)]);
+  await Promise.all([
+    sendGithubNotification(ctx),
+    sendGitlabNotification(ctx),
+    sendSlackNotification(ctx),
+  ]);
 };

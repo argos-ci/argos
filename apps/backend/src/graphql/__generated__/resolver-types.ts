@@ -648,6 +648,8 @@ export type IProject = INode & {
   public: Scalars['Boolean']['output'];
   /** Repository associated to the project */
   repository?: Maybe<IRepository>;
+  /** Slack channel */
+  slackChannelId?: Maybe<Scalars['String']['output']>;
   /** Project slug */
   slug: Scalars['String']['output'];
   /** Summary check */
@@ -1104,6 +1106,7 @@ export type IUpdateProjectInput = {
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   private?: InputMaybe<Scalars['Boolean']['input']>;
+  slackChannelId?: InputMaybe<Scalars['String']['input']>;
   summaryCheck?: InputMaybe<ISummaryCheck>;
 };
 
@@ -1744,6 +1747,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   private?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
   public?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   repository?: Resolver<Maybe<IResolversTypes['Repository']>, ParentType, ContextType>;
+  slackChannelId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;

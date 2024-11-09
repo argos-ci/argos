@@ -116,6 +116,8 @@ export const typeDefs = gql`
     prCommentEnabled: Boolean!
     "Summary check"
     summaryCheck: SummaryCheck!
+    "Slack channel"
+    slackChannelId: String
     "Build names"
     buildNames: [String!]!
     "Contributors"
@@ -157,6 +159,7 @@ export const typeDefs = gql`
     private: Boolean
     name: String
     summaryCheck: SummaryCheck
+    slackChannelId: String
   }
 
   input TransferProjectInput {
@@ -550,9 +553,9 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      const permssions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
 
-      if (!permssions.includes("view")) {
+      if (!permissions.includes("view")) {
         return null;
       }
 
@@ -567,9 +570,9 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      const permssions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
 
-      if (!permssions.includes("view")) {
+      if (!permissions.includes("view")) {
         return null;
       }
 
@@ -618,6 +621,7 @@ export const resolvers: IResolvers = {
       const project = await getAdminProject({
         id: args.input.id,
         user: ctx.auth?.user,
+        withGraphFetched: "account.slackInstallation",
       });
 
       const data: PartialModelObject<Project> = {};
@@ -636,6 +640,10 @@ export const resolvers: IResolvers = {
 
       if (args.input.summaryCheck != null) {
         data.summaryCheck = args.input.summaryCheck;
+      }
+
+      if (args.input.slackChannelId != null) {
+        data.slackChannelId = args.input.slackChannelId;
       }
 
       if (args.input.name != null && project.name !== args.input.name) {

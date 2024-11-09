@@ -50,6 +50,7 @@ export class Project extends Model {
       gitlabProjectId: { type: ["null", "string"] },
       prCommentEnabled: { type: "boolean" },
       summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
+      slackChannelId: { type: ["null", "string"] },
     },
   });
 
@@ -63,6 +64,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   prCommentEnabled!: boolean;
   summaryCheck!: "always" | "never" | "auto";
+  slackChannelId!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

@@ -541,6 +541,9 @@ type Project implements Node {
   """Repository associated to the project"""
   repository: Repository
 
+  """Slack channel"""
+  slackChannelId: String
+
   """Project slug"""
   slug: String!
 
@@ -892,6 +895,7 @@ input UpdateProjectInput {
   id: ID!
   name: String
   private: Boolean
+  slackChannelId: String
   summaryCheck: SummaryCheck
 }
 

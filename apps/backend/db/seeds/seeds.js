@@ -116,27 +116,27 @@ export const seed = async (knex) => {
       {
         ...timeStamps,
         name: "big",
-        token: "big-xxx",
+        token: "big-650ded7d72e85b52e099df6e56aa204d4fe9",
         accountId: smoothAccount.id,
         private: false,
       },
       {
         ...timeStamps,
         name: "awesome",
-        token: "awesome-xxx",
+        token: "awesome-650ded7d72e85b52e099df6e56aa204d",
         accountId: helloAccount.id,
         defaultBaseBranch: "main",
       },
       {
         ...timeStamps,
         name: "zone-51",
-        token: "zone-51-xxx",
+        token: "zone-51-650ded7d72e85b52e099df6e56aa204d",
         accountId: gregAccount.id,
       },
       {
         ...timeStamps,
         name: "lalouland",
-        token: "lalouland-xxx",
+        token: "lalouland-650ded7d72e85b52e099df6e56aa20",
         accountId: jeremyAccount.id,
       },
     ]);
