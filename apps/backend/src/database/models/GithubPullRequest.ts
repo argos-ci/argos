@@ -19,6 +19,7 @@ export class GithubPullRequest extends Model {
     properties: {
       commentDeleted: { type: "boolean" },
       commentId: { type: ["string", "null"] },
+      jobStatus: { type: ["string"] },
       githubRepositoryId: { type: "string" },
       number: { type: "integer" },
       title: { type: ["string", "null"] },
