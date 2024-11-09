@@ -192,3 +192,81 @@ export const Plan = defineFactory(models.Plan, () => ({
   fineGrainedAccessControlIncluded: true,
   interval: "month",
 }));
+
+export const SlackInstallation = defineFactory(
+  models.SlackInstallation,
+  () => ({
+    teamId: FactoryGirl.sequence(
+      "slackInstallation.teamId",
+      (n) => `team-${n}`,
+    ),
+    teamDomain: FactoryGirl.sequence(
+      "slackInstallation.teamDomain",
+      (n) => `teamDomain-${n}`,
+    ),
+    teamName: FactoryGirl.sequence(
+      "slackInstallation.teamName",
+      (n) => `teamName-${n}`,
+    ),
+    installation: {
+      bot: {
+        botUserId: "botUserId",
+        botAccessToken: "botAccessToken",
+        botScopes: ["chat:write"],
+      },
+    },
+  }),
+);
+export const SlackChannel = defineFactory(models.SlackChannel, () => ({
+  slackId: FactoryGirl.sequence("slackChannel.slackId", (n) => `slack-${n}`),
+  name: FactoryGirl.sequence("slackChannel.name", (n) => `channel-${n}`),
+  slackInstallationId: SlackInstallation.associate("id"),
+}));
+
+export const AutomationRule = defineFactory(models.AutomationRule, () => ({
+  active: true,
+  name: FactoryGirl.sequence("automationRule.name", (n) => `rule-${n}`),
+  projectId: Project.associate("id"),
+  on: ["build.completed"],
+  if: {
+    all: [
+      {
+        type: "build-conclusion",
+        value: "changes-detected",
+      },
+    ],
+  },
+  then: [
+    {
+      type: "slack",
+      payload: {
+        channelId: SlackChannel.associate("id"),
+        message: { text: "Default test message" },
+      },
+    },
+  ],
+}));
+
+export const AutomationActionRun = defineFactory(
+  models.AutomationActionRun,
+  () => ({
+    automationRunId: AutomationRun.associate("id"),
+    jobStatus: "pending",
+    attempts: 0,
+    action: "slack",
+    actionPayload: {
+      channelId: "1234",
+      message: { text: "Default test message" },
+    },
+    processedAt: null,
+    completedAt: null,
+    failureReason: null,
+    conclusion: null,
+  }),
+);
+
+export const AutomationRun = defineFactory(models.AutomationRun, () => ({
+  automationRuleId: AutomationRule.associate("id"),
+  event: "build.completed",
+  buildId: Build.associate("id"),
+}));

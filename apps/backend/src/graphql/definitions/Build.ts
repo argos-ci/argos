@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import { AutomationEvent, triggerAutomation } from "@/automation/index.js";
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, BuildReview, ScreenshotDiff } from "@/database/models/index.js";
 
@@ -324,11 +325,26 @@ export const resolvers: IResolvers = {
       // That might be better suited into a $afterUpdate hook.
       switch (validationStatus) {
         case "accepted": {
-          await pushBuildNotification({ buildId, type: "diff-accepted" });
+          await Promise.all([
+            pushBuildNotification({ buildId, type: "diff-accepted" }),
+            triggerAutomation(
+              build.projectId,
+              AutomationEvent.BuildReviewApproved,
+              build,
+            ),
+          ]);
+
           break;
         }
         case "rejected": {
-          await pushBuildNotification({ buildId, type: "diff-rejected" });
+          await Promise.all([
+            pushBuildNotification({ buildId, type: "diff-rejected" }),
+            triggerAutomation(
+              build.projectId,
+              AutomationEvent.BuildReviewApproved,
+              build,
+            ),
+          ]);
           break;
         }
       }

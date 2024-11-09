@@ -80,24 +80,24 @@ export async function seed() {
   const [bigProject] = await Project.query().insertAndFetch([
     {
       name: "big",
-      token: "big-xxx",
+      token: "big-650ded7d72e85b52e099df6e56aa204d4fe9",
       accountId: smoothAccount!.id,
       private: false,
     },
     {
       name: "awesome",
-      token: "awesome-xxx",
+      token: "awesome-650ded7d72e85b52e099df6e56aa204d",
       accountId: helloAccount!.id,
       defaultBaseBranch: "main",
     },
     {
       name: "zone-51",
-      token: "zone-51-xxx",
+      token: "zone-51-650ded7d72e85b52e099df6e56aa204d",
       accountId: gregAccount!.id,
     },
     {
       name: "lalouland",
-      token: "lalouland-xxx",
+      token: "lalouland-650ded7d72e85b52e099df6e56aa20",
       accountId: jeremyAccount!.id,
     },
   ]);
@@ -470,6 +470,6 @@ export async function seed() {
 
   const completeBuilds = await Build.query().where("jobStatus", "complete");
   for (const build of completeBuilds) {
-    await concludeBuild({ buildId: build.id, notify: false });
+    await concludeBuild({ build, notify: false });
   }
 }
