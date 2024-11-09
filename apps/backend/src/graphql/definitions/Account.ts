@@ -51,7 +51,7 @@ export const typeDefs = gql`
     trialing
     "Payment due"
     past_due
-    "Post-cancelation date"
+    "Post-cancellation date"
     canceled
     "Incomplete"
     incomplete

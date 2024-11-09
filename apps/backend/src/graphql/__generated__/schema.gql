@@ -91,7 +91,7 @@ enum AccountSubscriptionStatus {
   """Ongoing paid subscription"""
   active
 
-  """Post-cancelation date"""
+  """Post-cancellation date"""
   canceled
 
   """Incomplete"""
@@ -120,6 +120,31 @@ input AddContributorToProjectInput {
   level: ProjectUserLevel!
   projectId: ID!
   userAccountId: ID!
+}
+
+type AlertAction implements Node {
+  actionType: AlertActionType!
+  id: ID!
+  target: AlertActionTarget!
+}
+
+input AlertActionInput {
+  actionType: AlertActionType!
+  slackChannelId: ID
+  type: AlertActionType!
+}
+
+union AlertActionTarget = SlackChannel
+
+enum AlertActionType {
+  SLACK
+}
+
+input AlertNotifyOnInput {
+  buildFailure: Boolean
+  buildSuccess: Boolean
+  missingScreenshots: Boolean
+  referenceScreenshotChanges: Boolean
 }
 
 enum BaseBranchResolution {
@@ -292,6 +317,13 @@ input BuildsFilterInput {
 interface Connection {
   edges: [Node!]!
   pageInfo: PageInfo!
+}
+
+input CreateProjectAlertInput {
+  actions: [AlertActionInput!]!
+  active: Boolean
+  notifyOn: AlertNotifyOnInput!
+  projectId: ID!
 }
 
 input CreateTeamInput {
@@ -500,12 +532,14 @@ type Mutation {
 
   """Add contributor to project"""
   addOrUpdateProjectContributor(input: AddContributorToProjectInput!): ProjectContributor!
+  createProjectAlert(input: CreateProjectAlertInput!): ProjectAlert!
 
   """Create a team"""
   createTeam(input: CreateTeamInput!): CreateTeamResult!
 
   """Delete Project"""
   deleteProject(id: ID!): Boolean!
+  deleteProjectAlert(id: ID!): Boolean!
 
   """Delete team and all its projects"""
   deleteTeam(input: DeleteTeamInput!): Boolean!
@@ -574,6 +608,7 @@ type Mutation {
 
   """Update Project"""
   updateProject(input: UpdateProjectInput!): Project!
+  updateProjectAlert(input: UpdateProjectAlertInput!): ProjectAlert!
 
   """Set project pull request comment"""
   updateProjectPrComment(input: UpdateProjectPrCommentInput!): Project!
@@ -581,6 +616,13 @@ type Mutation {
 
 interface Node {
   id: ID!
+}
+
+type NotifyOn {
+  buildFailure: Boolean
+  buildSuccess: Boolean
+  missingScreenshots: Boolean
+  referenceScreenshotChanges: Boolean
 }
 
 type PageInfo {
@@ -662,6 +704,14 @@ type Project implements Node {
 
   """Total screenshots used"""
   totalScreenshots: Int!
+}
+
+type ProjectAlert {
+  actions: [AlertAction!]!
+  active: Boolean!
+  id: ID!
+  notifyOn: NotifyOn!
+  projectId: ID!
 }
 
 type ProjectConnection implements Connection {
@@ -884,6 +934,12 @@ input SetTeamMemberLevelInput {
   userAccountId: ID!
 }
 
+type SlackChannel implements Node {
+  id: ID!
+  name: String!
+  slackId: String!
+}
+
 type SlackInstallation implements Node {
   createdAt: DateTime!
   id: ID!
@@ -1019,6 +1075,13 @@ input UpdateAccountInput {
   meteredSpendLimitByPeriod: Int
   name: String
   slug: String
+}
+
+input UpdateProjectAlertInput {
+  actions: [AlertActionInput!]
+  active: Boolean
+  alertId: ID!
+  notifyOn: AlertNotifyOnInput
 }
 
 input UpdateProjectInput {

@@ -11,6 +11,7 @@ import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
+import { ProjectSlack } from "@/containers/Project/Slack";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
@@ -33,6 +34,10 @@ const ProjectQuery = graphql(`
     account(slug: $accountSlug) {
       id
       ... on Team {
+        slackInstallation {
+          id
+          teamName
+        }
         plan {
           id
           fineGrainedAccessControlIncluded
@@ -48,6 +53,7 @@ const ProjectQuery = graphql(`
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
       ...ProjectVisibility_Project
+      ...ProjectSlack_Project
       ...ProjectTransfer_Project
       ...ProjectDelete_Project
       ...ProjectGitRepository_Project
@@ -125,6 +131,9 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
   const fineGrainedAccessControlIncluded = Boolean(
     isTeam && account.plan?.fineGrainedAccessControlIncluded,
   );
+  const slackWorkspace = isTeam
+    ? account.slackInstallation?.teamName
+    : undefined;
 
   return (
     <SettingsLayout>
@@ -135,6 +144,9 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       {hasAdminPermission && <ProjectStatusChecks project={project} />}
       <ProjectBadge project={project} />
       {hasAdminPermission && <ProjectVisibility project={project} />}
+      {hasAdminPermission && (
+        <ProjectSlack project={project} slackWorkspace={slackWorkspace} />
+      )}
       {fineGrainedAccessControlIncluded && (
         <ProjectContributors project={project} />
       )}

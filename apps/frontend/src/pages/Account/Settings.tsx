@@ -31,6 +31,7 @@ import {
 import { PageLoader } from "@/ui/PageLoader";
 
 import { useAccountContext } from ".";
+import { useScrollToHash } from "../../util/useScrollToHash";
 
 const AccountQuery = graphql(`
   query AccountSettings_account($slug: String!) {
@@ -103,7 +104,9 @@ export function Component() {
 }
 
 function PageContent(props: { accountSlug: string }) {
+  useScrollToHash();
   const { permissions } = useAccountContext();
+
   const {
     data: { account },
   } = useSuspenseQuery(AccountQuery, {

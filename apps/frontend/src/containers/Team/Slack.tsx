@@ -37,26 +37,34 @@ export function TeamSlack(props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle id="slack">Slack</CardTitle>
+        <CardTitle id="slack-integration">Slack integration</CardTitle>
         <CardParagraph>
-          Set up Slack to access detailed link previews when sharing build URL.
+          Connect Argos to Slack to receive build notifications and get rich
+          link previews when sharing build URLs.
         </CardParagraph>
         {account.slackInstallation && (
-          <Card className="flex justify-between p-4">
-            <div className="flex items-center gap-2 font-semibold">
-              <SlackColoredLogo className="size-6" />{" "}
-              <Link
-                className="!text"
-                href={`https://${account.slackInstallation.teamDomain}.slack.com`}
-                target="_blank"
-              >
-                {account.slackInstallation.teamName}
-              </Link>
-            </div>
-            <div className="text-low text-sm">
-              Connected <Time date={account.slackInstallation.createdAt} />
-            </div>
-          </Card>
+          <>
+            <Card className="flex justify-between p-4">
+              <div className="flex items-center gap-2 font-semibold">
+                <SlackColoredLogo className="size-6" />{" "}
+                <Link
+                  className="!text"
+                  href={`https://${account.slackInstallation.teamDomain}.slack.com`}
+                  target="_blank"
+                >
+                  {account.slackInstallation.teamName}
+                </Link>
+              </div>
+              <div className="text-low text-sm">
+                Connected <Time date={account.slackInstallation.createdAt} />
+              </div>
+            </Card>
+            <CardParagraph className="text-sm">
+              <span className="font-semibold">Note:</span> To start receiving
+              build notifications, assign Slack channels in your project
+              settings.
+            </CardParagraph>
+          </>
         )}
       </CardBody>
       <CardFooter className="flex items-center justify-end">

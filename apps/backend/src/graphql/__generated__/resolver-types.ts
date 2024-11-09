@@ -141,7 +141,7 @@ export enum IAccountSubscriptionProvider {
 export enum IAccountSubscriptionStatus {
   /** Ongoing paid subscription */
   Active = 'active',
-  /** Post-cancelation date */
+  /** Post-cancellation date */
   Canceled = 'canceled',
   /** Incomplete */
   Incomplete = 'incomplete',
@@ -163,6 +163,32 @@ export type IAddContributorToProjectInput = {
   level: IProjectUserLevel;
   projectId: Scalars['ID']['input'];
   userAccountId: Scalars['ID']['input'];
+};
+
+export type IAlertAction = INode & {
+  __typename?: 'AlertAction';
+  actionType: IAlertActionType;
+  id: Scalars['ID']['output'];
+  target: IAlertActionTarget;
+};
+
+export type IAlertActionInput = {
+  actionType: IAlertActionType;
+  slackChannelId?: InputMaybe<Scalars['ID']['input']>;
+  type: IAlertActionType;
+};
+
+export type IAlertActionTarget = ISlackChannel;
+
+export enum IAlertActionType {
+  Slack = 'SLACK'
+}
+
+export type IAlertNotifyOnInput = {
+  buildFailure?: InputMaybe<Scalars['Boolean']['input']>;
+  buildSuccess?: InputMaybe<Scalars['Boolean']['input']>;
+  missingScreenshots?: InputMaybe<Scalars['Boolean']['input']>;
+  referenceScreenshotChanges?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export enum IBaseBranchResolution {
@@ -314,6 +340,13 @@ export type IBuildsFilterInput = {
 export type IConnection = {
   edges: Array<INode>;
   pageInfo: IPageInfo;
+};
+
+export type ICreateProjectAlertInput = {
+  actions: Array<IAlertActionInput>;
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  notifyOn: IAlertNotifyOnInput;
+  projectId: Scalars['ID']['input'];
 };
 
 export type ICreateTeamInput = {
@@ -533,10 +566,12 @@ export type IMutation = {
   acceptInvitation: ITeam;
   /** Add contributor to project */
   addOrUpdateProjectContributor: IProjectContributor;
+  createProjectAlert: IProjectAlert;
   /** Create a team */
   createTeam: ICreateTeamResult;
   /** Delete Project */
   deleteProject: Scalars['Boolean']['output'];
+  deleteProjectAlert: Scalars['Boolean']['output'];
   /** Delete team and all its projects */
   deleteTeam: Scalars['Boolean']['output'];
   /** Disable GitHub SSO */
@@ -583,6 +618,7 @@ export type IMutation = {
   updateAccount: IAccount;
   /** Update Project */
   updateProject: IProject;
+  updateProjectAlert: IProjectAlert;
   /** Set project pull request comment */
   updateProjectPrComment: IProject;
 };
@@ -598,12 +634,22 @@ export type IMutationAddOrUpdateProjectContributorArgs = {
 };
 
 
+export type IMutationCreateProjectAlertArgs = {
+  input: ICreateProjectAlertInput;
+};
+
+
 export type IMutationCreateTeamArgs = {
   input: ICreateTeamInput;
 };
 
 
 export type IMutationDeleteProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type IMutationDeleteProjectAlertArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -724,12 +770,25 @@ export type IMutationUpdateProjectArgs = {
 };
 
 
+export type IMutationUpdateProjectAlertArgs = {
+  input: IUpdateProjectAlertInput;
+};
+
+
 export type IMutationUpdateProjectPrCommentArgs = {
   input: IUpdateProjectPrCommentInput;
 };
 
 export type INode = {
   id: Scalars['ID']['output'];
+};
+
+export type INotifyOn = {
+  __typename?: 'NotifyOn';
+  buildFailure?: Maybe<Scalars['Boolean']['output']>;
+  buildSuccess?: Maybe<Scalars['Boolean']['output']>;
+  missingScreenshots?: Maybe<Scalars['Boolean']['output']>;
+  referenceScreenshotChanges?: Maybe<Scalars['Boolean']['output']>;
 };
 
 export type IPageInfo = {
@@ -812,6 +871,15 @@ export type IProjectBuildsArgs = {
 export type IProjectContributorsArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type IProjectAlert = {
+  __typename?: 'ProjectAlert';
+  actions: Array<IAlertAction>;
+  active: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  notifyOn: INotifyOn;
+  projectId: Scalars['ID']['output'];
 };
 
 export type IProjectConnection = IConnection & {
@@ -1091,6 +1159,13 @@ export type ISetTeamMemberLevelInput = {
   userAccountId: Scalars['ID']['input'];
 };
 
+export type ISlackChannel = INode & {
+  __typename?: 'SlackChannel';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  slackId: Scalars['String']['output'];
+};
+
 export type ISlackInstallation = INode & {
   __typename?: 'SlackInstallation';
   createdAt: Scalars['DateTime']['output'];
@@ -1259,6 +1334,13 @@ export type IUpdateAccountInput = {
   slug?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type IUpdateProjectAlertInput = {
+  actions?: InputMaybe<Array<IAlertActionInput>>;
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  alertId: Scalars['ID']['input'];
+  notifyOn?: InputMaybe<IAlertNotifyOnInput>;
+};
+
 export type IUpdateProjectInput = {
   autoApprovedBranchGlob?: InputMaybe<Scalars['String']['input']>;
   defaultBaseBranch?: InputMaybe<Scalars['String']['input']>;
@@ -1411,12 +1493,16 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
   info: GraphQLResolveInfo
 ) => TResult | Promise<TResult>;
 
+/** Mapping of union types */
+export type IResolversUnionTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
+  AlertActionTarget: ( ISlackChannel );
+}>;
 
 /** Mapping of interface types */
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Account );
+  Node: ( Subscription ) | ( Omit<IAlertAction, 'target'> & { target: _RefType['AlertActionTarget'] } ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackChannel ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1436,6 +1522,11 @@ export type IResolversTypes = ResolversObject<{
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  AlertAction: ResolverTypeWrapper<Omit<IAlertAction, 'target'> & { target: IResolversTypes['AlertActionTarget'] }>;
+  AlertActionInput: IAlertActionInput;
+  AlertActionTarget: ResolverTypeWrapper<IResolversUnionTypes<IResolversTypes>['AlertActionTarget']>;
+  AlertActionType: IAlertActionType;
+  AlertNotifyOnInput: IAlertNotifyOnInput;
   BaseBranchResolution: IBaseBranchResolution;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
@@ -1450,6 +1541,7 @@ export type IResolversTypes = ResolversObject<{
   BuildType: IBuildType;
   BuildsFilterInput: IBuildsFilterInput;
   Connection: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Connection']>;
+  CreateProjectAlertInput: ICreateProjectAlertInput;
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: ResolverTypeWrapper<Omit<ICreateTeamResult, 'team'> & { team: IResolversTypes['Team'] }>;
   Currency: ICurrency;
@@ -1490,9 +1582,11 @@ export type IResolversTypes = ResolversObject<{
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
   Mutation: ResolverTypeWrapper<{}>;
   Node: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Node']>;
+  NotifyOn: ResolverTypeWrapper<INotifyOn>;
   PageInfo: ResolverTypeWrapper<IPageInfo>;
   Plan: ResolverTypeWrapper<Plan>;
   Project: ResolverTypeWrapper<Project>;
+  ProjectAlert: ResolverTypeWrapper<Omit<IProjectAlert, 'actions'> & { actions: Array<IResolversTypes['AlertAction']> }>;
   ProjectConnection: ResolverTypeWrapper<Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversTypes['Project']> }>;
   ProjectContributor: ResolverTypeWrapper<ProjectUser>;
   ProjectContributorConnection: ResolverTypeWrapper<Omit<IProjectContributorConnection, 'edges'> & { edges: Array<IResolversTypes['ProjectContributor']> }>;
@@ -1522,6 +1616,7 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
+  SlackChannel: ResolverTypeWrapper<ISlackChannel>;
   SlackInstallation: ResolverTypeWrapper<ISlackInstallation>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SummaryCheck: ISummaryCheck;
@@ -1543,6 +1638,7 @@ export type IResolversTypes = ResolversObject<{
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
+  UpdateProjectAlertInput: IUpdateProjectAlertInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: ResolverTypeWrapper<Account>;
@@ -1562,6 +1658,10 @@ export type IResolversParentTypes = ResolversObject<{
   AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  AlertAction: Omit<IAlertAction, 'target'> & { target: IResolversParentTypes['AlertActionTarget'] };
+  AlertActionInput: IAlertActionInput;
+  AlertActionTarget: IResolversUnionTypes<IResolversParentTypes>['AlertActionTarget'];
+  AlertNotifyOnInput: IAlertNotifyOnInput;
   Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
@@ -1571,6 +1671,7 @@ export type IResolversParentTypes = ResolversObject<{
   BuildStats: IBuildStats;
   BuildsFilterInput: IBuildsFilterInput;
   Connection: IResolversInterfaceTypes<IResolversParentTypes>['Connection'];
+  CreateProjectAlertInput: ICreateProjectAlertInput;
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: Omit<ICreateTeamResult, 'team'> & { team: IResolversParentTypes['Team'] };
   Date: Scalars['Date']['output'];
@@ -1608,9 +1709,11 @@ export type IResolversParentTypes = ResolversObject<{
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
   Mutation: {};
   Node: IResolversInterfaceTypes<IResolversParentTypes>['Node'];
+  NotifyOn: INotifyOn;
   PageInfo: IPageInfo;
   Plan: Plan;
   Project: Project;
+  ProjectAlert: Omit<IProjectAlert, 'actions'> & { actions: Array<IResolversParentTypes['AlertAction']> };
   ProjectConnection: Omit<IProjectConnection, 'edges'> & { edges: Array<IResolversParentTypes['Project']> };
   ProjectContributor: ProjectUser;
   ProjectContributorConnection: Omit<IProjectContributorConnection, 'edges'> & { edges: Array<IResolversParentTypes['ProjectContributor']> };
@@ -1634,6 +1737,7 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotMetadataViewport: IScreenshotMetadataViewport;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
+  SlackChannel: ISlackChannel;
   SlackInstallation: ISlackInstallation;
   String: Scalars['String']['output'];
   Team: Account;
@@ -1650,6 +1754,7 @@ export type IResolversParentTypes = ResolversObject<{
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
   UpdateAccountInput: IUpdateAccountInput;
+  UpdateProjectAlertInput: IUpdateProjectAlertInput;
   UpdateProjectInput: IUpdateProjectInput;
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: Account;
@@ -1735,6 +1840,17 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
   status?: Resolver<IResolversTypes['AccountSubscriptionStatus'], ParentType, ContextType>;
   trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAlertActionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AlertAction'] = IResolversParentTypes['AlertAction']> = ResolversObject<{
+  actionType?: Resolver<IResolversTypes['AlertActionType'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  target?: Resolver<IResolversTypes['AlertActionTarget'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAlertActionTargetResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AlertActionTarget'] = IResolversParentTypes['AlertActionTarget']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'SlackChannel', ParentType, ContextType>;
 }>;
 
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
@@ -1957,8 +2073,10 @@ export interface IJsonObjectScalarConfig extends GraphQLScalarTypeConfig<IResolv
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
   addOrUpdateProjectContributor?: Resolver<IResolversTypes['ProjectContributor'], ParentType, ContextType, RequireFields<IMutationAddOrUpdateProjectContributorArgs, 'input'>>;
+  createProjectAlert?: Resolver<IResolversTypes['ProjectAlert'], ParentType, ContextType, RequireFields<IMutationCreateProjectAlertArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
+  deleteProjectAlert?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectAlertArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
   disableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationDisableGitHubSsoOnTeamArgs, 'input'>>;
   disconnectGitHubAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitHubAuthArgs, 'input'>>;
@@ -1983,12 +2101,21 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   unlinkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGitlabProjectArgs, 'input'>>;
   updateAccount?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUpdateAccountArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
+  updateProjectAlert?: Resolver<IResolversTypes['ProjectAlert'], ParentType, ContextType, RequireFields<IMutationUpdateProjectAlertArgs, 'input'>>;
   updateProjectPrComment?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectPrCommentArgs, 'input'>>;
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'AlertAction' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackChannel' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+}>;
+
+export type INotifyOnResolvers<ContextType = Context, ParentType extends IResolversParentTypes['NotifyOn'] = IResolversParentTypes['NotifyOn']> = ResolversObject<{
+  buildFailure?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
+  buildSuccess?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
+  missingScreenshots?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
+  referenceScreenshotChanges?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PageInfo'] = IResolversParentTypes['PageInfo']> = ResolversObject<{
@@ -2031,6 +2158,15 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   summaryCheck?: Resolver<IResolversTypes['SummaryCheck'], ParentType, ContextType>;
   token?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   totalScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IProjectAlertResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ProjectAlert'] = IResolversParentTypes['ProjectAlert']> = ResolversObject<{
+  actions?: Resolver<Array<IResolversTypes['AlertAction']>, ParentType, ContextType>;
+  active?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  notifyOn?: Resolver<IResolversTypes['NotifyOn'], ParentType, ContextType>;
+  projectId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2196,6 +2332,13 @@ export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentTy
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ISlackChannelResolvers<ContextType = Context, ParentType extends IResolversParentTypes['SlackChannel'] = IResolversParentTypes['SlackChannel']> = ResolversObject<{
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  slackId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type ISlackInstallationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['SlackInstallation'] = IResolversParentTypes['SlackInstallation']> = ResolversObject<{
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -2342,6 +2485,8 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountMetrics?: IAccountMetricsResolvers<ContextType>;
   AccountScreenshotMetrics?: IAccountScreenshotMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
+  AlertAction?: IAlertActionResolvers<ContextType>;
+  AlertActionTarget?: IAlertActionTargetResolvers<ContextType>;
   Build?: IBuildResolvers<ContextType>;
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
   BuildMetadata?: IBuildMetadataResolvers<ContextType>;
@@ -2371,9 +2516,11 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   JSONObject?: GraphQLScalarType;
   Mutation?: IMutationResolvers<ContextType>;
   Node?: INodeResolvers<ContextType>;
+  NotifyOn?: INotifyOnResolvers<ContextType>;
   PageInfo?: IPageInfoResolvers<ContextType>;
   Plan?: IPlanResolvers<ContextType>;
   Project?: IProjectResolvers<ContextType>;
+  ProjectAlert?: IProjectAlertResolvers<ContextType>;
   ProjectConnection?: IProjectConnectionResolvers<ContextType>;
   ProjectContributor?: IProjectContributorResolvers<ContextType>;
   ProjectContributorConnection?: IProjectContributorConnectionResolvers<ContextType>;
@@ -2393,6 +2540,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotMetadataSDK?: IScreenshotMetadataSdkResolvers<ContextType>;
   ScreenshotMetadataTest?: IScreenshotMetadataTestResolvers<ContextType>;
   ScreenshotMetadataViewport?: IScreenshotMetadataViewportResolvers<ContextType>;
+  SlackChannel?: ISlackChannelResolvers<ContextType>;
   SlackInstallation?: ISlackInstallationResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;
   TeamGithubMember?: ITeamGithubMemberResolvers<ContextType>;

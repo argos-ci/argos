@@ -28,6 +28,7 @@ import * as schema from "./schema.js";
 import * as Screenshot from "./Screenshot.js";
 import * as ScreenshotBucket from "./ScreenshotBucket.js";
 import * as ScreenshotDiff from "./ScreenshotDiff.js";
+import * as SlackChannel from "./SlackChannel.js";
 import * as SlackInstallation from "./SlackInstallation.js";
 import * as Team from "./Team.js";
 import * as User from "./User.js";
@@ -50,6 +51,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GitlabUser,
   GlApiNamespace,
   GlApiProject,
+  SlackChannel,
   GoogleUser,
   JobStatus,
   Node,

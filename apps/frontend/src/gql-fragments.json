@@ -4,6 +4,9 @@
       "Team",
       "User"
     ],
+    "AlertActionTarget": [
+      "SlackChannel"
+    ],
     "Connection": [
       "BuildConnection",
       "GhApiInstallationConnection",
@@ -19,6 +22,7 @@
     ],
     "Node": [
       "AccountSubscription",
+      "AlertAction",
       "Build",
       "BuildReview",
       "GhApiInstallation",
@@ -39,6 +43,7 @@
       "Screenshot",
       "ScreenshotBucket",
       "ScreenshotDiff",
+      "SlackChannel",
       "SlackInstallation",
       "Team",
       "TeamGithubMember",
