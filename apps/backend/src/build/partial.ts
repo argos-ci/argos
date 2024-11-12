@@ -176,25 +176,27 @@ export async function finalizePartialBuilds(input: {
         )
         .returning("id");
 
-      await Screenshot.query().insert(
-        missingShards.flatMap((shard, index) => {
-          const insertedShard = insertedShards[index];
-          invariant(insertedShard, "Inserted shard should be found");
-          invariant(shard.screenshots, "Screenshots should be fetched");
-          return shard.screenshots.map((screenshot) => {
-            return {
-              name: screenshot.name,
-              s3Id: screenshot.s3Id,
-              screenshotBucketId: build.compareScreenshotBucketId,
-              fileId: screenshot.fileId,
-              testId: screenshot.testId,
-              metadata: screenshot.metadata,
-              playwrightTraceFileId: screenshot.playwrightTraceFileId,
-              buildShardId: insertedShard.id,
-            };
-          });
-        }),
-      );
+      const missingScreenshots = missingShards.flatMap((shard, index) => {
+        const insertedShard = insertedShards[index];
+        invariant(insertedShard, "Inserted shard should be found");
+        invariant(shard.screenshots, "Screenshots should be fetched");
+        return shard.screenshots.map((screenshot) => {
+          return {
+            name: screenshot.name,
+            s3Id: screenshot.s3Id,
+            screenshotBucketId: build.compareScreenshotBucketId,
+            fileId: screenshot.fileId,
+            testId: screenshot.testId,
+            metadata: screenshot.metadata,
+            playwrightTraceFileId: screenshot.playwrightTraceFileId,
+            buildShardId: insertedShard.id,
+          };
+        });
+      });
+
+      if (missingScreenshots.length > 0) {
+        await Screenshot.query().insert(missingScreenshots);
+      }
 
       await finalizeBuild({ build });
       await buildJob.push(build.id);
