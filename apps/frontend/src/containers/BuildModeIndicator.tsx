@@ -65,7 +65,7 @@ export const BuildModeIndicator = memo(function BuildModeIndicator(props: {
     >
       <div
         className={clsx(
-          "bg-app rounded-full border",
+          "bg-app flex shrink-0 rounded-full border",
           { sm: "p-0.5", md: "p-1" }[scale],
         )}
       >

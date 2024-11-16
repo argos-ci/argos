@@ -133,9 +133,7 @@ const BuildRow = React.memo(
       >
         <div className="w-20 shrink-0">
           <div className="flex items-center gap-1">
-            <div className="shrink-0">
-              <BuildModeIndicator mode={build.mode} />
-            </div>
+            <BuildModeIndicator mode={build.mode} />
             <div className="tabular-nums">{build.number}</div>
           </div>
           <div className="text-low truncate">

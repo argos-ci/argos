@@ -196,12 +196,10 @@ export const BuildHeader = memo(
           />
           <div className="flex flex-col justify-center">
             <div className="mb-1 flex gap-1">
-              <div className="flex">
-                <BuildModeIndicator
-                  mode={build ? build.mode : BuildMode.Ci}
-                  scale="sm"
-                />
-              </div>
+              <BuildModeIndicator
+                mode={build ? build.mode : BuildMode.Ci}
+                scale="sm"
+              />
               <div className="text-sm font-medium leading-none">
                 Build {props.buildNumber}
                 {build && build.name !== "default" ? ` • ${build.name}` : ""}
