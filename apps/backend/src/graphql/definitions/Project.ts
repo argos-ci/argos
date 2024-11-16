@@ -550,9 +550,9 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      const permssions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
 
-      if (!permssions.includes("view")) {
+      if (!permissions.includes("view")) {
         return null;
       }
 
@@ -567,9 +567,9 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      const permssions = await project.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
 
-      if (!permssions.includes("view")) {
+      if (!permissions.includes("view")) {
         return null;
       }
 
