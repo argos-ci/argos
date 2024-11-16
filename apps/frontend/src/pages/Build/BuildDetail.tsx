@@ -141,7 +141,7 @@ const MissingScreenshotInfo = memo(
             <div className="*:size-10">{icon}</div>
             <div className="text-base font-medium">{title}</div>
           </div>
-          <p className="text-low text-sm">{description}</p>
+          <p className="text-low text-balance text-sm">{description}</p>
         </div>
       </div>
     );
@@ -311,12 +311,13 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
     case ScreenshotDiffStatus.RetryFailure:
       return (
         <MissingScreenshotInfo
-          title="Retried failure screenshot"
+          title="End-to-end retried test failure screenshot"
           description={
             <>
-              A failure screenshot has no baseline to compare with. This
-              screenshot was taken at the end of a failed attempt of the test.
-              Since it has been retried, it is not considered as a failure.
+              This failure screenshot does not have a baseline for comparison.
+              <br />A failure screenshot is captured at the end of a failed
+              end-to-end test attempt. However, since the test was retried and
+              passed afterward, this screenshot is not considered a failure.
             </>
           }
           icon={getGroupIcon(ScreenshotDiffStatus.Failure)}
@@ -325,11 +326,13 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
     case ScreenshotDiffStatus.Failure:
       return (
         <MissingScreenshotInfo
-          title="Failure screenshot"
+          title="End-to-end test failure screenshot"
           description={
             <>
-              A failure screenshot has no baseline to compare with. A screenshot
-              is detected as a failure when its name ends by "(failed)".
+              This failure screenshot does not have a baseline for comparison.
+              <br />A failure screenshot is captured at the end of a failed
+              end-to-end test attempt. Its sole purpose is to assist with
+              debugging by providing insights into why the test failed.
             </>
           }
           icon={getGroupIcon(ScreenshotDiffStatus.Failure)}
