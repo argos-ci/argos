@@ -65,9 +65,12 @@ export const createApp = async (): Promise<express.Express> => {
             "'self'",
             "data:",
             "https://argos-ci.com",
+            // TwicPics images
+            "https://argos.twic.pics",
+            // GitHub and GitLab avatars
             "https://github.com",
             "https://avatars.githubusercontent.com",
-            "https://argos.twic.pics",
+            "https://gitlab.com",
           ],
           "script-src": [
             "'self'",
