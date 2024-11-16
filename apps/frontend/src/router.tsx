@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { captureException } from "@sentry/react";
 import { RouterProvider } from "react-aria-components";
 import {
   createBrowserRouter,
@@ -6,10 +8,12 @@ import {
   Outlet,
   useHref,
   useNavigate,
+  useRouteError,
 } from "react-router-dom";
 
 import { Layout } from "@/containers/Layout";
 
+import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 
 declare module "react-aria-components" {
@@ -40,15 +44,27 @@ function Root() {
   );
 }
 
+function RootError() {
+  const routeError = useRouteError();
+
+  useEffect(() => {
+    captureException(routeError, { level: "fatal" });
+  }, [routeError]);
+
+  return <ErrorPage />;
+}
+
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
+      errorElement: <RootError />,
       path: `/auth/:provider/callback`,
       lazy: () => import("./pages/AuthCallback"),
     },
     {
       path: "/",
       element: <Root />,
+      errorElement: <RootError />,
       children: [
         {
           path: "/:accountSlug/:projectName/builds/:buildNumber",
