@@ -860,10 +860,15 @@ function useEstimateListItemHeight() {
       const status = (() => {
         switch (row.type) {
           case "group-item":
-            invariant(row.diff?.group);
+            invariant(
+              row.diff?.group,
+              "Expected group item to have a diff and a group",
+            );
             return getDiffGroupStatus(row.diff.group);
           case "item":
-            invariant(row.diff);
+            if (!row.diff) {
+              return null;
+            }
             return getDiffStatus(row.diff.id);
           default:
             assertNever(row);
