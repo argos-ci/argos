@@ -31,9 +31,16 @@ export function getTooltipAnimationClassName(
 ): string {
   return clsx(
     "fill-mode-forwards",
+    {
+      bottom: "origin-top",
+      top: "origin-bottom",
+      left: "origin-right",
+      right: "origin-left",
+      center: "origin-center",
+    }[props.placement],
     props.isEntering &&
       clsx(
-        "animate-in fade-in zoom-in-95",
+        "animate-in fade-in",
         {
           bottom: "slide-in-from-top-1",
           top: "slide-in-from-bottom-1",
@@ -82,7 +89,7 @@ const TooltipOverlay = React.forwardRef(
         {...props}
         className={(props) =>
           clsx(
-            "bg-subtle text z-50 overflow-hidden rounded-md border shadow-md",
+            "bg-subtle text overflow-hidden rounded-md border shadow-md",
             disableHoverableContent && "pointer-events-none",
             getTooltipAnimationClassName(props),
             variantClassName,

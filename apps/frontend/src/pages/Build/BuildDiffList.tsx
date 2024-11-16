@@ -601,10 +601,7 @@ function ListItem({
     <ListItemButton
       ref={ref}
       data-index={index}
-      className={clsx(
-        "group/item relative size-full cursor-default px-4 text-left focus:outline-none",
-        isSubItem && "pl-10",
-      )}
+      className="group/item relative size-full cursor-default text-left focus:outline-none"
       onPress={() => {
         if (item.diff) {
           setActiveDiff(item.diff);
@@ -675,7 +672,10 @@ function ListItem({
     status === EvaluationStatus.Rejected;
 
   return (
-    <div className="relative w-full" style={{ ...rowStyle, ...style }}>
+    <div
+      className={clsx("relative w-full px-4", isSubItem && "pl-10")}
+      style={{ ...rowStyle, ...style }}
+    >
       {isGroupItem && (
         <CardStack
           isFirst={item.first}
@@ -690,10 +690,10 @@ function ListItem({
           style={{ top: 8, left: 16 }}
         />
       )}
-      {isEvaluated && item.diff && !active ? (
+      {isEvaluated && item.diff ? (
         <TooltipTrigger delay={0} closeDelay={0} isOpen={isHovered}>
           {button}
-          <DiffTooltip diff={item.diff} triggerRef={ref} />
+          <DiffTooltip status={status} diff={item.diff} triggerRef={ref} />
         </TooltipTrigger>
       ) : (
         button
@@ -704,19 +704,21 @@ function ListItem({
 
 function DiffTooltip(props: {
   diff: Diff;
+  status: EvaluationStatus;
   triggerRef: RACTooltipProps["triggerRef"];
 }) {
   const { diff } = props;
   return (
     <RACTooltip
       triggerRef={props.triggerRef}
-      placement="right"
+      placement="right top"
       offset={8}
       className={(props) =>
-        clsx("pointer-events-none w-72", getTooltipAnimationClassName(props))
+        clsx("pointer-events-none w-60", getTooltipAnimationClassName(props))
       }
+      style={{ zIndex: 900 }}
     >
-      <DiffCard active={false} status={EvaluationStatus.Pending}>
+      <DiffCard active={false} status={props.status}>
         <DiffImage diff={diff} />
       </DiffCard>
     </RACTooltip>
