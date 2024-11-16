@@ -26,13 +26,35 @@ export type TooltipProps = {
   onOpenChange?: TooltipTriggerComponentProps["onOpenChange"];
 };
 
-const tooltipStyles = (props: TooltipRenderProps) =>
-  clsx(
+export function getTooltipAnimationClassName(
+  props: TooltipRenderProps,
+): string {
+  return clsx(
+    "fill-mode-forwards",
     props.isEntering &&
-      "animate-in fade-in zoom-in-95 data-[placement=bottom]:slide-in-from-top-1 data-[placement=top]:slide-in-from-bottom-1 data-[placement=left]:slide-in-from-right-1 data-[placement=right]:slide-in-from-left-1",
+      clsx(
+        "animate-in fade-in zoom-in-95",
+        {
+          bottom: "slide-in-from-top-1",
+          top: "slide-in-from-bottom-1",
+          left: "slide-in-from-right-1",
+          right: "slide-in-from-left-1",
+          center: "",
+        }[props.placement],
+      ),
     props.isExiting &&
-      "animate-out fade-out zoom-out-95 data-[placement=bottom]:slide-out-to-top-1 data-[placement=top]:slide-out-to-bottom-1 data-[placement=left]:slide-out-to-right-1 data-[placement=right]:slide-out-to-left-1",
+      clsx(
+        "animate-out fade-out zoom-out-95",
+        {
+          bottom: "slide-out-to-top-1",
+          top: "slide-out-to-bottom-1",
+          left: "slide-out-to-right-1",
+          right: "slide-out-to-left-1",
+          center: "",
+        }[props.placement],
+      ),
   );
+}
 
 type TooltipOverlayProps = RACTooltipProps & {
   variant?: TooltipVariant;
@@ -62,7 +84,7 @@ const TooltipOverlay = React.forwardRef(
           clsx(
             "bg-subtle text z-50 overflow-hidden rounded-md border shadow-md",
             disableHoverableContent && "pointer-events-none",
-            tooltipStyles(props),
+            getTooltipAnimationClassName(props),
             variantClassName,
             className,
           )

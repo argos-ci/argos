@@ -1,9 +1,11 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { ProjectPermission } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
+import { useEventCallback } from "@/ui/useEventCallback";
+import { usePrevious } from "@/ui/usePrevious";
 
 import { useProjectPermissions } from "../BuildContext";
 import { Diff } from "../BuildDiffState";
@@ -14,40 +16,60 @@ import {
   useBuildDiffStatusState,
 } from "../BuildReviewState";
 
+function useEvaluationToggle(props: {
+  diffId: string;
+  diffGroup: string | null;
+  target: EvaluationStatus;
+}) {
+  const { diffId, diffGroup, target } = props;
+  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
+  const [status, setStatus] = useBuildDiffStatusState({
+    diffId,
+    diffGroup,
+  });
+  const previous = usePrevious({ diffId, status });
+  useEffect(() => {
+    if (!previous || previous.status === status || previous.diffId !== diffId) {
+      return;
+    }
+    if (status === target) {
+      acknowledgeMarkedDiff();
+    }
+  }, [status, acknowledgeMarkedDiff, target, previous, diffId]);
+  const toggle = useEventCallback(() => {
+    setStatus(
+      status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending,
+    );
+  });
+  const isActive = status === target;
+  return [isActive, toggle] as const;
+}
+
 function AcceptButton(props: {
   screenshotDiffId: string;
   diffGroup: string | null;
   disabled: boolean;
 }) {
-  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
-  const [status, setStatus] = useBuildDiffStatusState({
+  const [isActive, toggle] = useEvaluationToggle({
     diffId: props.screenshotDiffId,
     diffGroup: props.diffGroup,
+    target: EvaluationStatus.Accepted,
   });
-  const toggle = () => {
-    if (status === EvaluationStatus.Pending) {
-      setStatus(EvaluationStatus.Accepted);
-      acknowledgeMarkedDiff();
-    } else {
-      setStatus(EvaluationStatus.Pending);
-    }
-  };
   const hotkey = useBuildHotkey("acceptDiff", toggle, {
     preventDefault: true,
     enabled: !props.disabled,
   });
-  const active = status === EvaluationStatus.Accepted;
   return (
     <HotkeyTooltip
-      description={active ? "Remove mark" : hotkey.description}
+      description={isActive ? "Remove mark" : hotkey.description}
       keys={hotkey.displayKeys}
-      keysEnabled={!active}
+      keysEnabled={!isActive}
       disabled={props.disabled}
     >
       <IconButton
-        aria-pressed={status === EvaluationStatus.Accepted}
+        aria-pressed={isActive}
         onPress={toggle}
-        color={active ? "success" : undefined}
+        color={isActive ? "success" : undefined}
         isDisabled={props.disabled}
       >
         <ThumbsUpIcon />
@@ -61,35 +83,26 @@ function RejectButton(props: {
   diffGroup: string | null;
   disabled: boolean;
 }) {
-  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
-  const [status, setStatus] = useBuildDiffStatusState({
+  const [isActive, toggle] = useEvaluationToggle({
     diffId: props.screenshotDiffId,
     diffGroup: props.diffGroup,
+    target: EvaluationStatus.Rejected,
   });
-  const toggle = () => {
-    if (status === EvaluationStatus.Pending) {
-      setStatus(EvaluationStatus.Rejected);
-      acknowledgeMarkedDiff();
-    } else {
-      setStatus(EvaluationStatus.Pending);
-    }
-  };
   const hotkey = useBuildHotkey("rejectDiff", toggle, {
     preventDefault: true,
     enabled: !props.disabled,
   });
-  const active = status === EvaluationStatus.Rejected;
   return (
     <HotkeyTooltip
-      description={active ? "Remove mark" : hotkey.description}
+      description={isActive ? "Remove mark" : hotkey.description}
       keys={hotkey.displayKeys}
-      keysEnabled={!active}
+      keysEnabled={!isActive}
       disabled={props.disabled}
     >
       <IconButton
-        aria-pressed={status === EvaluationStatus.Rejected}
+        aria-pressed={isActive}
         onPress={toggle}
-        color={active ? "danger" : undefined}
+        color={isActive ? "danger" : undefined}
         isDisabled={props.disabled}
       >
         <ThumbsDownIcon />

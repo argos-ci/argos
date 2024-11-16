@@ -6,13 +6,20 @@ import {
   Popover as RACPopover,
 } from "react-aria-components";
 
-const popoverStyles = (values: PopoverRenderProps) =>
-  clsx(
-    "bg-subtle z-50 bg-clip-padding border rounded-lg p-1 fill-mode-forwards flex",
-    "data-[placement=bottom]:origin-top data-[placement=top]:origin-bottom data-[placement=left]:origin-right data-[placement=right]:origin-left",
+function getPopoverAnimationClassName(values: PopoverRenderProps): string {
+  return clsx(
+    "fill-mode-forwards",
+    {
+      bottom: "origin-top",
+      top: "origin-bottom",
+      left: "origin-right",
+      right: "origin-left",
+      center: "origin-center",
+    }[values.placement],
     values.isEntering && "animate-in fade-in",
     values.isExiting && "animate-out fade-out zoom-out-95",
   );
+}
 
 export const Popover = forwardRef(function Popover(
   { className, ...props }: PopoverProps,
@@ -22,7 +29,13 @@ export const Popover = forwardRef(function Popover(
     <RACPopover
       ref={ref}
       offset={4}
-      className={(values) => clsx(popoverStyles(values), className)}
+      className={(values) =>
+        clsx(
+          "bg-subtle z-50 flex rounded-lg border bg-clip-padding p-1",
+          getPopoverAnimationClassName(values),
+          className,
+        )
+      }
       {...props}
     />
   );
