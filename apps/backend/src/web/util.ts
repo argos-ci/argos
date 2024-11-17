@@ -11,7 +11,11 @@ import config from "@/config/index.js";
 export const asyncHandler =
   (requestHandler: RequestHandler): RequestHandler =>
   (req, res, next) => {
-    Promise.resolve(requestHandler(req, res, next)).catch(next);
+    try {
+      Promise.resolve(requestHandler(req, res, next)).catch(next);
+    } catch (error) {
+      next(error);
+    }
   };
 
 export const subdomain =
@@ -49,7 +53,7 @@ type HttpErrorOptions = ErrorOptions & {
 /**
  * HTTPError is a subclass of Error that includes an HTTP status code.
  */
-class HTTPError extends Error {
+export class HTTPError extends Error {
   public statusCode: number;
   public details:
     | {

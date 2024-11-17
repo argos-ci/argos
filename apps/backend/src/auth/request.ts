@@ -1,21 +1,25 @@
+import { invariant } from "@argos/util/invariant";
 import * as authorization from "auth-header";
 import type { Request } from "express";
 
 import { Account, User } from "@/database/models/index.js";
+import { boom } from "@/web/util.js";
 
 import { verifyJWT } from "./jwt.js";
 
-export class AuthError extends Error {}
-
 const getTokenFromAuthHeader = (authHeader: string) => {
-  const auth = authorization.parse(authHeader);
-  if (auth.scheme !== "Bearer") {
-    throw new AuthError(`Invalid auth scheme: ${auth.scheme || "no scheme"}`);
+  try {
+    const auth = authorization.parse(authHeader);
+    if (auth.scheme !== "Bearer") {
+      return null;
+    }
+    if (typeof auth.token !== "string" || !auth.token) {
+      return null;
+    }
+    return auth.token;
+  } catch {
+    return null;
   }
-  if (typeof auth.token !== "string" || !auth.token) {
-    throw new AuthError("Invalid auth token");
-  }
-  return auth.token;
 };
 
 export type AuthPayload = {
@@ -26,17 +30,15 @@ export type AuthPayload = {
 const getAuthPayloadFromToken = async (token: string): Promise<AuthPayload> => {
   const jwt = verifyJWT(token);
   if (!jwt) {
-    throw new AuthError("Invalid JWT");
+    throw boom(401, "Invalid JWT");
   }
   const account = await Account.query()
     .withGraphFetched("user")
     .findById(jwt.account.id);
   if (!account) {
-    throw new AuthError("Account not found");
+    throw boom(401, "Account not found");
   }
-  if (!account.user) {
-    throw new AuthError("Account has no user");
-  }
+  invariant(account.user, "Account has no user");
   return { account, user: account.user };
 };
 
@@ -48,5 +50,8 @@ export async function getAuthPayloadFromRequest(
     return null;
   }
   const token = getTokenFromAuthHeader(authHeader);
+  if (!token) {
+    return null;
+  }
   return getAuthPayloadFromToken(token);
 }
