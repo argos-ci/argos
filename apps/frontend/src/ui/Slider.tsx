@@ -11,7 +11,7 @@ import {
   SliderTrackProps as RACSliderTrackProps,
 } from "react-aria-components";
 
-export type SliderProps = RACSliderProps;
+type SliderProps = RACSliderProps;
 
 export const Slider = forwardRef(function Slider(
   props: SliderProps,
@@ -29,7 +29,7 @@ export const Slider = forwardRef(function Slider(
   );
 });
 
-export type SliderOutputProps = RACSliderOutputProps;
+type SliderOutputProps = RACSliderOutputProps;
 
 export const SliderOutput = forwardRef(function SliderOutput(
   props: SliderOutputProps,
@@ -47,7 +47,7 @@ export const SliderOutput = forwardRef(function SliderOutput(
   );
 });
 
-export type SliderTrackProps = RACSliderTrackProps;
+type SliderTrackProps = RACSliderTrackProps;
 
 export const SliderTrack = forwardRef(function SliderTrack(
   props: SliderTrackProps,
@@ -65,7 +65,7 @@ export const SliderTrack = forwardRef(function SliderTrack(
   );
 });
 
-export type SliderThumbProps = RACSliderThumbProps;
+type SliderThumbProps = RACSliderThumbProps;
 
 export const SliderThumb = forwardRef(function SliderThumb(
   props: SliderThumbProps,
