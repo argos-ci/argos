@@ -4,7 +4,7 @@ import type { RequestHandler } from "express";
 
 import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request.js";
 
-import { asyncHandler } from "../util.js";
+import { asyncHandler, HTTPError } from "../util.js";
 
 declare global {
   namespace Express {
@@ -15,7 +15,13 @@ declare global {
 }
 
 export const auth: RequestHandler = asyncHandler(async (req, _res, next) => {
-  const account = await getAuthPayloadFromRequest(req);
+  const account = await getAuthPayloadFromRequest(req).catch((error) => {
+    if (error instanceof HTTPError && error.statusCode === 401) {
+      return null;
+    }
+
+    throw error;
+  });
   req.auth = account;
   next();
 });
