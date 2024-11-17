@@ -40,8 +40,10 @@ function BaseReviewButton(props: {
 }) {
   const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
   const [setValidationStatus, { loading }] = useSetValidationStatusMutation({
-    onCompleted: () => {
-      markAllDiffsAsAccepted();
+    onCompleted: (data) => {
+      if (data.setValidationStatus.status === BuildStatus.Accepted) {
+        markAllDiffsAsAccepted();
+      }
       props.onCompleted?.();
     },
   });

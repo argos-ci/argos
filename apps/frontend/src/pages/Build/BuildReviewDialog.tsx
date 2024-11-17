@@ -18,10 +18,7 @@ import { Modal, ModalProps } from "@/ui/Modal";
 
 import { useSetValidationStatusMutation } from "./BuildReviewAction";
 import { BuildReviewButton } from "./BuildReviewButton";
-import {
-  ReviewCompleteWatcher,
-  useBuildReviewSummary,
-} from "./BuildReviewState";
+import { useBuildReviewSummary } from "./BuildReviewState";
 
 const ProjectFragment = graphql(`
   fragment BuildReviewDialog_Project on Project {
@@ -157,7 +154,6 @@ export function BuildReviewDialogProvider(props: {
   const value = useMemo(() => ({ setIsOpen }), []);
   return (
     <>
-      <ReviewCompleteWatcher onReviewComplete={() => setIsOpen(true)} />
       {project && (
         <BuildReviewDialog
           isOpen={isOpen}
