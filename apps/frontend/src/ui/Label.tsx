@@ -5,7 +5,7 @@ import {
   LabelProps as RACLabelProps,
 } from "react-aria-components";
 
-export type LabelProps = RACLabelProps & {
+type LabelProps = RACLabelProps & {
   invalid?: boolean;
 };
 
