@@ -101,7 +101,7 @@ const timestampToISOString = (date: number) =>
   new Date(date * 1000).toISOString();
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2024-09-30.acacia",
+  apiVersion: "2024-10-28.acacia",
   typescript: true,
 });
 
