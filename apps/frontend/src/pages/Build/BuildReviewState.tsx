@@ -77,34 +77,6 @@ function useReviewStatus() {
   }, [stats, diffStatuses]);
 }
 
-/**
- * Triggers the callback when the review becomes "complete".
- * Switching from "pending" to "complete" state.
- */
-function useWatchReviewComplete(callback: () => void) {
-  const reviewStatus = useReviewStatus();
-  const previousReviewStatus = usePrevious(reviewStatus);
-  const { buildStatus } = useBuildReviewState();
-  const evtCallback = useEventCallback(callback);
-  useEffect(() => {
-    if (
-      buildStatus === BuildStatus.DiffDetected &&
-      previousReviewStatus === "pending" &&
-      reviewStatus === "complete"
-    ) {
-      evtCallback();
-    }
-  }, [reviewStatus, previousReviewStatus, evtCallback, buildStatus]);
-}
-
-/**
- * Watch the review status and trigger the callback when the review is complete.
- */
-export function ReviewCompleteWatcher(props: { onReviewComplete: () => void }) {
-  useWatchReviewComplete(props.onReviewComplete);
-  return null;
-}
-
 export function useWatchItemReview() {
   const { listenersRef } = useBuildReviewState();
   return useCallback(
