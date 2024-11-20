@@ -14,6 +14,7 @@ import { TwicPicture } from "@/ui/TwicPicture";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
+import { fetchImage } from "@/util/image";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
 import {
@@ -73,10 +74,7 @@ const DownloadScreenshotButton = memo(
           download={props.name}
           onPress={() => {
             setLoading(true);
-            fetch(downloadUrl, {
-              // To work with CORS on S3.
-              headers: { "Cache-control": "no-cache" },
-            })
+            fetchImage(downloadUrl.toString())
               .then((res) => res.blob())
               .then((blob) => {
                 const a = document.createElement("a");

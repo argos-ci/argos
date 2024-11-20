@@ -1,16 +1,12 @@
 import { forwardRef } from "react";
 
+import { checkIsTwicPicsUrl } from "@/util/image";
+
 export type TwicPictureProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   src: string;
   transforms?: string[];
   original?: boolean;
 };
-
-const TWIC_PICS_DOMAIN = "argos.twic.pics";
-
-function checkIsTwicPicsUrl(url: string) {
-  return new URL(url).hostname === TWIC_PICS_DOMAIN;
-}
 
 export const TwicPicture = forwardRef(function TwicPicture(
   props: TwicPictureProps,
