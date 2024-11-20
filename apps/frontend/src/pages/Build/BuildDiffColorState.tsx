@@ -24,8 +24,8 @@ export function useBuildDiffColorState() {
 export function useBuildDiffColorStyle() {
   const { color, opacity } = useBuildDiffColorState();
   return {
-    filter: `drop-shadow(0 2000px 0 ${color})`,
-    transform: "translateY(-2000px)",
+    filter: `drop-shadow(0 60000px 0 ${color})`,
+    transform: "translateY(-60000px)",
     overflow: "hidden",
     opacity,
   };
