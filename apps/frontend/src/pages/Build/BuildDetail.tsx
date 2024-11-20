@@ -388,7 +388,7 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
               height={diff.height}
             />
             <ScreenshotPicture
-              className="absolute left-0 top-0"
+              className="absolute left-0 top-0 w-full"
               alt="Baseline screenshot"
               {...getScreenshotPictureProps(diff.baseScreenshot!)}
             />
