@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { getPublicImageUrl } from "@/storage/index.js";
+import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage/index.js";
 
 import type {
   IResolvers,
@@ -56,11 +56,16 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId);
     },
-    url: async (screenshotDiff) => {
-      if (!screenshotDiff.s3Id) {
-        return null;
+    url: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
+        if (!screenshotDiff.s3Id) {
+          return null;
+        }
+        return getTwicPicsUrl(screenshotDiff.s3Id);
       }
-      return getPublicImageUrl(screenshotDiff.s3Id);
+      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      invariant(file, "File not found");
+      return getPublicImageFileUrl(file);
     },
     name: async (screenshotDiff, _args, ctx) => {
       const [baseScreenshot, compareScreenshot] = await Promise.all([

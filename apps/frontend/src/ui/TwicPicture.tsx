@@ -6,11 +6,22 @@ export type TwicPictureProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   original?: boolean;
 };
 
+const TWIC_PICS_DOMAIN = "argos.twic.pics";
+
+function checkIsTwicPicsUrl(url: string) {
+  return new URL(url).hostname === TWIC_PICS_DOMAIN;
+}
+
 export const TwicPicture = forwardRef(function TwicPicture(
   props: TwicPictureProps,
   ref: React.ForwardedRef<HTMLImageElement>,
 ) {
   const { src, transforms = [], original, ...rest } = props;
+
+  if (!checkIsTwicPicsUrl(src)) {
+    return <img ref={ref} src={src} {...rest} />;
+  }
+
   if (original) {
     return (
       <img
