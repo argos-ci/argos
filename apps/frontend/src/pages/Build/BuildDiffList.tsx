@@ -344,7 +344,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
 });
 
 function DiffPicture(props: TwicPictureProps) {
-  const style = useBuildDiffColorStyle();
+  const style = useBuildDiffColorStyle({ height: props.height });
   return <TwicPicture {...props} style={{ ...style, ...props.style }} />;
 }
 

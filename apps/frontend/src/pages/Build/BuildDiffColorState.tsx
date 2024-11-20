@@ -21,11 +21,18 @@ export function useBuildDiffColorState() {
   return context;
 }
 
-export function useBuildDiffColorStyle() {
+export function useBuildDiffColorStyle(props: {
+  height: number | string | null | undefined;
+}) {
   const { color, opacity } = useBuildDiffColorState();
+  if (!props.height) {
+    return {};
+  }
+  const unitHeight =
+    typeof props.height === "number" ? `${props.height}px` : props.height;
   return {
-    filter: `drop-shadow(0 60000px 0 ${color})`,
-    transform: "translateY(-60000px)",
+    filter: `drop-shadow(0 ${unitHeight} 0 ${color})`,
+    transform: `translateY(-${unitHeight})`,
     overflow: "hidden",
     opacity,
   };
