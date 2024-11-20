@@ -14,10 +14,7 @@ export const getSignedGetObjectUrl = async ({
   expiresIn: number;
 }) => {
   const command = new GetObjectCommand({ Bucket, Key });
-  return getSignedUrl(s3, command, {
-    expiresIn,
-    signableHeaders: new Set(["origin", "hostname"]),
-  });
+  return getSignedUrl(s3, command, { expiresIn });
 };
 
 export const getSignedPutObjectUrl = async ({

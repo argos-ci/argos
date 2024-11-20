@@ -73,7 +73,10 @@ const DownloadScreenshotButton = memo(
           download={props.name}
           onPress={() => {
             setLoading(true);
-            fetch(downloadUrl)
+            fetch(downloadUrl, {
+              // To work with CORS on S3.
+              headers: { "Cache-control": "no-cache" },
+            })
               .then((res) => res.blob())
               .then((blob) => {
                 const a = document.createElement("a");
