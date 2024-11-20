@@ -13,7 +13,11 @@ export const TwicPicture = forwardRef(function TwicPicture(
   const { src, transforms = [], original, ...rest } = props;
   if (original) {
     return (
-      <img ref={ref} src={twic(src, ["format=png", ...transforms])} {...rest} />
+      <img
+        ref={ref}
+        src={twic(src, ["format=png", "noop", ...transforms])}
+        {...rest}
+      />
     );
   }
   return (
