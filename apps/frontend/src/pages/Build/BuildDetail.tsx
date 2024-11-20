@@ -580,7 +580,7 @@ function CompareScreenshotChanged(props: {
 }
 
 function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
-  const style = useBuildDiffColorStyle();
+  const style = useBuildDiffColorStyle({ height: props.height });
   return (
     <ScreenshotPicture
       alt="Changes screenshot"
