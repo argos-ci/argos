@@ -1,3 +1,4 @@
+import { fetchImage } from "../image";
 import type { Rect } from "./types";
 
 /**
@@ -20,10 +21,7 @@ self.onmessage = (event) => {
  * Fetches a bitmap from a URL.
  */
 async function fetchBitmapFromURL(url: string) {
-  const response = await fetch(url, {
-    // To work with CORS on S3.
-    headers: { "Cache-control": "no-cache" },
-  });
+  const response = await fetchImage(url);
   const blob = await response.blob();
   const bmp = await createImageBitmap(blob);
   return bmp;
