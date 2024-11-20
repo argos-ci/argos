@@ -67,6 +67,8 @@ export const createApp = async (): Promise<express.Express> => {
             "https://argos-ci.com",
             // TwicPics images
             "https://argos.twic.pics",
+            // S3 images
+            "https://argos-ci-production.s3.eu-west-1.amazonaws.com",
             // GitHub and GitLab avatars
             "https://github.com",
             "https://avatars.githubusercontent.com",
