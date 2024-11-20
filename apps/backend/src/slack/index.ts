@@ -17,7 +17,7 @@ import {
   ScreenshotDiff,
   SlackInstallation,
 } from "@/database/models";
-import { getPublicImageUrl } from "@/storage";
+import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
 
 /**
  * Set the accountId in the cookies.
@@ -246,7 +246,7 @@ async function unfurlBuild(
       ? ScreenshotDiff.query()
           .findById(params.diffId)
           .where("buildId", build.id)
-          .withGraphFetched("[baseScreenshot, compareScreenshot]")
+          .withGraphFetched("[baseScreenshot.file, compareScreenshot.file]")
       : null,
   ]);
   invariant(status, "Status should be loaded");
@@ -255,7 +255,15 @@ async function unfurlBuild(
 
   const screenshot =
     screenshotDiff?.compareScreenshot || screenshotDiff?.baseScreenshot;
-  const imageUrl = screenshot ? await getPublicImageUrl(screenshot.s3Id) : null;
+  const imageUrl = await (() => {
+    if (!screenshot) {
+      return null;
+    }
+    if (!screenshot.file) {
+      return getTwicPicsUrl(screenshot.s3Id);
+    }
+    return getPublicImageFileUrl(screenshot.file);
+  })();
 
   const attachment: Bolt.types.MessageAttachment = {
     title: `Build ${build.number} — ${build.name} — ${build.project.account.name || build.project.account.slug}/${build.project.name}`,
