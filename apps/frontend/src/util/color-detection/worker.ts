@@ -20,7 +20,10 @@ self.onmessage = (event) => {
  * Fetches a bitmap from a URL.
  */
 async function fetchBitmapFromURL(url: string) {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    // To work with CORS on S3.
+    headers: { "Cache-control": "no-cache" },
+  });
   const blob = await response.blob();
   const bmp = await createImageBitmap(blob);
   return bmp;
