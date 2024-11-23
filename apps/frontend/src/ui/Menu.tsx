@@ -14,7 +14,7 @@ import {
 } from "react-aria-components";
 
 export function MenuSeparator() {
-  return <Separator className="-mx-1 my-1 border-t" />;
+  return <Separator className="my-1 border-t" />;
 }
 
 export { MenuTrigger } from "react-aria-components";
