@@ -1,9 +1,6 @@
 <p align="center">
   <a href="https://argos-ci.com/?utm_source=github&utm_medium=logo" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-logo-dark.png">
-    <img alt="Argos, the open source visual testing platform" src="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-logo-light.png" width="360" height="70">
-  </picture>
+  <img src="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-banner.jpg">
   </a>
 </p>
 
