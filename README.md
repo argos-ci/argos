@@ -1,19 +1,32 @@
 <p align="center">
   <a href="https://argos-ci.com/?utm_source=github&utm_medium=logo" target="_blank">
-    <img src="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/logo-github-readme.png" alt="Argos" width="300" height="61">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-logo-dark.png">
+    <img alt="Argos, the open source visual testing platform" src="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-logo-light.png" width="360" height="70">
+  </picture>
   </a>
 </p>
 
-_Argos is a visual testing solution that fits in your workflow to avoid visual regression. Takes screenshots on each commit and be notified if something changes._
+<h3 align="center">Argos</h3>
 
-[![Argos Visual Testing](https://argos-ci.com/badge.svg)](https://app.argos-ci.com/argos-ci/argos/reference)
-[![CI](https://github.com/argos-ci/argos/actions/workflows/ci.yml/badge.svg)](https://github.com/argos-ci/argos/actions/workflows/ci.yml)
+<p align="center">
+  Argos is the open source visual testing platform for modern engineering teams.
+  <br />
+  <a href="https://argos-ci.com"><strong>Learn more »</strong></a>
+  <br />
+  <br />
+  <a href="https://argos-ci.com/docs"><strong>Docs</strong></a> ·
+  <a href="https://github.com/argos-ci/argos-javascript/tree/main/examples"><strong>Examples</strong></a> ·
+  <a href="https://x.com/argos_ci"><strong>Follow us on X</strong></a> ·
+  <a href="https://argos-ci.com/discord"><strong>Discord</strong></a>
+</p>
 
-## Links
-
-- [Docs](https://argos-ci.com/docs)
-- [Examples](https://github.com/argos-ci/argos/tree/main/examples)
-- [Discord](https://argos-ci.com/discord)
+<p align="center">
+  <a href="https://app.argos-ci.com/argos-ci/argos/reference"><img src="https://argos-ci.com/badge.svg" alt="Covered by Argos"></a>
+  <a href="https://github.com/argos-ci/argos/actions/workflows/ci.yml">
+    <img src="https://github.com/argos-ci/argos/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+  </a>
+</p>
 
 ## Contributing
 
