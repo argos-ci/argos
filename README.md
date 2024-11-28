@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://argos-ci.com/?utm_source=github&utm_medium=logo" target="_blank">
-  <img src="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-banner.jpg">
+  <img src="https://raw.githubusercontent.com/argos-ci/argos/main/resources/logos/github-readme-banner.jpg" alt="Argos, the open source visual testing platform">
   </a>
 </p>
 
