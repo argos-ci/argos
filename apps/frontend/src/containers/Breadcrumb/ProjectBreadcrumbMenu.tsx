@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { RepoIcon } from "@primer/octicons-react";
 import { PlusCircleIcon } from "lucide-react";
-import { Section } from "react-aria-components";
+import { MenuSection } from "react-aria-components";
 import { useParams } from "react-router-dom";
 
 import { graphql } from "@/gql";
@@ -78,12 +78,12 @@ export function ProjectBreadcrumbMenu() {
       <BreadcrumbMenuButton />
       <Popover placement="bottom start">
         <Menu>
-          <Section>
+          <MenuSection>
             <MenuTitle>{title}</MenuTitle>
             <Suspense fallback={<MenuLoader />}>
               <Projects accountSlug={accountSlug} />
             </Suspense>
-          </Section>
+          </MenuSection>
           <MenuItem href={`/${accountSlug}/new`}>
             <MenuItemIcon>
               <PlusCircleIcon />

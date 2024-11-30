@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { PlusCircleIcon } from "lucide-react";
-import { Section } from "react-aria-components";
+import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router-dom";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -77,11 +77,11 @@ function MenuContent() {
   const teamAccounts = data.me.teams;
   return (
     <>
-      <Section>
+      <MenuSection>
         <MenuTitle>Personal</MenuTitle>
         <AccountMenuItems accounts={userAccounts} />
-      </Section>
-      <Section>
+      </MenuSection>
+      <MenuSection>
         <MenuTitle>Teams</MenuTitle>
         <AccountMenuItems accounts={teamAccounts} />
         <MenuItem href="/teams/new">
@@ -90,7 +90,7 @@ function MenuContent() {
           </MenuItemIcon>
           Create a Team
         </MenuItem>
-      </Section>
+      </MenuSection>
     </>
   );
 }
@@ -104,11 +104,11 @@ export function AccountBreadcrumbMenu() {
           <Suspense
             fallback={
               <>
-                <Section>
+                <MenuSection>
                   <MenuTitle>Personal</MenuTitle>
                   <MenuLoader />
-                </Section>
-                <Section>
+                </MenuSection>
+                <MenuSection>
                   <MenuTitle>Teams</MenuTitle>
                   <MenuLoader />
                   <MenuItem href="/teams/new">
@@ -117,7 +117,7 @@ export function AccountBreadcrumbMenu() {
                     </MenuItemIcon>
                     Create a Team
                   </MenuItem>
-                </Section>
+                </MenuSection>
               </>
             }
           >
