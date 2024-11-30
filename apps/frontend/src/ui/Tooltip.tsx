@@ -31,34 +31,37 @@ export function getTooltipAnimationClassName(
 ): string {
   return clsx(
     "fill-mode-forwards",
-    {
-      bottom: "origin-top",
-      top: "origin-bottom",
-      left: "origin-right",
-      right: "origin-left",
-      center: "origin-center",
-    }[props.placement],
-    props.isEntering &&
+    props.placement &&
       clsx(
-        "animate-in fade-in",
         {
-          bottom: "slide-in-from-top-1",
-          top: "slide-in-from-bottom-1",
-          left: "slide-in-from-right-1",
-          right: "slide-in-from-left-1",
-          center: "",
+          bottom: "origin-top",
+          top: "origin-bottom",
+          left: "origin-right",
+          right: "origin-left",
+          center: "origin-center",
         }[props.placement],
-      ),
-    props.isExiting &&
-      clsx(
-        "animate-out fade-out zoom-out-95",
-        {
-          bottom: "slide-out-to-top-1",
-          top: "slide-out-to-bottom-1",
-          left: "slide-out-to-right-1",
-          right: "slide-out-to-left-1",
-          center: "",
-        }[props.placement],
+        props.isEntering &&
+          clsx(
+            "animate-in fade-in",
+            {
+              bottom: "slide-in-from-top-1",
+              top: "slide-in-from-bottom-1",
+              left: "slide-in-from-right-1",
+              right: "slide-in-from-left-1",
+              center: "",
+            }[props.placement],
+          ),
+        props.isExiting &&
+          clsx(
+            "animate-out fade-out zoom-out-95",
+            {
+              bottom: "slide-out-to-top-1",
+              top: "slide-out-to-bottom-1",
+              left: "slide-out-to-right-1",
+              right: "slide-out-to-left-1",
+              center: "",
+            }[props.placement],
+          ),
       ),
   );
 }

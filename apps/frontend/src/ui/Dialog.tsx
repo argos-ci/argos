@@ -1,4 +1,5 @@
 import { forwardRef, useContext } from "react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
   Heading,
@@ -71,7 +72,12 @@ export const DialogTitle = forwardRef<
 });
 
 export function useOverlayTriggerState(): OverlayTriggerState {
-  return useContext(OverlayTriggerStateContext);
+  const ctx = useContext(OverlayTriggerStateContext);
+  invariant(
+    ctx,
+    "useOverlayTriggerState must be used within an OverlayTrigger",
+  );
+  return ctx;
 }
 
 export const DialogDismiss = forwardRef<

@@ -23,14 +23,14 @@ export const HeadlessLink = forwardRef<HTMLAnchorElement, LinkProps>(
         target={target}
         {...props}
       >
-        {isExternal ? (
-          <>
-            {children}
-            <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
-          </>
-        ) : (
-          children
-        )}
+        {isExternal
+          ? (props) => (
+              <>
+                {typeof children === "function" ? children(props) : children}
+                <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
+              </>
+            )
+          : children}
       </RACLink>
     );
   },

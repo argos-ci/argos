@@ -4,7 +4,7 @@ import pluginReactHooks from "eslint-plugin-react-hooks";
 import tailwind from "eslint-plugin-tailwindcss";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+const config = tseslint.config(
   {
     name: "argos/ignores",
     ignores: ["**/dist", "postcss.config.js", "tailwind.config.js"],
@@ -56,3 +56,5 @@ export default tseslint.config(
     },
   },
 );
+
+export default config;

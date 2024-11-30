@@ -54,6 +54,10 @@ function RootError() {
   return <ErrorPage />;
 }
 
+function HydrateFallback() {
+  return null;
+}
+
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
@@ -68,14 +72,17 @@ export const router: ReturnType<typeof createBrowserRouter> =
       children: [
         {
           path: "/:accountSlug/:projectName/builds/:buildNumber",
+          HydrateFallback,
           lazy: () => import("./pages/Build"),
         },
         {
           path: "/:accountSlug/:projectName/builds/:buildNumber/:diffId",
+          HydrateFallback,
           lazy: () => import("./pages/Build"),
         },
         {
           path: "/",
+          HydrateFallback,
           lazy: () => import("./pages/Home"),
         },
         {
@@ -88,34 +95,42 @@ export const router: ReturnType<typeof createBrowserRouter> =
           children: [
             {
               path: "new",
+              HydrateFallback,
               lazy: () => import("./pages/NewProject"),
             },
             {
               path: "login",
+              HydrateFallback,
               lazy: () => import("./pages/Login"),
             },
             {
               path: "signup",
+              HydrateFallback,
               lazy: () => import("./pages/Signup"),
             },
             {
               path: "invite/:inviteToken",
+              HydrateFallback,
               lazy: () => import("./pages/Invite"),
             },
             {
               path: "teams/new",
+              HydrateFallback,
               lazy: () => import("./pages/NewTeam"),
             },
             {
               path: ":accountSlug/:projectName",
               lazy: () => import("./pages/Project"),
+              HydrateFallback,
               children: [
                 {
                   index: true,
+                  HydrateFallback,
                   lazy: () => import("./pages/Project/Builds"),
                 },
                 {
                   path: "reference",
+                  HydrateFallback,
                   lazy: () => import("./pages/Project/Reference"),
                 },
                 {
@@ -124,6 +139,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 },
                 {
                   path: "settings",
+                  HydrateFallback,
                   lazy: () => import("./pages/Project/Settings"),
                 },
               ],
@@ -131,24 +147,29 @@ export const router: ReturnType<typeof createBrowserRouter> =
             {
               id: "account",
               path: ":accountSlug",
+              HydrateFallback,
               lazy: () => import("./pages/Account"),
               children: [
                 {
                   index: true,
+                  HydrateFallback,
                   lazy: () => import("./pages/Account/Projects"),
                 },
                 {
                   path: "new",
+                  HydrateFallback,
                   lazy: () => import("./pages/Account/NewProject"),
                 },
                 {
                   path: "settings",
+                  HydrateFallback,
                   lazy: () => import("./pages/Account/Settings"),
                 },
               ],
             },
             {
               path: "*",
+              HydrateFallback,
               element: <NotFound />,
             },
           ],
