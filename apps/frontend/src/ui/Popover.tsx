@@ -9,13 +9,14 @@ import {
 function getPopoverAnimationClassName(values: PopoverRenderProps): string {
   return clsx(
     "fill-mode-forwards",
-    {
-      bottom: "origin-top",
-      top: "origin-bottom",
-      left: "origin-right",
-      right: "origin-left",
-      center: "origin-center",
-    }[values.placement],
+    values.placement &&
+      {
+        bottom: "origin-top",
+        top: "origin-bottom",
+        left: "origin-right",
+        right: "origin-left",
+        center: "origin-center",
+      }[values.placement],
     values.isEntering && "animate-in fade-in",
     values.isExiting && "animate-out fade-out zoom-out-95",
   );
