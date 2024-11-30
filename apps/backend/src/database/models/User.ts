@@ -17,7 +17,7 @@ export class User extends Model {
     required: [],
     properties: {
       email: { oneOf: [{ type: "string", format: "email" }, { type: "null" }] },
-      accessToken: { type: "string" },
+      accessToken: { type: ["string", "null"] },
       gitlabUserId: { type: ["string", "null"] },
       googleUserId: { type: ["string", "null"] },
       staff: { type: "boolean" },
@@ -25,7 +25,7 @@ export class User extends Model {
   });
 
   email!: string | null;
-  accessToken!: string;
+  accessToken!: string | null;
   gitlabUserId!: string | null;
   googleUserId!: string | null;
   staff!: boolean;

@@ -124,6 +124,9 @@ export async function checkUserHasAccessToInstallation(
   user: User,
   ghInstallationId: number,
 ) {
+  if (!user.accessToken) {
+    return false;
+  }
   const octokit = getTokenOctokit(user.accessToken);
   const result = await octokit.paginate(
     octokit.apps.listInstallationsForAuthenticatedUser,

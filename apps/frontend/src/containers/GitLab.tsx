@@ -1,19 +1,7 @@
 import * as React from "react";
-import { useLocation } from "react-router-dom";
 
-import config from "@/config";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-
-function useLoginUrl(redirect: string | null | undefined) {
-  const { origin } = window.location;
-  const { pathname } = useLocation();
-  const callbackUrl = `${origin}/auth/gitlab/callback?r=${encodeURIComponent(
-    redirect ?? pathname,
-  )}`;
-  return `${config.get("gitlab.loginUrl")}&redirect_uri=${encodeURIComponent(
-    callbackUrl,
-  )}`;
-}
+import { useOAuthURL } from "@/util/oauth";
 
 export function GitLabLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -84,9 +72,12 @@ export function GitLabLoginButton({
   children?: React.ReactNode;
   redirect?: string | null;
 }) {
-  const loginUrl = useLoginUrl(redirect);
+  const url = useOAuthURL({
+    provider: "gitlab",
+    redirect: redirect ?? null,
+  });
   return (
-    <LinkButton variant="gitlab" href={loginUrl} {...props}>
+    <LinkButton variant="gitlab" href={url} {...props}>
       <ButtonIcon>
         <GitLabLogo />
       </ButtonIcon>

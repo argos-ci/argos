@@ -1,17 +1,9 @@
 import * as React from "react";
-import { useLocation } from "react-router-dom";
 
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
+import { useOAuthURL } from "@/util/oauth";
 
-function useLoginUrl(redirect: string | null | undefined) {
-  const { pathname } = useLocation();
-  const url = `/auth/google/login?r=${encodeURIComponent(
-    redirect ?? pathname,
-  )}`;
-  return url;
-}
-
-function GoogleLogo(props: React.SVGProps<SVGSVGElement>) {
+export function GoogleLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -49,7 +41,10 @@ export function GoogleLoginButton({
   children?: React.ReactNode;
   redirect?: string | null;
 }) {
-  const loginUrl = useLoginUrl(redirect);
+  const loginUrl = useOAuthURL({
+    provider: "google",
+    redirect: redirect ?? null,
+  });
   return (
     <LinkButton variant="google" href={loginUrl} target="_parent" {...props}>
       <ButtonIcon>

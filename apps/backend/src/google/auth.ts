@@ -12,14 +12,15 @@ function createOAuth2Client() {
   );
 }
 
-export function getGoogleAuthUrl(input: { redirect: string }) {
+export function getGoogleAuthUrl(input: { state: string }) {
+  const { state } = input;
   const oAuth2Client = createOAuth2Client();
   return oAuth2Client.generateAuthUrl({
     scope: [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",
     ],
-    state: input.redirect,
+    state,
   });
 }
 

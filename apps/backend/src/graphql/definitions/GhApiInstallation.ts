@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { GithubInstallation } from "@/database/models/GithubInstallation.js";
@@ -45,14 +44,17 @@ export const resolvers: IResolvers = {
   },
   Query: {
     ghApiInstallationRepositories: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const { auth } = ctx;
+      if (!auth) {
         throw unauthenticated();
       }
       const reposPerPage = Math.min(args.reposPerPage || 100, 100);
       const ghRepositories = await (async () => {
         if (args.fromAuthUser) {
-          invariant(ctx.auth);
-          const octokit = getTokenOctokit(ctx.auth.user.accessToken);
+          if (!auth.user.accessToken) {
+            return null;
+          }
+          const octokit = getTokenOctokit(auth.user.accessToken);
           return octokit.apps.listInstallationReposForAuthenticatedUser({
             installation_id: Number(args.installationId),
             per_page: reposPerPage,
@@ -75,6 +77,16 @@ export const resolvers: IResolvers = {
           page: args.page,
         });
       })();
+
+      if (!ghRepositories) {
+        return {
+          edges: [],
+          pageInfo: {
+            hasNextPage: false,
+            totalCount: 0,
+          },
+        };
+      }
 
       return {
         edges: ghRepositories.data.repositories,

@@ -273,8 +273,10 @@ async function getGitHubOctokitFromAppType(input: {
   app: "main" | "light";
 }) {
   switch (input.app) {
-    case "main":
+    case "main": {
+      invariant(input.creator.accessToken, "Should have access token");
       return getTokenOctokit(input.creator.accessToken);
+    }
     case "light":
       invariant(
         input.account.githubLightInstallationId,

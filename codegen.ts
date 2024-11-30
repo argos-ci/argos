@@ -27,6 +27,7 @@ const config: CodegenConfig = {
           GithubPullRequest: "../../database/models/index.js#GithubPullRequest",
           GithubRepository: "../../database/models/index.js#GithubRepository",
           GitlabProject: "../../database/models/index.js#GitlabProject",
+          GitlabUser: "../../database/models/index.js#GitlabUser",
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           Plan: "../../database/models/index.js#Plan",

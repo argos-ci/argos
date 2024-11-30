@@ -1,12 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/react";
 import axios, { isAxiosError } from "axios";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import config from "@/config";
-import { checkIsAuthProvider, useAuth } from "@/containers/Auth";
-import type { AuthProvider } from "@/containers/Auth";
+import { useAuth } from "@/containers/Auth";
 import { UniversalNavigate } from "@/containers/Redirect";
+import { useLiveRef } from "@/ui/useLiveRef";
+import {
+  AuthProvider,
+  checkIsAuthProvider,
+  getRedirectFromState,
+} from "@/util/oauth";
 
 import { NotFound } from "./NotFound";
 
@@ -22,34 +27,48 @@ function getLoginUrl(error: unknown) {
       )}`;
     }
   }
+  if (error instanceof Error) {
+    return `/login?error=${encodeURIComponent(error.message)}`;
+  }
   return "/login";
 }
 
 function AuthCallback(props: { provider: AuthProvider }) {
-  const navigate = useNavigate();
+  const { provider } = props;
   const [params] = useSearchParams();
   const code = params.get("code");
   const state = params.get("state");
-  const r = params.get("r");
   const error = params.get("error");
+  if (!state) {
+    throw new Error("Missing state");
+  }
+  if (!code) {
+    throw new Error("Missing code");
+  }
+  const redirectPath = getRedirectFromState({ state, provider });
   const { setToken, token } = useAuth();
+  const liveRef = useLiveRef({ setToken, token, provider });
+  const [authError, setAuthError] = useState<Error | null>(null);
+  if (authError) {
+    throw authError;
+  }
   useEffect(() => {
-    if (!code) {
-      return;
-    }
+    const { setToken, token, provider } = liveRef.current;
     api
-      .post(`/auth/${props.provider}`, { code, r })
+      .post(
+        `/auth/${provider}`,
+        { code },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
       .then((result) => {
         setToken(result.data.jwt);
       })
       .catch((error) => {
-        Sentry.captureException(error);
-        navigate(getLoginUrl(error));
+        setAuthError(error);
       });
-  }, [props.provider, r, code, setToken, navigate]);
+  }, [code, liveRef]);
   if (token) {
-    const redirectUrl = r || (state ? decodeURIComponent(state) : "/");
-    return <UniversalNavigate to={redirectUrl} replace />;
+    return <UniversalNavigate to={redirectPath} replace />;
   }
   if (error) {
     return <UniversalNavigate to="/login" replace />;
@@ -64,5 +83,13 @@ export function Component() {
     return <NotFound />;
   }
 
-  return <AuthCallback provider={params.provider} />;
+  return (
+    <Sentry.ErrorBoundary
+      fallback={({ error }) => (
+        <UniversalNavigate to={getLoginUrl(error)} replace />
+      )}
+    >
+      <AuthCallback provider={params.provider} />
+    </Sentry.ErrorBoundary>
+  );
 }

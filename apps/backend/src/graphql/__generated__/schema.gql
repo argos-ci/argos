@@ -2,6 +2,7 @@ interface Account implements Node {
   avatar: AccountAvatar!
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
+  githubAccount: GithubAccount
   gitlabAccessToken: String
   gitlabBaseUrl: String
   glNamespaces: GlApiNamespaceConnection
@@ -253,6 +254,18 @@ input DisableGitHubSSOOnTeamInput {
   teamAccountId: ID!
 }
 
+input DisconnectGitHubAuthInput {
+  accountId: ID!
+}
+
+input DisconnectGitLabAuthInput {
+  accountId: ID!
+}
+
+input DisconnectGoogleAuthInput {
+  accountId: ID!
+}
+
 input EnableGitHubSSOOnTeamInput {
   ghInstallationId: Int!
   teamAccountId: ID!
@@ -336,6 +349,13 @@ type GitlabProject implements Node & Repository {
   url: String!
 }
 
+type GitlabUser implements Node {
+  id: ID!
+  name: String!
+  url: String!
+  username: String!
+}
+
 type GlApiNamespace implements Node {
   id: ID!
   isProjectToken: Boolean!
@@ -415,6 +435,15 @@ type Mutation {
 
   """Disable GitHub SSO"""
   disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
+
+  """Disconnect GitHub Account"""
+  disconnectGitHubAuth(input: DisconnectGitHubAuthInput!): Account!
+
+  """Disconnect GitLab Account"""
+  disconnectGitLabAuth(input: DisconnectGitLabAuthInput!): Account!
+
+  """Disconnect Google Account"""
+  disconnectGoogleAuth(input: DisconnectGoogleAuthInput!): Account!
 
   """Enable GitHub SSO"""
   enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
@@ -782,6 +811,7 @@ type Team implements Account & Node {
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
   defaultUserLevel: TeamDefaultUserLevel!
+  githubAccount: GithubAccount
   githubLightInstallation: GithubInstallation
   githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
   gitlabAccessToken: String
@@ -904,10 +934,14 @@ type User implements Account & Node {
   avatar: AccountAvatar!
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
+  email: String
   ghInstallations: GhApiInstallationConnection!
+  githubAccount: GithubAccount
   gitlabAccessToken: String
   gitlabBaseUrl: String
+  gitlabUser: GitlabUser
   glNamespaces: GlApiNamespaceConnection
+  googleUserId: ID
   hasForcedPlan: Boolean!
   hasSubscribedToTrial: Boolean!
   id: ID!

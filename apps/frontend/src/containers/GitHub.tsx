@@ -1,20 +1,9 @@
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { useLocation } from "react-router-dom";
 
 import config from "@/config";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-
-function useLoginUrl(redirect: string | null | undefined) {
-  const { origin } = window.location;
-  const { pathname } = useLocation();
-  const callbackUrl = `${origin}/auth/github/callback?r=${encodeURIComponent(
-    redirect ?? pathname,
-  )}`;
-  return `${config.get("github.loginUrl")}&redirect_uri=${encodeURIComponent(
-    callbackUrl,
-  )}`;
-}
+import { useOAuthURL } from "@/util/oauth";
 
 /**
  * Get the URL to install the GitHub app.
@@ -58,9 +47,12 @@ export function GitHubLoginButton({
   children?: React.ReactNode;
   redirect?: string | null;
 }) {
-  const loginUrl = useLoginUrl(redirect);
+  const url = useOAuthURL({
+    provider: "github",
+    redirect: redirect ?? null,
+  });
   return (
-    <LinkButton variant="github" href={loginUrl} {...props}>
+    <LinkButton variant="github" href={url} {...props}>
       <ButtonIcon>
         <MarkGithubIcon />
       </ButtonIcon>

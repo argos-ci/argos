@@ -18,7 +18,7 @@
     "format": "prettier --write .",
     "heroku-postbuild": "BUILD_MODE=production pnpm run build",
     "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
-    "watch-codegen": "pnpm run codegen -- --watch",
+    "watch-codegen": "pnpm run codegen --watch",
     "knip": "knip --tags=-route"
   },
   "repository": "github:argos-ci/argos",

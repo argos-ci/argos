@@ -11,19 +11,11 @@ import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 
-export type AuthProvider = "github" | "gitlab" | "google";
-
-export function checkIsAuthProvider(
-  provider: string,
-): provider is AuthProvider {
-  return ["github", "gitlab", "google"].includes(provider);
-}
-
-type Token = null | string;
+type AuthToken = null | string;
 
 interface AuthContextValue {
-  token: Token;
-  setToken: (token: Token) => void;
+  token: AuthToken;
+  setToken: (token: AuthToken) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -57,7 +49,7 @@ export const AuthContextProvider = ({
   const [token, setStateToken] = useState<string | null>(() =>
     readAuthTokenCookie(),
   );
-  const setToken = useCallback((newToken: Token) => {
+  const setToken = useCallback((newToken: AuthToken) => {
     setStateToken(newToken);
     if (newToken === null) {
       removeAuthTokenCookie();
