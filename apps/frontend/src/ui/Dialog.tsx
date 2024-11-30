@@ -71,8 +71,13 @@ export const DialogTitle = forwardRef<
   );
 });
 
-export function useOverlayTriggerState(): OverlayTriggerState | null {
-  return useContext(OverlayTriggerStateContext);
+export function useOverlayTriggerState(): OverlayTriggerState {
+  const ctx = useContext(OverlayTriggerStateContext);
+  invariant(
+    ctx,
+    "useOverlayTriggerState must be used within an OverlayTrigger",
+  );
+  return ctx;
 }
 
 export const DialogDismiss = forwardRef<
@@ -84,7 +89,6 @@ export const DialogDismiss = forwardRef<
   }
 >((props, ref) => {
   const state = useOverlayTriggerState();
-  invariant(state, "DialogDismiss must be used within a Dialog");
   return (
     <Button
       ref={ref}

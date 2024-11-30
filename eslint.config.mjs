@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import vitest from "@vitest/eslint-plugin";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+const config = tseslint.config(
   {
     name: "argos/global-ignoes",
     ignores: [
@@ -36,3 +36,5 @@ export default tseslint.config(
     },
   },
 );
+
+export default config;
