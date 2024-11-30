@@ -3,7 +3,7 @@ import { MarkGithubIcon } from "@primer/octicons-react";
 
 import config from "@/config";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-import { useOAuthURL } from "@/util/oauth";
+import { useOAuthState, useOAuthURL } from "@/util/oauth";
 
 /**
  * Get the URL to install the GitHub app.
@@ -27,9 +27,10 @@ export function getGitHubAppManageURL(app: "main" | "light") {
   ).toString();
 }
 
-export function getGitHubMainAppInstallUrl(input: { pathname: string }) {
+export function useGitHubMainAppInstallUrl() {
+  const state = useOAuthState({ provider: "github", redirect: null });
   const url = new URL(getGitHubAppManageURL("main"));
-  url.searchParams.set("state", input.pathname);
+  url.searchParams.set("state", state);
   return url.toString();
 }
 

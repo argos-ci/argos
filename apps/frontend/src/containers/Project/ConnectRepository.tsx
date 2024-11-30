@@ -3,7 +3,6 @@ import { useQuery } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
-import { useLocation } from "react-router-dom";
 import { useDebounce } from "use-debounce";
 
 import config from "@/config";
@@ -25,7 +24,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 import { getItem, removeItem, setItem } from "@/util/storage";
 
-import { getGitHubMainAppInstallUrl } from "../GitHub";
+import { GitHubLoginButton, useGitHubMainAppInstallUrl } from "../GitHub";
 import { GitLabLogo } from "../GitLab";
 import {
   GitlabProjectList,
@@ -59,6 +58,9 @@ const ConnectRepositoryQuery = graphql(`
     }
     me {
       id
+      githubAccount {
+        id
+      }
       ghInstallations {
         edges {
           id
@@ -202,17 +204,17 @@ enum GitProvider {
 function GitHubButton(props: {
   onPress: LinkButtonProps["onPress"];
   hasInstallations: boolean;
+  isLoggedIntoGitHub: boolean;
   children?: React.ReactNode;
   size?: ButtonProps["size"];
 }) {
-  const { pathname } = useLocation();
+  const appUrl = useGitHubMainAppInstallUrl();
+  if (!props.isLoggedIntoGitHub) {
+    return <GitHubLoginButton {...props} redirect={appUrl} />;
+  }
   if (!props.hasInstallations) {
     return (
-      <LinkButton
-        variant="github"
-        size={props.size}
-        href={getGitHubMainAppInstallUrl({ pathname })}
-      >
+      <LinkButton variant="github" size={props.size} href={appUrl}>
         <ButtonIcon>
           <MarkGithubIcon />
         </ButtonIcon>
@@ -407,6 +409,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             <GitHubButton
               onPress={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}
+              isLoggedIntoGitHub={!!me.githubAccount}
             >
               GitHub
             </GitHubButton>
@@ -443,6 +446,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             size="large"
             onPress={() => setAndStoreProvider(GitProvider.GitHub)}
             hasInstallations={hasGhInstallations}
+            isLoggedIntoGitHub={!!me.githubAccount}
           >
             Continue with GitHub
           </GitHubButton>

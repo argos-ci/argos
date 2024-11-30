@@ -67,20 +67,32 @@ function getLoginUrl(provider: AuthProvider): string {
 }
 
 /**
+ * Get the OAuth state for a provider.
+ */
+export function useOAuthState(input: {
+  provider: AuthProvider;
+  redirect: string | null;
+}): string {
+  const { provider } = input;
+  const { pathname } = useLocation();
+  const redirect = input.redirect ?? pathname;
+  const state = useMemo(
+    () => createOAuthState({ redirect, provider }),
+    [redirect, provider],
+  );
+  return state;
+}
+
+/**
  * Get the OAuth URL for a provider.
  */
 export function useOAuthURL(input: {
   provider: AuthProvider;
   redirect: string | null;
 }): string {
-  const { pathname } = useLocation();
-  const redirect = input.redirect ?? pathname;
-  const { provider } = input;
+  const { provider, redirect } = input;
   const loginUrl = getLoginUrl(provider);
-  const state = useMemo(
-    () => createOAuthState({ redirect, provider }),
-    [redirect, provider],
-  );
+  const state = useOAuthState({ provider, redirect });
   const url = new URL(loginUrl);
   url.searchParams.set(
     "redirect_uri",
