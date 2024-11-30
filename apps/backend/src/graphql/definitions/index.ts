@@ -12,6 +12,7 @@ import * as GithubInstallation from "./GithubInstallation.js";
 import * as GithubPullRequest from "./GithubPullRequest.js";
 import * as GithubRepository from "./GithubRepository.js";
 import * as GitlabProject from "./GitlabProject.js";
+import * as GitlabUser from "./GitlabUser.js";
 import * as GlApiNamespace from "./GlApiNamespace.js";
 import * as GlApiProject from "./GlApiProject.js";
 import * as JobStatus from "./JobStatus.js";
@@ -43,6 +44,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GithubPullRequest,
   GithubRepository,
   GitlabProject,
+  GitlabUser,
   GlApiNamespace,
   GlApiProject,
   JobStatus,

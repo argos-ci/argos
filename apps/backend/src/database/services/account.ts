@@ -165,30 +165,57 @@ export const getOrCreateGhAccountFromGhProfile = async (
   });
 };
 
-export const getOrCreateUserAccountFromGhAccount = async (
+export async function getOrCreateUserAccountFromGhAccount(
   ghAccount: GithubAccount,
-  accessToken?: string,
-): Promise<Account> => {
+  options?: { accessToken?: string; account?: Account | null },
+): Promise<Account> {
   const email = ghAccount.email?.toLowerCase() ?? null;
+  const accessToken = options?.accessToken;
+  const attachToAccount = options?.account;
+
   const existingAccount = await Account.query()
     .withGraphFetched("user")
-    .findOne({
-      githubAccountId: ghAccount.id,
+    .findOne({ githubAccountId: ghAccount.id });
+
+  if (attachToAccount) {
+    if (existingAccount && existingAccount.id !== attachToAccount.id) {
+      throw new Error("GitHub account is already attached to another account");
+    }
+
+    if (
+      attachToAccount.githubAccountId &&
+      attachToAccount.githubAccountId !== ghAccount.id
+    ) {
+      throw new Error("Account is already attached to another GitHub account");
+    }
+
+    const user = await attachToAccount.$relatedQuery("user");
+
+    await transaction(async (trx) => {
+      await Promise.all([
+        attachToAccount.githubAccountId !== ghAccount.id
+          ? attachToAccount.$query(trx).patch({ githubAccountId: ghAccount.id })
+          : null,
+        accessToken && user.accessToken !== accessToken
+          ? user.$query(trx).patch({ accessToken })
+          : null,
+      ]);
     });
 
+    return attachToAccount.$query();
+  }
+
   if (existingAccount) {
-    invariant(existingAccount.user, "user not fetched");
+    const { user } = existingAccount;
+    invariant(user, "user not fetched");
 
     const updateData: PartialModelObject<User> = {};
 
-    if (
-      accessToken !== undefined &&
-      existingAccount.user.accessToken !== accessToken
-    ) {
+    if (accessToken !== undefined && user.accessToken !== accessToken) {
       updateData.accessToken = accessToken;
     }
 
-    if (existingAccount.user.email !== email) {
+    if (user.email !== email) {
       const existingEmailUser = await User.query().findOne("email", email);
       if (!existingEmailUser) {
         updateData.email = email;
@@ -196,7 +223,7 @@ export const getOrCreateUserAccountFromGhAccount = async (
     }
 
     if (Object.keys(updateData).length > 0) {
-      await existingAccount.user.$query().patchAndFetch(updateData);
+      await user.$query().patchAndFetch(updateData);
     }
 
     return existingAccount;
@@ -240,12 +267,42 @@ export const getOrCreateUserAccountFromGhAccount = async (
   }
 
   return account;
-};
+}
 
 export const getOrCreateUserAccountFromGitlabUser = async (
   gitlabUser: GitlabUser,
+  options?: { account?: Account | null },
 ): Promise<Account> => {
   const email = gitlabUser.email.trim().toLowerCase();
+  const attachToAccount = options?.account;
+
+  if (attachToAccount) {
+    const [user, existingUser] = await Promise.all([
+      attachToAccount.$relatedQuery("user"),
+      User.query().findOne({ gitlabUserId: gitlabUser.id }),
+    ]);
+
+    if (existingUser) {
+      invariant(existingUser.account, "account not fetched");
+      if (user.id !== existingUser.id) {
+        throw new Error(
+          "GitLab account is already attached to another account",
+        );
+      }
+    }
+
+    if (user.gitlabUserId && user.gitlabUserId !== gitlabUser.id) {
+      throw new Error(
+        "Account account is already attached to another GitLab account",
+      );
+    }
+
+    if (user.gitlabUserId !== gitlabUser.id) {
+      await user.$query().patch({ gitlabUserId: gitlabUser.id });
+    }
+
+    return attachToAccount;
+  }
 
   const existingUsers = await User.query()
     .withGraphFetched("account")
@@ -305,7 +362,38 @@ export const getOrCreateUserAccountFromGitlabUser = async (
 
 export async function getOrCreateAccountFromGoogleUserProfile(
   profile: GoogleUserProfile,
+  options?: { account?: Account | null },
 ) {
+  const attachToAccount = options?.account;
+
+  if (attachToAccount) {
+    const [user, existingUser] = await Promise.all([
+      attachToAccount.$relatedQuery("user"),
+      User.query().findOne({ googleUserId: profile.id }),
+    ]);
+
+    if (existingUser) {
+      invariant(existingUser.account, "account not fetched");
+      if (user.id !== existingUser.id) {
+        throw new Error(
+          "Google account is already attached to another account",
+        );
+      }
+    }
+
+    if (user.googleUserId && user.googleUserId !== profile.id) {
+      throw new Error(
+        "Account account is already attached to another Google account",
+      );
+    }
+
+    if (user.googleUserId !== profile.id) {
+      await user.$query().patch({ googleUserId: profile.id });
+    }
+
+    return attachToAccount;
+  }
+
   const existingUsers = await User.query()
     .withGraphFetched("account")
     .whereIn("email", profile.emails)

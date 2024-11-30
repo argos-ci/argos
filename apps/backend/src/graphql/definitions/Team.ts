@@ -62,6 +62,7 @@ export const typeDefs = gql`
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
+    githubAccount: GithubAccount
 
     me: TeamMember
     members(

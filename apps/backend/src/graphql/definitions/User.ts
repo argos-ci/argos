@@ -39,6 +39,7 @@ export const typeDefs = gql`
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
+    githubAccount: GithubAccount
 
     hasSubscribedToTrial: Boolean!
     lastSubscription: AccountSubscription
@@ -49,6 +50,9 @@ export const typeDefs = gql`
       first: Int = 30
       projectId: ID!
     ): ProjectContributorConnection!
+    gitlabUser: GitlabUser
+    googleUserId: ID
+    email: String
   }
 
   type UserConnection implements Connection {
@@ -134,6 +138,25 @@ export const resolvers: IResolvers = {
 
       const result = await query;
       return paginateResult({ result, first, after });
+    },
+    gitlabUser: async (account) => {
+      invariant(account.userId, "account.userId is undefined");
+      const gitlabUser = await User.relatedQuery("gitlabUser")
+        .for(account.userId)
+        .first();
+      return gitlabUser ?? null;
+    },
+    googleUserId: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      const user = await ctx.loaders.User.load(account.userId);
+      invariant(user, "user is undefined");
+      return user.googleUserId;
+    },
+    email: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      const user = await ctx.loaders.User.load(account.userId);
+      invariant(user, "user is undefined");
+      return user.email;
     },
   },
 };

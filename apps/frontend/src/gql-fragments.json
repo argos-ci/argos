@@ -28,6 +28,7 @@
       "GithubPullRequest",
       "GithubRepository",
       "GitlabProject",
+      "GitlabUser",
       "GlApiNamespace",
       "GlApiProject",
       "Plan",

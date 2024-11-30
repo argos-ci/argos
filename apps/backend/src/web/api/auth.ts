@@ -2,8 +2,10 @@ import { invariant } from "@argos/util/invariant";
 import axios from "axios";
 import cors from "cors";
 import express, { Router } from "express";
+import { z } from "zod";
 
 import { createJWT } from "@/auth/jwt.js";
+import { AuthPayload } from "@/auth/request.js";
 import config from "@/config/index.js";
 import type { Account } from "@/database/models/index.js";
 import {
@@ -27,6 +29,7 @@ import {
   getGoogleUserProfile,
 } from "@/google/index.js";
 
+import { auth } from "../middlewares/auth.js";
 import { asyncHandler } from "../util.js";
 
 const router: Router = Router();
@@ -47,10 +50,22 @@ function createJWTFromAccount(account: Account) {
   });
 }
 
-function handleOAuth(retrieveAccount: (body: any) => Promise<Account>) {
+const OAuthBodySchema = z.object({
+  code: z.string(),
+});
+
+type OAuthBody = z.infer<typeof OAuthBodySchema>;
+
+function handleOAuth(
+  retrieveAccount: (
+    body: OAuthBody,
+    auth: AuthPayload | null,
+  ) => Promise<Account>,
+) {
   return asyncHandler(async (req, res) => {
     try {
-      const account = await retrieveAccount(req.body);
+      const parsed = OAuthBodySchema.parse(req.body);
+      const account = await retrieveAccount(parsed, req.auth ?? null);
       res.send({ jwt: createJWTFromAccount(account) });
     } catch (error) {
       if (error instanceof axios.AxiosError && error.response) {
@@ -64,8 +79,9 @@ function handleOAuth(retrieveAccount: (body: any) => Promise<Account>) {
 
 router.post(
   "/auth/github",
+  auth,
   express.json(),
-  handleOAuth(async (body) => {
+  handleOAuth(async (body, auth) => {
     const result = await retrieveGithubOAuthToken({
       clientId: config.get("github.clientId"),
       clientSecret: config.get("github.clientSecret"),
@@ -81,10 +97,10 @@ router.post(
       profile.data,
       emails.data,
     );
-    const account = await getOrCreateUserAccountFromGhAccount(
-      ghAccount,
-      result.access_token,
-    );
+    const account = await getOrCreateUserAccountFromGhAccount(ghAccount, {
+      accessToken: result.access_token,
+      account: auth?.account ?? null,
+    });
     invariant(account.userId, "Expected account to have userId");
     await joinSSOTeams({
       githubAccountId: ghAccount.id,
@@ -96,27 +112,26 @@ router.post(
 
 router.post(
   "/auth/gitlab",
+  auth,
   express.json(),
-  handleOAuth(async (body) => {
+  handleOAuth(async (body, auth) => {
     const response = await retrieveGitlabOAuthToken({
       clientId: config.get("gitlab.appId"),
       clientSecret: config.get("gitlab.appSecret"),
       code: body.code,
-      redirectUri: `${config.get(
-        "server.url",
-      )}/auth/gitlab/callback?r=${encodeURIComponent(body.r)}`,
+      redirectUri: `${config.get("server.url")}/auth/gitlab/callback`,
     });
 
-    const api = getGitlabClient({
-      accessToken: response.access_token,
-    });
+    const api = getGitlabClient({ accessToken: response.access_token });
     const apiUser = await api.Users.showCurrentUser();
     const glUser = await getOrCreateGitlabUser(apiUser, {
       accessToken: response.access_token,
       accessTokenExpiresAt: new Date(Date.now() + response.expires_in * 1000),
       refreshToken: response.refresh_token,
     });
-    const account = await getOrCreateUserAccountFromGitlabUser(glUser);
+    const account = await getOrCreateUserAccountFromGitlabUser(glUser, {
+      account: auth?.account ?? null,
+    });
     return account;
   }),
 );
@@ -124,12 +139,14 @@ router.post(
 router.post(
   "/auth/google",
   express.json(),
-  handleOAuth(async (body) => {
+  handleOAuth(async (body, auth) => {
     const oAuth2Client = await getGoogleAuthenticatedClient({
       code: body.code,
     });
     const profile = await getGoogleUserProfile({ oAuth2Client });
-    const account = await getOrCreateAccountFromGoogleUserProfile(profile);
+    const account = await getOrCreateAccountFromGoogleUserProfile(profile, {
+      account: auth?.account ?? null,
+    });
     return account;
   }),
 );

@@ -4,6 +4,9 @@ import axios from "axios";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
+import { disconnectGitHubAuth } from "@/auth/github.js";
+import { disconnectGitLabAuth } from "@/auth/gitlab.js";
+import { disconnectGoogleAuth } from "@/auth/google.js";
 import {
   Account,
   Project,
@@ -83,6 +86,7 @@ export const typeDefs = gql`
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
+    githubAccount: GithubAccount
   }
 
   input UpdateAccountInput {
@@ -93,6 +97,18 @@ export const typeDefs = gql`
   }
 
   input UninstallSlackInput {
+    accountId: ID!
+  }
+
+  input DisconnectGitHubAuthInput {
+    accountId: ID!
+  }
+
+  input DisconnectGitLabAuthInput {
+    accountId: ID!
+  }
+
+  input DisconnectGoogleAuthInput {
     accountId: ID!
   }
 
@@ -110,6 +126,12 @@ export const typeDefs = gql`
     updateAccount(input: UpdateAccountInput!): Account!
     "Uninstall Slack"
     uninstallSlack(input: UninstallSlackInput!): Account!
+    "Disconnect GitHub Account"
+    disconnectGitHubAuth(input: DisconnectGitHubAuthInput!): Account!
+    "Disconnect GitLab Account"
+    disconnectGitLabAuth(input: DisconnectGitLabAuthInput!): Account!
+    "Disconnect Google Account"
+    disconnectGoogleAuth(input: DisconnectGoogleAuthInput!): Account!
   }
 `;
 
@@ -338,6 +360,12 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.SlackInstallation.load(account.slackInstallationId);
     },
+    githubAccount: async (account, _args, ctx) => {
+      if (!account.githubAccountId) {
+        return null;
+      }
+      return ctx.loaders.GithubAccount.load(account.githubAccountId);
+    },
   },
   AccountAvatar: {
     url: (avatar, args) => {
@@ -431,6 +459,30 @@ export const resolvers: IResolvers = {
       }
       await uninstallSlackInstallation(account.slackInstallation);
       return account.$query();
+    },
+    disconnectGitHubAuth: async (_root, args, ctx) => {
+      const { accountId } = args.input;
+      const account = await getAdminAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      return disconnectGitHubAuth(account);
+    },
+    disconnectGitLabAuth: async (_root, args, ctx) => {
+      const { accountId } = args.input;
+      const account = await getAdminAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      return disconnectGitLabAuth(account);
+    },
+    disconnectGoogleAuth: async (_root, args, ctx) => {
+      const { accountId } = args.input;
+      const account = await getAdminAccount({
+        id: accountId,
+        user: ctx.auth?.user,
+      });
+      return disconnectGoogleAuth(account);
     },
   },
 };

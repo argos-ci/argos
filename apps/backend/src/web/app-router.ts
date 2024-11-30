@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
+import { z } from "zod";
 
 import config from "@/config/index.js";
 import { getGoogleAuthUrl } from "@/google/index.js";
@@ -82,9 +83,14 @@ export const installAppRouter = async (app: express.Application) => {
     res.redirect(redirectTo);
   });
 
+  const OAuthQueryParamsSchema = z.object({
+    state: z.string(),
+    redirect_uri: z.string(),
+  });
+
   router.get("/auth/google/login", (req, res) => {
-    const redirect = checkIsPathname(req.query["r"]) ? req.query["r"] : "/";
-    res.redirect(getGoogleAuthUrl({ redirect }));
+    const { state } = OAuthQueryParamsSchema.parse(req.query);
+    res.redirect(getGoogleAuthUrl({ state }));
   });
 
   router.use(slackMiddleware);
@@ -105,10 +111,3 @@ export const installAppRouter = async (app: express.Application) => {
 
   app.use(subdomain(router, "app"));
 };
-
-/**
- * Check if the input is a valid pathname.
- */
-function checkIsPathname(input: unknown): input is string {
-  return typeof input === "string" && input.startsWith("/");
-}
