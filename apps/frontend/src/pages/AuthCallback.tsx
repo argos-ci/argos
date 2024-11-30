@@ -45,7 +45,7 @@ function AuthCallback(props: { provider: AuthProvider }) {
   if (!code) {
     throw new Error("Missing code");
   }
-  const redirectPath = getRedirectFromState({ state, provider });
+  const redirectUri = getRedirectFromState({ state, provider });
   const { setToken, token } = useAuth();
   const liveRef = useLiveRef({ setToken, token, provider });
   const [authError, setAuthError] = useState<Error | null>(null);
@@ -68,7 +68,7 @@ function AuthCallback(props: { provider: AuthProvider }) {
       });
   }, [code, liveRef]);
   if (token) {
-    return <UniversalNavigate to={redirectPath} replace />;
+    return <UniversalNavigate to={redirectUri} replace />;
   }
   if (error) {
     return <UniversalNavigate to="/login" replace />;
