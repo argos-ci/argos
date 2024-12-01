@@ -14,6 +14,7 @@ import {
   ProviderCard,
   ProviderContent,
   ProviderIcon,
+  ProviderLastLoggedAt,
   ProviderMenuButton,
 } from "../ui";
 
@@ -25,6 +26,7 @@ const AccountFragment = graphql(`
       username
       name
       url
+      lastLoggedAt
     }
   }
 `);
@@ -61,7 +63,7 @@ export function GitLabAuth(props: {
             <GitLabColoredLogo />
           </ProviderIcon>
           <ProviderContent>
-            <div>GitLab</div>
+            <div className="font-medium">GitLab</div>
             <div>
               {account.gitlabUser.name} (
               <Link
@@ -74,6 +76,9 @@ export function GitLabAuth(props: {
               )
             </div>
           </ProviderContent>
+          {account.gitlabUser.lastLoggedAt && (
+            <ProviderLastLoggedAt date={account.gitlabUser.lastLoggedAt} />
+          )}
           <MenuTrigger>
             <ProviderMenuButton />
             <Popover>

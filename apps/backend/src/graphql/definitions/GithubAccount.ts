@@ -12,6 +12,7 @@ export const typeDefs = gql`
     name: String
     url: String!
     avatar: AccountAvatar!
+    lastLoggedAt: DateTime
   }
 `;
 

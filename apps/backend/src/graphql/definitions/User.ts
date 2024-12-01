@@ -51,7 +51,7 @@ export const typeDefs = gql`
       projectId: ID!
     ): ProjectContributorConnection!
     gitlabUser: GitlabUser
-    googleUserId: ID
+    googleUser: GoogleUser
     email: String
   }
 
@@ -150,11 +150,12 @@ export const resolvers: IResolvers = {
         .first();
       return gitlabUser ?? null;
     },
-    googleUserId: async (account, _args, ctx) => {
+    googleUser: async (account) => {
       invariant(account.userId, "account.userId is undefined");
-      const user = await ctx.loaders.User.load(account.userId);
-      invariant(user, "user is undefined");
-      return user.googleUserId;
+      const gitlabUser = await User.relatedQuery("googleUser")
+        .for(account.userId)
+        .first();
+      return gitlabUser ?? null;
     },
     email: async (account, _args, ctx) => {
       invariant(account.userId, "account.userId is undefined");

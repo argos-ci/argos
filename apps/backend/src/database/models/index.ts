@@ -13,6 +13,7 @@ export * from "./GithubRepositoryInstallation.js";
 export * from "./GithubSynchronization.js";
 export * from "./GitlabProject.js";
 export * from "./GitlabUser.js";
+export * from "./GoogleUser.js";
 export * from "./Plan.js";
 export * from "./Project.js";
 export * from "./ProjectUser.js";

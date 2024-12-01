@@ -99,11 +99,11 @@ const documents = {
     "\n  mutation AccountSlack_UninstallSlack($accountId: ID!) {\n    uninstallSlack(input: { accountId: $accountId }) {\n      id\n      ...TeamSlack_Account\n    }\n  }\n": types.AccountSlack_UninstallSlackDocument,
     "\n  query UpgradeDialog_me {\n    me {\n      id\n      slug\n      hasSubscribedToTrial\n      ...AccountItem_Account\n      teams {\n        id\n        slug\n        subscriptionStatus\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.UpgradeDialog_MeDocument,
     "\n  fragment UserAuth_Account on Account {\n    id\n    ... on User {\n      ...GitHubAuth_Account\n      ...GitLabAuth_Account\n      ...GoogleAuth_Account\n    }\n  }\n": types.UserAuth_AccountFragmentDoc,
-    "\n  fragment GitHubAuth_Account on Account {\n    id\n    githubAccount {\n      id\n      login\n      name\n      url\n    }\n  }\n": types.GitHubAuth_AccountFragmentDoc,
+    "\n  fragment GitHubAuth_Account on Account {\n    id\n    githubAccount {\n      id\n      login\n      name\n      url\n      lastLoggedAt\n    }\n  }\n": types.GitHubAuth_AccountFragmentDoc,
     "\n  mutation GitHubAuth_disconnectGitHubAuth($accountId: ID!) {\n    disconnectGitHubAuth(input: { accountId: $accountId }) {\n      ...GitHubAuth_Account\n    }\n  }\n": types.GitHubAuth_DisconnectGitHubAuthDocument,
-    "\n  fragment GitLabAuth_Account on User {\n    id\n    gitlabUser {\n      id\n      username\n      name\n      url\n    }\n  }\n": types.GitLabAuth_AccountFragmentDoc,
+    "\n  fragment GitLabAuth_Account on User {\n    id\n    gitlabUser {\n      id\n      username\n      name\n      url\n      lastLoggedAt\n    }\n  }\n": types.GitLabAuth_AccountFragmentDoc,
     "\n  mutation GitLabAuth_disconnectGitLabAuth($accountId: ID!) {\n    disconnectGitLabAuth(input: { accountId: $accountId }) {\n      ...GitLabAuth_Account\n    }\n  }\n": types.GitLabAuth_DisconnectGitLabAuthDocument,
-    "\n  fragment GoogleAuth_Account on User {\n    id\n    googleUserId\n  }\n": types.GoogleAuth_AccountFragmentDoc,
+    "\n  fragment GoogleAuth_Account on User {\n    id\n    googleUser {\n      id\n      name\n      primaryEmail\n      lastLoggedAt\n    }\n  }\n": types.GoogleAuth_AccountFragmentDoc,
     "\n  mutation GoogleAuth_disconnectGoogleAuth($accountId: ID!) {\n    disconnectGoogleAuth(input: { accountId: $accountId }) {\n      ...GoogleAuth_Account\n    }\n  }\n": types.GoogleAuth_DisconnectGoogleAuthDocument,
     "\n  fragment UserListRow_user on User {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.UserListRow_UserFragmentDoc,
     "\n  mutation NewProject_importGithubProject(\n    $repo: String!\n    $owner: String!\n    $accountSlug: String!\n    $app: GitHubAppType!\n  ) {\n    importGithubProject(\n      input: {\n        repo: $repo\n        owner: $owner\n        accountSlug: $accountSlug\n        app: $app\n      }\n    ) {\n      id\n      slug\n    }\n  }\n": types.NewProject_ImportGithubProjectDocument,
@@ -496,7 +496,7 @@ export function graphql(source: "\n  fragment UserAuth_Account on Account {\n   
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment GitHubAuth_Account on Account {\n    id\n    githubAccount {\n      id\n      login\n      name\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment GitHubAuth_Account on Account {\n    id\n    githubAccount {\n      id\n      login\n      name\n      url\n    }\n  }\n"];
+export function graphql(source: "\n  fragment GitHubAuth_Account on Account {\n    id\n    githubAccount {\n      id\n      login\n      name\n      url\n      lastLoggedAt\n    }\n  }\n"): (typeof documents)["\n  fragment GitHubAuth_Account on Account {\n    id\n    githubAccount {\n      id\n      login\n      name\n      url\n      lastLoggedAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -504,7 +504,7 @@ export function graphql(source: "\n  mutation GitHubAuth_disconnectGitHubAuth($a
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment GitLabAuth_Account on User {\n    id\n    gitlabUser {\n      id\n      username\n      name\n      url\n    }\n  }\n"): (typeof documents)["\n  fragment GitLabAuth_Account on User {\n    id\n    gitlabUser {\n      id\n      username\n      name\n      url\n    }\n  }\n"];
+export function graphql(source: "\n  fragment GitLabAuth_Account on User {\n    id\n    gitlabUser {\n      id\n      username\n      name\n      url\n      lastLoggedAt\n    }\n  }\n"): (typeof documents)["\n  fragment GitLabAuth_Account on User {\n    id\n    gitlabUser {\n      id\n      username\n      name\n      url\n      lastLoggedAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -512,7 +512,7 @@ export function graphql(source: "\n  mutation GitLabAuth_disconnectGitLabAuth($a
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment GoogleAuth_Account on User {\n    id\n    googleUserId\n  }\n"): (typeof documents)["\n  fragment GoogleAuth_Account on User {\n    id\n    googleUserId\n  }\n"];
+export function graphql(source: "\n  fragment GoogleAuth_Account on User {\n    id\n    googleUser {\n      id\n      name\n      primaryEmail\n      lastLoggedAt\n    }\n  }\n"): (typeof documents)["\n  fragment GoogleAuth_Account on User {\n    id\n    googleUser {\n      id\n      name\n      primaryEmail\n      lastLoggedAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

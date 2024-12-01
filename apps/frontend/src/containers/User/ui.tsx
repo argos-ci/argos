@@ -2,6 +2,7 @@ import { cloneElement } from "react";
 import { MoreVerticalIcon } from "lucide-react";
 
 import { IconButton } from "@/ui/IconButton";
+import { Time } from "@/ui/Time";
 
 export function ProviderCard(props: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,14 @@ export function ProviderIcon(props: { children: React.ReactElement }) {
 
 export function ProviderContent(props: { children: React.ReactNode }) {
   return <div className="flex-1">{props.children}</div>;
+}
+
+export function ProviderLastLoggedAt(props: { date: string }) {
+  return (
+    <div>
+      Connected <Time date={props.date} />
+    </div>
+  );
 }
 
 export function ProviderMenuButton() {

@@ -5,17 +5,17 @@ import type { PartialModelObject } from "objection";
 
 import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
-import { GoogleUserProfile } from "@/google/index.js";
-import logger from "@/logger/index.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
 import { GithubAccountMember } from "../models/GithubAccountMember.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
+import { GoogleUser } from "../models/GoogleUser.js";
 import { Team } from "../models/Team.js";
 import { TeamUser } from "../models/TeamUser.js";
 import { User } from "../models/User.js";
 import { transaction } from "../transaction.js";
+import { Model } from "../util/model.js";
 import { getPartialModelUpdate } from "../util/update.js";
 
 const RESERVED_SLUGS = [
@@ -242,202 +242,173 @@ export async function getOrCreateUserAccountFromGhAccount(
   return account;
 }
 
-export const getOrCreateUserAccountFromGitlabUser = async (
-  gitlabUser: GitlabUser,
-  options?: { account?: Account | null },
-): Promise<Account> => {
-  const email = gitlabUser.email.trim().toLowerCase();
-  const attachToAccount = options?.account;
-
-  if (attachToAccount) {
-    const [user, existingUser] = await Promise.all([
-      attachToAccount.$relatedQuery("user"),
-      User.query().findOne({ gitlabUserId: gitlabUser.id }),
-    ]);
-
-    if (existingUser) {
-      invariant(existingUser.account, "account not fetched");
-      if (user.id !== existingUser.id) {
-        throw new Error(
-          "GitLab account is already attached to another account",
-        );
-      }
-    }
-
-    if (user.gitlabUserId && user.gitlabUserId !== gitlabUser.id) {
-      throw new Error(
-        "Account account is already attached to another GitLab account",
-      );
-    }
-
-    if (user.gitlabUserId !== gitlabUser.id) {
-      await user.$query().patch({ gitlabUserId: gitlabUser.id });
-    }
-
-    return attachToAccount;
-  }
-
-  const existingUsers = await User.query()
-    .withGraphFetched("account")
-    .where("gitlabUserId", gitlabUser.id)
-    .orWhere("email", email);
-
-  // If we match multiple accounts, it means that another
-  // user has the same email or gitlabUserId
-  // In this case we don't update anything and choose the one with gitLabUserId
-  if (existingUsers.length > 1) {
-    const userWithId = existingUsers.find(
-      (u) => u.gitlabUserId === gitlabUser.id,
-    );
-    invariant(userWithId?.account, "account not fetched");
-    return userWithId.account;
-  }
-
-  const existingUser = existingUsers[0];
-
-  if (existingUser) {
-    invariant(existingUser.account, "account not fetched");
-
-    // Either update the gitlabUserId or the email if needed
-    const data: PartialModelObject<User> = {};
-    if (existingUser.gitlabUserId !== gitlabUser.id) {
-      data.gitlabUserId = gitlabUser.id;
-    }
-    if (email && existingUser.email !== email) {
-      data.email = email;
-    }
-
-    if (Object.keys(data).length > 0) {
-      await existingUser.$clone().$query().patch(data);
-    }
-
-    return existingUser.account;
-  }
-
-  const slug = await resolveAccountSlug(gitlabUser.username.toLowerCase());
-
-  const account = await transaction(async (trx) => {
-    const user = await User.query(trx).insertAndFetch({
-      email: gitlabUser.email,
-      gitlabUserId: gitlabUser.id,
-    });
-    return Account.query(trx).insertAndFetch({
-      userId: user.id,
-      name: gitlabUser.name,
-      slug,
-    });
-  });
-
-  await sendWelcomeEmail({ to: gitlabUser.email });
-
-  return account;
-};
-
-export async function getOrCreateAccountFromGoogleUserProfile(
-  profile: GoogleUserProfile,
-  options?: { account?: Account | null },
-) {
-  const attachToAccount = options?.account;
+async function getOrCreateUserAccountFromThirdParty<
+  TModel extends Model,
+>(input: {
+  provider: string;
+  model: TModel;
+  attachToAccount?: Account | null;
+  getEmail: (model: TModel) => string;
+  getSlug: (model: TModel) => string;
+  getName: (model: TModel) => string | null;
+  getPotentialEmails: (model: TModel) => string[];
+  thirdPartyKey: NonNullable<keyof PartialModelObject<User>>;
+}) {
+  const {
+    provider,
+    model,
+    attachToAccount,
+    getEmail,
+    getSlug,
+    getName,
+    getPotentialEmails,
+    thirdPartyKey,
+  } = input;
+  const email = getEmail(model).trim().toLowerCase();
 
   if (attachToAccount) {
     const [user, existingUser] = await Promise.all([
       attachToAccount.$relatedQuery("user"),
       User.query()
-        .findOne({ googleUserId: profile.id })
+        .findOne({ [thirdPartyKey]: model.id })
         .withGraphFetched("account"),
     ]);
 
     if (existingUser) {
-      invariant(existingUser.account, "account not fetched");
+      invariant(existingUser.account, "Account not fetched");
       if (user.id !== existingUser.id) {
         throw new Error(
-          "Google account is already attached to another account",
+          `${provider} account is already attached to another Argos account`,
         );
       }
     }
 
-    if (user.googleUserId && user.googleUserId !== profile.id) {
+    if (user[thirdPartyKey] && user[thirdPartyKey] !== model.id) {
       throw new Error(
-        "Account account is already attached to another Google account",
+        `Argos Account is already attached to another ${provider} account`,
       );
     }
 
-    if (user.googleUserId !== profile.id) {
-      await user.$query().patch({ googleUserId: profile.id });
+    if (user[thirdPartyKey] !== model.id) {
+      await user.$query().patch({ [thirdPartyKey]: model.id });
     }
 
     return attachToAccount;
   }
 
+  const potentialEmails = getPotentialEmails(model);
   const existingUsers = await User.query()
     .withGraphFetched("account")
-    .whereIn("email", profile.emails)
-    .orWhere("googleUserId", profile.id);
+    .where(thirdPartyKey, model.id)
+    .orWhereIn("email", potentialEmails);
 
-  // If we match multiple accounts we have to handle the case
+  // If we match multiple accounts, it means that another
+  // user has the same email or id
+  // In this case we don't update anything and choose the one with gitLabUserId
   if (existingUsers.length > 1) {
-    // First we try to find a user with the same googleUserId
-    // If we find one, we return its account
-    const userWithId = existingUsers.find((u) => u.googleUserId === profile.id);
+    // If we have a user with the same id, we return the account.
+    const userWithId = existingUsers.find((u) => u[thirdPartyKey] === model.id);
     if (userWithId) {
-      invariant(userWithId.account, "account not fetched");
+      invariant(userWithId.account, "Account not fetched");
       return userWithId.account;
     }
 
-    // Then we try to find a user with the same email, starting with the primary
-    // we mark it by updating the googleUserId
-    const userWithEmail =
-      existingUsers.find((u) => u.email === profile.primaryEmail) ??
-      existingUsers[0];
+    // Then choose the user by order of potential emails
+    const userWithEmail = potentialEmails.reduce<User | null>((acc, email) => {
+      return acc ?? existingUsers.find((u) => u.email === email) ?? null;
+    }, null);
 
-    invariant(userWithEmail?.account, "account not fetched");
-    await userWithEmail.$clone().$query().patch({
-      googleUserId: profile.id,
-    });
+    invariant(userWithEmail, "A user should be found");
+    invariant(userWithEmail.account, "Account not fetched");
     return userWithEmail.account;
   }
 
   const existingUser = existingUsers[0];
 
   if (existingUser) {
-    invariant(existingUser.account, "account not fetched");
+    invariant(existingUser.account, "Account not fetched");
 
-    // If needed, update the googleUserId
-    if (existingUser.googleUserId !== profile.id) {
-      await existingUser.$clone().$query().patch({
-        googleUserId: profile.id,
-      });
+    // Either update the id or the email if needed
+    const data = getPartialModelUpdate(existingUser, {
+      [thirdPartyKey]: model.id,
+      email,
+    });
+
+    if (data) {
+      await existingUser.$clone().$query().patch(data);
     }
 
     return existingUser.account;
   }
 
-  const emailIdentifier = profile.primaryEmail.split("@")[0];
-  invariant(
-    emailIdentifier,
-    `Invalid email identifier: ${profile.primaryEmail}`,
-  );
-  const emailSlug = slugify(emailIdentifier.toLowerCase());
-  invariant(
-    emailSlug,
-    `Invalid email slug: (slug: ${emailSlug}, email: ${profile.primaryEmail})`,
-  );
-  const accountSlug = await resolveAccountSlug(emailSlug);
+  const baseSlug = getSlug(model).toLowerCase();
+  invariant(baseSlug, `Invalid slug: ${baseSlug}`);
 
-  logger.info(`Creating account with slug: ${accountSlug}`);
+  const slug = await resolveAccountSlug(slugify(baseSlug));
+
   const account = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({
-      email: profile.primaryEmail,
-      googleUserId: profile.id,
+      email,
+      [thirdPartyKey]: model.id,
     });
     return Account.query(trx).insertAndFetch({
       userId: user.id,
-      name: profile.name,
-      slug: accountSlug,
+      name: getName(model),
+      slug,
     });
   });
 
-  await sendWelcomeEmail({ to: profile.primaryEmail });
+  await sendWelcomeEmail({ to: email });
 
   return account;
+}
+
+export async function getOrCreateUserAccountFromGitlabUser(input: {
+  gitlabUser: GitlabUser;
+  attachToAccount: Account | null;
+}): Promise<Account> {
+  const { gitlabUser, attachToAccount } = input;
+  return getOrCreateUserAccountFromThirdParty({
+    provider: "GitLab",
+    model: gitlabUser,
+    attachToAccount,
+    getEmail: (model) => model.email,
+    getSlug: (model) => model.username,
+    getName: (model) => model.name,
+    getPotentialEmails: (model) => [model.email],
+    thirdPartyKey: "gitlabUserId",
+  });
+}
+
+export async function getOrCreateUserAccountFromGoogleUser(input: {
+  googleUser: GoogleUser;
+  attachToAccount: Account | null;
+}): Promise<Account> {
+  const { googleUser, attachToAccount } = input;
+  return getOrCreateUserAccountFromThirdParty({
+    provider: "Google",
+    model: googleUser,
+    attachToAccount,
+    getEmail: (model) => {
+      invariant(model.primaryEmail, "Expected primaryEmail to be defined");
+      return model.primaryEmail;
+    },
+    getSlug: (model) => {
+      invariant(model.primaryEmail, "Expected primaryEmail to be defined");
+      const emailIdentifier = model.primaryEmail
+        .toLocaleLowerCase()
+        .split("@")[0];
+      invariant(
+        emailIdentifier,
+        `Invalid email identifier: ${model.primaryEmail}`,
+      );
+      return emailIdentifier;
+    },
+    getName: (model) => model.name,
+    getPotentialEmails: (model) => {
+      invariant(model.emails, "Expected emails to be defined");
+      return model.emails;
+    },
+    thirdPartyKey: "googleUserId",
+  });
 }

@@ -1,6 +1,7 @@
 import type { ExpandedUserSchema } from "@/gitlab/index.js";
 
 import { GitlabUser } from "../models/GitlabUser.js";
+import { getPartialModelUpdate } from "../util/update.js";
 
 export async function getOrCreateGitlabUser(
   apiUser: ExpandedUserSchema,
@@ -8,22 +9,21 @@ export async function getOrCreateGitlabUser(
     accessToken: string;
     accessTokenExpiresAt: Date;
     refreshToken: string;
+    lastLoggedAt: string;
   },
 ): Promise<GitlabUser> {
   const existing = await GitlabUser.query().findOne({
     gitlabId: apiUser.id,
   });
   if (existing) {
-    if (
-      existing.username !== apiUser.username ||
-      existing.email !== apiUser.email ||
-      existing.name !== apiUser.name
-    ) {
-      return existing.$query().patchAndFetch({
-        username: apiUser.username,
-        email: apiUser.email,
-        name: apiUser.name,
-      });
+    const toUpdate = getPartialModelUpdate(existing, {
+      name: apiUser.name,
+      email: apiUser.email,
+      username: apiUser.username,
+      lastLoggedAt: options.lastLoggedAt,
+    });
+    if (toUpdate) {
+      return existing.$query().patchAndFetch(toUpdate);
     }
     return existing;
   }
@@ -36,5 +36,6 @@ export async function getOrCreateGitlabUser(
     accessToken: options.accessToken,
     accessTokenExpiresAt: options.accessTokenExpiresAt.toISOString(),
     refreshToken: options.refreshToken,
+    lastLoggedAt: options.lastLoggedAt,
   });
 }

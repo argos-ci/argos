@@ -31,6 +31,7 @@
       "GitlabUser",
       "GlApiNamespace",
       "GlApiProject",
+      "GoogleUser",
       "Plan",
       "Project",
       "ProjectContributor",

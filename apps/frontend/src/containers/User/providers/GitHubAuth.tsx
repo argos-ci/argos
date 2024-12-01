@@ -16,6 +16,7 @@ import {
   ProviderCard,
   ProviderContent,
   ProviderIcon,
+  ProviderLastLoggedAt,
   ProviderMenuButton,
 } from "../ui";
 
@@ -27,6 +28,7 @@ const AccountFragment = graphql(`
       login
       name
       url
+      lastLoggedAt
     }
   }
 `);
@@ -63,7 +65,7 @@ export function GitHubAuth(props: {
             <MarkGithubIcon />
           </ProviderIcon>
           <ProviderContent>
-            <div>GitHub</div>
+            <div className="font-medium">GitHub</div>
             <div>
               {account.githubAccount.name} (
               <Link
@@ -76,6 +78,9 @@ export function GitHubAuth(props: {
               )
             </div>
           </ProviderContent>
+          {account.githubAccount.lastLoggedAt && (
+            <ProviderLastLoggedAt date={account.githubAccount.lastLoggedAt} />
+          )}
           <MenuTrigger>
             <ProviderMenuButton />
             <Popover>
