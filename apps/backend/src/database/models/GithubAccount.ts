@@ -16,9 +16,9 @@ export class GithubAccount extends Model {
       login: { type: "string" },
       githubId: { type: "number" },
       type: { type: "string", enum: ["user", "organization", "bot"] },
-      accessToken: { type: "string" },
-      scope: { type: "string" },
-      lastLoggedAt: { type: "string" },
+      accessToken: { type: ["string", "null"] },
+      scope: { type: ["string", "null"] },
+      lastLoggedAt: { type: ["string", "null"] },
     },
   });
 
