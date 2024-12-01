@@ -1,6 +1,4 @@
-import { useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
-import { useLocation } from "react-router-dom";
 
 import config from "@/config";
 
@@ -23,11 +21,19 @@ function getOAuthNonceKey(provider: AuthProvider): string {
   return `oauth.nonce.${provider}`;
 }
 
+const nonces = new Map<AuthProvider, string>();
+
 /**
  * Generates a cryptographically secure random string.
  */
-function generateNonce(): string {
-  return Math.random().toString(36).substring(2);
+function getNonce(provider: AuthProvider): string {
+  const existing = nonces.get(provider);
+  if (existing) {
+    return existing;
+  }
+  const nonce = Math.random().toString(36).substring(2);
+  nonces.set(provider, nonce);
+  return nonce;
 }
 
 /**
@@ -38,7 +44,7 @@ function createOAuthState(input: {
   redirect: string;
 }): RawState {
   try {
-    const nonce = generateNonce();
+    const nonce = getNonce(input.provider);
     window.localStorage.setItem(getOAuthNonceKey(input.provider), nonce);
     const state: OAuthState = { nonce, redirect: input.redirect };
     return window.btoa(JSON.stringify(state));
@@ -63,30 +69,26 @@ function getLoginUrl(provider: AuthProvider): string {
 /**
  * Get the OAuth state for a provider.
  */
-export function useOAuthState(input: {
+export function getOAuthState(input: {
   provider: AuthProvider;
   redirect: string | null;
 }): string {
   const { provider } = input;
-  const { pathname } = useLocation();
-  const redirect = input.redirect ?? pathname;
-  const state = useMemo(
-    () => createOAuthState({ redirect, provider }),
-    [redirect, provider],
-  );
+  const redirect = input.redirect ?? window.location.pathname;
+  const state = createOAuthState({ redirect, provider });
   return state;
 }
 
 /**
  * Get the OAuth URL for a provider.
  */
-export function useOAuthURL(input: {
+export function getOAuthURL(input: {
   provider: AuthProvider;
   redirect: string | null;
 }): string {
   const { provider, redirect } = input;
   const loginUrl = getLoginUrl(provider);
-  const state = useOAuthState({ provider, redirect });
+  const state = getOAuthState({ provider, redirect });
   const url = new URL(loginUrl);
   url.searchParams.set(
     "redirect_uri",

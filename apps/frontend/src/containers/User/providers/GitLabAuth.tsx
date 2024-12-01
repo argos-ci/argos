@@ -7,7 +7,7 @@ import { GitLabAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { useOAuthURL } from "@/util/oauth";
+import { getOAuthURL } from "@/util/oauth";
 
 import {
   ProviderCard,
@@ -98,7 +98,7 @@ export function GitLabAuth(props: {
 }
 
 function ReconnectGitLabMenuItem() {
-  const url = useOAuthURL({
+  const url = getOAuthURL({
     provider: "gitlab",
     redirect: null,
   });
