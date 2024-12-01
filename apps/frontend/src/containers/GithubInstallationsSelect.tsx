@@ -13,7 +13,7 @@ import {
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
-import { getGitHubAppManageURL } from "./GitHub";
+import { getGitHubAppInstallURL } from "./GitHub";
 
 const InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
@@ -35,6 +35,7 @@ export const GithubInstallationsSelect = React.forwardRef<
     disabled?: boolean;
     onSwitchProvider?: () => void;
     app: "main" | "light";
+    accountId: string;
   }
 >(function GithubInstallationsSelect(props, ref) {
   const installations = useFragment(InstallationFragment, props.installations);
@@ -95,7 +96,9 @@ export const GithubInstallationsSelect = React.forwardRef<
           })}
           <ListBoxSeparator />
           <ListBoxItem
-            href={getGitHubAppManageURL(props.app)}
+            href={getGitHubAppInstallURL(props.app, {
+              accountId: props.accountId,
+            })}
             target="_blank"
             textValue="Add GitHub Account"
           >

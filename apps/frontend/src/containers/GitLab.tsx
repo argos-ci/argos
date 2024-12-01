@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-import { useOAuthURL } from "@/util/oauth";
+import { getOAuthURL } from "@/util/oauth";
 
 export function GitLabLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -72,7 +72,7 @@ export function GitLabLoginButton({
   children?: React.ReactNode;
   redirect?: string | null;
 }) {
-  const url = useOAuthURL({
+  const url = getOAuthURL({
     provider: "gitlab",
     redirect: redirect ?? null,
   });

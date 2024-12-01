@@ -6,7 +6,7 @@ import { FragmentType, graphql, useFragment } from "@/gql";
 import { GoogleAuth_AccountFragment } from "@/gql/graphql";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { useOAuthURL } from "@/util/oauth";
+import { getOAuthURL } from "@/util/oauth";
 
 import {
   ProviderCard,
@@ -82,7 +82,7 @@ export function GoogleAuth(props: {
 }
 
 function ReconnectGoogleMenuItem() {
-  const url = useOAuthURL({
+  const url = getOAuthURL({
     provider: "google",
     redirect: null,
   });

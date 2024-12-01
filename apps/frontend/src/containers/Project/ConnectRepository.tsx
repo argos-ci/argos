@@ -23,7 +23,7 @@ import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 
-import { GitHubLoginButton, useGitHubMainAppInstallUrl } from "../GitHub";
+import { getMainGitHubAppInstallURL, GitHubLoginButton } from "../GitHub";
 import { GitLabLogo } from "../GitLab";
 import {
   GitlabProjectList,
@@ -97,6 +97,7 @@ type GithubInstallationsProps = {
   connectButtonLabel: string;
   onSwitch: () => void;
   app: GitHubAppType;
+  accountId: string;
 };
 
 function GithubInstallations(props: GithubInstallationsProps) {
@@ -112,6 +113,7 @@ function GithubInstallations(props: GithubInstallationsProps) {
         setValue={setValue}
         onSwitchProvider={props.onSwitch}
         app={props.app}
+        accountId={props.accountId}
       />
       <GithubRepositoryList
         installationId={value}
@@ -119,6 +121,7 @@ function GithubInstallations(props: GithubInstallationsProps) {
         onSelectRepository={(repo) => props.onSelectRepository(repo, props.app)}
         connectButtonLabel={props.connectButtonLabel}
         app={props.app}
+        accountId={props.accountId}
       />
     </div>
   );
@@ -207,13 +210,18 @@ function GitHubButton(props: {
   children?: React.ReactNode;
   size?: ButtonProps["size"];
 }) {
-  const appUrl = useGitHubMainAppInstallUrl();
   if (!props.isLoggedIntoGitHub) {
-    return <GitHubLoginButton {...props} redirect={appUrl} />;
+    return (
+      <GitHubLoginButton {...props} redirect={getMainGitHubAppInstallURL()} />
+    );
   }
   if (!props.hasInstallations) {
     return (
-      <LinkButton variant="github" size={props.size} href={appUrl}>
+      <LinkButton
+        variant="github"
+        size={props.size}
+        href={getMainGitHubAppInstallURL()}
+      >
         <ButtonIcon>
           <MarkGithubIcon />
         </ButtonIcon>
@@ -332,6 +340,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
             app={GitHubAppType.Main}
+            accountId={account.id}
           />
         );
       }
@@ -347,6 +356,7 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
             app={GitHubAppType.Light}
+            accountId={account.id}
           />
         );
       }

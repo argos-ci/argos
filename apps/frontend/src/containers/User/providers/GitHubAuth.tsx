@@ -10,7 +10,7 @@ import { GitHubAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { useOAuthURL } from "@/util/oauth";
+import { getOAuthURL } from "@/util/oauth";
 
 import {
   ProviderCard,
@@ -110,7 +110,7 @@ export function GitHubAuth(props: {
 }
 
 function ReconnectGitHubMenuItem() {
-  const url = useOAuthURL({
+  const url = getOAuthURL({
     provider: "github",
     redirect: null,
   });

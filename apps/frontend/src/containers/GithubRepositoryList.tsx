@@ -16,7 +16,7 @@ import {
 import { Time } from "@/ui/Time";
 
 import { Query } from "./Apollo";
-import { getGitHubAppManageURL } from "./GitHub";
+import { getGitHubAppInstallURL } from "./GitHub";
 
 const InstallationQuery = graphql(`
   query GithubRepositoryList_ghApiInstallationRepositories(
@@ -140,6 +140,7 @@ export function GithubRepositoryList(props: {
   disabled?: boolean;
   connectButtonLabel: string;
   app: "main" | "light";
+  accountId: string;
 }) {
   const reposPerPage = 100;
   const [page, setPage] = useState(1);
@@ -187,7 +188,9 @@ export function GithubRepositoryList(props: {
                   <div>
                     Repository not in the list?{" "}
                     <Link
-                      href={getGitHubAppManageURL(props.app)}
+                      href={getGitHubAppInstallURL(props.app, {
+                        accountId: props.accountId,
+                      })}
                       target="_blank"
                     >
                       Manage repositories

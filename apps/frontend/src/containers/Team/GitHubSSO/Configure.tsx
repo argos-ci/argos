@@ -118,6 +118,7 @@ function GitHubInstallationsSelectControl(props: { teamAccountId: string }) {
         }}
         disabled={!data}
         app={installationType ?? "main"}
+        accountId={props.teamAccountId}
       />
       {controller.fieldState.error?.message && (
         <FormError className="mt-2">

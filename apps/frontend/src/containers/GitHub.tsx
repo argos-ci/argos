@@ -1,14 +1,17 @@
+import { useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import config from "@/config";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-import { useOAuthState, useOAuthURL } from "@/util/oauth";
+import { getOAuthState, getOAuthURL } from "@/util/oauth";
+
+type GitHubAppType = "main" | "light";
 
 /**
  * Get the URL to install the GitHub app.
  */
-export function getGitHubAppManageURL(app: "main" | "light") {
+function getGitHubAppInstallBaseURL(app: GitHubAppType) {
   const baseURL = (() => {
     switch (app) {
       case "main":
@@ -21,23 +24,39 @@ export function getGitHubAppManageURL(app: "main" | "light") {
   })();
   // /installations/new let you manage the installed app
   // that's why we use it here
-  return new URL(
-    `${baseURL.pathname}/installations/new`,
-    baseURL.origin,
-  ).toString();
+  return new URL(`${baseURL.pathname}/installations/new`, baseURL.origin);
 }
 
-export function useGitHubMainAppInstallUrl() {
-  const state = useOAuthState({ provider: "github", redirect: null });
-  const url = new URL(getGitHubAppManageURL("main"));
-  url.searchParams.set("state", state);
-  return url.toString();
+/**
+ * Get the URL to install the main GitHub app.
+ */
+export function getMainGitHubAppInstallURL() {
+  const baseURL = getGitHubAppInstallBaseURL("main");
+  const state = getOAuthState({ provider: "github", redirect: null });
+  baseURL.searchParams.set("state", state);
+  return baseURL.toString();
 }
 
-export function getGitHubLightAppInstallUrl(input: { accountId: string }) {
-  const url = new URL(getGitHubAppManageURL("light"));
-  url.searchParams.set("state", JSON.stringify({ accountId: input.accountId }));
-  return url.toString();
+/**
+ * Get the URL to install or manage the GitHub app.
+ */
+export function getGitHubAppInstallURL(
+  app: GitHubAppType,
+  input: { accountId: string },
+) {
+  switch (app) {
+    case "main": {
+      return getMainGitHubAppInstallURL();
+    }
+    case "light": {
+      const baseURL = getGitHubAppInstallBaseURL(app);
+      const state = JSON.stringify({ accountId: input.accountId });
+      baseURL.searchParams.set("state", state);
+      return baseURL.toString();
+    }
+    default:
+      assertNever(app);
+  }
 }
 
 export function GitHubLoginButton({
@@ -48,10 +67,14 @@ export function GitHubLoginButton({
   children?: React.ReactNode;
   redirect?: string | null;
 }) {
-  const url = useOAuthURL({
-    provider: "github",
-    redirect: redirect ?? null,
-  });
+  const url = useMemo(
+    () =>
+      getOAuthURL({
+        provider: "github",
+        redirect: redirect ?? null,
+      }),
+    [redirect],
+  );
   return (
     <LinkButton variant="github" href={url} {...props}>
       <ButtonIcon>

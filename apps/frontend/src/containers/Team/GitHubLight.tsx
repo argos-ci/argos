@@ -11,7 +11,7 @@ import {
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 
-import { getGitHubAppManageURL, getGitHubLightAppInstallUrl } from "../GitHub";
+import { getGitHubAppInstallURL } from "../GitHub";
 import { AccountLink } from "../GithubAccountLink";
 
 const TeamFragment = graphql(`
@@ -33,6 +33,7 @@ export function TeamGitHubLight(props: {
   team: FragmentType<typeof TeamFragment>;
 }) {
   const team = useFragment(TeamFragment, props.team);
+  const installURL = getGitHubAppInstallURL("light", { accountId: team.id });
 
   return (
     <Card>
@@ -75,15 +76,11 @@ export function TeamGitHubLight(props: {
           .
         </p>
         {team.githubLightInstallation ? (
-          <LinkButton variant="secondary" href={getGitHubAppManageURL("light")}>
+          <LinkButton variant="secondary" href={installURL}>
             Uninstall
           </LinkButton>
         ) : (
-          <LinkButton
-            href={getGitHubLightAppInstallUrl({ accountId: team.id })}
-          >
-            Install GitHub App
-          </LinkButton>
+          <LinkButton href={installURL}>Install GitHub App</LinkButton>
         )}
       </CardFooter>
     </Card>
