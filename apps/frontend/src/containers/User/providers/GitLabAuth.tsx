@@ -1,11 +1,12 @@
 import { useMutation } from "@apollo/client";
+import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
 import { GitLabColoredLogo, GitLabLoginButton } from "@/containers/GitLab";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { GitLabAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { getOAuthURL } from "@/util/oauth";
 
@@ -77,6 +78,15 @@ export function GitLabAuth(props: {
             <ProviderMenuButton />
             <Popover>
               <Menu aria-label="GitLab options">
+                <MenuItem
+                  href="https://gitlab.com/-/profile/applications"
+                  target="_blank"
+                >
+                  Manage on gitlab.com
+                  <MenuItemIcon position="right">
+                    <ExternalLinkIcon />
+                  </MenuItemIcon>
+                </MenuItem>
                 <ReconnectGitLabMenuItem />
                 <MenuItem
                   variant="danger"
