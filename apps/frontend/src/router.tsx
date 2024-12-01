@@ -63,6 +63,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
     {
       errorElement: <RootError />,
       path: `/auth/:provider/callback`,
+      HydrateFallback,
       lazy: () => import("./pages/AuthCallback"),
     },
     {

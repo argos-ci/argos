@@ -1,8 +1,6 @@
 import * as React from "react";
 import { invariant } from "@argos/util/invariant";
 
-import { getItem, removeItem, setItem } from "@/util/storage";
-
 const STORAGE_KEY = "theme";
 
 export enum ColorMode {
@@ -18,7 +16,7 @@ type ColorModeContextType = {
 const ColorModeContext = React.createContext<ColorModeContextType | null>(null);
 
 const getStorageTheme = () => {
-  const value = getItem(STORAGE_KEY);
+  const value = window.localStorage.getItem(STORAGE_KEY);
   if (!value) {
     return null;
   }
@@ -40,9 +38,9 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
     (colorMode: ColorMode | null) => {
       setColorMode(colorMode);
       if (colorMode) {
-        setItem(STORAGE_KEY, colorMode);
+        window.localStorage.setItem(STORAGE_KEY, colorMode);
       } else {
-        removeItem(STORAGE_KEY);
+        window.localStorage.removeItem(STORAGE_KEY);
       }
       window.updateColorModeClassName();
     },
