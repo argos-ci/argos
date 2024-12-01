@@ -342,7 +342,9 @@ export async function getOrCreateAccountFromGoogleUserProfile(
   if (attachToAccount) {
     const [user, existingUser] = await Promise.all([
       attachToAccount.$relatedQuery("user"),
-      User.query().findOne({ googleUserId: profile.id }),
+      User.query()
+        .findOne({ googleUserId: profile.id })
+        .withGraphFetched("account"),
     ]);
 
     if (existingUser) {
