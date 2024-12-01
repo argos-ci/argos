@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import slugify from "@sindresorhus/slugify";
 import type { PartialModelObject } from "objection";
 
@@ -15,6 +16,7 @@ import { Team } from "../models/Team.js";
 import { TeamUser } from "../models/TeamUser.js";
 import { User } from "../models/User.js";
 import { transaction } from "../transaction.js";
+import { getPartialModelUpdate } from "../util/update.js";
 
 const RESERVED_SLUGS = [
   "auth",
@@ -115,50 +117,20 @@ type GetOrCreateGhAccountProps = {
 };
 
 export async function getOrCreateGhAccount(props: GetOrCreateGhAccountProps) {
-  const existing = await GithubAccount.query().findOne({
-    githubId: props.githubId,
-  });
+  const { githubId, type, ...rest } = props;
+  const existing = await GithubAccount.query().findOne({ githubId });
   if (existing) {
-    const toUpdate: PartialModelObject<GithubAccount> = {};
-    if (existing.login !== props.login) {
-      toUpdate.login = props.login;
-    }
-    if (props.email !== undefined && existing.email !== props.email) {
-      toUpdate.email = props.email;
-    }
-    if (props.name !== undefined && existing.name !== props.name) {
-      toUpdate.name = props.name;
-    }
-    if (
-      props.accessToken !== undefined &&
-      existing.accessToken !== props.accessToken
-    ) {
-      toUpdate.accessToken = props.accessToken;
-    }
-    if (props.scope !== undefined && existing.scope !== props.scope) {
-      toUpdate.scope = props.scope;
-    }
-    if (
-      props.lastLoggedAt !== undefined &&
-      existing.lastLoggedAt !== props.lastLoggedAt
-    ) {
-      toUpdate.lastLoggedAt = props.lastLoggedAt;
-    }
-    if (Object.keys(toUpdate).length > 0) {
+    const toUpdate = getPartialModelUpdate(existing, rest);
+    if (toUpdate) {
       return existing.$query().patchAndFetch(toUpdate);
     }
     return existing;
   }
 
   return GithubAccount.query().insertAndFetch({
-    githubId: props.githubId,
-    login: props.login,
-    type: props.type,
-    email: props.email ?? null,
-    name: props.name ?? null,
-    accessToken: props.accessToken ?? null,
-    scope: props.scope ?? null,
-    lastLoggedAt: props.lastLoggedAt ?? null,
+    githubId,
+    type,
+    ...omitUndefinedValues(rest),
   });
 }
 
