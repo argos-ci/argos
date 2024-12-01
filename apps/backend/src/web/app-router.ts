@@ -89,8 +89,17 @@ export const installAppRouter = async (app: express.Application) => {
   });
 
   router.get("/auth/google/login", (req, res) => {
-    const { state } = OAuthQueryParamsSchema.parse(req.query);
-    res.redirect(getGoogleAuthUrl({ state }));
+    const { state, redirect_uri: redirectUri } = OAuthQueryParamsSchema.parse(
+      req.query,
+    );
+    res.redirect(
+      getGoogleAuthUrl({
+        clientId: config.get("google.clientId"),
+        clientSecret: config.get("google.clientSecret"),
+        redirectUri,
+        state,
+      }),
+    );
   });
 
   router.use(slackMiddleware);

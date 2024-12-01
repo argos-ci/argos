@@ -7,7 +7,6 @@ import {
   GithubAccountMember,
   GithubRepository,
   TeamUser,
-  User,
 } from "@/database/models/index.js";
 import { getTokenOctokit, Octokit } from "@/github/index.js";
 
@@ -121,13 +120,17 @@ export async function importOrgMembers(input: {
  * Check if a user has access to a GitHub Installation.
  */
 export async function checkUserHasAccessToInstallation(
-  user: User,
+  userAccount: Account,
   ghInstallationId: number,
 ) {
-  if (!user.accessToken) {
+  if (!userAccount.githubAccountId) {
     return false;
   }
-  const octokit = getTokenOctokit(user.accessToken);
+  const githubAccount = await userAccount.$relatedQuery("githubAccount");
+  if (!githubAccount.accessToken) {
+    return false;
+  }
+  const octokit = getTokenOctokit(githubAccount.accessToken);
   const result = await octokit.paginate(
     octokit.apps.listInstallationsForAuthenticatedUser,
   );

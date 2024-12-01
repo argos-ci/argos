@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 14.11
--- Dumped by pg_dump version 14.10 (Homebrew)
+-- Dumped by pg_dump version 14.13 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -419,6 +419,9 @@ CREATE TABLE public.github_accounts (
     login character varying(255) NOT NULL,
     "githubId" integer NOT NULL,
     type text NOT NULL,
+    "accessToken" character varying(255),
+    scope character varying(255),
+    "lastLoggedAt" timestamp with time zone,
     CONSTRAINT github_accounts_type_check CHECK ((type = ANY (ARRAY['user'::text, 'organization'::text, 'bot'::text])))
 );
 
@@ -1285,7 +1288,6 @@ CREATE TABLE public.users (
     email character varying(255),
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
-    "accessToken" character varying(255),
     "gitlabUserId" bigint,
     staff boolean DEFAULT false,
     "googleUserId" character varying(255)
@@ -2840,3 +2842,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024090
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241006153157_reference-branch.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241008035928_fix-enum.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241011152207_parent-commits.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201074304_github-access-token.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201100628_remove-github-access-token.js', 1, NOW());

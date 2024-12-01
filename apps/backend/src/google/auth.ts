@@ -2,20 +2,15 @@ import { invariant } from "@argos/util/invariant";
 import { OAuth2Client } from "google-auth-library";
 import { z } from "zod";
 
-import config from "@/config";
-
-function createOAuth2Client() {
-  return new OAuth2Client(
-    config.get("google.clientId"),
-    config.get("google.clientSecret"),
-    `${config.get("server.url")}/auth/google/callback`,
-  );
-}
-
-export function getGoogleAuthUrl(input: { state: string }) {
-  const { state } = input;
-  const oAuth2Client = createOAuth2Client();
-  return oAuth2Client.generateAuthUrl({
+export function getGoogleAuthUrl(input: {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  state: string;
+}) {
+  const { state, clientId, clientSecret, redirectUri } = input;
+  const client = new OAuth2Client(clientId, clientSecret, redirectUri);
+  return client.generateAuthUrl({
     scope: [
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",
@@ -24,11 +19,17 @@ export function getGoogleAuthUrl(input: { state: string }) {
   });
 }
 
-export async function getGoogleAuthenticatedClient(input: { code: string }) {
-  const oAuth2Client = createOAuth2Client();
-  const result = await oAuth2Client.getToken(input.code);
-  oAuth2Client.setCredentials(result.tokens);
-  return oAuth2Client;
+export async function getGoogleAuthenticatedClient(input: {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  code: string;
+}) {
+  const { clientId, clientSecret, redirectUri, code } = input;
+  const client = new OAuth2Client(clientId, clientSecret, redirectUri);
+  const result = await client.getToken(code);
+  client.setCredentials(result.tokens);
+  return client;
 }
 
 const RawGoogleProfileSchema = z.object({
@@ -71,9 +72,10 @@ function checkIsValidEmail(email: string) {
 }
 
 export async function getGoogleUserProfile(input: {
-  oAuth2Client: OAuth2Client;
+  client: OAuth2Client;
 }): Promise<GoogleUserProfile> {
-  const response = await input.oAuth2Client.request({
+  const { client } = input;
+  const response = await client.request({
     url: "https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses",
   });
   const profile = RawGoogleProfileSchema.parse(response.data);

@@ -11,6 +11,7 @@ export async function retrieveOAuthToken(args: {
   clientId: string;
   clientSecret: string;
   code: string;
+  redirectUri: string;
 }) {
   const result = await axios.post(
     "https://github.com/login/oauth/access_token",
@@ -18,6 +19,7 @@ export async function retrieveOAuthToken(args: {
       client_id: args.clientId,
       client_secret: args.clientSecret,
       code: args.code,
+      redirect_uri: args.redirectUri,
     },
     {
       headers: {

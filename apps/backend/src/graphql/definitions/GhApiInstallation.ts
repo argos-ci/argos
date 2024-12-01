@@ -51,10 +51,12 @@ export const resolvers: IResolvers = {
       const reposPerPage = Math.min(args.reposPerPage || 100, 100);
       const ghRepositories = await (async () => {
         if (args.fromAuthUser) {
-          if (!auth.user.accessToken) {
+          const githubAccount =
+            await auth.account.$relatedQuery("githubAccount");
+          if (!githubAccount?.accessToken) {
             return null;
           }
-          const octokit = getTokenOctokit(auth.user.accessToken);
+          const octokit = getTokenOctokit(githubAccount.accessToken);
           return octokit.apps.listInstallationReposForAuthenticatedUser({
             installation_id: Number(args.installationId),
             per_page: reposPerPage,

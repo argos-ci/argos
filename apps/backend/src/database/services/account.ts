@@ -106,32 +106,45 @@ export const getGhAccountType = (strType: string) => {
 type GetOrCreateGhAccountProps = {
   githubId: number;
   login: string;
+  type: GithubAccount["type"];
   email?: string | null | undefined;
   name?: string | null | undefined;
-  type: GithubAccount["type"];
+  accessToken?: GithubAccount["accessToken"] | undefined;
+  scope?: GithubAccount["scope"] | undefined;
+  lastLoggedAt?: GithubAccount["lastLoggedAt"] | undefined;
 };
 
-export const getOrCreateGhAccount = async (
-  props: GetOrCreateGhAccountProps,
-) => {
+export async function getOrCreateGhAccount(props: GetOrCreateGhAccountProps) {
   const existing = await GithubAccount.query().findOne({
     githubId: props.githubId,
   });
   if (existing) {
+    const toUpdate: PartialModelObject<GithubAccount> = {};
+    if (existing.login !== props.login) {
+      toUpdate.login = props.login;
+    }
+    if (props.email !== undefined && existing.email !== props.email) {
+      toUpdate.email = props.email;
+    }
+    if (props.name !== undefined && existing.name !== props.name) {
+      toUpdate.name = props.name;
+    }
     if (
-      existing.login !== props.login ||
-      (existing.email !== props.email && props.email !== undefined) ||
-      (existing.name !== props.name && props.name !== undefined)
+      props.accessToken !== undefined &&
+      existing.accessToken !== props.accessToken
     ) {
-      const toUpdate: PartialModelObject<GithubAccount> = {
-        login: props.login,
-      };
-      if (props.email !== undefined) {
-        toUpdate.email = props.email;
-      }
-      if (props.name !== undefined) {
-        toUpdate.name = props.name;
-      }
+      toUpdate.accessToken = props.accessToken;
+    }
+    if (props.scope !== undefined && existing.scope !== props.scope) {
+      toUpdate.scope = props.scope;
+    }
+    if (
+      props.lastLoggedAt !== undefined &&
+      existing.lastLoggedAt !== props.lastLoggedAt
+    ) {
+      toUpdate.lastLoggedAt = props.lastLoggedAt;
+    }
+    if (Object.keys(toUpdate).length > 0) {
       return existing.$query().patchAndFetch(toUpdate);
     }
     return existing;
@@ -143,13 +156,17 @@ export const getOrCreateGhAccount = async (
     type: props.type,
     email: props.email ?? null,
     name: props.name ?? null,
+    accessToken: props.accessToken ?? null,
+    scope: props.scope ?? null,
+    lastLoggedAt: props.lastLoggedAt ?? null,
   });
-};
+}
 
-export const getOrCreateGhAccountFromGhProfile = async (
+export async function getOrCreateGhAccountFromGhProfile(
   profile: RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"],
   emails: RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"],
-) => {
+  options?: { accessToken?: string; lastLoggedAt?: string; scope?: string },
+) {
   const email =
     emails.find((e) => e.primary && e.verified)?.email ??
     emails.find((e) => e.verified)?.email ??
@@ -162,15 +179,17 @@ export const getOrCreateGhAccountFromGhProfile = async (
     email,
     name: profile.name,
     type: getGhAccountType(profile.type),
+    accessToken: options?.accessToken,
+    lastLoggedAt: options?.lastLoggedAt,
+    scope: options?.scope,
   });
-};
+}
 
 export async function getOrCreateUserAccountFromGhAccount(
   ghAccount: GithubAccount,
-  options?: { accessToken?: string; account?: Account | null },
+  options?: { account?: Account | null },
 ): Promise<Account> {
   const email = ghAccount.email?.toLowerCase() ?? null;
-  const accessToken = options?.accessToken;
   const attachToAccount = options?.account;
 
   const existingAccount = await Account.query()
@@ -189,20 +208,13 @@ export async function getOrCreateUserAccountFromGhAccount(
       throw new Error("Account is already attached to another GitHub account");
     }
 
-    const user = await attachToAccount.$relatedQuery("user");
+    if (attachToAccount.githubAccountId !== ghAccount.id) {
+      return attachToAccount
+        .$query()
+        .patchAndFetch({ githubAccountId: ghAccount.id });
+    }
 
-    await transaction(async (trx) => {
-      await Promise.all([
-        attachToAccount.githubAccountId !== ghAccount.id
-          ? attachToAccount.$query(trx).patch({ githubAccountId: ghAccount.id })
-          : null,
-        accessToken && user.accessToken !== accessToken
-          ? user.$query(trx).patch({ accessToken })
-          : null,
-      ]);
-    });
-
-    return attachToAccount.$query();
+    return attachToAccount;
   }
 
   if (existingAccount) {
@@ -210,10 +222,6 @@ export async function getOrCreateUserAccountFromGhAccount(
     invariant(user, "user not fetched");
 
     const updateData: PartialModelObject<User> = {};
-
-    if (accessToken !== undefined && user.accessToken !== accessToken) {
-      updateData.accessToken = accessToken;
-    }
 
     if (user.email !== email) {
       const existingEmailUser = await User.query().findOne("email", email);
@@ -237,23 +245,16 @@ export async function getOrCreateUserAccountFromGhAccount(
     if (existingEmailUser) {
       invariant(existingEmailUser.account, "account not fetched");
 
-      await Promise.all([
-        accessToken ? existingEmailUser.$query().patch({ accessToken }) : null,
-        existingEmailUser.account.$query().patchAndFetch({
-          githubAccountId: ghAccount.id,
-        }),
-      ]);
-
-      return existingEmailUser.account;
+      return existingEmailUser.account.$query().patchAndFetch({
+        githubAccountId: ghAccount.id,
+      });
     }
   }
 
   const slug = await resolveAccountSlug(ghAccount.login.toLowerCase());
 
   const account = await transaction(async (trx) => {
-    const user = await User.query(trx).insertAndFetch(
-      accessToken ? { email, accessToken } : { email },
-    );
+    const user = await User.query(trx).insertAndFetch({ email });
     return Account.query(trx).insertAndFetch({
       userId: user.id,
       githubAccountId: ghAccount.id,

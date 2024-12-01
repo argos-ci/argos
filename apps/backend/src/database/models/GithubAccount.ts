@@ -16,6 +16,9 @@ export class GithubAccount extends Model {
       login: { type: "string" },
       githubId: { type: "number" },
       type: { type: "string", enum: ["user", "organization", "bot"] },
+      accessToken: { type: "string" },
+      scope: { type: "string" },
+      lastLoggedAt: { type: "string" },
     },
   });
 
@@ -24,6 +27,9 @@ export class GithubAccount extends Model {
   login!: string;
   githubId!: number;
   type!: "user" | "organization" | "bot";
+  accessToken!: string | null;
+  scope!: string | null;
+  lastLoggedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

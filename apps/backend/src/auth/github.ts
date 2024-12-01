@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
 
-import { transaction } from "@/database";
 import { Account } from "@/database/models";
 
 /**
@@ -12,18 +11,10 @@ export async function disconnectGitHubAuth(account: Account): Promise<Account> {
   }
   const user = await account.$relatedQuery("user");
   invariant(user, "User not found");
-  const hasGitHubAccount = account.githubAccountId !== null;
-  await transaction(async (trx) => {
-    await Promise.all([
-      hasGitHubAccount &&
-        account.$query(trx).patch({
-          githubAccountId: null,
-        }),
-      user.accessToken !== null &&
-        user.$query(trx).patch({
-          accessToken: null,
-        }),
-    ]);
-  });
-  return hasGitHubAccount ? account.$query() : account;
+  if (account.githubAccountId !== null) {
+    return account.$query().patchAndFetch({
+      githubAccountId: null,
+    });
+  }
+  return account;
 }
