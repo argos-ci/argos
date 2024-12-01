@@ -27,6 +27,7 @@ export const installAppRouter = async (app: express.Application) => {
   app.use(limiter);
 
   router.get("/config.js", (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=0");
     res.setHeader("Content-Type", "application/javascript");
     res.send(
       `window.clientData = ${JSON.stringify({
