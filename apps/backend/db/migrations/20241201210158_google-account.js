@@ -24,9 +24,12 @@ export const up = async (knex) => {
     FROM users WHERE "googleUserId" is not null
     `);
 
-  await knex.raw(
-    `update users set "googleUserId_fk" = (select id from google_users where "googleUserId" = users."googleUserId") where "googleUserId" is not null`,
-  );
+  const googleUsers = await knex("google_users").select("id", "googleId");
+  for (const googleUser of googleUsers) {
+    await knex("users")
+      .where("googleUserId", googleUser.googleId)
+      .update("googleUserId_fk", googleUser.id);
+  }
 
   await knex.schema.alterTable("users", async (table) => {
     table.dropColumn("googleUserId");
