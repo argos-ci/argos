@@ -1,10 +1,11 @@
 import { useMutation } from "@apollo/client";
+import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
 import { GoogleLoginButton, GoogleLogo } from "@/containers/Google";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { GoogleAuth_AccountFragment } from "@/gql/graphql";
-import { Menu, MenuItem } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { getOAuthURL } from "@/util/oauth";
 
@@ -12,13 +13,19 @@ import {
   ProviderCard,
   ProviderContent,
   ProviderIcon,
+  ProviderLastLoggedAt,
   ProviderMenuButton,
 } from "../ui";
 
 const AccountFragment = graphql(`
   fragment GoogleAuth_Account on User {
     id
-    googleUserId
+    googleUser {
+      id
+      name
+      primaryEmail
+      lastLoggedAt
+    }
   }
 `);
 
@@ -42,25 +49,47 @@ export function GoogleAuth(props: {
       disconnectGoogleAuth: {
         __typename: "User",
         id: account.id,
-        googleUserId: null,
+        googleUser: null,
       } as GoogleAuth_AccountFragment,
     },
   });
   return (
     <ProviderCard>
-      {account.googleUserId ? (
+      {account.googleUser ? (
         <>
           <ProviderIcon>
             <GoogleLogo />
           </ProviderIcon>
           <ProviderContent>
-            <div>Google</div>
-            <div>Connected</div>
+            <div className="font-medium">Google</div>
+            <div>
+              {account.googleUser.name && account.googleUser.primaryEmail ? (
+                <>
+                  {account.googleUser.name} ({account.googleUser.primaryEmail})
+                </>
+              ) : account.googleUser.primaryEmail ? (
+                account.googleUser.primaryEmail
+              ) : (
+                "Connected"
+              )}
+            </div>
           </ProviderContent>
+          {account.googleUser.lastLoggedAt && (
+            <ProviderLastLoggedAt date={account.googleUser.lastLoggedAt} />
+          )}
           <MenuTrigger>
             <ProviderMenuButton />
             <Popover>
               <Menu aria-label="Google options">
+                <MenuItem
+                  href="https://myaccount.google.com/connections"
+                  target="_blank"
+                >
+                  Manage on google.com
+                  <MenuItemIcon position="right">
+                    <ExternalLinkIcon />
+                  </MenuItemIcon>
+                </MenuItem>
                 <ReconnectGoogleMenuItem />
                 <MenuItem
                   variant="danger"

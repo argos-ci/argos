@@ -308,6 +308,7 @@ enum GitHubAppType {
 type GithubAccount implements Node {
   avatar: AccountAvatar!
   id: ID!
+  lastLoggedAt: DateTime
   login: String!
   name: String
   url: String!
@@ -351,6 +352,7 @@ type GitlabProject implements Node & Repository {
 
 type GitlabUser implements Node {
   id: ID!
+  lastLoggedAt: DateTime
   name: String!
   url: String!
   username: String!
@@ -379,6 +381,13 @@ type GlApiProject implements Node {
 type GlApiProjectConnection implements Connection {
   edges: [GlApiProject!]!
   pageInfo: PageInfo!
+}
+
+type GoogleUser implements Node {
+  id: ID!
+  lastLoggedAt: DateTime
+  name: String
+  primaryEmail: String
 }
 
 input ImportGithubProjectInput {
@@ -941,7 +950,7 @@ type User implements Account & Node {
   gitlabBaseUrl: String
   gitlabUser: GitlabUser
   glNamespaces: GlApiNamespaceConnection
-  googleUserId: ID
+  googleUser: GoogleUser
   hasForcedPlan: Boolean!
   hasSubscribedToTrial: Boolean!
   id: ID!

@@ -706,7 +706,8 @@ CREATE TABLE public.gitlab_users (
     "gitlabId" integer NOT NULL,
     "accessToken" character varying(255) NOT NULL,
     "accessTokenExpiresAt" timestamp with time zone NOT NULL,
-    "refreshToken" character varying(255) NOT NULL
+    "refreshToken" character varying(255) NOT NULL,
+    "lastLoggedAt" timestamp with time zone
 );
 
 
@@ -731,6 +732,45 @@ ALTER TABLE public.gitlab_users_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.gitlab_users_id_seq OWNED BY public.gitlab_users.id;
+
+
+--
+-- Name: google_users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.google_users (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "googleId" character varying(255) NOT NULL,
+    name character varying(255),
+    "primaryEmail" character varying(255),
+    emails jsonb,
+    "lastLoggedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.google_users OWNER TO postgres;
+
+--
+-- Name: google_users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.google_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.google_users_id_seq OWNER TO postgres;
+
+--
+-- Name: google_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.google_users_id_seq OWNED BY public.google_users.id;
 
 
 --
@@ -1290,7 +1330,7 @@ CREATE TABLE public.users (
     "updatedAt" timestamp with time zone NOT NULL,
     "gitlabUserId" bigint,
     staff boolean DEFAULT false,
-    "googleUserId" character varying(255)
+    "googleUserId" bigint
 );
 
 
@@ -1427,6 +1467,13 @@ ALTER TABLE ONLY public.gitlab_projects ALTER COLUMN id SET DEFAULT nextval('pub
 --
 
 ALTER TABLE ONLY public.gitlab_users ALTER COLUMN id SET DEFAULT nextval('public.gitlab_users_id_seq'::regclass);
+
+
+--
+-- Name: google_users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.google_users ALTER COLUMN id SET DEFAULT nextval('public.google_users_id_seq'::regclass);
 
 
 --
@@ -1725,6 +1772,22 @@ ALTER TABLE ONLY public.gitlab_projects
 
 ALTER TABLE ONLY public.gitlab_users
     ADD CONSTRAINT gitlab_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: google_users google_users_googleid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.google_users
+    ADD CONSTRAINT google_users_googleid_unique UNIQUE ("googleId");
+
+
+--
+-- Name: google_users google_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.google_users
+    ADD CONSTRAINT google_users_pkey PRIMARY KEY (id);
 
 
 --
@@ -2321,10 +2384,10 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
--- Name: users_googleuserid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: users_googleuserid_fk_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX users_googleuserid_index ON public.users USING btree ("googleUserId");
+CREATE INDEX users_googleuserid_fk_index ON public.users USING btree ("googleUserId");
 
 
 --
@@ -2712,6 +2775,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: users users_googleuserid_fk_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_googleuserid_fk_foreign FOREIGN KEY ("googleUserId") REFERENCES public.google_users(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -2844,3 +2915,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024100
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241011152207_parent-commits.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201074304_github-access-token.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201100628_remove-github-access-token.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201210158_google-account.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201222408_gitlab-last-loggedat.js', 1, NOW());

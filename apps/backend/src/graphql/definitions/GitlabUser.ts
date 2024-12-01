@@ -10,6 +10,7 @@ export const typeDefs = gql`
     name: String!
     username: String!
     url: String!
+    lastLoggedAt: DateTime
   }
 `;
 

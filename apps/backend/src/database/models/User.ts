@@ -8,6 +8,7 @@ import {
   ALL_ACCOUNT_PERMISSIONS,
 } from "./Account.js";
 import { GitlabUser } from "./GitlabUser.js";
+import { GoogleUser } from "./GoogleUser.js";
 import { Team } from "./Team.js";
 
 export class User extends Model {
@@ -71,6 +72,14 @@ export class User extends Model {
           to: "gitlab_users.id",
         },
       },
+      googleUser: {
+        relation: Model.HasOneRelation,
+        modelClass: GoogleUser,
+        join: {
+          from: "users.googleUserId",
+          to: "google_users.id",
+        },
+      },
     };
   }
 
@@ -78,6 +87,7 @@ export class User extends Model {
   teams?: Team[];
   ownedTeams?: Team[];
   gitlabUser?: GitlabUser;
+  googleUser?: GoogleUser;
 
   static getPermissions(
     userId: string,

@@ -30,6 +30,7 @@ const config: CodegenConfig = {
           GitlabUser: "../../database/models/index.js#GitlabUser",
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
+          GoogleUser: "../../database/models/index.js#GoogleUser",
           Plan: "../../database/models/index.js#Plan",
           ProjectContributor: "../../database/models/index.js#ProjectUser",
           Screenshot: "../../database/models/index.js#Screenshot",

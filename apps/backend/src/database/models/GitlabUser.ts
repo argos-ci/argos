@@ -25,6 +25,7 @@ export class GitlabUser extends Model {
       accessToken: { type: "string" },
       accessTokenExpiresAt: { type: "string" },
       refreshToken: { type: "string" },
+      lastLoggedAt: { type: ["string", "null"] },
     },
   });
 
@@ -35,6 +36,7 @@ export class GitlabUser extends Model {
   accessToken!: string;
   accessTokenExpiresAt!: string;
   refreshToken!: string;
+  lastLoggedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

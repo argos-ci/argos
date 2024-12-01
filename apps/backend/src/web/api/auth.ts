@@ -9,13 +9,14 @@ import { AuthPayload } from "@/auth/request.js";
 import config from "@/config/index.js";
 import type { Account } from "@/database/models/index.js";
 import {
-  getOrCreateAccountFromGoogleUserProfile,
   getOrCreateGhAccountFromGhProfile,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
+  getOrCreateUserAccountFromGoogleUser,
   joinSSOTeams,
 } from "@/database/services/account.js";
 import { getOrCreateGitlabUser } from "@/database/services/gitlabUser.js";
+import { getOrCreateGoogleUser } from "@/database/services/googleUser.js";
 import {
   getTokenOctokit,
   retrieveOAuthToken as retrieveGithubOAuthToken,
@@ -132,13 +133,15 @@ router.post(
 
     const api = getGitlabClient({ accessToken: response.access_token });
     const apiUser = await api.Users.showCurrentUser();
-    const glUser = await getOrCreateGitlabUser(apiUser, {
+    const gitlabUser = await getOrCreateGitlabUser(apiUser, {
       accessToken: response.access_token,
       accessTokenExpiresAt: new Date(Date.now() + response.expires_in * 1000),
       refreshToken: response.refresh_token,
+      lastLoggedAt: new Date().toISOString(),
     });
-    const account = await getOrCreateUserAccountFromGitlabUser(glUser, {
-      account: auth?.account ?? null,
+    const account = await getOrCreateUserAccountFromGitlabUser({
+      gitlabUser,
+      attachToAccount: auth?.account ?? null,
     });
     return account;
   }),
@@ -154,8 +157,12 @@ router.post(
       redirectUri: `${config.get("server.url")}/auth/google/callback`,
     });
     const profile = await getGoogleUserProfile({ client });
-    const account = await getOrCreateAccountFromGoogleUserProfile(profile, {
-      account: auth?.account ?? null,
+    const googleUser = await getOrCreateGoogleUser(profile, {
+      lastLoggedAt: new Date().toISOString(),
+    });
+    const account = await getOrCreateUserAccountFromGoogleUser({
+      googleUser,
+      attachToAccount: auth?.account ?? null,
     });
     return account;
   }),
