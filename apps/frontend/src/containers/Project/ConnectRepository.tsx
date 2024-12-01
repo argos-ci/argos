@@ -22,7 +22,6 @@ import { Card } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
-import { getItem, removeItem, setItem } from "@/util/storage";
 
 import { GitHubLoginButton, useGitHubMainAppInstallUrl } from "../GitHub";
 import { GitLabLogo } from "../GitLab";
@@ -269,15 +268,15 @@ const buttonLabels: Record<ConnectRepositoryProps["variant"], string> = {
 
 export const ConnectRepository = (props: ConnectRepositoryProps) => {
   const [provider, setProvider] = React.useState<GitProvider | null>(
-    getItem("gitProvider") as GitProvider | null,
+    window.localStorage.getItem("gitProvider") as GitProvider | null,
   );
   const setAndStoreProvider = React.useCallback(
     (provider: GitProvider | null) => {
       setProvider(provider);
       if (provider) {
-        setItem("gitProvider", provider);
+        window.localStorage.setItem("gitProvider", provider);
       } else {
-        removeItem("gitProvider");
+        window.localStorage.removeItem("gitProvider");
       }
     },
     [],

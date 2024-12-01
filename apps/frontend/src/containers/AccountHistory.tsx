@@ -1,7 +1,5 @@
 import * as React from "react";
 
-import { getItem, setItem } from "@/util/storage";
-
 import {
   decodeAuthToken,
   readAuthTokenCookie,
@@ -16,7 +14,10 @@ export function useVisitAccount(accountSlug: string | null) {
   const payload = useAuthTokenPayload();
   React.useEffect(() => {
     if (accountSlug && payload) {
-      setItem(getStorageKey(payload.account.id), accountSlug);
+      window.localStorage.setItem(
+        getStorageKey(payload.account.id),
+        accountSlug,
+      );
     }
   }, [accountSlug, payload]);
 }
@@ -30,5 +31,5 @@ export function getLatestVisitedAccount() {
   if (!payload) {
     return null;
   }
-  return getItem(getStorageKey(payload.account.id));
+  return window.localStorage.getItem(getStorageKey(payload.account.id));
 }

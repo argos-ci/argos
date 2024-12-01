@@ -274,8 +274,14 @@ async function getGitHubOctokitFromAppType(input: {
 }) {
   switch (input.app) {
     case "main": {
-      invariant(input.creator.accessToken, "Should have access token");
-      return getTokenOctokit(input.creator.accessToken);
+      const userAccount = await input.creator
+        .$relatedQuery("account")
+        .withGraphFetched("githubAccount");
+      invariant(
+        userAccount?.githubAccount?.accessToken,
+        "Should be linked to a GitHub account with an access token",
+      );
+      return getTokenOctokit(userAccount.githubAccount.accessToken);
     }
     case "light":
       invariant(

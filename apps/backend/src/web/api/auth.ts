@@ -56,36 +56,42 @@ const OAuthBodySchema = z.object({
 
 type OAuthBody = z.infer<typeof OAuthBodySchema>;
 
-function handleOAuth(
+/**
+ * Create an OAuth handler.
+ */
+function withOAuth(
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthPayload | null,
   ) => Promise<Account>,
-) {
-  return asyncHandler(async (req, res) => {
-    try {
-      const parsed = OAuthBodySchema.parse(req.body);
-      const account = await retrieveAccount(parsed, req.auth ?? null);
-      res.send({ jwt: createJWTFromAccount(account) });
-    } catch (error) {
-      if (error instanceof axios.AxiosError && error.response) {
-        res.status(error.response.status);
-        return;
+): express.RequestHandler[] {
+  return [
+    auth,
+    express.json(),
+    asyncHandler(async (req, res) => {
+      try {
+        const parsed = OAuthBodySchema.parse(req.body);
+        const account = await retrieveAccount(parsed, req.auth ?? null);
+        res.send({ jwt: createJWTFromAccount(account) });
+      } catch (error) {
+        if (error instanceof axios.AxiosError && error.response) {
+          res.status(error.response.status);
+          return;
+        }
+        throw error;
       }
-      throw error;
-    }
-  });
+    }),
+  ];
 }
 
 router.post(
   "/auth/github",
-  auth,
-  express.json(),
-  handleOAuth(async (body, auth) => {
+  withOAuth(async (body, auth) => {
     const result = await retrieveGithubOAuthToken({
       clientId: config.get("github.clientId"),
       clientSecret: config.get("github.clientSecret"),
       code: body.code,
+      redirectUri: `${config.get("server.url")}/auth/github/callback`,
     });
 
     const octokit = getTokenOctokit(result.access_token);
@@ -96,9 +102,13 @@ router.post(
     const ghAccount = await getOrCreateGhAccountFromGhProfile(
       profile.data,
       emails.data,
+      {
+        accessToken: result.access_token,
+        lastLoggedAt: new Date().toISOString(),
+        scope: result.scope,
+      },
     );
     const account = await getOrCreateUserAccountFromGhAccount(ghAccount, {
-      accessToken: result.access_token,
       account: auth?.account ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
@@ -112,9 +122,7 @@ router.post(
 
 router.post(
   "/auth/gitlab",
-  auth,
-  express.json(),
-  handleOAuth(async (body, auth) => {
+  withOAuth(async (body, auth) => {
     const response = await retrieveGitlabOAuthToken({
       clientId: config.get("gitlab.appId"),
       clientSecret: config.get("gitlab.appSecret"),
@@ -138,12 +146,14 @@ router.post(
 
 router.post(
   "/auth/google",
-  express.json(),
-  handleOAuth(async (body, auth) => {
-    const oAuth2Client = await getGoogleAuthenticatedClient({
+  withOAuth(async (body, auth) => {
+    const client = await getGoogleAuthenticatedClient({
       code: body.code,
+      clientId: config.get("google.clientId"),
+      clientSecret: config.get("google.clientSecret"),
+      redirectUri: `${config.get("server.url")}/auth/google/callback`,
     });
-    const profile = await getGoogleUserProfile({ oAuth2Client });
+    const profile = await getGoogleUserProfile({ client });
     const account = await getOrCreateAccountFromGoogleUserProfile(profile, {
       account: auth?.account ?? null,
     });

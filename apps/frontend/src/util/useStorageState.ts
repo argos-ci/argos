@@ -1,7 +1,5 @@
 import { useCallback, useState } from "react";
 
-import { setItem } from "./storage";
-
 export function useStorageState<S>(
   storageKey: string,
   initialState: S | (() => S),
@@ -23,7 +21,7 @@ export function useStorageState<S>(
           typeof value === "function"
             ? (value as (prevState: S) => S)(prevValue)
             : value;
-        setItem(storageKey, JSON.stringify(nextValue));
+        window.localStorage.setItem(storageKey, JSON.stringify(nextValue));
         return nextValue;
       });
     },

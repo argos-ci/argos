@@ -103,10 +103,14 @@ export const resolvers: IResolvers = {
         account.id === ctx.auth.account.id,
         "ghInstallations can only be accessed by the authenticated user",
       );
-      if (!ctx.auth.user.accessToken) {
+      if (!account.githubAccountId) {
         return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
       }
-      const octokit = getTokenOctokit(ctx.auth.user.accessToken);
+      const githubAccount = await account.$relatedQuery("githubAccount");
+      if (!githubAccount?.accessToken) {
+        return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
+      }
+      const octokit = getTokenOctokit(githubAccount.accessToken);
       const apiInstallations =
         await octokit.apps.listInstallationsForAuthenticatedUser({
           per_page: 100,

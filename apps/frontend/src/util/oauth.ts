@@ -4,8 +4,6 @@ import { useLocation } from "react-router-dom";
 
 import config from "@/config";
 
-import { getItem, setItem } from "./storage";
-
 type OAuthState = {
   nonce: string;
   redirect: string;
@@ -28,12 +26,8 @@ function getOAuthNonceKey(provider: AuthProvider): string {
 /**
  * Generates a cryptographically secure random string.
  */
-function generateSecureNonce(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
-    "",
-  );
+function generateNonce(): string {
+  return Math.random().toString(36).substring(2);
 }
 
 /**
@@ -44,8 +38,8 @@ function createOAuthState(input: {
   redirect: string;
 }): RawState {
   try {
-    const nonce = generateSecureNonce();
-    setItem(getOAuthNonceKey(input.provider), nonce);
+    const nonce = generateNonce();
+    window.localStorage.setItem(getOAuthNonceKey(input.provider), nonce);
     const state: OAuthState = { nonce, redirect: input.redirect };
     return window.btoa(JSON.stringify(state));
   } catch (error) {
@@ -114,8 +108,13 @@ export function getRedirectFromState(input: {
     if (!checkIsValidOAuthState(parsed)) {
       throw new Error("Invalid OAuth state structure");
     }
-    const storedNonce = getItem(getOAuthNonceKey(input.provider));
-    if (!storedNonce || parsed.nonce !== storedNonce) {
+    const storedNonce = window.localStorage.getItem(
+      getOAuthNonceKey(input.provider),
+    );
+    if (!storedNonce) {
+      throw new Error("Missing stored OAuth state nonce");
+    }
+    if (parsed.nonce !== storedNonce) {
       throw new Error("Invalid OAuth state nonce");
     }
     return parsed.redirect;

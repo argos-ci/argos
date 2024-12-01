@@ -635,7 +635,7 @@ export const resolvers: IResolvers = {
             .where("deleted", false)
             .throwIfNotFound(),
           checkUserHasAccessToInstallation(
-            ctx.auth.user,
+            ctx.auth.account,
             args.input.ghInstallationId,
           ),
           getAdminAccount({

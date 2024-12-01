@@ -82,9 +82,18 @@ export function MenuItem(
 export function MenuItemIcon(props: {
   children: React.ReactElement;
   className?: string;
+  position?: "left" | "right";
 }) {
+  const position = props.position ?? "left";
   return (
-    <div className="mr-2">
+    <div
+      className={
+        {
+          left: "mr-2",
+          right: "ml-2",
+        }[position]
+      }
+    >
       {cloneElement(Children.only(props.children), {
         className: clsx("size-[1em] mx-auto", props.className),
       })}

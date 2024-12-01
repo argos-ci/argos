@@ -1,12 +1,14 @@
 import { useMutation } from "@apollo/client";
 import { MarkGithubIcon } from "@primer/octicons-react";
+import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
+import config from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { GitHubAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
-import { Menu, MenuItem } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { useOAuthURL } from "@/util/oauth";
 
@@ -78,6 +80,15 @@ export function GitHubAuth(props: {
             <ProviderMenuButton />
             <Popover>
               <Menu aria-label="GitHub options">
+                <MenuItem
+                  href={`https://github.com/settings/connections/applications/${config.get("github.clientId")}`}
+                  target="_blank"
+                >
+                  Manage on github.com
+                  <MenuItemIcon position="right">
+                    <ExternalLinkIcon />
+                  </MenuItemIcon>
+                </MenuItem>
                 <ReconnectGitHubMenuItem />
                 <MenuItem
                   variant="danger"

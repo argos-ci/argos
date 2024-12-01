@@ -84,6 +84,7 @@ export function Component() {
             return <NotFound />;
           }
           const isTeam = account.__typename === "Team";
+          const isUser = account.__typename === "User";
           const fineGrainedAccessControlIncluded = Boolean(
             isTeam && account.plan?.fineGrainedAccessControlIncluded,
           );
@@ -128,7 +129,7 @@ export function Component() {
                   }
                   return null;
                 })()}
-              {hasAdminPermission && <UserAuth account={account} />}
+              {isUser && hasAdminPermission && <UserAuth account={account} />}
               {hasAdminPermission && <PlanCard account={account} />}
               {isTeam && <TeamMembers team={account} />}
               {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
