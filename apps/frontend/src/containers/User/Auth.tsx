@@ -26,11 +26,10 @@ export function UserAuth(props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Auth</CardTitle>
+        <CardTitle>Authentication</CardTitle>
         <CardParagraph>
-          Connect your Personal Account on Argos with a third-party service to
-          use it for login. One Login Connection can be added per third-party
-          service.
+          Connect your Argos Account with a third-party service to use it for
+          login.
         </CardParagraph>
         <div className="flex flex-col gap-2">
           <GitHubAuth account={account} />

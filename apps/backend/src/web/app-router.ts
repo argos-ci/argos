@@ -39,6 +39,7 @@ export const installAppRouter = async (app: express.Application) => {
           contactEmail: config.get("contactEmail"),
           github: {
             appUrl: config.get("github.appUrl"),
+            clientId: config.get("github.clientId"),
             loginUrl: config.get("github.loginUrl"),
             marketplaceUrl: config.get("github.marketplaceUrl"),
           },
