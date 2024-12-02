@@ -110,7 +110,7 @@ router.post(
       },
     );
     const account = await getOrCreateUserAccountFromGhAccount(ghAccount, {
-      account: auth?.account ?? null,
+      attachToAccount: auth?.account ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
     await joinSSOTeams({
