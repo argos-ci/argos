@@ -5,6 +5,7 @@ import type { PartialModelObject } from "objection";
 
 import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
+import { getRedisLock } from "@/util/redis/index.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
@@ -34,11 +35,21 @@ export async function getOrCreateGithubAccountMember(input: {
   githubAccountId: string;
   githubMemberId: string;
 }) {
-  const existing = await GithubAccountMember.query().findOne(input);
-  if (existing) {
-    return existing;
-  }
-  return GithubAccountMember.query().insertAndFetch(input);
+  const lock = await getRedisLock();
+  return lock.acquire(
+    [
+      "getOrCreateGithubAccountMember",
+      input.githubMemberId,
+      input.githubAccountId,
+    ],
+    async () => {
+      const existing = await GithubAccountMember.query().findOne(input);
+      if (existing) {
+        return existing;
+      }
+      return GithubAccountMember.query().insertAndFetch(input);
+    },
+  );
 }
 
 /**
