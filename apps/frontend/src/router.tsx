@@ -44,12 +44,33 @@ function Root() {
   );
 }
 
-function RootError() {
-  const routeError = useRouteError();
+function checkIsFailedToFetchError(error: unknown) {
+  return error instanceof Error && /Failed to fetch/.test(error.message);
+}
+
+function checkHasReloaded() {
+  const url = new URL(window.location.href);
+  return url.searchParams.has("reload");
+}
+
+function RootErrorBoundary() {
+  const error = useRouteError();
+  const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
 
   useEffect(() => {
-    captureException(routeError, { level: "fatal" });
-  }, [routeError]);
+    if (shouldReload) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("reload", "true");
+      window.location.replace(url);
+      return;
+    }
+
+    captureException(error, { level: "fatal" });
+  }, [error, shouldReload]);
+
+  if (shouldReload) {
+    return null;
+  }
 
   return <ErrorPage />;
 }
@@ -61,7 +82,7 @@ function HydrateFallback() {
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
-      errorElement: <RootError />,
+      ErrorBoundary: RootErrorBoundary,
       path: `/auth/:provider/callback`,
       HydrateFallback,
       lazy: () => import("./pages/AuthCallback"),
@@ -69,7 +90,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
     {
       path: "/",
       element: <Root />,
-      errorElement: <RootError />,
+      ErrorBoundary: RootErrorBoundary,
       children: [
         {
           path: "/:accountSlug/:projectName/builds/:buildNumber",
