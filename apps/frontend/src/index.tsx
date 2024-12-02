@@ -13,6 +13,13 @@ if (process.env["NODE_ENV"] === "production") {
     dsn: config.get("sentry.clientDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
+    beforeSend: (event) => {
+      // Filter CSP errors
+      if (event.type === "csp") {
+        return null;
+      }
+      return event;
+    },
   });
 }
 
