@@ -6,6 +6,7 @@ import type { PartialModelObject } from "objection";
 import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
+import { boom } from "@/web/util.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
@@ -170,10 +171,10 @@ export async function getOrCreateGhAccountFromGhProfile(
 
 export async function getOrCreateUserAccountFromGhAccount(
   ghAccount: GithubAccount,
-  options?: { account?: Account | null },
+  options?: { attachToAccount?: Account | null },
 ): Promise<Account> {
   const email = ghAccount.email?.toLowerCase() ?? null;
-  const attachToAccount = options?.account;
+  const attachToAccount = options?.attachToAccount;
 
   const existingAccount = await Account.query()
     .withGraphFetched("user")
@@ -181,14 +182,20 @@ export async function getOrCreateUserAccountFromGhAccount(
 
   if (attachToAccount) {
     if (existingAccount && existingAccount.id !== attachToAccount.id) {
-      throw new Error("GitHub account is already attached to another account");
+      throw boom(
+        400,
+        "GitHub account is already attached to another Argos account",
+      );
     }
 
     if (
       attachToAccount.githubAccountId &&
       attachToAccount.githubAccountId !== ghAccount.id
     ) {
-      throw new Error("Account is already attached to another GitHub account");
+      throw boom(
+        400,
+        "Argos account is already attached to another GitHub account",
+      );
     }
 
     if (attachToAccount.githubAccountId !== ghAccount.id) {
@@ -288,14 +295,16 @@ async function getOrCreateUserAccountFromThirdParty<
     if (existingUser) {
       invariant(existingUser.account, "Account not fetched");
       if (user.id !== existingUser.id) {
-        throw new Error(
+        throw boom(
+          400,
           `${provider} account is already attached to another Argos account`,
         );
       }
     }
 
     if (user[thirdPartyKey] && user[thirdPartyKey] !== model.id) {
-      throw new Error(
+      throw boom(
+        400,
         `Argos Account is already attached to another ${provider} account`,
       );
     }
