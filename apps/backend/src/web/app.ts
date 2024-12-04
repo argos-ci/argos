@@ -73,6 +73,7 @@ export const createApp = async (): Promise<express.Express> => {
             "https://github.com",
             "https://avatars.githubusercontent.com",
             "https://gitlab.com",
+            "https://secure.gravatar.com",
           ],
           "script-src": [
             "'self'",
