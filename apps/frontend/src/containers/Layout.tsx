@@ -1,6 +1,6 @@
 import { forwardRef, HTMLProps, Suspense } from "react";
 import { ApolloError } from "@apollo/client";
-import { ErrorBoundary } from "@sentry/react";
+import * as Sentry from "@sentry/react";
 import { clsx } from "clsx";
 import { useMatch } from "react-router-dom";
 
@@ -14,7 +14,7 @@ const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
   function Main(props: { children: React.ReactNode }, ref) {
     return (
       <main ref={ref} className="contents">
-        <ErrorBoundary
+        <Sentry.ErrorBoundary
           fallback={<ErrorPage />}
           onError={(error) => {
             if (error instanceof AuthenticationError) {
@@ -35,7 +35,7 @@ const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
           }}
         >
           {props.children}
-        </ErrorBoundary>
+        </Sentry.ErrorBoundary>
       </main>
     );
   },

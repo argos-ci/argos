@@ -14,6 +14,17 @@ import { jsonErrorHandler } from "./middlewares/errorHandler.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
+function getCSPReportURI(): null | string {
+  const baseURI = config.get("sentry.cspReportUri");
+  if (!baseURI) {
+    return null;
+  }
+  const url = new URL(baseURI);
+  url.searchParams.set("sentry_environment", config.get("sentry.environment"));
+  url.searchParams.set("sentry_release", config.get("releaseVersion"));
+  return url.toString();
+}
+
 export const createApp = async (): Promise<express.Express> => {
   const app = express();
 
@@ -55,6 +66,22 @@ export const createApp = async (): Promise<express.Express> => {
     });
   }
 
+  const cspReportUri = getCSPReportURI();
+
+  if (cspReportUri) {
+    app.use((_req, res, next) => {
+      res.setHeader(
+        "Report-To",
+        JSON.stringify({
+          group: "csp-endpoint",
+          max_age: 10886400,
+          endpoints: [{ url: cspReportUri }],
+        }),
+      );
+      next();
+    });
+  }
+
   app.use(
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
@@ -82,9 +109,9 @@ export const createApp = async (): Promise<express.Express> => {
             ...config.get("csp.scriptSrc"),
           ],
           "connect-src": ["'self'", "*"],
-          "report-uri": [
-            "https://o62154.ingest.us.sentry.io/api/133417/security/?sentry_key=99a76614db104e739449ae705131fb9d",
-          ],
+          ...(cspReportUri
+            ? { "report-to": ["csp-endpoint"], "report-uri": [cspReportUri] }
+            : {}),
         },
       },
       crossOriginEmbedderPolicy: false,

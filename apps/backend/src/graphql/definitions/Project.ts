@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { captureException } from "@sentry/node";
+import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
@@ -263,7 +263,7 @@ New project from ${input.account.name} (${
 ${input.account.slug} / ${input.project.name}
 `.trim(),
   }).catch((error) => {
-    captureException(error);
+    Sentry.captureException(error);
   });
 }
 

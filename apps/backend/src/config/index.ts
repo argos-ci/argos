@@ -271,6 +271,12 @@ const config = convict({
       default: "",
       env: "SENTRY_SERVER_DSN",
     },
+    cspReportUri: {
+      doc: "CSP report URI",
+      format: String,
+      default: "",
+      env: "SENTRY_CSP_REPORT_URI",
+    },
   },
   pg: {
     migrations: {
