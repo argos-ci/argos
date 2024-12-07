@@ -75,6 +75,7 @@ export async function commentGithubPr({
     if (checkErrorStatus(404, error)) {
       await pullRequest.$clone().$query().patch({ commentDeleted: true });
     } else {
+      console.error("Error while updating comment", error);
       throw error;
     }
   }
