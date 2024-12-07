@@ -1,4 +1,4 @@
-import { flush as flushSentryEvents } from "@sentry/node";
+import * as Sentry from "@sentry/node";
 
 /**
  * Handle graceful shutdown of the server.
@@ -9,7 +9,7 @@ import { flush as flushSentryEvents } from "@sentry/node";
 export function setupGracefulShutdown() {
   process.on("SIGTERM", () => {
     (async () => {
-      await flushSentryEvents();
+      await Sentry.flush();
     })()
       .catch((error) => {
         console.error("Error while running tasks before shutdown");

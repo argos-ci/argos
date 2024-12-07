@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { captureException } from "@sentry/react";
+import * as Sentry from "@sentry/react";
 import { RouterProvider } from "react-aria-components";
 import {
   createBrowserRouter,
@@ -65,7 +65,7 @@ function RootErrorBoundary() {
       return;
     }
 
-    captureException(error, { level: "fatal" });
+    Sentry.captureException(error, { level: "fatal" });
   }, [error, shouldReload]);
 
   if (shouldReload) {

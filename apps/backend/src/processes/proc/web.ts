@@ -1,3 +1,5 @@
+import "../setup.js";
+
 import { readFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import type { RequestListener, Server } from "node:http";
@@ -8,10 +10,6 @@ import { fileURLToPath } from "node:url";
 import config from "@/config/index.js";
 import logger from "@/logger/index.js";
 import { createApp } from "@/web/index.js";
-
-import { setup } from "../setup.js";
-
-setup();
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
