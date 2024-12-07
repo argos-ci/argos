@@ -91,9 +91,12 @@ export const installAppRouter = async (app: express.Application) => {
   });
 
   router.get("/auth/google/login", (req, res) => {
-    const { state, redirect_uri: redirectUri } = OAuthQueryParamsSchema.parse(
-      req.query,
-    );
+    const parsed = OAuthQueryParamsSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.redirect("/");
+      return;
+    }
+    const { state, redirect_uri: redirectUri } = parsed.data;
     res.redirect(
       getGoogleAuthUrl({
         clientId: config.get("google.clientId"),
