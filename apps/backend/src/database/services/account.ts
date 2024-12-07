@@ -128,21 +128,26 @@ type GetOrCreateGhAccountProps = {
   lastLoggedAt?: GithubAccount["lastLoggedAt"] | undefined;
 };
 
-export async function getOrCreateGhAccount(props: GetOrCreateGhAccountProps) {
+export async function getOrCreateGhAccount(
+  props: GetOrCreateGhAccountProps,
+): Promise<GithubAccount> {
   const { githubId, type, ...rest } = props;
-  const existing = await GithubAccount.query().findOne({ githubId });
-  if (existing) {
-    const toUpdate = getPartialModelUpdate(existing, rest);
-    if (toUpdate) {
-      return existing.$query().patchAndFetch(toUpdate);
+  const lock = await getRedisLock();
+  return lock.acquire(["get-or-create-gh-account", githubId], async () => {
+    const existing = await GithubAccount.query().findOne({ githubId });
+    if (existing) {
+      const toUpdate = getPartialModelUpdate(existing, rest);
+      if (toUpdate) {
+        return existing.$query().patchAndFetch(toUpdate);
+      }
+      return existing;
     }
-    return existing;
-  }
 
-  return GithubAccount.query().insertAndFetch({
-    githubId,
-    type,
-    ...omitUndefinedValues(rest),
+    return GithubAccount.query().insertAndFetch({
+      githubId,
+      type,
+      ...omitUndefinedValues(rest),
+    });
   });
 }
 
