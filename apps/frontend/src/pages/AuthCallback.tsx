@@ -47,17 +47,15 @@ function AuthCallback(props: { provider: AuthProvider }) {
   const code = params.get("code");
   const state = params.get("state");
   const errorParam = params.get("error");
-  if (!state) {
-    throw new Error("Missing state");
-  }
-  if (!code) {
-    throw new Error("Missing code");
-  }
-  const redirectUri = getRedirectFromState({ state, provider });
+  const redirectUri = state ? getRedirectFromState({ state, provider }) : null;
   const { setToken, token } = useAuth();
   const [initialToken] = useState(token);
   const [authError, setAuthError] = useState<Error | null>(null);
   useEffect(() => {
+    if (!code) {
+      return;
+    }
+
     api
       .post(
         `/auth/${provider}`,
@@ -79,6 +77,10 @@ function AuthCallback(props: { provider: AuthProvider }) {
   // If a authError is thrown, it will be caught by the ErrorBoundary.
   if (authError) {
     throw authError;
+  }
+
+  if (!code || !redirectUri) {
+    throw <UniversalNavigate to={redirectUri ?? "/login"} replace />;
   }
 
   // If there is an error param, redirect to the login page.
