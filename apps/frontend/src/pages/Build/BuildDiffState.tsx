@@ -1,7 +1,7 @@
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -167,7 +167,7 @@ export function checkCanBeReviewed(screenshotDiffStatus: ScreenshotDiffStatus) {
 }
 
 export function useBuildDiffState() {
-  const context = useContext(BuildDiffContext);
+  const context = use(BuildDiffContext);
   invariant(
     context,
     "useBuildDiffState must be used within a BuildDiffProvider",
@@ -431,7 +431,7 @@ type SearchModeContextValue = {
 const SearchModeContext = createContext<SearchModeContextValue | null>(null);
 
 export function useSearchModeState() {
-  const context = useContext(SearchModeContext);
+  const context = use(SearchModeContext);
   invariant(
     context,
     "useSearchModeState must be used within a BuildDiffProvider",
@@ -447,7 +447,7 @@ type SearchContextValue = {
 const SearchContext = createContext<SearchContextValue | null>(null);
 
 export function useSearchState() {
-  const context = useContext(SearchContext);
+  const context = use(SearchContext);
   invariant(context, "useSearchState must be used within a BuildDiffProvider");
   return context;
 }
@@ -665,12 +665,10 @@ export function BuildDiffProvider(props: {
     ],
   );
   return (
-    <SearchModeContext.Provider value={searchModeValue}>
-      <SearchContext.Provider value={searchValue}>
-        <BuildDiffContext.Provider value={value}>
-          {children}
-        </BuildDiffContext.Provider>
-      </SearchContext.Provider>
-    </SearchModeContext.Provider>
+    <SearchModeContext value={searchModeValue}>
+      <SearchContext value={searchValue}>
+        <BuildDiffContext value={value}>{children}</BuildDiffContext>
+      </SearchContext>
+    </SearchModeContext>
   );
 }

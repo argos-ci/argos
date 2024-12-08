@@ -1,7 +1,7 @@
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -69,11 +69,11 @@ export const AuthContextProvider = ({
     }
   }, [token]);
   const value = useMemo(() => ({ token, setToken }), [token, setToken]);
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext value={value}>{children}</AuthContext>;
 };
 
 export function useAuth() {
-  const value = useContext(AuthContext);
+  const value = use(AuthContext);
   invariant(value, "useAuth must be used within AuthProvider");
   return value;
 }

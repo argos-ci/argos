@@ -1,4 +1,4 @@
-import { ComponentPropsWithRef, useContext } from "react";
+import { ComponentPropsWithRef, use } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -54,7 +54,7 @@ export function DialogTitle(props: {
 }
 
 export function useOverlayTriggerState(): OverlayTriggerState {
-  const ctx = useContext(OverlayTriggerStateContext);
+  const ctx = use(OverlayTriggerStateContext);
   invariant(
     ctx,
     "useOverlayTriggerState must be used within an OverlayTrigger",

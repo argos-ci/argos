@@ -1,7 +1,7 @@
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -37,7 +37,7 @@ type BuildReviewStateValue = {
     React.SetStateAction<Record<Diff["id"], EvaluationStatus>>
   >;
   buildStatus: BuildStatus | null;
-  listenersRef: React.MutableRefObject<Listener[]>;
+  listenersRef: React.RefObject<Listener[]>;
 };
 
 const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
@@ -48,7 +48,7 @@ const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
  * Returns the current review state of the build.
  */
 function useBuildReviewState() {
-  const context = useContext(BuildReviewStateContext);
+  const context = use(BuildReviewStateContext);
   invariant(
     context,
     "useBuildDiffVisibleState must be used within a BuildDiffVisibleStateProvider",
@@ -315,8 +315,8 @@ export function BuildReviewStateProvider(props: {
     [diffStatuses, setDiffStatuses, buildStatus, listenersRef],
   );
   return (
-    <BuildReviewStateContext.Provider value={value}>
+    <BuildReviewStateContext value={value}>
       {props.children}
-    </BuildReviewStateContext.Provider>
+    </BuildReviewStateContext>
   );
 }

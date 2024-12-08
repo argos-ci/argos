@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, use, useMemo } from "react";
 import { invariant } from "@apollo/client/utilities/globals";
 
 import { useStorageState } from "@/util/useStorageState";
@@ -11,7 +11,7 @@ interface DiffFitContextValue {
 const DiffFitContext = createContext<DiffFitContextValue | null>(null);
 
 export const useBuildDiffFitState = () => {
-  const context = useContext(DiffFitContext);
+  const context = use(DiffFitContext);
   invariant(
     context,
     "useBuildDiffFitState must be used within a BuildDiffFitStateProvider",
@@ -31,7 +31,5 @@ export const BuildDiffFitStateProvider = ({
     (): DiffFitContextValue => ({ contained, setContained }),
     [contained, setContained],
   );
-  return (
-    <DiffFitContext.Provider value={value}>{children}</DiffFitContext.Provider>
-  );
+  return <DiffFitContext value={value}>{children}</DiffFitContext>;
 };

@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, use, useCallback, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 
 const STORAGE_KEY = "theme";
@@ -56,15 +50,11 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
     [colorMode, setColorModeAndStore],
   );
 
-  return (
-    <ColorModeContext.Provider value={value}>
-      {props.children}
-    </ColorModeContext.Provider>
-  );
+  return <ColorModeContext value={value}>{props.children}</ColorModeContext>;
 };
 
 export const useColorMode = () => {
-  const context = useContext(ColorModeContext);
+  const context = use(ColorModeContext);
   invariant(context, "useColorMode must be used within a ColorModeProvider");
   return context;
 };

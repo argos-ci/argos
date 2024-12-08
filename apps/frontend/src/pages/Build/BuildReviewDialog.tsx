@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useMemo, useState } from "react";
+import { createContext, memo, use, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
@@ -37,7 +37,7 @@ const BuildReviewDialogContext =
   createContext<null | BuildReviewDialogContextValue>(null);
 
 export function useReviewDialog() {
-  const context = useContext(BuildReviewDialogContext);
+  const context = use(BuildReviewDialogContext);
   invariant(
     context,
     "useReviewDialog must be called in BuildReviewDialogProvider",
@@ -161,9 +161,9 @@ export function BuildReviewDialogProvider(props: {
           project={project}
         />
       )}
-      <BuildReviewDialogContext.Provider value={value}>
+      <BuildReviewDialogContext value={value}>
         {props.children}
-      </BuildReviewDialogContext.Provider>
+      </BuildReviewDialogContext>
     </>
   );
 }

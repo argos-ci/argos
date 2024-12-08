@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, use, useMemo } from "react";
 
 import { ProjectPermission } from "@/gql/graphql";
 
@@ -16,15 +16,11 @@ export function BuildContextProvider(props: {
     () => ({ permissions: props.permissions }),
     [props.permissions],
   );
-  return (
-    <BuildContext.Provider value={value}>
-      {props.children}
-    </BuildContext.Provider>
-  );
+  return <BuildContext value={value}>{props.children}</BuildContext>;
 }
 
 export function useProjectPermissions() {
-  const context = useContext(BuildContext);
+  const context = use(BuildContext);
   if (!context) {
     throw new Error(
       "useProjectPermissions must be used within a BuildContextProvider",

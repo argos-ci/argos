@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, use, useMemo, useState } from "react";
 
 import { ModalProps } from "@/ui/Modal";
 
@@ -10,7 +10,7 @@ export type HotkeysDialogState = {
 const HotkeysDialogContext = createContext<HotkeysDialogState | null>(null);
 
 export function useBuildHotkeysDialogState() {
-  return useContext(HotkeysDialogContext);
+  return use(HotkeysDialogContext);
 }
 
 export function BuildHotkeysDialogStateProvider(props: {
@@ -19,8 +19,6 @@ export function BuildHotkeysDialogStateProvider(props: {
   const [isOpen, setIsOpen] = useState(false);
   const value = useMemo(() => ({ isOpen, setIsOpen }), [isOpen]);
   return (
-    <HotkeysDialogContext.Provider value={value}>
-      {props.children}
-    </HotkeysDialogContext.Provider>
+    <HotkeysDialogContext value={value}>{props.children}</HotkeysDialogContext>
   );
 }
