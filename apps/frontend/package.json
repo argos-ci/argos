@@ -24,8 +24,8 @@
     "@types/d3-selection": "^3.0.11",
     "@types/d3-zoom": "^3.0.8",
     "@types/js-cookie": "^3.0.6",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.1",
     "@types/react-helmet": "^6.1.11",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "autoprefixer": "^10.4.20",
@@ -43,10 +43,10 @@
     "lucide-react": "^0.468.0",
     "moment": "^2.30.1",
     "postcss": "^8.4.49",
-    "react": "^18.3.1",
+    "react": "^19.0.0",
     "react-aria": "^3.36.0",
     "react-aria-components": "^1.5.0",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.0.0",
     "react-helmet": "^6.1.0",
     "react-hook-form": "^7.54.0",
     "react-router-dom": "^7.0.2",
@@ -58,7 +58,7 @@
     "vite": "^6.0.3"
   },
   "overrides": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
   }
 }
