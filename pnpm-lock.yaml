@@ -340,8 +340,8 @@ importers:
   apps/frontend:
     devDependencies:
       '@apollo/client':
-        specifier: ^3.12.2
-        version: 3.12.2(@types/react@19.0.1)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        specifier: 3.11.10
+        version: 3.11.10(@types/react@19.0.1)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@argos/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -523,8 +523,8 @@ packages:
     peerDependencies:
       graphql: 14.x || 15.x || 16.x
 
-  '@apollo/client@3.12.2':
-    resolution: {integrity: sha512-dkacsdMgVsrrQhLpN4JqZTIEfnNsPVwny+4vccSRqheWZElzUz1Xi0h39p2+TieS1f+wwvyzwpoJEV57vwzT9Q==}
+  '@apollo/client@3.11.10':
+    resolution: {integrity: sha512-IfGc+X4il0rDqVQBBWdxIKM+ciDCiDzBq9+Bg9z4tJMi87uF6po4v+ddiac1wP0ARgVPsFwEIGxK7jhN4pW8jg==}
     peerDependencies:
       graphql: ^15.0.0 || ^16.0.0
       graphql-ws: ^5.5.5
@@ -8217,7 +8217,7 @@ snapshots:
     dependencies:
       graphql: 16.9.0
 
-  '@apollo/client@3.12.2(@types/react@19.0.1)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+  '@apollo/client@3.11.10(@types/react@19.0.1)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.9.0)
       '@wry/caches': 1.0.1

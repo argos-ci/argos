@@ -742,7 +742,9 @@ function ListItemButton(
   return <div ref={ref} {...rest} {...buttonProps} />;
 }
 
-const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
+const useInViewportIndices = (
+  containerRef: React.RefObject<HTMLElement | null>,
+) => {
   const [observer, setObserver] = useState<IntersectionObserver | null>(null);
   const inViewportIndices = useRef<Set<number>>(new Set());
 

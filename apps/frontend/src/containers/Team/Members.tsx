@@ -1,3 +1,4 @@
+import { memo, useState } from "react";
 import { Reference, useMutation } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -148,7 +149,7 @@ const RemoveUserFromTeamMutation = graphql(`
   }
 `);
 
-const LeaveTeamDialog = React.memo(
+const LeaveTeamDialog = memo(
   (props: { teamName: string; teamAccountId: string }) => {
     const state = useOverlayTriggerState();
     const authPayload = useAuthTokenPayload();
@@ -200,7 +201,7 @@ const RemoveFromTeamDialogUserFragment = graphql(`
 
 type RemovedUser = DocumentType<typeof RemoveFromTeamDialogUserFragment>;
 
-const RemoveFromTeamDialog = React.memo(
+const RemoveFromTeamDialog = memo(
   (props: { teamName: string; teamAccountId: string; user: RemovedUser }) => {
     const state = useOverlayTriggerState();
     const [removeFromTeam, { loading, error }] = useMutation(
@@ -660,9 +661,7 @@ export const TeamMembers = (props: {
 }) => {
   const authPayload = useAssertAuthTokenPayload();
   const team = useFragment(TeamFragment, props.team);
-  const [removedUser, setRemovedUser] = React.useState<RemovedUser | null>(
-    null,
-  );
+  const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
   const removeFromTeamModal = {
     isOpen: removedUser !== null,
     onOpenChange: (open: boolean) => {

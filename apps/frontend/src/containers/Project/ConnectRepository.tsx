@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useQuery } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
 import { assertNever } from "@argos/util/assertNever";
@@ -102,7 +103,7 @@ type GithubInstallationsProps = {
 function GithubInstallations(props: GithubInstallationsProps) {
   const firstInstallation = props.installations[0];
   invariant(firstInstallation, "no installations");
-  const [value, setValue] = React.useState<string>(firstInstallation.id);
+  const [value, setValue] = useState<string>(firstInstallation.id);
   return (
     <div className="flex max-w-4xl flex-col gap-4" style={{ height: 400 }}>
       <GithubInstallationsSelect
@@ -142,8 +143,8 @@ const GitlabNamespaces = (props: GitlabNamespacesProps) => {
     props.namespaces.find((namespace) => namespace.kind === "group") ||
     props.namespaces[0];
   invariant(defaultNamespace, "no namespaces");
-  const [value, setValue] = React.useState<string>(defaultNamespace.id);
-  const [search, setSearch] = React.useState<string>("");
+  const [value, setValue] = useState<string>(defaultNamespace.id);
+  const [search, setSearch] = useState<string>("");
   const [debouncedSearch] = useDebounce(search, 500);
   const namespace = props.namespaces.find(
     (namespace) => namespace.id === value,
@@ -273,21 +274,18 @@ const buttonLabels: Record<ConnectRepositoryProps["variant"], string> = {
   import: "Import Repository",
 };
 
-export const ConnectRepository = (props: ConnectRepositoryProps) => {
-  const [provider, setProvider] = React.useState<GitProvider | null>(
+export function ConnectRepository(props: ConnectRepositoryProps) {
+  const [provider, setProvider] = useState<GitProvider | null>(
     window.localStorage.getItem("gitProvider") as GitProvider | null,
   );
-  const setAndStoreProvider = React.useCallback(
-    (provider: GitProvider | null) => {
-      setProvider(provider);
-      if (provider) {
-        window.localStorage.setItem("gitProvider", provider);
-      } else {
-        window.localStorage.removeItem("gitProvider");
-      }
-    },
-    [],
-  );
+  const setAndStoreProvider = useCallback((provider: GitProvider | null) => {
+    setProvider(provider);
+    if (provider) {
+      window.localStorage.setItem("gitProvider", provider);
+    } else {
+      window.localStorage.removeItem("gitProvider");
+    }
+  }, []);
 
   const result = useQuery(ConnectRepositoryQuery, {
     variables: {
@@ -478,4 +476,4 @@ export const ConnectRepository = (props: ConnectRepositoryProps) => {
     default:
       assertNever(props.variant);
   }
-};
+}

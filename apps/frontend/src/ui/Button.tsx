@@ -96,7 +96,10 @@ export function ButtonIcon({
   position = "left",
   className,
 }: {
-  children: React.ReactElement;
+  children: React.ReactElement<{
+    className?: string;
+    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+  }>;
   position?: "left" | "right";
   className?: string;
 }) {

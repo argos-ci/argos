@@ -1,6 +1,6 @@
 import { cloneElement, useRef } from "react";
 import { clsx } from "clsx";
-import { mergeProps, useFocusable } from "react-aria";
+import { FocusableOptions, mergeProps, useFocusable } from "react-aria";
 import {
   Tooltip as RACTooltip,
   TooltipProps as RACTooltipProps,
@@ -18,7 +18,7 @@ const variantClassNames: Record<TooltipVariant, string> = {
 
 export type TooltipProps = {
   content: React.ReactNode;
-  children: React.ReactElement;
+  children: React.ReactElement<FocusableOptions>;
   variant?: TooltipVariant;
   placement?: RACTooltipProps["placement"];
   disableHoverableContent?: boolean;
@@ -109,7 +109,9 @@ function TooltipOverlay({
   );
 }
 
-function TooltipTarget(props: { children: React.ReactElement }) {
+function TooltipTarget(props: {
+  children: React.ReactElement<FocusableOptions>;
+}) {
   const triggerRef = useRef(null);
   const { focusableProps } = useFocusable(props.children.props, triggerRef);
 

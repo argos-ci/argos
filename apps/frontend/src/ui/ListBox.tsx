@@ -27,7 +27,10 @@ export function ListBoxSeparator() {
 }
 
 export function ListBoxItemIcon(props: {
-  children: React.ReactElement;
+  children: React.ReactElement<{
+    className?: string;
+    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+  }>;
   className?: string;
 }) {
   return cloneElement(Children.only(props.children), {

@@ -1,4 +1,5 @@
 import { cloneElement } from "react";
+import { FocusableOptions } from "react-aria";
 
 import { Tooltip, TooltipProps } from "./Tooltip";
 
@@ -12,7 +13,11 @@ export function HotkeyTooltip({
 }: {
   description: React.ReactNode;
   keys: string[];
-  children: React.ReactElement;
+  children: React.ReactElement<
+    FocusableOptions & {
+      "aria-keyshortcuts"?: React.AriaAttributes["aria-keyshortcuts"];
+    }
+  >;
   keysEnabled?: boolean;
   disabled?: boolean;
   placement?: TooltipProps["placement"];

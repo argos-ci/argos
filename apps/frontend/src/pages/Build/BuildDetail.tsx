@@ -696,7 +696,7 @@ const BuildScreenshots = memo(
 );
 
 const useScrollToTop = (
-  ref: React.RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement | null>,
   activeDiff: Diff | null,
 ) => {
   useLayoutEffect(() => {
