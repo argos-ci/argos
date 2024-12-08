@@ -59,17 +59,10 @@ export type ButtonProps = RACButtonProps &
     ref?: React.Ref<HTMLButtonElement>;
   };
 
-export function Button({
-  ref,
-  className,
-  variant,
-  size,
-  ...props
-}: ButtonProps) {
+export function Button({ className, variant, size, ...props }: ButtonProps) {
   const buttonClassName = getButtonClassName({ variant, size });
   return (
     <RACButton
-      ref={ref}
       className={clsx(buttonClassName, "cursor-default", className)}
       {...props}
     />
