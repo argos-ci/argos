@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 
 export type ChipColor =
@@ -10,11 +9,11 @@ export type ChipColor =
   | "danger"
   | "warning";
 
-export interface ChipProps extends React.ComponentProps<"div"> {
+export type ChipProps = Omit<React.ComponentPropsWithRef<"div">, "color"> & {
   color?: ChipColor;
   icon?: React.ComponentType<any> | null;
   scale?: "xs" | "sm" | "md" | undefined;
-}
+};
 
 const colorClassNames: Record<ChipColor, string> = {
   primary: "text-primary-low border-primary bg-primary-app",
@@ -26,35 +25,29 @@ const colorClassNames: Record<ChipColor, string> = {
   warning: "text-warning-low border-warning bg-warning-app",
 };
 
-export const Chip = forwardRef<HTMLDivElement, ChipProps>(
-  (
-    {
-      children,
-      icon: Icon,
-      color = "primary",
-      scale = "md",
-      className,
-      ...props
-    },
-    ref,
-  ) => {
-    const colorClassName = colorClassNames[color];
-    return (
-      <div
-        ref={ref}
-        className={clsx(
-          colorClassName,
-          scale === "xs" && "gap-1 px-2 text-xs",
-          scale === "sm" && "gap-1 px-3 py-1 text-xs",
-          scale === "md" && "gap-2 px-4 py-2 text-sm",
-          "rounded-chip inline-flex min-w-0 select-none items-center border font-medium leading-4",
-          className,
-        )}
-        {...props}
-      >
-        {Icon && <Icon className="size-[1em] shrink-0" />}
-        <span className="flex-1 truncate">{children}</span>
-      </div>
-    );
-  },
-);
+export function Chip({
+  children,
+  icon: Icon,
+  color = "primary",
+  scale = "md",
+  className,
+  ...rest
+}: ChipProps) {
+  const colorClassName = colorClassNames[color];
+  return (
+    <div
+      className={clsx(
+        colorClassName,
+        scale === "xs" && "gap-1 px-2 text-xs",
+        scale === "sm" && "gap-1 px-3 py-1 text-xs",
+        scale === "md" && "gap-2 px-4 py-2 text-sm",
+        "rounded-chip inline-flex min-w-0 select-none items-center border font-medium leading-4",
+        className,
+      )}
+      {...rest}
+    >
+      {Icon && <Icon className="size-[1em] shrink-0" />}
+      <span className="flex-1 truncate">{children}</span>
+    </div>
+  );
+}

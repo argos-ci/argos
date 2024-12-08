@@ -1,6 +1,5 @@
 import {
-  ComponentPropsWithoutRef,
-  forwardRef,
+  ComponentPropsWithRef,
   memo,
   useCallback,
   useEffect,
@@ -725,14 +724,13 @@ function DiffTooltip(props: {
   );
 }
 
-const ListItemButton = forwardRef(function ListItemButton(
+function ListItemButton(
   props: Pick<AriaButtonProps<"div">, "onPress" | "isDisabled"> &
     Pick<HoverProps, "onHoverChange"> &
-    ComponentPropsWithoutRef<"div">,
-  forwardedRef: React.ForwardedRef<HTMLDivElement>,
+    ComponentPropsWithRef<"div">,
 ) {
-  const ref = useObjectRef(forwardedRef);
-  const { onPress, isDisabled, ...rest } = props;
+  const { ref: propRef, onPress, isDisabled, ...rest } = props;
+  const ref = useObjectRef(propRef);
   const { buttonProps } = useButton(
     {
       elementType: "div",
@@ -742,9 +740,11 @@ const ListItemButton = forwardRef(function ListItemButton(
     ref,
   );
   return <div ref={ref} {...rest} {...buttonProps} />;
-});
+}
 
-const useInViewportIndices = (containerRef: React.RefObject<HTMLElement>) => {
+const useInViewportIndices = (
+  containerRef: React.RefObject<HTMLElement | null>,
+) => {
   const [observer, setObserver] = useState<IntersectionObserver | null>(null);
   const inViewportIndices = useRef<Set<number>>(new Set());
 

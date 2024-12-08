@@ -1,4 +1,4 @@
-import { forwardRef, HTMLProps, Suspense } from "react";
+import { ComponentPropsWithRef, Suspense } from "react";
 import { ApolloError } from "@apollo/client";
 import * as Sentry from "@sentry/react";
 import { clsx } from "clsx";
@@ -10,36 +10,37 @@ import { PageLoader } from "@/ui/PageLoader";
 import { AuthenticationError, logout } from "./Auth";
 import { Navbar } from "./Navbar";
 
-const Main = forwardRef<HTMLElement, { children: React.ReactNode }>(
-  function Main(props: { children: React.ReactNode }, ref) {
-    return (
-      <main ref={ref} className="contents">
-        <Sentry.ErrorBoundary
-          fallback={<ErrorPage />}
-          onError={(error) => {
-            if (error instanceof AuthenticationError) {
+function Main(props: {
+  ref?: React.Ref<HTMLDivElement>;
+  children: React.ReactNode;
+}) {
+  return (
+    <main ref={props.ref} className="contents">
+      <Sentry.ErrorBoundary
+        fallback={<ErrorPage />}
+        onError={(error) => {
+          if (error instanceof AuthenticationError) {
+            logout();
+            return;
+          }
+          if (error instanceof ApolloError) {
+            // Ignore unauthenticated errors & logout the user
+            if (
+              error.graphQLErrors.some(
+                (error) => error.extensions?.code === "UNAUTHENTICATED",
+              )
+            ) {
               logout();
               return;
             }
-            if (error instanceof ApolloError) {
-              // Ignore unauthenticated errors & logout the user
-              if (
-                error.graphQLErrors.some(
-                  (error) => error.extensions?.code === "UNAUTHENTICATED",
-                )
-              ) {
-                logout();
-                return;
-              }
-            }
-          }}
-        >
-          {props.children}
-        </Sentry.ErrorBoundary>
-      </main>
-    );
-  },
-);
+          }
+        }}
+      >
+        {props.children}
+      </Sentry.ErrorBoundary>
+    </main>
+  );
+}
 
 export function Layout(props: { children: React.ReactNode }) {
   const fullSize = useMatch("/:accountSlug/:projectName");
@@ -58,7 +59,7 @@ export function Layout(props: { children: React.ReactNode }) {
 export function SettingsLayout({
   className,
   ...props
-}: HTMLProps<HTMLDivElement>) {
+}: ComponentPropsWithRef<"div">) {
   return (
     <div
       className={clsx(className, "mb-6 flex max-w-4xl flex-col gap-6")}

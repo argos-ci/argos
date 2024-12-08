@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   GitMergeIcon,
   GitPullRequestClosedIcon,
@@ -6,6 +5,7 @@ import {
   GitPullRequestIcon,
 } from "@primer/octicons-react";
 import { clsx } from "clsx";
+import { FocusableOptions } from "react-aria";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { PullRequestState } from "@/gql/graphql";
@@ -158,7 +158,7 @@ function PullRequestInfo(props: {
 
 function PullRequestInfoTooltip(props: {
   pullRequest: FragmentType<typeof PullRequestInfoFragment>;
-  children: React.ReactElement;
+  children: React.ReactElement<FocusableOptions>;
 }) {
   const pullRequest = useFragment(PullRequestInfoFragment, props.pullRequest);
   return (

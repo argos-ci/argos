@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState } from "react";
 
 import config from "@/config";
 import { useAssertAuthToken } from "@/containers/Auth";
@@ -32,9 +32,7 @@ async function getStripePortalLink({
 }
 const useRedirectToStripePortal = () => {
   const token = useAssertAuthToken();
-  const [status, setStatus] = React.useState<"idle" | "loading" | "error">(
-    "idle",
-  );
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
     (props: { stripeCustomerId: string; accountId: string }) => {
       setStatus("loading");
@@ -120,9 +118,7 @@ async function getCheckoutSessionLink({
 
 const useRedirectToStripeCheckout = () => {
   const token = useAssertAuthToken();
-  const [status, setStatus] = React.useState<"idle" | "loading" | "error">(
-    "idle",
-  );
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
     (props: { accountId: string; successUrl: string; cancelUrl: string }) => {
       setStatus("loading");

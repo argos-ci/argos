@@ -1,18 +1,13 @@
-import { forwardRef } from "react";
-
 import { checkIsTwicPicsUrl } from "@/util/image";
 
-export type TwicPictureProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+export type TwicPictureProps = React.ComponentPropsWithRef<"img"> & {
   src: string;
   transforms?: string[];
   original?: boolean;
 };
 
-export const TwicPicture = forwardRef(function TwicPicture(
-  props: TwicPictureProps,
-  ref: React.ForwardedRef<HTMLImageElement>,
-) {
-  const { src, transforms = [], original, ...rest } = props;
+export function TwicPicture(props: TwicPictureProps) {
+  const { ref, src, transforms = [], original, ...rest } = props;
 
   if (!checkIsTwicPicsUrl(src)) {
     return <img ref={ref} src={src} {...rest} />;
@@ -48,7 +43,7 @@ export const TwicPicture = forwardRef(function TwicPicture(
       />
     </picture>
   );
-});
+}
 
 function twic(url: string, transforms: string[]): string {
   return `${url}?twic=v1/${transforms.join("/")}`;

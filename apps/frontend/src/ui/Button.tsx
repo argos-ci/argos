@@ -1,4 +1,4 @@
-import { Children, cloneElement, forwardRef } from "react";
+import { Children, cloneElement } from "react";
 import { clsx } from "clsx";
 import {
   Button as RACButton,
@@ -54,42 +54,52 @@ function getButtonClassName(options: ButtonOptions) {
   );
 }
 
-export type ButtonProps = RACButtonProps & ButtonOptions;
+export type ButtonProps = RACButtonProps &
+  ButtonOptions & {
+    ref?: React.Ref<HTMLButtonElement>;
+  };
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
-    const buttonClassName = getButtonClassName({ variant, size });
-    return (
-      <RACButton
-        ref={ref}
-        className={clsx(buttonClassName, "cursor-default", className)}
-        {...props}
-      />
-    );
-  },
-);
+export function Button({ className, variant, size, ...props }: ButtonProps) {
+  const buttonClassName = getButtonClassName({ variant, size });
+  return (
+    <RACButton
+      className={clsx(buttonClassName, "cursor-default", className)}
+      {...props}
+    />
+  );
+}
 
-export type LinkButtonProps = RACLinkProps & ButtonOptions;
+export type LinkButtonProps = RACLinkProps &
+  ButtonOptions & {
+    ref?: React.Ref<HTMLAnchorElement>;
+  };
 
-export const LinkButton = forwardRef<HTMLAnchorElement, LinkButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
-    const buttonClassName = getButtonClassName({ variant, size });
-    return (
-      <RACLink
-        ref={ref}
-        className={clsx(buttonClassName, className)}
-        {...props}
-      />
-    );
-  },
-);
+export function LinkButton({
+  ref,
+  className,
+  variant,
+  size,
+  ...props
+}: LinkButtonProps) {
+  const buttonClassName = getButtonClassName({ variant, size });
+  return (
+    <RACLink
+      ref={ref}
+      className={clsx(buttonClassName, className)}
+      {...props}
+    />
+  );
+}
 
 export function ButtonIcon({
   children,
   position = "left",
   className,
 }: {
-  children: React.ReactElement;
+  children: React.ReactElement<{
+    className?: string;
+    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+  }>;
   position?: "left" | "right";
   className?: string;
 }) {

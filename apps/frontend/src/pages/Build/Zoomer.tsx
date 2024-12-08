@@ -1,8 +1,8 @@
 import {
   createContext,
   memo,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -243,15 +243,11 @@ export const ZoomerSyncProvider = (props: {
     }),
     [register, subscribe, getInitialTransform, reset, zoomIn, zoomOut],
   );
-  return (
-    <ZoomerSyncContext.Provider value={value}>
-      {props.children}
-    </ZoomerSyncContext.Provider>
-  );
+  return <ZoomerSyncContext value={value}>{props.children}</ZoomerSyncContext>;
 };
 
 export const useZoomerSyncContext = () => {
-  const ctx = useContext(ZoomerSyncContext);
+  const ctx = use(ZoomerSyncContext);
   invariant(ctx, "Missing ZoomerSyncProvider");
   return ctx;
 };

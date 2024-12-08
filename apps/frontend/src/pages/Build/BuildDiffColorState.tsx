@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, use, useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { useStorageState } from "@/util/useStorageState";
@@ -13,7 +13,7 @@ type DiffColorContextValue = {
 const DiffColorContext = createContext<DiffColorContextValue | null>(null);
 
 export function useBuildDiffColorState() {
-  const context = useContext(DiffColorContext);
+  const context = use(DiffColorContext);
   invariant(
     context,
     "useBuildDiffColorState must be used within a BuildDiffColorStateProvider",
@@ -53,9 +53,5 @@ export function BuildDiffColorStateProvider(props: {
     (): DiffColorContextValue => ({ color, setColor, opacity, setOpacity }),
     [color, setColor, opacity, setOpacity],
   );
-  return (
-    <DiffColorContext.Provider value={value}>
-      {props.children}
-    </DiffColorContext.Provider>
-  );
+  return <DiffColorContext value={value}>{props.children}</DiffColorContext>;
 }

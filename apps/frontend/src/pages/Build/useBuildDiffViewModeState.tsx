@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, use, useMemo } from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { useStorageState } from "@/util/useStorageState";
@@ -15,7 +15,7 @@ const DiffViewModeContext = createContext<DiffViewModeContextValue | null>(
 );
 
 export const useBuildDiffViewModeState = () => {
-  const context = useContext(DiffViewModeContext);
+  const context = use(DiffViewModeContext);
   invariant(
     context,
     "useBuildDiffViewModeState must be used within a BuildDiffViewModeStateProvider",
@@ -41,9 +41,5 @@ export const BuildDiffViewModeStateProvider = ({
     }),
     [viewMode, setViewMode],
   );
-  return (
-    <DiffViewModeContext.Provider value={value}>
-      {children}
-    </DiffViewModeContext.Provider>
-  );
+  return <DiffViewModeContext value={value}>{children}</DiffViewModeContext>;
 };

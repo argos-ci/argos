@@ -1,25 +1,22 @@
-import { HTMLAttributes } from "react";
 import { clsx } from "clsx";
 
 import { CopyButton } from "./CopyButton";
 
-export const Pre = ({
-  className,
-  code,
-  ...props
-}: Omit<HTMLAttributes<HTMLPreElement>, "children"> & {
+type PreProps = Omit<React.ComponentPropsWithRef<"pre">, "children"> & {
   code: string;
-}) => {
+};
+
+export function Pre({ code, ...rest }: PreProps) {
   return (
     <pre
+      {...rest}
       className={clsx(
-        className,
+        rest.className,
         "bg-ui relative whitespace-pre-wrap rounded p-4",
       )}
-      {...props}
     >
       <CopyButton className="absolute right-2 top-4 text-lg" text={code} />
       <code>{code}</code>
     </pre>
   );
-};
+}

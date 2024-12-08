@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
@@ -50,16 +49,13 @@ const DeleteTeamMutation = graphql(`
   }
 `);
 
-const DeleteButton = forwardRef<
-  HTMLButtonElement,
-  Omit<ButtonProps, "variant" | "children">
->((props, ref) => {
+function DeleteButton(props: Omit<ButtonProps, "variant" | "children">) {
   return (
-    <Button ref={ref} variant="destructive" {...props}>
+    <Button variant="destructive" {...props}>
       Delete
     </Button>
   );
-});
+}
 
 type DeleteTeamButtonProps = {
   teamAccountId: string;

@@ -1,4 +1,4 @@
-import { HTMLAttributes } from "react";
+import clsx from "clsx";
 
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { FragmentType, graphql, useFragment } from "@/gql";
@@ -20,7 +20,7 @@ const AccountFragment = graphql(`
 export type AccountItemProps = {
   account: FragmentType<typeof AccountFragment>;
   showPlan?: boolean;
-} & HTMLAttributes<HTMLDivElement>;
+} & Omit<React.ComponentPropsWithRef<"div">, "children">;
 
 export function AccountItem({
   account: accountProp,
@@ -29,7 +29,10 @@ export function AccountItem({
 }: AccountItemProps) {
   const account = useFragment(AccountFragment, accountProp);
   return (
-    <div className="flex items-center gap-2" {...props}>
+    <div
+      {...props}
+      className={clsx("flex items-center gap-2", props.className)}
+    >
       <AccountAvatar avatar={account.avatar} size={18} />
       {account.name || account.slug}
       {showPlan && <AccountPlanChip account={account} />}

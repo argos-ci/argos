@@ -1,5 +1,3 @@
-import { HTMLAttributes } from "react";
-
 import { Tooltip } from "@/ui/Tooltip";
 
 import cypressIcon from "./logos/cypress.svg";
@@ -19,7 +17,7 @@ const Icons: Record<string, string> = {
 export function AutomationLibraryIndicator({
   automationLibrary,
   ...props
-}: HTMLAttributes<HTMLImageElement> & {
+}: Omit<React.ComponentPropsWithRef<"img">, "src" | "alt"> & {
   automationLibrary: {
     name: string;
     version: string;

@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import { getOAuthURL } from "@/util/oauth";
 

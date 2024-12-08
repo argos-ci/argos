@@ -12,7 +12,9 @@ export function ProviderCard(props: { children: React.ReactNode }) {
   );
 }
 
-export function ProviderIcon(props: { children: React.ReactElement }) {
+export function ProviderIcon(props: {
+  children: React.ReactElement<{ className?: string }>;
+}) {
   return cloneElement(props.children, { className: "size-6 shrink-0" });
 }
 

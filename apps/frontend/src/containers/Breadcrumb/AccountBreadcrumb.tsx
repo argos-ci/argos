@@ -27,6 +27,7 @@ const AccountQuery = graphql(`
     }
   }
 `);
+
 function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
   const match = useMatch(`/${accountSlug}`);
   const { data } = useSuspenseQuery(AccountQuery, {

@@ -1,11 +1,11 @@
-import * as React from "react";
+import { useLayoutEffect, useRef } from "react";
 
 /**
  * Return a reference that always hold the value of the last render.
  */
-export function useLiveRef<T>(value: T): React.MutableRefObject<T> {
-  const ref = React.useRef(value);
-  React.useLayoutEffect(() => {
+export function useLiveRef<T>(value: T): React.RefObject<T> {
+  const ref = useRef(value);
+  useLayoutEffect(() => {
     ref.current = value;
   });
   return ref;

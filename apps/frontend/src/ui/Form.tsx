@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { ApolloError } from "@apollo/client";
 import { SubmitHandler, useFormContext } from "react-hook-form";
 
@@ -28,12 +27,14 @@ const unwrapErrors = (error: unknown) => {
   ];
 };
 
-export const Form = forwardRef<
-  HTMLFormElement,
-  Omit<React.FormHTMLAttributes<HTMLFormElement>, "onSubmit"> & {
-    onSubmit: SubmitHandler<any>;
-  }
->(({ onSubmit, autoComplete = "off", ...props }, ref) => {
+export function Form({
+  ref,
+  onSubmit,
+  autoComplete = "off",
+  ...props
+}: Omit<React.ComponentPropsWithRef<"form">, "onSubmit"> & {
+  onSubmit: SubmitHandler<any>;
+}) {
   const { handleSubmit, clearErrors, setError } = useFormContext();
   return (
     <form
@@ -56,4 +57,4 @@ export const Form = forwardRef<
       {...props}
     />
   );
-});
+}

@@ -80,7 +80,7 @@ export function MenuItem(
 }
 
 export function MenuItemIcon(props: {
-  children: React.ReactElement;
+  children: React.ReactElement<{ className?: string }>;
   className?: string;
   position?: "left" | "right";
 }) {

@@ -1,4 +1,4 @@
-import { forwardRef, useContext } from "react";
+import { ComponentPropsWithRef, use } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -13,66 +13,48 @@ import { Button, ButtonProps } from "./Button";
 
 export { DialogTrigger } from "react-aria-components";
 
-export const DialogFooter = forwardRef<
-  HTMLDivElement,
-  {
-    children: React.ReactNode;
-  }
->(({ children }, ref) => {
+export function DialogFooter(props: ComponentPropsWithRef<"div">) {
   return (
     <div
-      ref={ref}
-      className="bg-subtle flex items-center justify-end gap-4 border-t p-4"
-    >
-      {children}
-    </div>
+      {...props}
+      className={clsx(
+        "bg-subtle flex items-center justify-end gap-4 border-t p-4",
+        props.className,
+      )}
+    />
   );
-});
+}
 
-export const DialogText = forwardRef<
-  HTMLDivElement,
-  {
-    children: React.ReactNode;
-    className?: string;
-  }
->(({ children, className }, ref) => {
-  return (
-    <p ref={ref} className={clsx("my-4", className)}>
-      {children}
-    </p>
-  );
-});
+export function DialogText(props: ComponentPropsWithRef<"p">) {
+  return <p {...props} className={clsx("my-4", props.className)} />;
+}
 
-export const DialogBody = forwardRef<
-  HTMLDivElement,
-  {
-    children: React.ReactNode;
-    className?: string;
+export function DialogBody(
+  props: ComponentPropsWithRef<"div"> & {
     confirm?: boolean;
-  }
->(({ children, className, confirm }, ref) => {
+  },
+) {
   return (
-    <div ref={ref} className={clsx("p-4", confirm && "text-center", className)}>
-      {children}
-    </div>
+    <div
+      {...props}
+      className={clsx("p-4", props.confirm && "text-center", props.className)}
+    />
   );
-});
+}
 
-export const DialogTitle = forwardRef<
-  HTMLHeadingElement,
-  {
-    children: React.ReactNode;
-  }
->(({ children }, ref) => {
+export function DialogTitle(props: {
+  ref?: React.Ref<HTMLHeadingElement>;
+  children: React.ReactNode;
+}) {
   return (
-    <Heading ref={ref} slot="title" className="mb-4 text-xl font-medium">
-      {children}
+    <Heading ref={props.ref} slot="title" className="mb-4 text-xl font-medium">
+      {props.children}
     </Heading>
   );
-});
+}
 
 export function useOverlayTriggerState(): OverlayTriggerState {
-  const ctx = useContext(OverlayTriggerStateContext);
+  const ctx = use(OverlayTriggerStateContext);
   invariant(
     ctx,
     "useOverlayTriggerState must be used within an OverlayTrigger",
@@ -80,18 +62,16 @@ export function useOverlayTriggerState(): OverlayTriggerState {
   return ctx;
 }
 
-export const DialogDismiss = forwardRef<
-  HTMLButtonElement,
-  {
-    children: React.ReactNode;
-    onPress?: ButtonProps["onPress"];
-    single?: boolean;
-  }
->((props, ref) => {
+export function DialogDismiss(props: {
+  ref?: React.Ref<HTMLButtonElement>;
+  children: React.ReactNode;
+  onPress?: ButtonProps["onPress"];
+  single?: boolean;
+}) {
   const state = useOverlayTriggerState();
   return (
     <Button
-      ref={ref}
+      ref={props.ref}
       className={props.single ? "flex-1 justify-center" : undefined}
       variant="secondary"
       onPress={(event) => {
@@ -103,24 +83,23 @@ export const DialogDismiss = forwardRef<
       {props.children}
     </Button>
   );
-});
+}
 
 type DialogProps = RACDialogProps & {
+  ref?: React.Ref<HTMLDivElement>;
   size?: "auto" | "medium";
 };
 
-export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
-  ({ className, size = "auto", ...props }, ref) => {
-    return (
-      <RACDialog
-        ref={ref}
-        className={clsx(
-          className,
-          "relative max-h-[inherit] overflow-auto focus:outline-none",
-          size === "medium" && "w-[36rem]",
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export function Dialog({ className, size = "auto", ...props }: DialogProps) {
+  return (
+    <RACDialog
+      ref={props.ref}
+      className={clsx(
+        className,
+        "relative max-h-[inherit] overflow-auto focus:outline-none",
+        size === "medium" && "w-[36rem]",
+      )}
+      {...props}
+    />
+  );
+}

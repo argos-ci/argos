@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 
 type RadioScale = "base" | "large";
@@ -8,23 +7,25 @@ const scaleClassNames: Record<RadioScale, string> = {
   base: "text-base",
 };
 
-export const RadioField = forwardRef<
-  HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement> & {
-    label: string;
-    value: string;
-    scale?: RadioScale;
-    children: React.ReactNode;
-  }
->(({ label, value, children, scale = "base", ...props }, ref) => {
+export function RadioField({
+  label,
+  children,
+  scale = "base",
+  ...props
+}: React.ComponentPropsWithRef<"input"> & {
+  label: string;
+  value: string;
+  scale?: RadioScale;
+  children: React.ReactNode;
+}) {
   const scaleClassName = scaleClassNames[scale];
   return (
     <label className="flex items-baseline gap-4 text-left">
-      <input type="radio" ref={ref} value={value} className="peer" {...props} />
+      <input type="radio" className="peer" {...props} />
       <div className="hover:border-base peer-checked:border-active border-l px-2">
         <div className={clsx(scaleClassName, "font-semibold")}>{label}</div>
         <p>{children}</p>
       </div>
     </label>
   );
-});
+}

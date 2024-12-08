@@ -1,8 +1,8 @@
-import { RefObject, useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 export const useScrollListener = (
   listener: (event: Event) => void,
-  elementRef: RefObject<HTMLElement>,
+  elementRef: React.RefObject<HTMLElement | null>,
 ) => {
   const listenerRef = useRef(listener);
   useLayoutEffect(() => {

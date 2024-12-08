@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 import {
   Button as RACButton,
@@ -56,35 +55,45 @@ function getIconButtonClassName(options: IconButtonOptions) {
   );
 }
 
-type IconButtonProps = RACButtonProps & IconButtonOptions;
+type IconButtonProps = RACButtonProps &
+  IconButtonOptions & {
+    ref?: React.Ref<HTMLButtonElement>;
+  };
 
-export const IconButton = forwardRef(function IconButton(
-  { className, color, variant, size, ...props }: IconButtonProps,
-  ref: React.ForwardedRef<HTMLButtonElement>,
-) {
+export function IconButton({
+  color,
+  variant,
+  size,
+  ...props
+}: IconButtonProps) {
   return (
     <RACButton
-      ref={ref}
+      {...props}
       className={clsx(
         getIconButtonClassName({ color, variant, size }),
-        className,
+        props.className,
       )}
-      {...props}
     />
   );
-});
+}
 
-type IconButtonLinkProps = RACLinkProps & IconButtonOptions;
+type IconButtonLinkProps = RACLinkProps &
+  IconButtonOptions & {
+    ref?: React.Ref<HTMLAnchorElement>;
+  };
 
-export const IconButtonLink = forwardRef(function IconButtonLink(
-  { className, color, variant, ...props }: IconButtonLinkProps,
-  ref: React.ForwardedRef<HTMLAnchorElement>,
-) {
+export function IconButtonLink({
+  color,
+  variant,
+  ...props
+}: IconButtonLinkProps) {
   return (
     <RACLink
-      ref={ref}
-      className={clsx(getIconButtonClassName({ color, variant }), className)}
       {...props}
+      className={clsx(
+        getIconButtonClassName({ color, variant }),
+        props.className,
+      )}
     />
   );
-});
+}
