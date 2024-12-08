@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-export type InitialAvatarProps = {
+type InitialAvatarProps = {
   ref?: React.Ref<HTMLDivElement>;
   className?: string;
   size?: number;
