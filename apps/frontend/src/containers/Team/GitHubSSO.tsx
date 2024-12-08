@@ -1,4 +1,4 @@
-import * as React from "react";
+import { memo } from "react";
 import { useMutation } from "@apollo/client";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
@@ -57,7 +57,7 @@ const DisableGitHubSSOMutation = graphql(`
   }
 `);
 
-const DisableButton = React.memo(function DisableButton(props: {
+const DisableButton = memo(function DisableButton(props: {
   teamAccountId: string;
 }) {
   const [disable, { error, loading }] = useMutation(DisableGitHubSSOMutation, {

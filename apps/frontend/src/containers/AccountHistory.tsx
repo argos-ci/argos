@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useEffect } from "react";
 
 import {
   decodeAuthToken,
@@ -12,7 +12,7 @@ function getStorageKey(accountId: string) {
 
 export function useVisitAccount(accountSlug: string | null) {
   const payload = useAuthTokenPayload();
-  React.useEffect(() => {
+  useEffect(() => {
     if (accountSlug && payload) {
       window.localStorage.setItem(
         getStorageKey(payload.account.id),

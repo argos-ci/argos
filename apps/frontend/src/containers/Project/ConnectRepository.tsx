@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useQuery } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
 import { assertNever } from "@argos/util/assertNever";

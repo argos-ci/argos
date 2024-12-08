@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 import {
   PopoverProps,
@@ -22,22 +21,22 @@ function getPopoverAnimationClassName(values: PopoverRenderProps): string {
   );
 }
 
-export const Popover = forwardRef(function Popover(
-  { className, ...props }: PopoverProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+export function Popover(
+  props: PopoverProps & {
+    ref?: React.Ref<HTMLDivElement>;
+  },
 ) {
   return (
     <RACPopover
-      ref={ref}
       offset={4}
+      {...props}
       className={(values) =>
         clsx(
           "bg-subtle z-50 flex rounded-lg border bg-clip-padding p-1",
           getPopoverAnimationClassName(values),
-          className,
+          props.className,
         )
       }
-      {...props}
     />
   );
-});
+}

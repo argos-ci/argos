@@ -1,4 +1,4 @@
-import * as React from "react";
+import { cloneElement, useRef } from "react";
 import { clsx } from "clsx";
 import { mergeProps, useFocusable } from "react-aria";
 import {
@@ -67,58 +67,53 @@ export function getTooltipAnimationClassName(
 }
 
 type TooltipOverlayProps = RACTooltipProps & {
+  ref?: React.Ref<HTMLDivElement>;
   variant?: TooltipVariant;
   disableHoverableContent?: boolean;
   children: React.ReactNode;
 };
 
-const TooltipOverlay = React.forwardRef(
-  (
-    {
-      className,
-      variant = "default",
-      disableHoverableContent = true,
-      children,
-      ...props
-    }: TooltipOverlayProps,
-    ref: React.ForwardedRef<HTMLDivElement>,
-  ) => {
-    const variantClassName = variantClassNames[variant];
-    const frozenChildrenRef = React.useRef(children);
-    return (
-      <RACTooltip
-        ref={ref}
-        offset={4}
-        {...props}
-        className={(props) =>
-          clsx(
-            "bg-subtle text overflow-hidden rounded-md border shadow-md",
-            disableHoverableContent && "pointer-events-none",
-            getTooltipAnimationClassName(props),
-            variantClassName,
-            className,
-          )
+function TooltipOverlay({
+  className,
+  variant = "default",
+  disableHoverableContent = true,
+  children,
+  ...props
+}: TooltipOverlayProps) {
+  const variantClassName = variantClassNames[variant];
+  const frozenChildrenRef = useRef(children);
+  return (
+    <RACTooltip
+      offset={4}
+      {...props}
+      className={(props) =>
+        clsx(
+          "bg-subtle text overflow-hidden rounded-md border shadow-md",
+          disableHoverableContent && "pointer-events-none",
+          getTooltipAnimationClassName(props),
+          variantClassName,
+          className,
+        )
+      }
+    >
+      {(values) => {
+        // Freeze the children while the tooltip is animating.
+        if (!values.isEntering && !values.isExiting) {
+          frozenChildrenRef.current = children;
+          return children;
         }
-      >
-        {(values) => {
-          // Freeze the children while the tooltip is animating.
-          if (!values.isEntering && !values.isExiting) {
-            frozenChildrenRef.current = children;
-            return children;
-          }
 
-          return frozenChildrenRef.current;
-        }}
-      </RACTooltip>
-    );
-  },
-);
+        return frozenChildrenRef.current;
+      }}
+    </RACTooltip>
+  );
+}
 
 function TooltipTarget(props: { children: React.ReactElement }) {
-  const triggerRef = React.useRef(null);
+  const triggerRef = useRef(null);
   const { focusableProps } = useFocusable(props.children.props, triggerRef);
 
-  return React.cloneElement(
+  return cloneElement(
     props.children,
     mergeProps(focusableProps, { tabIndex: 0 }, props.children.props, {
       ref: triggerRef,

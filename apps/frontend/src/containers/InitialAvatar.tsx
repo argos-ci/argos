@@ -1,18 +1,18 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 
-export type InitialAvatar = {
+export type InitialAvatarProps = {
+  ref?: React.Ref<HTMLDivElement>;
   className?: string;
   size?: number;
   color: string;
   initial: string;
 };
 
-export const InitialAvatar = forwardRef<any, InitialAvatar>((props, ref) => {
+export function InitialAvatar(props: InitialAvatarProps) {
   const size = props.size ?? 32;
   return (
     <div
-      ref={ref}
+      ref={props.ref}
       className={clsx(
         props.className,
         "flex select-none items-center justify-center rounded-full",
@@ -36,4 +36,4 @@ export const InitialAvatar = forwardRef<any, InitialAvatar>((props, ref) => {
       </svg>
     </div>
   );
-});
+}

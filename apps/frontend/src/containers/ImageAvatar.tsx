@@ -1,18 +1,15 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 
-export const ImageAvatar = forwardRef<
-  HTMLImageElement,
-  {
-    className?: string;
-    size?: number;
-    url: string;
-  }
->((props, ref) => {
+export function ImageAvatar(props: {
+  ref?: React.Ref<HTMLImageElement>;
+  className?: string;
+  size?: number;
+  url: string;
+}) {
   const size = props.size ?? 32;
   return (
     <img
-      ref={ref}
+      ref={props.ref}
       src={props.url}
       alt=""
       className={clsx(props.className, "rounded-full")}
@@ -20,4 +17,4 @@ export const ImageAvatar = forwardRef<
       width={size}
     />
   );
-});
+}

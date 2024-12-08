@@ -1,4 +1,4 @@
-import * as React from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { ApolloCache, Reference, useMutation } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { useNavigate } from "react-router-dom";
@@ -212,7 +212,7 @@ const RemoveContributorFromProjectMutation = graphql(`
   }
 `);
 
-const LeaveProjectDialog = React.memo(
+const LeaveProjectDialog = memo(
   (props: {
     projectId: string;
     userAccountId: string;
@@ -272,7 +272,7 @@ const RemoveFromProjectDialogUserFragment = graphql(`
 
 type RemovedUser = DocumentType<typeof RemoveFromProjectDialogUserFragment>;
 
-const RemoveFromProjectDialog = React.memo(
+const RemoveFromProjectDialog = memo(
   (props: { projectName: string; projectId: string; user: RemovedUser }) => {
     const state = useOverlayTriggerState();
     const [removeFromProject, { loading, error }] = useMutation(
@@ -335,9 +335,7 @@ function ProjectContributorsList(props: {
   readOnly: boolean;
 }) {
   const authPayload = useAssertAuthTokenPayload();
-  const [removedUser, setRemovedUser] = React.useState<RemovedUser | null>(
-    null,
-  );
+  const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
   const removeModal = {
     isOpen: removedUser !== null,
     onOpenChange: (open: boolean) => {
@@ -618,9 +616,9 @@ function TeamContributorsList(props: {
   projectId: string;
   teamAccountId: string;
 }) {
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 300);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const result = useQuery(TeamContributorsQuery, {
     variables: {
       projectId: props.projectId,
@@ -635,7 +633,7 @@ function TeamContributorsList(props: {
   const loading = !data;
   const noContributors = data?.team?.members.edges.length === 0 && !search;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading) {
       invariant(searchInputRef.current);
       searchInputRef.current.focus();

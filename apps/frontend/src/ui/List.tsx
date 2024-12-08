@@ -1,4 +1,4 @@
-import { forwardRef, HTMLAttributes, memo, ReactNode } from "react";
+import { ComponentPropsWithRef, memo, ReactNode } from "react";
 import { clsx } from "clsx";
 import {
   Link as RACLink,
@@ -8,47 +8,47 @@ import {
 import { Button } from "./Button";
 import { Loader, useDelayedVisible } from "./Loader";
 
-export const List = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        role="table"
-        className={clsx(
-          "flex flex-col overflow-auto rounded border",
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
-
-const listRowClassName = "bg-app flex gap-6 border-b last:border-b-0";
-
-export function ListRowLink({ className, ...props }: RACLinkProps) {
+export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
   return (
-    <RACLink
-      className={clsx(
-        listRowClassName,
-        "data-[hovered]:bg-hover data-[focus-visible]:bg-hover focus:outline-none",
-        className,
-      )}
+    <div
       {...props}
+      role="table"
+      className={clsx(
+        "flex flex-col overflow-auto rounded border",
+        props.className,
+      )}
     />
   );
 }
 
-export function ListRow({
-  className,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
+const listRowClassName = "bg-app flex gap-6 border-b last:border-b-0";
+
+export function ListRowLink(props: RACLinkProps) {
   return (
-    <div role="row" className={clsx(listRowClassName, className)} {...props} />
+    <RACLink
+      {...props}
+      className={clsx(
+        listRowClassName,
+        "data-[hovered]:bg-hover data-[focus-visible]:bg-hover focus:outline-none",
+        props.className,
+      )}
+    />
   );
 }
 
-const ListLoader = memo((props: { children: ReactNode }) => {
+type ListRowProps = Omit<ComponentPropsWithRef<"div">, "role">;
+
+export function ListRow(props: ListRowProps) {
+  return (
+    <div
+      {...props}
+      role="row"
+      className={clsx(listRowClassName, props.className)}
+    />
+  );
+}
+
+const ListLoader = memo(function ListLoader(props: { children: ReactNode }) {
   const visible = useDelayedVisible(500);
   if (!visible) {
     return null;
@@ -61,15 +61,14 @@ const ListLoader = memo((props: { children: ReactNode }) => {
   );
 });
 
-export function ListRowLoader({
-  className,
-  children,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
+export function ListRowLoader({ children, ...rest }: ListRowProps) {
   return (
     <ListRow
-      className={clsx(className, "text-low items-center justify-center gap-2")}
-      {...props}
+      {...rest}
+      className={clsx(
+        rest.className,
+        "text-low items-center justify-center gap-2",
+      )}
     >
       <ListLoader>{children}</ListLoader>
     </ListRow>
@@ -90,17 +89,17 @@ export function ListLoadMore(props: { onPress: () => void }) {
   );
 }
 
-export function ListEmpty(props: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+export function ListEmpty(props: ComponentPropsWithRef<"div">) {
   return (
-    <div className={clsx("py-2 font-medium", props.className)}>
-      {props.children}
-    </div>
+    <div {...props} className={clsx("py-2 font-medium", props.className)} />
   );
 }
 
-export function ListTitle(props: { children: React.ReactNode }) {
-  return <h3 className="mb-2 text-sm font-semibold">{props.children}</h3>;
+export function ListTitle(props: ComponentPropsWithRef<"h3">) {
+  return (
+    <h3
+      {...props}
+      className={clsx("mb-2 text-sm font-semibold", props.className)}
+    />
+  );
 }

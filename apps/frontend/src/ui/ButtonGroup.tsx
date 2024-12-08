@@ -1,16 +1,11 @@
-import { forwardRef } from "react";
+import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 
-export const ButtonGroup = forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->((props, ref) => {
-  const { className, ...rest } = props;
+export function ButtonGroup(props: ComponentPropsWithRef<"div">) {
   return (
     <div
-      ref={ref}
-      className={clsx(className, "group/button-group inline-flex")}
-      {...rest}
+      {...props}
+      className={clsx(props.className, "group/button-group inline-flex")}
     />
   );
-});
+}

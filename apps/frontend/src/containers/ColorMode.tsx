@@ -1,4 +1,10 @@
-import * as React from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { invariant } from "@argos/util/invariant";
 
 const STORAGE_KEY = "theme";
@@ -13,7 +19,7 @@ type ColorModeContextType = {
   setColorMode: (colorMode: ColorMode | null) => void;
 };
 
-const ColorModeContext = React.createContext<ColorModeContextType | null>(null);
+const ColorModeContext = createContext<ColorModeContextType | null>(null);
 
 const getStorageTheme = () => {
   const value = window.localStorage.getItem(STORAGE_KEY);
@@ -30,24 +36,19 @@ declare global {
 }
 
 export const ColorModeProvider = (props: { children: React.ReactNode }) => {
-  const [colorMode, setColorMode] = React.useState<ColorMode | null>(
-    getStorageTheme,
-  );
+  const [colorMode, setColorMode] = useState<ColorMode | null>(getStorageTheme);
 
-  const setColorModeAndStore = React.useCallback(
-    (colorMode: ColorMode | null) => {
-      setColorMode(colorMode);
-      if (colorMode) {
-        window.localStorage.setItem(STORAGE_KEY, colorMode);
-      } else {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
-      window.updateColorModeClassName();
-    },
-    [],
-  );
+  const setColorModeAndStore = useCallback((colorMode: ColorMode | null) => {
+    setColorMode(colorMode);
+    if (colorMode) {
+      window.localStorage.setItem(STORAGE_KEY, colorMode);
+    } else {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+    window.updateColorModeClassName();
+  }, []);
 
-  const value = React.useMemo(
+  const value = useMemo(
     () => ({
       colorMode,
       setColorMode: setColorModeAndStore,
@@ -63,7 +64,7 @@ export const ColorModeProvider = (props: { children: React.ReactNode }) => {
 };
 
 export const useColorMode = () => {
-  const context = React.useContext(ColorModeContext);
+  const context = useContext(ColorModeContext);
   invariant(context, "useColorMode must be used within a ColorModeProvider");
   return context;
 };

@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 import {
   ColorSwatchPickerItemProps,
@@ -9,26 +8,26 @@ import {
   ColorSwatchPickerItem as RACColorSwatchPickerItem,
 } from "react-aria-components";
 
-export const ColorSwatchPicker = forwardRef(function ColorSwatchPicker(
-  props: ColorSwatchPickerProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+export function ColorSwatchPicker(
+  props: ColorSwatchPickerProps & {
+    ref?: React.Ref<HTMLDivElement>;
+  },
 ) {
   return (
     <RACColorSwatchPicker
-      ref={ref}
       {...props}
       className={clsx("flex flex-wrap gap-2", props.className)}
     />
   );
-});
+}
 
-export const ColorSwatchPickerItem = forwardRef(function ColorSwatchPickerItem(
-  props: ColorSwatchPickerItemProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+export function ColorSwatchPickerItem(
+  props: ColorSwatchPickerItemProps & {
+    ref?: React.Ref<HTMLDivElement>;
+  },
 ) {
   return (
     <RACColorSwatchPickerItem
-      ref={ref}
       {...props}
       className={clsx(
         "rac-focus relative w-fit rounded outline-none forced-color-adjust-none",
@@ -37,17 +36,17 @@ export const ColorSwatchPickerItem = forwardRef(function ColorSwatchPickerItem(
       )}
     />
   );
-});
+}
 
-export const ColorSwatch = forwardRef(function ColorSwatch(
-  props: ColorSwatchProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+export function ColorSwatch(
+  props: ColorSwatchProps & {
+    ref?: React.Ref<HTMLDivElement>;
+  },
 ) {
   return (
     <RACColorSwatch
-      ref={ref}
       {...props}
       className={clsx("size-6 rounded border", props.className)}
     />
   );
-});
+}

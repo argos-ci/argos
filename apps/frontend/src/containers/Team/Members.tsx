@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Reference, useMutation } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";

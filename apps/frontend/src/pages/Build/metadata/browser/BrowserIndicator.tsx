@@ -1,5 +1,3 @@
-import { HTMLAttributes } from "react";
-
 import { Tooltip } from "@/ui/Tooltip";
 
 import chromeIcon from "./logos/chrome.svg";
@@ -21,7 +19,7 @@ const Icons: Record<string, string> = {
 export function BrowserIndicator({
   browser,
   ...props
-}: HTMLAttributes<HTMLImageElement> & {
+}: Omit<React.ComponentPropsWithRef<"img">, "src" | "alt"> & {
   browser: {
     name: string;
     version: string;

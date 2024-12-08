@@ -1,27 +1,26 @@
-import * as React from "react";
+import { useEffect, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
+import { useObjectRef } from "react-aria";
 
 import { Tooltip } from "./Tooltip";
 
-export function Truncable({
-  className,
-  children,
-  ...props
-}: Omit<React.HTMLAttributes<HTMLDivElement>, "children"> & {
+type TruncableProps = Omit<React.ComponentPropsWithRef<"div">, "children"> & {
   children: React.ReactNode;
-}) {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [isEnabled, setIsEnabled] = React.useState(false);
+};
 
-  React.useEffect(() => {
+export function Truncable({ ref: propRef, children, ...rest }: TruncableProps) {
+  const ref = useObjectRef(propRef);
+  const [isEnabled, setIsEnabled] = useState(false);
+
+  useEffect(() => {
     invariant(ref.current);
     setIsEnabled(ref.current.scrollWidth > ref.current.clientWidth);
-  }, []);
+  }, [ref]);
 
   return (
     <Tooltip content={isEnabled ? children : null}>
-      <div ref={ref} className={clsx("truncate", className)} {...props}>
+      <div ref={ref} {...rest} className={clsx("truncate", rest.className)}>
         {children}
       </div>
     </Tooltip>

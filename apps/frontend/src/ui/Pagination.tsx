@@ -1,30 +1,26 @@
-import * as React from "react";
 import { clsx } from "clsx";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 import { Button, ButtonProps } from "./Button";
 
-function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+function Pagination(props: React.ComponentPropsWithRef<"nav">) {
   return (
     <nav
-      role="navigation"
-      aria-label="pagination"
-      className={clsx("mx-auto flex w-full justify-center", className)}
+      aria-label="Pagination"
       {...props}
+      className={clsx("mx-auto flex w-full justify-center", props.className)}
     />
   );
 }
 
-const PaginationContent = React.forwardRef<
-  HTMLUListElement,
-  React.ComponentProps<"ul">
->(({ className, ...props }, ref) => (
-  <ul
-    ref={ref}
-    className={clsx("flex flex-row items-center gap-1", className)}
-    {...props}
-  />
-));
+function PaginationContent(props: React.ComponentPropsWithRef<"ul">) {
+  return (
+    <ul
+      {...props}
+      className={clsx("flex flex-row items-center gap-1", props.className)}
+    />
+  );
+}
 
 type PaginationButtonItemProps = {
   isActive?: boolean;
@@ -52,15 +48,14 @@ function PaginationButtonItem({
   );
 }
 
-function PaginationPrevious({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationButtonItem>) {
+function PaginationPrevious(
+  props: Omit<PaginationButtonItemProps, "children" | "aria-label">,
+) {
   return (
     <PaginationButtonItem
       aria-label="Go to previous page"
-      className={clsx("gap-1 pl-2.5", className)}
       {...props}
+      className={clsx("gap-1 pl-2.5", props.className)}
     >
       <ChevronLeft className="size-4" />
       <span>Previous</span>
@@ -68,15 +63,14 @@ function PaginationPrevious({
   );
 }
 
-function PaginationNext({
-  className,
-  ...props
-}: React.ComponentProps<typeof PaginationButtonItem>) {
+function PaginationNext(
+  props: Omit<PaginationButtonItemProps, "children" | "aria-label">,
+) {
   return (
     <PaginationButtonItem
       aria-label="Go to next page"
-      className={clsx("gap-1 pr-2.5", className)}
       {...props}
+      className={clsx("gap-1 pl-2.5", props.className)}
     >
       <span>Next</span>
       <ChevronRight className="size-4" />
@@ -84,15 +78,14 @@ function PaginationNext({
   );
 }
 
-function PaginationEllipsis({
-  className,
-  ...props
-}: React.ComponentProps<"span">) {
+function PaginationEllipsis(
+  props: Omit<React.ComponentPropsWithRef<"span">, "children" | "aria-hidden">,
+) {
   return (
     <span
       aria-hidden
-      className={clsx("flex size-9 items-end justify-center", className)}
       {...props}
+      className={clsx("flex size-9 items-end justify-center", props.className)}
     >
       <MoreHorizontal className="size-4" />
       <span className="sr-only">More pages</span>

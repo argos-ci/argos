@@ -1,4 +1,3 @@
-import * as React from "react";
 import { invariant } from "@apollo/client/utilities/globals";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ListIcon, PlusIcon } from "lucide-react";
@@ -26,18 +25,16 @@ const InstallationFragment = graphql(`
   }
 `);
 
-export const GithubInstallationsSelect = React.forwardRef<
-  HTMLButtonElement,
-  {
-    installations: FragmentType<typeof InstallationFragment>[];
-    value: string;
-    setValue: (value: string) => void;
-    disabled?: boolean;
-    onSwitchProvider?: () => void;
-    app: "main" | "light";
-    accountId: string;
-  }
->(function GithubInstallationsSelect(props, ref) {
+export function GithubInstallationsSelect(props: {
+  ref?: React.Ref<HTMLButtonElement>;
+  installations: FragmentType<typeof InstallationFragment>[];
+  value: string;
+  setValue: (value: string) => void;
+  disabled?: boolean;
+  onSwitchProvider?: () => void;
+  app: "main" | "light";
+  accountId: string;
+}) {
   const installations = useFragment(InstallationFragment, props.installations);
   const activeInstallation = (() => {
     if (props.value) {
@@ -64,7 +61,11 @@ export const GithubInstallationsSelect = React.forwardRef<
         props.setValue(String(key));
       }}
     >
-      <SelectButton ref={ref} className="w-full" isDisabled={props.disabled}>
+      <SelectButton
+        ref={props.ref}
+        className="w-full"
+        isDisabled={props.disabled}
+      >
         {activeInstallation ? (
           <div className="flex items-center gap-2">
             <MarkGithubIcon />
@@ -122,4 +123,4 @@ export const GithubInstallationsSelect = React.forwardRef<
       </Popover>
     </Select>
   );
-});
+}

@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { clsx } from "clsx";
 import {
   Label as RACLabel,
@@ -6,23 +5,20 @@ import {
 } from "react-aria-components";
 
 type LabelProps = RACLabelProps & {
+  ref?: React.ForwardedRef<HTMLLabelElement>;
   invalid?: boolean;
 };
 
-export const Label = forwardRef(function Label(
-  props: LabelProps,
-  ref: React.ForwardedRef<HTMLLabelElement>,
-) {
+export function Label(props: LabelProps) {
   const { invalid, ...rest } = props;
   return (
     <RACLabel
-      ref={ref}
       {...rest}
       className={clsx(
         "mb-2 inline-block text-sm font-medium",
         invalid ? "text-danger-low" : "text-low",
-        props.className,
+        rest.className,
       )}
     />
   );
-});
+}

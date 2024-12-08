@@ -1,5 +1,3 @@
-import { forwardRef } from "react";
-
 import { FragmentType, graphql, useFragment } from "@/gql";
 
 import { ImageAvatar } from "./ImageAvatar";
@@ -13,20 +11,18 @@ const AvatarFragment = graphql(`
   }
 `);
 
-export const AccountAvatar = forwardRef<
-  any,
-  {
-    className?: string;
-    size?: number;
-    avatar: FragmentType<typeof AvatarFragment>;
-  }
->((props, ref) => {
+export function AccountAvatar(props: {
+  ref?: React.Ref<HTMLElement>;
+  className?: string;
+  size?: number;
+  avatar: FragmentType<typeof AvatarFragment>;
+}) {
   const avatar = useFragment(AvatarFragment, props.avatar);
   const size = props.size ?? 32;
   if (!avatar.url) {
     return (
       <InitialAvatar
-        ref={ref}
+        ref={props.ref as React.Ref<HTMLDivElement>}
         initial={avatar.initial}
         color={avatar.color}
         size={size}
@@ -35,6 +31,11 @@ export const AccountAvatar = forwardRef<
     );
   }
   return (
-    <ImageAvatar url={avatar.url} size={size} className={props.className} />
+    <ImageAvatar
+      ref={props.ref as React.Ref<HTMLImageElement>}
+      url={avatar.url}
+      size={size}
+      className={props.className}
+    />
   );
-});
+}

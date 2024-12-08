@@ -3,20 +3,13 @@ import clsx from "clsx";
 import { ChevronRightIcon } from "lucide-react";
 import { usePress } from "react-aria";
 
-export function Details({
-  className,
-  ...props
-}: React.DetailedHTMLProps<
-  React.DetailsHTMLAttributes<HTMLDetailsElement>,
-  HTMLDetailsElement
->) {
-  return <details className={clsx("group/details", className)} {...props} />;
+export function Details(props: React.ComponentPropsWithRef<"details">) {
+  return (
+    <details {...props} className={clsx("group/details", props.className)} />
+  );
 }
 
-export function Summary({
-  className,
-  children,
-}: {
+export function Summary(props: {
   className?: string;
   children: React.ReactNode;
 }) {
@@ -43,7 +36,7 @@ export function Summary({
       ref={ref}
       className={clsx(
         "hover:bg-hover data-[pressed]:bg-active -mx-1 flex cursor-default list-none items-center gap-1.5 rounded px-1 py-0.5 font-medium transition group-open/details:mb-2",
-        className,
+        props.className,
       )}
       data-pressed={isPressed ? "" : undefined}
       {...pressProps}
@@ -53,7 +46,7 @@ export function Summary({
       }}
     >
       <ChevronRightIcon className="size-[1em] transition group-open/details:rotate-90" />
-      {children}
+      {props.children}
     </summary>
   );
 }
