@@ -76,10 +76,16 @@ export const installAppRouter = async (app: express.Application) => {
 
   router.use(
     "/graphql",
-    // Investigate "stream is not readable" error
+    // Handle cases where the request stream is not readable
     (req, _res, next) => {
       if (!req.readable) {
-        throw boom(500, "Request is not readable");
+        console.error(
+          "Request stream is not readable. Possible reasons: client closed connection, malformed request, or stream already consumed.",
+        );
+        throw boom(
+          400,
+          "Request could not be processed. Please check your connection or the data being sent.",
+        );
       }
       next();
     },
