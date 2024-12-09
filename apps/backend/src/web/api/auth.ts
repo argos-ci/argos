@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
 import axios from "axios";
-import cors from "cors";
 import express, { Router } from "express";
 import { z } from "zod";
 
@@ -31,7 +30,9 @@ import {
 } from "@/google/index.js";
 
 import { auth } from "../middlewares/auth.js";
-import { asyncHandler, boom } from "../util.js";
+import { allowApp } from "../middlewares/cors.js";
+import { allowOnlyPost } from "../middlewares/methods.js";
+import { asyncHandler } from "../util.js";
 
 const router: Router = Router();
 
@@ -64,13 +65,11 @@ function withOAuth(
   ) => Promise<Account>,
 ): express.RequestHandler[] {
   return [
-    cors({ origin: config.get("server.url") }),
+    allowApp,
+    allowOnlyPost,
     auth,
     express.json(),
     asyncHandler(async (req, res) => {
-      if (req.method !== "POST") {
-        throw boom(405, "Method Not Allowed");
-      }
       try {
         const parsed = OAuthBodySchema.parse(req.body);
         const account = await retrieveAccount(parsed, req.auth ?? null);

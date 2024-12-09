@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/react";
-import axios, { isAxiosError } from "axios";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 
-import config from "@/config";
 import { useAuth, useIsLoggedIn } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";
 import { UniversalNavigate } from "@/containers/Redirect";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
+import { APIError, fetchApi } from "@/util/api";
 import {
   AuthProvider,
   checkIsAuthProvider,
@@ -19,13 +18,18 @@ import {
 
 import { NotFound } from "./NotFound";
 
-const api = axios.create({
-  baseURL: config.get("api.baseUrl"),
-});
-
 function extractErrorMessage(error: unknown) {
-  if (isAxiosError(error) && error.response?.data?.error?.message) {
-    return error.response.data.error.message;
+  if (
+    error instanceof APIError &&
+    error.data &&
+    typeof error.data === "object" &&
+    "error" in error.data &&
+    error.data.error &&
+    typeof error.data.error === "object" &&
+    "message" in error.data.error &&
+    typeof error.data.error.message === "string"
+  ) {
+    return error.data.error.message;
   }
   if (error instanceof Error) {
     return error.message;
@@ -56,18 +60,12 @@ function AuthCallback(props: { provider: AuthProvider }) {
       return;
     }
 
-    api
-      .post(
-        `/auth/${provider}`,
-        { code },
-        {
-          headers: {
-            Authorization: initialToken ? `Bearer ${initialToken}` : undefined,
-          },
-        },
-      )
-      .then((result) => {
-        setToken(result.data.jwt);
+    fetchApi<{ jwt: string }>(`/auth/${provider}`, {
+      data: { code },
+      token: initialToken ?? undefined,
+    })
+      .then((data) => {
+        setToken(data.jwt);
       })
       .catch((error) => {
         setAuthError(error);

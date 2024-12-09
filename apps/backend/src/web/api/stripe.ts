@@ -1,6 +1,5 @@
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
-import cors from "cors";
 import express from "express";
 
 import config from "@/config/index.js";
@@ -15,6 +14,8 @@ import {
 import type { Stripe } from "@/stripe/index.js";
 
 import { auth } from "../middlewares/auth.js";
+import { allowApp } from "../middlewares/cors.js";
+import { allowOnlyPost } from "../middlewares/methods.js";
 import { asyncHandler, boom } from "../util.js";
 
 const router: express.Router = express.Router();
@@ -54,13 +55,11 @@ router.post(
 
 router.use(
   "/stripe/create-customer-portal-session",
-  cors({ origin: config.get("server.url") }),
+  allowApp,
+  allowOnlyPost,
   auth,
   express.json(),
   asyncHandler(async (req, res) => {
-    if (req.method !== "POST") {
-      throw boom(405, "Method Not Allowed");
-    }
     try {
       const { stripeCustomerId, accountId } = req.body;
       const user = req.auth?.user;
@@ -101,13 +100,11 @@ router.use(
 
 router.use(
   "/stripe/create-checkout-session",
-  cors({ origin: config.get("server.url") }),
+  allowApp,
+  allowOnlyPost,
   auth,
   express.json(),
   asyncHandler(async (req, res) => {
-    if (req.method !== "POST") {
-      throw boom(405, "Method Not Allowed");
-    }
     try {
       const { accountId, successUrl, cancelUrl } = req.body;
       invariant(req.auth, "Unauthenticated");
