@@ -38,10 +38,11 @@ export const subdomain =
       // Allow localhost for testing
       (config.get("env") === "test" && req.hostname === "localhost")
     ) {
-      return requestHandler(...args);
-    } else {
-      return next();
+      requestHandler(...args);
+      return;
     }
+
+    next();
   };
 
 type HttpErrorOptions = ErrorOptions & {
