@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 
-import config from "@/config";
+import { config } from "@/config";
 
 type OAuthState = {
   nonce: string;
@@ -56,9 +56,9 @@ function createOAuthState(input: {
 function getLoginUrl(provider: AuthProvider): string {
   switch (provider) {
     case "github":
-      return config.get("github.loginUrl");
+      return config.github.loginUrl;
     case "gitlab":
-      return config.get("gitlab.loginUrl");
+      return config.gitlab.loginUrl;
     case "google":
       return new URL("/auth/google/login", window.location.origin).toString();
     default:

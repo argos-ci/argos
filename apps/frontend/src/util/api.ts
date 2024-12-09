@@ -1,4 +1,4 @@
-import config from "@/config";
+import { config } from "@/config";
 
 export class APIError<TData> extends Error {
   public readonly status: number;
@@ -19,11 +19,7 @@ export async function fetchApi<TData, TErrorData = unknown>(
   pathname: string,
   options: { token?: string | undefined; data: unknown },
 ): Promise<TData> {
-  const apiBaseUrl = config.get("api.baseUrl");
-  if (!apiBaseUrl) {
-    throw new Error("api.baseUrl is not set");
-  }
-  const url = new URL(pathname, apiBaseUrl);
+  const url = new URL(pathname, config.api.baseUrl);
   const headers = new Headers();
   headers.append("Content-Type", "application/json");
   if (options.token) {

@@ -12,6 +12,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "3.11.10",
+    "@argos/config-types": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@argos/util": "workspace:*",
     "@eslint/js": "^9.16.0",

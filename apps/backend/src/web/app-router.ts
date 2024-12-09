@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import type { ClientConfig } from "@argos/config-types";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
@@ -27,43 +28,41 @@ export const installAppRouter = async (app: express.Application) => {
 
   router.use(limiter);
 
+  const clientConfig: ClientConfig = {
+    sentry: {
+      environment: config.get("sentry.environment"),
+      clientDsn: config.get("sentry.clientDsn"),
+    },
+    releaseVersion: config.get("releaseVersion"),
+    contactEmail: config.get("contactEmail"),
+    github: {
+      appUrl: config.get("github.appUrl"),
+      clientId: config.get("github.clientId"),
+      loginUrl: config.get("github.loginUrl"),
+      marketplaceUrl: config.get("github.marketplaceUrl"),
+    },
+    githubLight: {
+      appUrl: config.get("githubLight.appUrl"),
+    },
+    gitlab: {
+      loginUrl: config.get("gitlab.loginUrl"),
+    },
+    stripe: {
+      pricingTableId: config.get("stripe.pricingTableId"),
+      publishableKey: config.get("stripe.publishableKey"),
+    },
+    server: {
+      url: config.get("server.url"),
+    },
+    api: {
+      baseUrl: config.get("api.baseUrl"),
+    },
+  };
+
   router.get("/config.js", (_req, res) => {
     res.setHeader("Cache-Control", "public, max-age=0");
     res.setHeader("Content-Type", "application/javascript");
-    res.send(
-      `window.clientData = ${JSON.stringify({
-        config: {
-          sentry: {
-            environment: config.get("sentry.environment"),
-            clientDsn: config.get("sentry.clientDsn"),
-          },
-          releaseVersion: config.get("releaseVersion"),
-          contactEmail: config.get("contactEmail"),
-          github: {
-            appUrl: config.get("github.appUrl"),
-            clientId: config.get("github.clientId"),
-            loginUrl: config.get("github.loginUrl"),
-            marketplaceUrl: config.get("github.marketplaceUrl"),
-          },
-          githubLight: {
-            appUrl: config.get("githubLight.appUrl"),
-          },
-          gitlab: {
-            loginUrl: config.get("gitlab.loginUrl"),
-          },
-          stripe: {
-            pricingTableId: config.get("stripe.pricingTableId"),
-            publishableKey: config.get("stripe.publishableKey"),
-          },
-          server: {
-            url: config.get("server.url"),
-          },
-          api: {
-            baseUrl: config.get("api.baseUrl"),
-          },
-        },
-      })}`,
-    );
+    res.send(`window.clientData = ${JSON.stringify({ config: clientConfig })}`);
   });
 
   const distDir = join(import.meta.dirname, "../../../frontend/dist");

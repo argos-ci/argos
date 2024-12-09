@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 
-import config from "@/config";
+import { config } from "@/config";
 import { JWTData, useAuthTokenPayload } from "@/containers/Auth";
 
 const RedirectToWebsite = () => {
   useEffect(() => {
-    window.location.replace(new URL("/login", config.get("server.url")).href);
+    window.location.replace(new URL("/login", config.server.url).href);
   }, []);
   return null;
 };

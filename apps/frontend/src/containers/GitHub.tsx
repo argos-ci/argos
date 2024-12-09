@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
-import config from "@/config";
+import { config } from "@/config";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import { getOAuthState, getOAuthURL } from "@/util/oauth";
 
@@ -15,9 +15,9 @@ function getGitHubAppInstallBaseURL(app: GitHubAppType) {
   const baseURL = (() => {
     switch (app) {
       case "main":
-        return new URL(config.get("github.appUrl"));
+        return new URL(config.github.appUrl);
       case "light":
-        return new URL(config.get("githubLight.appUrl"));
+        return new URL(config.githubLight.appUrl);
       default:
         assertNever(app);
     }
