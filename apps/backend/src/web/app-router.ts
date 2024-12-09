@@ -11,7 +11,7 @@ import { createRedisStore } from "@/util/rate-limit.js";
 
 import { emailPreview } from "../email/express.js";
 import { auth } from "./middlewares/auth.js";
-import { subdomain } from "./util.js";
+import { boom, subdomain } from "./util.js";
 
 export const installAppRouter = async (app: express.Application) => {
   const router = Router();
@@ -73,7 +73,18 @@ export const installAppRouter = async (app: express.Application) => {
 
   await apolloServer.start();
 
-  router.use("/graphql", express.json(), createApolloMiddleware());
+  router.use(
+    "/graphql",
+    // Investigate "stream is not readable" error
+    (req, _res, next) => {
+      if (!req.readable) {
+        throw boom(500, "Request is not readable");
+      }
+      next();
+    },
+    express.json(),
+    createApolloMiddleware(),
+  );
 
   router.use(auth);
 
