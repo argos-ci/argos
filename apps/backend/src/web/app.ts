@@ -58,11 +58,18 @@ export const createApp = async (): Promise<express.Express> => {
   // Redirect from http to https
   if (config.get("server.secure") && config.get("server.httpsRedirect")) {
     app.use((req, res, next) => {
-      if (req.headers["x-forwarded-proto"] !== "https") {
-        res.redirect(`https://${req.hostname}${req.url}`);
-      } else {
-        next(); /* Continue to other routes if we're not redirecting */
+      const proto =
+        req.headers["x-forwarded-proto"] ||
+        req.headers["x-forwarded-protocol"] ||
+        req.protocol;
+
+      if (proto !== "https") {
+        const host = req.headers.host || req.hostname;
+        const secureUrl = `https://${host}${req.originalUrl}`;
+        return res.redirect(302, secureUrl);
       }
+
+      next();
     });
   }
 
@@ -123,8 +130,8 @@ export const createApp = async (): Promise<express.Express> => {
     }),
   );
 
-  installApiRouter(app);
   await installAppRouter(app);
+  installApiRouter(app);
 
   Sentry.setupExpressErrorHandler(app);
   app.use(jsonErrorHandler());

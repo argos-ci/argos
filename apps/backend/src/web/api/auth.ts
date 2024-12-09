@@ -37,9 +37,6 @@ const router: Router = Router();
 
 export default router;
 
-// @TODO be more restrictive on cors
-router.use(cors());
-
 function createJWTFromAccount(account: Account) {
   return createJWT({
     version: 1,
@@ -67,6 +64,7 @@ function withOAuth(
   ) => Promise<Account>,
 ): express.RequestHandler[] {
   return [
+    cors(),
     auth,
     express.json(),
     asyncHandler(async (req, res) => {

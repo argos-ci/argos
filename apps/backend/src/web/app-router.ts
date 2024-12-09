@@ -24,7 +24,7 @@ export const installAppRouter = async (app: express.Application) => {
     store: createRedisStore("app"),
   });
 
-  app.use(limiter);
+  router.use(limiter);
 
   router.get("/config.js", (_req, res) => {
     res.setHeader("Cache-Control", "public, max-age=0");
