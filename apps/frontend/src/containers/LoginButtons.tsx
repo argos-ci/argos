@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import { useLocation } from "react-router-dom";
 
-import config from "@/config";
+import { config } from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
 import { GoogleLoginButton } from "@/containers/Google";
@@ -44,7 +44,7 @@ export function LoginButtons(props: {
       </div>
       <p className="text-low mt-6 text-left text-sm">
         Need another login provider?{" "}
-        <Link href={`mailto:${config.get("contactEmail")}`} target="_blank">
+        <Link href={`mailto:${config.contactEmail}`} target="_blank">
           Contact us
         </Link>
       </p>

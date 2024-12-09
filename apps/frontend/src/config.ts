@@ -1,31 +1,7 @@
-// Taken from convict source code.
-function walk(obj: any, path: string, initializeMissing = false) {
-  let newObj = obj;
+import type { ClientConfig } from "@argos/config-types";
 
-  if (path) {
-    const ar = path.split(".");
-    while (ar.length) {
-      const k = ar.shift();
-      if (!k) {
-        continue;
-      }
-      if (initializeMissing && obj[k] == null) {
-        newObj[k] = {};
-        newObj = newObj[k];
-      } else if (k in newObj) {
-        newObj = newObj[k];
-      } else {
-        throw new Error(`cannot find configuration param '${path}'`);
-      }
-    }
-  }
-
-  return newObj;
+const clientData = (window as any).clientData;
+if (!clientData) {
+  throw new Error("Configuration is not available, please reload the page");
 }
-
-export default {
-  get: (key: string): any =>
-    (window as any).clientData
-      ? walk((window as any).clientData.config, key)
-      : null,
-};
+export const config: ClientConfig = clientData.config;

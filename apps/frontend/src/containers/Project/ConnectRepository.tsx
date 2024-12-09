@@ -5,7 +5,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useDebounce } from "use-debounce";
 
-import config from "@/config";
+import { config } from "@/config";
 import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelect";
 import { GithubRepositoryList } from "@/containers/GithubRepositoryList";
 import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
@@ -434,7 +434,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
           </div>
           <div>
             Need another provider?{" "}
-            <Link href={`mailto:${config.get("contactEmail")}`} target="_blank">
+            <Link href={`mailto:${config.contactEmail}`} target="_blank">
               Contact us
             </Link>
           </div>

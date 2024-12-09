@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import config from "@/config";
+import { config } from "@/config";
 import {
   Dialog,
   DialogBody,
@@ -51,10 +51,7 @@ export function CheckoutStatusDialog() {
               </DialogText>
               <DialogText>
                 If you think this is a mistake, please{" "}
-                <Link
-                  href={`mailto:${config.get("contactEmail")}`}
-                  target="_blank"
-                >
+                <Link href={`mailto:${config.contactEmail}`} target="_blank">
                   contact support
                 </Link>
                 .

@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { PlusCircleIcon } from "lucide-react";
 import moment from "moment";
 
-import config from "@/config";
+import { config } from "@/config";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import {
@@ -28,7 +28,7 @@ import { Time } from "@/ui/Time";
 
 import { AccountPlanChip } from "./AccountPlanChip";
 
-const contactHref = `mailto:${config.get("contactEmail")}`;
+const contactHref = `mailto:${config.contactEmail}`;
 
 const PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
@@ -253,7 +253,7 @@ function ManageSubscriptionButton({
   switch (provider) {
     case AccountSubscriptionProvider.Github:
       return (
-        <Link href={config.get("github.marketplaceUrl")} target="_blank">
+        <Link href={config.github.marketplaceUrl} target="_blank">
           {children}
         </Link>
       );

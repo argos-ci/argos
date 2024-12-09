@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import config from "@/config";
+import { config } from "@/config";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
@@ -95,10 +95,7 @@ export const AccountGitLab = (props: {
                   Proxy URL used to connect to your GitLab on-premise instance.
                   If you have any issue with your GitLab on-premise
                   configuration, please contact us{" "}
-                  <Link
-                    href={`mailto:${config.get("contactEmail")}`}
-                    target="_blank"
-                  >
+                  <Link href={`mailto:${config.contactEmail}`} target="_blank">
                     by email
                   </Link>
                   .

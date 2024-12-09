@@ -3,7 +3,7 @@ import { MarkGithubIcon } from "@primer/octicons-react";
 import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
-import config from "@/config";
+import { config } from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { GitHubAuth_AccountFragment } from "@/gql/graphql";
@@ -86,7 +86,7 @@ export function GitHubAuth(props: {
             <Popover>
               <Menu aria-label="GitHub options">
                 <MenuItem
-                  href={`https://github.com/settings/connections/applications/${config.get("github.clientId")}`}
+                  href={`https://github.com/settings/connections/applications/${config.github.clientId}`}
                   target="_blank"
                 >
                   Manage on github.com

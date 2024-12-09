@@ -276,6 +276,9 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(zod@3.23.8)
     devDependencies:
+      '@argos/config-types':
+        specifier: workspace:*
+        version: link:../../packages/config-types
       '@types/amqplib':
         specifier: ^0.10.6
         version: 0.10.6
@@ -336,6 +339,9 @@ importers:
       '@apollo/client':
         specifier: 3.11.10
         version: 3.11.10(@types/react@19.0.1)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@argos/config-types':
+        specifier: workspace:*
+        version: link:../../packages/config-types
       '@argos/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -465,6 +471,8 @@ importers:
       vite:
         specifier: ^6.0.3
         version: 6.0.3(@types/node@22.10.1)(jiti@2.4.1)(yaml@2.6.1)
+
+  packages/config-types: {}
 
   packages/tsconfig:
     dependencies:
