@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import express, { Router, static as serveStatic } from "express";
 import { rateLimit } from "express-rate-limit";
+import helmet from "helmet";
 import { z } from "zod";
 
 import config from "@/config/index.js";
@@ -130,9 +131,77 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
+  const cspReportUri = getCSPReportURI();
+
+  if (cspReportUri) {
+    app.use((_req, res, next) => {
+      res.setHeader(
+        "Report-To",
+        JSON.stringify({
+          group: "csp-endpoint",
+          max_age: 10886400,
+          endpoints: [{ url: cspReportUri }],
+        }),
+      );
+      next();
+    });
+  }
+
+  app.use(
+    helmet({
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+      contentSecurityPolicy: {
+        directives: {
+          "default-src": ["'self'"],
+          "img-src": [
+            "'self'",
+            "data:",
+            "https://argos-ci.com",
+            // TwicPics images
+            "https://argos.twic.pics",
+            // S3 images
+            "https://argos-ci-production.s3.eu-west-1.amazonaws.com",
+            // GitHub and GitLab avatars
+            "https://github.com",
+            "https://avatars.githubusercontent.com",
+            "https://gitlab.com",
+            "https://secure.gravatar.com",
+          ],
+          "script-src": [
+            "'self'",
+            // Script to update color classes
+            "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
+            ...config.get("csp.scriptSrc"),
+          ],
+          "connect-src": ["'self'", "*"],
+          ...(cspReportUri
+            ? { "report-to": ["csp-endpoint"], "report-uri": [cspReportUri] }
+            : {}),
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: false,
+      crossOriginOpenerPolicy: false,
+      frameguard: {
+        action: "deny", // Disallow embedded iframe
+      },
+    }),
+  );
+
   router.get("*", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));
   });
 
   app.use(subdomain(router, "app"));
 };
+
+function getCSPReportURI(): null | string {
+  const baseURI = config.get("sentry.cspReportUri");
+  if (!baseURI) {
+    return null;
+  }
+  const url = new URL(baseURI);
+  url.searchParams.set("sentry_environment", config.get("sentry.environment"));
+  url.searchParams.set("sentry_release", config.get("releaseVersion"));
+  return url.toString();
+}

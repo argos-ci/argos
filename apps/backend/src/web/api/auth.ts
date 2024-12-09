@@ -31,7 +31,7 @@ import {
 } from "@/google/index.js";
 
 import { auth } from "../middlewares/auth.js";
-import { asyncHandler } from "../util.js";
+import { asyncHandler, boom } from "../util.js";
 
 const router: Router = Router();
 
@@ -64,10 +64,13 @@ function withOAuth(
   ) => Promise<Account>,
 ): express.RequestHandler[] {
   return [
-    cors(),
+    cors({ origin: config.get("server.url") }),
     auth,
     express.json(),
     asyncHandler(async (req, res) => {
+      if (req.method !== "POST") {
+        throw boom(405, "Method Not Allowed");
+      }
       try {
         const parsed = OAuthBodySchema.parse(req.body);
         const account = await retrieveAccount(parsed, req.auth ?? null);
@@ -83,7 +86,7 @@ function withOAuth(
   ];
 }
 
-router.post(
+router.use(
   "/auth/github",
   withOAuth(async (body, auth) => {
     const result = await retrieveGithubOAuthToken({
@@ -119,7 +122,7 @@ router.post(
   }),
 );
 
-router.post(
+router.use(
   "/auth/gitlab",
   withOAuth(async (body, auth) => {
     const response = await retrieveGitlabOAuthToken({
@@ -145,7 +148,7 @@ router.post(
   }),
 );
 
-router.post(
+router.use(
   "/auth/google",
   withOAuth(async (body, auth) => {
     const client = await getGoogleAuthenticatedClient({
