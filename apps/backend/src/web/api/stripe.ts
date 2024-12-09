@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
+import cors from "cors";
 import express from "express";
 
 import config from "@/config/index.js";
@@ -51,11 +52,15 @@ router.post(
   }),
 );
 
-router.post(
+router.use(
   "/stripe/create-customer-portal-session",
+  cors({ origin: config.get("server.url") }),
   auth,
   express.json(),
   asyncHandler(async (req, res) => {
+    if (req.method !== "POST") {
+      throw boom(405, "Method Not Allowed");
+    }
     try {
       const { stripeCustomerId, accountId } = req.body;
       const user = req.auth?.user;
@@ -94,11 +99,15 @@ router.post(
   }),
 );
 
-router.post(
+router.use(
   "/stripe/create-checkout-session",
+  cors({ origin: config.get("server.url") }),
   auth,
   express.json(),
   asyncHandler(async (req, res) => {
+    if (req.method !== "POST") {
+      throw boom(405, "Method Not Allowed");
+    }
     try {
       const { accountId, successUrl, cancelUrl } = req.body;
       invariant(req.auth, "Unauthenticated");
