@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import config from "@/config";
 import { useAssertAuthToken } from "@/containers/Auth";
+import { fetchApi } from "@/util/api";
 
 import { Button, ButtonProps } from "./Button";
 import { Link } from "./Link";
@@ -16,19 +16,13 @@ async function getStripePortalLink({
   stripeCustomerId: string;
   accountId: string;
 }) {
-  const response = await fetch(
-    config.get("api.baseUrl") + "/stripe/create-customer-portal-session",
+  return fetchApi<{ sessionUrl: string }>(
+    "/stripe/create-customer-portal-session",
     {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ stripeCustomerId, accountId }),
+      token,
+      data: { stripeCustomerId, accountId },
     },
   );
-  const json = await response.json();
-  return json;
 }
 const useRedirectToStripePortal = () => {
   const token = useAssertAuthToken();
@@ -101,19 +95,10 @@ async function getCheckoutSessionLink({
   successUrl: string;
   cancelUrl: string;
 }) {
-  const response = await fetch(
-    config.get("api.baseUrl") + "/stripe/create-checkout-session",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(props),
-    },
-  );
-  const json = await response.json();
-  return json;
+  return fetchApi<{ sessionUrl: string }>("/stripe/create-checkout-session", {
+    token,
+    data: props,
+  });
 }
 
 const useRedirectToStripeCheckout = () => {
