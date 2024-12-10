@@ -246,7 +246,8 @@ export async function getOrCreateUserAccountFromGhAccount(
     }
   }
 
-  const slug = await resolveAccountSlug(ghAccount.login.toLowerCase());
+  const baseSlug = slugify(ghAccount.login.toLowerCase());
+  const slug = await resolveAccountSlug(baseSlug);
 
   const account = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({ email });
