@@ -1,11 +1,26 @@
 import { config } from "@/config";
 
+function extractErrorMessageFromData(data: unknown) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "error" in data &&
+    data.error &&
+    typeof data.error === "object" &&
+    "message" in data.error &&
+    typeof data.error.message === "string"
+  ) {
+    return data.error.message;
+  }
+  return "Unknown API error";
+}
+
 export class APIError<TData> extends Error {
   public readonly status: number;
   public readonly data: unknown;
 
-  constructor(message: string, options: { status: number; data: TData }) {
-    super(message);
+  constructor(options: { status: number; data: TData }) {
+    super(extractErrorMessageFromData(options.data));
     this.name = "APIError";
     this.status = options.status;
     this.data = options.data;
@@ -32,7 +47,7 @@ export async function fetchApi<TData, TErrorData = unknown>(
   });
   const json = await result.json();
   if (!result.ok) {
-    throw new APIError<TErrorData>("API request failed", {
+    throw new APIError<TErrorData>({
       status: result.status,
       data: json,
     });
