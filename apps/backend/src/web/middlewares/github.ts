@@ -39,9 +39,10 @@ const mainMiddleware = createNodeMiddleware(
     app: "main",
     secret: config.get("github.webhookSecret"),
   }),
+  { path: "/github/event-handler" },
 );
 
-router.post("/github/event-handler", (req, res, next) => {
+router.use((req, res, next) => {
   mainMiddleware(req, res, next);
 });
 
@@ -50,9 +51,10 @@ const lightMiddleware = createNodeMiddleware(
     app: "light",
     secret: config.get("githubLight.webhookSecret"),
   }),
+  { path: "/github-light/event-handler" },
 );
 
-router.post("/github-light/event-handler", (req, res, next) => {
+router.use((req, res, next) => {
   lightMiddleware(req, res, next);
 });
 
