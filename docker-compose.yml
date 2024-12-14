@@ -17,7 +17,7 @@ services:
 
   rabbitmq:
     # Last time I have checked, production is running 3.12.6
-    image: rabbitmq:3-alpine
+    image: rabbitmq:4-alpine
     ports:
       - "15672:15672"
       - "5672:5672"
