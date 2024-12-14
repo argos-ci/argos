@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import axios from "axios";
 import { z } from "zod";
 
@@ -13,20 +14,36 @@ export async function retrieveOAuthToken(args: {
   code: string;
   redirectUri: string;
 }) {
-  const result = await axios.post(
-    "https://github.com/login/oauth/access_token",
-    {
+  return Sentry.withScope(async (scope) => {
+    const body = {
       client_id: args.clientId,
       client_secret: args.clientSecret,
       code: args.code,
       redirect_uri: args.redirectUri,
-    },
-    {
-      headers: {
-        accept: "application/json",
-      },
-    },
-  );
+    };
 
-  return RetrieveTokenResponseSchema.parse(result.data);
+    scope.setExtra("body", body);
+
+    const result = await axios.post(
+      "https://github.com/login/oauth/access_token",
+      body,
+      {
+        headers: {
+          accept: "application/json",
+        },
+      },
+    );
+
+    try {
+      return RetrieveTokenResponseSchema.parse(result.data);
+    } catch (error) {
+      scope.setExtra("errorResponse", {
+        status: result.status,
+        data: result.data,
+      });
+      throw new Error("Failed to parse GitHub OAuth response", {
+        cause: error,
+      });
+    }
+  });
 }
