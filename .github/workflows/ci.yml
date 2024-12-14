@@ -97,7 +97,7 @@ jobs:
         #   --health-retries 5
 
       rabbit:
-        image: rabbitmq:3-alpine
+        image: rabbitmq:4-alpine
         ports:
           - 5672:5672
         # Speed up initialization by disabling health checks
