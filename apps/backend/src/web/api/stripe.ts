@@ -43,7 +43,10 @@ router.post(
     try {
       await handleStripeEvent(event);
     } catch (error) {
-      Sentry.setContext("stripeEvent", event);
+      Sentry.setContext(
+        "stripeEvent",
+        event as unknown as Record<string, unknown>,
+      );
 
       throw boom(500, "An error occurred while handling Stripe event.", {
         cause: error,
