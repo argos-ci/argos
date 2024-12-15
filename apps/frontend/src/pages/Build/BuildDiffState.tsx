@@ -1,5 +1,6 @@
 import {
   createContext,
+  startTransition,
   use,
   useCallback,
   useDeferredValue,
@@ -590,9 +591,11 @@ export function BuildDiffProvider(props: {
         { replace: true },
       );
       if (scroll) {
-        setScrolledDiff(diff);
-        const group = getDiffGroup(diff)!;
-        toggleGroup(group.name, true);
+        startTransition(() => {
+          setScrolledDiff(diff);
+          const group = getDiffGroup(diff)!;
+          toggleGroup(group.name, true);
+        });
       }
     },
     [

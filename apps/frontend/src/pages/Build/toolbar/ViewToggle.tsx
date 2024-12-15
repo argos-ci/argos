@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, startTransition } from "react";
 import { ColumnsIcon } from "lucide-react";
 
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -14,14 +14,18 @@ export const ViewToggle = memo(() => {
   const showBaselineHotkey = useBuildHotkey(
     "showBaseline",
     () => {
-      setViewMode("baseline");
+      startTransition(() => {
+        setViewMode("baseline");
+      });
     },
     { preventDefault: true },
   );
   const showChangesHotkey = useBuildHotkey(
     "showChanges",
     () => {
-      setViewMode("changes");
+      startTransition(() => {
+        setViewMode("changes");
+      });
     },
     { preventDefault: true },
   );
@@ -49,7 +53,9 @@ function ViewButton(props: {
 }) {
   const { setViewMode, viewMode } = useBuildDiffViewModeState();
   const activate = () => {
-    setViewMode(props.viewMode);
+    startTransition(() => {
+      setViewMode(props.viewMode);
+    });
   };
   return (
     <HotkeyTooltip

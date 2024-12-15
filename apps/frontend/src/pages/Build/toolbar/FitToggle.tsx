@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, startTransition } from "react";
 import { ShrinkIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
@@ -12,7 +12,9 @@ export const FitToggle = memo(() => {
   const { contained, setContained } = useBuildDiffFitState();
   const { reset } = useZoomerSyncContext();
   const toggle = () => {
-    setContained((contained) => !contained);
+    startTransition(() => {
+      setContained((contained) => !contained);
+    });
     reset();
   };
   const hotkey = useBuildHotkey("toggleDiffFit", toggle, {

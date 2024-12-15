@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, startTransition, useEffect, useRef } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { ProjectPermission } from "@/gql/graphql";
@@ -42,9 +42,11 @@ function useEvaluationToggle(props: {
   }, [status, acknowledgeMarkedDiff, target, previous, diffId]);
   const toggle = useEventCallback(() => {
     toggledRef.current = true;
-    setStatus(
-      status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending,
-    );
+    startTransition(() => {
+      setStatus(
+        status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending,
+      );
+    });
   });
   const isActive = status === target;
   return [isActive, toggle] as const;
