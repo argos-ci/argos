@@ -76,7 +76,7 @@ function MenuContent() {
   const userAccounts = [data.me];
   const teamAccounts = data.me.teams;
   return (
-    <>
+    <Menu>
       <MenuSection>
         <MenuTitle>Personal</MenuTitle>
         <AccountMenuItems accounts={userAccounts} />
@@ -91,7 +91,7 @@ function MenuContent() {
           Create a Team
         </MenuItem>
       </MenuSection>
-    </>
+    </Menu>
   );
 }
 
@@ -100,30 +100,28 @@ export function AccountBreadcrumbMenu() {
     <MenuTrigger>
       <BreadcrumbMenuButton />
       <Popover placement="bottom start">
-        <Menu>
-          <Suspense
-            fallback={
-              <>
-                <MenuSection>
-                  <MenuTitle>Personal</MenuTitle>
-                  <MenuLoader />
-                </MenuSection>
-                <MenuSection>
-                  <MenuTitle>Teams</MenuTitle>
-                  <MenuLoader />
-                  <MenuItem href="/teams/new">
-                    <MenuItemIcon>
-                      <PlusCircleIcon />
-                    </MenuItemIcon>
-                    Create a Team
-                  </MenuItem>
-                </MenuSection>
-              </>
-            }
-          >
-            <MenuContent />
-          </Suspense>
-        </Menu>
+        <Suspense
+          fallback={
+            <Menu>
+              <MenuSection>
+                <MenuTitle>Personal</MenuTitle>
+                <MenuLoader />
+              </MenuSection>
+              <MenuSection>
+                <MenuTitle>Teams</MenuTitle>
+                <MenuLoader />
+                <MenuItem href="/teams/new">
+                  <MenuItemIcon>
+                    <PlusCircleIcon />
+                  </MenuItemIcon>
+                  Create a Team
+                </MenuItem>
+              </MenuSection>
+            </Menu>
+          }
+        >
+          <MenuContent />
+        </Suspense>
       </Popover>
     </MenuTrigger>
   );
