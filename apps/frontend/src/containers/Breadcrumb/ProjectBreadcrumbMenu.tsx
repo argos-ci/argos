@@ -77,20 +77,35 @@ export function ProjectBreadcrumbMenu() {
     <MenuTrigger>
       <BreadcrumbMenuButton />
       <Popover placement="bottom start">
-        <Menu>
-          <MenuSection>
-            <MenuTitle>{title}</MenuTitle>
-            <Suspense fallback={<MenuLoader />}>
+        <Suspense
+          fallback={
+            <Menu>
+              <MenuSection>
+                <MenuTitle>{title}</MenuTitle>
+                <MenuLoader />
+              </MenuSection>
+              <MenuItem href={`/${accountSlug}/new`}>
+                <MenuItemIcon>
+                  <PlusCircleIcon />
+                </MenuItemIcon>
+                Create a Project
+              </MenuItem>
+            </Menu>
+          }
+        >
+          <Menu>
+            <MenuSection>
+              <MenuTitle>{title}</MenuTitle>
               <Projects accountSlug={accountSlug} />
-            </Suspense>
-          </MenuSection>
-          <MenuItem href={`/${accountSlug}/new`}>
-            <MenuItemIcon>
-              <PlusCircleIcon />
-            </MenuItemIcon>
-            Create a Project
-          </MenuItem>
-        </Menu>
+            </MenuSection>
+            <MenuItem href={`/${accountSlug}/new`}>
+              <MenuItemIcon>
+                <PlusCircleIcon />
+              </MenuItemIcon>
+              Create a Project
+            </MenuItem>
+          </Menu>
+        </Suspense>
       </Popover>
     </MenuTrigger>
   );
