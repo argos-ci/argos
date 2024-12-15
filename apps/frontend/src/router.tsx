@@ -58,6 +58,7 @@ function RootErrorBoundary() {
   const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
 
   useEffect(() => {
+    console.error(error);
     if (shouldReload) {
       const url = new URL(window.location.href);
       url.searchParams.set("reload", "true");

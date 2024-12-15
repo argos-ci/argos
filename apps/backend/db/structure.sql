@@ -940,6 +940,8 @@ CREATE TABLE public.projects (
     "gitlabProjectId" bigint,
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
+    "defaultUserLevel" text,
+    CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
 
@@ -2917,3 +2919,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024120
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201100628_remove-github-access-token.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201210158_google-account.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201222408_gitlab-last-loggedat.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241215091232_project-default-role.js', 1, NOW());
