@@ -12,6 +12,7 @@ import config from "@/config/index.js";
 import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { UserLevel, UserLevelJsonSchema } from "../util/user-level.js";
 import { Account } from "./Account.js";
 import { Build } from "./Build.js";
 import { GithubRepository } from "./GithubRepository.js";
@@ -50,6 +51,7 @@ export class Project extends Model {
       gitlabProjectId: { type: ["null", "string"] },
       prCommentEnabled: { type: "boolean" },
       summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
+      defaultUserLevel: { oneOf: [{ type: "null" }, UserLevelJsonSchema] },
     },
   });
 
@@ -63,6 +65,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   prCommentEnabled!: boolean;
   summaryCheck!: "always" | "never" | "auto";
+  defaultUserLevel!: UserLevel | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
@@ -138,20 +141,28 @@ export class Project extends Model {
     ]);
     invariant(project.account);
 
+    // If the project is public, the default permissions is "view"
+    // else no one can access the project by default.
     const defaultPermissions: ProjectPermission[] = isPublic ? ["view"] : [];
 
+    // If it's an non-authenticated user, we apply the default permissions.
     if (!user) {
       return defaultPermissions;
     }
 
+    // If it's a staff user, they have all permissions.
     if (user.staff) {
       return ALL_PROJECT_PERMISSIONS;
     }
 
+    // If it's a personal project.
     if (project.account.type === "user") {
+      // Only the owner can access the project.
       if (project.account.userId === user.id) {
         return ALL_PROJECT_PERMISSIONS;
       }
+
+      // Otherwise, we apply the default permissions.
       return defaultPermissions;
     }
 
@@ -165,19 +176,32 @@ export class Project extends Model {
       }),
     ]);
 
+    // If the user is not part of the project or the team, we apply the default permissions.
     if (!teamUser) {
       return defaultPermissions;
     }
 
+    // If the user is part of the team, we apply permissions based on their level.
     switch (teamUser.userLevel) {
+      // Owners and members of the team have all permissions.
       case "owner":
       case "member":
         return ALL_PROJECT_PERMISSIONS;
+
+      // If the user is a contributor in the team.
       case "contributor": {
-        if (!projectUser) {
+        // If the user has a specific user level defined for the project
+        // we use it, else we fallback to the default user level of the project.
+        const userLevel = projectUser?.userLevel ?? project.defaultUserLevel;
+
+        // If there is no user level.
+        if (!userLevel) {
+          // We apply the default permissions.
           return defaultPermissions;
         }
-        switch (projectUser.userLevel) {
+
+        // Else we apply permissions based on the user level.
+        switch (userLevel) {
           case "admin":
             return ALL_PROJECT_PERMISSIONS;
           case "reviewer":
@@ -185,7 +209,7 @@ export class Project extends Model {
           case "viewer":
             return ["view", "view_settings"];
           default:
-            assertNever(projectUser.userLevel);
+            assertNever(userLevel);
         }
       }
       // eslint-disable-next-line no-fallthrough

@@ -2,6 +2,7 @@ import { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { UserLevel, UserLevelJsonSchema } from "../util/user-level.js";
 import { Project } from "./Project.js";
 import { User } from "./User.js";
 
@@ -13,13 +14,13 @@ export class ProjectUser extends Model {
     properties: {
       userId: { type: "string" },
       projectId: { type: "string" },
-      userLevel: { type: "string", enum: ["admin", "reviewer", "viewer"] },
+      userLevel: UserLevelJsonSchema,
     },
   });
 
   userId!: string;
   projectId!: string;
-  userLevel!: "admin" | "reviewer" | "viewer";
+  userLevel!: UserLevel;
 
   static override get relationMappings(): RelationMappings {
     return {

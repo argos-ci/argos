@@ -555,6 +555,9 @@ type Project implements Node {
 
   """Default base branch"""
   defaultBaseBranch: String!
+
+  """Default user access level applied to members that are not contributors"""
+  defaultUserLevel: ProjectUserLevel
   id: ID!
 
   """Latest auto-approved build"""
@@ -928,6 +931,7 @@ input UpdateAccountInput {
 input UpdateProjectInput {
   autoApprovedBranchGlob: String
   defaultBaseBranch: String
+  defaultUserLevel: ProjectUserLevel
   id: ID!
   name: String
   private: Boolean

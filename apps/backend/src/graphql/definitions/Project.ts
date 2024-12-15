@@ -120,6 +120,8 @@ export const typeDefs = gql`
     buildNames: [String!]!
     "Contributors"
     contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
+    "Default user access level applied to members that are not contributors"
+    defaultUserLevel: ProjectUserLevel
   }
 
   extend type Query {
@@ -157,6 +159,7 @@ export const typeDefs = gql`
     private: Boolean
     name: String
     summaryCheck: SummaryCheck
+    defaultUserLevel: ProjectUserLevel
   }
 
   input TransferProjectInput {
@@ -644,6 +647,10 @@ export const resolvers: IResolvers = {
 
       if (args.input.summaryCheck != null) {
         data.summaryCheck = args.input.summaryCheck;
+      }
+
+      if (args.input.defaultUserLevel !== undefined) {
+        data.defaultUserLevel = args.input.defaultUserLevel;
       }
 
       if (args.input.name != null && project.name !== args.input.name) {

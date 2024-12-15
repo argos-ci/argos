@@ -684,6 +684,8 @@ export type IProject = INode & {
   customDefaultBaseBranch?: Maybe<Scalars['String']['output']>;
   /** Default base branch */
   defaultBaseBranch: Scalars['String']['output'];
+  /** Default user access level applied to members that are not contributors */
+  defaultUserLevel?: Maybe<IProjectUserLevel>;
   id: Scalars['ID']['output'];
   /** Latest auto-approved build */
   latestAutoApprovedBuild?: Maybe<IBuild>;
@@ -1154,6 +1156,7 @@ export type IUpdateAccountInput = {
 export type IUpdateProjectInput = {
   autoApprovedBranchGlob?: InputMaybe<Scalars['String']['input']>;
   defaultBaseBranch?: InputMaybe<Scalars['String']['input']>;
+  defaultUserLevel?: InputMaybe<IProjectUserLevel>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   private?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1824,6 +1827,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   customAutoApprovedBranchGlob?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   customDefaultBaseBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   defaultBaseBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  defaultUserLevel?: Resolver<Maybe<IResolversTypes['ProjectUserLevel']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   latestAutoApprovedBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   latestBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;

@@ -19,5 +19,12 @@ if (process.env["NODE_ENV"] === "production") {
 const container = document.querySelector("#root");
 invariant(container, "No #root element found");
 
-const root = createRoot(container);
+const root = createRoot(container, {
+  onUncaughtError: (error, errorInfo) => {
+    Sentry.captureException(error, { extra: errorInfo });
+  },
+  onCaughtError: (error, errorInfo) => {
+    console.error(error, errorInfo);
+  },
+});
 root.render(<App />);

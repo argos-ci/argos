@@ -1,7 +1,7 @@
 import { InfoIcon, MoreVerticalIcon } from "lucide-react";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
-import { ProjectUserLevel, TeamUserLevel } from "@/gql/graphql";
+import { TeamUserLevel } from "@/gql/graphql";
 import { IconButton } from "@/ui/IconButton";
 import { ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
@@ -80,10 +80,4 @@ export const TeamMemberLabel: Record<TeamUserLevel, string> = {
   owner: "Owner",
   member: "Member",
   contributor: "Contributor",
-};
-
-export const ProjectContributorLabel: Record<ProjectUserLevel, string> = {
-  admin: "Admin",
-  viewer: "Viewer",
-  reviewer: "Reviewer",
 };
