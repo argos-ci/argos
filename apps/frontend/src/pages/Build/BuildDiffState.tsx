@@ -2,6 +2,7 @@ import {
   createContext,
   use,
   useCallback,
+  useDeferredValue,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -142,7 +143,6 @@ export type DiffResult = MatchData<Diff>;
 
 type BuildDiffContextValue = {
   diffs: Diff[];
-  totalDiffCount: number;
   groups: DiffGroup[];
   expanded: string[];
   toggleGroup: (name: string, value?: boolean) => void;
@@ -154,6 +154,7 @@ type BuildDiffContextValue = {
   ready: boolean;
   stats: BuildStats | null;
   results: DiffResult[];
+  hasNoResults: boolean;
 };
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
@@ -479,6 +480,7 @@ export function BuildDiffProvider(props: {
   const build = useFragment(BuildDiffStateFragment, props.build);
   const stats = build?.stats ?? null;
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
   const expandedState = useExpandedState([
@@ -516,8 +518,8 @@ export function BuildDiffProvider(props: {
     if (!searchMode) {
       return [];
     }
-    return searcher.search(search);
-  }, [searchMode, searcher, search]);
+    return searcher.search(deferredSearch);
+  }, [searchMode, searcher, deferredSearch]);
 
   const filteredDiffs = useMemo(() => {
     if (!searchMode) {
@@ -632,6 +634,10 @@ export function BuildDiffProvider(props: {
     [searchMode, setSearchMode],
   );
 
+  const hasNoResults = Boolean(
+    searchMode && search && !results.length && screenshotDiffs.length > 0,
+  );
+
   const value = useMemo(
     (): BuildDiffContextValue => ({
       groups,
@@ -646,7 +652,7 @@ export function BuildDiffProvider(props: {
       ready,
       stats,
       results,
-      totalDiffCount: screenshotDiffs.length,
+      hasNoResults,
     }),
     [
       groups,
@@ -661,7 +667,7 @@ export function BuildDiffProvider(props: {
       ready,
       stats,
       results,
-      screenshotDiffs.length,
+      hasNoResults,
     ],
   );
   return (
