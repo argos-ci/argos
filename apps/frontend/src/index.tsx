@@ -20,11 +20,12 @@ const container = document.querySelector("#root");
 invariant(container, "No #root element found");
 
 const root = createRoot(container, {
-  onUncaughtError: (error, errorInfo) => {
-    Sentry.captureException(error, { extra: errorInfo });
-  },
-  onCaughtError: (error, errorInfo) => {
-    console.error(error, errorInfo);
-  },
+  onUncaughtError: Sentry.reactErrorHandler((error, errorInfo) => {
+    console.warn("Uncaught error", error, errorInfo.componentStack);
+  }),
+  // Callback called when React catches an error in an ErrorBoundary.
+  onCaughtError: Sentry.reactErrorHandler(),
+  // Callback called when React automatically recovers from errors.
+  onRecoverableError: Sentry.reactErrorHandler(),
 });
 root.render(<App />);
