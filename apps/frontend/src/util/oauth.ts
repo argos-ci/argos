@@ -21,18 +21,17 @@ function getOAuthNonceKey(provider: AuthProvider): string {
   return `oauth.nonce.${provider}`;
 }
 
-const nonces = new Map<AuthProvider, string>();
-
 /**
  * Generates a cryptographically secure random string.
  */
 function getNonce(provider: AuthProvider): string {
-  const existing = nonces.get(provider);
+  const key = getOAuthNonceKey(provider);
+  const existing = window.localStorage.getItem(key);
   if (existing) {
     return existing;
   }
   const nonce = Math.random().toString(36).substring(2);
-  nonces.set(provider, nonce);
+  window.localStorage.setItem(getOAuthNonceKey(provider), nonce);
   return nonce;
 }
 
@@ -45,7 +44,6 @@ function createOAuthState(input: {
 }): RawState {
   try {
     const nonce = getNonce(input.provider);
-    window.localStorage.setItem(getOAuthNonceKey(input.provider), nonce);
     const state: OAuthState = { nonce, redirect: input.redirect };
     return window.btoa(JSON.stringify(state));
   } catch (error) {
