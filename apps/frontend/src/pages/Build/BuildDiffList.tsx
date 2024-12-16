@@ -54,7 +54,6 @@ import {
   DiffResult,
   useBuildDiffState,
   useSearchModeState,
-  useSearchState,
 } from "./BuildDiffState";
 import { useBuildHotkey } from "./BuildHotkeys";
 import {
@@ -931,10 +930,9 @@ const InternalBuildDiffList = memo(() => {
     scrolledDiff,
     stats,
     results,
-    totalDiffCount,
+    hasNoResults,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
-  const { search } = useSearchState();
   const rows = useMemo(
     () => getRows(groups, expanded, results, searchMode),
     [groups, expanded, results, searchMode],
@@ -1074,7 +1072,7 @@ const InternalBuildDiffList = memo(() => {
 
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  if (searchMode && search && !results.length && totalDiffCount > 0) {
+  if (hasNoResults) {
     return <div className="p-4 text-sm">No results</div>;
   }
 

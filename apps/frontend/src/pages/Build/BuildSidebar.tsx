@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from "react";
+import { memo, startTransition, useCallback, useRef } from "react";
 import clsx from "clsx";
 import { SearchIcon, XIcon } from "lucide-react";
 import {
@@ -77,7 +77,9 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
   const { searchMode, setSearchMode } = useSearchModeState();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const enterSearchMode = useCallback(() => {
-    setSearchMode(true);
+    startTransition(() => {
+      setSearchMode(true);
+    });
     searchInputRef.current?.focus();
     searchInputRef.current?.select();
   }, [setSearchMode]);
