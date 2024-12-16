@@ -44,8 +44,11 @@ function Root() {
   );
 }
 
+const failedToFetchRegex =
+  /(Failed to fetch)|(error loading dynamically imported module)/;
+
 function checkIsFailedToFetchError(error: unknown) {
-  return error instanceof Error && /Failed to fetch/.test(error.message);
+  return error instanceof Error && failedToFetchRegex.test(error.message);
 }
 
 function checkHasReloaded() {
