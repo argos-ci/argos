@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   ApolloClient,
+  ApolloLink,
   ApolloProvider as BaseApolloProvider,
   DocumentNode,
   HttpLink,
@@ -12,6 +13,7 @@ import {
   useQuery as useApolloQuery,
 } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
+import { RetryLink } from "@apollo/client/link/retry";
 import { invariant } from "@apollo/client/utilities/globals";
 
 import fragments from "@/gql-fragments.json";
@@ -39,6 +41,8 @@ const ApolloProvider = (props: {
       headers: authorization ? { authorization } : {},
     });
 
+    const retryLink = new RetryLink();
+
     return new ApolloClient({
       cache: new InMemoryCache({
         possibleTypes: fragments.possibleTypes,
@@ -57,7 +61,7 @@ const ApolloProvider = (props: {
           },
         },
       }),
-      link: logoutLink.concat(httpLink),
+      link: ApolloLink.from([logoutLink, retryLink, httpLink]),
     });
   }, [authorization]);
   return (
