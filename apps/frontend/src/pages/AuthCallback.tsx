@@ -139,6 +139,13 @@ export function Component() {
 
   return (
     <Sentry.ErrorBoundary
+      beforeCapture={(scope, error) => {
+        // Invalid grant errors are not errors that should be reported.
+        // See https://stackoverflow.com/a/38433986
+        if (error instanceof APIError && error.message === "invalid_grant") {
+          scope.setLevel("info");
+        }
+      }}
       fallback={({ error }) => (
         <ErrorFallback error={error} provider={provider} />
       )}
