@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import pRetry from "p-retry";
 
 import {
   GithubInstallation,
@@ -57,23 +58,28 @@ export const GithubStrategy: MergeBaseStrategy<{
       return args.build.baseCommit;
     }
 
-    try {
-      const { data } =
-        await args.ctx.octokit.rest.repos.compareCommitsWithBasehead({
-          owner: args.ctx.owner,
-          repo: args.ctx.repo,
-          basehead: `${args.base}...${args.head}`,
-          per_page: 1,
-        });
-      return data.merge_base_commit.sha;
-    } catch (error) {
-      // If we can't find the base commit, then we can't give a bucket
-      if (checkErrorStatus(404, error)) {
-        return null;
-      }
+    return pRetry(
+      async () => {
+        try {
+          const { data } =
+            await args.ctx.octokit.rest.repos.compareCommitsWithBasehead({
+              owner: args.ctx.owner,
+              repo: args.ctx.repo,
+              basehead: `${args.base}...${args.head}`,
+              per_page: 1,
+            });
+          return data.merge_base_commit.sha;
+        } catch (error) {
+          // If we can't find the base commit, then we can't give a bucket
+          if (checkErrorStatus(404, error)) {
+            return null;
+          }
 
-      throw error;
-    }
+          throw error;
+        }
+      },
+      { retries: 3 },
+    );
   },
   listParentCommitShas: async (args) => {
     // If the app is light, we just find the last bucket ancest on the base branch.
