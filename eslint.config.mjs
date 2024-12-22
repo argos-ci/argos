@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 
 const config = tseslint.config(
   {
-    name: "argos/global-ignoes",
+    name: "argos/global-ignores",
     ignores: [
       "**/dist",
       "apps/backend/src/graphql/__generated__",
@@ -16,6 +16,7 @@ const config = tseslint.config(
   {
     name: "argos/custom-ts-rules",
     rules: {
+      curly: "error",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
