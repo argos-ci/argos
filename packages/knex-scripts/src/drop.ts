@@ -3,8 +3,8 @@ import { oraPromise } from "ora";
 
 import { getConfig } from "./config.js";
 import {
-  getCommand,
   getCommandEnv,
+  getPostgresCommand,
   preventRunningInProduction,
   runCommand,
 } from "./utils.js";
@@ -17,8 +17,10 @@ async function dropDatabase() {
 
   const config = await getConfig();
   const env = getCommandEnv(config);
-  const command = getCommand(config, "dropdb --if-exists");
-  await runCommand(command, { env });
+  const { command, args } = getPostgresCommand(config, "dropdb", [
+    "--if-exists",
+  ]);
+  await runCommand({ command, args, env });
 }
 
 /**

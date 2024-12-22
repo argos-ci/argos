@@ -1,5 +1,5 @@
-import { exec } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { access } from "node:fs/promises";
 import glob from "fast-glob";
 import type { Knex } from "knex";
 
@@ -85,57 +85,65 @@ export function getCommandEnv(input: { knexConfig: Knex.Config }) {
   return process.env;
 }
 
-export function getCommand(
-  input: { knexConfig: Knex.Config },
+/**
+ * Returns a postgres command to run with arguments based on the connection config.
+ */
+export function getPostgresCommand(
+  config: { knexConfig: Knex.Config },
   command: string,
+  args: string[] = [],
 ) {
   const {
     knexConfig: { connection },
-  } = input;
-  const args = [command];
+  } = config;
+  const argsOutput = Array.from(args);
 
   assertIsPgConnectionConfig(connection);
 
   if (connection.host) {
-    args.push(`--host "${connection.host}"`);
+    argsOutput.push("--host", `${connection.host}`);
   }
 
   if (connection.user) {
-    args.push(`--username "${connection.user}"`);
+    argsOutput.push("--username", `${connection.user}`);
   }
 
   if (connection.password) {
-    args.push("--no-password");
+    argsOutput.push("--no-password");
   }
 
   if (!connection.database) {
     throw new Error("Database is missing in connection config.");
   }
 
-  args.push(connection.database);
+  argsOutput.push(connection.database);
 
-  return args.join(" ");
+  return { command, args: argsOutput };
 }
 
-export function runCommand(
-  command: string,
-  options?: { env?: NodeJS.ProcessEnv; log?: (value: string) => void },
-) {
-  const log = options?.log || (() => {});
+export function runCommand(input: {
+  command: string;
+  args: string[];
+  env?: NodeJS.ProcessEnv;
+}) {
   return new Promise((resolve, reject) => {
-    log(`Running command: "${command}"`);
-    exec(command, options, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-        return;
-      }
+    execFile(
+      input.command,
+      input.args,
+      { env: input.env },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+          return;
+        }
 
-      if (stderr) {
-        reject(stderr);
-        return;
-      }
+        if (stderr) {
+          reject(stderr);
+          return;
+        }
 
-      resolve(stdout);
-    });
+        resolve(stdout);
+      },
+    );
   });
 }

@@ -3,8 +3,8 @@ import { oraPromise } from "ora";
 
 import { getConfig } from "./config.js";
 import {
-  getCommand,
   getCommandEnv,
+  getPostgresCommand,
   preventRunningInProduction,
   runCommand,
 } from "./utils.js";
@@ -18,12 +18,15 @@ async function loadDatabaseSchema() {
   const config = await getConfig();
 
   const env = getCommandEnv(config);
-  const command = `${getCommand(
-    config,
-    "psql",
-  )} -v ON_ERROR_STOP=1 -f ${config.structurePath}`;
 
-  await runCommand(command, { env });
+  const { command, args } = getPostgresCommand(config, "psql", [
+    "-v",
+    "ON_ERROR_STOP=1",
+    "-f",
+    config.structurePath,
+  ]);
+
+  await runCommand({ command, args, env });
 }
 
 /**

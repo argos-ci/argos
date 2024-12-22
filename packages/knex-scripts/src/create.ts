@@ -3,8 +3,8 @@ import { oraPromise } from "ora";
 
 import { getConfig } from "./config.js";
 import {
-  getCommand,
   getCommandEnv,
+  getPostgresCommand,
   preventRunningInProduction,
   runCommand,
 } from "./utils.js";
@@ -17,8 +17,8 @@ async function createDatabase() {
 
   const config = await getConfig();
   const env = getCommandEnv(config);
-  const command = getCommand(config, "createdb");
-  await runCommand(command, { env });
+  const { command, args } = getPostgresCommand(config, "createdb");
+  await runCommand({ command, args, env });
 }
 
 /**

@@ -5,9 +5,9 @@ import { oraPromise } from "ora";
 
 import { getConfig } from "./config.js";
 import {
-  getCommand,
   getCommandEnv,
   getInsertsFromMigrations,
+  getPostgresCommand,
   requireEnv,
   runCommand,
 } from "./utils.js";
@@ -22,12 +22,13 @@ async function dumpDatabaseSchema() {
   await mkdir(dirname(config.structurePath), { recursive: true });
 
   const env = getCommandEnv(config);
-  const command = `${getCommand(
-    config,
-    "pg_dump --schema-only",
-  )} > ${config.structurePath}`;
+  const { command, args } = getPostgresCommand(config, "pg_dump", [
+    "--schema-only",
+    "-f",
+    config.structurePath,
+  ]);
 
-  await runCommand(command, { env });
+  await runCommand({ command, args, env });
 
   const migrationInserts = await getInsertsFromMigrations(config);
   await appendFile(
