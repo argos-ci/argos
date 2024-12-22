@@ -101,11 +101,11 @@ export function getPostgresCommand(
   assertIsPgConnectionConfig(connection);
 
   if (connection.host) {
-    argsOutput.push("--host", `${connection.host}`);
+    argsOutput.push("--host", connection.host);
   }
 
   if (connection.user) {
-    argsOutput.push("--username", `${connection.user}`);
+    argsOutput.push("--username", connection.user);
   }
 
   if (connection.password) {
