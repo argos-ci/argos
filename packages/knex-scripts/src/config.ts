@@ -1,13 +1,11 @@
 import { join } from "node:path";
 import type { Knex } from "knex";
 
-export type Config = {
+type Config = {
   knexConfig: Knex.Config;
   structurePath: string;
+  migrationsPath: string;
 };
-
-const STRUCTURE_PATH = join(process.cwd(), "db/structure.sql");
-const MIGRATIONS_PATH = join(process.cwd(), "db/migrations");
 
 async function readKnexConfig(): Promise<Knex.Config> {
   const knexFile = join(process.cwd(), "knexfile.js");
@@ -27,11 +25,11 @@ async function readKnexConfig(): Promise<Knex.Config> {
   }
 }
 
-export async function getConfig() {
+export async function getConfig(): Promise<Config> {
   const knexConfig = await readKnexConfig();
   return {
     knexConfig,
-    structurePath: STRUCTURE_PATH,
-    migrationsPath: MIGRATIONS_PATH,
+    structurePath: join(process.cwd(), "db/structure.sql"),
+    migrationsPath: join(process.cwd(), "db/migrations"),
   };
 }

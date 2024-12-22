@@ -32,27 +32,6 @@ export async function getInsertsFromMigrations(input: {
   );
 }
 
-export async function getInsertsFromStructure(
-  structurePath: string,
-): Promise<string[]> {
-  const hasStructurePath = await exists(structurePath);
-  if (!hasStructurePath) {
-    return [];
-  }
-  const structure = await readFile(structurePath, "utf-8");
-  const regExp =
-    /INSERT INTO public\.knex_migrations\(name, batch, migration_time\) VALUES \('.*', 1, NOW\(\)\);/g;
-
-  const inserts = [];
-
-  let match: RegExpExecArray | null;
-  while ((match = regExp.exec(structure))) {
-    inserts.push(match[0]);
-  }
-
-  return inserts;
-}
-
 function getNodeEnv() {
   return process.env["NODE_ENV"] || "development";
 }

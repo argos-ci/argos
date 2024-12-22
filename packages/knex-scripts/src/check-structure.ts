@@ -8,7 +8,7 @@ import { getInsertsFromMigrations } from "./utils.js";
 /**
  * Get inserts from the structure file.
  */
-export async function getInsertsFromStructure(input: {
+async function getInsertsFromStructure(input: {
   structurePath: string;
 }): Promise<string[]> {
   const structure = await readFile(input.structurePath, "utf-8");
@@ -27,7 +27,7 @@ export async function getInsertsFromStructure(input: {
 /**
  * Check if the structure is up to date.
  */
-export async function checkIsStructureUpToDate() {
+async function checkIsStructureUpToDate() {
   const config = await getConfig();
   const [migrationsInFolder, migrationsInStructure] = await Promise.all([
     getInsertsFromMigrations(config),
