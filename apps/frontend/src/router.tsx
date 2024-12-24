@@ -49,17 +49,19 @@ function Root() {
  */
 const DYNAMIC_IMPORT_MODULE_FAILED_TO_LOAD = [
   // Blink
-  "Failed to fetch",
+  /Failed to fetch/,
   // Firefox
-  "error loading dynamically imported module",
+  /error loading dynamically imported module/,
   // Safari
-  "Importing a module script failed.",
+  /Importing a module script failed./,
 ];
 
 function checkIsFailedToFetchError(error: unknown) {
   return (
     error instanceof Error &&
-    DYNAMIC_IMPORT_MODULE_FAILED_TO_LOAD.includes(error.message)
+    DYNAMIC_IMPORT_MODULE_FAILED_TO_LOAD.some((regex) =>
+      regex.test(error.message),
+    )
   );
 }
 
