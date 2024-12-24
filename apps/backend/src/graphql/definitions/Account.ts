@@ -15,6 +15,7 @@ import {
 } from "@/database/models/index.js";
 import { checkAccountSlug } from "@/database/services/account.js";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { getAccountScreenshotMetrics } from "@/metrics/account.js";
 import { uninstallSlackInstallation } from "@/slack/index.js";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
@@ -64,6 +65,35 @@ export const typeDefs = gql`
     view
   }
 
+  type AccountMetricDataPoint {
+    ts: Timestamp!
+    total: Int!
+    projects: JSONObject!
+  }
+
+  type AccountMetricData {
+    total: Int!
+    projects: JSONObject!
+  }
+
+  type AccountMetrics {
+    series: [AccountMetricDataPoint!]!
+    all: AccountMetricData!
+    projects: [Project!]!
+  }
+
+  enum TimeSeriesGroupBy {
+    month
+    week
+    day
+  }
+
+  input AccountMetricsInput {
+    projectIds: [ID!]
+    from: DateTime!
+    groupBy: TimeSeriesGroupBy!
+  }
+
   interface Account implements Node {
     id: ID!
     stripeCustomerId: String
@@ -87,6 +117,7 @@ export const typeDefs = gql`
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
     githubAccount: GithubAccount
+    metrics(input: AccountMetricsInput!): AccountMetrics!
   }
 
   input UpdateAccountInput {
@@ -365,6 +396,16 @@ export const resolvers: IResolvers = {
         return null;
       }
       return ctx.loaders.GithubAccount.load(account.githubAccountId);
+    },
+    metrics: async (account, args) => {
+      const data = await getAccountScreenshotMetrics({
+        accountId: account.id,
+        projectIds: args.input.projectIds,
+        from: args.input.from,
+        to: new Date(),
+        groupBy: args.input.groupBy,
+      });
+      return data;
     },
   },
   AccountAvatar: {

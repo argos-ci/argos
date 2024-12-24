@@ -3,10 +3,18 @@ import { clsx } from "clsx";
 
 export const Heading = ({
   className,
+  margin,
   ...props
-}: HTMLProps<HTMLHeadingElement>) => {
+}: HTMLProps<HTMLHeadingElement> & { margin?: boolean }) => {
   return (
-    <h1 className={clsx(className, "mb-4 text-2xl font-medium")} {...props} />
+    <h1
+      className={clsx(
+        className,
+        "text-2xl font-medium",
+        margin !== false && "mb-4",
+      )}
+      {...props}
+    />
   );
 };
 

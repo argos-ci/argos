@@ -19,6 +19,7 @@ function Main(props: {
       <Sentry.ErrorBoundary
         fallback={<ErrorPage />}
         onError={(error) => {
+          console.error(error);
           if (error instanceof AuthenticationError) {
             logout();
             return;
