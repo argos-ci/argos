@@ -22,7 +22,7 @@ export async function getAccountScreenshotMetrics(input: {
     LEFT JOIN projects p ON sb."projectId" = p.id
     WHERE p."accountId" = :accountId
       AND sb."createdAt" >= date_trunc(:groupBy, :from::timestamp)
-      AND sb."createdAt" <= date_trunc(:groupBy, :to::timestamp)
+      AND sb."createdAt" <= :to
       ${input.projectIds && input.projectIds.length > 0 ? `AND sb."projectId" = any(:projectIds)` : ""}
     GROUP BY date, p.id
   ),
@@ -35,7 +35,7 @@ export async function getAccountScreenshotMetrics(input: {
   series AS (
     SELECT generate_series(
       date_trunc(:groupBy, :from::timestamp),
-      date_trunc(:groupBy, :to::timestamp),
+      :to,
       INTERVAL '${interval}'
     ) AS date
   )

@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect } from "react";
+import { Suspense, useCallback, useEffect, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { CloudOffIcon } from "lucide-react";
@@ -13,6 +13,7 @@ import {
   Pie,
   PieChart,
   XAxis,
+  YAxis,
 } from "recharts";
 
 import { DocumentType, graphql } from "@/gql";
@@ -180,6 +181,16 @@ function EvolutionChart(props: {
       },
     },
   );
+  const ticks = useMemo(() => {
+    switch (groupBy) {
+      case TimeSeriesGroupBy.Day:
+        return getTicks(from, to, "day", 4);
+      case TimeSeriesGroupBy.Week:
+        return getTicks(from, to, "week");
+      case TimeSeriesGroupBy.Month:
+        return getTicks(from, to, "month");
+    }
+  }, [from, to, groupBy]);
   return (
     <ChartContainer config={chartConfig} className="h-80 md:flex-1">
       <AreaChart
@@ -187,7 +198,8 @@ function EvolutionChart(props: {
         accessibilityLayer
         data={account.metrics.series}
       >
-        <CartesianGrid vertical={false} />
+        <CartesianGrid vertical={false} strokeDasharray="5 5" />
+        <YAxis tickLine={false} axisLine={false} />
         <XAxis
           dataKey="ts"
           type="number"
@@ -195,17 +207,27 @@ function EvolutionChart(props: {
           tickLine={false}
           axisLine={false}
           minTickGap={0}
-          domain={[from.getTime(), to.getTime()]}
-          ticks={getMonthTicks(from, to)}
+          tickMargin={12}
+          domain={["dataMin", "dataMax"]}
+          ticks={ticks}
           tickFormatter={(value) => {
             const date = new Date(value);
-            return date.toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            });
+            switch (groupBy) {
+              case TimeSeriesGroupBy.Day:
+              case TimeSeriesGroupBy.Week: {
+                return date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+              }
+              case TimeSeriesGroupBy.Month:
+                return date.toLocaleDateString("en-US", {
+                  month: "short",
+                  year: "numeric",
+                });
+            }
           }}
         />
-        {/* <YAxis type="number" tickLine={false} axisLine={false} /> */}
         <ChartTooltip
           content={
             <ChartTooltipContent
@@ -245,7 +267,7 @@ function EvolutionChart(props: {
             <Area
               key={project.id}
               dataKey={`projects.${project.id}`}
-              type="natural"
+              type="monotone"
               fill={color}
               fillOpacity={0.4}
               stroke={color}
@@ -309,16 +331,16 @@ function ProjectsDistributionChart(props: { account: Account }) {
                     <tspan
                       x={viewBox.cx}
                       y={viewBox.cy}
-                      className="fill-text-default text-3xl font-bold"
+                      className="fill-text-default text-xl font-medium"
                     >
                       {account.metrics.all.total.toLocaleString()}
                     </tspan>
                     <tspan
                       x={viewBox.cx}
-                      y={(viewBox.cy || 0) + 24}
-                      className="fill-text-low"
+                      y={(viewBox.cy || 0) + 20}
+                      className="fill-text-low text-xs"
                     >
-                      Screenshots
+                      screenshots
                     </tspan>
                   </text>
                 );
@@ -332,12 +354,17 @@ function ProjectsDistributionChart(props: { account: Account }) {
   );
 }
 
-function getMonthTicks(from: Date, to: Date) {
+function getTicks(
+  from: Date,
+  to: Date,
+  unit: moment.unitOfTime.Base,
+  step = 1,
+) {
   const ticks = [];
-  const current = moment(from).startOf("month");
+  const current = moment(from).add(1, unit).startOf(unit);
   while (current.isBefore(to)) {
     ticks.push(current.toDate().getTime());
-    current.add(1, "month");
+    current.add(step, unit);
   }
   return ticks;
 }
