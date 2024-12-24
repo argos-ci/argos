@@ -38,6 +38,7 @@ function AccountTabs({ account }: { account: Account }) {
     <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabLinkList aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
+        <TabLink href="~/analytics">Analytics</TabLink>
         <TabLink href="settings">
           {account.__typename === "User"
             ? "Personal Settings"

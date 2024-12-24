@@ -1,5 +1,121 @@
 const tailwindPlugin = require("tailwindcss/plugin");
 
+const backgroundColor = {
+  app: "var(--mauve-1)",
+  subtle: "var(--mauve-2)",
+  ui: "var(--mauve-3)",
+  hover: "var(--mauve-4)",
+  active: "var(--mauve-5)",
+  border: "var(--mauve-6)",
+  text: {
+    default: "var(--mauve-12)",
+    low: "var(--mauve-11)",
+  },
+  solid: {
+    DEFAULT: "var(--mauve-9)",
+    hover: "var(--mauve-10)",
+    active: "var(--mauve-11)",
+  },
+  github: {
+    DEFAULT: "rgb(36 41 46 / <alpha-value>)",
+    hover: "rgb(85 85 85 / <alpha-value>)",
+    active: "rgb(85 85 85 / <alpha-value>)",
+  },
+  gitlab: {
+    DEFAULT: "rgb(226 67 41 / <alpha-value>)",
+    hover: "rgb(252 109 38 / <alpha-value>)",
+    active: "rgb(252 109 38 / <alpha-value>)",
+  },
+  google: {
+    DEFAULT: "var(--gray-1)",
+    hover: "var(--gray-2)",
+    active: "var(--gray-3)",
+  },
+  primary: {
+    app: "var(--violet-1)",
+    ui: "var(--violet-3)",
+    active: "var(--violet-5)",
+    solid: {
+      DEFAULT: "var(--violet-9)",
+      hover: "var(--violet-10)",
+      active: "var(--violet-11)",
+    },
+  },
+  danger: {
+    app: "var(--tomato-1)",
+    subtle: "var(--tomato-2)",
+    ui: "var(--tomato-3)",
+    hover: "var(--tomato-4)",
+    active: "var(--tomato-5)",
+    solid: {
+      DEFAULT: "var(--tomato-9)",
+      hover: "var(--tomato-10)",
+      active: "var(--tomato-11)",
+    },
+  },
+  warning: {
+    app: "var(--amber-1)",
+    ui: "var(--amber-3)",
+    active: "var(--amber-5)",
+    solid: {
+      DEFAULT: "var(--amber-9)",
+      hover: "var(--amber-10)",
+      active: "var(--amber-11)",
+    },
+  },
+  success: {
+    app: "var(--grass-1)",
+    ui: "var(--grass-3)",
+    hover: "var(--grass-4)",
+    active: "var(--grass-5)",
+    solid: {
+      DEFAULT: "var(--grass-9)",
+      hover: "var(--grass-10)",
+      active: "var(--grass-11)",
+    },
+  },
+  info: {
+    app: "var(--blue-1)",
+  },
+  pending: {
+    app: "var(--amber-1)",
+  },
+};
+
+const borderColor = {
+  DEFAULT: "var(--mauve-6)",
+  low: "var(--mauve-4)",
+  base: "var(--mauve-6)",
+  hover: "var(--mauve-8)",
+  active: "var(--mauve-9)",
+  primary: {
+    DEFAULT: "var(--violet-6)",
+    ui: "var(--violet-7)",
+    hover: "var(--violet-8)",
+    active: "var(--violet-9)",
+  },
+  danger: {
+    DEFAULT: "var(--tomato-6)",
+    hover: "var(--tomato-8)",
+  },
+  warning: {
+    DEFAULT: "var(--amber-6)",
+    hover: "var(--amber-8)",
+  },
+  info: {
+    DEFAULT: "var(--blue-6)",
+    hover: "var(--blue-8)",
+  },
+  pending: {
+    DEFAULT: "var(--amber-6)",
+    hover: "var(--amber-8)",
+  },
+  success: {
+    DEFAULT: "var(--grass-6)",
+    hover: "var(--grass-8)",
+  },
+};
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
@@ -12,83 +128,8 @@ module.exports = {
           to: "var(--violet-10)",
         },
       },
-      backgroundColor: {
-        app: "var(--mauve-1)",
-        subtle: "var(--mauve-2)",
-        ui: "var(--mauve-3)",
-        hover: "var(--mauve-4)",
-        active: "var(--mauve-5)",
-        border: "var(--mauve-6)",
-        solid: {
-          DEFAULT: "var(--mauve-9)",
-          hover: "var(--mauve-10)",
-          active: "var(--mauve-11)",
-        },
-        github: {
-          DEFAULT: "rgb(36 41 46 / <alpha-value>)",
-          hover: "rgb(85 85 85 / <alpha-value>)",
-          active: "rgb(85 85 85 / <alpha-value>)",
-        },
-        gitlab: {
-          DEFAULT: "rgb(226 67 41 / <alpha-value>)",
-          hover: "rgb(252 109 38 / <alpha-value>)",
-          active: "rgb(252 109 38 / <alpha-value>)",
-        },
-        google: {
-          DEFAULT: "var(--gray-1)",
-          hover: "var(--gray-2)",
-          active: "var(--gray-3)",
-        },
-        primary: {
-          app: "var(--violet-1)",
-          ui: "var(--violet-3)",
-          active: "var(--violet-5)",
-          solid: {
-            DEFAULT: "var(--violet-9)",
-            hover: "var(--violet-10)",
-            active: "var(--violet-11)",
-          },
-        },
-        danger: {
-          app: "var(--tomato-1)",
-          subtle: "var(--tomato-2)",
-          ui: "var(--tomato-3)",
-          hover: "var(--tomato-4)",
-          active: "var(--tomato-5)",
-          solid: {
-            DEFAULT: "var(--tomato-9)",
-            hover: "var(--tomato-10)",
-            active: "var(--tomato-11)",
-          },
-        },
-        warning: {
-          app: "var(--amber-1)",
-          ui: "var(--amber-3)",
-          active: "var(--amber-5)",
-          solid: {
-            DEFAULT: "var(--amber-9)",
-            hover: "var(--amber-10)",
-            active: "var(--amber-11)",
-          },
-        },
-        success: {
-          app: "var(--grass-1)",
-          ui: "var(--grass-3)",
-          hover: "var(--grass-4)",
-          active: "var(--grass-5)",
-          solid: {
-            DEFAULT: "var(--grass-9)",
-            hover: "var(--grass-10)",
-            active: "var(--grass-11)",
-          },
-        },
-        info: {
-          app: "var(--blue-1)",
-        },
-        pending: {
-          app: "var(--amber-1)",
-        },
-      },
+      backgroundColor,
+      fill: backgroundColor,
       textColor: {
         DEFAULT: "var(--mauve-12)",
         low: "var(--mauve-11)",
@@ -147,38 +188,8 @@ module.exports = {
           DEFAULT: "var(--gray-6)",
         },
       },
-      borderColor: {
-        DEFAULT: "var(--mauve-6)",
-        base: "var(--mauve-6)",
-        hover: "var(--mauve-8)",
-        active: "var(--mauve-9)",
-        primary: {
-          DEFAULT: "var(--violet-6)",
-          ui: "var(--violet-7)",
-          hover: "var(--violet-8)",
-          active: "var(--violet-9)",
-        },
-        danger: {
-          DEFAULT: "var(--tomato-6)",
-          hover: "var(--tomato-8)",
-        },
-        warning: {
-          DEFAULT: "var(--amber-6)",
-          hover: "var(--amber-8)",
-        },
-        info: {
-          DEFAULT: "var(--blue-6)",
-          hover: "var(--blue-8)",
-        },
-        pending: {
-          DEFAULT: "var(--amber-6)",
-          hover: "var(--amber-8)",
-        },
-        success: {
-          DEFAULT: "var(--grass-6)",
-          hover: "var(--grass-8)",
-        },
-      },
+      borderColor,
+      stroke: borderColor,
       fontSize: {
         xxs: [
           "0.6875rem",

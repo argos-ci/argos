@@ -21,7 +21,9 @@ export type Scalars = {
   Float: { input: number; output: number; }
   Date: { input: any; output: any; }
   DateTime: { input: any; output: any; }
+  JSONObject: { input: any; output: any; }
   Time: { input: any; output: any; }
+  Timestamp: { input: any; output: any; }
 };
 
 export type IAccount = {
@@ -35,6 +37,7 @@ export type IAccount = {
   hasForcedPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
+  metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
@@ -47,6 +50,11 @@ export type IAccount = {
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
+};
+
+
+export type IAccountMetricsArgs = {
+  input: IAccountMetricsInput;
 };
 
 
@@ -65,6 +73,32 @@ export type IAccountAvatar = {
 
 export type IAccountAvatarUrlArgs = {
   size: Scalars['Int']['input'];
+};
+
+export type IAccountMetricData = {
+  __typename?: 'AccountMetricData';
+  projects: Scalars['JSONObject']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type IAccountMetricDataPoint = {
+  __typename?: 'AccountMetricDataPoint';
+  projects: Scalars['JSONObject']['output'];
+  total: Scalars['Int']['output'];
+  ts: Scalars['Timestamp']['output'];
+};
+
+export type IAccountMetrics = {
+  __typename?: 'AccountMetrics';
+  all: IAccountMetricData;
+  projects: Array<IProject>;
+  series: Array<IAccountMetricDataPoint>;
+};
+
+export type IAccountMetricsInput = {
+  from: Scalars['DateTime']['input'];
+  groupBy: ITimeSeriesGroupBy;
+  projectIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export enum IAccountPermission {
@@ -1035,6 +1069,7 @@ export type ITeam = IAccount & INode & {
   inviteLink?: Maybe<Scalars['String']['output']>;
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
+  metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
@@ -1064,6 +1099,11 @@ export type ITeamMembersArgs = {
   levels?: InputMaybe<Array<ITeamUserLevel>>;
   search?: InputMaybe<Scalars['String']['input']>;
   sso?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type ITeamMetricsArgs = {
+  input: IAccountMetricsInput;
 };
 
 
@@ -1128,6 +1168,12 @@ export enum ITestReportStatus {
   Timedout = 'timedout'
 }
 
+export enum ITimeSeriesGroupBy {
+  Day = 'day',
+  Month = 'month',
+  Week = 'week'
+}
+
 export type ITransferProjectInput = {
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
@@ -1186,6 +1232,7 @@ export type IUser = IAccount & INode & {
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   lastSubscription?: Maybe<IAccountSubscription>;
+  metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
@@ -1201,6 +1248,11 @@ export type IUser = IAccount & INode & {
   subscription?: Maybe<IAccountSubscription>;
   subscriptionStatus?: Maybe<IAccountSubscriptionStatus>;
   teams: Array<ITeam>;
+};
+
+
+export type IUserMetricsArgs = {
+  input: IAccountMetricsInput;
 };
 
 
@@ -1310,6 +1362,10 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
 export type IResolversTypes = ResolversObject<{
   Account: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Account']>;
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
+  AccountMetricData: ResolverTypeWrapper<IAccountMetricData>;
+  AccountMetricDataPoint: ResolverTypeWrapper<IAccountMetricDataPoint>;
+  AccountMetrics: ResolverTypeWrapper<Omit<IAccountMetrics, 'projects'> & { projects: Array<IResolversTypes['Project']> }>;
+  AccountMetricsInput: IAccountMetricsInput;
   AccountPermission: IAccountPermission;
   AccountSubscription: ResolverTypeWrapper<Subscription>;
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
@@ -1358,6 +1414,7 @@ export type IResolversTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  JSONObject: ResolverTypeWrapper<Scalars['JSONObject']['output']>;
   JobStatus: IJobStatus;
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
@@ -1410,6 +1467,8 @@ export type IResolversTypes = ResolversObject<{
   TestReportStats: ResolverTypeWrapper<ITestReportStats>;
   TestReportStatus: ITestReportStatus;
   Time: ResolverTypeWrapper<Scalars['Time']['output']>;
+  TimeSeriesGroupBy: ITimeSeriesGroupBy;
+  Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   TransferProjectInput: ITransferProjectInput;
   UninstallSlackInput: IUninstallSlackInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
@@ -1426,6 +1485,10 @@ export type IResolversTypes = ResolversObject<{
 export type IResolversParentTypes = ResolversObject<{
   Account: IResolversInterfaceTypes<IResolversParentTypes>['Account'];
   AccountAvatar: AccountAvatar;
+  AccountMetricData: IAccountMetricData;
+  AccountMetricDataPoint: IAccountMetricDataPoint;
+  AccountMetrics: Omit<IAccountMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
+  AccountMetricsInput: IAccountMetricsInput;
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
   Boolean: Scalars['Boolean']['output'];
@@ -1466,6 +1529,7 @@ export type IResolversParentTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: Scalars['Int']['output'];
+  JSONObject: Scalars['JSONObject']['output'];
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
@@ -1507,6 +1571,7 @@ export type IResolversParentTypes = ResolversObject<{
   TestReport: ITestReport;
   TestReportStats: ITestReportStats;
   Time: Scalars['Time']['output'];
+  Timestamp: Scalars['Timestamp']['output'];
   TransferProjectInput: ITransferProjectInput;
   UninstallSlackInput: IUninstallSlackInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
@@ -1530,6 +1595,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IAccountMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -1548,6 +1614,26 @@ export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IR
   color?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   initial?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType, RequireFields<IAccountAvatarUrlArgs, 'size'>>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAccountMetricDataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetricData'] = IResolversParentTypes['AccountMetricData']> = ResolversObject<{
+  projects?: Resolver<IResolversTypes['JSONObject'], ParentType, ContextType>;
+  total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAccountMetricDataPointResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetricDataPoint'] = IResolversParentTypes['AccountMetricDataPoint']> = ResolversObject<{
+  projects?: Resolver<IResolversTypes['JSONObject'], ParentType, ContextType>;
+  total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  ts?: Resolver<IResolversTypes['Timestamp'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAccountMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetrics'] = IResolversParentTypes['AccountMetrics']> = ResolversObject<{
+  all?: Resolver<IResolversTypes['AccountMetricData'], ParentType, ContextType>;
+  projects?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
+  series?: Resolver<Array<IResolversTypes['AccountMetricDataPoint']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1764,6 +1850,10 @@ export type IGoogleUserResolvers<ContextType = Context, ParentType extends IReso
   primaryEmail?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
+
+export interface IJsonObjectScalarConfig extends GraphQLScalarTypeConfig<IResolversTypes['JSONObject'], any> {
+  name: 'JSONObject';
+}
 
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
@@ -2029,6 +2119,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
+  metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<ITeamMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -2088,6 +2179,10 @@ export interface ITimeScalarConfig extends GraphQLScalarTypeConfig<IResolversTyp
   name: 'Time';
 }
 
+export interface ITimestampScalarConfig extends GraphQLScalarTypeConfig<IResolversTypes['Timestamp'], any> {
+  name: 'Timestamp';
+}
+
 export type IUserResolvers<ContextType = Context, ParentType extends IResolversParentTypes['User'] = IResolversParentTypes['User']> = ResolversObject<{
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
@@ -2105,6 +2200,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IUserMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -2132,6 +2228,9 @@ export type IUserConnectionResolvers<ContextType = Context, ParentType extends I
 export type IResolvers<ContextType = Context> = ResolversObject<{
   Account?: IAccountResolvers<ContextType>;
   AccountAvatar?: IAccountAvatarResolvers<ContextType>;
+  AccountMetricData?: IAccountMetricDataResolvers<ContextType>;
+  AccountMetricDataPoint?: IAccountMetricDataPointResolvers<ContextType>;
+  AccountMetrics?: IAccountMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   Build?: IBuildResolvers<ContextType>;
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
@@ -2158,6 +2257,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   GlApiProject?: IGlApiProjectResolvers<ContextType>;
   GlApiProjectConnection?: IGlApiProjectConnectionResolvers<ContextType>;
   GoogleUser?: IGoogleUserResolvers<ContextType>;
+  JSONObject?: GraphQLScalarType;
   Mutation?: IMutationResolvers<ContextType>;
   Node?: INodeResolvers<ContextType>;
   PageInfo?: IPageInfoResolvers<ContextType>;
@@ -2191,6 +2291,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   TestReport?: ITestReportResolvers<ContextType>;
   TestReportStats?: ITestReportStatsResolvers<ContextType>;
   Time?: GraphQLScalarType;
+  Timestamp?: GraphQLScalarType;
   User?: IUserResolvers<ContextType>;
   UserConnection?: IUserConnectionResolvers<ContextType>;
 }>;

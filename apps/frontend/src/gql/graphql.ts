@@ -16,7 +16,9 @@ export type Scalars = {
   Float: { input: number; output: number; }
   Date: { input: any; output: any; }
   DateTime: { input: any; output: any; }
+  JSONObject: { input: any; output: any; }
   Time: { input: any; output: any; }
+  Timestamp: { input: any; output: any; }
 };
 
 export type Account = {
@@ -30,6 +32,7 @@ export type Account = {
   hasForcedPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
+  metrics: AccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
@@ -42,6 +45,11 @@ export type Account = {
   stripeCustomerId?: Maybe<Scalars['String']['output']>;
   subscription?: Maybe<AccountSubscription>;
   subscriptionStatus?: Maybe<AccountSubscriptionStatus>;
+};
+
+
+export type AccountMetricsArgs = {
+  input: AccountMetricsInput;
 };
 
 
@@ -60,6 +68,32 @@ export type AccountAvatar = {
 
 export type AccountAvatarUrlArgs = {
   size: Scalars['Int']['input'];
+};
+
+export type AccountMetricData = {
+  __typename?: 'AccountMetricData';
+  projects: Scalars['JSONObject']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type AccountMetricDataPoint = {
+  __typename?: 'AccountMetricDataPoint';
+  projects: Scalars['JSONObject']['output'];
+  total: Scalars['Int']['output'];
+  ts: Scalars['Timestamp']['output'];
+};
+
+export type AccountMetrics = {
+  __typename?: 'AccountMetrics';
+  all: AccountMetricData;
+  projects: Array<Project>;
+  series: Array<AccountMetricDataPoint>;
+};
+
+export type AccountMetricsInput = {
+  from: Scalars['DateTime']['input'];
+  groupBy: TimeSeriesGroupBy;
+  projectIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export enum AccountPermission {
@@ -1030,6 +1064,7 @@ export type Team = Account & Node & {
   inviteLink?: Maybe<Scalars['String']['output']>;
   me?: Maybe<TeamMember>;
   members: TeamMemberConnection;
+  metrics: AccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<AccountSubscription>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
@@ -1059,6 +1094,11 @@ export type TeamMembersArgs = {
   levels?: InputMaybe<Array<TeamUserLevel>>;
   search?: InputMaybe<Scalars['String']['input']>;
   sso?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type TeamMetricsArgs = {
+  input: AccountMetricsInput;
 };
 
 
@@ -1123,6 +1163,12 @@ export enum TestReportStatus {
   Timedout = 'timedout'
 }
 
+export enum TimeSeriesGroupBy {
+  Day = 'day',
+  Month = 'month',
+  Week = 'week'
+}
+
 export type TransferProjectInput = {
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
@@ -1181,6 +1227,7 @@ export type User = Account & Node & {
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   lastSubscription?: Maybe<AccountSubscription>;
+  metrics: AccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<AccountSubscription>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
@@ -1196,6 +1243,11 @@ export type User = Account & Node & {
   subscription?: Maybe<AccountSubscription>;
   subscriptionStatus?: Maybe<AccountSubscriptionStatus>;
   teams: Array<Team>;
+};
+
+
+export type UserMetricsArgs = {
+  input: AccountMetricsInput;
 };
 
 
@@ -1935,6 +1987,15 @@ export type UserListRow_UserFragment = { __typename?: 'User', id: string, slug: 
     & { ' $fragmentRefs'?: { 'AccountAvatarFragmentFragment': AccountAvatarFragmentFragment } }
   ) } & { ' $fragmentName'?: 'UserListRow_UserFragment' };
 
+export type AccountUsage_AccountQueryVariables = Exact<{
+  slug: Scalars['String']['input'];
+  from: Scalars['DateTime']['input'];
+  groupBy: TimeSeriesGroupBy;
+}>;
+
+
+export type AccountUsage_AccountQuery = { __typename?: 'Query', account?: { __typename?: 'Team', id: string, permissions: Array<AccountPermission>, metrics: { __typename?: 'AccountMetrics', all: { __typename?: 'AccountMetricData', total: number, projects: any }, series: Array<{ __typename?: 'AccountMetricDataPoint', ts: any, total: number, projects: any }>, projects: Array<{ __typename?: 'Project', id: string, name: string }> } } | { __typename?: 'User', id: string, permissions: Array<AccountPermission>, metrics: { __typename?: 'AccountMetrics', all: { __typename?: 'AccountMetricData', total: number, projects: any }, series: Array<{ __typename?: 'AccountMetricDataPoint', ts: any, total: number, projects: any }>, projects: Array<{ __typename?: 'Project', id: string, name: string }> } } | null };
+
 export type NewProject_ImportGithubProjectMutationVariables = Exact<{
   repo: Scalars['String']['input'];
   owner: Scalars['String']['input'];
@@ -2286,6 +2347,7 @@ export const UpgradeDialog_MeDocument = {"kind":"Document","definitions":[{"kind
 export const GitHubAuth_DisconnectGitHubAuthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GitHubAuth_disconnectGitHubAuth"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"accountId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"disconnectGitHubAuth"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"accountId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"accountId"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"GitHubAuth_Account"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"GitHubAuth_Account"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Account"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"githubAccount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"login"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"lastLoggedAt"}}]}}]}}]} as unknown as DocumentNode<GitHubAuth_DisconnectGitHubAuthMutation, GitHubAuth_DisconnectGitHubAuthMutationVariables>;
 export const GitLabAuth_DisconnectGitLabAuthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GitLabAuth_disconnectGitLabAuth"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"accountId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"disconnectGitLabAuth"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"accountId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"accountId"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"GitLabAuth_Account"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"GitLabAuth_Account"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"gitlabUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"lastLoggedAt"}}]}}]}}]} as unknown as DocumentNode<GitLabAuth_DisconnectGitLabAuthMutation, GitLabAuth_DisconnectGitLabAuthMutationVariables>;
 export const GoogleAuth_DisconnectGoogleAuthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GoogleAuth_disconnectGoogleAuth"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"accountId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"disconnectGoogleAuth"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"accountId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"accountId"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"GoogleAuth_Account"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"GoogleAuth_Account"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"googleUser"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"primaryEmail"}},{"kind":"Field","name":{"kind":"Name","value":"lastLoggedAt"}}]}}]}}]} as unknown as DocumentNode<GoogleAuth_DisconnectGoogleAuthMutation, GoogleAuth_DisconnectGoogleAuthMutationVariables>;
+export const AccountUsage_AccountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AccountUsage_account"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"slug"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"from"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"DateTime"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupBy"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TimeSeriesGroupBy"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"account"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"slug"},"value":{"kind":"Variable","name":{"kind":"Name","value":"slug"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}},{"kind":"Field","name":{"kind":"Name","value":"metrics"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"from"},"value":{"kind":"Variable","name":{"kind":"Name","value":"from"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"groupBy"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupBy"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"all"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"projects"}}]}},{"kind":"Field","name":{"kind":"Name","value":"series"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ts"}},{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"projects"}}]}},{"kind":"Field","name":{"kind":"Name","value":"projects"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]}}]} as unknown as DocumentNode<AccountUsage_AccountQuery, AccountUsage_AccountQueryVariables>;
 export const NewProject_ImportGithubProjectDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"NewProject_importGithubProject"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"repo"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"owner"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"accountSlug"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"app"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GitHubAppType"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"importGithubProject"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"repo"},"value":{"kind":"Variable","name":{"kind":"Name","value":"repo"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"owner"},"value":{"kind":"Variable","name":{"kind":"Name","value":"owner"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"accountSlug"},"value":{"kind":"Variable","name":{"kind":"Name","value":"accountSlug"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"app"},"value":{"kind":"Variable","name":{"kind":"Name","value":"app"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}}]}}]}}]} as unknown as DocumentNode<NewProject_ImportGithubProjectMutation, NewProject_ImportGithubProjectMutationVariables>;
 export const NewProject_ImportGitlabProjectDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"NewProject_importGitlabProject"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"gitlabProjectId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"accountSlug"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"importGitlabProject"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"gitlabProjectId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"gitlabProjectId"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"accountSlug"},"value":{"kind":"Variable","name":{"kind":"Name","value":"accountSlug"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}}]}}]}}]} as unknown as DocumentNode<NewProject_ImportGitlabProjectMutation, NewProject_ImportGitlabProjectMutationVariables>;
 export const AccountProjects_AccountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AccountProjects_account"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"slug"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"account"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"slug"},"value":{"kind":"Variable","name":{"kind":"Name","value":"slug"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"permissions"}},{"kind":"Field","name":{"kind":"Name","value":"projects"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"IntValue","value":"100"}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"IntValue","value":"0"}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"ProjectList_Project"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"AccountAvatarFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AccountAvatar"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"url"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"size"},"value":{"kind":"IntValue","value":"64"}}]},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"initial"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ProjectList_Project"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Project"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}},{"kind":"Field","name":{"kind":"Name","value":"account"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"slug"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"AccountAvatarFragment"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"repository"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"fullName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"latestBuild"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<AccountProjects_AccountQuery, AccountProjects_AccountQueryVariables>;

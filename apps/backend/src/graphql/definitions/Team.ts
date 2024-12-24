@@ -63,6 +63,7 @@ export const typeDefs = gql`
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
     githubAccount: GithubAccount
+    metrics(input: AccountMetricsInput!): AccountMetrics!
 
     me: TeamMember
     members(
