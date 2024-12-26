@@ -75,6 +75,13 @@ export type IAccountAvatarUrlArgs = {
   size: Scalars['Int']['input'];
 };
 
+export type IAccountBuildsMetrics = {
+  __typename?: 'AccountBuildsMetrics';
+  all: IAccountMetricData;
+  projects: Array<IProject>;
+  series: Array<IAccountMetricDataPoint>;
+};
+
 export type IAccountMetricData = {
   __typename?: 'AccountMetricData';
   projects: Scalars['JSONObject']['output'];
@@ -90,9 +97,8 @@ export type IAccountMetricDataPoint = {
 
 export type IAccountMetrics = {
   __typename?: 'AccountMetrics';
-  all: IAccountMetricData;
-  projects: Array<IProject>;
-  series: Array<IAccountMetricDataPoint>;
+  builds: IAccountBuildsMetrics;
+  screenshots: IAccountScreenshotMetrics;
 };
 
 export type IAccountMetricsInput = {
@@ -105,6 +111,13 @@ export enum IAccountPermission {
   Admin = 'admin',
   View = 'view'
 }
+
+export type IAccountScreenshotMetrics = {
+  __typename?: 'AccountScreenshotMetrics';
+  all: IAccountMetricData;
+  projects: Array<IProject>;
+  series: Array<IAccountMetricDataPoint>;
+};
 
 export type IAccountSubscription = INode & {
   __typename?: 'AccountSubscription';
@@ -1362,11 +1375,13 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
 export type IResolversTypes = ResolversObject<{
   Account: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Account']>;
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
+  AccountBuildsMetrics: ResolverTypeWrapper<Omit<IAccountBuildsMetrics, 'projects'> & { projects: Array<IResolversTypes['Project']> }>;
   AccountMetricData: ResolverTypeWrapper<IAccountMetricData>;
   AccountMetricDataPoint: ResolverTypeWrapper<IAccountMetricDataPoint>;
-  AccountMetrics: ResolverTypeWrapper<Omit<IAccountMetrics, 'projects'> & { projects: Array<IResolversTypes['Project']> }>;
+  AccountMetrics: ResolverTypeWrapper<Omit<IAccountMetrics, 'builds' | 'screenshots'> & { builds: IResolversTypes['AccountBuildsMetrics'], screenshots: IResolversTypes['AccountScreenshotMetrics'] }>;
   AccountMetricsInput: IAccountMetricsInput;
   AccountPermission: IAccountPermission;
+  AccountScreenshotMetrics: ResolverTypeWrapper<Omit<IAccountScreenshotMetrics, 'projects'> & { projects: Array<IResolversTypes['Project']> }>;
   AccountSubscription: ResolverTypeWrapper<Subscription>;
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
@@ -1485,10 +1500,12 @@ export type IResolversTypes = ResolversObject<{
 export type IResolversParentTypes = ResolversObject<{
   Account: IResolversInterfaceTypes<IResolversParentTypes>['Account'];
   AccountAvatar: AccountAvatar;
+  AccountBuildsMetrics: Omit<IAccountBuildsMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
   AccountMetricData: IAccountMetricData;
   AccountMetricDataPoint: IAccountMetricDataPoint;
-  AccountMetrics: Omit<IAccountMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
+  AccountMetrics: Omit<IAccountMetrics, 'builds' | 'screenshots'> & { builds: IResolversParentTypes['AccountBuildsMetrics'], screenshots: IResolversParentTypes['AccountScreenshotMetrics'] };
   AccountMetricsInput: IAccountMetricsInput;
+  AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
   Boolean: Scalars['Boolean']['output'];
@@ -1617,6 +1634,13 @@ export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IR
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type IAccountBuildsMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountBuildsMetrics'] = IResolversParentTypes['AccountBuildsMetrics']> = ResolversObject<{
+  all?: Resolver<IResolversTypes['AccountMetricData'], ParentType, ContextType>;
+  projects?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
+  series?: Resolver<Array<IResolversTypes['AccountMetricDataPoint']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type IAccountMetricDataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetricData'] = IResolversParentTypes['AccountMetricData']> = ResolversObject<{
   projects?: Resolver<IResolversTypes['JSONObject'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
@@ -1631,6 +1655,12 @@ export type IAccountMetricDataPointResolvers<ContextType = Context, ParentType e
 }>;
 
 export type IAccountMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetrics'] = IResolversParentTypes['AccountMetrics']> = ResolversObject<{
+  builds?: Resolver<IResolversTypes['AccountBuildsMetrics'], ParentType, ContextType>;
+  screenshots?: Resolver<IResolversTypes['AccountScreenshotMetrics'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAccountScreenshotMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountScreenshotMetrics'] = IResolversParentTypes['AccountScreenshotMetrics']> = ResolversObject<{
   all?: Resolver<IResolversTypes['AccountMetricData'], ParentType, ContextType>;
   projects?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
   series?: Resolver<Array<IResolversTypes['AccountMetricDataPoint']>, ParentType, ContextType>;
@@ -2228,9 +2258,11 @@ export type IUserConnectionResolvers<ContextType = Context, ParentType extends I
 export type IResolvers<ContextType = Context> = ResolversObject<{
   Account?: IAccountResolvers<ContextType>;
   AccountAvatar?: IAccountAvatarResolvers<ContextType>;
+  AccountBuildsMetrics?: IAccountBuildsMetricsResolvers<ContextType>;
   AccountMetricData?: IAccountMetricDataResolvers<ContextType>;
   AccountMetricDataPoint?: IAccountMetricDataPointResolvers<ContextType>;
   AccountMetrics?: IAccountMetricsResolvers<ContextType>;
+  AccountScreenshotMetrics?: IAccountScreenshotMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   Build?: IBuildResolvers<ContextType>;
   BuildConnection?: IBuildConnectionResolvers<ContextType>;

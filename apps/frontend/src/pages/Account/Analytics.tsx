@@ -1,20 +1,11 @@
 import { Suspense, useCallback, useEffect, useMemo } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
-import { CloudOffIcon } from "lucide-react";
+import NumberFlow from "@number-flow/react";
 import moment from "moment";
 import { Helmet } from "react-helmet";
-import { useParams, useSearchParams } from "react-router-dom";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Label,
-  Pie,
-  PieChart,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { DocumentType, graphql } from "@/gql";
 import { TimeSeriesGroupBy } from "@/gql/graphql";
@@ -43,18 +34,35 @@ const AccountQuery = graphql(`
       id
       permissions
       metrics(input: { from: $from, groupBy: $groupBy }) {
-        all {
-          total
-          projects
+        screenshots {
+          all {
+            total
+            projects
+          }
+          series {
+            ts
+            total
+            projects
+          }
+          projects {
+            id
+            name
+          }
         }
-        series {
-          ts
-          total
-          projects
-        }
-        projects {
-          id
-          name
+        builds {
+          all {
+            total
+            projects
+          }
+          series {
+            ts
+            total
+            projects
+          }
+          projects {
+            id
+            name
+          }
         }
       }
     }
@@ -91,8 +99,16 @@ export function Component() {
 
   return (
     <Container className="py-10">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <Heading margin={false}>Analytics</Heading>
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
+        <div>
+          <Heading margin={false} className="mb-1">
+            Analytics
+          </Heading>
+          <p className="text-low text-sm">
+            Track builds and screenshots to monitor your visual testing activity
+            at a glance.
+          </p>
+        </div>
         <PeriodSelect value={period} onChange={setPeriod} />
       </div>
       <Helmet>
@@ -105,55 +121,96 @@ export function Component() {
   );
 }
 
+const emptyMetric = {
+  all: { total: 0, projects: {} },
+  series: [],
+  projects: [],
+};
+
 function Charts(props: { accountSlug: string; period: Period }) {
   const { accountSlug, period } = props;
   const { from, to, groupBy } = Periods[period];
 
-  const { data } = useSuspenseQuery(AccountQuery, {
+  const { data } = useQuery(AccountQuery, {
     variables: {
       slug: accountSlug,
       from: from.toISOString(),
       groupBy,
     },
   });
-  const { account } = data;
 
-  if (!account) {
-    throw new Error("No data");
+  if (data && !data.account) {
+    return <Navigate to="/" />;
   }
 
+  return (
+    <div className="flex flex-col gap-6 lg:flex-row">
+      <ChartCard
+        metric={data?.account?.metrics.builds ?? null}
+        from={from}
+        to={to}
+        groupBy={groupBy}
+        title="Builds"
+        emptyTitle="No builds"
+        emptyDescription="You haven't created any builds for this period."
+      />
+      <ChartCard
+        metric={data?.account?.metrics.screenshots ?? null}
+        from={from}
+        to={to}
+        groupBy={groupBy}
+        title="Screenshots"
+        emptyTitle="No screenshots"
+        emptyDescription="You haven't uploaded any screenshots for this period."
+      />
+    </div>
+  );
+}
+
+type Metric = Account["metrics"]["builds"] | Account["metrics"]["screenshots"];
+
+function ChartCard(props: {
+  metric: Metric | null;
+  from: Date;
+  to: Date;
+  groupBy: TimeSeriesGroupBy;
+  title: string;
+  emptyTitle: string;
+  emptyDescription: string;
+}) {
+  const { metric, from, to, groupBy, title, emptyTitle, emptyDescription } =
+    props;
   return (
     <Card className="flex flex-col">
       <div className="flex border-b">
         <div className="min-w-52 p-6">
-          <h2 className="font-medium">Screenshots</h2>
-          <p className="text-sm">
-            The number of screenshots uploaded to Argos.
-          </p>
+          <h2 className="text-low mb-0.5 text-sm font-medium">{title}</h2>
+          <div className="relative text-2xl font-medium">
+            <NumberFlow
+              value={metric?.all.total ?? 0}
+              className={metric ? undefined : "invisible"}
+            />
+            {!metric && (
+              <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
+            )}
+          </div>
         </div>
       </div>
-      <div className="flex items-center justify-center p-6">
-        {account.metrics.all.total === 0 ? (
+      <div className="flex h-72 items-center justify-center p-6">
+        {metric && metric.all.total === 0 ? (
           <div className="flex flex-col items-center gap-2">
-            <CloudOffIcon
-              className="size-20"
-              strokeWidth={0.8}
-              absoluteStrokeWidth
-            />
-            <div className="font-medium">No screenshots</div>
-            <p className="text-low text-sm">
-              You haven't taken any screenshots for this period.
-            </p>
+            <div className="font-medium">{emptyTitle}</div>
+            <p className="text-low text-sm">{emptyDescription}</p>
           </div>
         ) : (
-          <div className="flex size-full flex-col gap-6 pt-6 md:flex-row">
+          <div className="flex size-full flex-col gap-6 pt-4 md:flex-row">
             <EvolutionChart
-              account={account}
+              metric={metric ?? emptyMetric}
               from={from}
               to={to}
               groupBy={groupBy}
             />
-            <ProjectsDistributionChart account={account} />
+            {/* <ProjectsDistributionChart metric={metric} title={title} /> */}
           </div>
         )}
       </div>
@@ -162,25 +219,18 @@ function Charts(props: { accountSlug: string; period: Period }) {
 }
 
 function EvolutionChart(props: {
-  account: Account;
+  metric: Metric;
   from: Date;
   to: Date;
   groupBy: TimeSeriesGroupBy;
 }) {
-  const { account, from, to, groupBy } = props;
-  const chartConfig = account.metrics.projects.reduce<ChartConfig>(
-    (config, project) => {
-      config[`projects.${project.id}`] = {
-        label: project.name,
-      };
-      return config;
-    },
-    {
-      screenshots: {
-        label: "Screenshots",
-      },
-    },
-  );
+  const { metric, from, to, groupBy } = props;
+  const chartConfig = metric.projects.reduce<ChartConfig>((config, project) => {
+    config[`projects.${project.id}`] = {
+      label: project.name,
+    };
+    return config;
+  }, {});
   const ticks = useMemo(() => {
     switch (groupBy) {
       case TimeSeriesGroupBy.Day:
@@ -192,14 +242,23 @@ function EvolutionChart(props: {
     }
   }, [from, to, groupBy]);
   return (
-    <ChartContainer config={chartConfig} className="h-80 md:flex-1">
+    <ChartContainer config={chartConfig} className="h-full md:flex-1">
       <AreaChart
-        margin={{ left: 12, right: 12 }}
+        margin={{ left: -12, right: 12 }}
         accessibilityLayer
-        data={account.metrics.series}
+        data={metric.series}
+        syncId="evolution"
       >
         <CartesianGrid vertical={false} strokeDasharray="5 5" />
-        <YAxis tickLine={false} axisLine={false} />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(value: number) => {
+            return value.toLocaleString(navigator.language, {
+              notation: "compact",
+            });
+          }}
+        />
         <XAxis
           dataKey="ts"
           type="number"
@@ -215,15 +274,14 @@ function EvolutionChart(props: {
             switch (groupBy) {
               case TimeSeriesGroupBy.Day:
               case TimeSeriesGroupBy.Week: {
-                return date.toLocaleDateString("en-US", {
+                return date.toLocaleDateString(navigator.language, {
                   month: "short",
                   day: "numeric",
                 });
               }
               case TimeSeriesGroupBy.Month:
-                return date.toLocaleDateString("en-US", {
+                return date.toLocaleDateString(navigator.language, {
                   month: "short",
-                  year: "numeric",
                 });
             }
           }}
@@ -237,10 +295,9 @@ function EvolutionChart(props: {
                 const date = new Date(firstItem.payload.ts);
                 switch (groupBy) {
                   case TimeSeriesGroupBy.Day:
-                    return date.toLocaleDateString("en-US", {
+                    return date.toLocaleDateString(navigator.language, {
                       month: "short",
                       day: "numeric",
-                      year: "numeric",
                     });
                   case TimeSeriesGroupBy.Week: {
                     const startOfWeek = moment(date)
@@ -252,16 +309,15 @@ function EvolutionChart(props: {
                     return `${startOfWeek} - ${endOfWeek}`;
                   }
                   case TimeSeriesGroupBy.Month:
-                    return date.toLocaleDateString("en-US", {
+                    return date.toLocaleDateString(navigator.language, {
                       month: "short",
-                      year: "numeric",
                     });
                 }
               }}
             />
           }
         />
-        {account.metrics.projects.map((project, index) => {
+        {metric.projects.map((project, index) => {
           const color = getChartColorFromIndex(index);
           return (
             <Area
@@ -271,85 +327,11 @@ function EvolutionChart(props: {
               fill={color}
               fillOpacity={0.4}
               stroke={color}
-              stackId="screenshots"
+              stackId="group"
             />
           );
         })}
       </AreaChart>
-    </ChartContainer>
-  );
-}
-
-function ProjectsDistributionChart(props: { account: Account }) {
-  const { account } = props;
-  const chartConfig = account.metrics.projects.reduce<ChartConfig>(
-    (config, project, index) => {
-      config[project.name] = {
-        label: project.name,
-        color: getChartColorFromIndex(index),
-      };
-      return config;
-    },
-    { screenshots: { label: "Screenshots" } },
-  );
-
-  const data = account.metrics.projects.reduce<
-    { project: string; screenshots: number; fill: string }[]
-  >((acc, project, index) => {
-    acc.push({
-      project: project.name,
-      screenshots: account.metrics.all.projects[project.id],
-      fill: getChartColorFromIndex(index),
-    });
-    return acc;
-  }, []);
-
-  return (
-    <ChartContainer config={chartConfig} className="mx-auto size-80">
-      <PieChart>
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel />}
-        />
-        <Pie
-          data={data}
-          dataKey="screenshots"
-          nameKey="project"
-          innerRadius={60}
-          strokeWidth={5}
-        >
-          <Label
-            content={({ viewBox }) => {
-              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                return (
-                  <text
-                    x={viewBox.cx}
-                    y={viewBox.cy}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    <tspan
-                      x={viewBox.cx}
-                      y={viewBox.cy}
-                      className="fill-text-default text-xl font-medium"
-                    >
-                      {account.metrics.all.total.toLocaleString()}
-                    </tspan>
-                    <tspan
-                      x={viewBox.cx}
-                      y={(viewBox.cy || 0) + 20}
-                      className="fill-text-low text-xs"
-                    >
-                      screenshots
-                    </tspan>
-                  </text>
-                );
-              }
-              return null;
-            }}
-          />
-        </Pie>
-      </PieChart>
     </ChartContainer>
   );
 }

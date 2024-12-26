@@ -15,7 +15,10 @@ import {
 } from "@/database/models/index.js";
 import { checkAccountSlug } from "@/database/services/account.js";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
-import { getAccountScreenshotMetrics } from "@/metrics/account.js";
+import {
+  getAccountBuildMetrics,
+  getAccountScreenshotMetrics,
+} from "@/metrics/account.js";
 import { uninstallSlackInstallation } from "@/slack/index.js";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
@@ -76,10 +79,21 @@ export const typeDefs = gql`
     projects: JSONObject!
   }
 
-  type AccountMetrics {
+  type AccountScreenshotMetrics {
     series: [AccountMetricDataPoint!]!
     all: AccountMetricData!
     projects: [Project!]!
+  }
+
+  type AccountBuildsMetrics {
+    series: [AccountMetricDataPoint!]!
+    all: AccountMetricData!
+    projects: [Project!]!
+  }
+
+  type AccountMetrics {
+    screenshots: AccountScreenshotMetrics!
+    builds: AccountBuildsMetrics!
   }
 
   enum TimeSeriesGroupBy {
@@ -398,14 +412,21 @@ export const resolvers: IResolvers = {
       return ctx.loaders.GithubAccount.load(account.githubAccountId);
     },
     metrics: async (account, args) => {
-      const data = await getAccountScreenshotMetrics({
+      const params = {
         accountId: account.id,
         projectIds: args.input.projectIds,
         from: args.input.from,
         to: new Date(),
         groupBy: args.input.groupBy,
-      });
-      return data;
+      };
+      const [screenshots, builds] = await Promise.all([
+        getAccountScreenshotMetrics(params),
+        getAccountBuildMetrics(params),
+      ]);
+      return {
+        screenshots,
+        builds,
+      };
     },
   },
   AccountAvatar: {

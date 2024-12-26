@@ -58,6 +58,7 @@
     "vite": "^6.0.3"
   },
   "dependencies": {
+    "@number-flow/react": "^0.4.4",
     "recharts": "^2.15.0"
   }
 }

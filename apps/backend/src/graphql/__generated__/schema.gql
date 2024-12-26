@@ -30,6 +30,12 @@ type AccountAvatar {
   url(size: Int!): String
 }
 
+type AccountBuildsMetrics {
+  all: AccountMetricData!
+  projects: [Project!]!
+  series: [AccountMetricDataPoint!]!
+}
+
 type AccountMetricData {
   projects: JSONObject!
   total: Int!
@@ -42,9 +48,8 @@ type AccountMetricDataPoint {
 }
 
 type AccountMetrics {
-  all: AccountMetricData!
-  projects: [Project!]!
-  series: [AccountMetricDataPoint!]!
+  builds: AccountBuildsMetrics!
+  screenshots: AccountScreenshotMetrics!
 }
 
 input AccountMetricsInput {
@@ -56,6 +61,12 @@ input AccountMetricsInput {
 enum AccountPermission {
   admin
   view
+}
+
+type AccountScreenshotMetrics {
+  all: AccountMetricData!
+  projects: [Project!]!
+  series: [AccountMetricDataPoint!]!
 }
 
 type AccountSubscription implements Node {
