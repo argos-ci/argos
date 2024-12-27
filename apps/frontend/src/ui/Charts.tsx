@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { invariant } from "@argos/util/invariant";
+import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
 import * as RechartsPrimitive from "recharts";
 
@@ -16,6 +17,7 @@ export function getChartColorFromIndex(index: number) {
 export type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode;
+    count?: number;
     icon?: React.ComponentType;
   } & (
     | { color?: string; theme?: never }
@@ -242,7 +244,7 @@ function ChartTooltipContent({
                       </span>
                     </div>
                     {item.value && (
-                      <span className="text font-mono font-medium tabular-nums">
+                      <span className="text font-medium tabular-nums">
                         {item.value.toLocaleString()}
                       </span>
                     )}
@@ -296,4 +298,74 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config];
 }
 
-export { ChartContainer, ChartTooltip, ChartTooltipContent };
+const ChartLegend = RechartsPrimitive.Legend;
+
+function ChartLegendContent({
+  ref,
+  className,
+  hideIcon = false,
+  payload,
+  verticalAlign = "bottom",
+  nameKey,
+}: React.ComponentPropsWithRef<"div"> &
+  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+    hideIcon?: boolean;
+    nameKey?: string;
+  }) {
+  const { config } = useChart();
+
+  if (!payload?.length) {
+    return null;
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={clsx(
+        "flex flex-wrap items-center justify-center gap-x-6 gap-y-2",
+        verticalAlign === "top" ? "pb-3" : "pt-3",
+        className,
+      )}
+    >
+      {payload.map((item) => {
+        const key = `${nameKey || item.dataKey || "value"}`;
+        const itemConfig = getPayloadConfigFromPayload(config, item, key);
+
+        return (
+          <div key={item.value}>
+            <div
+              className={clsx(
+                "[&>svg]:text-low flex items-center gap-1.5 [&>svg]:size-3",
+              )}
+            >
+              {itemConfig?.icon && !hideIcon ? (
+                <itemConfig.icon />
+              ) : (
+                <div
+                  className="size-2 shrink-0 rounded-[2px]"
+                  style={{
+                    backgroundColor: item.color,
+                  }}
+                />
+              )}
+              {itemConfig?.label}
+            </div>
+            {typeof itemConfig?.count === "number" && (
+              <div className="mt-1 text-base font-bold">
+                <NumberFlow value={itemConfig?.count} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+};

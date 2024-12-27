@@ -65,89 +65,93 @@ export function Component() {
   const hasAdminPermission = permissions.includes(AccountPermission.Admin);
 
   return (
-    <Container className="py-10">
-      <Helmet>
-        <title>{accountSlug} • Settings</title>
-      </Helmet>
-      <Heading>
-        {userSlug === accountSlug ? "Personal" : "Team"} Settings
-      </Heading>
-      <Query
-        // Prevent persistence between pages
-        key={accountSlug}
-        fallback={<PageLoader />}
-        query={AccountQuery}
-        variables={{ slug: accountSlug }}
-      >
-        {({ account }) => {
-          if (!account) {
-            return <NotFound />;
-          }
-          const isTeam = account.__typename === "Team";
-          const isUser = account.__typename === "User";
-          const fineGrainedAccessControlIncluded = Boolean(
-            isTeam && account.plan?.fineGrainedAccessControlIncluded,
-          );
+    <div className="bg-subtle flex-1">
+      <Container className="py-10">
+        <Helmet>
+          <title>{accountSlug} • Settings</title>
+        </Helmet>
+        <Heading>
+          {userSlug === accountSlug ? "Personal" : "Team"} Settings
+        </Heading>
+        <Query
+          // Prevent persistence between pages
+          key={accountSlug}
+          fallback={<PageLoader />}
+          query={AccountQuery}
+          variables={{ slug: accountSlug }}
+        >
+          {({ account }) => {
+            if (!account) {
+              return <NotFound />;
+            }
+            const isTeam = account.__typename === "Team";
+            const isUser = account.__typename === "User";
+            const fineGrainedAccessControlIncluded = Boolean(
+              isTeam && account.plan?.fineGrainedAccessControlIncluded,
+            );
 
-          return (
-            <SettingsLayout>
-              {hasAdminPermission &&
-                (() => {
-                  switch (account.__typename) {
-                    case "User":
-                      return (
-                        <>
-                          <AccountChangeName
-                            account={account}
-                            title="Your Name"
-                            description="Please enter your full name, or a display name you are comfortable with."
-                          />
-                          <AccountChangeSlug
-                            account={account}
-                            title="Your Username"
-                            description="This is your URL namespace within Argos."
-                          />
-                        </>
-                      );
-                    case "Team":
-                      return (
-                        <>
-                          <AccountChangeName
-                            account={account}
-                            title="Team Name"
-                            description="This is your team's visible name within Argos. For example, the
+            return (
+              <SettingsLayout>
+                {hasAdminPermission &&
+                  (() => {
+                    switch (account.__typename) {
+                      case "User":
+                        return (
+                          <>
+                            <AccountChangeName
+                              account={account}
+                              title="Your Name"
+                              description="Please enter your full name, or a display name you are comfortable with."
+                            />
+                            <AccountChangeSlug
+                              account={account}
+                              title="Your Username"
+                              description="This is your URL namespace within Argos."
+                            />
+                          </>
+                        );
+                      case "Team":
+                        return (
+                          <>
+                            <AccountChangeName
+                              account={account}
+                              title="Team Name"
+                              description="This is your team's visible name within Argos. For example, the
               name of your company or department."
-                          />
-                          <AccountChangeSlug
-                            account={account}
-                            title="Team URL"
-                            description="This is your team’s URL namespace on Argos. Within it, your team
+                            />
+                            <AccountChangeSlug
+                              account={account}
+                              title="Team URL"
+                              description="This is your team’s URL namespace on Argos. Within it, your team
                     can inspect their projects or configure settings."
-                          />
-                        </>
-                      );
-                  }
-                  return null;
-                })()}
-              {isUser && hasAdminPermission && <UserAuth account={account} />}
-              {hasAdminPermission && <PlanCard account={account} />}
-              {isTeam && <TeamMembers team={account} />}
-              {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
-              {isTeam &&
-                hasAdminPermission &&
-                fineGrainedAccessControlIncluded && (
-                  <TeamAccessRole team={account} />
+                            />
+                          </>
+                        );
+                    }
+                    return null;
+                  })()}
+                {isUser && hasAdminPermission && <UserAuth account={account} />}
+                {hasAdminPermission && <PlanCard account={account} />}
+                {isTeam && <TeamMembers team={account} />}
+                {isTeam && hasAdminPermission && (
+                  <TeamGitHubSSO team={account} />
                 )}
-              {isTeam && <TeamSlack account={account} />}
-              {isTeam && hasAdminPermission && (
-                <TeamGitHubLight team={account} />
-              )}
-              {hasAdminPermission && <AccountGitLab account={account} />}
-              {isTeam && hasAdminPermission && <TeamDelete team={account} />}
-            </SettingsLayout>
-          );
-        }}
-      </Query>
-    </Container>
+                {isTeam &&
+                  hasAdminPermission &&
+                  fineGrainedAccessControlIncluded && (
+                    <TeamAccessRole team={account} />
+                  )}
+                {isTeam && <TeamSlack account={account} />}
+                {isTeam && hasAdminPermission && (
+                  <TeamGitHubLight team={account} />
+                )}
+                {hasAdminPermission && <AccountGitLab account={account} />}
+                {isTeam && hasAdminPermission && <TeamDelete team={account} />}
+              </SettingsLayout>
+            );
+          }}
+        </Query>
+      </Container>
+    </div>
   );
 }

@@ -2,17 +2,28 @@ import { Suspense, useCallback, useEffect, useMemo } from "react";
 import { useQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import NumberFlow from "@number-flow/react";
+import clsx from "clsx";
 import moment from "moment";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Pie,
+  PieChart,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-import { DocumentType, graphql } from "@/gql";
+import { graphql } from "@/gql";
 import { TimeSeriesGroupBy } from "@/gql/graphql";
 import { Card } from "@/ui/Card";
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   getChartColorFromIndex,
@@ -69,20 +80,18 @@ const AccountQuery = graphql(`
   }
 `);
 
-type Account = NonNullable<DocumentType<typeof AccountQuery>["account"]>;
-
 /** @route */
 export function Component() {
   const { accountSlug } = useParams();
   invariant(accountSlug);
-  const [params, setParams] = useSearchParams({ period: "last-365-days" });
+  const [params, setParams] = useSearchParams({ period: DEFAULT_PERIOD });
   const period = parsePeriod(params.get("period"));
 
   const setPeriod = useCallback(
     (value: Period) => {
       setParams((prev) => {
         const next = new URLSearchParams(prev);
-        if (value === "last-365-days") {
+        if (value === DEFAULT_PERIOD) {
           next.delete("period");
         } else {
           next.set("period", value);
@@ -98,34 +107,30 @@ export function Component() {
   }, [setPeriod, period]);
 
   return (
-    <Container className="py-10">
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-        <div>
-          <Heading margin={false} className="mb-1">
-            Analytics
-          </Heading>
-          <p className="text-low text-sm">
-            Track builds and screenshots to monitor your visual testing activity
-            at a glance.
-          </p>
+    <div className="bg-subtle flex-1">
+      <Container className="py-10">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <Heading margin={false} className="mb-1">
+              Analytics
+            </Heading>
+            <p className="text-low text-sm">
+              Track builds and screenshots to monitor your visual testing
+              activity at a glance.
+            </p>
+          </div>
+          <PeriodSelect value={period} onChange={setPeriod} />
         </div>
-        <PeriodSelect value={period} onChange={setPeriod} />
-      </div>
-      <Helmet>
-        <title>{accountSlug} • Analytics</title>
-      </Helmet>
-      <Suspense fallback={<Loader />}>
-        <Charts accountSlug={accountSlug} period={period} />
-      </Suspense>
-    </Container>
+        <Helmet>
+          <title>{accountSlug} • Analytics</title>
+        </Helmet>
+        <Suspense fallback={<Loader />}>
+          <Charts accountSlug={accountSlug} period={period} />
+        </Suspense>
+      </Container>
+    </div>
   );
 }
-
-const emptyMetric = {
-  all: { total: 0, projects: {} },
-  series: [],
-  projects: [],
-};
 
 function Charts(props: { accountSlug: string; period: Period }) {
   const { accountSlug, period } = props;
@@ -139,82 +144,278 @@ function Charts(props: { accountSlug: string; period: Period }) {
     },
   });
 
-  if (data && !data.account) {
+  const metrics = data?.account?.metrics;
+
+  const screenshotByBuildSeries: Metric | null = useMemo(() => {
+    if (!metrics) {
+      return null;
+    }
+
+    const series = metrics.screenshots.series.reduce<Metric["series"]>(
+      (acc, serie, index) => {
+        const screenshots = serie;
+        const builds = metrics.builds.series[index];
+        invariant(builds);
+        acc.push({
+          projects: metrics.screenshots.projects.reduce<Record<string, number>>(
+            (acc, project) => {
+              const nbScreenshots = screenshots.projects[project.id];
+              const nbBuilds = builds.projects[project.id];
+              acc[project.id] =
+                nbBuilds > 0 ? Math.round(nbScreenshots / nbBuilds) : 0;
+              return acc;
+            },
+            {},
+          ),
+          total: Math.round(screenshots.total / builds.total),
+          ts: serie.ts,
+        });
+        return acc;
+      },
+      [],
+    );
+    const all = series.reduce<{
+      total: number;
+      projects: Record<string, number>;
+    }>(
+      (acc, serie) => {
+        acc.total += serie.total;
+        Object.entries(serie.projects).forEach(([projectId, count]) => {
+          acc.projects[projectId] = (acc.projects[projectId] ?? 0) + count;
+        });
+        return acc;
+      },
+      { total: 0, projects: {} },
+    );
+
+    return {
+      all,
+      projects: metrics.screenshots.projects,
+      series,
+    };
+  }, [metrics]);
+
+  if (data && !metrics) {
     return <Navigate to="/" />;
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      <ChartCard
-        metric={data?.account?.metrics.builds ?? null}
-        from={from}
-        to={to}
-        groupBy={groupBy}
-        title="Builds"
-        emptyTitle="No builds"
-        emptyDescription="You haven't created any builds for this period."
-      />
-      <ChartCard
-        metric={data?.account?.metrics.screenshots ?? null}
-        from={from}
-        to={to}
-        groupBy={groupBy}
-        title="Screenshots"
-        emptyTitle="No screenshots"
-        emptyDescription="You haven't uploaded any screenshots for this period."
-      />
+    <div className="grid grid-cols-12 gap-6 lg:flex-row">
+      <Card className="col-span-12 flex flex-col lg:col-span-6">
+        <ChartCardHeader>
+          <ChartCardDescription>Builds</ChartCardDescription>
+          <Count count={metrics?.builds.all.total ?? null} />
+        </ChartCardHeader>
+        <ChartCardBody>
+          {metrics?.builds ? (
+            metrics.builds.all.total === 0 ? (
+              <EmptyState
+                title="No builds"
+                description="You haven't created any builds for this period."
+              />
+            ) : (
+              <EvolutionChart
+                metric={metrics.builds}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
+      <Card className="col-span-12 flex flex-col lg:col-span-6">
+        <ChartCardHeader>
+          <ChartCardDescription>Screenshots</ChartCardDescription>
+          <Count count={metrics?.screenshots.all.total ?? null} />
+        </ChartCardHeader>
+        <ChartCardBody>
+          {metrics ? (
+            metrics.screenshots.all.total === 0 ? (
+              <EmptyState
+                title="No screenshots"
+                description="You haven't uploaded any screenshots for this period."
+              />
+            ) : (
+              <EvolutionChart
+                metric={metrics.screenshots}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
+      <Card className="col-span-12 flex flex-col lg:col-span-4">
+        <ChartCardHeader>
+          <ChartCardHeading>Screenshots by Project</ChartCardHeading>
+        </ChartCardHeader>
+        <ChartCardBody>
+          {metrics ? <ProjectPieChart metric={metrics.screenshots} /> : null}
+        </ChartCardBody>
+      </Card>
+      <div className="col-span-12 flex flex-col gap-[inherit] lg:col-span-3">
+        <Card className="p-6">
+          <ChartCardHeading className="mb-4">
+            Usage by {GroupByLabels[groupBy]}
+          </ChartCardHeading>
+          <div className="flex flex-col gap-4">
+            <div>
+              <ChartCardDescription>Builds</ChartCardDescription>
+              <Count
+                count={
+                  metrics
+                    ? Math.round(
+                        metrics.builds.all.total / metrics.builds.series.length,
+                      )
+                    : null
+                }
+              />
+            </div>
+            <div>
+              <ChartCardDescription>Screenshots</ChartCardDescription>
+              <Count
+                count={
+                  metrics
+                    ? Math.round(
+                        metrics.screenshots.all.total /
+                          metrics.screenshots.series.length,
+                      )
+                    : null
+                }
+              />
+            </div>
+          </div>
+        </Card>
+      </div>
+      <Card className="col-span-12 flex flex-col lg:col-span-5">
+        <ChartCardHeader>
+          <ChartCardHeading className="mb-4">
+            Screenshots by Build
+          </ChartCardHeading>
+        </ChartCardHeader>
+        <ChartCardBody>
+          {screenshotByBuildSeries ? (
+            screenshotByBuildSeries.all.total === 0 ? (
+              <EmptyState
+                title="No screenshots"
+                description="You haven't uploaded any screenshots for this period."
+              />
+            ) : (
+              <EvolutionChart
+                metric={screenshotByBuildSeries}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
     </div>
   );
 }
 
-type Metric = Account["metrics"]["builds"] | Account["metrics"]["screenshots"];
+type Metric = {
+  all: {
+    total: number;
+    projects: Record<string, number>;
+  };
+  projects: { id: string; name: string }[];
+  series: {
+    ts: number;
+    total: number;
+    projects: Record<string, number>;
+  }[];
+};
 
-function ChartCard(props: {
-  metric: Metric | null;
-  from: Date;
-  to: Date;
-  groupBy: TimeSeriesGroupBy;
-  title: string;
-  emptyTitle: string;
-  emptyDescription: string;
-}) {
-  const { metric, from, to, groupBy, title, emptyTitle, emptyDescription } =
-    props;
+function ChartCardHeader(props: { children: React.ReactNode }) {
+  return <div className="p-6">{props.children}</div>;
+}
+
+function Count(props: { count: number | null }) {
+  const isLoading = props.count === null;
   return (
-    <Card className="flex flex-col">
-      <div className="flex border-b">
-        <div className="min-w-52 p-6">
-          <h2 className="text-low mb-0.5 text-sm font-medium">{title}</h2>
-          <div className="relative text-2xl font-medium">
-            <NumberFlow
-              value={metric?.all.total ?? 0}
-              className={metric ? undefined : "invisible"}
-            />
-            {!metric && (
-              <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="flex h-72 items-center justify-center p-6">
-        {metric && metric.all.total === 0 ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="font-medium">{emptyTitle}</div>
-            <p className="text-low text-sm">{emptyDescription}</p>
-          </div>
-        ) : (
-          <div className="flex size-full flex-col gap-6 pt-4 md:flex-row">
-            <EvolutionChart
-              metric={metric ?? emptyMetric}
-              from={from}
-              to={to}
-              groupBy={groupBy}
-            />
-            {/* <ProjectsDistributionChart metric={metric} title={title} /> */}
-          </div>
-        )}
-      </div>
-    </Card>
+    <div className="relative text-4xl font-black">
+      <NumberFlow
+        value={props.count ?? 0}
+        className={isLoading ? "invisible" : undefined}
+      />
+      {isLoading && (
+        <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
+      )}
+    </div>
+  );
+}
+
+function ChartCardHeading(props: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <h2 className={clsx("text-2xl font-bold", props.className)}>
+      {props.children}
+    </h2>
+  );
+}
+
+function ChartCardDescription(props: { children: React.ReactNode }) {
+  return <p className="text-low text-sm font-medium">{props.children}</p>;
+}
+
+function ChartCardBody(props: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-80 flex-1 items-center justify-center p-6 pt-0">
+      {props.children}
+    </div>
+  );
+}
+
+function EmptyState(props: { title: string; description: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="font-medium">{props.title}</div>
+      <p className="text-low text-sm">{props.description}</p>
+    </div>
+  );
+}
+
+function ProjectPieChart(props: { metric: Metric }) {
+  const chartConfig = props.metric.projects.reduce<ChartConfig>(
+    (config, project, index) => {
+      config[project.name] = {
+        label: project.name,
+        count: props.metric.all.projects[project.id],
+        color: getChartColorFromIndex(index),
+      };
+      return config;
+    },
+    { screenshots: { label: "Screenshots" } },
+  );
+  const data = props.metric.projects.reduce<
+    { project: string; screenshots: number; fill: string }[]
+  >((acc, project, index) => {
+    const screenshots = props.metric.all.projects[project.id];
+    invariant(typeof screenshots === "number");
+    acc.push({
+      project: project.name,
+      screenshots,
+      fill: getChartColorFromIndex(index),
+    });
+    return acc;
+  }, []);
+  return (
+    <ChartContainer config={chartConfig} className="size-full">
+      <PieChart>
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent hideLabel />}
+        />
+        <Pie data={data} dataKey="screenshots" nameKey="project" />
+        <ChartLegend content={<ChartLegendContent />} />
+      </PieChart>
+    </ChartContainer>
   );
 }
 
@@ -379,6 +580,8 @@ const Periods: Record<
   },
 };
 
+const DEFAULT_PERIOD: Period = "last-30-days";
+
 function parsePeriod(value: string | null): Period {
   switch (value) {
     case "last-7-days":
@@ -387,15 +590,21 @@ function parsePeriod(value: string | null): Period {
     case "last-365-days":
       return value;
     default:
-      return "last-365-days";
+      return DEFAULT_PERIOD;
   }
 }
 
 const PeriodLabels: Record<Period, string> = {
-  "last-7-days": "Last week",
-  "last-30-days": "Last month",
-  "last-90-days": "Last 3 months",
-  "last-365-days": "Last year",
+  "last-7-days": "Last 7 days",
+  "last-30-days": "Last 30 days",
+  "last-90-days": "Last 90 days",
+  "last-365-days": "Last 365 days",
+};
+
+const GroupByLabels: Record<TimeSeriesGroupBy, string> = {
+  [TimeSeriesGroupBy.Day]: "Day",
+  [TimeSeriesGroupBy.Week]: "Week",
+  [TimeSeriesGroupBy.Month]: "Month",
 };
 
 function PeriodSelect(props: {
