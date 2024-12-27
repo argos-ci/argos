@@ -110,6 +110,10 @@ export async function getAccountScreenshotMetrics(input: {
     { total: 0, projects: {} },
   );
 
+  projects.sort((a, b) => {
+    return (all.projects[b.id] ?? 0) - (all.projects[a.id] ?? 0);
+  });
+
   return { series, all, projects };
 }
 

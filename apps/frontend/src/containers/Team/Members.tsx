@@ -550,7 +550,7 @@ function TeamGithubMembersList(props: {
   const members = data.team.githubMembers.edges;
   return (
     <div className="my-4">
-      <ListTitle>
+      <ListTitle className="flex items-center">
         <MarkGithubIcon className="mr-1.5 size-4" />
         GitHub members synced from{" "}
         <GithubAccountLink githubAccount={githubAccount} />

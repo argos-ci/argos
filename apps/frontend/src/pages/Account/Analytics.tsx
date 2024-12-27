@@ -5,7 +5,15 @@ import NumberFlow from "@number-flow/react";
 import moment from "moment";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Pie,
+  PieChart,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { DocumentType, graphql } from "@/gql";
 import { TimeSeriesGroupBy } from "@/gql/graphql";
@@ -13,6 +21,8 @@ import { Card } from "@/ui/Card";
 import {
   ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   getChartColorFromIndex,
@@ -75,14 +85,14 @@ type Account = NonNullable<DocumentType<typeof AccountQuery>["account"]>;
 export function Component() {
   const { accountSlug } = useParams();
   invariant(accountSlug);
-  const [params, setParams] = useSearchParams({ period: "last-365-days" });
+  const [params, setParams] = useSearchParams({ period: DEFAULT_PERIOD });
   const period = parsePeriod(params.get("period"));
 
   const setPeriod = useCallback(
     (value: Period) => {
       setParams((prev) => {
         const next = new URLSearchParams(prev);
-        if (value === "last-365-days") {
+        if (value === DEFAULT_PERIOD) {
           next.delete("period");
         } else {
           next.set("period", value);
@@ -121,17 +131,11 @@ export function Component() {
   );
 }
 
-const emptyMetric = {
-  all: { total: 0, projects: {} },
-  series: [],
-  projects: [],
-};
-
 function Charts(props: { accountSlug: string; period: Period }) {
   const { accountSlug, period } = props;
   const { from, to, groupBy } = Periods[period];
 
-  const { data } = useQuery(AccountQuery, {
+  const results = useQuery(AccountQuery, {
     variables: {
       slug: accountSlug,
       from: from.toISOString(),
@@ -139,82 +143,154 @@ function Charts(props: { accountSlug: string; period: Period }) {
     },
   });
 
+  const data = results.data ?? results.previousData;
+
   if (data && !data.account) {
     return <Navigate to="/" />;
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      <ChartCard
-        metric={data?.account?.metrics.builds ?? null}
-        from={from}
-        to={to}
-        groupBy={groupBy}
-        title="Builds"
-        emptyTitle="No builds"
-        emptyDescription="You haven't created any builds for this period."
-      />
-      <ChartCard
-        metric={data?.account?.metrics.screenshots ?? null}
-        from={from}
-        to={to}
-        groupBy={groupBy}
-        title="Screenshots"
-        emptyTitle="No screenshots"
-        emptyDescription="You haven't uploaded any screenshots for this period."
-      />
+    <div className="grid grid-cols-6 gap-6 lg:flex-row">
+      <Card className="col-span-6 lg:col-span-3">
+        <ChartCardHeader>
+          <ChartCardHeading>Builds</ChartCardHeading>
+          <ChartCardCount
+            count={data?.account?.metrics.builds.all.total ?? null}
+          />
+        </ChartCardHeader>
+        <ChartCardBody>
+          {data?.account?.metrics.builds ? (
+            data.account.metrics.builds.all.total === 0 ? (
+              <EmptyState
+                title="No builds"
+                description="You haven't created any builds for this period."
+              />
+            ) : (
+              <EvolutionChart
+                metric={data.account.metrics.builds}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
+      <Card className="col-span-6 lg:col-span-3">
+        <ChartCardHeader>
+          <ChartCardHeading>Screenshots</ChartCardHeading>
+          <ChartCardCount
+            count={data?.account?.metrics.screenshots.all.total ?? null}
+          />
+        </ChartCardHeader>
+        <ChartCardBody>
+          {data?.account?.metrics.screenshots ? (
+            data.account.metrics.screenshots.all.total === 0 ? (
+              <EmptyState
+                title="No screenshots"
+                description="You haven't uploaded any screenshots for this period."
+              />
+            ) : (
+              <EvolutionChart
+                metric={data.account.metrics.screenshots}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
+      <Card className="col-span-6 lg:col-span-2">
+        <ChartCardHeader>
+          <ChartCardHeading>Screenshots per project</ChartCardHeading>
+        </ChartCardHeader>
+        <ChartCardBody>
+          {data?.account?.metrics.screenshots ? (
+            <ProjectPieChart metric={data.account.metrics.screenshots} />
+          ) : null}
+        </ChartCardBody>
+      </Card>
     </div>
   );
 }
 
 type Metric = Account["metrics"]["builds"] | Account["metrics"]["screenshots"];
 
-function ChartCard(props: {
-  metric: Metric | null;
-  from: Date;
-  to: Date;
-  groupBy: TimeSeriesGroupBy;
-  title: string;
-  emptyTitle: string;
-  emptyDescription: string;
-}) {
-  const { metric, from, to, groupBy, title, emptyTitle, emptyDescription } =
-    props;
+function ChartCardHeader(props: { children: React.ReactNode }) {
+  return <div className="border-b p-6">{props.children}</div>;
+}
+
+function ChartCardCount(props: { count: number | null }) {
+  const isLoading = props.count === null;
   return (
-    <Card className="flex flex-col">
-      <div className="flex border-b">
-        <div className="min-w-52 p-6">
-          <h2 className="text-low mb-0.5 text-sm font-medium">{title}</h2>
-          <div className="relative text-2xl font-medium">
-            <NumberFlow
-              value={metric?.all.total ?? 0}
-              className={metric ? undefined : "invisible"}
-            />
-            {!metric && (
-              <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="flex h-72 items-center justify-center p-6">
-        {metric && metric.all.total === 0 ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="font-medium">{emptyTitle}</div>
-            <p className="text-low text-sm">{emptyDescription}</p>
-          </div>
-        ) : (
-          <div className="flex size-full flex-col gap-6 pt-4 md:flex-row">
-            <EvolutionChart
-              metric={metric ?? emptyMetric}
-              from={from}
-              to={to}
-              groupBy={groupBy}
-            />
-            {/* <ProjectsDistributionChart metric={metric} title={title} /> */}
-          </div>
-        )}
-      </div>
-    </Card>
+    <div className="relative text-2xl font-medium">
+      <NumberFlow
+        value={props.count ?? 0}
+        className={isLoading ? "invisible" : undefined}
+      />
+      {isLoading && (
+        <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
+      )}
+    </div>
+  );
+}
+
+function ChartCardHeading(props: { children: React.ReactNode }) {
+  return <h2 className="mb-0.5 text-sm font-medium">{props.children}</h2>;
+}
+
+function ChartCardBody(props: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-80 items-center justify-center p-6">
+      {props.children}
+    </div>
+  );
+}
+
+function EmptyState(props: { title: string; description: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="font-medium">{props.title}</div>
+      <p className="text-low text-sm">{props.description}</p>
+    </div>
+  );
+}
+
+function ProjectPieChart(props: { metric: Metric }) {
+  const chartConfig = props.metric.projects.reduce<ChartConfig>(
+    (config, project, index) => {
+      config[project.name] = {
+        label: project.name,
+        count: props.metric.all.projects[project.id],
+        color: getChartColorFromIndex(index),
+      };
+      return config;
+    },
+    { screenshots: { label: "Screenshots" } },
+  );
+  const data = props.metric.projects.reduce<
+    { project: string; screenshots: number; fill: string }[]
+  >((acc, project, index) => {
+    acc.push({
+      project: project.name,
+      screenshots: props.metric.all.projects[project.id],
+      fill: getChartColorFromIndex(index),
+    });
+    return acc;
+  }, []);
+  console.log(props.metric.all.projects);
+  return (
+    <ChartContainer config={chartConfig} className="size-full">
+      <PieChart>
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent hideLabel />}
+        />
+        <Pie data={data} dataKey="screenshots" nameKey="project" />
+        <ChartLegend content={<ChartLegendContent />} />
+      </PieChart>
+    </ChartContainer>
   );
 }
 
@@ -244,7 +320,7 @@ function EvolutionChart(props: {
   return (
     <ChartContainer config={chartConfig} className="h-full md:flex-1">
       <AreaChart
-        margin={{ left: -12, right: 12 }}
+        margin={{ top: 12, left: -12, right: 12 }}
         accessibilityLayer
         data={metric.series}
         syncId="evolution"
@@ -331,6 +407,7 @@ function EvolutionChart(props: {
             />
           );
         })}
+        <ChartLegend content={<ChartLegendContent />} />
       </AreaChart>
     </ChartContainer>
   );
@@ -352,6 +429,8 @@ function getTicks(
 }
 
 type Period = "last-7-days" | "last-30-days" | "last-90-days" | "last-365-days";
+
+const DEFAULT_PERIOD: Period = "last-30-days";
 
 const Periods: Record<
   Period,
@@ -387,15 +466,15 @@ function parsePeriod(value: string | null): Period {
     case "last-365-days":
       return value;
     default:
-      return "last-365-days";
+      return DEFAULT_PERIOD;
   }
 }
 
 const PeriodLabels: Record<Period, string> = {
-  "last-7-days": "Last week",
-  "last-30-days": "Last month",
-  "last-90-days": "Last 3 months",
-  "last-365-days": "Last year",
+  "last-7-days": "Last 7 days",
+  "last-30-days": "Last 30 days",
+  "last-90-days": "Last 90 days",
+  "last-365-days": "Last 365 days",
 };
 
 function PeriodSelect(props: {

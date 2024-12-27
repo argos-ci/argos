@@ -44,7 +44,7 @@ export function BuildNameFilter(props: {
           props.onChange(value ? String(value) : null)
         }
       >
-        <SelectButton className="min-w-[8em]">
+        <SelectButton className="text-low w-full min-w-[8em] text-sm">
           {getBuildNameLabel(value)}
         </SelectButton>
         <Popover>
