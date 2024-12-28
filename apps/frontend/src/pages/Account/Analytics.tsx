@@ -167,7 +167,9 @@ function Charts(props: { accountSlug: string; period: Period }) {
             },
             {},
           ),
-          total: Math.round(screenshots.total / builds.total),
+          total: builds.total
+            ? Math.round(screenshots.total / builds.total)
+            : 0,
           ts: serie.ts,
         });
         return acc;
@@ -209,10 +211,7 @@ function Charts(props: { accountSlug: string; period: Period }) {
         <ChartCardBody>
           {metrics?.builds ? (
             metrics.builds.all.total === 0 ? (
-              <EmptyState
-                title="No builds"
-                description="You haven't created any builds for this period."
-              />
+              <EmptyStateBuilds />
             ) : (
               <EvolutionChart
                 metric={metrics.builds}
@@ -232,10 +231,7 @@ function Charts(props: { accountSlug: string; period: Period }) {
         <ChartCardBody>
           {metrics ? (
             metrics.screenshots.all.total === 0 ? (
-              <EmptyState
-                title="No screenshots"
-                description="You haven't uploaded any screenshots for this period."
-              />
+              <EmptyStateScreenshots />
             ) : (
               <EvolutionChart
                 metric={metrics.screenshots}
@@ -252,7 +248,13 @@ function Charts(props: { accountSlug: string; period: Period }) {
           <ChartCardHeading>Screenshots by Project</ChartCardHeading>
         </ChartCardHeader>
         <ChartCardBody>
-          {metrics ? <ProjectPieChart metric={metrics.screenshots} /> : null}
+          {metrics ? (
+            metrics.screenshots.all.total > 0 ? (
+              <ProjectPieChart metric={metrics.screenshots} />
+            ) : (
+              <EmptyStateScreenshots />
+            )
+          ) : null}
         </ChartCardBody>
       </Card>
       <div className="col-span-12 flex flex-col gap-[inherit] lg:col-span-3">
@@ -294,14 +296,23 @@ function Charts(props: { accountSlug: string; period: Period }) {
           <ChartCardHeading className="mb-4">
             Screenshots by Build
           </ChartCardHeading>
+          <ChartCardDescription>Screenshots</ChartCardDescription>
+          <Count
+            count={
+              metrics
+                ? metrics.screenshots.all.total
+                  ? Math.round(
+                      metrics.screenshots.all.total / metrics.builds.all.total,
+                    )
+                  : 0
+                : null
+            }
+          />
         </ChartCardHeader>
         <ChartCardBody>
           {screenshotByBuildSeries ? (
             screenshotByBuildSeries.all.total === 0 ? (
-              <EmptyState
-                title="No screenshots"
-                description="You haven't uploaded any screenshots for this period."
-              />
+              <EmptyStateScreenshots />
             ) : (
               <EvolutionChart
                 metric={screenshotByBuildSeries}
@@ -314,6 +325,24 @@ function Charts(props: { accountSlug: string; period: Period }) {
         </ChartCardBody>
       </Card>
     </div>
+  );
+}
+
+function EmptyStateScreenshots() {
+  return (
+    <EmptyState
+      title="No screenshots"
+      description="You haven't uploaded any screenshots for this period."
+    />
+  );
+}
+
+function EmptyStateBuilds() {
+  return (
+    <EmptyState
+      title="No builds"
+      description="You haven't created any builds for this period."
+    />
   );
 }
 
@@ -342,6 +371,7 @@ function Count(props: { count: number | null }) {
         value={props.count ?? 0}
         className={isLoading ? "invisible" : undefined}
       />
+
       {isLoading && (
         <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
       )}
