@@ -204,15 +204,6 @@ function Charts(props: { accountSlug: string; period: Period }) {
     return <Navigate to="/" />;
   }
 
-  console.log(
-    getCSVName({
-      unit: "builds",
-      from,
-      to,
-      groupBy,
-    }),
-  );
-
   return (
     <div className="grid grid-cols-12 gap-6 lg:flex-row">
       <Card className="group col-span-12 flex flex-col lg:col-span-6">
@@ -229,6 +220,7 @@ function Charts(props: { accountSlug: string; period: Period }) {
                 exportToCSV({
                   metric: metrics.builds,
                   name: getCSVName({
+                    account: accountSlug,
                     unit: "builds",
                     from,
                     to,
@@ -270,6 +262,7 @@ function Charts(props: { accountSlug: string; period: Period }) {
                 exportToCSV({
                   metric: metrics.builds,
                   name: getCSVName({
+                    account: accountSlug,
                     unit: "screenshots",
                     from,
                     to,
@@ -383,22 +376,16 @@ function Charts(props: { accountSlug: string; period: Period }) {
 }
 
 function getCSVName(props: {
+  account: string;
   unit: string;
   from: Date;
   to: Date;
   groupBy: TimeSeriesGroupBy;
 }) {
-  const { unit, from, to, groupBy } = props;
+  const { account, unit, from, to, groupBy } = props;
   const fromStr = from.toISOString().slice(0, 10);
   const toStr = to.toISOString().slice(0, 10);
-  switch (groupBy) {
-    case TimeSeriesGroupBy.Day:
-      return `argos-${unit}-${fromStr}-${toStr}.csv`;
-    case TimeSeriesGroupBy.Week:
-      return `argos-${unit}-${fromStr}-${toStr}-week.csv`;
-    case TimeSeriesGroupBy.Month:
-      return `argos-${unit}-${fromStr}-${toStr}-month.csv`;
-  }
+  return `${account}-${unit}-${fromStr}-${toStr}-${groupBy}.csv`;
 }
 
 function exportToCSV(props: { metric: Metric; name: string }) {
