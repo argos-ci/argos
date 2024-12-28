@@ -3,6 +3,7 @@ import { useQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
+import { FileDownIcon } from "lucide-react";
 import moment from "moment";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
@@ -29,10 +30,12 @@ import {
   getChartColorFromIndex,
 } from "@/ui/Charts";
 import { Container } from "@/ui/Container";
+import { IconButton } from "@/ui/IconButton";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Loader } from "@/ui/Loader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
+import { Tooltip } from "@/ui/Tooltip";
 import { Heading } from "@/ui/Typography";
 
 const AccountQuery = graphql(`
@@ -201,12 +204,42 @@ function Charts(props: { accountSlug: string; period: Period }) {
     return <Navigate to="/" />;
   }
 
+  console.log(
+    getCSVName({
+      unit: "builds",
+      from,
+      to,
+      groupBy,
+    }),
+  );
+
   return (
     <div className="grid grid-cols-12 gap-6 lg:flex-row">
-      <Card className="col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader>
-          <ChartCardDescription>Builds</ChartCardDescription>
-          <Count count={metrics?.builds.all.total ?? null} />
+      <Card className="group col-span-12 flex flex-col lg:col-span-6">
+        <ChartCardHeader className="flex items-start justify-between gap-6">
+          <div>
+            <ChartCardDescription>Builds</ChartCardDescription>
+            <Count count={metrics?.builds.all.total ?? null} />
+          </div>
+          <Tooltip content="Export to CSV">
+            <IconButton
+              isDisabled={!metrics}
+              onPress={() => {
+                invariant(metrics);
+                exportToCSV({
+                  metric: metrics.builds,
+                  name: getCSVName({
+                    unit: "builds",
+                    from,
+                    to,
+                    groupBy,
+                  }),
+                });
+              }}
+            >
+              <FileDownIcon />
+            </IconButton>
+          </Tooltip>
         </ChartCardHeader>
         <ChartCardBody>
           {metrics?.builds ? (
@@ -224,9 +257,30 @@ function Charts(props: { accountSlug: string; period: Period }) {
         </ChartCardBody>
       </Card>
       <Card className="col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader>
-          <ChartCardDescription>Screenshots</ChartCardDescription>
-          <Count count={metrics?.screenshots.all.total ?? null} />
+        <ChartCardHeader className="flex items-start justify-between gap-6">
+          <div>
+            <ChartCardDescription>Screenshots</ChartCardDescription>
+            <Count count={metrics?.screenshots.all.total ?? null} />
+          </div>
+          <Tooltip content="Export to CSV">
+            <IconButton
+              isDisabled={!metrics}
+              onPress={() => {
+                invariant(metrics);
+                exportToCSV({
+                  metric: metrics.builds,
+                  name: getCSVName({
+                    unit: "screenshots",
+                    from,
+                    to,
+                    groupBy,
+                  }),
+                });
+              }}
+            >
+              <FileDownIcon />
+            </IconButton>
+          </Tooltip>
         </ChartCardHeader>
         <ChartCardBody>
           {metrics ? (
@@ -328,6 +382,59 @@ function Charts(props: { accountSlug: string; period: Period }) {
   );
 }
 
+function getCSVName(props: {
+  unit: string;
+  from: Date;
+  to: Date;
+  groupBy: TimeSeriesGroupBy;
+}) {
+  const { unit, from, to, groupBy } = props;
+  const fromStr = from.toISOString().slice(0, 10);
+  const toStr = to.toISOString().slice(0, 10);
+  switch (groupBy) {
+    case TimeSeriesGroupBy.Day:
+      return `argos-${unit}-${fromStr}-${toStr}.csv`;
+    case TimeSeriesGroupBy.Week:
+      return `argos-${unit}-${fromStr}-${toStr}-week.csv`;
+    case TimeSeriesGroupBy.Month:
+      return `argos-${unit}-${fromStr}-${toStr}-month.csv`;
+  }
+}
+
+function exportToCSV(props: { metric: Metric; name: string }) {
+  const { metric } = props;
+
+  const rows: (string | number)[][] = [
+    ["Date", "Total", ...metric.projects.map((p) => p.name)],
+  ];
+
+  metric.series.forEach((serie) => {
+    const row = [
+      new Date(serie.ts).toISOString(),
+      serie.total,
+      ...metric.projects.map((p) => serie.projects[p.id] ?? 0),
+    ];
+    rows.push(row);
+  });
+
+  const csvContent = rows.map((e) => e.join(",")).join("\n");
+
+  // Create the blob and download link
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = props.name;
+
+  // Trigger download
+  document.body.appendChild(link);
+  link.click();
+
+  // Cleanup
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function EmptyStateScreenshots() {
   return (
     <EmptyState
@@ -359,8 +466,11 @@ type Metric = {
   }[];
 };
 
-function ChartCardHeader(props: { children: React.ReactNode }) {
-  return <div className="p-6">{props.children}</div>;
+function ChartCardHeader(props: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={clsx("p-6", props.className)}>{props.children}</div>;
 }
 
 function Count(props: { count: number | null }) {
