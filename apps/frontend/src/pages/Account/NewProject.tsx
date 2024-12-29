@@ -1,12 +1,17 @@
 import { useMutation } from "@apollo/client";
+import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
-import { Container } from "@/ui/Container";
 import { getGraphQLErrorMessage } from "@/ui/Form";
-import { Heading, Headline } from "@/ui/Typography";
+import {
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderContent,
+} from "@/ui/Layout";
 
 const ImportGithubProjectMutation = graphql(`
   mutation NewProject_importGithubProject(
@@ -96,50 +101,52 @@ export function Component() {
   }
 
   return (
-    <>
+    <Page>
       <Helmet>
         <title>New Project</title>
       </Helmet>
-      <div className="bg-subtle flex-1">
-        <Container className="py-10">
-          <Heading>Create a new Project</Heading>
-          <Headline>
-            To add visual testing a new Project, import an existing Git
-            Repository.
-          </Headline>
-          <div className="relative mt-8 max-w-2xl" style={{ height: 382 }}>
-            <ConnectRepository
-              variant="import"
-              disabled={loading}
-              accountSlug={accountSlug}
-              onSelectRepository={(repo, app) => {
-                importGithubProject({
-                  variables: {
-                    repo: repo.name,
-                    owner: repo.owner_login,
-                    accountSlug: accountSlug,
-                    app,
-                  },
-                }).catch((error) => {
-                  // TODO: Show error in UI
-                  alert(getGraphQLErrorMessage(error));
-                });
-              }}
-              onSelectProject={(glProject) => {
-                importGitLabProject({
-                  variables: {
-                    gitlabProjectId: glProject.id,
-                    accountSlug: accountSlug,
-                  },
-                }).catch((error) => {
-                  // TODO: Show error in UI
-                  alert(getGraphQLErrorMessage(error));
-                });
-              }}
-            />
-          </div>
-        </Container>
-      </div>
-    </>
+      <PageContainer>
+        <PageHeader>
+          <PageHeaderContent>
+            <Heading>Create a new Project</Heading>
+            <Text slot="headline">
+              To add visual testing a new project, import an existing Git
+              repository.
+            </Text>
+          </PageHeaderContent>
+        </PageHeader>
+        <div className="relative max-w-2xl flex-1">
+          <ConnectRepository
+            variant="import"
+            disabled={loading}
+            accountSlug={accountSlug}
+            onSelectRepository={(repo, app) => {
+              importGithubProject({
+                variables: {
+                  repo: repo.name,
+                  owner: repo.owner_login,
+                  accountSlug: accountSlug,
+                  app,
+                },
+              }).catch((error) => {
+                // TODO: Show error in UI
+                alert(getGraphQLErrorMessage(error));
+              });
+            }}
+            onSelectProject={(glProject) => {
+              importGitLabProject({
+                variables: {
+                  gitlabProjectId: glProject.id,
+                  accountSlug: accountSlug,
+                },
+              }).catch((error) => {
+                // TODO: Show error in UI
+                alert(getGraphQLErrorMessage(error));
+              });
+            }}
+          />
+        </div>
+      </PageContainer>
+    </Page>
   );
 }

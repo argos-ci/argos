@@ -84,8 +84,8 @@ const backgroundColor = {
 
 const borderColor = {
   DEFAULT: "var(--mauve-6)",
+  default: "var(--mauve-6)",
   low: "var(--mauve-4)",
-  base: "var(--mauve-6)",
   hover: "var(--mauve-8)",
   active: "var(--mauve-9)",
   primary: {

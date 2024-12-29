@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { useDebounce } from "use-debounce";
 
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { UserListRow } from "@/containers/UserList";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -94,7 +94,7 @@ function TeamContributorsList(props: {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 300);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const result = useQuery(TeamContributorsQuery, {
+  const result = useSafeQuery(TeamContributorsQuery, {
     variables: {
       projectId: props.projectId,
       teamAccountId: props.teamAccountId,

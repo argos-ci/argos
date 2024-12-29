@@ -1,19 +1,29 @@
 import { memo, useCallback, useEffect, useRef } from "react";
-import { useQuery } from "@apollo/client";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
+import { BoxesIcon } from "lucide-react";
+import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams, useResolvedPath } from "react-router-dom";
 
+import { useSafeQuery } from "@/containers/Apollo";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
-import { Container } from "@/ui/Container";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateIcon,
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderContent,
+} from "@/ui/Layout";
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
@@ -288,18 +298,14 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { permissions } = useProjectContext();
   const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
   const [buildName, setBuildName] = useBuildNameFilter();
-  const projectResult = useQuery(ProjectQuery, {
+  const projectResult = useSafeQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
     },
   });
 
-  if (projectResult.error) {
-    throw projectResult.error;
-  }
-
-  const buildsResult = useQuery(ProjectBuildsQuery, {
+  const buildsResult = useSafeQuery(ProjectBuildsQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
@@ -312,10 +318,6 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { fetchMore } = buildsResult;
   const buildResultRef = useRef(buildsResult);
   buildResultRef.current = buildsResult;
-
-  if (buildsResult.error) {
-    throw buildsResult.error;
-  }
 
   const fetchNextPage = useCallback(() => {
     const displayCount =
@@ -347,11 +349,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     !(projectResult.data || projectResult.previousData) ||
     !(buildsResult.data || buildsResult.previousData)
   ) {
-    return (
-      <Container className="py-10">
-        <PageLoader />
-      </Container>
-    );
+    return <PageLoader />;
   }
 
   const project =
@@ -361,44 +359,55 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     buildsResult.previousData?.project?.builds;
 
   if (!project || !builds) {
-    return (
-      <Container className="py-10">
-        <NotFound />
-      </Container>
-    );
+    return <NotFound />;
   }
 
   if (builds.pageInfo.totalCount === 0) {
     if (hasReviewerPermission) {
       return (
-        <Container className="py-10">
+        <PageContainer>
           <GettingStarted project={project} />
-        </Container>
+        </PageContainer>
       );
     } else {
       return (
-        <Container className="py-10">
-          <Alert>
-            <AlertTitle>No build</AlertTitle>
-            <AlertText>There is no build yet on this project.</AlertText>
-            <AlertActions>
+        <PageContainer>
+          <EmptyState>
+            <EmptyStateIcon>
+              <BoxesIcon strokeWidth={1} />
+            </EmptyStateIcon>
+            <Heading>No build</Heading>
+            <Text slot="description">
+              There is no build yet on this project.
+            </Text>
+            <EmptyStateActions>
               <LinkButton href="/">Back to home</LinkButton>
-            </AlertActions>
-          </Alert>
-        </Container>
+            </EmptyStateActions>
+          </EmptyState>
+        </PageContainer>
       );
     }
   }
 
   return (
-    <Container className="flex flex-1 flex-col pb-10 pt-4">
-      {project.buildNames.length > 1 && (
-        <BuildNameFilter
-          buildNames={project.buildNames}
-          value={buildName}
-          onChange={setBuildName}
-        />
-      )}
+    <PageContainer>
+      <PageHeader>
+        <PageHeaderContent>
+          <Heading>Builds</Heading>
+          <Text slot="headline">
+            View all the builds associated with this project.
+          </Text>
+        </PageHeaderContent>
+        {project.buildNames.length > 1 && (
+          <PageHeaderActions>
+            <BuildNameFilter
+              buildNames={project.buildNames}
+              value={buildName}
+              onChange={setBuildName}
+            />
+          </PageHeaderActions>
+        )}
+      </PageHeader>
       <div className="relative flex-1">
         <BuildsList
           project={project}
@@ -407,7 +416,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
           fetching={buildsResult.loading}
         />
       </div>
-    </Container>
+    </PageContainer>
   );
 };
 
@@ -420,13 +429,13 @@ export function Component() {
   }
 
   return (
-    <div className="bg-subtle flex min-h-0 flex-1 flex-col">
+    <Page>
       <Helmet>
         <title>
           {accountSlug}/{projectName} • Builds
         </title>
       </Helmet>
       <PageContent accountSlug={accountSlug} projectName={projectName} />
-    </div>
+    </Page>
   );
 }

@@ -1,22 +1,31 @@
+import { CircleXIcon } from "lucide-react";
+import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
-import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
-import { Container } from "@/ui/Container";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateIcon,
+  Page,
+} from "@/ui/Layout";
 
-export const NotFound = () => {
+export function NotFound() {
   return (
-    <Container>
+    <Page>
       <Helmet>
         <title>Page not found</title>
       </Helmet>
-      <Alert>
-        <AlertTitle>Page not found</AlertTitle>
-        <AlertText>There is nothing to see here.</AlertText>
-        <AlertActions>
+      <EmptyState>
+        <EmptyStateIcon>
+          <CircleXIcon strokeWidth={1} />
+        </EmptyStateIcon>
+        <Heading>Page not found</Heading>
+        <Text slot="description">There is nothing to see here.</Text>
+        <EmptyStateActions>
           <LinkButton href="/">Back to home</LinkButton>
-        </AlertActions>
-      </Alert>
-    </Container>
+        </EmptyStateActions>
+      </EmptyState>
+    </Page>
   );
-};
+}

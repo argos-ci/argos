@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { AccountSelector } from "@/containers/AccountSelector";
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button, ButtonProps } from "@/ui/Button";
@@ -43,7 +43,7 @@ export function TeamSubscribeDialog({
   children?: React.ReactNode;
   variant?: ButtonProps["variant"];
 }) {
-  const { data } = useQuery(MeQuery);
+  const { data } = useSafeQuery(MeQuery);
   const [accountId, setAccountId] = useState(initialAccountId);
   const hasSubscribedToTrial = Boolean(data?.me?.hasSubscribedToTrial);
   const teams = data?.me ? data.me.teams : null;

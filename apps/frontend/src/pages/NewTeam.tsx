@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router-dom";
 
@@ -7,9 +8,13 @@ import {
   TeamNewForm,
   useCreateTeamAndRedirect,
 } from "@/containers/Team/NewForm";
-import { Container } from "@/ui/Container";
+import {
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderContent,
+} from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
-import { Heading, Headline } from "@/ui/Typography";
 
 const AutoCreateTeam = ({ name }: { name: string }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
@@ -34,26 +39,30 @@ export function Component() {
   }
 
   return (
-    <>
-      <hr className="border-t" />
+    <Page>
       <Helmet>
         <title>New Team</title>
       </Helmet>
+      <hr className="border-t" />
       <AuthGuard>
         {() => {
           return (
-            <Container className="py-10">
-              <Heading>Create a Team</Heading>
-              <Headline>
-                A team alllows you to collaborate on one or several projects.
-              </Headline>
-              <div className="mt-4 max-w-2xl">
+            <PageContainer>
+              <PageHeader>
+                <PageHeaderContent>
+                  <Heading>Create a Team</Heading>
+                  <Text slot="headline">
+                    Create a team to collaborate on one or several projects.
+                  </Text>
+                </PageHeaderContent>
+              </PageHeader>
+              <div className="max-w-2xl">
                 <TeamNewForm defaultTeamName={name} />
               </div>
-            </Container>
+            </PageContainer>
           );
         }}
       </AuthGuard>
-    </>
+    </Page>
   );
 }

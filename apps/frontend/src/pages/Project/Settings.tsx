@@ -1,7 +1,9 @@
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@apollo/client";
+import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import { Query } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
@@ -16,9 +18,13 @@ import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
-import { Container } from "@/ui/Container";
+import {
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderContent,
+} from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
-import { Heading } from "@/ui/Typography";
 
 import { useProjectContext } from ".";
 
@@ -67,53 +73,73 @@ export function Component() {
     return <NotFound />;
   }
 
-  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
-  const hasReviewPermission = permissions.includes(ProjectPermission.Review);
-
   return (
-    <Container className="py-10">
+    <Page>
       <Helmet>
         <title>
           {accountSlug}/{projectName} • Settings
         </title>
       </Helmet>
-      <Heading>Project Settings</Heading>
-      <Query
-        fallback={<PageLoader />}
-        query={ProjectQuery}
-        variables={{
-          accountSlug,
-          projectName,
-        }}
-      >
-        {({ project, account }) => {
-          if (!project || !account) {
-            return <NotFound />;
-          }
-
-          const isTeam = account.__typename === "Team";
-          const fineGrainedAccessControlIncluded = Boolean(
-            isTeam && account.plan?.fineGrainedAccessControlIncluded,
-          );
-
-          return (
+      <PageContainer>
+        <PageHeader>
+          <PageHeaderContent>
+            <Heading>Project Settings</Heading>
+            <Text slot="headline">
+              Configure the settings for this project.
+            </Text>
+          </PageHeaderContent>
+        </PageHeader>
+        <Suspense
+          fallback={
             <SettingsLayout>
-              {hasAdminPermission && <ProjectChangeName project={project} />}
-              {hasReviewPermission && <ProjectToken project={project} />}
-              {hasAdminPermission && <ProjectGitRepository project={project} />}
-              {hasAdminPermission && <ProjectBranches project={project} />}
-              {hasAdminPermission && <ProjectStatusChecks project={project} />}
-              <ProjectBadge project={project} />
-              {hasAdminPermission && <ProjectVisibility project={project} />}
-              {fineGrainedAccessControlIncluded && (
-                <ProjectContributors project={project} />
-              )}
-              {hasAdminPermission && <ProjectTransfer project={project} />}
-              {hasAdminPermission && <ProjectDelete project={project} />}
+              <PageLoader />
             </SettingsLayout>
-          );
-        }}
-      </Query>
-    </Container>
+          }
+        >
+          <PageContent accountSlug={accountSlug} projectName={projectName} />
+        </Suspense>
+      </PageContainer>
+    </Page>
+  );
+}
+
+function PageContent(props: { accountSlug: string; projectName: string }) {
+  const { permissions } = useProjectContext();
+  const {
+    data: { account, project },
+  } = useSuspenseQuery(ProjectQuery, {
+    variables: {
+      accountSlug: props.accountSlug,
+      projectName: props.projectName,
+    },
+  });
+
+  if (!project || !account) {
+    return <NotFound />;
+  }
+
+  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
+  const hasReviewPermission = permissions.includes(ProjectPermission.Review);
+
+  const isTeam = account.__typename === "Team";
+  const fineGrainedAccessControlIncluded = Boolean(
+    isTeam && account.plan?.fineGrainedAccessControlIncluded,
+  );
+
+  return (
+    <SettingsLayout>
+      {hasAdminPermission && <ProjectChangeName project={project} />}
+      {hasReviewPermission && <ProjectToken project={project} />}
+      {hasAdminPermission && <ProjectGitRepository project={project} />}
+      {hasAdminPermission && <ProjectBranches project={project} />}
+      {hasAdminPermission && <ProjectStatusChecks project={project} />}
+      <ProjectBadge project={project} />
+      {hasAdminPermission && <ProjectVisibility project={project} />}
+      {fineGrainedAccessControlIncluded && (
+        <ProjectContributors project={project} />
+      )}
+      {hasAdminPermission && <ProjectTransfer project={project} />}
+      {hasAdminPermission && <ProjectDelete project={project} />}
+    </SettingsLayout>
   );
 }

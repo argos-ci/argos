@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useQuery } from "@apollo/client";
 
+import { useSafeQuery } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { graphql } from "@/gql";
 
@@ -46,7 +46,7 @@ const ProjectQuery = graphql(`
 `);
 
 export const BuildPage = ({ params }: { params: BuildParams }) => {
-  const { data, error, refetch } = useQuery(ProjectQuery, {
+  const { data, refetch } = useSafeQuery(ProjectQuery, {
     variables: {
       accountSlug: params.accountSlug,
       projectName: params.projectName,
@@ -72,10 +72,6 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
     }
     return undefined;
   }, [buildStatusProgress, refetch]);
-
-  if (error) {
-    throw error;
-  }
 
   if (data && !data.project?.build) {
     return <BuildNotFound />;

@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginButtons } from "@/containers/LoginButtons";
 import { graphql } from "@/gql";
@@ -75,7 +75,7 @@ export function Component() {
   const params = useParams();
   const token = params.inviteToken;
   invariant(token, "no invite token");
-  const { data } = useQuery(InvitationQuery, {
+  const { data } = useSafeQuery(InvitationQuery, {
     variables: {
       token,
     },

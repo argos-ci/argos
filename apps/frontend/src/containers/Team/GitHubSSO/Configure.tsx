@@ -9,7 +9,7 @@ import {
 } from "react-hook-form";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelect";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -64,12 +64,9 @@ const query = graphql(`
 `);
 
 function GitHubInstallationsSelectControl(props: { teamAccountId: string }) {
-  const { data, error } = useQuery(query, {
+  const { data } = useSafeQuery(query, {
     variables: { teamAccountId: props.teamAccountId },
   });
-  if (error) {
-    throw error;
-  }
   const installations = (() => {
     if (!data) {
       return [];

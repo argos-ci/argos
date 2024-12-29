@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
 import { TeamMemberLabel, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
@@ -41,7 +41,7 @@ export function ProjectTeamMembersList(props: {
   projectId: string;
   teamAccountId: string;
 }) {
-  const result = useQuery(TeamMembersQuery, {
+  const result = useSafeQuery(TeamMembersQuery, {
     variables: {
       teamAccountId: props.teamAccountId,
       after: 0,

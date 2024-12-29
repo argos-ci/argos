@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { Helmet } from "react-helmet";
@@ -7,7 +8,8 @@ import { CheckoutStatusDialog } from "@/containers/CheckoutStatusDialog";
 import { ProjectList } from "@/containers/ProjectList";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
-import { Container } from "@/ui/Container";
+import { Page } from "@/ui/Layout";
+import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
 
@@ -31,29 +33,35 @@ export function Component() {
   const { accountSlug } = useParams();
   invariant(accountSlug);
 
+  return (
+    <Page>
+      <Helmet>
+        <title>{accountSlug} • Projects</title>
+      </Helmet>
+      <Suspense fallback={<PageLoader />}>
+        <Projects accountSlug={accountSlug} />
+      </Suspense>
+      <CheckoutStatusDialog />
+    </Page>
+  );
+}
+
+function Projects(props: { accountSlug: string }) {
   const { data } = useSuspenseQuery(AccountQuery, {
-    variables: { slug: accountSlug },
+    variables: { slug: props.accountSlug },
     fetchPolicy: "cache-and-network",
   });
 
+  if (!data.account) {
+    return <NotFound />;
+  }
+
   return (
-    <div className="bg-subtle flex-1">
-      <Container className="pb-10 pt-4">
-        <Helmet>
-          <title>{accountSlug} • Projects</title>
-        </Helmet>
-        {data.account ? (
-          <ProjectList
-            projects={data.account.projects.edges}
-            canCreateProject={data.account.permissions.includes(
-              AccountPermission.Admin,
-            )}
-          />
-        ) : (
-          <NotFound />
-        )}
-        <CheckoutStatusDialog />
-      </Container>
-    </div>
+    <ProjectList
+      projects={data.account.projects.edges}
+      canCreateProject={data.account.permissions.includes(
+        AccountPermission.Admin,
+      )}
+    />
   );
 }

@@ -1,11 +1,11 @@
-import { HTMLProps } from "react";
+import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 
-export const Container = ({
-  className,
-  ...props
-}: HTMLProps<HTMLDivElement>) => {
+export function Container(props: ComponentPropsWithRef<"div">) {
   return (
-    <div className={clsx(className, "container mx-auto px-4")} {...props} />
+    <div
+      {...props}
+      className={clsx("container mx-auto px-4", props.className)}
+    />
   );
-};
+}
