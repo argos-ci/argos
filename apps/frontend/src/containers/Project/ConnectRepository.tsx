@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { useQuery } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -23,6 +22,7 @@ import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 
+import { useSafeQuery } from "../Apollo";
 import { getMainGitHubAppInstallURL, GitHubLoginButton } from "../GitHub";
 import { GitLabLogo } from "../GitLab";
 import {
@@ -287,15 +287,11 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
     }
   }, []);
 
-  const result = useQuery(ConnectRepositoryQuery, {
+  const result = useSafeQuery(ConnectRepositoryQuery, {
     variables: {
       accountSlug: props.accountSlug,
     },
   });
-
-  if (result.error) {
-    throw result.error;
-  }
 
   if (!result.data) {
     return (

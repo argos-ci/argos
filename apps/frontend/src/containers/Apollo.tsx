@@ -10,7 +10,7 @@ import {
   QueryHookOptions,
   QueryResult,
   TypedDocumentNode,
-  useQuery as useApolloQuery,
+  useQuery,
 } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
 import { RetryLink } from "@apollo/client/link/retry";
@@ -78,44 +78,16 @@ export const ApolloInitializer = (props: { children: React.ReactNode }) => {
   );
 };
 
-export function useQuery<
+export function useSafeQuery<
   TData = any,
   TVariables extends OperationVariables = OperationVariables,
 >(
   query: DocumentNode | TypedDocumentNode<TData, TVariables>,
   options?: QueryHookOptions<TData, TVariables>,
-): QueryResult<TData, TVariables> {
-  const { loading, error, data, ...others } = useApolloQuery(query, options);
+): Omit<QueryResult<TData, TVariables>, "error"> {
+  const { loading, error, data, ...others } = useQuery(query, options);
   if (error) {
     throw error;
   }
   return { loading, data, ...others };
-}
-
-export function Query<
-  TData = any,
-  TVariables extends OperationVariables = OperationVariables,
->({
-  fallback = null,
-  children,
-  query,
-  ...options
-}: {
-  children: (
-    data: NonNullable<QueryResult<TData, TVariables>["data"]>,
-  ) => React.ReactElement | null;
-  fallback?: React.ReactElement | null;
-  query: DocumentNode | TypedDocumentNode<TData, TVariables>;
-  variables?: TVariables;
-  skip?: boolean;
-}): React.ReactElement | null {
-  const { data, previousData } = useQuery(query, options);
-
-  const dataOrPreviousData = data || previousData;
-
-  if (!dataOrPreviousData) {
-    return fallback;
-  }
-
-  return children(dataOrPreviousData);
 }

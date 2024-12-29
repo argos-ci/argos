@@ -4,7 +4,7 @@ import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
 import { Time } from "@/ui/Time";
 
-import { Query } from "./Apollo";
+import { useSafeQuery } from "./Apollo";
 
 const ProjectsQuery = graphql(`
   query GitlabProjectList_glApiProjects(
@@ -49,49 +49,46 @@ export type GitlabProjectListProps = {
 );
 
 export function GitlabProjectList(props: GitlabProjectListProps) {
+  const result = useSafeQuery(ProjectsQuery, {
+    variables: {
+      accountId: props.accountId,
+      userId: props.userId,
+      groupId: props.groupId,
+      allProjects: props.allProjects,
+      search: props.search,
+      page: 1,
+    },
+  });
+
+  const data = result.data || result.previousData;
+
+  if (!data) {
+    return <Loader />;
+  }
+
+  const { glApiProjects } = data;
+
+  if (glApiProjects.edges.length === 0) {
+    return <div className="text-center">No projects in this namespace</div>;
+  }
   return (
-    <Query
-      fallback={<Loader />}
-      query={ProjectsQuery}
-      variables={{
-        accountId: props.accountId,
-        userId: props.userId,
-        groupId: props.groupId,
-        allProjects: props.allProjects,
-        search: props.search,
-        page: 1,
-      }}
-    >
-      {({ glApiProjects }) => {
-        if (glApiProjects.edges.length === 0) {
-          return (
-            <div className="text-center">No projects in this namespace</div>
-          );
-        }
-        return (
-          <List>
-            {glApiProjects.edges.map((project) => (
-              <ListRow
-                key={project.id}
-                className="items-center justify-between p-4"
-              >
-                <div>
-                  {project.name} •{" "}
-                  <Time date={project.last_activity_at} className="text-low" />
-                </div>
-                <Button
-                  onPress={() => {
-                    props.onSelectProject(project);
-                  }}
-                  isDisabled={props.disabled}
-                >
-                  {props.connectButtonLabel}
-                </Button>
-              </ListRow>
-            ))}
-          </List>
-        );
-      }}
-    </Query>
+    <List>
+      {glApiProjects.edges.map((project) => (
+        <ListRow key={project.id} className="items-center justify-between p-4">
+          <div>
+            {project.name} •{" "}
+            <Time date={project.last_activity_at} className="text-low" />
+          </div>
+          <Button
+            onPress={() => {
+              props.onSelectProject(project);
+            }}
+            isDisabled={props.disabled}
+          >
+            {props.connectButtonLabel}
+          </Button>
+        </ListRow>
+      ))}
+    </List>
   );
 }

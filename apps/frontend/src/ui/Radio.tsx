@@ -22,7 +22,7 @@ export function RadioField({
   return (
     <label className="flex items-baseline gap-4 text-left">
       <input type="radio" className="peer" {...props} />
-      <div className="hover:border-base peer-checked:border-active border-l px-2">
+      <div className="hover:border-default peer-checked:border-active border-l px-2">
         <div className={clsx(scaleClassName, "font-semibold")}>{label}</div>
         <p>{children}</p>
       </div>

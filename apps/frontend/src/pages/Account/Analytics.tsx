@@ -1,10 +1,11 @@
 import { Suspense, useCallback, useEffect, useMemo } from "react";
-import { useQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
 import { FileDownIcon } from "lucide-react";
 import moment from "moment";
+import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -29,14 +30,19 @@ import {
   ChartTooltipContent,
   getChartColorFromIndex,
 } from "@/ui/Charts";
-import { Container } from "@/ui/Container";
 import { IconButton } from "@/ui/IconButton";
+import {
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderContent,
+} from "@/ui/Layout";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
-import { Loader } from "@/ui/Loader";
+import { PageLoader } from "@/ui/PageLoader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { Tooltip } from "@/ui/Tooltip";
-import { Heading } from "@/ui/Typography";
 
 const AccountQuery = graphql(`
   query AccountUsage_account(
@@ -110,28 +116,28 @@ export function Component() {
   }, [setPeriod, period]);
 
   return (
-    <div className="bg-subtle flex-1">
-      <Container className="py-10">
-        <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <Heading margin={false} className="mb-1">
-              Analytics
-            </Heading>
-            <p className="text-low text-sm">
+    <Page>
+      <Helmet>
+        <title>{accountSlug} • Analytics</title>
+      </Helmet>
+      <PageContainer>
+        <PageHeader>
+          <PageHeaderContent>
+            <Heading>Analytics</Heading>
+            <Text slot="headline">
               Track builds and screenshots to monitor your visual testing
               activity at a glance.
-            </p>
-          </div>
-          <PeriodSelect value={period} onChange={setPeriod} />
-        </div>
-        <Helmet>
-          <title>{accountSlug} • Analytics</title>
-        </Helmet>
-        <Suspense fallback={<Loader />}>
+            </Text>
+          </PageHeaderContent>
+          <PageHeaderActions>
+            <PeriodSelect value={period} onChange={setPeriod} />
+          </PageHeaderActions>
+        </PageHeader>
+        <Suspense fallback={<PageLoader />}>
           <Charts accountSlug={accountSlug} period={period} />
         </Suspense>
-      </Container>
-    </div>
+      </PageContainer>
+    </Page>
   );
 }
 
@@ -139,7 +145,7 @@ function Charts(props: { accountSlug: string; period: Period }) {
   const { accountSlug, period } = props;
   const { from, to, groupBy } = Periods[period];
 
-  const { data } = useQuery(AccountQuery, {
+  const { data } = useSuspenseQuery(AccountQuery, {
     variables: {
       slug: accountSlug,
       from: from.toISOString(),
@@ -147,7 +153,7 @@ function Charts(props: { accountSlug: string; period: Period }) {
     },
   });
 
-  const metrics = data?.account?.metrics;
+  const metrics = data.account?.metrics;
 
   const screenshotByBuildSeries: Metric | null = useMemo(() => {
     if (!metrics) {

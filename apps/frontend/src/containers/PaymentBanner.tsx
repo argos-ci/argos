@@ -1,7 +1,7 @@
 import { memo } from "react";
+import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 
-import { useQuery } from "@/containers/Apollo";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
@@ -88,12 +88,12 @@ function BannerTemplate(props: {
 export const PaymentBanner = memo(
   (props: { account: FragmentType<typeof PaymentBannerFragment> }) => {
     const account = useFragment(PaymentBannerFragment, props.account);
-    const { data: { me } = {} } = useQuery(PaymentBannerQuery);
+    const { data } = useSuspenseQuery(PaymentBannerQuery);
 
     const { subscription, subscriptionStatus, permissions, stripeCustomerId } =
       account;
 
-    if (!me) {
+    if (!data.me) {
       return null;
     }
 

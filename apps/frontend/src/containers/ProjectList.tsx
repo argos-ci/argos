@@ -1,8 +1,18 @@
-import { PlusCircleIcon } from "lucide-react";
+import { FolderIcon, PlusCircleIcon } from "lucide-react";
+import { Heading, Text } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
+import {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateIcon,
+  PageContainer,
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderContent,
+} from "@/ui/Layout";
 import { HeadlessLink } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
@@ -94,35 +104,59 @@ export function ProjectList(props: {
   const projects = useFragment(ProjectFragment, props.projects);
 
   if (projects.length === 0) {
-    return (
-      <div className="mt-10 flex flex-col items-center justify-center">
-        <div className="mb-2 text-2xl font-medium">
-          There's no projects yet.
-        </div>
-        {props.canCreateProject && (
-          <>
-            <div className="text-low mb-4">
-              Start by creating a new project.
-            </div>
+    if (props.canCreateProject) {
+      return (
+        <EmptyState>
+          <EmptyStateIcon>
+            <FolderIcon />
+          </EmptyStateIcon>
+          <Heading>Create your first project</Heading>
+          <Text slot="description">
+            Start by creating your first Argos project.
+          </Text>
+          <EmptyStateActions>
             <CreateProjectButton />
-          </>
+          </EmptyStateActions>
+        </EmptyState>
+      );
+    }
+
+    return (
+      <EmptyState>
+        <EmptyStateIcon>
+          <FolderIcon />
+        </EmptyStateIcon>
+        <Heading>No projects</Heading>
+        <Text slot="description">You haven't created any project yet.</Text>
+        {props.canCreateProject && (
+          <EmptyStateActions>
+            <CreateProjectButton />
+          </EmptyStateActions>
         )}
-      </div>
+      </EmptyState>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {props.canCreateProject && (
-        <div className="flex justify-end">
-          <CreateProjectButton variant="secondary" />
-        </div>
-      )}
-      <div className="grid grid-cols-3 gap-4">
+    <PageContainer>
+      <PageHeader>
+        <PageHeaderContent>
+          <Heading>Projects</Heading>
+          <Text slot="headline">
+            View all the projects associated with this account.
+          </Text>
+        </PageHeaderContent>
+        {props.canCreateProject && (
+          <PageHeaderActions>
+            <CreateProjectButton variant="secondary" />
+          </PageHeaderActions>
+        )}
+      </PageHeader>
+      <div className="grid grid-cols-3 gap-6">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }

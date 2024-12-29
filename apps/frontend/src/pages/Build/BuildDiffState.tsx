@@ -10,12 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router-dom";
 
+import { useSafeQuery } from "@/containers/Apollo";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -335,7 +335,7 @@ function useDataState({
   projectName: string;
   buildNumber: number;
 }) {
-  const { data, loading, error, fetchMore } = useQuery(ProjectQuery, {
+  const { data, loading, fetchMore } = useSafeQuery(ProjectQuery, {
     variables: {
       accountSlug,
       projectName,
@@ -344,9 +344,6 @@ function useDataState({
       first: 20,
     },
   });
-  if (error) {
-    throw error;
-  }
   useEffect(() => {
     if (
       !loading &&

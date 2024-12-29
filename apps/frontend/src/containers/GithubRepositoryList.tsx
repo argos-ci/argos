@@ -15,7 +15,7 @@ import {
 } from "@/ui/Pagination";
 import { Time } from "@/ui/Time";
 
-import { Query } from "./Apollo";
+import { useSafeQuery } from "./Apollo";
 import { getGitHubAppInstallURL } from "./GitHub";
 
 const InstallationQuery = graphql(`
@@ -145,72 +145,70 @@ export function GithubRepositoryList(props: {
   const reposPerPage = 100;
   const [page, setPage] = useState(1);
 
+  const result = useSafeQuery(InstallationQuery, {
+    variables: {
+      installationId: props.installationId,
+      page,
+      reposPerPage,
+      fromAuthUser: props.app === "main",
+    },
+  });
+
+  const data = result.data || result.previousData;
+
+  if (!data) {
+    return <Loader />;
+  }
+
+  const { ghApiInstallationRepositories } = data;
+
+  const pageCount = Math.ceil(
+    ghApiInstallationRepositories.pageInfo.totalCount / reposPerPage,
+  );
+
   return (
-    <Query
-      fallback={<Loader />}
-      query={InstallationQuery}
-      variables={{
-        installationId: props.installationId,
-        page,
-        reposPerPage,
-        fromAuthUser: props.app === "main",
-      }}
-    >
-      {({ ghApiInstallationRepositories }) => {
-        const pageCount = Math.ceil(
-          ghApiInstallationRepositories.pageInfo.totalCount / reposPerPage,
-        );
+    <>
+      <List>
+        {ghApiInstallationRepositories.edges.map((repo) => (
+          <ListRow key={repo.id} className="items-center justify-between p-4">
+            <div>
+              {repo.name} • <Time date={repo.updated_at} className="text-low" />
+            </div>
+            <Button
+              onPress={() => {
+                props.onSelectRepository(repo);
+              }}
+              isDisabled={props.disabled}
+            >
+              {props.connectButtonLabel}
+            </Button>
+          </ListRow>
+        ))}
+        {page === pageCount && (
+          <ListRow className="p-4 text-sm">
+            <div>
+              Repository not in the list?{" "}
+              <Link
+                href={getGitHubAppInstallURL(props.app, {
+                  accountId: props.accountId,
+                })}
+                target="_blank"
+              >
+                Manage repositories
+              </Link>
+            </div>
+          </ListRow>
+        )}
+      </List>
 
-        return (
-          <>
-            <List>
-              {ghApiInstallationRepositories.edges.map((repo) => (
-                <ListRow
-                  key={repo.id}
-                  className="items-center justify-between p-4"
-                >
-                  <div>
-                    {repo.name} •{" "}
-                    <Time date={repo.updated_at} className="text-low" />
-                  </div>
-                  <Button
-                    onPress={() => {
-                      props.onSelectRepository(repo);
-                    }}
-                    isDisabled={props.disabled}
-                  >
-                    {props.connectButtonLabel}
-                  </Button>
-                </ListRow>
-              ))}
-              {page === pageCount && (
-                <ListRow className="p-4 text-sm">
-                  <div>
-                    Repository not in the list?{" "}
-                    <Link
-                      href={getGitHubAppInstallURL(props.app, {
-                        accountId: props.accountId,
-                      })}
-                      target="_blank"
-                    >
-                      Manage repositories
-                    </Link>
-                  </div>
-                </ListRow>
-              )}
-            </List>
-
-            {pageCount > 1 && (
-              <ReposPagination
-                page={page}
-                pageCount={pageCount}
-                setPage={setPage}
-                paginationItemCount={5}
-              />
-            )}
-          </>
-        );
-      }}
-    </Query>
+      {pageCount > 1 && (
+        <ReposPagination
+          page={page}
+          pageCount={pageCount}
+          setPage={setPage}
+          paginationItemCount={5}
+        />
+      )}
+    </>
   );
 }

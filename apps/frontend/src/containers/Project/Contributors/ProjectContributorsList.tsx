@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { invariant } from "@argos/util/invariant";
 
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { useAssertAuthTokenPayload } from "@/containers/Auth";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
 import { RemoveMenu, UserListRow } from "@/containers/UserList";
@@ -60,7 +60,7 @@ export function ProjectContributorsList(props: {
       }
     },
   };
-  const result = useQuery(ProjectContributorsQuery, {
+  const result = useSafeQuery(ProjectContributorsQuery, {
     variables: {
       projectId: props.projectId,
       after: 0,

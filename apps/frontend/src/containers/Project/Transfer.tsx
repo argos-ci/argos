@@ -30,7 +30,7 @@ import { Modal } from "@/ui/Modal";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { AccountSelector } from "../AccountSelector";
-import { useQuery } from "../Apollo";
+import { useSafeQuery } from "../Apollo";
 
 type TransferDialogButtonProps = {
   project: FragmentType<typeof ProjectFragment>;
@@ -57,7 +57,7 @@ const MeQuery = graphql(`
 `);
 
 const SelectAccountStep = (props: SelectAccountStepProps) => {
-  const { data } = useQuery(MeQuery);
+  const { data } = useSafeQuery(MeQuery);
 
   return (
     <>
@@ -183,7 +183,7 @@ type ReviewInputs = {
 };
 
 const ReviewStep = (props: ReviewStepProps) => {
-  const { data } = useQuery(ReviewQuery, {
+  const { data } = useSafeQuery(ReviewQuery, {
     variables: {
       projectId: props.projectId,
       actualAccountId: props.actualAccountId,

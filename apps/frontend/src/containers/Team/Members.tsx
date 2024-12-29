@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
 
-import { useQuery } from "@/containers/Apollo";
+import { useSafeQuery } from "@/containers/Apollo";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -405,7 +405,7 @@ function TeamMembersList(props: {
   hasFineGrainedAccessControl: boolean;
 }) {
   const authPayload = useAssertAuthTokenPayload();
-  const { data, fetchMore } = useQuery(TeamMembersQuery, {
+  const { data, fetchMore } = useSafeQuery(TeamMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,
@@ -533,7 +533,7 @@ function TeamGithubMembersList(props: {
     props.githubAccount,
   );
   const authPayload = useAssertAuthTokenPayload();
-  const { data, fetchMore } = useQuery(TeamGithubMembersQuery, {
+  const { data, fetchMore } = useSafeQuery(TeamGithubMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,
