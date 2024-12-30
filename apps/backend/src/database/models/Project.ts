@@ -243,8 +243,12 @@ export class Project extends Model {
     return false;
   }
 
+  /**
+   * Generate a new token for the project.
+   */
   static async generateToken() {
-    return generateRandomHexString();
+    const token = await generateRandomHexString(34);
+    return `argos_${token}`;
   }
 
   /**
