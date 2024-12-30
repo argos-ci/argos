@@ -41,7 +41,7 @@ const DeleteProjectMutation = graphql(`
   }
 `);
 
-const DeleteProjectButton = (props: DeleteProjectButtonProps) => {
+function DeleteProjectButton(props: DeleteProjectButtonProps) {
   const client = useApolloClient();
   const form = useForm<ConfirmDeleteInputs>({
     defaultValues: {
@@ -72,7 +72,7 @@ const DeleteProjectButton = (props: DeleteProjectButtonProps) => {
                   This project will be deleted, along with all of its Builds,
                   Screenshots, Screenshot Diffs, and Settings.
                 </DialogText>
-                <div className="bg-danger-hover text-danger-low my-8 rounded p-2">
+                <div className="bg-danger-hover text-danger-low my-4 rounded p-2">
                   <strong>Warning:</strong> This action is not reversible.
                   Please be certain.
                 </div>
@@ -119,7 +119,7 @@ const DeleteProjectButton = (props: DeleteProjectButtonProps) => {
       </Modal>
     </DialogTrigger>
   );
-};
+}
 
 const ProjectFragment = graphql(`
   fragment ProjectDelete_Project on Project {
@@ -132,9 +132,9 @@ const ProjectFragment = graphql(`
   }
 `);
 
-export const ProjectDelete = (props: {
+export function ProjectDelete(props: {
   project: FragmentType<typeof ProjectFragment>;
-}) => {
+}) {
   const project = useFragment(ProjectFragment, props.project);
   return (
     <Card intent="danger">
@@ -154,4 +154,4 @@ export const ProjectDelete = (props: {
       </CardFooter>
     </Card>
   );
-};
+}

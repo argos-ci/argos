@@ -719,7 +719,7 @@ export const TeamMembers = (props: {
           ) : null}
         </Modal>
       </CardBody>
-      <CardFooter className="flex items-center justify-between">
+      <CardFooter className="flex items-center justify-between gap-4">
         {team.inviteLink ? (
           <>
             <div>Invite people to collaborate in the Team.</div>

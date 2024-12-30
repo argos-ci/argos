@@ -179,7 +179,7 @@ export class Team extends Model {
 
   async $getInviteLink() {
     if (!this.inviteSecret) {
-      this.inviteSecret = await generateRandomHexString();
+      this.inviteSecret = await generateRandomHexString(20);
       await Team.query()
         .findById(this.id)
         .patch({ inviteSecret: this.inviteSecret });

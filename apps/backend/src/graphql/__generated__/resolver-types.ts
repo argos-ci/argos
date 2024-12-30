@@ -529,6 +529,8 @@ export type IMutation = {
   /** Link Gitlab Project */
   linkGitlabProject: IProject;
   ping: Scalars['Boolean']['output'];
+  /** Regenerate project token */
+  regenerateProjectToken: IProject;
   removeContributorFromProject: IRemoveContributorFromProjectPayload;
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
@@ -627,6 +629,11 @@ export type IMutationLinkGithubRepositoryArgs = {
 
 export type IMutationLinkGitlabProjectArgs = {
   input: ILinkGitlabProjectInput;
+};
+
+
+export type IMutationRegenerateProjectTokenArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1902,6 +1909,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   linkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGithubRepositoryArgs, 'input'>>;
   linkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGitlabProjectArgs, 'input'>>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  regenerateProjectToken?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationRegenerateProjectTokenArgs, 'id'>>;
   removeContributorFromProject?: Resolver<IResolversTypes['RemoveContributorFromProjectPayload'], ParentType, ContextType, RequireFields<IMutationRemoveContributorFromProjectArgs, 'input'>>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
   setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;

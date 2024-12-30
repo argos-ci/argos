@@ -64,7 +64,7 @@ export function TeamGitHubLight(props: {
           </div>
         )}
       </CardBody>
-      <CardFooter className="flex items-center justify-between">
+      <CardFooter className="flex items-center justify-between gap-4">
         <p>
           Learn more about{" "}
           <Link

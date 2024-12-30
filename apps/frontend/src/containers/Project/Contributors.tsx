@@ -64,7 +64,7 @@ export function ProjectContributors(props: {
           teamAccountId={project.account.id}
         />
       </CardBody>
-      <CardFooter className="flex items-center justify-between">
+      <CardFooter className="flex items-center justify-between gap-4">
         {hasAdminPermission ? (
           <>
             <div>

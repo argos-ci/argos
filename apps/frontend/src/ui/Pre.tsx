@@ -2,11 +2,14 @@ import { clsx } from "clsx";
 
 import { CopyButton } from "./CopyButton";
 
-type PreProps = Omit<React.ComponentPropsWithRef<"pre">, "children"> & {
-  code: string;
-};
+type CopyButtonProps = React.ComponentProps<typeof CopyButton>;
 
-export function Pre({ code, ...rest }: PreProps) {
+type PreProps = Omit<React.ComponentPropsWithRef<"pre">, "children"> &
+  Pick<CopyButtonProps, "copyRef"> & {
+    code: string;
+  };
+
+export function Pre({ code, copyRef, ...rest }: PreProps) {
   return (
     <pre
       {...rest}
@@ -15,7 +18,11 @@ export function Pre({ code, ...rest }: PreProps) {
         "bg-ui relative whitespace-pre-wrap rounded p-4",
       )}
     >
-      <CopyButton className="absolute right-2 top-4 text-lg" text={code} />
+      <CopyButton
+        className="absolute right-2 top-4 text-lg"
+        text={code}
+        copyRef={copyRef}
+      />
       <code>{code}</code>
     </pre>
   );

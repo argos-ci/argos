@@ -100,7 +100,7 @@ const DeleteTeamButton = (props: DeleteTeamButtonProps) => {
                   Argos recommends that you transfer projects you want to keep
                   to another Team before deleting this Team.
                 </DialogText>
-                <div className="bg-danger-hover text-danger-low my-8 rounded p-2">
+                <div className="bg-danger-hover text-danger-low my-4 rounded p-2">
                   <strong>Warning:</strong> This action is not reversible.
                   Please be certain.
                 </div>
@@ -167,7 +167,7 @@ export const TeamDelete = (props: {
         </CardParagraph>
       </CardBody>
       {hasActiveNonCanceledSubscription ? (
-        <CardFooter className="flex items-center justify-between">
+        <CardFooter className="flex items-center justify-between gap-4">
           <div>
             A subscription is active on the team. Please cancel your
             subscription before deleting the team.
