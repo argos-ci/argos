@@ -65,7 +65,8 @@ const documents = {
     "\n  mutation ProjectGitRepository_updateEnablePrComment(\n    $projectId: ID!\n    $enabled: Boolean!\n  ) {\n    updateProjectPrComment(\n      input: { projectId: $projectId, enabled: $enabled }\n    ) {\n      id\n      prCommentEnabled\n    }\n  }\n": types.ProjectGitRepository_UpdateEnablePrCommentDocument,
     "\n  mutation ProjectStatusChecks_updateProject(\n    $id: ID!\n    $summaryCheck: SummaryCheck\n  ) {\n    updateProject(input: { id: $id, summaryCheck: $summaryCheck }) {\n      id\n      summaryCheck\n    }\n  }\n": types.ProjectStatusChecks_UpdateProjectDocument,
     "\n  fragment ProjectStatusChecks_Project on Project {\n    id\n    summaryCheck\n  }\n": types.ProjectStatusChecks_ProjectFragmentDoc,
-    "\n  fragment ProjectToken_Project on Project {\n    token\n  }\n": types.ProjectToken_ProjectFragmentDoc,
+    "\n  fragment ProjectToken_Project on Project {\n    id\n    token\n    name\n    account {\n      id\n      slug\n    }\n  }\n": types.ProjectToken_ProjectFragmentDoc,
+    "\n  mutation RegenerateTokenMutation($projectId: ID!) {\n    regenerateProjectToken(id: $projectId) {\n      id\n      token\n    }\n  }\n": types.RegenerateTokenMutationDocument,
     "\n  query TransferProject_me {\n    me {\n      id\n      ...AccountItem_Account\n      teams {\n        id\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.TransferProject_MeDocument,
     "\n  fragment ProjectTransfer_Account on Account {\n    id\n    name\n    slug\n    avatar {\n      ...AccountAvatarFragment\n    }\n  }\n": types.ProjectTransfer_AccountFragmentDoc,
     "\n  query ProjectTransfer_Review(\n    $projectId: ID!\n    $actualAccountId: ID!\n    $targetAccountId: ID!\n  ) {\n    projectById(id: $projectId) {\n      id\n      builds {\n        pageInfo {\n          totalCount\n        }\n      }\n      totalScreenshots\n    }\n\n    actualAccount: accountById(id: $actualAccountId) {\n      id\n      ...ProjectTransfer_Account\n      plan {\n        id\n        displayName\n      }\n    }\n\n    targetAccount: accountById(id: $targetAccountId) {\n      id\n      ...ProjectTransfer_Account\n      plan {\n        id\n        displayName\n      }\n    }\n  }\n": types.ProjectTransfer_ReviewDocument,
@@ -363,7 +364,11 @@ export function graphql(source: "\n  fragment ProjectStatusChecks_Project on Pro
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ProjectToken_Project on Project {\n    token\n  }\n"): (typeof documents)["\n  fragment ProjectToken_Project on Project {\n    token\n  }\n"];
+export function graphql(source: "\n  fragment ProjectToken_Project on Project {\n    id\n    token\n    name\n    account {\n      id\n      slug\n    }\n  }\n"): (typeof documents)["\n  fragment ProjectToken_Project on Project {\n    id\n    token\n    name\n    account {\n      id\n      slug\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RegenerateTokenMutation($projectId: ID!) {\n    regenerateProjectToken(id: $projectId) {\n      id\n      token\n    }\n  }\n"): (typeof documents)["\n  mutation RegenerateTokenMutation($projectId: ID!) {\n    regenerateProjectToken(id: $projectId) {\n      id\n      token\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -1,17 +1,21 @@
-import { useState } from "react";
+import { useImperativeHandle, useState } from "react";
 import { clsx } from "clsx";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { Button, ButtonProps } from "react-aria-components";
 import { useClipboard } from "use-clipboard-copy";
 
 import { Tooltip } from "./Tooltip";
+import { useEventCallback } from "./useEventCallback";
 
 export function CopyButton({
   text,
   className,
+  copyRef,
   ...props
-}: ButtonProps & { text: string }) {
+}: ButtonProps & { text: string; copyRef?: React.Ref<() => void> }) {
   const clipboard = useClipboard({ copiedTimeout: 2000 });
+  const copy = useEventCallback(() => clipboard.copy(text));
+  useImperativeHandle(copyRef, () => copy, [copy]);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   return (
     <Tooltip
@@ -24,9 +28,7 @@ export function CopyButton({
           "text-low data-[hovered]:text bg-ui data-[hovered]:bg-hover data-[pressed]:bg-active data-[focus-visible]:ring-default cursor-default rounded p-1 transition focus:outline-none data-[focus-visible]:ring-4",
           className,
         )}
-        onPress={() => {
-          clipboard.copy(text);
-        }}
+        onPress={copy}
         {...props}
       >
         <div className="relative size-[1em] overflow-hidden">

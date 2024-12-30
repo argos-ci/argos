@@ -509,6 +509,9 @@ type Mutation {
   """Link Gitlab Project"""
   linkGitlabProject(input: LinkGitlabProjectInput!): Project!
   ping: Boolean!
+
+  """Regenerate project token"""
+  regenerateProjectToken(id: ID!): Project!
   removeContributorFromProject(input: RemoveContributorFromProjectInput!): RemoveContributorFromProjectPayload!
 
   """Remove a user from a team"""

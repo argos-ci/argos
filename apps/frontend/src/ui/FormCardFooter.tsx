@@ -8,7 +8,7 @@ export function FormCardFooter(props: {
   isDisabled?: boolean;
 }) {
   return (
-    <CardFooter className="flex items-center justify-between">
+    <CardFooter className="flex items-center justify-between gap-4">
       <div>{props.children}</div>
       <div className="flex items-center justify-end gap-4">
         <FormRootError />

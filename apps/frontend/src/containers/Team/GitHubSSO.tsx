@@ -129,7 +129,7 @@ export function TeamGitHubSSO(props: {
           </div>
         )}
       </CardBody>
-      <CardFooter className="flex items-center justify-between">
+      <CardFooter className="flex items-center justify-between gap-4">
         {priced ? (
           <div>
             This feature is available as part of GitHub SSO for Teams, available

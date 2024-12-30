@@ -1,65 +1,64 @@
-import { HTMLProps } from "react";
+import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 
-type CardProps = HTMLProps<HTMLDivElement> & {
-  intent?: "danger";
-};
-
-export const Card = ({ className, intent, ...props }: CardProps) => {
+export function Card(
+  props: ComponentPropsWithRef<"div"> & {
+    intent?: "danger";
+  },
+) {
+  const { intent, ...rest } = props;
   return (
     <div
+      {...rest}
       className={clsx(
-        className,
+        rest.className,
         "bg-app w-full overflow-hidden rounded border border-[--card-border]",
         intent === "danger"
           ? "[--card-border:theme(borderColor.danger.hover)] [--card-footer-bg:theme(backgroundColor.danger.ui)]"
           : "[--card-border:theme(borderColor.DEFAULT)]",
       )}
-      {...props}
     />
   );
-};
+}
 
-export const CardBody = (props: HTMLProps<HTMLDivElement>) => {
-  return <div className="p-4" {...props} />;
-};
+export function CardBody(props: ComponentPropsWithRef<"div">) {
+  return <div {...props} className={clsx("p-4", props.className)} />;
+}
 
-export const CardFooter = ({
-  className,
-  ...props
-}: HTMLProps<HTMLDivElement>) => {
+export function CardFooter(props: ComponentPropsWithRef<"div">) {
   return (
     <div
+      {...props}
       className={clsx(
         "border-t border-[--card-border] bg-[--card-footer-bg,theme(backgroundColor.subtle)] p-4 text-sm",
-        className,
+        props.className,
       )}
-      {...props}
     />
   );
-};
+}
 
-export const CardTitle = (props: HTMLProps<HTMLDivElement>) => {
-  return <h2 className="mb-4 text-xl font-semibold" {...props} />;
-};
+export function CardTitle(props: ComponentPropsWithRef<"div">) {
+  return (
+    <h2
+      {...props}
+      className={clsx("mb-4 text-xl font-semibold", props.className)}
+    />
+  );
+}
 
-export const CardParagraph = ({
-  className,
-  ...props
-}: HTMLProps<HTMLDivElement>) => {
-  return <div className={clsx(className, "my-4 last:mb-0")} {...props} />;
-};
+export function CardParagraph(props: ComponentPropsWithRef<"div">) {
+  return <div {...props} className={clsx("my-4 last:mb-0", props.className)} />;
+}
 
-export const CardSeparator = ({
-  className,
-  ...props
-}: HTMLProps<HTMLDivElement>) => {
+export function CardSeparator(
+  props: Omit<ComponentPropsWithRef<"div">, "role" | "aria-orientation">,
+) {
   return (
     <div
+      {...props}
       role="separator"
       aria-orientation="horizontal"
-      className={clsx(className, "border-t")}
-      {...props}
+      className={clsx(props.className, "border-t")}
     />
   );
-};
+}

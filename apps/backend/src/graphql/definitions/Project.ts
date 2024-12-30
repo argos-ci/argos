@@ -215,6 +215,8 @@ export const typeDefs = gql`
     importGitlabProject(input: ImportGitlabProjectInput!): Project!
     "Update Project"
     updateProject(input: UpdateProjectInput!): Project!
+    "Regenerate project token"
+    regenerateProjectToken(id: ID!): Project!
     "Link GitHub Repository"
     linkGithubRepository(input: LinkGithubRepositoryInput!): Project!
     "Unlink GitHub Repository"
@@ -850,6 +852,18 @@ export const resolvers: IResolvers = {
       await projectUser.$query().delete();
 
       return { projectContributorId };
+    },
+    regenerateProjectToken: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const project = await getAdminProject({
+        id: args.id,
+        user: ctx.auth.user,
+      });
+
+      const token = await Project.generateToken();
+      return project.$query().patchAndFetch({ token });
     },
   },
 };
