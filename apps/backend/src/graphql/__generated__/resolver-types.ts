@@ -257,23 +257,23 @@ export type IBuildStats = {
 
 export enum IBuildStatus {
   /** job status: aborted */
-  Aborted = 'aborted',
+  Aborted = 'ABORTED',
   /** reviewStatus: accepted */
-  Accepted = 'accepted',
-  /** conclusion: diffDetected */
-  DiffDetected = 'diffDetected',
+  Accepted = 'ACCEPTED',
+  /** conclusion: changes-detected */
+  ChangesDetected = 'CHANGES_DETECTED',
   /** job status: complete */
-  Error = 'error',
+  Error = 'ERROR',
   /** job status: expired */
-  Expired = 'expired',
+  Expired = 'EXPIRED',
+  /** conclusion: no-changes */
+  NoChanges = 'NO_CHANGES',
   /** job status: pending */
-  Pending = 'pending',
+  Pending = 'PENDING',
   /** job status: progress */
-  Progress = 'progress',
+  Progress = 'PROGRESS',
   /** reviewStatus: rejected */
-  Rejected = 'rejected',
-  /** conclusion: stable */
-  Stable = 'stable'
+  Rejected = 'REJECTED'
 }
 
 export enum IBuildType {

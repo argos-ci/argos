@@ -46,13 +46,13 @@ function getBuildNotificationTypeFromBuildStatus(
       return "diff-accepted";
     case "rejected":
       return "diff-rejected";
-    case "diffDetected":
+    case "changes-detected":
       return "diff-detected";
     case "pending":
       return "queued";
     case "progress":
       return "progress";
-    case "stable":
+    case "no-changes":
       return "no-diff-detected";
     default:
       return null;

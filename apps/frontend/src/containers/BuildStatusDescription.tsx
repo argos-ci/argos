@@ -26,7 +26,7 @@ export const BuildStatusDescription = (props: {
 }) => {
   const build = useFragment(BuildFragment, props.build);
 
-  if (build.status === "expired") {
+  if (build.status === BuildStatus.Expired) {
     if (build.parallel) {
       if (build.parallel.total === -1) {
         return (
@@ -54,9 +54,9 @@ export const BuildStatusDescription = (props: {
   switch (build.type) {
     case "orphan":
       switch (build.status) {
-        case "accepted":
+        case BuildStatus.Accepted:
           return <>Changes have been accepted by a user.</>;
-        case "rejected":
+        case BuildStatus.Rejected:
           return <>Changes have been rejected by a user.</>;
         default: {
           switch (build.mode) {
@@ -111,7 +111,7 @@ export const BuildStatusDescription = (props: {
 
     case "check": {
       switch (build.status) {
-        case BuildStatus.Stable: {
+        case BuildStatus.NoChanges: {
           if (build.stats.total === 0) {
             return (
               <>
@@ -129,7 +129,7 @@ export const BuildStatusDescription = (props: {
         case BuildStatus.Aborted:
           return <>This build has been voluntarily aborted.</>;
 
-        case BuildStatus.DiffDetected:
+        case BuildStatus.ChangesDetected:
           return (
             <>
               Some changes have been detected between baseline and current

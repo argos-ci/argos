@@ -2,6 +2,7 @@ import { memo } from "react";
 
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { BuildStatus } from "@/gql/graphql";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetail } from "./BuildDetail";
@@ -89,16 +90,16 @@ export function BuildWorkspace(props: {
       <BuildSidebar build={build} repoUrl={repoUrl} params={props.params} />
       {(() => {
         switch (build.status) {
-          case "aborted":
-          case "error":
-          case "expired":
+          case BuildStatus.Aborted:
+          case BuildStatus.Error:
+          case BuildStatus.Expired:
             return (
               <div className="min-h-0 flex-1 p-10 text-center text-xl">
                 <BuildStatusDescription build={build} />
               </div>
             );
-          case "pending":
-          case "progress":
+          case BuildStatus.Pending:
+          case BuildStatus.Progress:
             return <BuildProgress parallel={build.parallel} />;
           default:
             return (

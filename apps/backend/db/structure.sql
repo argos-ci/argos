@@ -226,7 +226,10 @@ CREATE TABLE public.builds (
     metadata jsonb,
     "baseBranchResolvedFrom" text,
     "parentCommits" jsonb,
+    conclusion text,
+    stats jsonb,
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
+    CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
     CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
 );
@@ -2920,3 +2923,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024120
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201210158_google-account.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201222408_gitlab-last-loggedat.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241215091232_project-default-role.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241231154644_build-status.js', 1, NOW());

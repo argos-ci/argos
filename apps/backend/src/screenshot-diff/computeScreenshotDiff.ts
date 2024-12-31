@@ -4,8 +4,8 @@ import { invariant } from "@argos/util/invariant";
 import type { S3Client } from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
 
-import { pushBuildNotification } from "@/build-notification/index.js";
-import { raw, transaction } from "@/database/index.js";
+import { concludeBuild } from "@/build/concludeBuild.js";
+import { transaction } from "@/database/index.js";
 import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
@@ -127,22 +127,6 @@ async function getOrCreateDiffFile(args: {
   return file;
 }
 
-async function areAllDiffsCompleted(buildId: string): Promise<{
-  complete: boolean;
-  diff: boolean;
-}> {
-  const isComplete = raw(`bool_and("jobStatus" = 'complete') as complete`);
-  const hasDiff = raw(
-    `count(*) FILTER (WHERE (${ScreenshotDiff.selectDiffStatus}) in ('added', 'changed', 'removed')) > 0 AS diff`,
-  );
-  const result = await ScreenshotDiff.query()
-    .select(isComplete, hasDiff)
-    .leftJoinRelated("compareScreenshot")
-    .where("buildId", buildId)
-    .first();
-  return result as unknown as { complete: boolean; diff: boolean };
-}
-
 /**
  * Computes the screenshot difference
  */
@@ -160,7 +144,8 @@ export const computeScreenshotDiff = async (
       "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
     );
 
-  invariant(screenshotDiff?.compareScreenshot, "no compare screenshot");
+  invariant(screenshotDiff.build, "no build");
+  invariant(screenshotDiff.compareScreenshot, "no compare screenshot");
 
   const baseImage = screenshotDiff.baseScreenshot?.s3Id
     ? new S3ImageFile({
@@ -270,12 +255,6 @@ export const computeScreenshotDiff = async (
   // Unlink images
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
 
-  // Push notification if all screenshot diffs are completed
-  const { complete, diff } = await areAllDiffsCompleted(buildId);
-  if (complete) {
-    await pushBuildNotification({
-      buildId,
-      type: diff ? "diff-detected" : "no-diff-detected",
-    });
-  }
+  // Conclude build if it's the last diff
+  await concludeBuild({ buildId: screenshotDiff.build.id });
 };

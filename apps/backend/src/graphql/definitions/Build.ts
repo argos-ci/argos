@@ -7,7 +7,7 @@ import { Build, ScreenshotDiff } from "@/database/models/index.js";
 
 import {
   IBaseBranchResolution,
-  type IBuildStatus,
+  IBuildStatus,
   type IResolvers,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
@@ -28,23 +28,23 @@ export const typeDefs = gql`
 
   enum BuildStatus {
     "reviewStatus: accepted"
-    accepted
+    ACCEPTED
     "reviewStatus: rejected"
-    rejected
-    "conclusion: stable"
-    stable
-    "conclusion: diffDetected"
-    diffDetected
+    REJECTED
+    "conclusion: no-changes"
+    NO_CHANGES
+    "conclusion: changes-detected"
+    CHANGES_DETECTED
     "job status: pending"
-    pending
+    PENDING
     "job status: progress"
-    progress
+    PROGRESS
     "job status: complete"
-    error
+    ERROR
     "job status: aborted"
-    aborted
+    ABORTED
     "job status: expired"
-    expired
+    EXPIRED
   }
 
   type BuildStats {
@@ -194,9 +194,29 @@ export const resolvers: IResolvers = {
       );
     },
     status: async (build, _args, ctx) => {
-      return ctx.loaders.BuildAggregatedStatus.load(
-        build,
-      ) as Promise<IBuildStatus>;
+      const status = await ctx.loaders.BuildAggregatedStatus.load(build);
+      switch (status) {
+        case "accepted":
+          return IBuildStatus.Accepted;
+        case "rejected":
+          return IBuildStatus.Rejected;
+        case "no-changes":
+          return IBuildStatus.NoChanges;
+        case "changes-detected":
+          return IBuildStatus.ChangesDetected;
+        case "pending":
+          return IBuildStatus.Pending;
+        case "progress":
+          return IBuildStatus.Progress;
+        case "aborted":
+          return IBuildStatus.Aborted;
+        case "expired":
+          return IBuildStatus.Expired;
+        case "error":
+          return IBuildStatus.Error;
+        default:
+          assertNever(status);
+      }
     },
     stats: async (build, _args, ctx) => {
       return ctx.loaders.BuildStats.load(build.id);
@@ -286,17 +306,11 @@ export const resolvers: IResolvers = {
       // That might be better suited into a $afterUpdate hook.
       switch (validationStatus) {
         case "accepted": {
-          await pushBuildNotification({
-            buildId,
-            type: "diff-accepted",
-          });
+          await pushBuildNotification({ buildId, type: "diff-accepted" });
           break;
         }
         case "rejected": {
-          await pushBuildNotification({
-            buildId,
-            type: "diff-rejected",
-          });
+          await pushBuildNotification({ buildId, type: "diff-rejected" });
           break;
         }
       }
