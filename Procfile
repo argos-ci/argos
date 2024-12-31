@@ -2,4 +2,4 @@ release: ./scripts/release.sh
 web: ./scripts/heroku-node-settings.sh apps/backend/dist/processes/proc/web.js
 buildAndSynchronize: ./scripts/heroku-node-settings.sh apps/backend/dist/processes/proc/build-and-synchronize.js
 screenshotDiff: ./scripts/heroku-node-settings.sh apps/backend/dist/processes/proc/screenshot-diff.js
-crawlAndCapture: ./scripts/heroku-node-settings.sh apps/backend/dist/processes/proc/crawl-and-capture.js
+concludeBuilds: ./scripts/heroku-node-settings.sh apps/backend/dist/processes/proc/conclude-builds.js

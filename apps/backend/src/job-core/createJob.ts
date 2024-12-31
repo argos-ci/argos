@@ -56,7 +56,7 @@ export const createJob = <TValue extends string | number>(
   consumer: {
     perform: (value: TValue) => void | Promise<void>;
     complete: (value: TValue) => void | Promise<void>;
-    error: (value: TValue) => void | Promise<void>;
+    error: (value: TValue, error: unknown) => void | Promise<void>;
   },
   { prefetch = 1 }: JobParams = {},
 ): Job<TValue> => {
@@ -145,7 +145,7 @@ export const createJob = <TValue extends string | number>(
                   scope.setExtra("jobArgs", payload.args);
                   logger.error(error);
                 });
-                await consumer.error(payload.args[0]);
+                await consumer.error(payload.args[0], error);
                 return;
               }
             } catch (error) {
