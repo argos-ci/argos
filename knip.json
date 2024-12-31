@@ -34,5 +34,5 @@
   },
   "exclude": ["classMembers"],
   "ignore": ["playwright.config.mts"],
-  "ignoreBinaries": ["stripe", "sleep", "ngrok"]
+  "ignoreBinaries": ["stripe", "sleep", "ngrok", "op"]
 }
