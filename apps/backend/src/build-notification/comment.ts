@@ -66,7 +66,8 @@ export const getCommentBody = async (props: {
         invariant(status, "unknown build status");
 
         const label = getBuildLabel(build.type, status);
-        const review = status === "diffDetected" ? ` ([Review](${url}))` : "";
+        const review =
+          status === "changes-detected" ? ` ([Review](${url}))` : "";
         const name = getBuildName({
           build,
           project: hasMultipleProjects ? build.project : null,

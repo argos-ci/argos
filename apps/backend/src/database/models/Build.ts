@@ -42,11 +42,11 @@ const BuildStatusSchema = z.enum([
 ]);
 type BuildStatus = z.infer<typeof BuildStatusSchema>;
 
-const BuildConclusionSchema = z.enum(["stable", "diffDetected"]);
-type BuildConclusion = z.infer<typeof BuildConclusionSchema> | null;
+const BuildConclusionSchema = z.enum(["no-changes", "changes-detected"]);
+export type BuildConclusion = z.infer<typeof BuildConclusionSchema>;
 
 const BuildReviewStatusSchema = z.enum(["accepted", "rejected"]);
-type BuildReviewStatus = z.infer<typeof BuildReviewStatusSchema> | null;
+type BuildReviewStatus = z.infer<typeof BuildReviewStatusSchema>;
 
 export const BuildAggregatedStatusSchema = z.union([
   BuildReviewStatusSchema,
@@ -121,6 +121,38 @@ export class Build extends Model {
       metadata: {
         oneOf: [BuildMetadataJsonSchema, { type: "null" }],
       },
+      conclusion: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["no-changes", "changes-detected"] },
+        ],
+      },
+      stats: {
+        oneOf: [
+          { type: "null" },
+          {
+            type: "object",
+            properties: {
+              failure: { type: "integer" },
+              added: { type: "integer" },
+              unchanged: { type: "integer" },
+              changed: { type: "integer" },
+              removed: { type: "integer" },
+              total: { type: "integer" },
+              retryFailure: { type: "integer" },
+            },
+            required: [
+              "failure",
+              "added",
+              "unchanged",
+              "changed",
+              "removed",
+              "total",
+              "retryFailure",
+            ],
+          },
+        ],
+      },
     },
   });
 
@@ -148,6 +180,8 @@ export class Build extends Model {
   runAttempt!: number | null;
   partial!: boolean | null;
   metadata!: BuildMetadata | null;
+  conclusion!: BuildConclusion | null;
+  stats!: BuildStats | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -246,6 +280,37 @@ export class Build extends Model {
   }
 
   /**
+   * Get screenshot diffs statuses for each build.
+   */
+  static async getScreenshotDiffsStatuses(buildIds: string[]) {
+    const screenshotDiffs = buildIds.length
+      ? await ScreenshotDiff.query()
+          .select("buildId", "jobStatus")
+          .whereIn("buildId", buildIds)
+          .groupBy("buildId", "jobStatus")
+      : [];
+
+    return buildIds.map((buildId) => {
+      const diffJobStatuses = screenshotDiffs
+        .filter((screenshotDiff) => screenshotDiff.buildId === buildId)
+        .map(({ jobStatus }) => jobStatus);
+
+      if (diffJobStatuses.includes("error")) {
+        return "error";
+      }
+
+      if (
+        diffJobStatuses.length === 0 ||
+        (diffJobStatuses.length === 1 && diffJobStatuses[0] === "complete")
+      ) {
+        return "complete";
+      }
+
+      return "progress";
+    });
+  }
+
+  /**
    * Get status of the build.
    * Aggregate statuses from screenshot diffs.
    */
@@ -254,12 +319,8 @@ export class Build extends Model {
       .filter(({ jobStatus }) => jobStatus === "complete")
       .map(({ id }) => id);
 
-    const screenshotDiffs = completeBuildIds.length
-      ? await ScreenshotDiff.query()
-          .select("buildId", "jobStatus")
-          .whereIn("buildId", completeBuildIds)
-          .groupBy("buildId", "jobStatus")
-      : [];
+    const screenshotDiffStatuses =
+      await Build.getScreenshotDiffsStatuses(completeBuildIds);
 
     return builds.map((build) => {
       switch (build.jobStatus) {
@@ -275,22 +336,10 @@ export class Build extends Model {
           return build.jobStatus;
 
         case "complete": {
-          const diffJobStatuses = screenshotDiffs
-            .filter(({ buildId }) => build.id === buildId)
-            .map(({ jobStatus }) => jobStatus);
-
-          if (diffJobStatuses.includes("error")) {
-            return "error";
-          }
-
-          if (
-            diffJobStatuses.length === 0 ||
-            (diffJobStatuses.length === 1 && diffJobStatuses[0] === "complete")
-          ) {
-            return "complete";
-          }
-
-          return "progress";
+          const index = completeBuildIds.indexOf(build.id);
+          const diffStatus = screenshotDiffStatuses[index];
+          invariant(diffStatus, "diff status not found");
+          return diffStatus;
         }
         default:
           assertNever(build.jobStatus);
@@ -352,7 +401,7 @@ export class Build extends Model {
   static async getConclusions(
     buildIds: string[],
     statuses: BuildStatus[],
-  ): Promise<BuildConclusion[]> {
+  ): Promise<(BuildConclusion | null)[]> {
     const completeBuildIds = buildIds.filter(
       (_, index) => statuses[index] === "complete",
     );
@@ -379,9 +428,9 @@ export class Build extends Model {
         (diff) => diff.buildId === buildId,
       );
       if (buildDiffCount && buildDiffCount.count > 0) {
-        return "diffDetected";
+        return "changes-detected";
       }
-      return "stable";
+      return "no-changes";
     });
   }
 
@@ -390,10 +439,10 @@ export class Build extends Model {
    */
   static async getReviewStatuses(
     buildIds: string[],
-    conclusions: BuildConclusion[],
-  ): Promise<BuildReviewStatus[]> {
+    conclusions: (BuildConclusion | null)[],
+  ): Promise<(BuildReviewStatus | null)[]> {
     const diffDetectedBuildIds = buildIds.filter(
-      (_buildId, index) => conclusions[index] === "diffDetected",
+      (_buildId, index) => conclusions[index] === "changes-detected",
     );
 
     const screenshotDiffs = diffDetectedBuildIds.length
@@ -404,7 +453,7 @@ export class Build extends Model {
       : [];
 
     return buildIds.map((buildId, index) => {
-      if (conclusions[index] !== "diffDetected") {
+      if (conclusions[index] !== "changes-detected") {
         return null;
       }
 
@@ -449,14 +498,17 @@ export class Build extends Model {
     return `${config.get("server.url")}${pathname}`;
   }
 
-  static async getAggregatedBuildStatuses(builds: Build[]) {
+  static async getAggregatedBuildStatuses(
+    builds: Build[],
+  ): Promise<BuildAggregatedStatus[]> {
     const buildIds = builds.map((build) => build.id);
     const statuses = await Build.getStatuses(builds);
     const conclusions = await Build.getConclusions(buildIds, statuses);
     const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
-    return builds.map(
-      (_build, index) =>
-        reviewStatuses[index] || conclusions[index] || statuses[index],
-    ) as BuildAggregatedStatus[];
+    return builds.map((_build, index) => {
+      const status =
+        reviewStatuses[index] || conclusions[index] || statuses[index];
+      return BuildAggregatedStatusSchema.parse(status);
+    });
   }
 }

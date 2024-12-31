@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useSafeQuery } from "@/containers/Apollo";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { graphql } from "@/gql";
+import { BuildStatus } from "@/gql/graphql";
 
 import { BuildContextProvider } from "./BuildContext";
 import { BuildDiffColorStateProvider } from "./BuildDiffColorState";
@@ -58,7 +59,8 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   const build = project?.build ?? null;
   const buildStatusProgress = Boolean(
     build?.status &&
-      (build.status === "pending" || build.status === "progress"),
+      (build.status === BuildStatus.Pending ||
+        build.status === BuildStatus.Progress),
   );
   const hotkeysDialog = useBuildHotkeysDialogState();
 

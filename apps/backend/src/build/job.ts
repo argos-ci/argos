@@ -8,19 +8,18 @@ import { createModelJob, UnretryableError } from "@/job-core/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
 import { updateStripeUsage } from "@/stripe/index.js";
 
+import { concludeBuild } from "./concludeBuild.js";
 import { createBuildDiffs } from "./createBuildDiffs.js";
 
 /**
  * Pushes the diffs to the screenshot-diff job queue.
  * If there is no diff to proceed, it pushes a notification.
  */
-async function pushDiffs(buildId: string, screenshotDiffs: ScreenshotDiff[]) {
-  if (screenshotDiffs.length === 0) {
-    await pushBuildNotification({ buildId, type: "no-diff-detected" });
-    return;
-  }
-
-  const toProcessedDiffIds = screenshotDiffs
+async function pushDiffs(input: {
+  build: Build;
+  screenshotDiffs: ScreenshotDiff[];
+}) {
+  const toProcessedDiffIds = input.screenshotDiffs
     .filter(({ jobStatus }) => jobStatus !== "complete")
     .map(({ id }) => id);
 
@@ -29,18 +28,7 @@ async function pushDiffs(buildId: string, screenshotDiffs: ScreenshotDiff[]) {
     return;
   }
 
-  await ScreenshotDiff.fetchGraph(screenshotDiffs, "compareScreenshot");
-  const statuses = await Promise.all(
-    screenshotDiffs.map((screenshotDiff) => screenshotDiff.$getDiffStatus()),
-  );
-
-  const type = statuses.some(
-    (status) => status === "added" || status === "removed",
-  )
-    ? ("diff-detected" as const)
-    : ("no-diff-detected" as const);
-
-  await pushBuildNotification({ buildId, type });
+  await concludeBuild({ buildId: input.build.id });
 }
 
 /**
@@ -109,8 +97,8 @@ export async function performBuild(build: Build) {
       .withGraphFetched("[gitlabProject, account]")
       .throwIfNotFound(),
     pushBuildNotification({ buildId: build.id, type: "progress" }),
-    createBuildDiffs(build).then(async (diffs) => {
-      pushDiffs(build.id, diffs);
+    createBuildDiffs(build).then(async (screenshotDiffs) => {
+      await pushDiffs({ build, screenshotDiffs });
     }),
   ]);
 

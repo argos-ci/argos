@@ -71,7 +71,7 @@ describe("finalizeBuilds", () => {
               {
                 id: build.id,
                 number: 1,
-                status: "stable",
+                status: "no-changes",
                 url: "http://localhost:3000/awesome-team/awesome-project/builds/1",
                 notification: {
                   description: "Everything's good!",
@@ -122,7 +122,7 @@ describe("finalizeBuilds", () => {
               {
                 id: build.id,
                 number: 1,
-                status: "stable",
+                status: "no-changes",
                 url: "http://localhost:3000/awesome-team/awesome-project/builds/1",
                 notification: {
                   description: "Everything's good!",

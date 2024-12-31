@@ -11,7 +11,7 @@ function getBuildStatusLabel(status: BuildAggregatedStatus): string {
       return "👍 Changes approved";
     case "aborted":
       return "🙅 Build aborted";
-    case "diffDetected":
+    case "changes-detected":
       return "⚠️ Changes detected";
     case "error":
       return "❌ An error happened";
@@ -23,7 +23,7 @@ function getBuildStatusLabel(status: BuildAggregatedStatus): string {
       return "🚜 Diffing screenshots";
     case "rejected":
       return "👎 Changes rejected";
-    case "stable":
+    case "no-changes":
       return "✅ No changes detected";
     default:
       assertNever(status);

@@ -233,16 +233,16 @@ describe("models/Build", () => {
       expect(conclusions).toEqual([null, null, null, null]);
     });
 
-    it("should return 'stable' when empty", async () => {
+    it("should return 'no-changes' when empty", async () => {
       const build = await factory.Build.create({
         jobStatus: "complete",
       });
       const statuses = await Build.getStatuses([build]);
       const conclusions = await Build.getConclusions([build.id], statuses);
-      expect(conclusions).toEqual(["stable"]);
+      expect(conclusions).toEqual(["no-changes"]);
     });
 
-    it("should return 'stable' when no diff detected", async () => {
+    it("should return 'no-changes' when no diff detected", async () => {
       const build = await factory.Build.create();
       await factory.ScreenshotDiff.createMany(2, [
         { buildId: build.id },
@@ -250,10 +250,10 @@ describe("models/Build", () => {
       ]);
       const statuses = await Build.getStatuses([build]);
       const conclusions = await Build.getConclusions([build.id], statuses);
-      expect(conclusions).toEqual(["stable"]);
+      expect(conclusions).toEqual(["no-changes"]);
     });
 
-    it("should return 'diff-detected' when diff are detected", async () => {
+    it("should return 'changes-detected' when diff are detected", async () => {
       const build = await factory.Build.create();
       await factory.ScreenshotDiff.createMany(2, [
         { buildId: build.id },
@@ -261,7 +261,7 @@ describe("models/Build", () => {
       ]);
       const statuses = await Build.getStatuses([build]);
       const conclusions = await Build.getConclusions([build.id], statuses);
-      expect(conclusions).toEqual(["diffDetected"]);
+      expect(conclusions).toEqual(["changes-detected"]);
     });
   });
 

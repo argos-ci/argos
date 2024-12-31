@@ -168,10 +168,7 @@ export async function createBuild(params: {
     },
   );
 
-  await pushBuildNotification({
-    buildId: build.id,
-    type: "queued",
-  });
+  await pushBuildNotification({ buildId: build.id, type: "queued" });
 
   return build;
 }

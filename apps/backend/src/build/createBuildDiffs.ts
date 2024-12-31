@@ -91,6 +91,8 @@ export async function createBuildDiffs(build: Build) {
     "no compare screenshot bucket found for build",
   );
 
+  invariant(compareScreenshotBucket.complete, "compare bucket is not complete");
+
   const compareScreenshots = compareScreenshotBucket.screenshots;
   invariant(compareScreenshots, "no compare screenshots found for build");
 

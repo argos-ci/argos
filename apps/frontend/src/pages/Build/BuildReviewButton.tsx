@@ -48,8 +48,8 @@ function BaseReviewButton(props: {
     },
   });
 
-  const AcceptIcon = getBuildIcon("check", "accepted");
-  const RejectIcon = getBuildIcon("check", "rejected");
+  const AcceptIcon = getBuildIcon("check", BuildStatus.Accepted);
+  const RejectIcon = getBuildIcon("check", BuildStatus.Rejected);
 
   return (
     <MenuTrigger>
@@ -74,7 +74,7 @@ function BaseReviewButton(props: {
                 },
               });
             }}
-            isDisabled={props.build.status === "accepted"}
+            isDisabled={props.build.status === BuildStatus.Accepted}
           >
             <MenuItemIcon className="text-success-low">
               <AcceptIcon />
@@ -90,7 +90,7 @@ function BaseReviewButton(props: {
                 },
               });
             }}
-            isDisabled={props.build.status === "rejected"}
+            isDisabled={props.build.status === BuildStatus.Rejected}
           >
             <MenuItemIcon className="text-danger-low">
               <RejectIcon />
@@ -126,7 +126,7 @@ export function BuildReviewButton(props: {
     ![
       BuildStatus.Accepted,
       BuildStatus.Rejected,
-      BuildStatus.DiffDetected,
+      BuildStatus.ChangesDetected,
     ].includes(project.build.status)
   ) {
     return null;

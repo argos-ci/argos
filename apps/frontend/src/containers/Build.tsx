@@ -12,18 +12,9 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
-type BuildType = "reference" | "check" | "orphan";
+import { BuildStatus } from "@/gql/graphql";
 
-type BuildStatus =
-  | "accepted"
-  | "rejected"
-  | "stable"
-  | "diffDetected"
-  | "pending"
-  | "progress"
-  | "error"
-  | "aborted"
-  | "expired";
+type BuildType = "reference" | "check" | "orphan";
 
 export const getBuildColor = (
   type: BuildType | null | undefined,
@@ -34,10 +25,10 @@ export const getBuildColor = (
       return "success" as const;
     case "orphan": {
       switch (status) {
-        case "accepted":
+        case BuildStatus.Accepted:
           return "success" as const;
 
-        case "rejected":
+        case BuildStatus.Rejected:
           return "danger" as const;
 
         default:
@@ -46,23 +37,23 @@ export const getBuildColor = (
     }
     case "check": {
       switch (status) {
-        case "accepted":
-        case "stable":
+        case BuildStatus.Accepted:
+        case BuildStatus.NoChanges:
           return "success" as const;
 
-        case "error":
-        case "rejected":
-        case "expired":
+        case BuildStatus.Error:
+        case BuildStatus.Rejected:
+        case BuildStatus.Expired:
           return "danger" as const;
 
-        case "aborted":
+        case BuildStatus.Aborted:
           return "neutral" as const;
 
-        case "progress":
-        case "pending":
+        case BuildStatus.Progress:
+        case BuildStatus.Pending:
           return "pending" as const;
 
-        case "diffDetected":
+        case BuildStatus.ChangesDetected:
           return "warning" as const;
 
         default:
@@ -73,8 +64,8 @@ export const getBuildColor = (
     case null:
     case undefined:
       switch (status) {
-        case "expired":
-        case "error":
+        case BuildStatus.Expired:
+        case BuildStatus.Error:
           return "danger" as const;
 
         default:
@@ -94,10 +85,10 @@ export const getBuildIcon = (
       return BadgeCheckIcon;
     case "orphan": {
       switch (status) {
-        case "accepted":
+        case BuildStatus.Accepted:
           return ThumbsUpIcon;
 
-        case "rejected":
+        case BuildStatus.Rejected:
           return ThumbsDownIcon;
 
         default:
@@ -106,27 +97,27 @@ export const getBuildIcon = (
     }
     case "check": {
       switch (status) {
-        case "accepted":
+        case BuildStatus.Accepted:
           return ThumbsUpIcon;
 
-        case "stable":
+        case BuildStatus.NoChanges:
           return CheckCircle2Icon;
 
-        case "error":
-        case "expired":
-        case "aborted":
+        case BuildStatus.Error:
+        case BuildStatus.Expired:
+        case BuildStatus.Aborted:
           return XCircleIcon;
 
-        case "rejected":
+        case BuildStatus.Rejected:
           return ThumbsDownIcon;
 
-        case "progress":
+        case BuildStatus.Progress:
           return RefreshCcwDotIcon;
 
-        case "pending":
+        case BuildStatus.Pending:
           return CircleDotIcon;
 
-        case "diffDetected":
+        case BuildStatus.ChangesDetected:
           return AlertTriangleIcon;
 
         default:
@@ -137,8 +128,8 @@ export const getBuildIcon = (
     case null:
     case undefined:
       switch (status) {
-        case "expired":
-        case "error":
+        case BuildStatus.Expired:
+        case BuildStatus.Error:
           return XCircleIcon;
         default:
           return DotIcon;
@@ -155,9 +146,9 @@ export const getBuildLabel = (
   switch (type) {
     case "orphan": {
       switch (status) {
-        case "rejected":
+        case BuildStatus.Rejected:
           return "Changes rejected";
-        case "accepted":
+        case BuildStatus.Accepted:
           return "Changes approved";
         default:
           return "Orphan build";
@@ -167,23 +158,23 @@ export const getBuildLabel = (
       return "Auto-approved build";
     case "check": {
       switch (status) {
-        case "stable":
+        case BuildStatus.NoChanges:
           return "No changes detected";
-        case "diffDetected":
+        case BuildStatus.ChangesDetected:
           return "Changes detected";
-        case "pending":
+        case BuildStatus.Pending:
           return "Build scheduled";
-        case "progress":
+        case BuildStatus.Progress:
           return "Build in progress";
-        case "error":
+        case BuildStatus.Error:
           return "Build failed";
-        case "aborted":
+        case BuildStatus.Aborted:
           return "Build aborted";
-        case "expired":
+        case BuildStatus.Expired:
           return "Build expired";
-        case "rejected":
+        case BuildStatus.Rejected:
           return "Changes rejected";
-        case "accepted":
+        case BuildStatus.Accepted:
           return "Changes approved";
         default:
           assertNever(status);
@@ -193,9 +184,9 @@ export const getBuildLabel = (
     case null:
     case undefined:
       switch (status) {
-        case "expired":
+        case BuildStatus.Expired:
           return "Build expired";
-        case "error":
+        case BuildStatus.Error:
           return "Build failed";
         default:
           return "Build scheduled";

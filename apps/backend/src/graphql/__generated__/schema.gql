@@ -225,31 +225,31 @@ type BuildStats {
 
 enum BuildStatus {
   """job status: aborted"""
-  aborted
+  ABORTED
 
   """reviewStatus: accepted"""
-  accepted
+  ACCEPTED
 
-  """conclusion: diffDetected"""
-  diffDetected
+  """conclusion: changes-detected"""
+  CHANGES_DETECTED
 
   """job status: complete"""
-  error
+  ERROR
 
   """job status: expired"""
-  expired
+  EXPIRED
+
+  """conclusion: no-changes"""
+  NO_CHANGES
 
   """job status: pending"""
-  pending
+  PENDING
 
   """job status: progress"""
-  progress
+  PROGRESS
 
   """reviewStatus: rejected"""
-  rejected
-
-  """conclusion: stable"""
-  stable
+  REJECTED
 }
 
 enum BuildType {

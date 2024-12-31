@@ -90,12 +90,12 @@ describe("GraphQL", () => {
         edges: [
           {
             number: 2,
-            status: "stable",
+            status: "NO_CHANGES",
             createdAt: "2017-02-05T17:14:28.167Z",
           },
           {
             number: 1,
-            status: "stable",
+            status: "NO_CHANGES",
             createdAt: "2017-02-04T17:14:28.167Z",
           },
         ],
