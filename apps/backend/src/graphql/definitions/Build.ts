@@ -3,7 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
-import { Build, ScreenshotDiff } from "@/database/models/index.js";
+import { Build, BuildReview, ScreenshotDiff } from "@/database/models/index.js";
+import { transaction } from "@/database/transaction.js";
 
 import {
   IBaseBranchResolution,
@@ -11,7 +12,7 @@ import {
   type IResolvers,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
-import { forbidden, notFound, unauthenticated } from "../util.js";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -283,11 +284,17 @@ export const resolvers: IResolvers = {
   },
   Mutation: {
     setValidationStatus: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const { auth } = ctx;
+      if (!auth) {
         throw unauthenticated();
       }
 
       const { buildId, validationStatus } = args;
+
+      if (validationStatus !== "accepted" && validationStatus !== "rejected") {
+        throw badUserInput("validationStatus must be 'accepted' or 'rejected'");
+      }
+
       const build = await Build.query()
         .findById(buildId)
         .withGraphFetched("project.account");
@@ -298,15 +305,24 @@ export const resolvers: IResolvers = {
 
       invariant(build.project?.account);
 
-      const permissions = await build.project.$getPermissions(ctx.auth.user);
+      const permissions = await build.project.$getPermissions(auth.user);
 
       if (!permissions.includes("review")) {
         throw forbidden("You cannot approve or reject this build");
       }
 
-      await ScreenshotDiff.query()
-        .where({ buildId })
-        .patch({ validationStatus });
+      await transaction(async (trx) => {
+        await Promise.all([
+          ScreenshotDiff.query(trx)
+            .where({ buildId })
+            .patch({ validationStatus }),
+          BuildReview.query(trx).insert({
+            buildId,
+            userId: auth.user.id,
+            state: validationStatus === "accepted" ? "approved" : "rejected",
+          }),
+        ]);
+      });
 
       // That might be better suited into a $afterUpdate hook.
       switch (validationStatus) {
