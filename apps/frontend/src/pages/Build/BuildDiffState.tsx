@@ -133,7 +133,7 @@ function createDiffs(count: number): null[] {
   return Array.from({ length: count }, () => null);
 }
 
-function getGroupsFromStats(stats: BuildStats): DiffGroup[] {
+function getGroupsFromStats(stats: NonNullable<BuildStats>): DiffGroup[] {
   return GROUPS.map((group) => ({
     name: group,
     diffs: createDiffs(stats[group]),

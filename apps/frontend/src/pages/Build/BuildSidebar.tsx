@@ -97,7 +97,7 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
   });
   return (
     <Tabs
-      defaultSelectedKey={build.stats.total === 0 ? "info" : "screenshots"}
+      defaultSelectedKey={!build.stats?.total ? "info" : "screenshots"}
       className="group/sidebar flex w-[295px] shrink-0 flex-col border-r"
     >
       <div className="flex shrink-0 items-center border-b px-2">

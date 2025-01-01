@@ -123,23 +123,28 @@ export function getNotificationStates(input: {
   }
 }
 
+function getBuildStatsMessage(build: Build): string {
+  invariant(build.stats, "Build should be concluded");
+  return getStatsMessage(build.stats);
+}
+
 /**
  * Get the notification description for each platform based on the build
  * notification type and if it's a auto-approved build.
  */
-async function getNotificationDescription(input: {
+function getNotificationDescription(input: {
   buildNotificationType: BuildNotification["type"];
-  buildId: string;
+  build: Build;
   isAutoApproved: boolean;
-}): Promise<string> {
-  const { buildNotificationType, buildId, isAutoApproved } = input;
+}): string {
+  const { buildNotificationType, build, isAutoApproved } = input;
   switch (buildNotificationType) {
     case "queued":
       return "Build is queued";
     case "progress":
       return "Build in progress...";
     case "no-diff-detected": {
-      const statsMessage = await getStatsMessage(buildId);
+      const statsMessage = getBuildStatsMessage(build);
       if (!statsMessage) {
         if (isAutoApproved) {
           return "Auto-approved, no changes found";
@@ -152,18 +157,18 @@ async function getNotificationDescription(input: {
       return `${statsMessage} — no changes found`;
     }
     case "diff-detected": {
-      const statsMessage = await getStatsMessage(buildId);
+      const statsMessage = getBuildStatsMessage(build);
       if (isAutoApproved) {
         return `${statsMessage}, automatically approved`;
       }
       return `${statsMessage} — waiting for your decision`;
     }
     case "diff-accepted": {
-      const statsMessage = await getStatsMessage(buildId);
+      const statsMessage = getBuildStatsMessage(build);
       return `${statsMessage} — approved`;
     }
     case "diff-rejected": {
-      const statsMessage = await getStatsMessage(buildId);
+      const statsMessage = getBuildStatsMessage(build);
       return `${statsMessage} — rejected`;
     }
     default: {
@@ -179,18 +184,16 @@ export async function getNotificationPayload(input: {
   buildNotification: Pick<BuildNotification, "type">;
   build: Build;
 }): Promise<NotificationPayload> {
-  const [description, context] = await Promise.all([
-    getNotificationDescription({
-      buildNotificationType: input.buildNotification.type,
-      buildId: input.build.id,
-      isAutoApproved: input.build.type === "reference",
-    }),
-    getStatusContext(input.build),
-  ]);
+  const description = getNotificationDescription({
+    buildNotificationType: input.buildNotification.type,
+    build: input.build,
+    isAutoApproved: input.build.type === "reference",
+  });
   const states = getNotificationStates({
     buildNotificationType: input.buildNotification.type,
     isAutoApproved: input.build.type === "reference",
   });
+  const context = await getStatusContext(input.build);
 
   return {
     description,

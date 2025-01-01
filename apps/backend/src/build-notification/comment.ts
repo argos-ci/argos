@@ -28,9 +28,9 @@ function getBuildName(input: { build: Build; project: Project | null }) {
   return input.build.name;
 }
 
-export const getCommentBody = async (props: {
+export async function getCommentBody(props: {
   commit: string;
-}): Promise<string> => {
+}): Promise<string> {
   const builds = await Build.query()
     .distinctOn("builds.name", "builds.projectId")
     .joinRelated("compareScreenshotBucket")
@@ -44,40 +44,40 @@ export const getCommentBody = async (props: {
 
   const hasMultipleProjects =
     new Set(builds.map((build) => build.projectId)).size > 1;
-  const aggregateStatuses = await Build.getAggregatedBuildStatuses(builds);
-  const buildRows = await Promise.all(
-    builds
-      // Filter out builds that are not associated with a project that has PR comments enabled.
-      // We don't filter at SQL level because we still want to know if it's linked to multiple projects
-      // to determine if we should prepend the project name to the build name.
-      .filter((build) => {
-        invariant(build.project, "Relation `project` should be fetched");
-        return build.project.prCommentEnabled;
-      })
-      .map(async (build, index) => {
-        invariant(build.project, "Relation `project` should be fetched");
+  const [aggregateStatuses, urls] = await Promise.all([
+    Build.getAggregatedBuildStatuses(builds),
+    Promise.all(builds.map((build) => build.getUrl())),
+  ]);
+  const buildRows = builds
+    // Filter out builds that are not associated with a project that has PR comments enabled.
+    // We don't filter at SQL level because we still want to know if it's linked to multiple projects
+    // to determine if we should prepend the project name to the build name.
+    .filter((build) => {
+      invariant(build.project, "Relation `project` should be fetched");
+      return build.project.prCommentEnabled;
+    })
+    .map((build, index) => {
+      invariant(build.project, "Relation `project` should be fetched");
 
-        const [stats, url] = await Promise.all([
-          getStatsMessage(build.id),
-          build.getUrl(),
-        ]);
+      const url = urls[index];
+      invariant(url, "missing build URL");
 
-        const status = aggregateStatuses[index];
-        invariant(status, "unknown build status");
+      const status = aggregateStatuses[index];
+      invariant(status, "missing build status");
 
-        const label = getBuildLabel(build.type, status);
-        const review =
-          status === "changes-detected" ? ` ([Review](${url}))` : "";
-        const name = getBuildName({
-          build,
-          project: hasMultipleProjects ? build.project : null,
-        });
+      const stats = build.stats ? getStatsMessage(build.stats) : null;
 
-        return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
-          stats || "-"
-        } | ${formatDate(build.updatedAt)} |`;
-      }),
-  );
+      const label = getBuildLabel(build.type, status);
+      const review = status === "changes-detected" ? ` ([Review](${url}))` : "";
+      const name = getBuildName({
+        build,
+        project: hasMultipleProjects ? build.project : null,
+      });
+
+      return `| **${name}** ([Inspect](${url})) | ${label}${review} | ${
+        stats || "-"
+      } | ${formatDate(build.updatedAt)} |`;
+    });
   return [
     getCommentHeader(),
     "",
@@ -85,4 +85,4 @@ export const getCommentBody = async (props: {
     `| :---- | :----- | :------ | :------------ |`,
     ...buildRows.sort(),
   ].join("\n");
-};
+}

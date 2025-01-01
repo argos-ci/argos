@@ -314,13 +314,13 @@ export class Build extends Model {
    * Get status of the build.
    * Aggregate statuses from screenshot diffs.
    */
-  static async getStatuses(builds: Build[]) {
-    const completeBuildIds = builds
-      .filter(({ jobStatus }) => jobStatus === "complete")
+  static async getStatuses(builds: Build[]): Promise<BuildStatus[]> {
+    const unconcludedBuilds = builds
+      .filter((build) => build.jobStatus === "complete" && !build.conclusion)
       .map(({ id }) => id);
 
     const screenshotDiffStatuses =
-      await Build.getScreenshotDiffsStatuses(completeBuildIds);
+      await Build.getScreenshotDiffsStatuses(unconcludedBuilds);
 
     return builds.map((build) => {
       switch (build.jobStatus) {
@@ -328,15 +328,19 @@ export class Build extends Model {
         case "progress":
           return Date.now() - new Date(build.createdAt).getTime() >
             2 * 3600 * 1000
-            ? "expired"
-            : "pending";
+            ? ("expired" as const)
+            : ("pending" as const);
 
         case "error":
         case "aborted":
           return build.jobStatus;
 
         case "complete": {
-          const index = completeBuildIds.indexOf(build.id);
+          const index = unconcludedBuilds.indexOf(build.id);
+          // If the build is concluded, we don't need to check the diff status.
+          if (index === -1) {
+            return build.jobStatus;
+          }
           const diffStatus = screenshotDiffStatuses[index];
           invariant(diffStatus, "diff status not found");
           return diffStatus;
@@ -348,9 +352,9 @@ export class Build extends Model {
   }
 
   /**
-   * Get stats of the build.
+   * Compute stats for a list of builds.
    */
-  static async getStats(buildIds: string[]): Promise<BuildStats[]> {
+  static async computeStats(buildIds: string[]): Promise<BuildStats[]> {
     const data = (await ScreenshotDiff.query()
       .whereIn("buildId", buildIds)
       .leftJoinRelated("compareScreenshot")
@@ -388,17 +392,9 @@ export class Build extends Model {
   }
 
   /**
-   * Get status of the current build.
-   */
-  async $getStatus() {
-    const statuses = await Build.getStatuses([this]);
-    return statuses[0];
-  }
-
-  /**
    * Get the conclusion of builds.
    */
-  static async getConclusions(
+  static async computeConclusions(
     buildIds: string[],
     statuses: BuildStatus[],
   ): Promise<(BuildConclusion | null)[]> {
@@ -438,12 +434,11 @@ export class Build extends Model {
    * Get the review status of builds.
    */
   static async getReviewStatuses(
-    buildIds: string[],
-    conclusions: (BuildConclusion | null)[],
+    builds: Build[],
   ): Promise<(BuildReviewStatus | null)[]> {
-    const diffDetectedBuildIds = buildIds.filter(
-      (_buildId, index) => conclusions[index] === "changes-detected",
-    );
+    const diffDetectedBuildIds = builds
+      .filter((build) => build.conclusion === "changes-detected")
+      .map((build) => build.id);
 
     const screenshotDiffs = diffDetectedBuildIds.length
       ? await ScreenshotDiff.query()
@@ -452,13 +447,13 @@ export class Build extends Model {
           .groupBy("buildId", "validationStatus")
       : [];
 
-    return buildIds.map((buildId, index) => {
-      if (conclusions[index] !== "changes-detected") {
+    return builds.map((build) => {
+      if (build.conclusion !== "changes-detected") {
         return null;
       }
 
       const status = screenshotDiffs
-        .filter((diff) => diff.buildId === buildId)
+        .filter((diff) => diff.buildId === build.id)
         .map(({ validationStatus }) => validationStatus);
 
       if (status.length === 1 && status[0] === "accepted") {
@@ -501,13 +496,13 @@ export class Build extends Model {
   static async getAggregatedBuildStatuses(
     builds: Build[],
   ): Promise<BuildAggregatedStatus[]> {
-    const buildIds = builds.map((build) => build.id);
-    const statuses = await Build.getStatuses(builds);
-    const conclusions = await Build.getConclusions(buildIds, statuses);
-    const reviewStatuses = await Build.getReviewStatuses(buildIds, conclusions);
-    return builds.map((_build, index) => {
+    const [statuses, reviewStatuses] = await Promise.all([
+      Build.getStatuses(builds),
+      Build.getReviewStatuses(builds),
+    ]);
+    return builds.map((build, index) => {
       const status =
-        reviewStatuses[index] || conclusions[index] || statuses[index];
+        reviewStatuses[index] || build.conclusion || statuses[index];
       return BuildAggregatedStatusSchema.parse(status);
     });
   }

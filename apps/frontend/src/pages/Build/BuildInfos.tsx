@@ -187,7 +187,7 @@ export function BuildInfos(props: {
       </Dd>
 
       <Dt>Total screenshots count</Dt>
-      <Dd>{build ? build.stats.total : "-"}</Dd>
+      <Dd>{build.stats ? build.stats.total : "-"}</Dd>
 
       {build.pullRequest ? (
         <>

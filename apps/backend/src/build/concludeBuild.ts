@@ -13,8 +13,8 @@ export async function concludeBuild(input: { buildId: string }) {
   const { buildId } = input;
   const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
   const [[conclusion], [stats]] = await Promise.all([
-    Build.getConclusions([buildId], statuses),
-    Build.getStats([buildId]),
+    Build.computeConclusions([buildId], statuses),
+    Build.computeStats([buildId]),
   ]);
   invariant(stats !== undefined, "No stats found");
   invariant(conclusion !== undefined, "No conclusion found");

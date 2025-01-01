@@ -94,7 +94,7 @@ export const typeDefs = gql`
     "Pull request"
     pullRequest: PullRequest
     "Build stats"
-    stats: BuildStats!
+    stats: BuildStats
     "Build type"
     type: BuildType
     "Pull request head commit"
@@ -217,9 +217,6 @@ export const resolvers: IResolvers = {
         default:
           assertNever(status);
       }
-    },
-    stats: async (build, _args, ctx) => {
-      return ctx.loaders.BuildStats.load(build.id);
     },
     commit: async (build, _args, ctx) => {
       if (build.prHeadCommit) {

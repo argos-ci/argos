@@ -94,20 +94,25 @@ describe("models/Build", () => {
     });
   });
 
-  describe("#getStatus", () => {
+  describe("#getStatuses", () => {
     let build;
+
+    const getBuildStatus = async (build: Build) => {
+      const [status] = await Build.getStatuses([build]);
+      return status;
+    };
 
     describe("with in progress job", () => {
       it("should be pending", async () => {
         build = await factory.Build.create({ jobStatus: "progress" });
-        expect(await build.$getStatus()).toBe("pending");
+        expect(await getBuildStatus(build)).toBe("pending");
       });
     });
 
     describe("with pending job", () => {
       it("should be pending", async () => {
         build = await factory.Build.create({ jobStatus: "pending" });
-        expect(await build.$getStatus()).toBe("pending");
+        expect(await getBuildStatus(build)).toBe("pending");
       });
     });
 
@@ -119,7 +124,7 @@ describe("models/Build", () => {
             new Date().valueOf() - 3 * 3600 * 1000,
           ).toISOString(),
         });
-        expect(await build.$getStatus()).toBe("expired");
+        expect(await getBuildStatus(build)).toBe("expired");
       });
     });
 
@@ -131,7 +136,7 @@ describe("models/Build", () => {
             new Date().valueOf() - 3 * 3600 * 1000,
           ).toISOString(),
         });
-        expect(await build.$getStatus()).toBe("expired");
+        expect(await getBuildStatus(build)).toBe("expired");
       });
     });
 
@@ -143,7 +148,7 @@ describe("models/Build", () => {
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "error" },
           ]);
-          expect(await build.$getStatus()).toBe("error");
+          expect(await getBuildStatus(build)).toBe("error");
         });
       });
 
@@ -154,7 +159,7 @@ describe("models/Build", () => {
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "pending" },
           ]);
-          expect(await build.$getStatus()).toBe("progress");
+          expect(await getBuildStatus(build)).toBe("progress");
         });
       });
 
@@ -165,7 +170,7 @@ describe("models/Build", () => {
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "progress" },
           ]);
-          expect(await build.$getStatus()).toBe("progress");
+          expect(await getBuildStatus(build)).toBe("progress");
         });
       });
 
@@ -176,7 +181,7 @@ describe("models/Build", () => {
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "complete" },
           ]);
-          expect(await build.$getStatus()).toBe("complete");
+          expect(await getBuildStatus(build)).toBe("complete");
         });
       });
     });
@@ -184,14 +189,14 @@ describe("models/Build", () => {
     describe("with aborted job", () => {
       it("should be aborted", async () => {
         build = await factory.Build.create({ jobStatus: "aborted" });
-        expect(await build.$getStatus()).toBe("aborted");
+        expect(await getBuildStatus(build)).toBe("aborted");
       });
     });
 
     describe("with error job", () => {
       it("should be error", async () => {
         build = await factory.Build.create({ jobStatus: "error" });
-        expect(await build.$getStatus()).toBe("error");
+        expect(await getBuildStatus(build)).toBe("error");
       });
     });
   });
@@ -216,7 +221,7 @@ describe("models/Build", () => {
     });
   });
 
-  describe("#getConclusions", () => {
+  describe("#computeConclusions", () => {
     it("should return null for uncompleted jobs", async () => {
       const builds = await factory.Build.createMany(4, [
         { jobStatus: "pending" },
@@ -226,7 +231,7 @@ describe("models/Build", () => {
       ]);
 
       const statuses = await Build.getStatuses(builds);
-      const conclusions = await Build.getConclusions(
+      const conclusions = await Build.computeConclusions(
         builds.map((b) => b.id),
         statuses,
       );
@@ -238,7 +243,7 @@ describe("models/Build", () => {
         jobStatus: "complete",
       });
       const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
+      const conclusions = await Build.computeConclusions([build.id], statuses);
       expect(conclusions).toEqual(["no-changes"]);
     });
 
@@ -249,7 +254,7 @@ describe("models/Build", () => {
         { buildId: build.id },
       ]);
       const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
+      const conclusions = await Build.computeConclusions([build.id], statuses);
       expect(conclusions).toEqual(["no-changes"]);
     });
 
@@ -260,7 +265,7 @@ describe("models/Build", () => {
         { buildId: build.id, score: 0.8 },
       ]);
       const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
+      const conclusions = await Build.computeConclusions([build.id], statuses);
       expect(conclusions).toEqual(["changes-detected"]);
     });
   });
@@ -268,75 +273,55 @@ describe("models/Build", () => {
   describe("#reviewStatuses", () => {
     it("should return null for uncompleted jobs", async () => {
       const build = await factory.Build.create({
-        jobStatus: "pending",
+        conclusion: null,
       });
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
-      const reviewStatuses = await Build.getReviewStatuses(
-        [build.id],
-        conclusions,
-      );
+      const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual([null]);
     });
 
-    it("should return null for stable build", async () => {
-      const builds = await factory.Build.createMany(2);
+    it("should return null for 'no-changes' builds", async () => {
+      const builds = await factory.Build.createMany(2, {
+        conclusion: "no-changes",
+      });
       await factory.ScreenshotDiff.createMany(2, { buildId: builds[0]!.id });
       await factory.ScreenshotDiff.createMany(2, { buildId: builds[1]!.id });
-      const statuses = await Build.getStatuses(builds);
-      const conclusions = await Build.getConclusions(
-        builds.map((b) => b.id),
-        statuses,
-      );
-      const reviewStatuses = await Build.getReviewStatuses(
-        builds.map((b) => b.id),
-        conclusions,
-      );
+      const reviewStatuses = await Build.getReviewStatuses(builds);
       expect(reviewStatuses).toEqual([null, null]);
     });
 
     it("should return 'accepted' when all diff are accepted", async () => {
-      const build = await factory.Build.create();
+      const build = await factory.Build.create({
+        conclusion: "changes-detected",
+      });
       await factory.ScreenshotDiff.createMany(2, [
         { buildId: build.id, score: 0.8, validationStatus: "accepted" },
         { buildId: build.id, score: 0.4, validationStatus: "accepted" },
       ]);
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
-      const reviewStatuses = await Build.getReviewStatuses(
-        [build.id],
-        conclusions,
-      );
+      const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["accepted"]);
     });
 
     it("should return 'rejected' when one diff is rejected", async () => {
-      const build = await factory.Build.create();
+      const build = await factory.Build.create({
+        conclusion: "changes-detected",
+      });
       await factory.ScreenshotDiff.createMany(2, [
         { buildId: build.id, score: 0.8, validationStatus: "accepted" },
         { buildId: build.id, score: 0.4, validationStatus: "rejected" },
       ]);
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
-      const reviewStatuses = await Build.getReviewStatuses(
-        [build.id],
-        conclusions,
-      );
+      const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["rejected"]);
     });
 
     it("should return null in other case", async () => {
-      const build = await factory.Build.create();
+      const build = await factory.Build.create({
+        conclusion: "changes-detected",
+      });
       await factory.ScreenshotDiff.createMany(2, [
         { buildId: build.id, score: 0.8, validationStatus: "accepted" },
         { buildId: build.id, score: 0.4, validationStatus: "unknown" },
       ]);
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.getConclusions([build.id], statuses);
-      const reviewStatuses = await Build.getReviewStatuses(
-        [build.id],
-        conclusions,
-      );
+      const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual([null]);
     });
   });
