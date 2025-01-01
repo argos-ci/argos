@@ -180,7 +180,7 @@ type Build implements Node {
   screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
 
   """Build stats"""
-  stats: BuildStats!
+  stats: BuildStats
 
   """Review status, conclusion or job status"""
   status: BuildStatus!

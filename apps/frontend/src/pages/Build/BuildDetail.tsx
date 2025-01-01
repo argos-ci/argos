@@ -746,7 +746,7 @@ export function BuildDetail(props: {
             </BuildDiffFitStateProvider>
           </BuildDiffVisibleStateProvider>
         </ZoomerSyncProvider>
-      ) : build.stats.total === 0 ? (
+      ) : build.stats?.total === 0 ? (
         <div className="flex h-full min-h-0 flex-1 items-center justify-center">
           <div className="border-info bg-info-app text-info-low m-4 max-w-2xl rounded-lg border p-8 text-center">
             <div className="mb-2 text-lg font-semibold">

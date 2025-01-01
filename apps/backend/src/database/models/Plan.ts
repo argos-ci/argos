@@ -19,8 +19,8 @@ export class Plan extends Model {
     properties: {
       name: { type: "string" },
       includedScreenshots: { type: "number" },
-      githubPlanId: { type: "number" },
-      stripeProductId: { type: "string" },
+      githubPlanId: { type: ["number", "null"] },
+      stripeProductId: { type: ["string", "null"] },
       usageBased: { type: "boolean" },
       githubSsoIncluded: { type: "boolean" },
       fineGrainedAccessControlIncluded: { type: "boolean" },
@@ -29,8 +29,8 @@ export class Plan extends Model {
 
   name!: string;
   includedScreenshots!: number;
-  githubPlanId!: number;
-  stripeProductId!: string;
+  githubPlanId!: number | null;
+  stripeProductId!: string | null;
   usageBased!: boolean;
   githubSsoIncluded!: boolean;
   fineGrainedAccessControlIncluded!: boolean;

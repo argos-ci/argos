@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { concludeBuild } from "@/build/concludeBuild.js";
 import { Build } from "@/database/models/Build.js";
 import { BuildNotification } from "@/database/models/BuildNotification.js";
 import { factory } from "@/database/testing/index.js";
@@ -36,6 +37,8 @@ describe("#getNotificationPayload", () => {
       buildNotification = await factory.BuildNotification.create({
         buildId: build.id,
       });
+      await concludeBuild({ buildId: build.id, notify: false });
+      build = await build.$query();
     });
 
     it("returns argos as context", async () => {
@@ -70,6 +73,8 @@ describe("#getNotificationPayload", () => {
       buildNotification = await factory.BuildNotification.create({
         buildId: build.id,
       });
+      await concludeBuild({ buildId: build.id, notify: false });
+      build = await build.$query();
     });
 
     it("returns argos as context", async () => {

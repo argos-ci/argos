@@ -15,7 +15,7 @@
     "db:drop": "knex-scripts drop",
     "db:dump": "pnpm run db:migrate:latest && knex-scripts dump",
     "db:load": "knex-scripts load",
-    "db:seed": "knex seed:run",
+    "db:seed": "node dist/database/bin/run-seed.js",
     "db:truncate": "knex-scripts truncate",
     "db:migrate:latest": "knex migrate:latest",
     "db:migrate:rollback": "knex migrate:rollback",

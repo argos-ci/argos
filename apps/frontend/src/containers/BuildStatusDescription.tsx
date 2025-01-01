@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BuildMode, BuildStatus } from "@/gql/graphql";
@@ -112,6 +113,7 @@ export const BuildStatusDescription = (props: {
     case "check": {
       switch (build.status) {
         case BuildStatus.NoChanges: {
+          invariant(build.stats, "Concluded build should have stats");
           if (build.stats.total === 0) {
             return (
               <>

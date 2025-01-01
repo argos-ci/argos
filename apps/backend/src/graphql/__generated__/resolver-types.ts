@@ -205,7 +205,7 @@ export type IBuild = INode & {
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
   screenshotDiffs: IScreenshotDiffConnection;
   /** Build stats */
-  stats: IBuildStats;
+  stats?: Maybe<IBuildStats>;
   /** Review status, conclusion or job status */
   status: IBuildStatus;
   /** Build type */
@@ -1702,7 +1702,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   pullRequest?: Resolver<Maybe<IResolversTypes['PullRequest']>, ParentType, ContextType>;
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
-  stats?: Resolver<IResolversTypes['BuildStats'], ParentType, ContextType>;
+  stats?: Resolver<Maybe<IResolversTypes['BuildStats']>, ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
   type?: Resolver<Maybe<IResolversTypes['BuildType']>, ParentType, ContextType>;
   updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;

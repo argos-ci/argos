@@ -5,6 +5,7 @@
       "entry": [
         "src/processes/proc/*.ts",
         "src/build/bin/*.ts",
+        "src/database/bin/*.ts",
         "src/database/testing/index.ts",
         "src/graphql/definitions/*.ts"
       ],

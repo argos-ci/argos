@@ -6,7 +6,6 @@ import {
   Account,
   Build,
   BuildAggregatedStatus,
-  BuildStats,
   File,
   GithubAccount,
   GithubInstallation,
@@ -174,12 +173,6 @@ function createBuildFromCompareScreenshotBucketIdLoader() {
   );
 }
 
-function createBuildStatsLoader() {
-  return new DataLoader<string, BuildStats>(async (buildIds) => {
-    return Build.getStats(buildIds as string[]);
-  });
-}
-
 function createGhApiInstallationLoader() {
   return new DataLoader<
     { app: GithubInstallation["app"]; installationId: number },
@@ -206,7 +199,6 @@ export const createLoaders = () => ({
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
-  BuildStats: createBuildStatsLoader(),
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),
   GithubAccount: createModelLoader(GithubAccount),

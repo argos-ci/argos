@@ -239,9 +239,10 @@ async function unfurlBuild(
     return null;
   }
 
-  const [[status], statsMessage, screenshotDiff] = await Promise.all([
+  const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
+
+  const [[status], screenshotDiff] = await Promise.all([
     Build.getAggregatedBuildStatuses([build]),
-    getStatsMessage(build.id),
     params.diffId
       ? ScreenshotDiff.query()
           .findById(params.diffId)

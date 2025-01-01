@@ -1,6 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { concludeBuild } from "@/build/concludeBuild.js";
 import type {
   Account,
   Build,
@@ -70,6 +71,8 @@ describe("GraphQL", () => {
           score: 0,
         },
       ]);
+      await concludeBuild({ buildId: build.id, notify: false });
+      build = await build.$query();
     });
 
     it("should mutate all the validationStatus", async () => {

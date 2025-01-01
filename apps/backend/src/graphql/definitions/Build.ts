@@ -94,7 +94,7 @@ export const typeDefs = gql`
     "Pull request"
     pullRequest: PullRequest
     "Build stats"
-    stats: BuildStats!
+    stats: BuildStats
     "Build type"
     type: BuildType
     "Pull request head commit"
@@ -167,6 +167,14 @@ const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
 export const resolvers: IResolvers = {
   Build: {
     screenshotDiffs: async (build, { first, after }) => {
+      // If the build is not concluded, we don't want to return any diffs.
+      if (!build.conclusion) {
+        return paginateResult({
+          result: { total: 0, results: [] },
+          first,
+          after,
+        });
+      }
       const result = await build
         .$relatedQuery("screenshotDiffs")
         .leftJoinRelated("[baseScreenshot, compareScreenshot]")
@@ -217,9 +225,6 @@ export const resolvers: IResolvers = {
         default:
           assertNever(status);
       }
-    },
-    stats: async (build, _args, ctx) => {
-      return ctx.loaders.BuildStats.load(build.id);
     },
     commit: async (build, _args, ctx) => {
       if (build.prHeadCommit) {

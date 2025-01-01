@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import { Build } from "@/database/models/index.js";
 
 /**
@@ -7,9 +5,7 @@ import { Build } from "@/database/models/index.js";
  * Example: 40 changed, 20 added, 10 removed, 5 failures
  * Around 45 characters max.
  */
-export async function getStatsMessage(buildId: string): Promise<string> {
-  const [stats] = await Build.getStats([buildId]);
-  invariant(stats, "Build stats not found");
+export function getStatsMessage(stats: NonNullable<Build["stats"]>): string {
   const parts = [];
   if (stats.changed > 0) {
     parts.push(`${stats.changed} changed`);

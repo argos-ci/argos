@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { concludeBuild } from "@/build/concludeBuild";
 import type {
   Build,
   Project,
@@ -58,6 +59,7 @@ describe("finalizeBuilds", () => {
   describe("with a bucket already complete", () => {
     beforeEach(async () => {
       await compareScreenshotBucket.$query().patch({ complete: true });
+      await concludeBuild({ buildId: build.id, notify: false });
     });
 
     it("returns 200 with the finalized build", async () => {
@@ -106,6 +108,7 @@ describe("finalizeBuilds", () => {
 
   describe("with a valid build", () => {
     it("returns 200 status code", async () => {
+      await concludeBuild({ buildId: build.id, notify: false });
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")

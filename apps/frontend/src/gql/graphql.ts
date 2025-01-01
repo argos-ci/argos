@@ -200,7 +200,7 @@ export type Build = Node & {
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
   screenshotDiffs: ScreenshotDiffConnection;
   /** Build stats */
-  stats: BuildStats;
+  stats?: Maybe<BuildStats>;
   /** Review status, conclusion or job status */
   status: BuildStatus;
   /** Build type */
@@ -1417,7 +1417,7 @@ export type BuildStatusChip_BuildFragment = (
   & { ' $fragmentRefs'?: { 'BuildStatusDescription_BuildFragment': BuildStatusDescription_BuildFragment } }
 ) & { ' $fragmentName'?: 'BuildStatusChip_BuildFragment' };
 
-export type BuildStatusDescription_BuildFragment = { __typename?: 'Build', type?: BuildType | null, status: BuildStatus, mode: BuildMode, baseBranch?: string | null, stats: { __typename?: 'BuildStats', total: number }, parallel?: { __typename?: 'BuildParallel', total: number, received: number, nonce: string } | null } & { ' $fragmentName'?: 'BuildStatusDescription_BuildFragment' };
+export type BuildStatusDescription_BuildFragment = { __typename?: 'Build', type?: BuildType | null, status: BuildStatus, mode: BuildMode, baseBranch?: string | null, stats?: { __typename?: 'BuildStats', total: number } | null, parallel?: { __typename?: 'BuildParallel', total: number, received: number, nonce: string } | null } & { ' $fragmentName'?: 'BuildStatusDescription_BuildFragment' };
 
 export type GithubAccountLink_GithubAccountFragment = { __typename?: 'GithubAccount', login: string, name?: string | null, url: string } & { ' $fragmentName'?: 'GithubAccountLink_GithubAccountFragment' };
 
@@ -2080,7 +2080,7 @@ export type Account_AccountQuery = { __typename?: 'Query', account?: (
     & { ' $fragmentRefs'?: { 'PaymentBanner_Account_User_Fragment': PaymentBanner_Account_User_Fragment } }
   ) | null };
 
-export type BuildDetail_BuildFragment = { __typename?: 'Build', id: string, createdAt: any, branch?: string | null, type?: BuildType | null, stats: { __typename?: 'BuildStats', total: number }, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', id: string, branch?: string | null, createdAt: any } | null, pullRequest?: { __typename?: 'GithubPullRequest', merged?: boolean | null } | null } & { ' $fragmentName'?: 'BuildDetail_BuildFragment' };
+export type BuildDetail_BuildFragment = { __typename?: 'Build', id: string, createdAt: any, branch?: string | null, type?: BuildType | null, stats?: { __typename?: 'BuildStats', total: number } | null, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', id: string, branch?: string | null, createdAt: any } | null, pullRequest?: { __typename?: 'GithubPullRequest', merged?: boolean | null } | null } & { ' $fragmentName'?: 'BuildDetail_BuildFragment' };
 
 export type BuildDiffState_ScreenshotDiffFragment = { __typename?: 'ScreenshotDiff', id: string, status: ScreenshotDiffStatus, url?: string | null, name: string, width?: number | null, height?: number | null, group?: string | null, threshold?: number | null, baseScreenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null, metadata?: { __typename?: 'ScreenshotMetadata', url?: string | null, colorScheme?: ScreenshotMetadataColorScheme | null, mediaType?: ScreenshotMetadataMediaType | null, automationLibrary: { __typename?: 'ScreenshotMetadataAutomationLibrary', name: string, version: string }, browser?: { __typename?: 'ScreenshotMetadataBrowser', name: string, version: string } | null, sdk: { __typename?: 'ScreenshotMetadataSDK', name: string, version: string }, viewport?: { __typename?: 'ScreenshotMetadataViewport', width: number, height: number } | null, test?: { __typename?: 'ScreenshotMetadataTest', id?: string | null, title: string, titlePath: Array<string>, retry?: number | null, retries?: number | null, repeat?: number | null, location?: { __typename?: 'ScreenshotMetadataLocation', file: string, line: number } | null } | null } | null } | null, compareScreenshot?: { __typename?: 'Screenshot', id: string, url: string, width?: number | null, height?: number | null, playwrightTraceUrl?: string | null, metadata?: { __typename?: 'ScreenshotMetadata', url?: string | null, colorScheme?: ScreenshotMetadataColorScheme | null, mediaType?: ScreenshotMetadataMediaType | null, automationLibrary: { __typename?: 'ScreenshotMetadataAutomationLibrary', name: string, version: string }, browser?: { __typename?: 'ScreenshotMetadataBrowser', name: string, version: string } | null, sdk: { __typename?: 'ScreenshotMetadataSDK', name: string, version: string }, viewport?: { __typename?: 'ScreenshotMetadataViewport', width: number, height: number } | null, test?: { __typename?: 'ScreenshotMetadataTest', id?: string | null, title: string, titlePath: Array<string>, retry?: number | null, retries?: number | null, repeat?: number | null, location?: { __typename?: 'ScreenshotMetadataLocation', file: string, line: number } | null } | null } | null } | null } & { ' $fragmentName'?: 'BuildDiffState_ScreenshotDiffFragment' };
 
@@ -2098,12 +2098,12 @@ export type BuildDiffState_ProjectQuery = { __typename?: 'Query', project?: { __
           & { ' $fragmentRefs'?: { 'BuildDiffState_ScreenshotDiffFragment': BuildDiffState_ScreenshotDiffFragment } }
         )> } } | null } | null };
 
-export type BuildDiffState_BuildFragment = { __typename?: 'Build', id: string, stats: (
+export type BuildDiffState_BuildFragment = { __typename?: 'Build', id: string, stats?: (
     { __typename?: 'BuildStats', total: number, failure: number, changed: number, added: number, removed: number, unchanged: number, retryFailure: number }
     & { ' $fragmentRefs'?: { 'BuildStatsIndicator_BuildStatsFragment': BuildStatsIndicator_BuildStatsFragment } }
-  ) } & { ' $fragmentName'?: 'BuildDiffState_BuildFragment' };
+  ) | null } & { ' $fragmentName'?: 'BuildDiffState_BuildFragment' };
 
-export type BuildInfos_BuildFragment = { __typename?: 'Build', createdAt: any, name: string, commit: string, branch?: string | null, mode: BuildMode, baseBranch?: string | null, baseBranchResolvedFrom?: BaseBranchResolution | null, stats: { __typename?: 'BuildStats', total: number }, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', id: string, commit: string, branch?: string | null } | null, baseBuild?: { __typename?: 'Build', id: string, number: number } | null, pullRequest?: { __typename?: 'GithubPullRequest', id: string, url: string, number: number } | null, metadata?: { __typename?: 'BuildMetadata', testReport?: { __typename?: 'TestReport', status: TestReportStatus } | null } | null } & { ' $fragmentName'?: 'BuildInfos_BuildFragment' };
+export type BuildInfos_BuildFragment = { __typename?: 'Build', createdAt: any, name: string, commit: string, branch?: string | null, mode: BuildMode, baseBranch?: string | null, baseBranchResolvedFrom?: BaseBranchResolution | null, stats?: { __typename?: 'BuildStats', total: number } | null, baseScreenshotBucket?: { __typename?: 'ScreenshotBucket', id: string, commit: string, branch?: string | null } | null, baseBuild?: { __typename?: 'Build', id: string, number: number } | null, pullRequest?: { __typename?: 'GithubPullRequest', id: string, url: string, number: number } | null, metadata?: { __typename?: 'BuildMetadata', testReport?: { __typename?: 'TestReport', status: TestReportStatus } | null } | null } & { ' $fragmentName'?: 'BuildInfos_BuildFragment' };
 
 export type BuildOrphanDialog_BuildFragment = { __typename?: 'Build', baseBranch?: string | null, mode: BuildMode, type?: BuildType | null } & { ' $fragmentName'?: 'BuildOrphanDialog_BuildFragment' };
 
@@ -2146,7 +2146,7 @@ export type BuildReviewDialog_ProjectFragment = (
 ) & { ' $fragmentName'?: 'BuildReviewDialog_ProjectFragment' };
 
 export type BuildSidebar_BuildFragment = (
-  { __typename?: 'Build', stats: { __typename?: 'BuildStats', total: number } }
+  { __typename?: 'Build', stats?: { __typename?: 'BuildStats', total: number } | null }
   & { ' $fragmentRefs'?: { 'BuildInfos_BuildFragment': BuildInfos_BuildFragment } }
 ) & { ' $fragmentName'?: 'BuildSidebar_BuildFragment' };
 
@@ -2219,10 +2219,10 @@ export type ProjectBuilds_Project_BuildsQueryVariables = Exact<{
 
 
 export type ProjectBuilds_Project_BuildsQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, builds: { __typename?: 'BuildConnection', pageInfo: { __typename?: 'PageInfo', totalCount: number, hasNextPage: boolean }, edges: Array<(
-        { __typename?: 'Build', id: string, number: number, createdAt: any, name: string, branch?: string | null, commit: string, mode: BuildMode, stats: (
+        { __typename?: 'Build', id: string, number: number, createdAt: any, name: string, branch?: string | null, commit: string, mode: BuildMode, stats?: (
           { __typename?: 'BuildStats' }
           & { ' $fragmentRefs'?: { 'BuildStatsIndicator_BuildStatsFragment': BuildStatsIndicator_BuildStatsFragment } }
-        ), pullRequest?: (
+        ) | null, pullRequest?: (
           { __typename?: 'GithubPullRequest', id: string }
           & { ' $fragmentRefs'?: { 'PullRequestButton_PullRequestFragment': PullRequestButton_PullRequestFragment } }
         ) | null }

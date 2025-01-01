@@ -9,12 +9,15 @@ import { Build, BuildConclusion, BuildNotification } from "@/database/models";
  * Concludes the build by updating the conclusion and the stats.
  * Called when all diffs are processed.
  */
-export async function concludeBuild(input: { buildId: string }) {
-  const { buildId } = input;
+export async function concludeBuild(input: {
+  buildId: string;
+  notify?: boolean;
+}) {
+  const { buildId, notify = true } = input;
   const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
   const [[conclusion], [stats]] = await Promise.all([
-    Build.getConclusions([buildId], statuses),
-    Build.getStats([buildId]),
+    Build.computeConclusions([buildId], statuses),
+    Build.computeStats([buildId]),
   ]);
   invariant(stats !== undefined, "No stats found");
   invariant(conclusion !== undefined, "No conclusion found");
@@ -22,20 +25,27 @@ export async function concludeBuild(input: { buildId: string }) {
   if (conclusion === null) {
     return;
   }
-  const [, buildNotification] = await transaction(async (trx) => {
-    return Promise.all([
-      Build.query(trx).findById(buildId).patch({
-        conclusion,
-        stats,
-      }),
-      BuildNotification.query(trx).insert({
-        buildId,
-        type: getNotificationType(conclusion),
-        jobStatus: "pending",
-      }),
-    ]);
-  });
-  await buildNotificationJob.push(buildNotification.id);
+  if (notify) {
+    const [, buildNotification] = await transaction(async (trx) => {
+      return Promise.all([
+        Build.query(trx).findById(buildId).patch({
+          conclusion,
+          stats,
+        }),
+        BuildNotification.query(trx).insert({
+          buildId,
+          type: getNotificationType(conclusion),
+          jobStatus: "pending",
+        }),
+      ]);
+    });
+    await buildNotificationJob.push(buildNotification.id);
+  } else {
+    await Build.query().findById(buildId).patch({
+      conclusion,
+      stats,
+    });
+  }
 }
 
 function getNotificationType(conclusion: BuildConclusion) {
