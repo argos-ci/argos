@@ -9,8 +9,11 @@ import { Build, BuildConclusion, BuildNotification } from "@/database/models";
  * Concludes the build by updating the conclusion and the stats.
  * Called when all diffs are processed.
  */
-export async function concludeBuild(input: { buildId: string }) {
-  const { buildId } = input;
+export async function concludeBuild(input: {
+  buildId: string;
+  notify?: boolean;
+}) {
+  const { buildId, notify = true } = input;
   const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
   const [[conclusion], [stats]] = await Promise.all([
     Build.computeConclusions([buildId], statuses),
@@ -28,14 +31,18 @@ export async function concludeBuild(input: { buildId: string }) {
         conclusion,
         stats,
       }),
-      BuildNotification.query(trx).insert({
-        buildId,
-        type: getNotificationType(conclusion),
-        jobStatus: "pending",
-      }),
+      notify
+        ? BuildNotification.query(trx).insert({
+            buildId,
+            type: getNotificationType(conclusion),
+            jobStatus: "pending",
+          })
+        : null,
     ]);
   });
-  await buildNotificationJob.push(buildNotification.id);
+  if (buildNotification) {
+    await buildNotificationJob.push(buildNotification.id);
+  }
 }
 
 function getNotificationType(conclusion: BuildConclusion) {

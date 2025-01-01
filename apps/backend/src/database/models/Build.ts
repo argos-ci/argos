@@ -57,7 +57,7 @@ export type BuildAggregatedStatus = z.infer<typeof BuildAggregatedStatusSchema>;
 
 export type BuildMode = "ci" | "monitoring";
 
-export type BuildStats = {
+type BuildStats = {
   failure: number;
   added: number;
   unchanged: number;
@@ -500,10 +500,11 @@ export class Build extends Model {
       Build.getStatuses(builds),
       Build.getReviewStatuses(builds),
     ]);
-    return builds.map((build, index) => {
+    const aggregateStatuses = builds.map((build, index) => {
       const status =
         reviewStatuses[index] || build.conclusion || statuses[index];
       return BuildAggregatedStatusSchema.parse(status);
     });
+    return aggregateStatuses;
   }
 }

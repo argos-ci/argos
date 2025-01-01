@@ -1,3 +1,6 @@
+import { concludeBuild } from "../../dist/build/concludeBuild.js";
+import { Build } from "../../dist/database/models/Build.js";
+
 const now = new Date().toISOString();
 const timeStamps = { createdAt: now, updatedAt: now };
 
@@ -535,4 +538,9 @@ export const seed = async (knex) => {
       fineGrainedAccessControlIncluded: true,
     },
   ]);
+
+  const completeBuilds = await Build.query().where("jobStatus", "complete");
+  for (const build of completeBuilds) {
+    await concludeBuild({ buildId: build.id });
+  }
 };

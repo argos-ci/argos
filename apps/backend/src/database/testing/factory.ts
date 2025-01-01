@@ -122,6 +122,16 @@ export const Build = defineFactory(models.Build, () => {
     compareScreenshotBucketId: ScreenshotBucket.extend(() => ({
       projectId,
     })).associate("id"),
+    conclusion: "no-changes",
+    stats: {
+      failure: 0,
+      added: 0,
+      unchanged: 0,
+      changed: 0,
+      removed: 0,
+      total: 0,
+      retryFailure: 0,
+    },
   };
 });
 
