@@ -143,7 +143,11 @@ describe("models/Build", () => {
     describe("with complete job", () => {
       describe("and one in error screenshot diff", () => {
         it("should be error", async () => {
-          build = await factory.Build.create();
+          build = await factory.Build.create({
+            jobStatus: "complete",
+            conclusion: null,
+            stats: null,
+          });
           await factory.ScreenshotDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "error" },
@@ -154,7 +158,11 @@ describe("models/Build", () => {
 
       describe("and one pending screenshot diff", () => {
         it("should be pending", async () => {
-          build = await factory.Build.create();
+          build = await factory.Build.create({
+            jobStatus: "complete",
+            conclusion: null,
+            stats: null,
+          });
           await factory.ScreenshotDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "pending" },
@@ -165,7 +173,11 @@ describe("models/Build", () => {
 
       describe("and one in progress screenshot diff", () => {
         it("should be progress", async () => {
-          build = await factory.Build.create();
+          build = await factory.Build.create({
+            jobStatus: "complete",
+            conclusion: null,
+            stats: null,
+          });
           await factory.ScreenshotDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "progress" },
@@ -176,7 +188,11 @@ describe("models/Build", () => {
 
       describe("with complete screenshot diffs", () => {
         it("should be error", async () => {
-          build = await factory.Build.create();
+          build = await factory.Build.create({
+            jobStatus: "complete",
+            conclusion: null,
+            stats: null,
+          });
           await factory.ScreenshotDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "complete" },

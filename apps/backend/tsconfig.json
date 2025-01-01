@@ -8,7 +8,6 @@
     }
   },
   "exclude": [
-    "./db/seeds",
     "./dist",
     "cypress",
     "@testing-library/cypress",

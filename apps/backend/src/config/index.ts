@@ -286,13 +286,6 @@ const config = convict({
         default: join(__dirname, "../../db/migrations"),
       },
     },
-    seeds: {
-      directory: {
-        doc: "Seeds directory",
-        format: String,
-        default: join(__dirname, "../../db/seeds"),
-      },
-    },
     client: {
       doc: "Knex client",
       format: String,

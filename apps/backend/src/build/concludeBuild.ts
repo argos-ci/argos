@@ -25,23 +25,26 @@ export async function concludeBuild(input: {
   if (conclusion === null) {
     return;
   }
-  const [, buildNotification] = await transaction(async (trx) => {
-    return Promise.all([
-      Build.query(trx).findById(buildId).patch({
-        conclusion,
-        stats,
-      }),
-      notify
-        ? BuildNotification.query(trx).insert({
-            buildId,
-            type: getNotificationType(conclusion),
-            jobStatus: "pending",
-          })
-        : null,
-    ]);
-  });
-  if (buildNotification) {
+  if (notify) {
+    const [, buildNotification] = await transaction(async (trx) => {
+      return Promise.all([
+        Build.query(trx).findById(buildId).patch({
+          conclusion,
+          stats,
+        }),
+        BuildNotification.query(trx).insert({
+          buildId,
+          type: getNotificationType(conclusion),
+          jobStatus: "pending",
+        }),
+      ]);
+    });
     await buildNotificationJob.push(buildNotification.id);
+  } else {
+    await Build.query().findById(buildId).patch({
+      conclusion,
+      stats,
+    });
   }
 }
 
