@@ -1,11 +1,11 @@
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { BoxesIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useParams, useResolvedPath } from "react-router-dom";
+import { useParams, useResolvedPath, useSearchParams } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
@@ -13,7 +13,7 @@ import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import { LinkButton } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import {
   EmptyState,
   EmptyStateActions,
@@ -32,7 +32,12 @@ import { Truncable } from "@/ui/Truncable";
 import { useProjectContext } from ".";
 import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
 import { NotFound } from "../NotFound";
-import { BuildNameFilter, useBuildNameFilter } from "./BuildNameFilter";
+import { BuildNameFilter, useBuildNameFilterState } from "./BuildNameFilter";
+import {
+  BuildStatusFilter,
+  useBuildStatusFilterState,
+} from "./BuildStatusFilter";
+import { BuildTypeFilter, useBuildTypeFilterState } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
 
 const ProjectQuery = graphql(`
@@ -59,15 +64,11 @@ const ProjectBuildsQuery = graphql(`
     $projectName: String!
     $after: Int!
     $first: Int!
-    $buildName: String
+    $filters: BuildsFilterInput
   ) {
-    project(
-      accountSlug: $accountSlug
-      projectName: $projectName
-      buildName: $buildName
-    ) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      builds(first: $first, after: $after, buildName: $buildName) {
+      builds(first: $first, after: $after, filters: $filters) {
         pageInfo {
           totalCount
           hasNextPage
@@ -299,7 +300,15 @@ const BuildsList = ({
 const PageContent = (props: { accountSlug: string; projectName: string }) => {
   const { permissions } = useProjectContext();
   const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
-  const [buildName, setBuildName] = useBuildNameFilter();
+  const [, setSearchParams] = useSearchParams();
+  const clearFilters = () => {
+    setSearchParams({});
+  };
+  const [buildName, setBuildName, isBuildNameDirty] = useBuildNameFilterState();
+  const [buildStatus, setBuildStatus, isBuildStatusDirty] =
+    useBuildStatusFilterState();
+  const [buildType, setBuildType, isBuildTypeDirty] = useBuildTypeFilterState();
+  const hasFilters = isBuildNameDirty || isBuildStatusDirty || isBuildTypeDirty;
   const projectResult = useSafeQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
@@ -307,11 +316,19 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     },
   });
 
+  const filters = useMemo(() => {
+    return {
+      name: buildName,
+      type: Array.from(buildType),
+      status: Array.from(buildStatus),
+    };
+  }, [buildName, buildType, buildStatus]);
+
   const buildsResult = useSafeQuery(ProjectBuildsQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
-      buildName,
+      filters,
       after: 0,
       first: 20,
     },
@@ -364,7 +381,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     return <NotFound />;
   }
 
-  if (builds.pageInfo.totalCount === 0) {
+  if (builds.pageInfo.totalCount === 0 && !hasFilters) {
     if (hasReviewerPermission) {
       return (
         <PageContainer>
@@ -400,23 +417,40 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
             View all the builds associated with this project.
           </Text>
         </PageHeaderContent>
-        {project.buildNames.length > 1 && (
-          <PageHeaderActions>
+        <PageHeaderActions>
+          <BuildTypeFilter value={buildType} onChange={setBuildType} />
+          <BuildStatusFilter value={buildStatus} onChange={setBuildStatus} />
+          {project.buildNames.length > 1 && (
             <BuildNameFilter
               buildNames={project.buildNames}
               value={buildName}
               onChange={setBuildName}
             />
-          </PageHeaderActions>
-        )}
+          )}
+        </PageHeaderActions>
       </PageHeader>
       <div className="relative flex-1">
-        <BuildsList
-          project={project}
-          builds={builds}
-          fetchNextPage={fetchNextPage}
-          fetching={buildsResult.loading}
-        />
+        {hasFilters && builds.pageInfo.totalCount === 0 ? (
+          <EmptyState>
+            <EmptyStateIcon>
+              <BoxesIcon strokeWidth={1} />
+            </EmptyStateIcon>
+            <Heading>No builds</Heading>
+            <Text slot="description">
+              There is no build matching the filters.
+            </Text>
+            <EmptyStateActions>
+              <Button onPress={() => clearFilters()}>Reset filters</Button>
+            </EmptyStateActions>
+          </EmptyState>
+        ) : (
+          <BuildsList
+            project={project}
+            builds={builds}
+            fetchNextPage={fetchNextPage}
+            fetching={buildsResult.loading}
+          />
+        )}
       </div>
     </PageContainer>
   );

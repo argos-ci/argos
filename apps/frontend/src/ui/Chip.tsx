@@ -1,13 +1,8 @@
 import { clsx } from "clsx";
 
-export type ChipColor =
-  | "primary"
-  | "info"
-  | "success"
-  | "neutral"
-  | "pending"
-  | "danger"
-  | "warning";
+import { lowTextColorClassNames, UIColor } from "@/util/colors";
+
+export type ChipColor = UIColor;
 
 export type ChipProps = Omit<React.ComponentPropsWithRef<"div">, "color"> & {
   color?: ChipColor;
@@ -16,13 +11,25 @@ export type ChipProps = Omit<React.ComponentPropsWithRef<"div">, "color"> & {
 };
 
 const colorClassNames: Record<ChipColor, string> = {
-  primary: "text-primary-low border-primary bg-primary-app",
-  info: "text-info-low border-info bg-info-app",
-  success: "text-success-low border-success bg-success-app",
-  neutral: "text-low border bg-app",
-  pending: "text-pending-low border-pending bg-pending-app",
-  danger: "text-danger-low border-danger bg-danger-app",
-  warning: "text-warning-low border-warning bg-warning-app",
+  primary: clsx(
+    lowTextColorClassNames.primary,
+    "border-primary bg-primary-app",
+  ),
+  info: clsx(lowTextColorClassNames.info, "border-info bg-info-app"),
+  success: clsx(
+    lowTextColorClassNames.success,
+    "border-success bg-success-app",
+  ),
+  neutral: clsx(lowTextColorClassNames.neutral, "border bg-app"),
+  pending: clsx(
+    lowTextColorClassNames.pending,
+    "border-pending bg-pending-app",
+  ),
+  danger: clsx(lowTextColorClassNames.danger, "border-danger bg-danger-app"),
+  warning: clsx(
+    lowTextColorClassNames.warning,
+    "border-warning bg-warning-app",
+  ),
 };
 
 export function Chip({

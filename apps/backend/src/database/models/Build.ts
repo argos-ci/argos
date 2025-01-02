@@ -30,6 +30,8 @@ import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
 import { User } from "./User.js";
 
+export const BUILD_EXPIRATION_DELAY_MS = 2 * 3600 * 1000; // 2 hours
+
 export type BuildType = "reference" | "check" | "orphan";
 
 const BuildStatusSchema = z.enum([
@@ -327,7 +329,7 @@ export class Build extends Model {
         case "pending":
         case "progress":
           return Date.now() - new Date(build.createdAt).getTime() >
-            2 * 3600 * 1000
+            BUILD_EXPIRATION_DELAY_MS
             ? ("expired" as const)
             : ("pending" as const);
 

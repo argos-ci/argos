@@ -263,6 +263,12 @@ enum BuildType {
   reference
 }
 
+input BuildsFilterInput {
+  name: String
+  status: [BuildStatus!]
+  type: [BuildType!]
+}
+
 interface Connection {
   edges: [Node!]!
   pageInfo: PageInfo!
@@ -579,7 +585,7 @@ type Project implements Node {
   buildNames: [String!]!
 
   """Builds associated to the repository"""
-  builds(after: Int = 0, buildName: String, first: Int = 30): BuildConnection!
+  builds(after: Int = 0, filters: BuildsFilterInput, first: Int = 30): BuildConnection!
 
   """Contributors"""
   contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
@@ -696,7 +702,7 @@ type Query {
   ping: Boolean!
 
   """Get a project"""
-  project(accountSlug: String!, buildName: String, projectName: String!): Project
+  project(accountSlug: String!, projectName: String!): Project
 
   """Get a project"""
   projectById(id: ID!): Project
