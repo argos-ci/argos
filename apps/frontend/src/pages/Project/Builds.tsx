@@ -346,16 +346,20 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
         after: displayCount,
       },
       updateQuery: (prev, { fetchMoreResult }) => {
+        if (!prev.project?.builds?.edges || !fetchMoreResult?.project?.builds) {
+          return fetchMoreResult;
+        }
+
         return {
           ...prev,
           project: {
-            ...prev.project!,
+            ...prev.project,
             builds: {
-              ...prev.project!.builds,
-              ...fetchMoreResult.project!.builds,
+              ...prev.project.builds,
+              ...fetchMoreResult.project.builds,
               edges: [
-                ...prev.project!.builds.edges,
-                ...fetchMoreResult.project!.builds.edges,
+                ...prev.project.builds.edges,
+                ...fetchMoreResult.project.builds.edges,
               ],
             },
           },
