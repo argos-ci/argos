@@ -15,8 +15,9 @@ export class Model extends ObjectionModel {
     if (!this.createdAt) {
       this.createdAt = new Date().toISOString();
     }
-
-    this.updatedAt = new Date().toISOString();
+    if (!this.updatedAt) {
+      this.updatedAt = new Date().toISOString();
+    }
   }
 
   override $beforeUpdate(_opt: ModelOptions, _queryContext: QueryContext) {

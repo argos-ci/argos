@@ -2,6 +2,7 @@ export * from "./Account.js";
 export * from "./Build.js";
 export * from "./BuildShard.js";
 export * from "./BuildNotification.js";
+export * from "./BuildReview.js";
 export * from "./Capture.js";
 export * from "./Crawl.js";
 export * from "./File.js";

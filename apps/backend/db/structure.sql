@@ -158,6 +158,44 @@ ALTER SEQUENCE public.build_notifications_id_seq OWNED BY public.build_notificat
 
 
 --
+-- Name: build_reviews; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.build_reviews (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userId" bigint,
+    "buildId" bigint NOT NULL,
+    state text NOT NULL,
+    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+);
+
+
+ALTER TABLE public.build_reviews OWNER TO postgres;
+
+--
+-- Name: build_reviews_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.build_reviews_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.build_reviews_id_seq OWNER TO postgres;
+
+--
+-- Name: build_reviews_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.build_reviews_id_seq OWNED BY public.build_reviews.id;
+
+
+--
 -- Name: build_shards; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1377,6 +1415,13 @@ ALTER TABLE ONLY public.build_notifications ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: build_reviews id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_reviews ALTER COLUMN id SET DEFAULT nextval('public.build_reviews_id_seq'::regclass);
+
+
+--
 -- Name: build_shards id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1617,6 +1662,14 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.build_notifications
     ADD CONSTRAINT build_notifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: build_reviews build_reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_reviews
+    ADD CONSTRAINT build_reviews_pkey PRIMARY KEY (id);
 
 
 --
@@ -1987,6 +2040,20 @@ CREATE INDEX accounts_userid_index ON public.accounts USING btree ("userId");
 --
 
 CREATE INDEX build_notifications_buildid_index ON public.build_notifications USING btree ("buildId");
+
+
+--
+-- Name: build_reviews_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_reviews_buildid_index ON public.build_reviews USING btree ("buildId");
+
+
+--
+-- Name: build_reviews_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_reviews_userid_index ON public.build_reviews USING btree ("userId");
 
 
 --
@@ -2449,6 +2516,22 @@ ALTER TABLE ONLY public.accounts
 
 ALTER TABLE ONLY public.build_notifications
     ADD CONSTRAINT build_notifications_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: build_reviews build_reviews_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_reviews
+    ADD CONSTRAINT build_reviews_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: build_reviews build_reviews_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_reviews
+    ADD CONSTRAINT build_reviews_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
 
 
 --
@@ -2924,3 +3007,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024120
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241201222408_gitlab-last-loggedat.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241215091232_project-default-role.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241231154644_build-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250102150800_build-review.js', 1, NOW());
