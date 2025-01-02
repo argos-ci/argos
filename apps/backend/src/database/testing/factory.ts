@@ -155,8 +155,14 @@ export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({
   baseScreenshotId: Screenshot.associate("id"),
   compareScreenshotId: Screenshot.associate("id"),
   jobStatus: "complete",
-  validationStatus: "accepted",
+  validationStatus: "unknown",
   score: 0,
+}));
+
+export const BuildReview = defineFactory(models.BuildReview, () => ({
+  buildId: Build.associate("id"),
+  userId: User.associate("id"),
+  state: "accepted",
 }));
 
 export const Test = defineFactory(models.Test, () => ({

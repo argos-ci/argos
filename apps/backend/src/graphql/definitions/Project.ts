@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
-import { raw, type PartialModelObject } from "objection";
+import type { PartialModelObject } from "objection";
 
 import {
   Account,
@@ -12,7 +12,6 @@ import {
   Project,
   ProjectUser,
   Screenshot,
-  ScreenshotDiff,
   User,
 } from "@/database/models/index.js";
 import {
@@ -515,19 +514,13 @@ export const resolvers: IResolvers = {
 
               if (!status.includes(IBuildStatus.Accepted)) {
                 qb.whereNotExists(
-                  ScreenshotDiff.query()
-                    .select(raw("1"))
-                    .whereRaw('screenshot_diffs."buildId" = builds.id')
-                    .where("validationStatus", "accepted"),
+                  Build.submittedReviewQuery().where("state", "approved"),
                 );
               }
 
               if (!status.includes(IBuildStatus.Rejected)) {
                 qb.whereNotExists(
-                  ScreenshotDiff.query()
-                    .select(raw("1"))
-                    .whereRaw('screenshot_diffs."buildId" = builds.id')
-                    .where("validationStatus", "rejected"),
+                  Build.submittedReviewQuery().where("state", "rejected"),
                 );
               }
 
@@ -535,12 +528,7 @@ export const resolvers: IResolvers = {
                 qb.where((qb) => {
                   qb.whereNot("conclusion", "changes-detected")
                     .orWhereNull("conclusion")
-                    .orWhereExists(
-                      ScreenshotDiff.query()
-                        .select(raw("1"))
-                        .whereRaw('screenshot_diffs."buildId" = builds.id')
-                        .whereIn("validationStatus", ["rejected", "accepted"]),
-                    );
+                    .orWhereExists(Build.submittedReviewQuery());
                 });
               }
 
@@ -548,12 +536,7 @@ export const resolvers: IResolvers = {
                 qb.where((qb) => {
                   qb.whereNot("conclusion", "no-changes")
                     .orWhereNull("conclusion")
-                    .orWhereExists(
-                      ScreenshotDiff.query()
-                        .select(raw("1"))
-                        .whereRaw('screenshot_diffs."buildId" = builds.id')
-                        .whereIn("validationStatus", ["rejected", "accepted"]),
-                    );
+                    .orWhereExists(Build.submittedReviewQuery());
                 });
               }
             });

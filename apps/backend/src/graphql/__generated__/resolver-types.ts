@@ -967,7 +967,6 @@ export type IScreenshotDiff = INode & {
   status: IScreenshotDiffStatus;
   threshold?: Maybe<Scalars['Float']['output']>;
   url?: Maybe<Scalars['String']['output']>;
-  validationStatus?: Maybe<Scalars['String']['output']>;
   width?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -2074,7 +2073,6 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   status?: Resolver<IResolversTypes['ScreenshotDiffStatus'], ParentType, ContextType>;
   threshold?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  validationStatus?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

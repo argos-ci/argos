@@ -23,6 +23,7 @@ import {
   mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
+import { BuildReview } from "./BuildReview.js";
 import { BuildShard } from "./BuildShard.js";
 import { GithubPullRequest } from "./GithubPullRequest.js";
 import { Project } from "./Project.js";
@@ -442,11 +443,18 @@ export class Build extends Model {
       .filter((build) => build.conclusion === "changes-detected")
       .map((build) => build.id);
 
-    const screenshotDiffs = diffDetectedBuildIds.length
-      ? await ScreenshotDiff.query()
-          .select("buildId", "validationStatus")
+    const reviews = diffDetectedBuildIds.length
+      ? await BuildReview.query()
+          .select("buildId", "state")
           .whereIn("buildId", diffDetectedBuildIds)
-          .groupBy("buildId", "validationStatus")
+          .whereIn("state", ["approved", "rejected"]).andWhereRaw(`"id" IN (
+            SELECT DISTINCT ON ("buildId")
+              "id"
+            FROM "build_reviews"
+            WHERE "buildId" = "build_reviews"."buildId"
+              AND "state" IN ('approved', 'rejected')
+            ORDER BY "buildId", "createdAt" DESC
+          )`)
       : [];
 
     return builds.map((build) => {
@@ -454,19 +462,24 @@ export class Build extends Model {
         return null;
       }
 
-      const status = screenshotDiffs
-        .filter((diff) => diff.buildId === build.id)
-        .map(({ validationStatus }) => validationStatus);
+      const review = reviews.find((review) => review.buildId === build.id);
 
-      if (status.length === 1 && status[0] === "accepted") {
-        return "accepted";
+      if (!review) {
+        return null;
       }
 
-      if (status.includes("rejected")) {
-        return "rejected";
+      switch (review.state) {
+        case "approved":
+          return "accepted";
+        case "rejected":
+          return "rejected";
+        case "pending":
+          throw new Error(
+            "Unexpected review state, should be filtered in query",
+          );
+        default:
+          assertNever(review.state);
       }
-
-      return null;
     });
   }
 
@@ -508,5 +521,22 @@ export class Build extends Model {
       return BuildAggregatedStatusSchema.parse(status);
     });
     return aggregateStatuses;
+  }
+
+  /**
+   * To be used in a `Build.query().whereExists` clause.
+   */
+  static submittedReviewQuery() {
+    return BuildReview.query()
+      .select(1)
+      .whereRaw('build_reviews."buildId" = builds.id')
+      .whereIn("id", (qb) => {
+        qb.select("id")
+          .from("build_reviews")
+          .whereRaw('build_reviews."buildId" = builds.id')
+          .whereIn("state", ["approved", "rejected"])
+          .orderBy("id", "desc")
+          .limit(1);
+      });
   }
 }

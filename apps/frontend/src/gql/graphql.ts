@@ -962,7 +962,6 @@ export type ScreenshotDiff = Node & {
   status: ScreenshotDiffStatus;
   threshold?: Maybe<Scalars['Float']['output']>;
   url?: Maybe<Scalars['String']['output']>;
-  validationStatus?: Maybe<Scalars['String']['output']>;
   width?: Maybe<Scalars['Int']['output']>;
 };
 

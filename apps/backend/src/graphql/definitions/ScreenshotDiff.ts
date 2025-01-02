@@ -31,7 +31,6 @@ export const typeDefs = gql`
     width: Int
     height: Int
     status: ScreenshotDiffStatus!
-    validationStatus: String
     group: String
     threshold: Float
   }

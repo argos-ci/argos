@@ -81,12 +81,17 @@ describe("#getBaseBucketForBuildAndCommit", () => {
       });
     });
 
-    describe("if the associated build is a type check with unapproved diff", () => {
+    describe("if the associated build is a type check with a rejected review", () => {
       beforeEach(async () => {
         await baseBucketBuild.$query().patch({ type: "check" });
-        await factory.ScreenshotDiff.create({
+        await factory.BuildReview.create({
           buildId: baseBucketBuild.id,
-          validationStatus: "rejected",
+          state: "approved",
+        });
+        // The last one wins, so it's a rejected build in this case
+        await factory.BuildReview.create({
+          buildId: baseBucketBuild.id,
+          state: "rejected",
         });
       });
 
@@ -100,12 +105,12 @@ describe("#getBaseBucketForBuildAndCommit", () => {
       });
     });
 
-    describe("if the associated build is a type check with approved diff", () => {
+    describe("if the associated build is a type check with approved review", () => {
       beforeEach(async () => {
         await baseBucketBuild.$query().patch({ type: "check" });
-        await factory.ScreenshotDiff.create({
+        await factory.BuildReview.create({
           buildId: baseBucketBuild.id,
-          validationStatus: "accepted",
+          state: "approved",
         });
       });
 

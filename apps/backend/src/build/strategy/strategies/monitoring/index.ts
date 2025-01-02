@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Build, ScreenshotDiff } from "@/database/models";
+import { Build } from "@/database/models";
 
 import { BuildStrategy, GetBaseResult } from "../../types";
 
@@ -12,12 +12,7 @@ async function getBase(build: Build): GetBaseResult {
     .where("mode", "monitoring")
     .where("jobStatus", "complete")
     .whereNot("id", build.id)
-    .whereExists(
-      ScreenshotDiff.query()
-        .select(1)
-        .whereRaw('"buildId" = builds.id')
-        .where("validationStatus", "accepted"),
-    )
+    .whereExists(Build.submittedReviewQuery().where("state", "approved"))
     .orderBy("id", "desc")
     .first();
 

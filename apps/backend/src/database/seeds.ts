@@ -2,6 +2,7 @@ import { concludeBuild } from "@/build/concludeBuild.js";
 
 import { Account } from "./models/Account.js";
 import { Build } from "./models/Build.js";
+import { BuildReview } from "./models/BuildReview.js";
 import { File } from "./models/File.js";
 import { GithubAccount } from "./models/GithubAccount.js";
 import { Plan } from "./models/Plan.js";
@@ -357,26 +358,14 @@ export async function seed() {
       ),
     ],
     [acceptedBuild!.id]: [
-      { ...addedScreenshotDiff, validationStatus: "accepted" as const },
-      ...duplicate(
-        { ...stableScreenshotDiff, validationStatus: "accepted" as const },
-        3,
-      ),
-      ...duplicate(
-        { ...updatedScreenshotDiff, validationStatus: "accepted" as const },
-        2,
-      ),
+      { ...addedScreenshotDiff },
+      ...duplicate({ ...stableScreenshotDiff }, 3),
+      ...duplicate({ ...updatedScreenshotDiff }, 2),
     ],
     [rejectedBuild!.id]: [
-      { ...addedScreenshotDiff, validationStatus: "rejected" as const },
-      ...duplicate(
-        { ...stableScreenshotDiff, validationStatus: "rejected" as const },
-        3,
-      ),
-      ...duplicate(
-        { ...updatedScreenshotDiff, validationStatus: "rejected" as const },
-        3,
-      ),
+      { ...addedScreenshotDiff },
+      ...duplicate({ ...stableScreenshotDiff }, 3),
+      ...duplicate({ ...updatedScreenshotDiff }, 3),
     ],
     [inProgressBuild!.id]: [
       { ...updatedScreenshotDiff, jobStatus: "pending" as const },
@@ -391,6 +380,19 @@ export async function seed() {
       ...duplicate(removedScreenshotDiff, 2),
     ],
   };
+
+  await BuildReview.query().insert([
+    {
+      buildId: acceptedBuild!.id,
+      userId: gregUser!.id,
+      state: "approved",
+    },
+    {
+      buildId: rejectedBuild!.id,
+      userId: null,
+      state: "rejected",
+    },
+  ]);
 
   const screenshotDiffs = await ScreenshotDiff.query()
     .withGraphFetched("compareScreenshot.test")
