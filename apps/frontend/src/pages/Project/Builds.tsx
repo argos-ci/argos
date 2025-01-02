@@ -33,10 +33,6 @@ import { useProjectContext } from ".";
 import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
 import { NotFound } from "../NotFound";
 import { BuildNameFilter, useBuildNameFilterState } from "./BuildNameFilter";
-import {
-  BuildStatusFilter,
-  useBuildStatusFilterState,
-} from "./BuildStatusFilter";
 import { BuildTypeFilter, useBuildTypeFilterState } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
 
@@ -305,10 +301,8 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     setSearchParams({});
   };
   const [buildName, setBuildName, isBuildNameDirty] = useBuildNameFilterState();
-  const [buildStatus, setBuildStatus, isBuildStatusDirty] =
-    useBuildStatusFilterState();
   const [buildType, setBuildType, isBuildTypeDirty] = useBuildTypeFilterState();
-  const hasFilters = isBuildNameDirty || isBuildStatusDirty || isBuildTypeDirty;
+  const hasFilters = isBuildNameDirty || isBuildTypeDirty;
   const projectResult = useSafeQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
@@ -320,9 +314,8 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
     return {
       name: buildName,
       type: Array.from(buildType),
-      status: Array.from(buildStatus),
     };
-  }, [buildName, buildType, buildStatus]);
+  }, [buildName, buildType]);
 
   const buildsResult = useSafeQuery(ProjectBuildsQuery, {
     variables: {
@@ -423,7 +416,6 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
         </PageHeaderContent>
         <PageHeaderActions>
           <BuildTypeFilter value={buildType} onChange={setBuildType} />
-          <BuildStatusFilter value={buildStatus} onChange={setBuildStatus} />
           {project.buildNames.length > 1 && (
             <BuildNameFilter
               buildNames={project.buildNames}
