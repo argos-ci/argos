@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
-import type { PartialModelObject } from "objection";
+import { raw, type PartialModelObject } from "objection";
 
 import {
   Account,
@@ -516,6 +516,7 @@ export const resolvers: IResolvers = {
               if (!status.includes(IBuildStatus.Accepted)) {
                 qb.whereNotExists(
                   ScreenshotDiff.query()
+                    .select(raw("1"))
                     .whereRaw('screenshot_diffs."buildId" = builds.id')
                     .where("validationStatus", "accepted"),
                 );
@@ -524,6 +525,7 @@ export const resolvers: IResolvers = {
               if (!status.includes(IBuildStatus.Rejected)) {
                 qb.whereNotExists(
                   ScreenshotDiff.query()
+                    .select(raw("1"))
                     .whereRaw('screenshot_diffs."buildId" = builds.id')
                     .where("validationStatus", "rejected"),
                 );
@@ -535,6 +537,7 @@ export const resolvers: IResolvers = {
                     .orWhereNull("conclusion")
                     .orWhereExists(
                       ScreenshotDiff.query()
+                        .select(raw("1"))
                         .whereRaw('screenshot_diffs."buildId" = builds.id')
                         .whereIn("validationStatus", ["rejected", "accepted"]),
                     );
@@ -547,6 +550,7 @@ export const resolvers: IResolvers = {
                     .orWhereNull("conclusion")
                     .orWhereExists(
                       ScreenshotDiff.query()
+                        .select(raw("1"))
                         .whereRaw('screenshot_diffs."buildId" = builds.id')
                         .whereIn("validationStatus", ["rejected", "accepted"]),
                     );
