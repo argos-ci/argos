@@ -65,15 +65,15 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
         approvedWithOtherName,
         approvedWithOtherMode,
       ].map((build) =>
-        factory.ScreenshotDiff.create({
+        factory.BuildReview.create({
           buildId: build!.id,
-          validationStatus: "accepted",
+          state: "approved",
         }),
       ),
     );
-    await factory.ScreenshotDiff.create({
+    await factory.BuildReview.create({
       buildId: nonApproved!.id,
-      validationStatus: "rejected",
+      state: "rejected",
     });
     sourceBuild = source!;
     matchedBuild = lastApproved!;

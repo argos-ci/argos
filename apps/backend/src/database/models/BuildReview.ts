@@ -18,7 +18,7 @@ export class BuildReview extends Model {
   });
 
   buildId!: string;
-  userId!: string;
+  userId!: string | null;
   state!: "pending" | "approved" | "rejected";
 
   static override get relationMappings(): RelationMappings {

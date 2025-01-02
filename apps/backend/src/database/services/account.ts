@@ -69,6 +69,7 @@ export async function joinSSOTeams(input: {
     .where("ssoGithubAccount:members.githubMemberId", input.githubAccountId)
     .whereNotExists(
       TeamUser.query()
+        .select(1)
         .where("userId", input.userId)
         .whereRaw('team_users."teamId" = teams.id'),
     );

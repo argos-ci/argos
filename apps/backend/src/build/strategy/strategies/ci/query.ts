@@ -1,8 +1,4 @@
-import {
-  Build,
-  ScreenshotBucket,
-  ScreenshotDiff,
-} from "@/database/models/index.js";
+import { Build, ScreenshotBucket } from "@/database/models/index.js";
 
 /**
  * Get the base bucket for a build and a commit.
@@ -65,13 +61,10 @@ export function queryBaseBucket(
         .where("jobStatus", "complete")
         .whereNot("id", build.id)
         .where((qb) => {
-          // Reference build or check build with accepted diffs
+          // Reference build or check build with approved review
           qb.where("type", "reference").orWhere((qb) => {
             qb.where("type", "check").whereExists(
-              ScreenshotDiff.query()
-                .select(1)
-                .whereRaw('"buildId" = builds.id')
-                .where("validationStatus", "accepted"),
+              Build.hasTheLastReviewOfState(["approved"]),
             );
           });
         }),

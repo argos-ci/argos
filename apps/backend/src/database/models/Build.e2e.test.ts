@@ -305,26 +305,54 @@ describe("models/Build", () => {
       expect(reviewStatuses).toEqual([null, null]);
     });
 
-    it("should return 'accepted' when all diff are accepted", async () => {
+    it("should return 'accepted' when the last review is of type 'approved'", async () => {
       const build = await factory.Build.create({
         conclusion: "changes-detected",
       });
-      await factory.ScreenshotDiff.createMany(2, [
-        { buildId: build.id, score: 0.8, validationStatus: "accepted" },
-        { buildId: build.id, score: 0.4, validationStatus: "accepted" },
-      ]);
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "rejected",
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "approved",
+      });
       const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["accepted"]);
     });
 
-    it("should return 'rejected' when one diff is rejected", async () => {
+    it("should return 'rejected' when the last review is of type 'rejected'", async () => {
       const build = await factory.Build.create({
         conclusion: "changes-detected",
       });
-      await factory.ScreenshotDiff.createMany(2, [
-        { buildId: build.id, score: 0.8, validationStatus: "accepted" },
-        { buildId: build.id, score: 0.4, validationStatus: "rejected" },
-      ]);
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "approved",
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "rejected",
+      });
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual(["rejected"]);
+    });
+
+    it("should should ignore reviews of type pending", async () => {
+      const build = await factory.Build.create({
+        conclusion: "changes-detected",
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "approved",
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "rejected",
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "pending",
+      });
       const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["rejected"]);
     });
@@ -333,10 +361,6 @@ describe("models/Build", () => {
       const build = await factory.Build.create({
         conclusion: "changes-detected",
       });
-      await factory.ScreenshotDiff.createMany(2, [
-        { buildId: build.id, score: 0.8, validationStatus: "accepted" },
-        { buildId: build.id, score: 0.4, validationStatus: "unknown" },
-      ]);
       const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual([null]);
     });

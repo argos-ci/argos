@@ -19,7 +19,7 @@ describe("GraphQL", () => {
     await setupDatabase();
   });
 
-  describe("validationStatus", () => {
+  describe("mutation setValidationStatus", () => {
     let userAccount: Account;
     let teamAccount: Account;
     let project: Project;
@@ -75,7 +75,7 @@ describe("GraphQL", () => {
       build = await build.$query();
     });
 
-    it("should mutate all the validationStatus", async () => {
+    it("should mutate the build status", async () => {
       const app = await createApolloServerApp(
         apolloServer,
         createApolloMiddleware,
@@ -93,23 +93,12 @@ describe("GraphQL", () => {
                 buildId: "${build.id}",
                 validationStatus: rejected
               ){
-                screenshotDiffs(after: 0, first: 10) {
-                  edges {
-                    validationStatus
-                  }
-                }
+                status
               }
             }
           `,
         });
-      expect(
-        res.body.data.setValidationStatus.screenshotDiffs.edges,
-      ).toHaveLength(3);
-      res.body.data.setValidationStatus.screenshotDiffs.edges.forEach(
-        (screenshotDiff: { validationStatus: string }) => {
-          expect(screenshotDiff.validationStatus).toBe("rejected");
-        },
-      );
+      expect(res.body.data.setValidationStatus.status).toBe("REJECTED");
 
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
@@ -131,30 +120,14 @@ describe("GraphQL", () => {
               projectName: "${project.name}",
             ) {
               build(number: 1) {
-                screenshotDiffs(after: 0, first: 10) {
-                  edges {
-                    validationStatus
-                  }
-                } 
+                status
               }
             }
           }`,
         });
       expectNoGraphQLError(res);
       expect(res.status).toBe(200);
-      const { edges: screenshotDiffs } =
-        res.body.data.project.build.screenshotDiffs;
-      expect(screenshotDiffs).toEqual([
-        {
-          validationStatus: "rejected",
-        },
-        {
-          validationStatus: "rejected",
-        },
-        {
-          validationStatus: "rejected",
-        },
-      ]);
+      expect(res.body.data.project.build.status).toBe("REJECTED");
     });
 
     it("should not mutate when the user is unauthorized", async () => {
@@ -177,11 +150,7 @@ describe("GraphQL", () => {
                 buildId: "${build.id}",
                 validationStatus: rejected
               ) {
-                screenshotDiffs(after: 0, first: 10) {
-                  edges {
-                    validationStatus
-                  }
-                }
+                status
               }
             }
           `,

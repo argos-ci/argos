@@ -265,15 +265,22 @@ export const resolvers: IResolvers = {
           const result = await projectsQuery.where((qb) => {
             // User is a team member or owner
             qb.whereExists(
-              teamUserQuery.clone().whereIn("userLevel", ["owner", "member"]),
+              teamUserQuery
+                .select(1)
+                .clone()
+                .whereIn("userLevel", ["owner", "member"]),
             ).orWhere((qb) => {
               // User is a contributor
               qb.whereExists(
-                teamUserQuery.clone().where("userLevel", "contributor"),
+                teamUserQuery
+                  .select(1)
+                  .clone()
+                  .where("userLevel", "contributor"),
               )
                 // And is a contributor to the project
                 .whereExists(
                   ProjectUser.query()
+                    .select(1)
                     .whereRaw(`projects.id = project_users."projectId"`)
                     .where("userId", auth.user.id),
                 );
