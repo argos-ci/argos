@@ -764,7 +764,6 @@ type ScreenshotDiff implements Node {
   status: ScreenshotDiffStatus!
   threshold: Float
   url: String
-  validationStatus: String
   width: Int
 }
 
