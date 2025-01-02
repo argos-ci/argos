@@ -285,6 +285,12 @@ export enum IBuildType {
   Reference = 'reference'
 }
 
+export type IBuildsFilterInput = {
+  name?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Array<IBuildStatus>>;
+  type?: InputMaybe<Array<IBuildType>>;
+};
+
 export type IConnection = {
   edges: Array<INode>;
   pageInfo: IPageInfo;
@@ -773,7 +779,7 @@ export type IProjectBuildArgs = {
 
 export type IProjectBuildsArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
-  buildName?: InputMaybe<Scalars['String']['input']>;
+  filters?: InputMaybe<IBuildsFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -890,7 +896,6 @@ export type IQueryInvitationArgs = {
 
 export type IQueryProjectArgs = {
   accountSlug: Scalars['String']['input'];
-  buildName?: InputMaybe<Scalars['String']['input']>;
   projectName: Scalars['String']['input'];
 };
 
@@ -1403,6 +1408,7 @@ export type IResolversTypes = ResolversObject<{
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
   BuildType: IBuildType;
+  BuildsFilterInput: IBuildsFilterInput;
   Connection: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Connection']>;
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: ResolverTypeWrapper<Omit<ICreateTeamResult, 'team'> & { team: IResolversTypes['Team'] }>;
@@ -1521,6 +1527,7 @@ export type IResolversParentTypes = ResolversObject<{
   BuildMetadata: IBuildMetadata;
   BuildParallel: IBuildParallel;
   BuildStats: IBuildStats;
+  BuildsFilterInput: IBuildsFilterInput;
   Connection: IResolversInterfaceTypes<IResolversParentTypes>['Connection'];
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: Omit<ICreateTeamResult, 'team'> & { team: IResolversParentTypes['Team'] };

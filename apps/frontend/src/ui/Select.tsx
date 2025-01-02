@@ -28,7 +28,7 @@ export function SelectButton({
         "bg-app text invalid:border-danger hover:border-hover focus:border-active disabled:opacity-disabled cursor-default appearance-none rounded border leading-tight focus:outline-none",
         "flex w-full items-center justify-between",
         {
-          md: "gap-3 px-3 py-2 text-base",
+          md: "gap-2 px-3 py-2 text-base",
           sm: "gap-2 px-2 py-1 text-sm",
         }[size],
         rest.className,

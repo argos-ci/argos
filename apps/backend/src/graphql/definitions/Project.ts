@@ -7,10 +7,12 @@ import type { PartialModelObject } from "objection";
 import {
   Account,
   Build,
+  BUILD_EXPIRATION_DELAY_MS,
   GitlabProject,
   Project,
   ProjectUser,
   Screenshot,
+  ScreenshotDiff,
   User,
 } from "@/database/models/index.js";
 import {
@@ -23,6 +25,7 @@ import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
 
 import {
+  IBuildStatus,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
@@ -76,12 +79,22 @@ export const typeDefs = gql`
     view
   }
 
+  input BuildsFilterInput {
+    name: String
+    type: [BuildType!]
+    status: [BuildStatus!]
+  }
+
   type Project implements Node {
     id: ID!
     name: String!
     token: String
     "Builds associated to the repository"
-    builds(first: Int = 30, after: Int = 0, buildName: String): BuildConnection!
+    builds(
+      first: Int = 30
+      after: Int = 0
+      filters: BuildsFilterInput
+    ): BuildConnection!
     "A single build linked to the repository"
     build(number: Int!): Build
     "Latest auto-approved build"
@@ -126,11 +139,7 @@ export const typeDefs = gql`
 
   extend type Query {
     "Get a project"
-    project(
-      accountSlug: String!
-      projectName: String!
-      buildName: String
-    ): Project
+    project(accountSlug: String!, projectName: String!): Project
     "Get a project"
     projectById(id: ID!): Project
   }
@@ -448,12 +457,104 @@ export const resolvers: IResolvers = {
     latestBuild: async (project, _args, ctx) => {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
-    builds: async (project, { first, after, buildName }) => {
+    builds: async (project, { first, after, filters }) => {
       const result = await Build.query()
         .where({ projectId: project.id })
-        .where((query) =>
-          buildName ? query.where({ name: buildName }) : query,
-        )
+        .where((query) => {
+          if (filters?.name) {
+            query.where("name", filters.name);
+          }
+          if (filters?.type) {
+            query.whereIn("type", filters.type);
+          }
+          const status = filters?.status;
+          if (status) {
+            query.where((qb) => {
+              // Job status check
+              if (!status.includes(IBuildStatus.Aborted)) {
+                qb.whereNot("jobStatus", "aborted");
+              }
+
+              if (!status.includes(IBuildStatus.Error)) {
+                qb.whereNot("jobStatus", "error");
+              }
+
+              if (!status.includes(IBuildStatus.Expired)) {
+                qb.whereNot((qb) => {
+                  qb.whereIn("jobStatus", ["progress", "pending"]).whereRaw(
+                    `now() - "builds"."createdAt" > interval '${BUILD_EXPIRATION_DELAY_MS} milliseconds'`,
+                  );
+                });
+              }
+
+              if (!status.includes(IBuildStatus.Progress)) {
+                qb.whereNot((qb) => {
+                  qb.where((qb) =>
+                    // Job is in progress
+                    // or job is complete without a conclusion, we assume it's in progress
+                    qb
+                      .where("jobStatus", "progress")
+                      .orWhere((qb) =>
+                        qb
+                          .where("jobStatus", "complete")
+                          .whereNull("conclusion"),
+                      ),
+                  ).whereRaw(
+                    `now() - "builds"."createdAt" < interval '${BUILD_EXPIRATION_DELAY_MS} milliseconds'`,
+                  );
+                });
+              }
+
+              if (!status.includes(IBuildStatus.Pending)) {
+                qb.whereNot((qb) => {
+                  qb.where("jobStatus", "pending").whereRaw(
+                    `now() - "builds"."createdAt" < interval '${BUILD_EXPIRATION_DELAY_MS} milliseconds'`,
+                  );
+                });
+              }
+
+              if (!status.includes(IBuildStatus.Accepted)) {
+                qb.whereNotExists(
+                  ScreenshotDiff.query()
+                    .whereRaw('screenshot_diffs."buildId" = builds.id')
+                    .where("validationStatus", "accepted"),
+                );
+              }
+
+              if (!status.includes(IBuildStatus.Rejected)) {
+                qb.whereNotExists(
+                  ScreenshotDiff.query()
+                    .whereRaw('screenshot_diffs."buildId" = builds.id')
+                    .where("validationStatus", "rejected"),
+                );
+              }
+
+              if (!status.includes(IBuildStatus.ChangesDetected)) {
+                qb.where((qb) => {
+                  qb.whereNot("conclusion", "changes-detected")
+                    .orWhereNull("conclusion")
+                    .orWhereExists(
+                      ScreenshotDiff.query()
+                        .whereRaw('screenshot_diffs."buildId" = builds.id')
+                        .whereIn("validationStatus", ["rejected", "accepted"]),
+                    );
+                });
+              }
+
+              if (!status.includes(IBuildStatus.NoChanges)) {
+                qb.where((qb) => {
+                  qb.whereNot("conclusion", "no-changes")
+                    .orWhereNull("conclusion")
+                    .orWhereExists(
+                      ScreenshotDiff.query()
+                        .whereRaw('screenshot_diffs."buildId" = builds.id')
+                        .whereIn("validationStatus", ["rejected", "accepted"]),
+                    );
+                });
+              }
+            });
+          }
+        })
         .orderBy([
           { column: "createdAt", order: "desc" },
           { column: "number", order: "desc" },

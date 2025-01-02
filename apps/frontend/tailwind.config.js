@@ -54,13 +54,13 @@ const backgroundColor = {
     },
   },
   warning: {
-    app: "var(--amber-1)",
-    ui: "var(--amber-3)",
-    active: "var(--amber-5)",
+    app: "var(--orange-1)",
+    ui: "var(--orange-3)",
+    active: "var(--orange-5)",
     solid: {
-      DEFAULT: "var(--amber-9)",
-      hover: "var(--amber-10)",
-      active: "var(--amber-11)",
+      DEFAULT: "var(--orange-9)",
+      hover: "var(--orange-10)",
+      active: "var(--orange-11)",
     },
   },
   success: {
@@ -76,9 +76,24 @@ const backgroundColor = {
   },
   info: {
     app: "var(--blue-1)",
+    ui: "var(--blue-3)",
+    hover: "var(--blue-4)",
+    active: "var(--blue-5)",
+    solid: {
+      DEFAULT: "var(--blue-9)",
+      hover: "var(--blue-10)",
+      active: "var(--blue-11)",
+    },
   },
   pending: {
     app: "var(--amber-1)",
+    ui: "var(--amber-3)",
+    active: "var(--amber-5)",
+    solid: {
+      DEFAULT: "var(--amber-9)",
+      hover: "var(--amber-10)",
+      active: "var(--amber-11)",
+    },
   },
 };
 
@@ -99,8 +114,8 @@ const borderColor = {
     hover: "var(--tomato-8)",
   },
   warning: {
-    DEFAULT: "var(--amber-6)",
-    hover: "var(--amber-8)",
+    DEFAULT: "var(--orange-6)",
+    hover: "var(--orange-8)",
   },
   info: {
     DEFAULT: "var(--blue-6)",
@@ -142,8 +157,8 @@ module.exports = {
           low: "var(--tomato-11)",
         },
         warning: {
-          DEFAULT: "var(--amber-12)",
-          low: "var(--amber-11)",
+          DEFAULT: "var(--orange-12)",
+          low: "var(--orange-11)",
         },
         info: {
           DEFAULT: "var(--blue-12)",

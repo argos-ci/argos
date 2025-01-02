@@ -59,7 +59,10 @@ export function MenuItem(
             </div>
           );
         }
-        if (menuProps.selectionMode === "single") {
+        if (
+          menuProps.selectionMode === "single" ||
+          menuProps.selectionMode === "multiple"
+        ) {
           return (
             <div className="flex items-center justify-between gap-2">
               <CheckIcon
@@ -85,17 +88,19 @@ export function MenuItemIcon(props: {
   position?: "left" | "right";
 }) {
   const position = props.position ?? "left";
+  const child = Children.only(props.children);
   return (
     <div
-      className={
+      className={clsx(
         {
           left: "mr-2",
           right: "ml-2",
-        }[position]
-      }
+        }[position],
+        props.className,
+      )}
     >
-      {cloneElement(Children.only(props.children), {
-        className: clsx("size-[1em] mx-auto", props.className),
+      {cloneElement(child, {
+        className: clsx("size-[1em] mx-auto", child.props.className),
       })}
     </div>
   );

@@ -2,7 +2,7 @@ import { FragmentType, graphql, useFragment } from "@/gql";
 import { Chip, ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { getBuildColor, getBuildIcon, getBuildLabel } from "./Build";
+import { getBuildDescriptor } from "./Build";
 import { BuildStatusDescription } from "./BuildStatusDescription";
 
 const BuildFragment = graphql(`
@@ -18,14 +18,11 @@ export const BuildStatusChip = (props: {
   scale?: ChipProps["scale"];
 }) => {
   const build = useFragment(BuildFragment, props.build);
+  const descriptor = getBuildDescriptor(build.type, build.status);
   return (
     <Tooltip variant="info" content={<BuildStatusDescription build={build} />}>
-      <Chip
-        icon={getBuildIcon(build.type, build.status)}
-        color={getBuildColor(build.type, build.status)}
-        scale={props.scale}
-      >
-        {getBuildLabel(build.type, build.status)}
+      <Chip icon={descriptor.icon} color={descriptor.color} scale={props.scale}>
+        {descriptor.label}
       </Chip>
     </Tooltip>
   );

@@ -1,6 +1,6 @@
 import { ChevronDownIcon } from "lucide-react";
 
-import { getBuildIcon } from "@/containers/Build";
+import { buildStatusDescriptors } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
   BuildStatus,
@@ -48,8 +48,8 @@ function BaseReviewButton(props: {
     },
   });
 
-  const AcceptIcon = getBuildIcon("check", BuildStatus.Accepted);
-  const RejectIcon = getBuildIcon("check", BuildStatus.Rejected);
+  const { icon: AcceptIcon } = buildStatusDescriptors[BuildStatus.Accepted];
+  const { icon: RejectIcon } = buildStatusDescriptors[BuildStatus.Rejected];
 
   return (
     <MenuTrigger>
@@ -76,8 +76,8 @@ function BaseReviewButton(props: {
             }}
             isDisabled={props.build.status === BuildStatus.Accepted}
           >
-            <MenuItemIcon className="text-success-low">
-              <AcceptIcon />
+            <MenuItemIcon>
+              <AcceptIcon className="text-success-low" />
             </MenuItemIcon>
             Approve changes
           </MenuItem>
@@ -92,8 +92,8 @@ function BaseReviewButton(props: {
             }}
             isDisabled={props.build.status === BuildStatus.Rejected}
           >
-            <MenuItemIcon className="text-danger-low">
-              <RejectIcon />
+            <MenuItemIcon>
+              <RejectIcon className="text-danger-low" />
             </MenuItemIcon>
             Reject changes
           </MenuItem>

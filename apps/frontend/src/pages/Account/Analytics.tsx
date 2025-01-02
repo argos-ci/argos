@@ -750,7 +750,7 @@ function PeriodSelect(props: {
       selectedKey={props.value}
       onSelectionChange={(value) => props.onChange(value as Period)}
     >
-      <SelectButton className="text-low w-full text-sm">
+      <SelectButton className="w-full text-sm">
         {PeriodLabels[props.value]}
       </SelectButton>
       <Popover>
