@@ -526,7 +526,7 @@ export class Build extends Model {
   /**
    * To be used in a `Build.query().whereExists` clause.
    */
-  static hasTheLastReviewOfState(states: ("approved" | "rejected")[]) {
+  static submittedReviewQuery() {
     return BuildReview.query()
       .select(1)
       .whereRaw('build_reviews."buildId" = builds.id')
@@ -536,8 +536,7 @@ export class Build extends Model {
           .whereRaw('build_reviews."buildId" = builds.id')
           .whereIn("state", ["approved", "rejected"])
           .orderBy("id", "desc")
-          .limit(1); // Get the most recent review
-      })
-      .whereIn("state", states); // Check that it's approved
+          .limit(1);
+      });
   }
 }

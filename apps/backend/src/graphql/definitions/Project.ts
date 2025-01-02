@@ -513,20 +513,22 @@ export const resolvers: IResolvers = {
               }
 
               if (!status.includes(IBuildStatus.Accepted)) {
-                qb.whereNotExists(Build.hasTheLastReviewOfState(["approved"]));
+                qb.whereNotExists(
+                  Build.submittedReviewQuery().where("state", "approved"),
+                );
               }
 
               if (!status.includes(IBuildStatus.Rejected)) {
-                qb.whereNotExists(Build.hasTheLastReviewOfState(["rejected"]));
+                qb.whereNotExists(
+                  Build.submittedReviewQuery().where("state", "rejected"),
+                );
               }
 
               if (!status.includes(IBuildStatus.ChangesDetected)) {
                 qb.where((qb) => {
                   qb.whereNot("conclusion", "changes-detected")
                     .orWhereNull("conclusion")
-                    .orWhereExists(
-                      Build.hasTheLastReviewOfState(["approved", "rejected"]),
-                    );
+                    .orWhereExists(Build.submittedReviewQuery());
                 });
               }
 
@@ -534,9 +536,7 @@ export const resolvers: IResolvers = {
                 qb.where((qb) => {
                   qb.whereNot("conclusion", "no-changes")
                     .orWhereNull("conclusion")
-                    .orWhereExists(
-                      Build.hasTheLastReviewOfState(["approved", "rejected"]),
-                    );
+                    .orWhereExists(Build.submittedReviewQuery());
                 });
               }
             });

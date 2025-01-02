@@ -64,7 +64,7 @@ export function queryBaseBucket(
           // Reference build or check build with approved review
           qb.where("type", "reference").orWhere((qb) => {
             qb.where("type", "check").whereExists(
-              Build.hasTheLastReviewOfState(["approved"]),
+              Build.submittedReviewQuery().where("state", "approved"),
             );
           });
         }),
