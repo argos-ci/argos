@@ -191,4 +191,5 @@ export const Plan = defineFactory(models.Plan, () => ({
   usageBased: false,
   githubSsoIncluded: true,
   fineGrainedAccessControlIncluded: true,
+  interval: "month",
 }));

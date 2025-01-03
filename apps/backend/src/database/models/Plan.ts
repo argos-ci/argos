@@ -2,6 +2,7 @@ import { firstUpper } from "@argos/util/string";
 
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import type { SubscriptionInterval } from "./Subscription.js";
 
 const FREE_PLAN_NAME = "free";
 
@@ -15,6 +16,7 @@ export class Plan extends Model {
       "usageBased",
       "githubSsoIncluded",
       "fineGrainedAccessControlIncluded",
+      "interval",
     ],
     properties: {
       name: { type: "string" },
@@ -24,6 +26,7 @@ export class Plan extends Model {
       usageBased: { type: "boolean" },
       githubSsoIncluded: { type: "boolean" },
       fineGrainedAccessControlIncluded: { type: "boolean" },
+      interval: { type: "string", enum: ["month", "year"] },
     },
   });
 
@@ -34,6 +37,7 @@ export class Plan extends Model {
   usageBased!: boolean;
   githubSsoIncluded!: boolean;
   fineGrainedAccessControlIncluded!: boolean;
+  interval!: SubscriptionInterval;
 
   static override virtualAttributes = ["displayName"];
 

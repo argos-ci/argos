@@ -898,7 +898,9 @@ CREATE TABLE public.plans (
     "stripeProductId" character varying(255),
     "usageBased" boolean NOT NULL,
     "githubSsoIncluded" boolean DEFAULT false NOT NULL,
-    "fineGrainedAccessControlIncluded" boolean DEFAULT false NOT NULL
+    "fineGrainedAccessControlIncluded" boolean DEFAULT false NOT NULL,
+    "interval" text DEFAULT 'month'::text NOT NULL,
+    CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
 
@@ -3008,3 +3010,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024121
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241231154644_build-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250102150800_build-review.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103090503_remove-validation-status-column.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103131406_plan-interval.js', 1, NOW());

@@ -225,20 +225,30 @@ export class Account extends Model {
 
     const getCurrentPeriodStartDate = memoize(async () => {
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      if (this.forcedPlanId) {
-        return startOfMonth;
+      const [subscription, plan] = await Promise.all([
+        getActiveSubscription(),
+        getPlan(),
+      ]);
+      if (subscription?.startDate) {
+        invariant(plan, "If there is a subscription, there should be a plan");
+        return subscription.getLastResetDate(now, plan.interval);
       }
-      const subscription = await getActiveSubscription();
-      return subscription?.startDate
-        ? subscription.getLastResetDate()
-        : startOfMonth;
+      const interval = plan?.interval ?? "month";
+      switch (interval) {
+        case "month":
+          return new Date(now.getFullYear(), now.getMonth(), 1);
+        case "year":
+          return new Date(now.getFullYear(), 0, 1);
+        default:
+          assertNever(interval);
+      }
     });
 
     const getCurrentPeriodEndDate = memoize(async () => {
-      const [startDate, activeSubscription] = await Promise.all([
+      const [startDate, activeSubscription, plan] = await Promise.all([
         getCurrentPeriodStartDate(),
         getActiveSubscription(),
+        getPlan(),
       ]);
 
       if (activeSubscription?.status === "trialing") {
@@ -246,15 +256,28 @@ export class Account extends Model {
         return new Date(activeSubscription.trialEndDate);
       }
 
-      const now = new Date();
-      const endDate = new Date(startDate);
-      endDate.setMonth(startDate.getMonth() + 1);
-      return new Date(
-        Math.min(
-          endDate.getTime(),
-          new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime(),
-        ),
-      );
+      const interval = plan?.interval ?? "month";
+
+      switch (interval) {
+        case "month": {
+          const now = new Date();
+          const endDate = new Date(startDate);
+          endDate.setMonth(startDate.getMonth() + 1);
+          return new Date(
+            Math.min(
+              endDate.getTime(),
+              new Date(now.getFullYear(), now.getMonth() + 2, 0).getTime(),
+            ),
+          );
+        }
+        case "year": {
+          const endDate = new Date(startDate);
+          endDate.setFullYear(startDate.getFullYear() + 1);
+          return endDate;
+        }
+        default:
+          assertNever(interval);
+      }
     });
 
     const getCurrentPeriodScreenshots = memoize(async () => {

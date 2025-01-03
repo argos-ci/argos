@@ -280,7 +280,7 @@ function ManageSubscriptionButton({
 
 function Period({ start, end }: { start: string; end: string }) {
   const sameYear = moment(start).isSame(end, "year");
-  const format = sameYear ? "MMM DD" : "MMM DD YYYY";
+  const format = sameYear ? "MMM DD" : "MMM D, YYYY";
   return (
     <div className="font-medium">
       Current period ({<Time date={start} format={format} />} -{" "}
