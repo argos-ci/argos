@@ -27,6 +27,11 @@
     color: theme("textColor.DEFAULT");
     height: 100%;
     -webkit-font-smoothing: antialiased;
+    color-scheme: only light;
+  }
+
+  html.dark body {
+    color-scheme: only dark;
   }
 
   #root {
