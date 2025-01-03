@@ -551,7 +551,7 @@ function TeamGithubMembersList(props: {
   return (
     <div className="my-4">
       <ListTitle>
-        <MarkGithubIcon className="mr-1.5 size-4" />
+        <MarkGithubIcon className="mr-1.5 inline-block size-4" />
         GitHub members synced from{" "}
         <GithubAccountLink githubAccount={githubAccount} />
       </ListTitle>
