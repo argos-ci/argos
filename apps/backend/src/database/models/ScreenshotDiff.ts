@@ -18,12 +18,7 @@ export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";
 
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: [
-      "buildId",
-      "baseScreenshotId",
-      "compareScreenshotId",
-      "validationStatus",
-    ],
+    required: ["buildId", "baseScreenshotId", "compareScreenshotId"],
     properties: {
       buildId: { type: "string" },
       baseScreenshotId: { type: ["string", "null"] },
@@ -32,10 +27,6 @@ export class ScreenshotDiff extends Model {
       fileId: { type: ["string", "null"] },
       score: { type: ["number", "null"], minimum: 0, maximum: 1 },
       stabilityScore: { type: ["number", "null"], minimum: 0, maximum: 100 },
-      validationStatus: {
-        type: "string",
-        enum: ["unknown", "accepted", "rejected"],
-      },
       testId: { type: ["string", "null"] },
       group: { type: ["string", "null"] },
     },
@@ -49,7 +40,6 @@ export class ScreenshotDiff extends Model {
   score!: number | null;
   stabilityScore!: number | null;
   jobStatus!: JobStatus;
-  validationStatus!: "unknown" | "accepted" | "rejected";
   testId!: string | null;
   group!: string | null;
 

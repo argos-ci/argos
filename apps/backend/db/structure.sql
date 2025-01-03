@@ -1065,7 +1065,6 @@ CREATE TABLE public.screenshot_diffs (
     "compareScreenshotId" bigint,
     score numeric(10,5),
     "jobStatus" public.job_status,
-    "validationStatus" character varying(255) NOT NULL,
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "s3Id" character varying(255),
@@ -3008,3 +3007,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024120
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241215091232_project-default-role.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20241231154644_build-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250102150800_build-review.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103090503_remove-validation-status-column.js', 1, NOW());

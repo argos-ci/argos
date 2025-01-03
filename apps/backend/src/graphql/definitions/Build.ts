@@ -4,7 +4,6 @@ import gqlTag from "graphql-tag";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, BuildReview, ScreenshotDiff } from "@/database/models/index.js";
-import { transaction } from "@/database/transaction.js";
 
 import {
   IBaseBranchResolution,
@@ -311,17 +310,10 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot approve or reject this build");
       }
 
-      await transaction(async (trx) => {
-        await Promise.all([
-          ScreenshotDiff.query(trx)
-            .where({ buildId })
-            .patch({ validationStatus }),
-          BuildReview.query(trx).insert({
-            buildId,
-            userId: auth.user.id,
-            state: validationStatus === "accepted" ? "approved" : "rejected",
-          }),
-        ]);
+      await BuildReview.query().insert({
+        buildId,
+        userId: auth.user.id,
+        state: validationStatus === "accepted" ? "approved" : "rejected",
       });
 
       // That might be better suited into a $afterUpdate hook.

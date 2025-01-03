@@ -152,7 +152,6 @@ export async function createBuildDiffs(build: Build) {
         compareScreenshot,
       }),
       score: sameFileId ? 0 : null,
-      validationStatus: "unknown" as const,
       testId: compareScreenshot.testId,
     };
   });
@@ -173,7 +172,6 @@ export async function createBuildDiffs(build: Build) {
         compareScreenshotId: null,
         jobStatus: "complete" as const,
         score: null,
-        validationStatus: "unknown" as const,
       })) ?? [];
 
   const allInserts = [...inserts, ...removedScreenshots];

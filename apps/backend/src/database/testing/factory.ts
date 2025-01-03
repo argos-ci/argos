@@ -155,7 +155,6 @@ export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({
   baseScreenshotId: Screenshot.associate("id"),
   compareScreenshotId: Screenshot.associate("id"),
   jobStatus: "complete",
-  validationStatus: "unknown",
   score: 0,
 }));
 

@@ -290,7 +290,6 @@ export async function seed() {
     compareScreenshotId: screenshots[1]!.id,
     score: null,
     jobStatus: "complete" as const,
-    validationStatus: "unknown" as const,
     s3Id: "penelope-diff-transparent.png",
     createdAt: now,
     updatedAt: now,
