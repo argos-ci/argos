@@ -60,7 +60,6 @@ describe("build", () => {
       const diffs = await ScreenshotDiff.query().where("buildId", build.id);
       expect(diffs).toHaveLength(1);
       expect(diffs[0]).toHaveProperty("jobStatus", "complete");
-      expect(diffs[0]).toHaveProperty("validationStatus", "unknown");
       expect(diffs[0]).toHaveProperty("score", null);
       expect(diffs[0]).toHaveProperty("s3Id", null);
     });

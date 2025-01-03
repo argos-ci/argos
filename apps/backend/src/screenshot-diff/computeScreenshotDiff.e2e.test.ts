@@ -99,7 +99,6 @@ describe("#computeScreenshotDiff", () => {
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
         testId: test.id,
       });
     });
@@ -153,7 +152,6 @@ describe("#computeScreenshotDiff", () => {
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
       });
     });
 

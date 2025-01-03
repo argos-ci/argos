@@ -7,7 +7,6 @@ const baseData = {
   baseScreenshotId: "1",
   compareScreenshotId: "2",
   jobStatus: "pending",
-  validationStatus: "unknown",
 };
 
 describe("models/ScreenshotDiff", () => {

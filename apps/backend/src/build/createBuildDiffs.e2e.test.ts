@@ -158,7 +158,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: null,
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
-        validationStatus: "unknown",
         stabilityScore: null,
       });
       expect(addDiffWithoutFile).toMatchObject({
@@ -166,7 +165,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: null,
         compareScreenshotId: newScreenshotWithoutFile!.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
         stabilityScore: null,
       });
       expect(updatedDiff).toMatchObject({
@@ -174,7 +172,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: classicDiffBaseScreenshot!.id,
         compareScreenshotId: classicDiffCompareScreenshot!.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
         stabilityScore: null,
       });
       expect(removedDiff).toMatchObject({
@@ -182,7 +179,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: removedScreenshot!.id,
         compareScreenshotId: null,
         jobStatus: "complete",
-        validationStatus: "unknown",
         score: null,
       });
       expect(noFileBaseScreenshotDiff).toMatchObject({
@@ -190,7 +186,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: noFileBaseScreenshotBase!.id,
         compareScreenshotId: noFileBaseScreenshotCompare!.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
         score: null,
         stabilityScore: null,
       });
@@ -199,7 +194,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: noFileCompareScreenshotBase!.id,
         compareScreenshotId: noFileCompareScreenshotCompare!.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
         score: null,
         stabilityScore: null,
       });
@@ -208,7 +202,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: sameFileScreenshotBase!.id,
         compareScreenshotId: sameFileScreenshotCompare!.id,
         jobStatus: "complete",
-        validationStatus: "unknown",
         stabilityScore: null,
       });
     });
@@ -277,7 +270,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: null,
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
-        validationStatus: "unknown",
         stabilityScore: null,
       });
       expect(diffs[1]).toMatchObject({
@@ -285,7 +277,6 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: null,
         compareScreenshotId: newScreenshotWithoutFile!.id,
         jobStatus: "pending",
-        validationStatus: "unknown",
         stabilityScore: null,
       });
     });
