@@ -7,7 +7,7 @@
   },
   "s3": {
     "screenshotsBucket": "argos-ci-test",
-    "publicImageBaseUrl": "https://argos.twic.pics/test/"
+    "publicImageBaseUrl": "https://ik.imagekit.io/argos/test/"
   },
   "pg": {
     "connection": {

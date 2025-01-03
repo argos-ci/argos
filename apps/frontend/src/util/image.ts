@@ -1,13 +1,13 @@
-const TWIC_PICS_DOMAIN = "argos.twic.pics";
+const IMAGEKIT_DOMAIN = "ik.imagekit.io";
 
-export function checkIsTwicPicsUrl(url: string) {
-  return new URL(url).hostname === TWIC_PICS_DOMAIN;
+export function checkIsImageKitUrl(url: string) {
+  return new URL(url).hostname === IMAGEKIT_DOMAIN;
 }
 
 export function fetchImage(url: string) {
   return fetch(
     url,
-    checkIsTwicPicsUrl(url)
+    checkIsImageKitUrl(url)
       ? {}
       : {
           // To work with CORS on S3.
