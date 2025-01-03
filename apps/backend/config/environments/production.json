@@ -1,7 +1,7 @@
 {
   "s3": {
     "screenshotsBucket": "argos-ci-production",
-    "publicImageBaseUrl": "https://ik.imagekit.io/argos/"
+    "publicImageBaseUrl": "https://files.argos-ci.com/"
   },
   "github": {
     "marketplaceUrl": "https://github.com/marketplace/argos-ci"

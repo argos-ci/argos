@@ -1,4 +1,4 @@
-const IMAGEKIT_DOMAIN = "ik.imagekit.io";
+const IMAGEKIT_DOMAIN = "files.argos-ci.com";
 
 export function checkIsImageKitUrl(url: string) {
   return new URL(url).hostname === IMAGEKIT_DOMAIN;
