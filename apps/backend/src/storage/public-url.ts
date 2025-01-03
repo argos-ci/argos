@@ -15,7 +15,7 @@ export async function getPublicUrl(key: string) {
   return url;
 }
 
-const TWIC_PICS_PIXELS_LIMIT = 36_000_000;
+const IMAGEKIT_PIXELS_LIMIT = 100_000_000;
 
 function checkIsImageFile(file: FileModel) {
   return file.type === "screenshot" || file.type === "screenshotDiff";
@@ -41,7 +41,7 @@ export function getTwicPicsUrl(key: string) {
 export async function getPublicImageFileUrl(file: FileModel) {
   if (config.get("s3.publicImageBaseUrl")) {
     const pixels = getPixelsInFile(file);
-    if (pixels && pixels < TWIC_PICS_PIXELS_LIMIT) {
+    if (pixels && pixels < IMAGEKIT_PIXELS_LIMIT) {
       return getTwicPicsUrl(file.key);
     }
   }

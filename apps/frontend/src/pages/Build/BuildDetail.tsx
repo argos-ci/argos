@@ -7,10 +7,10 @@ import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import { IconButtonLink } from "@/ui/IconButton";
+import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
-import { TwicPicture } from "@/ui/TwicPicture";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
@@ -61,8 +61,7 @@ type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
 
 const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string; name: string }) => {
-    const downloadUrl = new URL(props.url);
-    downloadUrl.searchParams.append("download", props.name);
+    const downloadUrl = imgkit(props.url, ["orig=true", "ik-attachment=true"]);
     const [loading, setLoading] = useState(false);
 
     return (
@@ -70,11 +69,11 @@ const DownloadScreenshotButton = memo(
         <IconButtonLink
           variant="contained"
           isDisabled={loading}
-          href={downloadUrl.toString()}
+          href={downloadUrl}
           download={props.name}
           onPress={() => {
             setLoading(true);
-            fetchImage(downloadUrl.toString())
+            fetchImage(downloadUrl)
               .then((res) => res.blob())
               .then((blob) => {
                 const a = document.createElement("a");
@@ -181,7 +180,7 @@ function getImageScale(element: HTMLImageElement) {
 }
 
 type ScreenshotPictureProps = Omit<
-  React.ComponentProps<typeof TwicPicture>,
+  React.ComponentProps<typeof ImageKitPicture>,
   "width" | "height"
 > & {
   src: string;
@@ -222,7 +221,7 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
     // Watch classname, because it can change the size of the image
   }, [onScaleChangeRef, props.className]);
   return (
-    <TwicPicture
+    <ImageKitPicture
       key={src}
       ref={ref}
       src={src}

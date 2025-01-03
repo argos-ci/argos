@@ -162,8 +162,8 @@ export const installAppRouter = async (app: express.Application) => {
             "'self'",
             "data:",
             "https://argos-ci.com",
-            // TwicPics images
-            "https://argos.twic.pics",
+            // ImageKit images
+            "https://ik.imagekit.io",
             // S3 images
             "https://argos-ci-production.s3.eu-west-1.amazonaws.com",
             // GitHub and GitLab avatars

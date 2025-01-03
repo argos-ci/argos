@@ -40,9 +40,9 @@ import {
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { getTooltipAnimationClassName } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
-import { TwicPicture, TwicPictureProps } from "@/ui/TwicPicture";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
@@ -268,8 +268,8 @@ function getImgAttributes(
     src: url,
     width: dimensions?.width,
     height: dimensions?.height,
-    transforms: dimensions
-      ? [`contain-max=${dimensions.width * 2}x${dimensions.height * 2}`]
+    parameters: dimensions
+      ? [`tr=w-${dimensions.width},h-${dimensions.height},c-at_max,dpr-2`]
       : [],
   };
 }
@@ -287,7 +287,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
         dimensions,
       );
       return (
-        <TwicPicture
+        <ImageKitPicture
           key={key}
           {...attrs}
           className="max-h-full max-w-full object-contain"
@@ -300,7 +300,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
         dimensions,
       );
       return (
-        <TwicPicture
+        <ImageKitPicture
           key={key}
           {...attrs}
           className="max-h-full max-w-full object-contain"
@@ -322,7 +322,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             className="relative"
             style={{ width: dimensions.width, height: dimensions.height }}
           >
-            <TwicPicture
+            <ImageKitPicture
               key={compareKey}
               {...compareAttrs}
               className="opacity-disabled absolute w-full"
@@ -341,9 +341,9 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
   }
 });
 
-function DiffPicture(props: TwicPictureProps) {
+function DiffPicture(props: ImageKitPictureProps) {
   const style = useBuildDiffColorStyle({ height: props.height });
-  return <TwicPicture {...props} style={{ ...style, ...props.style }} />;
+  return <ImageKitPicture {...props} style={{ ...style, ...props.style }} />;
 }
 
 const CardStack = ({
