@@ -425,6 +425,7 @@ export async function seed() {
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      interval: "month",
     },
     {
       name: "starter",
@@ -434,6 +435,7 @@ export async function seed() {
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      interval: "month",
     },
     {
       name: "standard",
@@ -443,15 +445,17 @@ export async function seed() {
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      interval: "month",
     },
     {
-      name: "Pro",
+      name: "Pro (legacy)",
       includedScreenshots: 1000000,
       githubPlanId: 7788,
       stripeProductId: "prod_MzEawyq1kFcHEn",
       usageBased: false,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      interval: "month",
     },
     {
       name: "pro",
@@ -461,6 +465,7 @@ export async function seed() {
       usageBased: true,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,
+      interval: "month",
     },
   ]);
 

@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
@@ -5,11 +6,7 @@ import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Plan } from "./Plan.js";
 
-const getStartOfMonth = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), 1);
-
-const getStartOfPreviousMonth = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth() - 1, 1);
+export type SubscriptionInterval = "month" | "year";
 
 export class Subscription extends Model {
   static override tableName = "subscriptions";
@@ -90,21 +87,45 @@ export class Subscription extends Model {
   account?: Account;
   plan?: Plan;
 
-  getLastResetDate(now = new Date()) {
-    const startOfMonth = getStartOfMonth(now);
+  getLastResetDate(now: Date, interval: SubscriptionInterval) {
+    const startOfPeriod = getStartOf(now, interval);
     const startDate = new Date(this.startDate);
-    const monthDuration = now.getTime() - startOfMonth.getTime();
-    const monthSubscriptionDuration =
-      startDate.getTime() - getStartOfMonth(startDate).getTime();
-    const billingHasResetThisMonth = monthDuration > monthSubscriptionDuration;
+    const periodDuration = now.getTime() - startOfPeriod.getTime();
+    const subscriptionPeriodDuration =
+      startDate.getTime() - getStartOf(startDate, interval).getTime();
+    const billingHasResetThisPeriod =
+      periodDuration > subscriptionPeriodDuration;
 
-    return billingHasResetThisMonth
-      ? new Date(startOfMonth.getTime() + monthSubscriptionDuration)
+    return billingHasResetThisPeriod
+      ? new Date(startOfPeriod.getTime() + subscriptionPeriodDuration)
       : new Date(
           Math.min(
-            getStartOfPreviousMonth(now).getTime() + monthSubscriptionDuration,
-            startOfMonth.getTime(), // end of previous month
+            getStartOfPrevious(now, interval).getTime() +
+              subscriptionPeriodDuration,
+            startOfPeriod.getTime(), // end of previous period
           ),
         );
+  }
+}
+
+function getStartOf(date: Date, interval: SubscriptionInterval) {
+  switch (interval) {
+    case "month":
+      return new Date(date.getFullYear(), date.getMonth(), 1);
+    case "year":
+      return new Date(date.getFullYear(), 0, 1);
+    default:
+      assertNever(interval);
+  }
+}
+
+function getStartOfPrevious(date: Date, interval: SubscriptionInterval) {
+  switch (interval) {
+    case "month":
+      return new Date(date.getFullYear(), date.getMonth() - 1, 1);
+    case "year":
+      return new Date(date.getFullYear() - 1, 0, 1);
+    default:
+      assertNever(interval);
   }
 }
