@@ -13,8 +13,12 @@
         "apps/backend/src/graphql/__generated__/**"
       ]
     },
-    "//#lint:root": {},
-    "//#knip": {},
+    "//#lint:root": {
+      "outputs": []
+    },
+    "//#knip": {
+      "outputs": []
+    },
     "setup": {
       "dependsOn": ["build"],
       "cache": false,
