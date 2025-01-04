@@ -26,17 +26,8 @@ jobs:
       - name: Build
         run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Check types
-        run: pnpm run check-types
-
-      - name: Check Prettier
-        run: pnpm run check-format
-
-      - name: Knip
-        run: pnpm run knip
+      - name: Run static checks
+        run: pnpm exec -- turbo run static-checks
 
   unit-test:
     runs-on: ubuntu-latest

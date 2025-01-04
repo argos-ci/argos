@@ -45,7 +45,7 @@ function AccountTabs({ account }: { account: Account }) {
             : "Team Settings"}
         </TabLink>
       </TabLinkList>
-      <hr className="border-t-base border-t" />
+      <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel className="flex flex-1 flex-col">
         <Suspense fallback={<PageLoader />}>
