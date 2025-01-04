@@ -14,7 +14,7 @@
     "watch-build": "pnpm run build -- --watch --quiet",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
-    "lint": "eslint ."
+    "lint": "eslint . --max-warnings 0"
   },
   "sideEffects": false,
   "dependencies": {

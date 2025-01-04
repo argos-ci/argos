@@ -63,7 +63,7 @@ function ChartContainer({
         data-chart={chartId}
         ref={ref}
         className={clsx(
-          "[&_.recharts-cartesian-axis-tick_text]:fill-subtle-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "[&_.recharts-cartesian-axis-tick_text]:fill-subtle [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
           className,
         )}
         {...props}

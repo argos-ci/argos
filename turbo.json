@@ -13,13 +13,15 @@
         "apps/backend/src/graphql/__generated__/**"
       ]
     },
+    "//#lint:root": {},
+    "//#knip": {},
     "setup": {
       "dependsOn": ["build"],
       "cache": false,
       "env": ["NODE_ENV", "TZ", "BUILD_MODE"]
     },
     "check-types": {
-      "dependsOn": [],
+      "dependsOn": ["^check-types"],
       "outputs": []
     },
     "check-format": {
@@ -27,11 +29,17 @@
       "outputs": []
     },
     "lint": {
-      "dependsOn": [],
+      "dependsOn": ["^lint"],
       "outputs": []
     },
     "static-checks": {
-      "dependsOn": ["check-types", "check-format", "lint"]
+      "dependsOn": [
+        "check-types",
+        "check-format",
+        "lint",
+        "//#lint:root",
+        "//#knip"
+      ]
     },
     "watch-build": {
       "dependsOn": ["build"],

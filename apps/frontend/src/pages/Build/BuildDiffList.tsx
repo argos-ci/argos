@@ -237,7 +237,7 @@ const ListHeader = ({
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header border-t-base bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-2 text-left focus:outline-none",
+        "group/list-header bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-2 text-left focus:outline-none",
       )}
       style={style}
       onPress={onClick}
@@ -1080,7 +1080,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="border-b-base flex shrink-0 items-center overflow-x-auto border-b px-2"
+          className="flex shrink-0 items-center overflow-x-auto border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

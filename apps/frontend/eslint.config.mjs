@@ -7,7 +7,12 @@ import tseslint from "typescript-eslint";
 const config = tseslint.config(
   {
     name: "argos/ignores",
-    ignores: ["**/dist", "postcss.config.js", "tailwind.config.js"],
+    ignores: [
+      "**/dist",
+      "postcss.config.js",
+      "tailwind.config.js",
+      "src/gql/**/*",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

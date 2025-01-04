@@ -9,7 +9,7 @@
     "setup": "pnpm run db:create && pnpm run db:load",
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "db:check-structure": "knex-scripts check-structure",
     "db:create": "knex-scripts create",
     "db:drop": "knex-scripts drop",
