@@ -1,6 +1,5 @@
 import { ChevronDownIcon } from "lucide-react";
 
-import { buildStatusDescriptors } from "@/containers/Build";
 import { FragmentType, graphql, useFragment } from "@/gql";
 import {
   BuildStatus,
@@ -11,6 +10,7 @@ import { Button, ButtonIcon } from "@/ui/Button";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
+import { buildStatusDescriptors } from "@/util/build";
 
 import { useSetValidationStatusMutation } from "./BuildReviewAction";
 import { useMarkAllDiffsAsAccepted } from "./BuildReviewState";

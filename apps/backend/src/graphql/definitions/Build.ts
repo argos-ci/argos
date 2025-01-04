@@ -113,6 +113,8 @@ export const typeDefs = gql`
     baseBranch: String
     "Base branch resolved from"
     baseBranchResolvedFrom: BaseBranchResolution
+    "Effective build reviews"
+    reviews: [BuildReview!]!
   }
 
   type BuildMetadata {
@@ -279,6 +281,9 @@ export const resolvers: IResolvers = {
         default:
           assertNever(build.baseBranchResolvedFrom);
       }
+    },
+    reviews: async (build, _args, ctx) => {
+      return ctx.loaders.BuildUniqueReviews.load(build.id);
     },
   },
   Mutation: {

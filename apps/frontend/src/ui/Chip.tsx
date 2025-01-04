@@ -45,10 +45,10 @@ export function Chip({
     <div
       className={clsx(
         colorClassName,
-        scale === "xs" && "gap-1 px-2 text-xs",
-        scale === "sm" && "gap-1 px-3 py-1 text-xs",
-        scale === "md" && "gap-2 px-4 py-2 text-sm",
-        "rounded-chip inline-flex min-w-0 select-none items-center border font-medium leading-4",
+        scale === "xs" && "px-2 text-xs [--chip-gap:theme(spacing.1)]",
+        scale === "sm" && "px-3 py-1 text-xs [--chip-gap:theme(spacing.1)]",
+        scale === "md" && "px-4 py-2 text-sm [--chip-gap:theme(spacing.2)]",
+        "rounded-chip inline-flex min-w-0 select-none items-center gap-[--chip-gap] border font-medium leading-4",
         className,
       )}
       {...rest}

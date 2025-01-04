@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, Build, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, Project, Account, TeamUser, GithubAccountMember } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { Context } from '../context.js';
@@ -202,6 +202,8 @@ export type IBuild = INode & {
   prNumber?: Maybe<Scalars['Int']['output']>;
   /** Pull request */
   pullRequest?: Maybe<IPullRequest>;
+  /** Effective build reviews */
+  reviews: Array<IBuildReview>;
   /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
   screenshotDiffs: IScreenshotDiffConnection;
   /** Build stats */
@@ -243,6 +245,20 @@ export type IBuildParallel = {
   received: Scalars['Int']['output'];
   total: Scalars['Int']['output'];
 };
+
+export type IBuildReview = INode & {
+  __typename?: 'BuildReview';
+  date: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  state: IBuildReviewState;
+  user?: Maybe<IUser>;
+};
+
+export enum IBuildReviewState {
+  Approved = 'APPROVED',
+  Pending = 'PENDING',
+  Rejected = 'REJECTED'
+}
 
 export type IBuildStats = {
   __typename?: 'BuildStats';
@@ -1377,7 +1393,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Account );
+  Node: ( Subscription ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( ISlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1404,6 +1420,8 @@ export type IResolversTypes = ResolversObject<{
   BuildMetadata: ResolverTypeWrapper<IBuildMetadata>;
   BuildMode: IBuildMode;
   BuildParallel: ResolverTypeWrapper<IBuildParallel>;
+  BuildReview: ResolverTypeWrapper<BuildReview>;
+  BuildReviewState: IBuildReviewState;
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
   BuildType: IBuildType;
@@ -1525,6 +1543,7 @@ export type IResolversParentTypes = ResolversObject<{
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
   BuildMetadata: IBuildMetadata;
   BuildParallel: IBuildParallel;
+  BuildReview: BuildReview;
   BuildStats: IBuildStats;
   BuildsFilterInput: IBuildsFilterInput;
   Connection: IResolversInterfaceTypes<IResolversParentTypes>['Connection'];
@@ -1707,6 +1726,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   prHeadCommit?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   pullRequest?: Resolver<Maybe<IResolversTypes['PullRequest']>, ParentType, ContextType>;
+  reviews?: Resolver<Array<IResolversTypes['BuildReview']>, ParentType, ContextType>;
   screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<Maybe<IResolversTypes['BuildStats']>, ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
@@ -1730,6 +1750,14 @@ export type IBuildParallelResolvers<ContextType = Context, ParentType extends IR
   nonce?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   received?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IBuildReviewResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildReview'] = IResolversParentTypes['BuildReview']> = ResolversObject<{
+  date?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  state?: Resolver<IResolversTypes['BuildReviewState'], ParentType, ContextType>;
+  user?: Resolver<Maybe<IResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1931,7 +1959,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -2281,6 +2309,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   BuildConnection?: IBuildConnectionResolvers<ContextType>;
   BuildMetadata?: IBuildMetadataResolvers<ContextType>;
   BuildParallel?: IBuildParallelResolvers<ContextType>;
+  BuildReview?: IBuildReviewResolvers<ContextType>;
   BuildStats?: IBuildStatsResolvers<ContextType>;
   Connection?: IConnectionResolvers<ContextType>;
   CreateTeamResult?: ICreateTeamResultResolvers<ContextType>;

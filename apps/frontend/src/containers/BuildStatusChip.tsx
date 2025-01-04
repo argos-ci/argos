@@ -1,8 +1,10 @@
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { BuildStatus } from "@/gql/graphql";
 import { Chip, ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
+import { getBuildDescriptor } from "@/util/build";
 
-import { getBuildDescriptor } from "./Build";
+import { AccountAvatar } from "./AccountAvatar";
 import { BuildStatusDescription } from "./BuildStatusDescription";
 
 const BuildFragment = graphql(`
@@ -10,20 +12,98 @@ const BuildFragment = graphql(`
     ...BuildStatusDescription_Build
     type
     status
+    reviews {
+      id
+      date
+      user {
+        id
+        name
+        avatar {
+          ...AccountAvatarFragment
+        }
+      }
+    }
   }
 `);
 
-export const BuildStatusChip = (props: {
+export function BuildStatusChip(props: {
   build: FragmentType<typeof BuildFragment>;
   scale?: ChipProps["scale"];
-}) => {
+}) {
   const build = useFragment(BuildFragment, props.build);
   const descriptor = getBuildDescriptor(build.type, build.status);
+  const reviewWithUsers = build.reviews.filter((review) => review.user);
   return (
     <Tooltip variant="info" content={<BuildStatusDescription build={build} />}>
       <Chip icon={descriptor.icon} color={descriptor.color} scale={props.scale}>
-        {descriptor.label}
+        <span
+          aria-label={getChipLabel(build) ?? undefined}
+          className="flex items-center gap-[--chip-gap]"
+        >
+          {descriptor.label}
+          <BuildReviewUsers reviews={reviewWithUsers} />
+        </span>
       </Chip>
     </Tooltip>
   );
-};
+}
+
+function getChipLabel(build: DocumentType<typeof BuildFragment>) {
+  switch (build.status) {
+    case BuildStatus.Rejected:
+    case BuildStatus.Accepted: {
+      const descriptor = getBuildDescriptor(build.type, build.status);
+      const reviewers = getReviewerList(build.reviews);
+      return reviewers ? `${descriptor.label} by ${reviewers}` : "Accepted";
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Get the reviewer list for a build.
+ * @example by Greg Bergé, Jeremy Sfez and 2 others
+ */
+function getReviewerList(
+  reviews: DocumentType<typeof BuildFragment>["reviews"],
+) {
+  const reviewerNames = reviews
+    .map((review) => review.user?.name)
+    .filter(Boolean) as string[];
+  if (reviewerNames.length === 0) {
+    return null;
+  }
+  const displayedReviewers = reviewerNames.slice(0, 2);
+  const remainingCount = reviewerNames.length - displayedReviewers.length;
+  if (remainingCount > 0) {
+    return `${displayedReviewers.join(", ")} and ${remainingCount} others`;
+  }
+  return displayedReviewers.join(", ");
+}
+
+function BuildReviewUsers(props: {
+  reviews: DocumentType<typeof BuildFragment>["reviews"];
+}) {
+  if (props.reviews.length === 0) {
+    return null;
+  }
+  return (
+    <div className="flex -space-x-1">
+      {props.reviews.map((review) => {
+        if (!review.user) {
+          return null;
+        }
+        return (
+          <div key={review.id}>
+            <AccountAvatar
+              avatar={review.user.avatar}
+              size={16}
+              alt={review.user.name ?? undefined}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
