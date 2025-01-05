@@ -2,7 +2,7 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { config } from "@/config";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
@@ -10,7 +10,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Link } from "@/ui/Link";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment AccountGitLab_Account on Account {
     id
     permissions
@@ -34,9 +34,9 @@ type Inputs = {
 };
 
 export const AccountGitLab = (props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) => {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const client = useApolloClient();
   const form = useForm<Inputs>({
     defaultValues: {

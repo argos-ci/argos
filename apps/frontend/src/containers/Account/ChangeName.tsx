@@ -1,13 +1,13 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment AccountChangeName_Account on Account {
     id
     name
@@ -29,11 +29,11 @@ type Inputs = {
 };
 
 export const AccountChangeName = (props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
   title: React.ReactNode;
   description: React.ReactNode;
 }) => {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const client = useApolloClient();
   const form = useForm<Inputs>({
     defaultValues: {

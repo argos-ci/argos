@@ -44,6 +44,7 @@ const ApolloProvider = (props: {
     const retryLink = new RetryLink();
 
     return new ApolloClient({
+      dataMasking: false,
       cache: new InMemoryCache({
         possibleTypes: fragments.possibleTypes,
         typePolicies: {

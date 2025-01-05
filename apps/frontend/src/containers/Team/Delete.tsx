@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
@@ -26,7 +26,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { Modal } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 
-const TeamFragment = graphql(`
+const _TeamFragment = graphql(`
   fragment TeamDelete_Team on Team {
     id
     slug
@@ -156,9 +156,9 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
 }
 
 export const TeamDelete = (props: {
-  team: FragmentType<typeof TeamFragment>;
+  team: DocumentType<typeof _TeamFragment>;
 }) => {
-  const team = useFragment(TeamFragment, props.team);
+  const { team } = props;
   const hasActiveNonCanceledSubscription =
     team.subscription?.status === AccountSubscriptionStatus.Active &&
     !team.subscription.endDate;

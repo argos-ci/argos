@@ -6,7 +6,7 @@ import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildType } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip } from "@/ui/Chip";
@@ -24,7 +24,7 @@ import {
   useGetDiffEvaluationStatus,
 } from "../BuildReviewState";
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
     name
     status
@@ -103,7 +103,7 @@ function useBuildReviewProgression() {
 
 function LoggedReviewButton(props: {
   project: ComponentProps<typeof BuildReviewButton>["project"];
-  build: DocumentType<typeof BuildFragment>;
+  build: DocumentType<typeof _BuildFragment>;
 }) {
   const progression = useBuildReviewProgression();
   if (!progression) {
@@ -162,7 +162,7 @@ function LoggedReviewButton(props: {
 const ConditionalBuildReviewButton = memo(
   (props: {
     project: ComponentProps<typeof BuildReviewButton>["project"];
-    build: DocumentType<typeof BuildFragment>;
+    build: DocumentType<typeof _BuildFragment>;
   }) => {
     const loggedIn = useIsLoggedIn();
     return loggedIn ? (
@@ -171,7 +171,7 @@ const ConditionalBuildReviewButton = memo(
   },
 );
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment BuildHeader_Project on Project {
     ...BuildReviewButton_Project
   }
@@ -182,11 +182,10 @@ export const BuildHeader = memo(
     buildNumber: number;
     accountSlug: string;
     projectName: string;
-    build: FragmentType<typeof BuildFragment> | null;
-    project: FragmentType<typeof ProjectFragment> | null;
+    build: DocumentType<typeof _BuildFragment> | null;
+    project: DocumentType<typeof _ProjectFragment> | null;
   }) => {
-    const build = useFragment(BuildFragment, props.build);
-    const project = useFragment(ProjectFragment, props.project);
+    const { build, project } = props;
     return (
       <div className="flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 border-b p-4">
         <div className="flex h-[calc(2rem+2px)] items-center gap-4">

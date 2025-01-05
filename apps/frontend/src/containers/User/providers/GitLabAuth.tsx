@@ -3,7 +3,7 @@ import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
 import { GitLabColoredLogo, GitLabLoginButton } from "@/containers/GitLab";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { GitLabAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
@@ -18,7 +18,7 @@ import {
   ProviderMenuButton,
 } from "../ui";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment GitLabAuth_Account on User {
     id
     gitlabUser {
@@ -40,9 +40,9 @@ const DisconnectGitLabMutation = graphql(`
 `);
 
 export function GitLabAuth(props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const [disconnect] = useMutation(DisconnectGitLabMutation, {
     variables: {
       accountId: account.id,

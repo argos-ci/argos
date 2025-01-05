@@ -29,8 +29,7 @@ const documents = {
     "\n  query ProjectBreadcrumbMenu_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      projects(first: 100, after: 0) {\n        edges {\n          id\n          name\n        }\n      }\n    }\n  }\n": types.ProjectBreadcrumbMenu_AccountDocument,
     "\n  fragment BuildStatusChip_Build on Build {\n    ...BuildStatusDescription_Build\n    type\n    status\n    reviews {\n      id\n      date\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n": types.BuildStatusChip_BuildFragmentDoc,
     "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    mode\n    baseBranch\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n    ...ReviewDescription_Build\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
-    "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      ...BuildReviewList_Review\n    }\n  }\n": types.ReviewDescription_BuildFragmentDoc,
-    "\n  fragment BuildReviewList_Review on BuildReview {\n    id\n    date\n    state\n    user {\n      id\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n": types.BuildReviewList_ReviewFragmentDoc,
+    "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n": types.ReviewDescription_BuildFragmentDoc,
     "\n  fragment GithubAccountLink_GithubAccount on GithubAccount {\n    login\n    name\n    url\n  }\n": types.GithubAccountLink_GithubAccountFragmentDoc,
     "\n  fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": types.GithubInstallationsSelect_GhApiInstallationFragmentDoc,
     "\n  query GithubRepositoryList_ghApiInstallationRepositories(\n    $installationId: ID!\n    $page: Int!\n    $reposPerPage: Int\n    $fromAuthUser: Boolean!\n  ) {\n    ghApiInstallationRepositories(\n      installationId: $installationId\n      fromAuthUser: $fromAuthUser\n      page: $page\n      reposPerPage: $reposPerPage\n    ) {\n      edges {\n        id\n        name\n        updated_at\n        owner_login\n      }\n      pageInfo {\n        hasNextPage\n        totalCount\n      }\n    }\n  }\n": types.GithubRepositoryList_GhApiInstallationRepositoriesDocument,
@@ -126,7 +125,8 @@ const documents = {
     "\n  fragment BuildOrphanDialog_Project on Project {\n    slug\n  }\n": types.BuildOrphanDialog_ProjectFragmentDoc,
     "\n  query BuildPage_Project(\n    $accountSlug: String!\n    $projectName: String!\n    $buildNumber: Int!\n  ) {\n    project(accountSlug: $accountSlug, projectName: $projectName) {\n      id\n      ...BuildHeader_Project\n      ...BuildWorkspace_Project\n      ...BuildReviewDialog_Project\n      permissions\n      account {\n        id\n        ...OvercapacityBanner_Account\n        ...PaymentBanner_Account\n      }\n      build(number: $buildNumber) {\n        id\n        status\n        ...BuildHeader_Build\n        ...BuildWorkspace_Build\n        ...BuildDiffState_Build\n      }\n    }\n  }\n": types.BuildPage_ProjectDocument,
     "\n  mutation BuildReviewAction_setValidationStatus(\n    $buildId: ID!\n    $validationStatus: ValidationStatus!\n  ) {\n    setValidationStatus(\n      buildId: $buildId\n      validationStatus: $validationStatus\n    ) {\n      id\n      status\n      # Invalidate the cache for the build status chip\n      ...BuildStatusChip_Build\n    }\n  }\n": types.BuildReviewAction_SetValidationStatusDocument,
-    "\n  fragment BuildReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n    }\n  }\n": types.BuildReviewButton_ProjectFragmentDoc,
+    "\n  fragment BuildReviewAction_Build on Build {\n    id\n    # Invalidate the cache for the build status chip\n    ...BuildStatusChip_Build\n  }\n": types.BuildReviewAction_BuildFragmentDoc,
+    "\n  fragment BuildReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n      ...BuildReviewAction_Build\n    }\n  }\n": types.BuildReviewButton_ProjectFragmentDoc,
     "\n  fragment BuildReviewDialog_Project on Project {\n    ...BuildReviewButton_Project\n    build(number: $buildNumber) {\n      id\n    }\n  }\n": types.BuildReviewDialog_ProjectFragmentDoc,
     "\n  fragment BuildSidebar_Build on Build {\n    ...BuildInfos_Build\n    stats {\n      total\n    }\n  }\n": types.BuildSidebar_BuildFragmentDoc,
     "\n  fragment BuildStatsIndicator_BuildStats on BuildStats {\n    total\n    failure\n    changed\n    added\n    removed\n    unchanged\n    retryFailure\n  }\n": types.BuildStatsIndicator_BuildStatsFragmentDoc,
@@ -222,11 +222,7 @@ export function graphql(source: "\n  fragment BuildStatusDescription_Build on Bu
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      ...BuildReviewList_Review\n    }\n  }\n"): (typeof documents)["\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      ...BuildReviewList_Review\n    }\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  fragment BuildReviewList_Review on BuildReview {\n    id\n    date\n    state\n    user {\n      id\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment BuildReviewList_Review on BuildReview {\n    id\n    date\n    state\n    user {\n      id\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -610,7 +606,11 @@ export function graphql(source: "\n  mutation BuildReviewAction_setValidationSta
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment BuildReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n    }\n  }\n"): (typeof documents)["\n  fragment BuildReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n    }\n  }\n"];
+export function graphql(source: "\n  fragment BuildReviewAction_Build on Build {\n    id\n    # Invalidate the cache for the build status chip\n    ...BuildStatusChip_Build\n  }\n"): (typeof documents)["\n  fragment BuildReviewAction_Build on Build {\n    id\n    # Invalidate the cache for the build status chip\n    ...BuildStatusChip_Build\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment BuildReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n      ...BuildReviewAction_Build\n    }\n  }\n"): (typeof documents)["\n  fragment BuildReviewButton_Project on Project {\n    name\n    permissions\n    public\n    account {\n      id\n      slug\n    }\n    build(number: $buildNumber) {\n      id\n      status\n      ...BuildReviewAction_Build\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

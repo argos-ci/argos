@@ -1,7 +1,8 @@
 import { ChevronDownIcon } from "lucide-react";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
+  BuildReviewAction_BuildFragment,
   BuildStatus,
   ProjectPermission,
   ValidationStatus,
@@ -15,7 +16,7 @@ import { buildStatusDescriptors } from "@/util/build";
 import { useSetValidationStatusMutation } from "./BuildReviewAction";
 import { useMarkAllDiffsAsAccepted } from "./BuildReviewState";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment BuildReviewButton_Project on Project {
     name
     permissions
@@ -27,26 +28,33 @@ const ProjectFragment = graphql(`
     build(number: $buildNumber) {
       id
       status
+      ...BuildReviewAction_Build
     }
   }
 `);
 
 function BaseReviewButton(props: {
-  build: { id: string; status: BuildStatus };
+  build: {
+    id: string;
+    status: BuildStatus;
+  } & BuildReviewAction_BuildFragment;
   disabled?: boolean;
   autoFocus?: boolean;
   onCompleted?: () => void;
   children?: React.ReactNode;
 }) {
   const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
-  const [setValidationStatus, { loading }] = useSetValidationStatusMutation({
-    onCompleted: (data) => {
-      if (data.setValidationStatus.status === BuildStatus.Accepted) {
-        markAllDiffsAsAccepted();
-      }
-      props.onCompleted?.();
+  const [setValidationStatus, { loading }] = useSetValidationStatusMutation(
+    props.build,
+    {
+      onCompleted: (data) => {
+        if (data.setValidationStatus.status === BuildStatus.Accepted) {
+          markAllDiffsAsAccepted();
+        }
+        props.onCompleted?.();
+      },
     },
-  });
+  );
 
   const { icon: AcceptIcon } = buildStatusDescriptors[BuildStatus.Accepted];
   const { icon: RejectIcon } = buildStatusDescriptors[BuildStatus.Rejected];
@@ -114,12 +122,12 @@ export function DisabledBuildReviewButton(props: { tooltip: React.ReactNode }) {
 }
 
 export function BuildReviewButton(props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
   autoFocus?: boolean;
   onCompleted?: () => void;
   children?: React.ReactNode;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   if (
     !project.build ||
     !project.account ||

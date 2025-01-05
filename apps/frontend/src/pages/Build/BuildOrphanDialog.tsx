@@ -1,7 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { LightBulbIcon } from "@primer/octicons-react";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildType } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import {
@@ -15,7 +15,7 @@ import {
 import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildOrphanDialog_Build on Build {
     baseBranch
     mode
@@ -23,18 +23,17 @@ const BuildFragment = graphql(`
   }
 `);
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment BuildOrphanDialog_Project on Project {
     slug
   }
 `);
 
 export function BuildOrphanDialog(props: {
-  build: FragmentType<typeof BuildFragment>;
-  project: FragmentType<typeof ProjectFragment>;
+  build: DocumentType<typeof _BuildFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const build = useFragment(BuildFragment, props.build);
-  const project = useFragment(ProjectFragment, props.project);
+  const { build, project } = props;
 
   if (build.type !== BuildType.Orphan || !build.baseBranch) {
     return null;

@@ -1,4 +1,4 @@
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   Card,
   CardBody,
@@ -9,7 +9,7 @@ import {
 import { Link } from "@/ui/Link";
 import { Pre } from "@/ui/Pre";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectBadge_Project on Project {
     id
     slug
@@ -40,9 +40,9 @@ const BadgeBlock = (props: {
 };
 
 export const ProjectBadge = (props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) => {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   return (
     <Card>
       <CardBody>

@@ -2,7 +2,7 @@ import { FolderIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import {
   EmptyState,
@@ -18,7 +18,7 @@ import { Time } from "@/ui/Time";
 
 import { getRepositoryIcon } from "./Repository";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
     id
     name
@@ -43,8 +43,7 @@ const ProjectFragment = graphql(`
   }
 `);
 
-type Project = DocumentType<typeof ProjectFragment>;
-type ProjectFragmentType = FragmentType<typeof ProjectFragment>;
+type Project = DocumentType<typeof _ProjectFragment>;
 
 function ProjectCard({ project }: { project: Project }) {
   const repositoryType = project.repository?.__typename;
@@ -98,10 +97,10 @@ function CreateProjectButton(props: Omit<LinkButtonProps, "children">) {
 }
 
 export function ProjectList(props: {
-  projects: ProjectFragmentType[];
+  projects: Project[];
   canCreateProject: boolean;
 }) {
-  const projects = useFragment(ProjectFragment, props.projects);
+  const { projects } = props;
 
   if (projects.length === 0) {
     if (props.canCreateProject) {

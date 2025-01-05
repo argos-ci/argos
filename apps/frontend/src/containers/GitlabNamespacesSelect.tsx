@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { ListIcon } from "lucide-react";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   ListBox,
   ListBoxItem,
@@ -13,7 +13,7 @@ import { Select, SelectButton } from "@/ui/Select";
 
 import { GitLabLogo } from "./GitLab";
 
-const NamespaceFragment = graphql(`
+const _NamespaceFragment = graphql(`
   fragment GitlabNamespacesSelect_GlApiNamespace on GlApiNamespace {
     id
     name
@@ -22,13 +22,13 @@ const NamespaceFragment = graphql(`
 `);
 
 export const GitlabNamespacesSelect = (props: {
-  namespaces: FragmentType<typeof NamespaceFragment>[];
+  namespaces: DocumentType<typeof _NamespaceFragment>[];
   value: string;
   setValue: (value: string) => void;
   disabled?: boolean;
   onSwitch: () => void;
 }) => {
-  const namespaces = useFragment(NamespaceFragment, props.namespaces);
+  const { namespaces } = props;
   const activeNamespace = namespaces.find(
     (namespace) => namespace.id === props.value,
   );

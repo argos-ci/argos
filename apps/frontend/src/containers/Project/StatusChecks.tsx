@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { SummaryCheck } from "@/gql/graphql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
@@ -25,7 +25,7 @@ type Inputs = {
   summaryCheck: SummaryCheck;
 };
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectStatusChecks_Project on Project {
     id
     summaryCheck
@@ -33,9 +33,9 @@ const ProjectFragment = graphql(`
 `);
 
 export const ProjectStatusChecks = (props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) => {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const form = useForm<Inputs>({
     defaultValues: {
       summaryCheck: project.summaryCheck,

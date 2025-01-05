@@ -1,5 +1,5 @@
 import { SettingsLayout } from "@/containers/Layout";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   Card,
   CardBody,
@@ -11,16 +11,16 @@ import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
 import { Pre } from "@/ui/Pre";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment GettingStarted_Project on Project {
     token
   }
 `);
 
 export function GettingStarted(props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   return (
     <SettingsLayout className="mx-auto">
       <Card>

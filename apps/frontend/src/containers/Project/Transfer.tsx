@@ -5,7 +5,7 @@ import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -33,7 +33,7 @@ import { AccountSelector } from "../AccountSelector";
 import { useSafeQuery } from "../Apollo";
 
 type TransferDialogButtonProps = {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 };
 
 type SelectAccountStepProps = {
@@ -363,7 +363,7 @@ const SuccessStep = (props: SuccessStepProps) => {
 };
 
 const TransferDialogButton = (props: TransferDialogButtonProps) => {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const [targetAccountId, setTargetAccountId] = useState<string>("");
   const [step, setStep] = useState<"select" | "review" | "success">("select");
   const navigate = useNavigate();
@@ -417,7 +417,7 @@ const TransferDialogButton = (props: TransferDialogButtonProps) => {
   );
 };
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectTransfer_Project on Project {
     id
     name
@@ -431,7 +431,7 @@ const ProjectFragment = graphql(`
 `);
 
 export const ProjectTransfer = (props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) => {
   return (
     <Card>

@@ -3,8 +3,7 @@ import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
 import { GoogleLoginButton, GoogleLogo } from "@/containers/Google";
-import { FragmentType, graphql, useFragment } from "@/gql";
-import { GoogleAuth_AccountFragment } from "@/gql/graphql";
+import { DocumentType, graphql } from "@/gql";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { getOAuthURL } from "@/util/oauth";
@@ -17,7 +16,7 @@ import {
   ProviderMenuButton,
 } from "../ui";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment GoogleAuth_Account on User {
     id
     googleUser {
@@ -38,9 +37,9 @@ const DisconnectGoogleMutation = graphql(`
 `);
 
 export function GoogleAuth(props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const [disconnect] = useMutation(DisconnectGoogleMutation, {
     variables: {
       accountId: account.id,
@@ -50,7 +49,7 @@ export function GoogleAuth(props: {
         __typename: "User",
         id: account.id,
         googleUser: null,
-      } as GoogleAuth_AccountFragment,
+      },
     },
   });
   return (

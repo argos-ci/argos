@@ -5,7 +5,7 @@ import { MarkGithubIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
@@ -108,7 +108,7 @@ const TeamGithubMembersQuery = graphql(`
   }
 `);
 
-const TeamFragment = graphql(`
+const _TeamFragment = graphql(`
   fragment TeamMembers_Team on Team {
     id
     name
@@ -293,7 +293,7 @@ const SetTeamMemberLevelMutation = graphql(`
   }
 `);
 
-const LevelSelectTeamMemberFragment = graphql(`
+const _LevelSelectTeamMemberFragment = graphql(`
   fragment LevelSelect_TeamMember on TeamMember {
     id
     level
@@ -306,9 +306,9 @@ const LevelSelectTeamMemberFragment = graphql(`
 function LevelSelect(props: {
   teamId: string;
   hasFineGrainedAccessControl: boolean;
-  member: FragmentType<typeof LevelSelectTeamMemberFragment>;
+  member: DocumentType<typeof _LevelSelectTeamMemberFragment>;
 }) {
-  const member = useFragment(LevelSelectTeamMemberFragment, props.member);
+  const { member } = props;
   const [setTeamMemberLevel] = useMutation(SetTeamMemberLevelMutation);
 
   return (
@@ -511,7 +511,7 @@ function TeamMembersList(props: {
   );
 }
 
-const TeamGithubMembersListGithubAccountFragment = graphql(`
+const _TeamGithubMembersListGithubAccountFragment = graphql(`
   fragment TeamGithubMembersList_GithubAccount on GithubAccount {
     id
     ...GithubAccountLink_GithubAccount
@@ -523,15 +523,12 @@ function TeamGithubMembersList(props: {
   teamName: string;
   amOwner: boolean;
   onRemove: (user: RemovedUser) => void;
-  githubAccount: FragmentType<
-    typeof TeamGithubMembersListGithubAccountFragment
+  githubAccount: DocumentType<
+    typeof _TeamGithubMembersListGithubAccountFragment
   >;
   hasFineGrainedAccessControl: boolean;
 }) {
-  const githubAccount = useFragment(
-    TeamGithubMembersListGithubAccountFragment,
-    props.githubAccount,
-  );
+  const { githubAccount } = props;
   const authPayload = useAssertAuthTokenPayload();
   const { data, fetchMore } = useSafeQuery(TeamGithubMembersQuery, {
     variables: {
@@ -657,10 +654,10 @@ function TeamGithubMembersList(props: {
 }
 
 export const TeamMembers = (props: {
-  team: FragmentType<typeof TeamFragment>;
+  team: DocumentType<typeof _TeamFragment>;
 }) => {
+  const { team } = props;
   const authPayload = useAssertAuthTokenPayload();
-  const team = useFragment(TeamFragment, props.team);
   const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
   const removeFromTeamModal = {
     isOpen: removedUser !== null,

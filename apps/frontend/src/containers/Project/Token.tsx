@@ -3,7 +3,7 @@ import { useApolloClient } from "@apollo/client";
 import { DialogTrigger } from "react-aria-components";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { useProjectContext } from "@/pages/Project";
 import { Button } from "@/ui/Button";
@@ -32,7 +32,7 @@ import { Modal } from "@/ui/Modal";
 import { Pre } from "@/ui/Pre";
 import { usePrevious } from "@/ui/usePrevious";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectToken_Project on Project {
     id
     token
@@ -45,9 +45,9 @@ const ProjectFragment = graphql(`
 `);
 
 export function ProjectToken(props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
 
   // The user may not have permission
   if (!project.token) {

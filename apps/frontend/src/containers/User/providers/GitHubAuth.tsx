@@ -5,7 +5,7 @@ import { MenuTrigger } from "react-aria-components";
 
 import { config } from "@/config";
 import { GitHubLoginButton } from "@/containers/GitHub";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { GitHubAuth_AccountFragment } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
@@ -20,7 +20,7 @@ import {
   ProviderMenuButton,
 } from "../ui";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment GitHubAuth_Account on Account {
     id
     githubAccount {
@@ -42,9 +42,9 @@ const DisconnectGitHubMutation = graphql(`
 `);
 
 export function GitHubAuth(props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const [disconnect] = useMutation(DisconnectGitHubMutation, {
     variables: {
       accountId: account.id,

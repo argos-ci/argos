@@ -2,7 +2,7 @@ import { invariant } from "@apollo/client/utilities/globals";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ListIcon, PlusIcon } from "lucide-react";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   ListBox,
   ListBoxItem,
@@ -14,7 +14,7 @@ import { Select, SelectButton } from "@/ui/Select";
 
 import { getGitHubAppInstallURL } from "./GitHub";
 
-const InstallationFragment = graphql(`
+const _InstallationFragment = graphql(`
   fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {
     id
     account {
@@ -27,7 +27,7 @@ const InstallationFragment = graphql(`
 
 export function GithubInstallationsSelect(props: {
   ref?: React.Ref<HTMLButtonElement>;
-  installations: FragmentType<typeof InstallationFragment>[];
+  installations: DocumentType<typeof _InstallationFragment>[];
   value: string;
   setValue: (value: string) => void;
   disabled?: boolean;
@@ -35,7 +35,7 @@ export function GithubInstallationsSelect(props: {
   app: "main" | "light";
   accountId: string;
 }) {
-  const installations = useFragment(InstallationFragment, props.installations);
+  const { installations } = props;
   const activeInstallation = (() => {
     if (props.value) {
       const installation = installations.find(

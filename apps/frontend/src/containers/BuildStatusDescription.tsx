@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import { Time } from "@/ui/Time";
@@ -11,7 +11,7 @@ import { buildReviewDescriptors } from "@/util/build-review";
 
 import { AccountAvatar } from "./AccountAvatar";
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
     type
     status
@@ -30,9 +30,9 @@ const BuildFragment = graphql(`
 `);
 
 export function BuildStatusDescription(props: {
-  build: FragmentType<typeof BuildFragment>;
+  build: DocumentType<typeof _BuildFragment>;
 }) {
-  const build = useFragment(BuildFragment, props.build);
+  const { build } = props;
 
   if (build.status === BuildStatus.Expired) {
     if (build.parallel) {
@@ -174,20 +174,28 @@ export function BuildStatusDescription(props: {
   }
 }
 
-const ReviewDescriptionBuildFragment = graphql(`
+const _ReviewDescriptionBuildFragment = graphql(`
   fragment ReviewDescription_Build on Build {
     status
     reviews {
       id
-      ...BuildReviewList_Review
+      date
+      state
+      user {
+        id
+        name
+        avatar {
+          ...AccountAvatarFragment
+        }
+      }
     }
   }
 `);
 
 function ReviewDescription(props: {
-  build: FragmentType<typeof ReviewDescriptionBuildFragment>;
+  build: DocumentType<typeof _ReviewDescriptionBuildFragment>;
 }) {
-  const build = useFragment(ReviewDescriptionBuildFragment, props.build);
+  const { build } = props;
   const descriptor = buildStatusDescriptors[build.status];
   return (
     <div className="max-w-sm">
@@ -197,64 +205,42 @@ function ReviewDescription(props: {
       </p>
       <div className="rounded border p-2 pb-0">
         <h3 className="mb-1 text-xs font-semibold">Reviews</h3>
-        <BuildReviewList reviews={build.reviews} />
+        <ul className="flex flex-col text-sm">
+          {build.reviews.map((review) => {
+            const descriptor = buildReviewDescriptors[review.state];
+            const Icon = descriptor.icon;
+            return (
+              <li
+                className="flex items-center gap-3 border-b py-2 text-xs last:border-b-0"
+                key={review.id}
+              >
+                <div className="flex items-center">
+                  <Icon
+                    className={clsx("size-3 shrink-0", descriptor.textColor)}
+                  />
+                  &nbsp;
+                  <strong className="w-14">{descriptor.label}</strong>
+                </div>
+                <div className="text-low">—</div>
+                <div className="flex items-center">
+                  <Time date={review.date} tooltip="title" />
+                  {review.user && (
+                    <>
+                      &nbsp;by&nbsp;
+                      <AccountAvatar
+                        className="shrink-0"
+                        size={16}
+                        avatar={review.user.avatar}
+                      />
+                      &nbsp;{review.user.name}
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
-  );
-}
-
-const BuildReviewFragment = graphql(`
-  fragment BuildReviewList_Review on BuildReview {
-    id
-    date
-    state
-    user {
-      id
-      name
-      avatar {
-        ...AccountAvatarFragment
-      }
-    }
-  }
-`);
-
-function BuildReviewList(props: {
-  reviews: FragmentType<typeof BuildReviewFragment>[];
-}) {
-  const reviews = useFragment(BuildReviewFragment, props.reviews);
-  return (
-    <ul className="flex flex-col text-sm">
-      {reviews.map((review) => {
-        const descriptor = buildReviewDescriptors[review.state];
-        const Icon = descriptor.icon;
-        return (
-          <li
-            className="flex items-center gap-3 border-b py-2 text-xs last:border-b-0"
-            key={review.id}
-          >
-            <div className="flex items-center">
-              <Icon className={clsx("size-3 shrink-0", descriptor.textColor)} />
-              &nbsp;
-              <strong className="w-14">{descriptor.label}</strong>
-            </div>
-            <div className="text-low">—</div>
-            <div className="flex items-center">
-              <Time date={review.date} tooltip="title" />
-              {review.user && (
-                <>
-                  &nbsp;by&nbsp;
-                  <AccountAvatar
-                    className="shrink-0"
-                    size={16}
-                    avatar={review.user.avatar}
-                  />
-                  &nbsp;{review.user.name}
-                </>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
   );
 }

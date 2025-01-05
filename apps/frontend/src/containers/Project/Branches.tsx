@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Code } from "@/ui/Code";
 import { Form } from "@/ui/Form";
@@ -39,7 +39,7 @@ type Inputs = {
   autoApprovedBranchGlob: string;
 };
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectBranches_Project on Project {
     id
     customDefaultBaseBranch
@@ -53,9 +53,9 @@ const ProjectFragment = graphql(`
 `);
 
 export const ProjectBranches = (props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) => {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const defaultDefaultBaseBranch =
     project.customDefaultBaseBranch ||
     project.repository?.defaultBranch ||

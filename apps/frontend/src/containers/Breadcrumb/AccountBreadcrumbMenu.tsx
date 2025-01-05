@@ -4,7 +4,7 @@ import { PlusCircleIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router-dom";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
 import {
   Menu,
@@ -18,7 +18,7 @@ import { Popover } from "@/ui/Popover";
 
 import { AccountItem } from "../AccountItem";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment AccountBreadcrumbMenu_Account on Account {
     id
     slug
@@ -39,7 +39,7 @@ const MeQuery = graphql(`
   }
 `);
 
-type Account = FragmentType<typeof AccountFragment>;
+type Account = DocumentType<typeof _AccountFragment>;
 
 function resolveAccountPath(slug: string, pathname: string) {
   if (matchPath("/:slug/settings/*", pathname)) {
@@ -50,7 +50,7 @@ function resolveAccountPath(slug: string, pathname: string) {
 }
 
 function AccountMenuItems(props: { accounts: Account[] }) {
-  const accounts = useFragment(AccountFragment, props.accounts);
+  const { accounts } = props;
   const location = useLocation();
   return (
     <>

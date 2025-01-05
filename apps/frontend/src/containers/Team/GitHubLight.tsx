@@ -1,6 +1,6 @@
 import { MarkGithubIcon } from "@primer/octicons-react";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { LinkButton } from "@/ui/Button";
 import {
   Card,
@@ -14,7 +14,7 @@ import { Link } from "@/ui/Link";
 import { getGitHubAppInstallURL } from "../GitHub";
 import { AccountLink } from "../GithubAccountLink";
 
-const TeamFragment = graphql(`
+const _TeamFragment = graphql(`
   fragment TeamGitHubLight_Team on Team {
     id
     githubLightInstallation {
@@ -30,9 +30,9 @@ const TeamFragment = graphql(`
 `);
 
 export function TeamGitHubLight(props: {
-  team: FragmentType<typeof TeamFragment>;
+  team: DocumentType<typeof _TeamFragment>;
 }) {
-  const team = useFragment(TeamFragment, props.team);
+  const { team } = props;
   const installURL = getGitHubAppInstallURL("light", { accountId: team.id });
 
   return (

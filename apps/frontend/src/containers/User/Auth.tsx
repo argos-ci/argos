@@ -1,13 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 
 import { GitHubAuth } from "./providers/GitHubAuth";
 import { GitLabAuth } from "./providers/GitLabAuth";
 import { GoogleAuth } from "./providers/GoogleAuth";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment UserAuth_Account on Account {
     id
     ... on User {
@@ -19,9 +19,9 @@ const AccountFragment = graphql(`
 `);
 
 export function UserAuth(props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   invariant(account.__typename === "User");
   return (
     <Card>

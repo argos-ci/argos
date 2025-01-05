@@ -1,7 +1,7 @@
 import { useApolloClient, useMutation } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
@@ -13,7 +13,7 @@ import { Link } from "@/ui/Link";
 import { getRepositoryIcon } from "../Repository";
 import { ConnectRepository } from "./ConnectRepository";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectGitRepository_Project on Project {
     id
     account {
@@ -236,9 +236,9 @@ const GitOptionsForm = ({
 };
 
 export const ProjectGitRepository = (props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) => {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const RepoIcon = project.repository
     ? getRepositoryIcon(project.repository.__typename)
     : null;
