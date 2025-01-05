@@ -16,7 +16,7 @@ import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 
@@ -451,7 +451,7 @@ export function useSearchState() {
   return context;
 }
 
-const BuildDiffStateFragment = graphql(`
+const _BuildDiffStateFragment = graphql(`
   fragment BuildDiffState_Build on Build {
     id
     stats {
@@ -467,15 +467,14 @@ const BuildDiffStateFragment = graphql(`
   }
 `);
 
-type BuildStats = DocumentType<typeof BuildDiffStateFragment>["stats"];
+type BuildStats = DocumentType<typeof _BuildDiffStateFragment>["stats"];
 
 export function BuildDiffProvider(props: {
   children: React.ReactNode;
-  build: FragmentType<typeof BuildDiffStateFragment> | null;
+  build: DocumentType<typeof _BuildDiffStateFragment> | null;
   params: BuildParams;
 }) {
-  const { children, params } = props;
-  const build = useFragment(BuildDiffStateFragment, props.build);
+  const { children, params, build } = props;
   const stats = build?.stats ?? null;
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);

@@ -1,12 +1,11 @@
 import { memo } from "react";
 import { AlertTriangleIcon } from "lucide-react";
 
-import { graphql } from "@/gql";
-import { FragmentType, useFragment } from "@/gql/fragment-masking";
+import { DocumentType, graphql } from "@/gql";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment OvercapacityBanner_Account on Account {
     plan {
       id
@@ -20,10 +19,9 @@ const AccountFragment = graphql(`
 export const OvercapacityBanner = memo(
   (props: {
     accountSlug: string;
-    account: FragmentType<typeof AccountFragment>;
+    account: DocumentType<typeof _AccountFragment>;
   }) => {
-    const { accountSlug } = props;
-    const account = useFragment(AccountFragment, props.account);
+    const { accountSlug, account } = props;
     const { plan, consumptionRatio } = account;
     const visible = plan && !plan.usageBased && consumptionRatio >= 0.9;
     if (!visible) {

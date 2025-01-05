@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { clsx } from "clsx";
 import { Button as RACButton } from "react-aria-components";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
@@ -125,7 +125,7 @@ function StatCount({ icon, count, color, tooltip }: StatCountProps) {
   return <Tooltip content={tooltip}>{element}</Tooltip>;
 }
 
-const BuildStatsFragment = graphql(`
+const _BuildStatsFragment = graphql(`
   fragment BuildStatsIndicator_BuildStats on BuildStats {
     total
     failure
@@ -138,17 +138,16 @@ const BuildStatsFragment = graphql(`
 `);
 
 export const BuildStatsIndicator = memo(function BuildStatsIndicator({
-  stats: rawStats,
+  stats,
   onClickGroup,
   className,
   tooltip = true,
 }: {
-  stats: FragmentType<typeof BuildStatsFragment>;
+  stats: DocumentType<typeof _BuildStatsFragment>;
   onClickGroup?: (group: DiffGroup["name"]) => void;
   className?: string;
   tooltip?: boolean;
 }) {
-  const stats = useFragment(BuildStatsFragment, rawStats);
   return (
     <div className={clsx(className, "flex items-center")}>
       {GROUPS.map((group) => {

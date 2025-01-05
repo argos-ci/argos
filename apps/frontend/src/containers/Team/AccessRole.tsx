@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { TeamDefaultUserLevel } from "@/gql/graphql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
@@ -9,7 +9,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormRadio, FormRadioGroup } from "@/ui/FormRadio";
 import { Link } from "@/ui/Link";
 
-const TeamFragment = graphql(`
+const _TeamFragment = graphql(`
   fragment TeamAccessRole_Team on Team {
     id
     defaultUserLevel
@@ -34,9 +34,9 @@ type Inputs = {
 };
 
 export function TeamAccessRole(props: {
-  team: FragmentType<typeof TeamFragment>;
+  team: DocumentType<typeof _TeamFragment>;
 }) {
-  const team = useFragment(TeamFragment, props.team);
+  const { team } = props;
   const form = useForm<Inputs>({
     defaultValues: {
       level: team.defaultUserLevel,

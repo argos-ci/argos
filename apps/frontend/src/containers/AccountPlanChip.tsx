@@ -1,8 +1,8 @@
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Chip, ChipColor } from "@/ui/Chip";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment AccountPlanChip_Account on Account {
     subscriptionStatus
     plan {
@@ -13,10 +13,10 @@ const AccountFragment = graphql(`
 `);
 
 export const AccountPlanChip = (props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
   className?: string;
 }) => {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const chipProps: { color: ChipColor; children: string } | null = (() => {
     switch (account.subscriptionStatus) {
       case AccountSubscriptionStatus.Active:

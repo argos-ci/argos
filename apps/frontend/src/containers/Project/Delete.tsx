@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -121,7 +121,7 @@ function DeleteProjectButton(props: DeleteProjectButtonProps) {
   );
 }
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectDelete_Project on Project {
     id
     name
@@ -133,9 +133,9 @@ const ProjectFragment = graphql(`
 `);
 
 export function ProjectDelete(props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   return (
     <Card intent="danger">
       <CardBody>

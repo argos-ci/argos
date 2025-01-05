@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
@@ -44,7 +44,7 @@ const parseVisibility = (visibility: Inputs["visibility"]): boolean | null => {
   }
 };
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectVisibility_Project on Project {
     id
     private
@@ -57,9 +57,9 @@ const ProjectFragment = graphql(`
 `);
 
 export const ProjectVisibility = (props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) => {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const form = useForm<Inputs>({
     defaultValues: {
       visibility: formatVisibility(project.private ?? null),

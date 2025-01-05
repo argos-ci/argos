@@ -3,14 +3,14 @@ import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
-const PaymentBannerFragment = graphql(`
+const _PaymentBannerFragment = graphql(`
   fragment PaymentBanner_Account on Account {
     id
     subscriptionStatus
@@ -86,8 +86,8 @@ function BannerTemplate(props: {
 }
 
 export const PaymentBanner = memo(
-  (props: { account: FragmentType<typeof PaymentBannerFragment> }) => {
-    const account = useFragment(PaymentBannerFragment, props.account);
+  (props: { account: DocumentType<typeof _PaymentBannerFragment> }) => {
+    const { account } = props;
     const { data } = useSuspenseQuery(PaymentBannerQuery);
 
     const { subscription, subscriptionStatus, permissions, stripeCustomerId } =

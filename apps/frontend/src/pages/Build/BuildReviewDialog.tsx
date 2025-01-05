@@ -1,7 +1,7 @@
 import { createContext, memo, use, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ValidationStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogText,
   DialogTitle,
+  useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
@@ -20,7 +21,7 @@ import { useSetValidationStatusMutation } from "./BuildReviewAction";
 import { BuildReviewButton } from "./BuildReviewButton";
 import { useBuildReviewSummary } from "./BuildReviewState";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment BuildReviewDialog_Project on Project {
     ...BuildReviewButton_Project
     build(number: $buildNumber) {
@@ -54,13 +55,13 @@ export function useReviewDialog() {
 const BuildReviewDialog = memo(function BuildReviewDialog(props: {
   isOpen: NonNullable<ModalProps["isOpen"]>;
   onOpenChange: NonNullable<ModalProps["onOpenChange"]>;
-  project: DocumentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
+  const { project } = props;
   const summary = useBuildReviewSummary();
-  const [setValidationStatus, { loading, error }] =
-    useSetValidationStatusMutation();
-  const hasBuild = Boolean(props.project.build);
-  const disabled = !hasBuild || loading;
+  if (!project.build) {
+    return null;
+  }
   return (
     <Modal
       isOpen={props.isOpen}
@@ -69,43 +70,7 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
     >
       {(() => {
         if (summary.pending.length === 0 && summary.rejected.length === 0) {
-          return (
-            <Dialog size="medium">
-              <DialogBody>
-                <DialogTitle>Finish your review</DialogTitle>
-                <DialogText>
-                  <strong>All changes have been marked as accepted.</strong>
-                  <br />
-                  Approve the changes to submit your review.
-                </DialogText>
-              </DialogBody>
-              <DialogFooter>
-                {error && (
-                  <FormError>{getGraphQLErrorMessage(error)}</FormError>
-                )}
-                <DialogDismiss>Cancel</DialogDismiss>
-                <Button
-                  isDisabled={disabled}
-                  variant="primary"
-                  autoFocus
-                  onPress={() => {
-                    if (!props.project.build) {
-                      return;
-                    }
-                    setValidationStatus({
-                      variables: {
-                        buildId: props.project.build.id,
-                        validationStatus: ValidationStatus.Accepted,
-                      },
-                    }).catch(() => {});
-                    props.onOpenChange(false);
-                  }}
-                >
-                  Approve changes
-                </Button>
-              </DialogFooter>
-            </Dialog>
-          );
+          return <FinishReviewAcceptedDialog build={project.build} />;
         }
         return (
           <Dialog size="medium">
@@ -128,7 +93,6 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
               </DialogText>
             </DialogBody>
             <DialogFooter>
-              {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
               <DialogDismiss>Cancel</DialogDismiss>
               <BuildReviewButton
                 project={props.project}
@@ -145,11 +109,52 @@ const BuildReviewDialog = memo(function BuildReviewDialog(props: {
   );
 });
 
+function FinishReviewAcceptedDialog(props: {
+  build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
+}) {
+  const { build } = props;
+  const [setValidationStatus, { loading, error }] =
+    useSetValidationStatusMutation(build);
+  const state = useOverlayTriggerState();
+  return (
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>Finish your review</DialogTitle>
+        <DialogText>
+          <strong>All changes have been marked as accepted.</strong>
+          <br />
+          Approve the changes to submit your review.
+        </DialogText>
+      </DialogBody>
+      <DialogFooter>
+        {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
+        <DialogDismiss>Cancel</DialogDismiss>
+        <Button
+          isDisabled={loading}
+          variant="primary"
+          autoFocus
+          onPress={() => {
+            setValidationStatus({
+              variables: {
+                buildId: build.id,
+                validationStatus: ValidationStatus.Accepted,
+              },
+            }).catch(() => {});
+            state.close();
+          }}
+        >
+          Approve changes
+        </Button>
+      </DialogFooter>
+    </Dialog>
+  );
+}
+
 export function BuildReviewDialogProvider(props: {
   children: React.ReactNode;
-  project: FragmentType<typeof ProjectFragment> | null;
+  project: DocumentType<typeof _ProjectFragment> | null;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const [isOpen, setIsOpen] = useState(false);
   const value = useMemo(() => ({ setIsOpen }), []);
   return (

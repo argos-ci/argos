@@ -1,9 +1,9 @@
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 
 import { ImageAvatar } from "./ImageAvatar";
 import { InitialAvatar } from "./InitialAvatar";
 
-const AvatarFragment = graphql(`
+const _AvatarFragment = graphql(`
   fragment AccountAvatarFragment on AccountAvatar {
     url(size: 64)
     color
@@ -15,10 +15,10 @@ export function AccountAvatar(props: {
   ref?: React.Ref<HTMLElement>;
   className?: string;
   size?: number;
-  avatar: FragmentType<typeof AvatarFragment>;
+  avatar: DocumentType<typeof _AvatarFragment>;
   alt?: string;
 }) {
-  const avatar = useFragment(AvatarFragment, props.avatar);
+  const { avatar } = props;
   const size = props.size ?? 32;
   if (!avatar.url) {
     return (

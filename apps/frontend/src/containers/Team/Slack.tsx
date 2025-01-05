@@ -1,6 +1,6 @@
 import { useMutation } from "@apollo/client";
 
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamSlack_AccountFragment } from "@/gql/graphql";
 import { useAccountContext } from "@/pages/Account";
 import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
@@ -16,7 +16,7 @@ import { Time } from "@/ui/Time";
 
 import { SlackColoredLogo } from "../Slack";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment TeamSlack_Account on Account {
     id
     slackInstallation {
@@ -29,9 +29,9 @@ const AccountFragment = graphql(`
 `);
 
 export function TeamSlack(props: {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) {
-  const account = useFragment(AccountFragment, props.account);
+  const { account } = props;
   const { permissions } = useAccountContext();
   const hasAdminPermission = permissions.includes(AccountPermission.Admin);
   return (
@@ -91,7 +91,7 @@ const UninstallSlackMutation = graphql(`
 `);
 
 function DisconnectSlackButton(props: {
-  account: DocumentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
 }) {
   const [uninstallSlack] = useMutation(UninstallSlackMutation, {
     variables: { accountId: props.account.id },

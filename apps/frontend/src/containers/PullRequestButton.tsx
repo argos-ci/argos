@@ -7,7 +7,7 @@ import {
 import { clsx } from "clsx";
 import { FocusableOptions } from "react-aria";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { PullRequestState } from "@/gql/graphql";
 import { Button, ButtonIcon, ButtonSize, LinkButton } from "@/ui/Button";
 import { Time } from "@/ui/Time";
@@ -15,7 +15,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { ImageAvatar } from "./ImageAvatar";
 
-const PullRequestStatusIconFragment = graphql(`
+const _PullRequestStatusIconFragment = graphql(`
   fragment PullRequestStatusIcon_PullRequest on PullRequest {
     draft
     merged
@@ -24,12 +24,9 @@ const PullRequestStatusIconFragment = graphql(`
 `);
 
 const PullRequestStatusIcon = (props: {
-  pullRequest: FragmentType<typeof PullRequestStatusIconFragment>;
+  pullRequest: DocumentType<typeof _PullRequestStatusIconFragment>;
 }) => {
-  const pullRequest = useFragment(
-    PullRequestStatusIconFragment,
-    props.pullRequest,
-  );
+  const { pullRequest } = props;
 
   if (pullRequest.merged) {
     return (
@@ -63,7 +60,7 @@ const PullRequestStatusIcon = (props: {
   }
 };
 
-const PullRequestInfoFragment = graphql(`
+const _PullRequestInfoFragment = graphql(`
   fragment PullRequestInfo_PullRequest on PullRequest {
     title
     draft
@@ -86,9 +83,9 @@ const PullRequestInfoFragment = graphql(`
 `);
 
 function PullRequestInfo(props: {
-  pullRequest: FragmentType<typeof PullRequestInfoFragment>;
+  pullRequest: DocumentType<typeof _PullRequestInfoFragment>;
 }) {
-  const pullRequest = useFragment(PullRequestInfoFragment, props.pullRequest);
+  const { pullRequest } = props;
   if (!pullRequest.title || !pullRequest.date || !pullRequest.creator) {
     return null;
   }
@@ -157,10 +154,10 @@ function PullRequestInfo(props: {
 }
 
 function PullRequestInfoTooltip(props: {
-  pullRequest: FragmentType<typeof PullRequestInfoFragment>;
+  pullRequest: DocumentType<typeof _PullRequestInfoFragment>;
   children: React.ReactElement<FocusableOptions>;
 }) {
-  const pullRequest = useFragment(PullRequestInfoFragment, props.pullRequest);
+  const { pullRequest } = props;
   return (
     <Tooltip
       variant="info"
@@ -178,7 +175,7 @@ function PullRequestInfoTooltip(props: {
   );
 }
 
-const PullRequestButtonFragment = graphql(`
+const _PullRequestButtonFragment = graphql(`
   fragment PullRequestButton_PullRequest on PullRequest {
     title
     number
@@ -189,13 +186,13 @@ const PullRequestButtonFragment = graphql(`
 `);
 
 export function PullRequestButton(props: {
-  pullRequest: FragmentType<typeof PullRequestButtonFragment>;
+  pullRequest: DocumentType<typeof _PullRequestButtonFragment>;
   size?: ButtonSize;
   className?: string;
   target?: string;
   emulateLink?: boolean;
 }) {
-  const pullRequest = useFragment(PullRequestButtonFragment, props.pullRequest);
+  const { pullRequest } = props;
   const ButtonComponent = props.emulateLink ? Button : LinkButton;
   return (
     // Prevent default is not possible with React Aria, so we do a trick here

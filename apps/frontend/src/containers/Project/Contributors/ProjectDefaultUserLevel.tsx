@@ -13,7 +13,7 @@ import {
   ProjectContributorLevelLabel,
   ProjectContributorLevelListBox,
 } from "@/containers/ProjectContributor";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ProjectUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
@@ -32,7 +32,7 @@ import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectDefaultUserLevel_Project on Project {
     id
     defaultUserLevel
@@ -91,7 +91,7 @@ type Inputs = {
 };
 
 function ProjectDefaultUserLevelDialog(props: {
-  project: DocumentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
   const form = useForm<Inputs>({
     defaultValues: {
@@ -136,9 +136,9 @@ function ProjectDefaultUserLevelDialog(props: {
 }
 
 export function ProjectDefaultUserLevel(props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   return (
     <DialogTrigger>
       <Button variant="secondary">

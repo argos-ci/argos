@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
+import { assertNever } from "@argos/util/assertNever";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
@@ -155,8 +156,9 @@ function PageContent(props: { accountSlug: string }) {
                   />
                 </>
               );
+            default:
+              assertNever(account);
           }
-          return null;
         })()}
       {isUser && hasAdminPermission && <UserAuth account={account} />}
       {hasAdminPermission && <PlanCard account={account} />}

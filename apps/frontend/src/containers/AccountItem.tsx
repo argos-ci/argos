@@ -1,11 +1,11 @@
 import clsx from "clsx";
 
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 
 import { AccountAvatar } from "./AccountAvatar";
 
-const AccountFragment = graphql(`
+const _AccountFragment = graphql(`
   fragment AccountItem_Account on Account {
     id
     slug
@@ -18,16 +18,15 @@ const AccountFragment = graphql(`
 `);
 
 export type AccountItemProps = {
-  account: FragmentType<typeof AccountFragment>;
+  account: DocumentType<typeof _AccountFragment>;
   showPlan?: boolean;
 } & Omit<React.ComponentPropsWithRef<"div">, "children">;
 
 export function AccountItem({
-  account: accountProp,
+  account,
   showPlan = false,
   ...props
 }: AccountItemProps) {
-  const account = useFragment(AccountFragment, accountProp);
   return (
     <div
       {...props}

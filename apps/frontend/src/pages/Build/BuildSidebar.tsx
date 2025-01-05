@@ -9,7 +9,7 @@ import {
   Tabs,
 } from "react-aria-components";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
@@ -36,7 +36,7 @@ function Tab(
   );
 }
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildSidebar_Build on Build {
     ...BuildInfos_Build
     stats {
@@ -70,10 +70,10 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
 
 export const BuildSidebar = memo(function BuildSidebar(props: {
   repoUrl: string | null;
-  build: FragmentType<typeof BuildFragment>;
+  build: DocumentType<typeof _BuildFragment>;
   params: BuildParams;
 }) {
-  const build = useFragment(BuildFragment, props.build);
+  const { build } = props;
   const { searchMode, setSearchMode } = useSearchModeState();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const enterSearchMode = useCallback(() => {

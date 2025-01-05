@@ -1,6 +1,6 @@
 import { InfoIcon, MoreVerticalIcon } from "lucide-react";
 
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { IconButton } from "@/ui/IconButton";
 import { ListRow } from "@/ui/List";
@@ -46,7 +46,7 @@ export function RemoveMenu(props: {
   );
 }
 
-const UserListRowFragment = graphql(`
+const _UserListRowFragment = graphql(`
   fragment UserListRow_user on User {
     id
     slug
@@ -58,10 +58,10 @@ const UserListRowFragment = graphql(`
 `);
 
 export function UserListRow(props: {
-  user: FragmentType<typeof UserListRowFragment>;
+  user: DocumentType<typeof _UserListRowFragment>;
   children?: React.ReactNode;
 }) {
-  const user = useFragment(UserListRowFragment, props.user);
+  const { user } = props;
   return (
     <ListRow className="items-center px-4 py-2">
       <AccountAvatar avatar={user.avatar} size={36} className="shrink-0" />

@@ -52,6 +52,9 @@ const config: CodegenConfig = {
       config: {
         dedupeFragments: true,
       },
+      presetConfig: {
+        fragmentMasking: false,
+      },
     },
     "apps/frontend/src/gql-fragments.json": {
       plugins: ["fragment-matcher"],

@@ -1,7 +1,7 @@
 import { memo } from "react";
 
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 import { Progress } from "@/ui/Progress";
 
@@ -10,7 +10,7 @@ import { BuildOrphanDialog } from "./BuildOrphanDialog";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
     ...BuildSidebar_Build
     ...BuildStatusDescription_Build
@@ -25,7 +25,7 @@ const BuildFragment = graphql(`
   }
 `);
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
     ...BuildOrphanDialog_Project
     repository {
@@ -38,7 +38,7 @@ const ProjectFragment = graphql(`
 const BuildProgress = memo(function BuildProgress({
   parallel,
 }: {
-  parallel: DocumentType<typeof BuildFragment>["parallel"];
+  parallel: DocumentType<typeof _BuildFragment>["parallel"];
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center gap-10 p-10">
@@ -78,11 +78,10 @@ const BuildProgress = memo(function BuildProgress({
 
 export function BuildWorkspace(props: {
   params: BuildParams;
-  build: FragmentType<typeof BuildFragment>;
-  project: FragmentType<typeof ProjectFragment>;
+  build: DocumentType<typeof _BuildFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const build = useFragment(BuildFragment, props.build);
-  const project = useFragment(ProjectFragment, props.project);
+  const { build, project } = props;
   const repoUrl = project.repository?.url ?? null;
 
   return (

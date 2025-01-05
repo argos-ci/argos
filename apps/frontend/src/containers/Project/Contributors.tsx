@@ -1,4 +1,4 @@
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import {
   Card,
@@ -15,7 +15,7 @@ import { ProjectContributorsList } from "./Contributors/ProjectContributorsList"
 import { ProjectDefaultUserLevel } from "./Contributors/ProjectDefaultUserLevel";
 import { ProjectTeamMembersList } from "./Contributors/ProjectTeamMembersList";
 
-const ProjectFragment = graphql(`
+const _ProjectFragment = graphql(`
   fragment ProjectContributors_Project on Project {
     id
     name
@@ -29,9 +29,9 @@ const ProjectFragment = graphql(`
 `);
 
 export function ProjectContributors(props: {
-  project: FragmentType<typeof ProjectFragment>;
+  project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const project = useFragment(ProjectFragment, props.project);
+  const { project } = props;
   const hasAdminPermission = project.permissions.includes(
     ProjectPermission.Admin,
   );

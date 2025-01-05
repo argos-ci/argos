@@ -6,7 +6,7 @@ import moment from "moment";
 
 import { config } from "@/config";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   AccountSubscriptionProvider,
   AccountSubscriptionStatus,
@@ -30,7 +30,7 @@ import { AccountPlanChip } from "./AccountPlanChip";
 
 const contactHref = `mailto:${config.contactEmail}`;
 
-const PlanCardFragment = graphql(`
+const _PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
     __typename
     id
@@ -73,7 +73,9 @@ type Project = {
   currentPeriodScreenshots: number;
 };
 
-function PlanStatus(props: { account: DocumentType<typeof PlanCardFragment> }) {
+function PlanStatus(props: {
+  account: DocumentType<typeof _PlanCardFragment>;
+}) {
   const { account } = props;
   switch (account.subscriptionStatus) {
     case AccountSubscriptionStatus.TrialExpired: {
@@ -246,7 +248,7 @@ function ManageSubscriptionButton({
   account,
   children = "Manage your subscription",
 }: {
-  account: DocumentType<typeof PlanCardFragment>;
+  account: DocumentType<typeof _PlanCardFragment>;
   children: ReactNode;
 }) {
   const provider = account.subscription?.provider ?? null;
@@ -290,7 +292,7 @@ function Period({ start, end }: { start: string; end: string }) {
 }
 
 function PlanCardFooter(props: {
-  account: DocumentType<typeof PlanCardFragment>;
+  account: DocumentType<typeof _PlanCardFragment>;
 }) {
   const { account } = props;
   if (account.hasForcedPlan) {
@@ -374,9 +376,9 @@ function PlanCardFooter(props: {
 }
 
 export function PlanCard(props: {
-  account: FragmentType<typeof PlanCardFragment>;
+  account: DocumentType<typeof _PlanCardFragment>;
 }) {
-  const account = useFragment(PlanCardFragment, props.account);
+  const { account } = props;
   const { plan, projects, periodStartDate, periodEndDate } = account;
 
   return (

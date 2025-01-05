@@ -1,4 +1,4 @@
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 import { Chip, ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
@@ -7,7 +7,7 @@ import { getBuildDescriptor } from "@/util/build";
 import { AccountAvatar } from "./AccountAvatar";
 import { BuildStatusDescription } from "./BuildStatusDescription";
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildStatusChip_Build on Build {
     ...BuildStatusDescription_Build
     type
@@ -27,10 +27,10 @@ const BuildFragment = graphql(`
 `);
 
 export function BuildStatusChip(props: {
-  build: FragmentType<typeof BuildFragment>;
+  build: DocumentType<typeof _BuildFragment>;
   scale?: ChipProps["scale"];
 }) {
-  const build = useFragment(BuildFragment, props.build);
+  const { build } = props;
   const descriptor = getBuildDescriptor(build.type, build.status);
   const reviewWithUsers = build.reviews.filter((review) => review.user);
   return (
@@ -48,7 +48,7 @@ export function BuildStatusChip(props: {
   );
 }
 
-function getChipLabel(build: DocumentType<typeof BuildFragment>) {
+function getChipLabel(build: DocumentType<typeof _BuildFragment>) {
   switch (build.status) {
     case BuildStatus.Rejected:
     case BuildStatus.Accepted: {
@@ -66,7 +66,7 @@ function getChipLabel(build: DocumentType<typeof BuildFragment>) {
  * @example by Greg Bergé, Jeremy Sfez and 2 others
  */
 function getReviewerList(
-  reviews: DocumentType<typeof BuildFragment>["reviews"],
+  reviews: DocumentType<typeof _BuildFragment>["reviews"],
 ) {
   const reviewerNames = reviews
     .map((review) => review.user?.name)
@@ -83,7 +83,7 @@ function getReviewerList(
 }
 
 function BuildReviewUsers(props: {
-  reviews: DocumentType<typeof BuildFragment>["reviews"];
+  reviews: DocumentType<typeof _BuildFragment>["reviews"];
 }) {
   if (props.reviews.length === 0) {
     return null;

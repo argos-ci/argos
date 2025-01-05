@@ -4,7 +4,7 @@ import { useDebounce } from "use-debounce";
 
 import { useSafeQuery } from "@/containers/Apollo";
 import { UserListRow } from "@/containers/UserList";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -55,7 +55,7 @@ const TeamContributorsQuery = graphql(`
   }
 `);
 
-const ContributorListRowFragment = graphql(`
+const _ContributorListRowFragment = graphql(`
   fragment ContributorListRow_user on User {
     id
     projectsContributedOn(first: 1, projectId: $projectId) {
@@ -70,9 +70,9 @@ const ContributorListRowFragment = graphql(`
 
 function ContributorListRow(props: {
   projectId: string;
-  user: FragmentType<typeof ContributorListRowFragment>;
+  user: DocumentType<typeof _ContributorListRowFragment>;
 }) {
-  const user = useFragment(ContributorListRowFragment, props.user);
+  const { user } = props;
   const contributor = user.projectsContributedOn.edges[0] ?? null;
   return (
     <UserListRow user={user}>

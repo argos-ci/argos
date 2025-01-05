@@ -3,7 +3,7 @@ import { useMutation } from "@apollo/client";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
-import { FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   AccountSubscriptionStatus,
   TeamGitHubSso_TeamFragment,
@@ -32,7 +32,7 @@ import { Modal } from "@/ui/Modal";
 import { GithubAccountLink } from "../GithubAccountLink";
 import { ConfigureGitHubSSO } from "./GitHubSSO/Configure";
 
-const TeamFragment = graphql(`
+const _TeamFragment = graphql(`
   fragment TeamGitHubSSO_Team on Team {
     id
     plan {
@@ -103,10 +103,9 @@ const DisableButton = memo(function DisableButton(props: {
 });
 
 export function TeamGitHubSSO(props: {
-  team: FragmentType<typeof TeamFragment>;
+  team: DocumentType<typeof _TeamFragment>;
 }) {
-  const team = useFragment(TeamFragment, props.team);
-
+  const { team } = props;
   const hasActiveSubscription =
     team.subscriptionStatus === AccountSubscriptionStatus.Active;
   const priced = !team.plan?.githubSsoIncluded;

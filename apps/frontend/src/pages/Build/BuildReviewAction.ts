@@ -1,6 +1,6 @@
 import { MutationHookOptions, useMutation } from "@apollo/client";
 
-import { graphql } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import {
   BuildReviewAction_SetValidationStatusMutation,
   BuildStatus,
@@ -25,7 +25,16 @@ const SetValidationStatusMutation = graphql(`
   }
 `);
 
+const _BuildFragment = graphql(`
+  fragment BuildReviewAction_Build on Build {
+    id
+    # Invalidate the cache for the build status chip
+    ...BuildStatusChip_Build
+  }
+`);
+
 export function useSetValidationStatusMutation(
+  build: DocumentType<typeof _BuildFragment>,
   options?: MutationHookOptions<
     BuildReviewAction_SetValidationStatusMutation,
     Exact<{
@@ -37,7 +46,7 @@ export function useSetValidationStatusMutation(
   return useMutation(SetValidationStatusMutation, {
     optimisticResponse: (variables) => ({
       setValidationStatus: {
-        id: variables.buildId,
+        ...build,
         status:
           variables.validationStatus === ValidationStatus.Accepted
             ? BuildStatus.Accepted

@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { DownloadIcon } from "lucide-react";
 
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import { IconButtonLink } from "@/ui/IconButton";
@@ -37,7 +37,7 @@ import {
 } from "./useBuildDiffViewModeState";
 import { useZoomTransform, ZoomerSyncProvider, ZoomPane } from "./Zoomer";
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
     id
     stats {
@@ -57,7 +57,7 @@ const BuildFragment = graphql(`
   }
 `);
 
-type BuildFragmentDocument = DocumentType<typeof BuildFragment>;
+type BuildFragmentDocument = DocumentType<typeof _BuildFragment>;
 
 const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string; name: string }) => {
@@ -708,10 +708,10 @@ const useScrollToTop = (
 };
 
 export function BuildDetail(props: {
-  build: FragmentType<typeof BuildFragment>;
+  build: BuildFragmentDocument;
   repoUrl: string | null;
 }) {
-  const build = useFragment(BuildFragment, props.build);
+  const { build } = props;
   const { activeDiff } = useBuildDiffState();
   const containerRef = useRef<HTMLDivElement>(null);
   useScrollToTop(containerRef, activeDiff);

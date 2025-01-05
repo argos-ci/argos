@@ -5,7 +5,7 @@ import {
   BuildModeDescription,
   BuildModeLabel,
 } from "@/containers/BuildModeIndicator";
-import { DocumentType, FragmentType, graphql, useFragment } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
@@ -122,7 +122,7 @@ function TestReportStatusLabel(props: { status: TestReportStatus }) {
   }
 }
 
-const BuildFragment = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
     createdAt
     name
@@ -164,10 +164,10 @@ function Description(props: { children: React.ReactNode }) {
 
 export function BuildInfos(props: {
   repoUrl: string | null;
-  build: FragmentType<typeof BuildFragment>;
+  build: DocumentType<typeof _BuildFragment>;
   params: BuildParams;
 }) {
-  const build = useFragment(BuildFragment, props.build);
+  const { build } = props;
   return (
     <dl>
       <Dt>Created</Dt>
@@ -270,7 +270,7 @@ export function BuildInfos(props: {
 function BaseBranchResolvedFrom(props: {
   resolvedFrom: BaseBranchResolution;
   projectUrl: string;
-  pullRequest: DocumentType<typeof BuildFragment>["pullRequest"];
+  pullRequest: DocumentType<typeof _BuildFragment>["pullRequest"];
 }) {
   const { resolvedFrom, pullRequest } = props;
   switch (resolvedFrom) {
@@ -302,7 +302,7 @@ function BaseBranchResolvedFrom(props: {
 }
 
 function PullRequestLink(props: {
-  pullRequest: NonNullable<DocumentType<typeof BuildFragment>["pullRequest"]>;
+  pullRequest: NonNullable<DocumentType<typeof _BuildFragment>["pullRequest"]>;
 }) {
   return (
     <Link className="font-mono" href={props.pullRequest.url}>
