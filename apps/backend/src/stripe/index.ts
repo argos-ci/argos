@@ -82,19 +82,25 @@ async function getStripeSubscriptionFromSession(
   return session.subscription;
 }
 
-function getFirstItemFromStripeSubscription(
+function getPlanItemFromStripeSubscription(
   subscription: Stripe.Subscription,
 ): Stripe.SubscriptionItem {
-  const first = subscription.items.data[0];
-  invariant(first, "no item found in Stripe subscription");
-  return first;
+  // All addons prices have a metadata (type: "addon")
+  // all others are considered as plan prices.
+  const planItems = subscription.items.data.filter(
+    (item) => item.metadata["type"] !== "addon",
+  );
+  const item = planItems[0];
+  invariant(item, "no plan items found");
+  invariant(planItems.length === 1, "multiple plan items found");
+  return item;
 }
 
-function getFirstProductIdFromSubscription(
+function getPlanProductIdFromStripeSubscription(
   subscription: Stripe.Subscription,
 ): string {
-  const first = getFirstItemFromStripeSubscription(subscription);
-  const { product } = first.price;
+  const item = getPlanItemFromStripeSubscription(subscription);
+  const { product } = item.price;
   if (typeof product === "string") {
     return product;
   }
@@ -171,7 +177,7 @@ function checkIsFlatTier(tier: Stripe.Price.Tier): tier is StripeFlatTier {
 async function getIncludedScreenshotsFromStripeSubscription(
   stripeSubscription: Stripe.Subscription,
 ) {
-  const firstItem = getFirstItemFromStripeSubscription(stripeSubscription);
+  const firstItem = getPlanItemFromStripeSubscription(stripeSubscription);
   const price = firstItem.price;
 
   switch (price.billing_scheme) {
@@ -216,7 +222,8 @@ async function getIncludedScreenshotsFromStripeSubscription(
 async function getArgosSubscriptionDataFromStripe(
   stripeSubscription: Stripe.Subscription,
 ) {
-  const stripeProductId = getFirstProductIdFromSubscription(stripeSubscription);
+  const stripeProductId =
+    getPlanProductIdFromStripeSubscription(stripeSubscription);
   const [plan, paymentMethodFilled, includedScreenshots] = await Promise.all([
     getPlanFromStripeProductId(stripeProductId),
     checkSubscriptionPaymentMethodFilled(stripeSubscription),
@@ -335,7 +342,7 @@ export async function updateStripeUsage({
       subscription.stripeSubscriptionId,
     );
 
-    const item = getFirstItemFromStripeSubscription(stripeSubscription);
+    const item = getPlanItemFromStripeSubscription(stripeSubscription);
 
     await stripe.subscriptionItems.createUsageRecord(item.id, {
       action: "set",
