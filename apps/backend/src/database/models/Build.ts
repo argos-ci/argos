@@ -515,12 +515,23 @@ export class Build extends Model {
       Build.getStatuses(builds),
       Build.getReviewStatuses(builds),
     ]);
-    const aggregateStatuses = builds.map((build, index) => {
-      const status =
-        reviewStatuses[index] || build.conclusion || statuses[index];
-      return BuildAggregatedStatusSchema.parse(status);
+    return builds.map((build, index) => {
+      if (reviewStatuses[index]) {
+        return reviewStatuses[index];
+      }
+      if (build.conclusion) {
+        return build.conclusion;
+      }
+      invariant(statuses[index], "status should be fetched");
+      // A progress status at this point means that the build has just been
+      // completed while the status was being fetched.
+      // So we consider it as progress.
+      if (statuses[index] === "complete") {
+        return "progress";
+      }
+
+      return statuses[index];
     });
-    return aggregateStatuses;
   }
 
   /**
