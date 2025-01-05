@@ -4,6 +4,7 @@ import { TransactionOrKnex } from "objection";
 import {
   Build,
   BuildNotification,
+  BuildReview,
   Capture,
   Crawl,
   Project,
@@ -73,6 +74,10 @@ export async function unsafe_deleteProject(args: {
       .where("screenshotBucket.projectId", args.projectId)
       .delete();
     await BuildNotification.query(trx)
+      .joinRelated("build")
+      .where("build.projectId", args.projectId)
+      .delete();
+    await BuildReview.query(trx)
       .joinRelated("build")
       .where("build.projectId", args.projectId)
       .delete();
