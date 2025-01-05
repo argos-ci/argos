@@ -5,8 +5,6 @@ import {
   Build,
   BuildNotification,
   BuildReview,
-  Capture,
-  Crawl,
   Project,
   Screenshot,
   ScreenshotBucket,
@@ -57,14 +55,6 @@ export async function unsafe_deleteProject(args: {
   trx?: TransactionOrKnex;
 }) {
   await transaction(args.trx, async (trx) => {
-    await Capture.query(trx)
-      .joinRelated("crawl.build")
-      .where("crawl:build.projectId", args.projectId)
-      .delete();
-    await Crawl.query(trx)
-      .joinRelated("build")
-      .where("build.projectId", args.projectId)
-      .delete();
     await ScreenshotDiff.query(trx)
       .joinRelated("build")
       .where("build.projectId", args.projectId)

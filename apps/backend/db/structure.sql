@@ -297,82 +297,6 @@ ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
 
 
 --
--- Name: captures; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.captures (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "jobStatus" public.job_status NOT NULL,
-    "crawlId" bigint NOT NULL,
-    "screenshotId" bigint,
-    "fileId" bigint,
-    url character varying(255) NOT NULL
-);
-
-
-ALTER TABLE public.captures OWNER TO postgres;
-
---
--- Name: captures_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.captures_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.captures_id_seq OWNER TO postgres;
-
---
--- Name: captures_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.captures_id_seq OWNED BY public.captures.id;
-
-
---
--- Name: crawls; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.crawls (
-    id bigint NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    "jobStatus" public.job_status NOT NULL,
-    "buildId" bigint NOT NULL,
-    "baseUrl" character varying(255) NOT NULL
-);
-
-
-ALTER TABLE public.crawls OWNER TO postgres;
-
---
--- Name: crawls_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.crawls_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.crawls_id_seq OWNER TO postgres;
-
---
--- Name: crawls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.crawls_id_seq OWNED BY public.crawls.id;
-
-
---
 -- Name: files; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1437,20 +1361,6 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
--- Name: captures id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.captures ALTER COLUMN id SET DEFAULT nextval('public.captures_id_seq'::regclass);
-
-
---
--- Name: crawls id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.crawls ALTER COLUMN id SET DEFAULT nextval('public.crawls_id_seq'::regclass);
-
-
---
 -- Name: files id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1687,22 +1597,6 @@ ALTER TABLE ONLY public.build_shards
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
-
-
---
--- Name: captures captures_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.captures
-    ADD CONSTRAINT captures_pkey PRIMARY KEY (id);
-
-
---
--- Name: crawls crawls_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.crawls
-    ADD CONSTRAINT crawls_pkey PRIMARY KEY (id);
 
 
 --
@@ -2111,48 +2005,6 @@ CREATE INDEX builds_projectid_index ON public.builds USING btree ("projectId");
 --
 
 CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
-
-
---
--- Name: captures_crawlid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX captures_crawlid_index ON public.captures USING btree ("crawlId");
-
-
---
--- Name: captures_fileid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX captures_fileid_index ON public.captures USING btree ("fileId");
-
-
---
--- Name: captures_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX captures_jobstatus_index ON public.captures USING btree ("jobStatus");
-
-
---
--- Name: captures_screenshotid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX captures_screenshotid_index ON public.captures USING btree ("screenshotId");
-
-
---
--- Name: crawls_buildid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX crawls_buildid_index ON public.crawls USING btree ("buildId");
-
-
---
--- Name: crawls_jobstatus_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX crawls_jobstatus_index ON public.crawls USING btree ("jobStatus");
 
 
 --
@@ -2576,38 +2428,6 @@ ALTER TABLE ONLY public.builds
 
 
 --
--- Name: captures captures_crawlid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.captures
-    ADD CONSTRAINT captures_crawlid_foreign FOREIGN KEY ("crawlId") REFERENCES public.crawls(id);
-
-
---
--- Name: captures captures_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.captures
-    ADD CONSTRAINT captures_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
-
-
---
--- Name: captures captures_screenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.captures
-    ADD CONSTRAINT captures_screenshotid_foreign FOREIGN KEY ("screenshotId") REFERENCES public.screenshots(id);
-
-
---
--- Name: crawls crawls_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.crawls
-    ADD CONSTRAINT crawls_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
-
-
---
 -- Name: github_account_members github_account_members_githubaccountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3011,3 +2831,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024123
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250102150800_build-review.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103090503_remove-validation-status-column.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103131406_plan-interval.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105130307_remove-crawls-captures.js', 1, NOW());
