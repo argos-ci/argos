@@ -3,6 +3,7 @@ import type { DocumentNode } from "graphql";
 import * as Account from "./Account.js";
 import * as AccountSubscription from "./AccountSubscription.js";
 import * as Build from "./Build.js";
+import * as BuildReview from "./BuildReview.js";
 import * as Connection from "./Connection.js";
 import * as DateDefs from "./Date.js";
 import * as GhApiInstallation from "./GhApiInstallation.js";
@@ -36,6 +37,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Account,
   AccountSubscription,
   Build,
+  BuildReview,
   Connection,
   DateDefs,
   GhApiInstallation,

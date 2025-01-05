@@ -6,6 +6,7 @@ import {
   Account,
   Build,
   BuildAggregatedStatus,
+  BuildReview,
   File,
   GithubAccount,
   GithubInstallation,
@@ -193,12 +194,42 @@ function createGhApiInstallationLoader() {
   });
 }
 
+function createBuildUniqueReviewsLoader() {
+  return new DataLoader<string, BuildReview[]>(async (inputs) => {
+    const reviews = await BuildReview.query()
+      .whereIn(
+        "id",
+        BuildReview.query()
+          .select("id")
+          .whereIn("buildId", inputs as string[])
+          .distinctOn(["buildId", "userId"])
+          .orderBy([
+            { column: "buildId", order: "desc" },
+            { column: "userId", order: "desc" },
+            { column: "createdAt", order: "desc" },
+          ]),
+      )
+      .orderBy("createdAt", "desc");
+    const reviewsMap = reviews.reduce<Record<string, BuildReview[]>>(
+      (map, review) => {
+        const array = map[review.buildId] ?? [];
+        array.push(review);
+        map[review.buildId] = array;
+        return map;
+      },
+      {},
+    );
+    return inputs.map((id) => reviewsMap[id] ?? []);
+  });
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
+  BuildUniqueReviews: createBuildUniqueReviewsLoader(),
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),
   GithubAccount: createModelLoader(GithubAccount),

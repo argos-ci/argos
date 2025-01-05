@@ -16,6 +16,7 @@ export function AccountAvatar(props: {
   className?: string;
   size?: number;
   avatar: FragmentType<typeof AvatarFragment>;
+  alt?: string;
 }) {
   const avatar = useFragment(AvatarFragment, props.avatar);
   const size = props.size ?? 32;
@@ -26,6 +27,7 @@ export function AccountAvatar(props: {
         initial={avatar.initial}
         color={avatar.color}
         size={size}
+        alt={props.alt}
         className={props.className}
       />
     );
@@ -36,6 +38,7 @@ export function AccountAvatar(props: {
       url={avatar.url}
       size={size}
       className={props.className}
+      alt={props.alt}
     />
   );
 }

@@ -20,6 +20,7 @@
     "Node": [
       "AccountSubscription",
       "Build",
+      "BuildReview",
       "GhApiInstallation",
       "GhApiInstallationAccount",
       "GhApiRepository",

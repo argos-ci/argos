@@ -1,9 +1,15 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import clsx from "clsx";
 
 import { FragmentType, graphql, useFragment } from "@/gql";
 import { BuildMode, BuildStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
+import { Time } from "@/ui/Time";
+import { buildStatusDescriptors } from "@/util/build";
+import { buildReviewDescriptors } from "@/util/build-review";
+
+import { AccountAvatar } from "./AccountAvatar";
 
 const BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
@@ -19,12 +25,13 @@ const BuildFragment = graphql(`
       received
       nonce
     }
+    ...ReviewDescription_Build
   }
 `);
 
-export const BuildStatusDescription = (props: {
+export function BuildStatusDescription(props: {
   build: FragmentType<typeof BuildFragment>;
-}) => {
+}) {
   const build = useFragment(BuildFragment, props.build);
 
   if (build.status === BuildStatus.Expired) {
@@ -55,10 +62,11 @@ export const BuildStatusDescription = (props: {
   switch (build.type) {
     case "orphan":
       switch (build.status) {
-        case BuildStatus.Accepted:
-          return <>Changes have been accepted by a user.</>;
+        case BuildStatus.Accepted: {
+          return <ReviewDescription build={build} />;
+        }
         case BuildStatus.Rejected:
-          return <>Changes have been rejected by a user.</>;
+          return <ReviewDescription build={build} />;
         default: {
           switch (build.mode) {
             case BuildMode.Ci:
@@ -142,9 +150,9 @@ export const BuildStatusDescription = (props: {
         case BuildStatus.Progress:
           return <>This build is in progress.</>;
         case BuildStatus.Accepted:
-          return <>Changes have been accepted by a user.</>;
+          return <ReviewDescription build={build} />;
         case BuildStatus.Rejected:
-          return <>Changes have been rejected by a user.</>;
+          return <ReviewDescription build={build} />;
         case BuildStatus.Pending:
           return <>This build is scheduled to be processed.</>;
         default:
@@ -164,4 +172,89 @@ export const BuildStatusDescription = (props: {
     default:
       throw new Error(`Unknown build type: ${build.type}`);
   }
-};
+}
+
+const ReviewDescriptionBuildFragment = graphql(`
+  fragment ReviewDescription_Build on Build {
+    status
+    reviews {
+      id
+      ...BuildReviewList_Review
+    }
+  }
+`);
+
+function ReviewDescription(props: {
+  build: FragmentType<typeof ReviewDescriptionBuildFragment>;
+}) {
+  const build = useFragment(ReviewDescriptionBuildFragment, props.build);
+  const descriptor = buildStatusDescriptors[build.status];
+  return (
+    <div className="max-w-sm">
+      <p className="mb-4">
+        This build is <strong>{descriptor.label}</strong> based on the state of
+        its latest review.
+      </p>
+      <div className="rounded border p-2 pb-0">
+        <h3 className="mb-1 text-xs font-semibold">Reviews</h3>
+        <BuildReviewList reviews={build.reviews} />
+      </div>
+    </div>
+  );
+}
+
+const BuildReviewFragment = graphql(`
+  fragment BuildReviewList_Review on BuildReview {
+    id
+    date
+    state
+    user {
+      id
+      name
+      avatar {
+        ...AccountAvatarFragment
+      }
+    }
+  }
+`);
+
+function BuildReviewList(props: {
+  reviews: FragmentType<typeof BuildReviewFragment>[];
+}) {
+  const reviews = useFragment(BuildReviewFragment, props.reviews);
+  return (
+    <ul className="flex flex-col text-sm">
+      {reviews.map((review) => {
+        const descriptor = buildReviewDescriptors[review.state];
+        const Icon = descriptor.icon;
+        return (
+          <li
+            className="flex items-center gap-3 border-b py-2 text-xs last:border-b-0"
+            key={review.id}
+          >
+            <div className="flex items-center">
+              <Icon className={clsx("size-3 shrink-0", descriptor.textColor)} />
+              &nbsp;
+              <strong className="w-14">{descriptor.label}</strong>
+            </div>
+            <div className="text-low">—</div>
+            <div className="flex items-center">
+              <Time date={review.date} tooltip="title" />
+              {review.user && (
+                <>
+                  &nbsp;by&nbsp;
+                  <AccountAvatar
+                    className="shrink-0"
+                    size={16}
+                    avatar={review.user.avatar}
+                  />
+                  &nbsp;{review.user.name}
+                </>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

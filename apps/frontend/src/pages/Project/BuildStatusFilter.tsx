@@ -1,12 +1,12 @@
 import clsx from "clsx";
 import { MenuTrigger } from "react-aria-components";
 
-import { buildStatusDescriptors } from "@/containers/Build";
 import { BuildStatus } from "@/gql/graphql";
 import { Badge } from "@/ui/Badge";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
+import { buildStatusDescriptors } from "@/util/build";
 import { bgColorClassNames, lowTextColorClassNames } from "@/util/colors";
 import { useMultipleSearchParamsState } from "@/util/search-params";
 

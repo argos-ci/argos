@@ -1,14 +1,13 @@
 import { clsx } from "clsx";
 
-type InitialAvatarProps = {
+export function InitialAvatar(props: {
   ref?: React.Ref<HTMLDivElement>;
   className?: string;
   size?: number;
   color: string;
   initial: string;
-};
-
-export function InitialAvatar(props: InitialAvatarProps) {
+  alt?: string;
+}) {
   const size = props.size ?? 32;
   return (
     <div
@@ -22,6 +21,8 @@ export function InitialAvatar(props: InitialAvatarProps) {
         width: size,
         height: size,
       }}
+      role="img"
+      aria-label={props.alt}
     >
       <svg width="100%" height="100%" viewBox="-50 -66 100 100">
         <text

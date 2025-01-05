@@ -19,6 +19,7 @@ const config: CodegenConfig = {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
           Build: "../../database/models/index.js#Build",
+          BuildReview: "../../database/models/index.js#BuildReview",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
           GithubAccount: "../../database/models/index.js#GithubAccount",

@@ -19,6 +19,8 @@ const SetValidationStatusMutation = graphql(`
     ) {
       id
       status
+      # Invalidate the cache for the build status chip
+      ...BuildStatusChip_Build
     }
   }
 `);
