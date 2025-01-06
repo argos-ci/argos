@@ -30,3 +30,8 @@
 Changes and improvements are more than welcome!
 Please make your changes in a specific branch and request to pull into main!
 To learn more about it, have a look at our [CONTRIBUTING.md](/CONTRIBUTING.md).
+
+
+<p align="center">
+  <img src="https://api.lucabubi.me/chart?username=argos-ci&repository=argos&color=violet" alt="Star History github.com/lucabubi/star-history" />
+</p>
