@@ -5,6 +5,7 @@ import {
   Build,
   BuildNotification,
   BuildReview,
+  BuildShard,
   Project,
   Screenshot,
   ScreenshotBucket,
@@ -68,6 +69,10 @@ export async function unsafe_deleteProject(args: {
       .where("build.projectId", args.projectId)
       .delete();
     await BuildReview.query(trx)
+      .joinRelated("build")
+      .where("build.projectId", args.projectId)
+      .delete();
+    await BuildShard.query(trx)
       .joinRelated("build")
       .where("build.projectId", args.projectId)
       .delete();
