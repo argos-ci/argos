@@ -71,8 +71,8 @@ export function BuildOrphanDialog(props: {
                     </p>
 
                     <p className="text-low mt-2">
-                      <LightBulbIcon /> You can configure auto-approved branches
-                      in{" "}
+                      <LightBulbIcon className="inline" /> You can configure
+                      auto-approved branches in{" "}
                       <Link href={`/${project.slug}/settings`}>
                         project's settings
                       </Link>
