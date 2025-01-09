@@ -3,7 +3,9 @@ export const getCommentHeader = () => {
 };
 
 export const getPendingCommentBody = () => {
-  return [getCommentHeader(), "", "Waiting for the first build to start…"].join(
-    "\n",
-  );
+  return [
+    getCommentHeader(),
+    "",
+    "Awaiting the start of a new Argos build…",
+  ].join("\n");
 };
