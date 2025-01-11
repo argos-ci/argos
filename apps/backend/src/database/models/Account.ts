@@ -71,6 +71,7 @@ export class Account extends Model {
       meteredSpendLimitByPeriod: {
         oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
       },
+      blockWhenSpendLimitIsReached: { type: "boolean" },
     },
   });
 
@@ -86,6 +87,7 @@ export class Account extends Model {
   slackInstallationId!: string | null;
   githubLightInstallationId!: string | null;
   meteredSpendLimitByPeriod!: number | null;
+  blockWhenSpendLimitIsReached!: boolean;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
@@ -437,14 +439,13 @@ export class Account extends Model {
           subscription,
           "There should be an active subscription for usage based plans",
         );
-        invariant(
-          subscription.includedScreenshots !== null,
-          "includedScreenshots should be defined for usage based plans",
-        );
-        invariant(
-          subscription.additionalScreenshotPrice !== null,
-          "additionalScreenshotPrice should be defined for usage based plans",
-        );
+
+        if (
+          !subscription.includedScreenshots ||
+          !subscription.additionalScreenshotPrice
+        ) {
+          return 0;
+        }
 
         const overage = Math.max(
           0,

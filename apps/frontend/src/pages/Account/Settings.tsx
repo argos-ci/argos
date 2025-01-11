@@ -17,6 +17,7 @@ import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/Members";
 import { TeamSlack } from "@/containers/Team/Slack";
+import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -54,6 +55,7 @@ const AccountQuery = graphql(`
       ...TeamAccessRole_Team
       ...TeamGitHubLight_Team
       ...UserAuth_Account
+      ...TeamSpendManagement_Account
     }
   }
 `);
@@ -162,6 +164,7 @@ function PageContent(props: { accountSlug: string }) {
         })()}
       {isUser && hasAdminPermission && <UserAuth account={account} />}
       {hasAdminPermission && <PlanCard account={account} />}
+      {isTeam && <TeamSpendManagement account={account} />}
       {isTeam && <TeamMembers team={account} />}
       {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
       {isTeam && hasAdminPermission && fineGrainedAccessControlIncluded && (

@@ -94,6 +94,7 @@ CREATE TABLE public.accounts (
     "slackInstallationId" bigint,
     "githubLightInstallationId" bigint,
     "meteredSpendLimitByPeriod" integer,
+    "blockWhenSpendLimitIsReached" boolean DEFAULT false NOT NULL,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 

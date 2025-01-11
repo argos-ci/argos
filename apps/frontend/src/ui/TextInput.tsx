@@ -9,7 +9,7 @@ export function TextInput(props: TextInputProps) {
       {...props}
       className={clsx(
         props.className,
-        "bg-app text invalid:border-danger [&:not([disabled])]:hover:border-hover focus:border-active disabled:opacity-disabled aria-invalid:border-danger block w-full appearance-none rounded border px-3 py-2 leading-tight focus:outline-none",
+        "bg-app text [&:not([disabled])]:hover:border-hover focus:border-active disabled:opacity-disabled aria-invalid:border-danger block w-full appearance-none rounded border px-3 py-2 leading-tight focus:outline-none",
       )}
     />
   );

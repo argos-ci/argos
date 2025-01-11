@@ -7,7 +7,7 @@ const scaleClasses: Record<ProgressScale, string> = {
   md: "h-2",
 };
 
-export const Progress = ({
+export function Progress({
   className,
   value,
   max,
@@ -19,7 +19,7 @@ export const Progress = ({
   max: number;
   min: number;
   scale?: ProgressScale;
-}) => {
+}) {
   const percent = Math.min(1, value / max);
 
   return (
@@ -42,4 +42,60 @@ export const Progress = ({
       />
     </div>
   );
-};
+}
+
+export function CircleProgress({
+  className,
+  value,
+  max,
+  min,
+  radius,
+  strokeWidth,
+}: {
+  className?: string;
+  value: number;
+  max: number;
+  min: number;
+  radius: number;
+  strokeWidth: number;
+}) {
+  const percent = Math.min(1, value / max);
+
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - percent * circumference;
+
+  return (
+    <svg
+      className={clsx("-rotate-90", className)}
+      width={radius * 2}
+      height={radius * 2}
+      viewBox={`0 0 ${radius * 2 + strokeWidth * 2} ${radius * 2 + strokeWidth * 2}`}
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={min}
+      aria-valuemax={max}
+    >
+      <circle
+        className="text-[--mauve-6]"
+        strokeWidth={strokeWidth}
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx={radius + strokeWidth}
+        cy={radius + strokeWidth}
+      />
+      <circle
+        className="text-[--violet-9] transition-[stroke-dashoffset]"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="butt"
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx={radius + strokeWidth}
+        cy={radius + strokeWidth}
+      />
+    </svg>
+  );
+}

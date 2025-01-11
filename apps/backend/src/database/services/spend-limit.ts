@@ -28,11 +28,30 @@ export async function getSpendLimitThreshold(
     if (
       // The highest threshold is reached.
       (acc === null || acc < threshold) &&
-      previousUsageCost < limitAtThreshold &&
+      previousUsageCost <= limitAtThreshold &&
       currentCost > limitAtThreshold
     ) {
       return threshold;
     }
     return acc;
   }, null);
+}
+
+/**
+ * Check if the account is blocked because the spend limit has been reached.
+ */
+export async function checkIsBlockedBySpendLimit(
+  account: Account,
+): Promise<boolean> {
+  const manager = account.$getSubscriptionManager();
+
+  if (
+    account.meteredSpendLimitByPeriod === null ||
+    !account.blockWhenSpendLimitIsReached
+  ) {
+    return false;
+  }
+
+  const currentCost = await manager.getAdditionalScreenshotCost();
+  return currentCost > account.meteredSpendLimitByPeriod;
 }

@@ -1,5 +1,7 @@
 interface Account implements Node {
+  additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
+  blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
   githubAccount: GithubAccount
@@ -9,6 +11,7 @@ interface Account implements Node {
   hasForcedPlan: Boolean!
   id: ID!
   includedScreenshots: Int!
+  meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
   periodEndDate: DateTime
@@ -70,6 +73,7 @@ type AccountScreenshotMetrics {
 }
 
 type AccountSubscription implements Node {
+  currency: Currency!
   endDate: DateTime
   id: ID!
   paymentMethodFilled: Boolean!
@@ -297,6 +301,11 @@ input CreateTeamInput {
 type CreateTeamResult {
   redirectUrl: String!
   team: Team!
+}
+
+enum Currency {
+  EUR
+  USD
 }
 
 scalar Date
@@ -880,7 +889,9 @@ enum SummaryCheck {
 }
 
 type Team implements Account & Node {
+  additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
+  blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
   defaultUserLevel: TeamDefaultUserLevel!
@@ -896,6 +907,7 @@ type Team implements Account & Node {
   inviteLink: String
   me: TeamMember
   members(after: Int = 0, first: Int = 30, levels: [TeamUserLevel!], search: String, sso: Boolean): TeamMemberConnection!
+  meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
   oldPaidSubscription: AccountSubscription
@@ -992,8 +1004,10 @@ input UnlinkGitlabProjectInput {
 }
 
 input UpdateAccountInput {
+  blockWhenSpendLimitIsReached: Boolean
   gitlabAccessToken: String
   id: ID!
+  meteredSpendLimitByPeriod: Int
   name: String
   slug: String
 }
@@ -1014,7 +1028,9 @@ input UpdateProjectPrCommentInput {
 }
 
 type User implements Account & Node {
+  additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
+  blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
   email: String
@@ -1030,6 +1046,7 @@ type User implements Account & Node {
   id: ID!
   includedScreenshots: Int!
   lastSubscription: AccountSubscription
+  meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
   oldPaidSubscription: AccountSubscription

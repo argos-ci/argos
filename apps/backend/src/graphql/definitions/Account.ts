@@ -114,6 +114,7 @@ export const typeDefs = gql`
     stripeClientReferenceId: String!
     consumptionRatio: Float!
     currentPeriodScreenshots: Int!
+    additionalScreenshotsCost: Float!
     includedScreenshots: Int!
     slug: String!
     name: String
@@ -132,6 +133,8 @@ export const typeDefs = gql`
     slackInstallation: SlackInstallation
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
+    meteredSpendLimitByPeriod: Int
+    blockWhenSpendLimitIsReached: Boolean!
   }
 
   input UpdateAccountInput {
@@ -139,6 +142,8 @@ export const typeDefs = gql`
     name: String
     slug: String
     gitlabAccessToken: String
+    meteredSpendLimitByPeriod: Int
+    blockWhenSpendLimitIsReached: Boolean
   }
 
   input UninstallSlackInput {
@@ -304,6 +309,10 @@ export const resolvers: IResolvers = {
     currentPeriodScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
       return manager.getCurrentPeriodScreenshots();
+    },
+    additionalScreenshotsCost: async (account) => {
+      const manager = account.$getSubscriptionManager();
+      return manager.getAdditionalScreenshotCost();
     },
     includedScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
@@ -473,6 +482,17 @@ export const resolvers: IResolvers = {
           throw error;
         }
         data.slug = input.slug;
+      }
+
+      if (input.meteredSpendLimitByPeriod !== undefined) {
+        data.meteredSpendLimitByPeriod = input.meteredSpendLimitByPeriod;
+      }
+
+      if (
+        input.blockWhenSpendLimitIsReached !== undefined &&
+        input.blockWhenSpendLimitIsReached !== null
+      ) {
+        data.blockWhenSpendLimitIsReached = input.blockWhenSpendLimitIsReached;
       }
 
       if (input.name !== undefined) {

@@ -13,8 +13,16 @@ export function FormCheckbox({
   const id = idProp ?? genId;
   return (
     <div className={clsx(className, "flex gap-2")}>
-      <input type="checkbox" id={id} {...props} />
-      <label htmlFor={id} className="inline-block select-none font-medium">
+      <input
+        type="checkbox"
+        id={id}
+        className="disabled:opacity-disabled peer"
+        {...props}
+      />
+      <label
+        htmlFor={id}
+        className="peer-disabled:opacity-disabled inline-block select-none font-medium"
+      >
         {label}
       </label>
     </div>
