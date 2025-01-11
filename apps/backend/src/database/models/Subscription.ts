@@ -43,7 +43,7 @@ export class Subscription extends Model {
         oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
       },
       additionalScreenshotPrice: {
-        oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+        oneOf: [{ type: "null" }, { type: "number", minimum: 0 }],
       },
       usageUpdatedAt: { type: ["string", "null"] },
       currency: {

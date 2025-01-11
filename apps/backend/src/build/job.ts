@@ -1,12 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
-import {
-  Account,
-  Build,
-  Project,
-  ScreenshotDiff,
-} from "@/database/models/index.js";
+import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
+import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { createModelJob, UnretryableError } from "@/job-core/index.js";
@@ -65,44 +61,6 @@ async function updateUsage(project: Project) {
       // @TODO send email
     }
   });
-}
-
-/**
- * Spend limit thresholds.
- */
-const THRESHOLDS = [50, 75, 100] as const;
-
-/**
- * Get the spend limit threshold that has been reached for the first time.
- */
-async function getSpendLimitThreshold(
-  account: Account,
-): Promise<number | null> {
-  const manager = account.$getSubscriptionManager();
-
-  if (account.meteredSpendLimitByPeriod === null) {
-    return null;
-  }
-
-  const [currentCost, previousUsageCost] = await Promise.all([
-    manager.getAdditionalScreenshotCost(),
-    manager.getAdditionalScreenshotCost({ to: "previousUsage" }),
-  ]);
-
-  const spendLimit = account.meteredSpendLimitByPeriod;
-  return THRESHOLDS.reduceRight<null | number>((acc, threshold) => {
-    if (acc !== null) {
-      return acc;
-    }
-    const percent = threshold / 100;
-    if (
-      previousUsageCost < spendLimit * percent &&
-      currentCost > spendLimit * percent
-    ) {
-      return threshold;
-    }
-    return acc;
-  }, null);
 }
 
 /**

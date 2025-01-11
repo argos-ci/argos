@@ -93,6 +93,7 @@ CREATE TABLE public.accounts (
     "gitlabBaseUrl" character varying(255),
     "slackInstallationId" bigint,
     "githubLightInstallationId" bigint,
+    "meteredSpendLimitByPeriod" integer,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -1125,6 +1126,9 @@ CREATE TABLE public.subscriptions (
     "paymentMethodFilled" boolean NOT NULL,
     status character varying(255) NOT NULL,
     "includedScreenshots" integer,
+    "additionalScreenshotPrice" real,
+    currency character varying(255),
+    "usageUpdatedAt" timestamp with time zone,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -2831,4 +2835,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2024123
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250102150800_build-review.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103090503_remove-validation-status-column.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103131406_plan-interval.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105124212_spend-management.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105130307_remove-crawls-captures.js', 1, NOW());
