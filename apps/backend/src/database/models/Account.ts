@@ -30,7 +30,13 @@ type AccountSubscriptionManager = {
   checkIsUsageBasedPlan(): Promise<boolean>;
   getCurrentPeriodStartDate(): Promise<Date>;
   getCurrentPeriodEndDate(): Promise<Date>;
-  getCurrentPeriodScreenshots(): Promise<number>;
+  getCurrentPeriodScreenshots(options?: {
+    to?: "previousUsage";
+    projectId?: string;
+  }): Promise<number>;
+  getAdditionalScreenshotCost(options?: {
+    to?: "previousUsage";
+  }): Promise<number>;
   getCurrentPeriodConsumptionRatio(): Promise<number>;
   checkIsOutOfCapacity(): Promise<"flat-rate" | "trialing" | null>;
   getIncludedScreenshots(): Promise<number>;
@@ -62,6 +68,9 @@ export class Account extends Model {
       gitlabBaseUrl: { type: ["string", "null"] },
       slackInstallationId: { type: ["string", "null"] },
       githubLightInstallationId: { type: ["string", "null"] },
+      meteredSpendLimitByPeriod: {
+        oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+      },
     },
   });
 
@@ -76,6 +85,7 @@ export class Account extends Model {
   gitlabBaseUrl!: string | null;
   slackInstallationId!: string | null;
   githubLightInstallationId!: string | null;
+  meteredSpendLimitByPeriod!: number | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
@@ -280,10 +290,27 @@ export class Account extends Model {
       }
     });
 
-    const getCurrentPeriodScreenshots = memoize(async () => {
-      const startDate = await getCurrentPeriodStartDate();
-      return this.$getScreenshotCountFromDate(startDate.toISOString());
-    });
+    const getCurrentPeriodScreenshots: AccountSubscriptionManager["getCurrentPeriodScreenshots"] =
+      memoize(async (options) => {
+        const [subscription, startDate, usageBased] = await Promise.all([
+          getActiveSubscription(),
+          getCurrentPeriodStartDate(),
+          checkIsUsageBasedPlan(),
+        ]);
+        const to = (() => {
+          if (options?.to === "previousUsage") {
+            invariant(
+              usageBased,
+              "`previousUsage` is only available for usage based plans",
+            );
+            return new Date(subscription?.usageUpdatedAt ?? startDate);
+          }
+          return "now";
+        })();
+        return this.$getScreenshotCountBetween(startDate, to, {
+          projectId: options?.projectId,
+        });
+      });
 
     const checkIsUsageBasedPlan = memoize(async () => {
       const plan = await getPlan();
@@ -391,6 +418,41 @@ export class Account extends Model {
       return consumptionRatio > 1.1 ? "flat-rate" : null;
     });
 
+    const getAdditionalScreenshotCost: AccountSubscriptionManager["getAdditionalScreenshotCost"] =
+      memoize(async (options) => {
+        const [usageBased, subscription, periodScreenshots] = await Promise.all(
+          [
+            checkIsUsageBasedPlan(),
+            getActiveSubscription(),
+            getCurrentPeriodScreenshots(options),
+          ],
+        );
+
+        // For non-usage based plans, there is no additional cost.
+        if (!usageBased) {
+          return 0;
+        }
+
+        invariant(
+          subscription,
+          "There should be an active subscription for usage based plans",
+        );
+        invariant(
+          subscription.includedScreenshots !== null,
+          "includedScreenshots should be defined for usage based plans",
+        );
+        invariant(
+          subscription.additionalScreenshotPrice !== null,
+          "additionalScreenshotPrice should be defined for usage based plans",
+        );
+
+        const overage = Math.max(
+          0,
+          periodScreenshots - subscription.includedScreenshots,
+        );
+        return overage * subscription.additionalScreenshotPrice;
+      });
+
     this._cachedSubscriptionManager = {
       getActiveSubscription,
       getPlan,
@@ -402,23 +464,29 @@ export class Account extends Model {
       checkIsOutOfCapacity,
       getIncludedScreenshots,
       getSubscriptionStatus,
+      getAdditionalScreenshotCost,
     };
 
     return this._cachedSubscriptionManager;
   }
 
-  async $getScreenshotCountFromDate(
-    from: string,
+  async $getScreenshotCountBetween(
+    from: Date,
+    to: Date | "now",
     options?: {
-      projectId?: string;
+      projectId?: string | undefined;
     },
   ): Promise<number> {
     const query = ScreenshotBucket.query()
       .sum("screenshot_buckets.screenshotCount as total")
       .leftJoinRelated("project.githubRepository")
-      .where("screenshot_buckets.createdAt", ">=", from)
+      .where("screenshot_buckets.createdAt", ">=", from.toISOString())
       .where("project.accountId", this.id)
       .first();
+
+    if (to !== "now") {
+      query.where("screenshot_buckets.createdAt", "<", to.toISOString());
+    }
 
     if (options?.projectId) {
       query.where("project.id", options.projectId);

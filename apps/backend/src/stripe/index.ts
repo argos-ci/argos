@@ -166,6 +166,10 @@ type StripeFlatTier = Stripe.Price.Tier & {
   unit_amount: 0 | null;
 };
 
+type StripeUsageTier = Stripe.Price.Tier & {
+  unit_amount_decimal: string;
+};
+
 /**
  * Check if a tier is a flat tier.
  * A flat tier has a flat_amount, an up_to value and no unit_amount.
@@ -174,11 +178,31 @@ function checkIsFlatTier(tier: Stripe.Price.Tier): tier is StripeFlatTier {
   return Boolean(tier.up_to && tier.flat_amount && !tier.unit_amount);
 }
 
-async function getIncludedScreenshotsFromStripeSubscription(
+/**
+ * Check if a tier is a usage tier.
+ * A usage tier has a unit_amount, an up_to value and no flat_amount.
+ */
+function checkIsUsageTier(tier: Stripe.Price.Tier): tier is StripeUsageTier {
+  return Boolean(tier.unit_amount_decimal);
+}
+
+const CurrencySchema = z.enum(["usd", "eur"]);
+
+/**
+ * Retried the price informations collected from a Stripe subscription
+ * and stored in Argos database.
+ */
+async function getPriceInfosFromStripeSubscription(
   stripeSubscription: Stripe.Subscription,
-) {
+): Promise<
+  Pick<
+    Subscription,
+    "includedScreenshots" | "currency" | "additionalScreenshotPrice"
+  >
+> {
   const firstItem = getPlanItemFromStripeSubscription(stripeSubscription);
   const price = firstItem.price;
+  const currency = CurrencySchema.parse(price.currency);
 
   switch (price.billing_scheme) {
     case "tiered": {
@@ -188,7 +212,7 @@ async function getIncludedScreenshotsFromStripeSubscription(
       invariant(tiers);
 
       // Find the highest flat tier "up_to" value
-      return tiers.reduce(
+      const includedScreenshots = tiers.reduce(
         (max, tier) => {
           if (!checkIsFlatTier(tier)) {
             return max;
@@ -197,6 +221,17 @@ async function getIncludedScreenshotsFromStripeSubscription(
         },
         null as null | number,
       );
+
+      const usageTiers = tiers.filter((tier) => checkIsUsageTier(tier));
+      const firstUsageTier = usageTiers[0];
+      invariant(firstUsageTier, "no usage tier found");
+      invariant(usageTiers.length === 1, "multiple usage tiers found");
+
+      return {
+        includedScreenshots,
+        currency,
+        additionalScreenshotPrice: Number(firstUsageTier.unit_amount_decimal),
+      };
     }
     case "per_unit": {
       if (!price.tiers_mode) {
@@ -208,14 +243,26 @@ async function getIncludedScreenshotsFromStripeSubscription(
             price.metadata["includedScreenshots"],
           );
           if (Number.isInteger(includedScreenshots)) {
-            return includedScreenshots;
+            return {
+              includedScreenshots,
+              currency,
+              additionalScreenshotPrice: null,
+            };
           }
         }
       }
-      return null;
+      return {
+        includedScreenshots: null,
+        currency,
+        additionalScreenshotPrice: null,
+      };
     }
     default:
-      return null;
+      return {
+        includedScreenshots: null,
+        currency,
+        additionalScreenshotPrice: null,
+      };
   }
 }
 
@@ -224,10 +271,10 @@ async function getArgosSubscriptionDataFromStripe(
 ) {
   const stripeProductId =
     getPlanProductIdFromStripeSubscription(stripeSubscription);
-  const [plan, paymentMethodFilled, includedScreenshots] = await Promise.all([
+  const [plan, paymentMethodFilled, infos] = await Promise.all([
     getPlanFromStripeProductId(stripeProductId),
     checkSubscriptionPaymentMethodFilled(stripeSubscription),
-    getIncludedScreenshotsFromStripeSubscription(stripeSubscription),
+    getPriceInfosFromStripeSubscription(stripeSubscription),
   ]);
   const startDate = timestampToISOString(
     stripeSubscription.current_period_start,
@@ -248,7 +295,7 @@ async function getArgosSubscriptionDataFromStripe(
     trialEndDate,
     paymentMethodFilled,
     status: stripeSubscription.status,
-    includedScreenshots,
+    ...infos,
   } satisfies Partial<Subscription>;
 }
 
@@ -307,13 +354,25 @@ export async function getStripePriceFromPlanOrThrow(
   return defaultPrice;
 }
 
-export async function updateStripeUsage({
-  account,
-  totalScreenshots,
-}: {
+/**
+ * Check if a usage-based subscription is incomplete.
+ * Meaning some information are missing to be able to use it.
+ */
+function checkIsUsageBasedSubscriptionIncomplete(
+  subscription: Subscription,
+): boolean {
+  return (
+    subscription.includedScreenshots === null ||
+    subscription.additionalScreenshotPrice === null ||
+    subscription.currency === null
+  );
+}
+
+export async function updateStripeUsage(input: {
   account: Account;
   totalScreenshots: number;
 }): Promise<void> {
+  const { account, totalScreenshots } = input;
   const manager = account.$getSubscriptionManager();
   const subscription = await manager.getActiveSubscription();
 
@@ -342,11 +401,24 @@ export async function updateStripeUsage({
       subscription.stripeSubscriptionId,
     );
 
+    // If the subscription is incomplete, we need to update it,
+    // could happen if we added a new information in the database.
+    if (checkIsUsageBasedSubscriptionIncomplete(subscription)) {
+      await updateArgosSubscriptionFromStripe(subscription, stripeSubscription);
+    }
+
+    // Get timestamp at second precision
+    const timestamp = Math.ceil(Date.now() / 1000);
     const item = getPlanItemFromStripeSubscription(stripeSubscription);
 
     await stripe.subscriptionItems.createUsageRecord(item.id, {
       action: "set",
       quantity: totalScreenshots,
+      timestamp,
+    });
+
+    await subscription.$query().patch({
+      usageUpdatedAt: new Date(timestamp * 1000).toISOString(),
     });
   } catch (error) {
     throw new Error("Error while updating stripe usage", {

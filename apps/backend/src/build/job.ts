@@ -1,12 +1,18 @@
 import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
-import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
+import {
+  Account,
+  Build,
+  Project,
+  ScreenshotDiff,
+} from "@/database/models/index.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { createModelJob, UnretryableError } from "@/job-core/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
 import { updateStripeUsage } from "@/stripe/index.js";
+import { getRedisLock } from "@/util/redis/index.js";
 
 import { concludeBuild } from "./concludeBuild.js";
 import { createBuildDiffs } from "./createBuildDiffs.js";
@@ -32,21 +38,71 @@ async function pushDiffs(input: {
 }
 
 /**
- * Update the stripe usage if needed.
+ * Update the usage in Stripe, also check the spend limit.
  */
-async function updateProjectConsumption(project: Project) {
+async function updateUsage(project: Project) {
   const { account } = project;
   invariant(account, "No account found", UnretryableError);
   const manager = account.$getSubscriptionManager();
-
-  const [usageBased, totalScreenshots] = await Promise.all([
+  const [usageBased, lock] = await Promise.all([
     manager.checkIsUsageBasedPlan(),
-    manager.getCurrentPeriodScreenshots(),
+    getRedisLock(),
   ]);
 
-  if (usageBased) {
-    await updateStripeUsage({ account, totalScreenshots });
+  if (!usageBased) {
+    return;
   }
+
+  return lock.acquire(["updateUsage", account.id], async () => {
+    const [totalScreenshots, spendLimitThreshold] = await Promise.all([
+      manager.getCurrentPeriodScreenshots(),
+      getSpendLimitThreshold(account),
+    ]);
+
+    await updateStripeUsage({ account, totalScreenshots });
+
+    if (spendLimitThreshold !== null) {
+      // @TODO send email
+    }
+  });
+}
+
+/**
+ * Spend limit thresholds.
+ */
+const THRESHOLDS = [50, 75, 100] as const;
+
+/**
+ * Get the spend limit threshold that has been reached for the first time.
+ */
+async function getSpendLimitThreshold(
+  account: Account,
+): Promise<number | null> {
+  const manager = account.$getSubscriptionManager();
+
+  if (account.meteredSpendLimitByPeriod === null) {
+    return null;
+  }
+
+  const [currentCost, previousUsageCost] = await Promise.all([
+    manager.getAdditionalScreenshotCost(),
+    manager.getAdditionalScreenshotCost({ to: "previousUsage" }),
+  ]);
+
+  const spendLimit = account.meteredSpendLimitByPeriod;
+  return THRESHOLDS.reduceRight<null | number>((acc, threshold) => {
+    if (acc !== null) {
+      return acc;
+    }
+    const percent = threshold / 100;
+    if (
+      previousUsageCost < spendLimit * percent &&
+      currentCost > spendLimit * percent
+    ) {
+      return threshold;
+    }
+    return acc;
+  }, null);
 }
 
 /**
@@ -102,10 +158,7 @@ export async function performBuild(build: Build) {
     }),
   ]);
 
-  await Promise.all([
-    updateProjectConsumption(project),
-    syncGitlabProject(project),
-  ]);
+  await Promise.all([updateUsage(project), syncGitlabProject(project)]);
 }
 
 export const job = createModelJob("build", Build, performBuild);
