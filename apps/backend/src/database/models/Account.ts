@@ -479,7 +479,7 @@ export class Account extends Model {
   ): Promise<number> {
     const query = ScreenshotBucket.query()
       .sum("screenshot_buckets.screenshotCount as total")
-      .leftJoinRelated("project.githubRepository")
+      .leftJoinRelated("project")
       .where("screenshot_buckets.createdAt", ">=", from.toISOString())
       .where("project.accountId", this.id)
       .first();
