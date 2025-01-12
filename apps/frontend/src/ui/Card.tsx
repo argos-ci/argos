@@ -30,7 +30,7 @@ export function CardFooter(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "border-t border-[--card-border] bg-[--card-footer-bg,theme(backgroundColor.subtle)] p-4 text-sm",
+        "border-t border-[--card-border] bg-[--card-footer-bg,theme(backgroundColor.app)] p-4 text-sm",
         props.className,
       )}
     />
