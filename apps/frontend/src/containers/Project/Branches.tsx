@@ -125,7 +125,7 @@ export const ProjectBranches = (props: {
               <h3 className="mb-1 font-semibold">Default base branch</h3>
               <p className="text-low text-sm">
                 Argos will find the first ancestor commit on base branch in Git
-                history. It uses pull-request base branch if avaible, else it
+                history. It uses pull-request base branch if avalaible, else it
                 defaults to the project default branch specified here.
               </p>
               <div className="mt-4">
@@ -140,7 +140,9 @@ export const ProjectBranches = (props: {
                         <Code>{project.repository.defaultBranch}</Code>
                       </>
                     ) : (
-                      "Use main branch"
+                      <>
+                        Use <Code>main</Code> as default base branch
+                      </>
                     )
                   }
                 />
