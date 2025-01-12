@@ -811,6 +811,119 @@ ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNED BY public.knex_migrat
 
 
 --
+-- Name: notification_messages; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.notification_messages (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    "userId" bigint NOT NULL,
+    "workflowId" bigint NOT NULL,
+    channel character varying(255) NOT NULL,
+    "deliveredAt" timestamp with time zone,
+    "seenAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.notification_messages OWNER TO postgres;
+
+--
+-- Name: notification_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.notification_messages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.notification_messages_id_seq OWNER TO postgres;
+
+--
+-- Name: notification_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.notification_messages_id_seq OWNED BY public.notification_messages.id;
+
+
+--
+-- Name: notification_workflow_recipients; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.notification_workflow_recipients (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userId" bigint NOT NULL,
+    "workflowId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.notification_workflow_recipients OWNER TO postgres;
+
+--
+-- Name: notification_workflow_recipients_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.notification_workflow_recipients_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.notification_workflow_recipients_id_seq OWNER TO postgres;
+
+--
+-- Name: notification_workflow_recipients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.notification_workflow_recipients_id_seq OWNED BY public.notification_workflow_recipients.id;
+
+
+--
+-- Name: notification_workflows; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.notification_workflows (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    type character varying(255) NOT NULL,
+    data jsonb NOT NULL
+);
+
+
+ALTER TABLE public.notification_workflows OWNER TO postgres;
+
+--
+-- Name: notification_workflows_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.notification_workflows_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.notification_workflows_id_seq OWNER TO postgres;
+
+--
+-- Name: notification_workflows_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.notification_workflows_id_seq OWNED BY public.notification_workflows.id;
+
+
+--
 -- Name: plans; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1457,6 +1570,27 @@ ALTER TABLE ONLY public.knex_migrations_lock ALTER COLUMN index SET DEFAULT next
 
 
 --
+-- Name: notification_messages id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_messages ALTER COLUMN id SET DEFAULT nextval('public.notification_messages_id_seq'::regclass);
+
+
+--
+-- Name: notification_workflow_recipients id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_workflow_recipients ALTER COLUMN id SET DEFAULT nextval('public.notification_workflow_recipients_id_seq'::regclass);
+
+
+--
+-- Name: notification_workflows id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_workflows ALTER COLUMN id SET DEFAULT nextval('public.notification_workflows_id_seq'::regclass);
+
+
+--
 -- Name: plans id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1762,6 +1896,30 @@ ALTER TABLE ONLY public.knex_migrations_lock
 
 ALTER TABLE ONLY public.knex_migrations
     ADD CONSTRAINT knex_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notification_messages notification_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_messages
+    ADD CONSTRAINT notification_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notification_workflow_recipients notification_workflow_recipients_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_workflow_recipients
+    ADD CONSTRAINT notification_workflow_recipients_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notification_workflows notification_workflows_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_workflows
+    ADD CONSTRAINT notification_workflows_pkey PRIMARY KEY (id);
 
 
 --
@@ -2073,6 +2231,34 @@ CREATE INDEX github_synchronizations_githubinstallationid_index ON public.github
 --
 
 CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchronizations USING btree ("jobStatus");
+
+
+--
+-- Name: notification_messages_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX notification_messages_userid_index ON public.notification_messages USING btree ("userId");
+
+
+--
+-- Name: notification_messages_workflowid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX notification_messages_workflowid_index ON public.notification_messages USING btree ("workflowId");
+
+
+--
+-- Name: notification_workflow_recipients_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX notification_workflow_recipients_userid_index ON public.notification_workflow_recipients USING btree ("userId");
+
+
+--
+-- Name: notification_workflow_recipients_workflowid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX notification_workflow_recipients_workflowid_index ON public.notification_workflow_recipients USING btree ("workflowId");
 
 
 --
@@ -2497,6 +2683,38 @@ ALTER TABLE ONLY public.github_synchronizations
 
 
 --
+-- Name: notification_messages notification_messages_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_messages
+    ADD CONSTRAINT notification_messages_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
+-- Name: notification_messages notification_messages_workflowid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_messages
+    ADD CONSTRAINT notification_messages_workflowid_foreign FOREIGN KEY ("workflowId") REFERENCES public.notification_workflows(id);
+
+
+--
+-- Name: notification_workflow_recipients notification_workflow_recipients_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_workflow_recipients
+    ADD CONSTRAINT notification_workflow_recipients_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
+-- Name: notification_workflow_recipients notification_workflow_recipients_workflowid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notification_workflow_recipients
+    ADD CONSTRAINT notification_workflow_recipients_workflowid_foreign FOREIGN KEY ("workflowId") REFERENCES public.notification_workflows(id);
+
+
+--
 -- Name: project_users project_users_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2838,3 +3056,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025010
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250103131406_plan-interval.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105124212_spend-management.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105130307_remove-crawls-captures.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250111204217_user-notifications.js', 1, NOW());
