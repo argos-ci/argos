@@ -7,13 +7,13 @@ export function Separator(
   },
 ) {
   const { separatorProps } = useSeparator(props);
+  console.log(separatorProps);
   return (
     <div
       {...separatorProps}
       className={clsx(
         "bg-border shrink-0",
-        "aria-[orientation=vertical]:h-full aria-[orientation=vertical]:w-px",
-        "aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full",
+        props.orientation === "vertical" ? "h-full w-px" : "h-px w-full",
         props.className,
       )}
     />

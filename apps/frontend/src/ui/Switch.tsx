@@ -20,11 +20,13 @@ function Switch(props: SwitchProps) {
   );
 }
 
+export type SwitchFieldProps<TFieldValues extends FieldValues> = {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
+} & SwitchProps;
+
 export function SwitchField<TFieldValues extends FieldValues>(
-  props: SwitchProps & {
-    control: Control<TFieldValues>;
-    name: Path<TFieldValues>;
-  },
+  props: SwitchFieldProps<TFieldValues>,
 ) {
   const { ref, control, name, ...rest } = props;
   const { field } = useController({

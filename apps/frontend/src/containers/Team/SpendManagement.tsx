@@ -9,9 +9,10 @@ import { useAccountContext } from "@/pages/Account";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
-import { FormCheckbox } from "@/ui/FormCheckbox";
+import { FormSwitch } from "@/ui/FormSwitch";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { CircleProgress } from "@/ui/Progress";
+import { Separator } from "@/ui/Separator";
 import { SwitchField } from "@/ui/Switch";
 
 const _AccountFragment = graphql(`
@@ -87,6 +88,8 @@ function SpendManagementForm(props: {
   )
     ? (rawMeteredSpendLimitByPeriod as number)
     : 0;
+  const additionalScreenshotsCost = account.additionalScreenshotsCost;
+  const currency = account.subscription.currency;
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     await apolloClient.mutate({
       mutation: UpdateAccountMutation,
@@ -122,12 +125,12 @@ function SpendManagementForm(props: {
 
   const currencyFormatter = new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: account.subscription.currency,
+    currency,
   });
 
   const currencyFormatterNoDigits = new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: account.subscription.currency,
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
@@ -145,17 +148,13 @@ function SpendManagementForm(props: {
               <strong>100%</strong> of the set amount. You can choose to block
               builds when the spend amount limit is reached.
             </CardParagraph>
-            <div className="rounded border p-4">
-              <div className="flex items-center justify-between gap-4">
+            <div className="overflow-hidden rounded border">
+              <div className="flex items-center justify-between gap-4 p-4">
                 <div className="flex items-center gap-2">
                   <CircleProgress
                     radius={24}
                     strokeWidth={12}
-                    value={
-                      isSpendLimitEnabled
-                        ? account.additionalScreenshotsCost
-                        : 0
-                    }
+                    value={isSpendLimitEnabled ? additionalScreenshotsCost : 0}
                     min={0}
                     max={
                       isSpendLimitEnabled ? (meteredSpendLimitByPeriod ?? 0) : 1
@@ -164,16 +163,13 @@ function SpendManagementForm(props: {
                   <div>
                     {isSpendLimitEnabled ? (
                       <div className="font-medium">
-                        {currencyFormatter.format(
-                          account.additionalScreenshotsCost,
-                        )}{" "}
-                        /{" "}
+                        {currencyFormatter.format(additionalScreenshotsCost)} /{" "}
                         {currencyFormatterNoDigits.format(
                           meteredSpendLimitByPeriod,
                         )}{" "}
                         (
                         {(
-                          (account.additionalScreenshotsCost /
+                          (additionalScreenshotsCost /
                             (meteredSpendLimitByPeriod || 1)) *
                           100
                         ).toFixed(0)}
@@ -182,9 +178,7 @@ function SpendManagementForm(props: {
                     ) : (
                       <div className="font-medium">
                         Current period additional costs —{" "}
-                        {currencyFormatter.format(
-                          account.additionalScreenshotsCost,
-                        )}
+                        {currencyFormatter.format(additionalScreenshotsCost)}
                       </div>
                     )}
                     <div
@@ -206,31 +200,37 @@ function SpendManagementForm(props: {
               </div>
               {isSpendLimitEnabled && hasAdminPermission ? (
                 <>
-                  <FormTextInput
-                    {...defaultMeteredSpendLimitByPeriodProps}
-                    ref={(element) => {
-                      defaultMeteredSpendLimitByPeriodProps.ref(element);
-                      if (
-                        element &&
-                        form.formState.defaultValues?.isSpendLimitEnabled !==
-                          isSpendLimitEnabled
-                      ) {
-                        element.focus();
-                      }
-                    }}
-                    label={`Additional screenshots cost limit (${account.subscription.currency})`}
-                    className="my-4 max-w-max"
-                    type="number"
-                    pattern="\d*"
-                    min={0}
-                    step={50}
-                    inputMode="numeric"
-                    formNoValidate
-                  />
-                  <FormCheckbox
-                    {...form.register("blockWhenSpendLimitIsReached")}
-                    label="Pause builds when spend limit is reached"
-                  />
+                  <Separator orientation="horizontal" />
+                  <div className="bg-subtle flex flex-col gap-6 p-4">
+                    <FormTextInput
+                      {...defaultMeteredSpendLimitByPeriodProps}
+                      ref={(element) => {
+                        defaultMeteredSpendLimitByPeriodProps.ref(element);
+                        if (
+                          element &&
+                          form.formState.defaultValues?.isSpendLimitEnabled !==
+                            isSpendLimitEnabled
+                        ) {
+                          element.focus();
+                        }
+                      }}
+                      label="Set amount"
+                      type="number"
+                      pattern="\d*"
+                      min={0}
+                      step={50}
+                      inputMode="numeric"
+                      formNoValidate
+                      addon={currency}
+                      className="max-w-[200px]"
+                      placeholder={currencyFormatterNoDigits.format(0)}
+                    />
+                    <FormSwitch
+                      control={form.control}
+                      name="blockWhenSpendLimitIsReached"
+                      label="Pause builds when spend limit is reached"
+                    />
+                  </div>
                 </>
               ) : null}
             </div>
