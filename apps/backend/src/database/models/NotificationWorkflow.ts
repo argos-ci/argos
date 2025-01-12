@@ -1,5 +1,10 @@
 import type { RelationMappings } from "objection";
 
+import {
+  NotificationWorkflowType,
+  WORKFLOW_TYPES,
+} from "@/notification/workflow-types.js";
+
 import { SpendLimitThreshold } from "../services/spend-limit.js";
 import { Model } from "../util/model.js";
 import {
@@ -10,10 +15,6 @@ import {
 } from "../util/schemas.js";
 import { NotificationMessage } from "./NotificationMessage.js";
 import { NotificationWorkflowRecipient } from "./NotificationWorkflowRecipient.js";
-
-const workflowTypes = ["welcome", "spend_limit"] as const;
-
-export type NotificationWorkflowType = (typeof workflowTypes)[number];
 
 export type NotificationWorkflowData = {
   spend_limit: {
@@ -32,7 +33,7 @@ export class NotificationWorkflow<
   static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
     required: ["type", "data"],
     properties: {
-      type: { type: "string", enum: workflowTypes as unknown as string[] },
+      type: { type: "string", enum: WORKFLOW_TYPES as unknown as string[] },
       data: { type: "object" },
     },
   });

@@ -1,10 +1,8 @@
 import type * as React from "react";
 
-import {
-  NotificationWorkflowData,
-  NotificationWorkflowType,
-} from "@/database/models/NotificationWorkflow.js";
+import { NotificationWorkflowData } from "@/database/models/NotificationWorkflow.js";
 
+import { NotificationWorkflowType } from "../workflow-types";
 import * as spend_limit from "./spend_limit";
 import * as welcome from "./welcome";
 
