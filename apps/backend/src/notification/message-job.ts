@@ -37,11 +37,19 @@ async function processMessage(message: NotificationMessage) {
     },
   };
   const email = handler.email({ ...(data as any), ctx });
-  await sendEmail({
+
+  const result = await sendEmail({
     to,
     subject: email.subject,
     react: email.body,
   });
+
+  const externalId = (await result?.data?.id) ?? null;
+
+  // Mark the message as sent and store the external ID.
+  await message
+    .$query()
+    .patch({ sentAt: new Date().toISOString(), externalId });
 }
 
 /**

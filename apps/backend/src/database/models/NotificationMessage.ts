@@ -23,8 +23,10 @@ export class NotificationMessage extends Model {
       userId: { type: "string" },
       workflowId: { type: "string" },
       channel: { type: "string", enum: channels as unknown as string[] },
+      sentAt: { type: ["string", "null"] },
       deliveredAt: { type: ["string", "null"] },
-      seenAt: { type: ["string", "null"] },
+      linkClickedAt: { type: ["string", "null"] },
+      externalId: { type: ["string", "null"] },
     },
   });
 
@@ -32,8 +34,22 @@ export class NotificationMessage extends Model {
   userId!: string;
   workflowId!: string;
   channel!: NotificationChannel;
+  /**
+   * Message has been processed and sent.
+   */
+  sentAt!: string | null;
+  /**
+   * Message has been delivered, example email delivered by our email provider.
+   */
   deliveredAt!: string | null;
-  seenAt!: string | null;
+  /**
+   * User clicked on a link in the message.
+   */
+  linkClickedAt!: string | null;
+  /**
+   * External ID from the provider, example Resend ID.
+   */
+  externalId!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

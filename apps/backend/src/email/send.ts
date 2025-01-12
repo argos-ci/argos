@@ -1,3 +1,4 @@
+import { render } from "@react-email/render";
 import { Resend } from "resend";
 
 import config from "@/config/index.js";
@@ -33,10 +34,11 @@ export async function sendEmail(options: {
   if (production) {
     if (!resend) {
       logger.error("Resend API key is missing");
-      return;
+      return null;
     }
   } else if (!resend) {
-    return;
+    return null;
   }
-  await resend.emails.send({ ...options, from: defaultFrom });
+  const text = await render(options.react, { plainText: true });
+  return resend.emails.send({ ...options, text, from: defaultFrom });
 }

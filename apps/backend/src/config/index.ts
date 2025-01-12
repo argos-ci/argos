@@ -92,6 +92,12 @@ const config = convict({
       default: "",
       env: "RESEND_API_KEY",
     },
+    webhookSecret: {
+      doc: "Resend webhook secret",
+      format: String,
+      default: "development",
+      env: "RESEND_WEBHOOK_SECRET",
+    },
   },
   s3: {
     screenshotsBucket: {

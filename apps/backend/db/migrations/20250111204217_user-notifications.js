@@ -31,8 +31,10 @@ export const up = async (knex) => {
     table.bigInteger("workflowId").index().notNullable();
     table.foreign("workflowId").references("notification_workflows.id");
     table.string("channel").notNullable();
+    table.dateTime("sentAt");
     table.dateTime("deliveredAt");
-    table.dateTime("seenAt");
+    table.dateTime("linkClickedAt");
+    table.string("externalId").index();
   });
 };
 

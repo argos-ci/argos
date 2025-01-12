@@ -822,8 +822,10 @@ CREATE TABLE public.notification_messages (
     "userId" bigint NOT NULL,
     "workflowId" bigint NOT NULL,
     channel character varying(255) NOT NULL,
+    "sentAt" timestamp with time zone,
     "deliveredAt" timestamp with time zone,
-    "seenAt" timestamp with time zone
+    "linkClickedAt" timestamp with time zone,
+    "externalId" character varying(255)
 );
 
 
@@ -2231,6 +2233,13 @@ CREATE INDEX github_synchronizations_githubinstallationid_index ON public.github
 --
 
 CREATE INDEX github_synchronizations_jobstatus_index ON public.github_synchronizations USING btree ("jobStatus");
+
+
+--
+-- Name: notification_messages_externalid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX notification_messages_externalid_index ON public.notification_messages USING btree ("externalId");
 
 
 --
