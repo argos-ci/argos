@@ -127,7 +127,7 @@ function ProjectDefaultUserLevelDialog(props: {
           </DialogBody>
           <DialogFooter>
             <DialogDismiss>Close</DialogDismiss>
-            <FormSubmit>Save</FormSubmit>
+            <FormSubmit disableIfPristine>Save</FormSubmit>
           </DialogFooter>
         </Form>
       </FormProvider>

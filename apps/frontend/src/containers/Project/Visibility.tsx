@@ -75,6 +75,7 @@ export const ProjectVisibility = (props: {
         private: parseVisibility(data.visibility),
       },
     });
+    form.reset(data);
   };
 
   const repositoryLabel = project.repository

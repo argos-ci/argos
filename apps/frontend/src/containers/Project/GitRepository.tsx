@@ -7,7 +7,7 @@ import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
-import { FormCheckbox } from "@/ui/FormCheckbox";
+import { FormSwitch } from "@/ui/FormSwitch";
 import { Link } from "@/ui/Link";
 
 import { getRepositoryIcon } from "../Repository";
@@ -218,15 +218,18 @@ const GitOptionsForm = ({
         enabled: data.enabled,
       },
     });
+    form.reset(data);
   };
 
   return (
     <FormProvider {...form}>
       <Form onSubmit={onSubmit}>
         <div className="mx-4 mb-4">
-          <FormCheckbox
-            {...form.register("enabled")}
-            label="Enable pull request comments"
+          <FormSwitch
+            name="enabled"
+            control={form.control}
+            label="Pull request comments"
+            description="When enabled, comments will be posted on pull requests with the status of the Argos builds."
           />
         </div>
         <FormCardFooter />

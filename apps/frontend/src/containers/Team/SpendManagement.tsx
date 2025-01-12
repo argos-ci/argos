@@ -257,7 +257,7 @@ function SpendManagementForm(props: {
               ) : null}
             </div>
           </CardBody>
-          <FormCardFooter isSuccessful={isSuccessful} disableIfDirty />
+          <FormCardFooter isSuccessful={isSuccessful} />
         </Form>
       </FormProvider>
       <Modal
@@ -281,6 +281,7 @@ function SpendManagementForm(props: {
               },
             });
             setConfirmation((prev) => ({ ...prev, isOpen: false }));
+            form.reset(confirmation.data);
           }}
         />
       </Modal>

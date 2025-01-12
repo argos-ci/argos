@@ -38,7 +38,9 @@ export const AccountGitLab = (props: {
 }) => {
   const { account } = props;
   const client = useApolloClient();
+  const userIsAdmin = account.permissions.includes(AccountPermission.Admin);
   const form = useForm<Inputs>({
+    disabled: !userIsAdmin,
     defaultValues: {
       gitlabAccessToken: account.gitlabAccessToken ?? "",
       gitlabBaseUrl: account.gitlabBaseUrl ?? "",
@@ -52,8 +54,8 @@ export const AccountGitLab = (props: {
         gitlabAccessToken: data.gitlabAccessToken || null,
       },
     });
+    form.reset(data);
   };
-  const userIsAdmin = account.permissions.includes(AccountPermission.Admin);
   return (
     <Card>
       <FormProvider {...form}>
@@ -74,6 +76,7 @@ export const AccountGitLab = (props: {
               })}
               label="Personal access token"
               disabled={!userIsAdmin}
+              placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
             />
             <div className="text-low mt-2 text-sm">
               The access token is used to update commit status in GitLab. These
@@ -109,7 +112,7 @@ export const AccountGitLab = (props: {
               </div>
             )}
           </CardBody>
-          <FormCardFooter isDisabled={!userIsAdmin}>
+          <FormCardFooter>
             Learn more about{" "}
             <Link href="https://argos-ci.com/docs/gitlab" target="_blank">
               setting up GitLab + Argos integration

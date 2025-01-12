@@ -48,6 +48,7 @@ export const AccountChangeName = (props: {
         name: data.name,
       },
     });
+    form.reset(data);
   };
   return (
     <Card>

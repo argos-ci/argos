@@ -6,13 +6,13 @@ export function FormSubmit({
   children,
   ...props
 }: ButtonProps & {
-  disableIfDirty?: boolean;
+  disableIfPristine?: boolean;
 }) {
   const { formState } = useFormContext();
   const isDisabled =
     props.isDisabled ||
     formState.isSubmitting ||
-    (props.disableIfDirty && !formState.isDirty);
+    (props.disableIfPristine && !formState.isDirty);
   return (
     <Button type="submit" {...props} isDisabled={isDisabled}>
       {children ?? "Save"}

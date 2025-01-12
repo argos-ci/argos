@@ -52,6 +52,7 @@ export const ProjectStatusChecks = (props: {
         summaryCheck: data.summaryCheck,
       },
     });
+    form.reset(data);
   };
 
   return (
