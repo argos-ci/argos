@@ -155,7 +155,7 @@ function SpendManagementForm(props: {
               Set a spend amount towards additional screenshots cost. All
               account owners will be notified when the spend amount reaches{" "}
               <strong>50%</strong>, <strong>75%</strong>, and{" "}
-              <strong>100%</strong> of the set amount. You can choose to block
+              <strong>100%</strong> of the set amount. You can choose to pause
               builds when the spend amount limit is reached.
             </CardParagraph>
             <div className="overflow-hidden rounded border">
