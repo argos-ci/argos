@@ -7,7 +7,7 @@ import { mergeRefs } from "@/util/merge-refs";
 
 type SwitchProps = ComponentPropsWithRef<typeof RACSwitch>;
 
-export function Switch(props: SwitchProps) {
+function Switch(props: SwitchProps) {
   return (
     <RACSwitch
       {...props}
