@@ -12,7 +12,7 @@ import {
 type TooltipVariant = "default" | "info";
 
 const variantClassNames: Record<TooltipVariant, string> = {
-  default: clsx("text-xxs py-1 px-2 max-w-sm"),
+  default: clsx("text-xs py-1 px-2 max-w-sm"),
   info: "text-sm p-2 [&_strong]:font-medium",
 };
 
