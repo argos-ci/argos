@@ -65,11 +65,11 @@ async function updateUsage(project: Project) {
         data: {
           accountName: account.name,
           accountSlug: account.slug,
+          blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
           threshold: spendLimitThreshold,
         },
         recipients: ownerIds,
       });
-      // @TODO send email
     }
   });
 }

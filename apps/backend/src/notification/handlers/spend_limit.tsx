@@ -19,6 +19,7 @@ export const previewData: Handler<"spend_limit">["previewData"] = {
   threshold: 100,
   accountName: "Argos",
   accountSlug: "argos",
+  blockWhenSpendLimitIsReached: true,
 };
 
 export const email: Handler<"spend_limit">["email"] = (props) => {
@@ -80,12 +81,25 @@ export const email: Handler<"spend_limit">["email"] = (props) => {
                     <strong>100%</strong> of its allocated spend for this
                     billing cycle.
                   </Paragraph>
-                  <Paragraph>
-                    Depending on your plan, additional charges may apply for
-                    further usage. To review your current usage or explore
-                    options to manage your spend, please visit your{" "}
-                    <Link href={settingsHref}>team settings</Link>.
-                  </Paragraph>
+                  {props.blockWhenSpendLimitIsReached ? (
+                    <Paragraph>
+                      To prevent any further charges,{" "}
+                      <strong>all builds have been paused</strong>. Please
+                      review your current usage or disable the pause in the{" "}
+                      <Link href={settingsHref}>team settings</Link> to continue
+                      to use Argos.
+                    </Paragraph>
+                  ) : (
+                    <Paragraph>
+                      <strong>
+                        You can continue to create builds and usage may increase
+                        above your limit.
+                      </strong>{" "}
+                      Please review your current usage or adjust your spend
+                      limit in the{" "}
+                      <Link href={settingsHref}>team settings</Link>.
+                    </Paragraph>
+                  )}
                 </>
               );
             }

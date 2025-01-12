@@ -1,11 +1,11 @@
 import type { RelationMappings } from "objection";
 
 import {
+  NotificationWorkflowData,
   NotificationWorkflowType,
   WORKFLOW_TYPES,
 } from "@/notification/workflow-types.js";
 
-import { SpendLimitThreshold } from "../services/spend-limit.js";
 import { Model } from "../util/model.js";
 import {
   jobModelSchema,
@@ -15,15 +15,6 @@ import {
 } from "../util/schemas.js";
 import { NotificationMessage } from "./NotificationMessage.js";
 import { NotificationWorkflowRecipient } from "./NotificationWorkflowRecipient.js";
-
-export type NotificationWorkflowData = {
-  spend_limit: {
-    threshold: SpendLimitThreshold;
-    accountName: string | null;
-    accountSlug: string;
-  };
-  welcome: Record<string, never>;
-};
 
 export class NotificationWorkflow<
   Type extends NotificationWorkflowType = NotificationWorkflowType,

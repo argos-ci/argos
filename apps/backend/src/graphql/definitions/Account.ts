@@ -576,6 +576,8 @@ export const resolvers: IResolvers = {
             data: {
               accountName: account.name,
               accountSlug: account.slug,
+              blockWhenSpendLimitIsReached:
+                account.blockWhenSpendLimitIsReached,
               threshold,
             },
             recipients: owners,

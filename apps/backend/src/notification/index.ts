@@ -1,12 +1,14 @@
 import { transaction } from "@/database/index.js";
 import {
   NotificationWorkflow,
-  NotificationWorkflowData,
   NotificationWorkflowRecipient,
 } from "@/database/models/index.js";
 
 import { notificationWorkflowJob } from "./workflow-job.js";
-import { NotificationWorkflowType } from "./workflow-types.js";
+import {
+  NotificationWorkflowData,
+  NotificationWorkflowType,
+} from "./workflow-types.js";
 
 /**
  * Send a notification to a list of recipients.
