@@ -21,6 +21,7 @@ async function processMessage(message: NotificationMessage) {
   invariant(message.user, "user should be fetched");
   invariant(message.user.account, "user.account should be fetched");
 
+  // At this point, the user could have changed their email address.
   if (!message.user.email) {
     return;
   }

@@ -261,13 +261,11 @@ export async function getOrCreateUserAccountFromGhAccount(
     return { account, user };
   });
 
-  if (email) {
-    await sendNotification({
-      type: "welcome",
-      data: {},
-      recipients: [user.id],
-    });
-  }
+  await sendNotification({
+    type: "welcome",
+    data: {},
+    recipients: [user.id],
+  });
 
   return account;
 }
