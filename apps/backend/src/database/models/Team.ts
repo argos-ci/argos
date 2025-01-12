@@ -177,6 +177,16 @@ export class Team extends Model {
     }
   }
 
+  /**
+   * Get the user IDs of the owners of a team.
+   */
+  static async getOwnerIds(teamId: string): Promise<string[]> {
+    const teamUsers = await TeamUser.query()
+      .select("userId")
+      .where({ teamId, userLevel: "owner" });
+    return teamUsers.map((teamUser) => teamUser.userId);
+  }
+
   async $getInviteLink() {
     if (!this.inviteSecret) {
       this.inviteSecret = await generateRandomHexString(20);

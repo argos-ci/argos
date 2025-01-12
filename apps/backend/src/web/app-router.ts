@@ -11,7 +11,7 @@ import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 import { slackMiddleware } from "@/slack/index.js";
 import { createRedisStore } from "@/util/rate-limit.js";
 
-import { emailPreview } from "../email/express.js";
+import { notificationPreview } from "../notification/express.js";
 import { auth } from "./middlewares/auth.js";
 import { boom, subdomain } from "./util.js";
 
@@ -68,7 +68,7 @@ export const installAppRouter = async (app: express.Application) => {
   const distDir = join(import.meta.dirname, "../../../frontend/dist");
 
   if (config.get("env") !== "production") {
-    router.use("/email-preview", emailPreview);
+    router.use("/notification-preview", notificationPreview);
   }
 
   await apolloServer.start();
@@ -139,7 +139,7 @@ export const installAppRouter = async (app: express.Application) => {
   const cspReportUri = getCSPReportURI();
 
   if (cspReportUri) {
-    app.use((_req, res, next) => {
+    router.use((_req, res, next) => {
       res.setHeader(
         "Report-To",
         JSON.stringify({
@@ -152,7 +152,7 @@ export const installAppRouter = async (app: express.Application) => {
     });
   }
 
-  app.use(
+  router.use(
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
       contentSecurityPolicy: {

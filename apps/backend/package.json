@@ -51,6 +51,7 @@
     "amqplib": "^0.10.5",
     "auth-header": "^1.0.0",
     "axios": "^1.7.9",
+    "clsx": "^2.1.1",
     "convict": "^6.2.4",
     "cookies": "^0.9.1",
     "cors": "^2.8.5",

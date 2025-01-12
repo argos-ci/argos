@@ -6,6 +6,7 @@ import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { createModelJob, UnretryableError } from "@/job-core/index.js";
+import { sendNotification } from "@/notification/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
 import { updateStripeUsage } from "@/stripe/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
@@ -58,6 +59,16 @@ async function updateUsage(project: Project) {
     await updateStripeUsage({ account, totalScreenshots });
 
     if (spendLimitThreshold !== null) {
+      const ownerIds = await account.$getOwnerIds();
+      await sendNotification({
+        type: "spend_limit",
+        data: {
+          accountName: account.name,
+          accountSlug: account.slug,
+          threshold: spendLimitThreshold,
+        },
+        recipients: ownerIds,
+      });
       // @TODO send email
     }
   });

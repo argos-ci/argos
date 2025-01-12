@@ -23,7 +23,7 @@ export const up = async (knex) => {
 export const down = async (knex) => {
   await knex.schema.alterTable("accounts", async (table) => {
     table.dropColumn("meteredSpendLimitByPeriod");
-    // table.dropColumn("blockWhenSpendLimitIsReached");
+    table.dropColumn("blockWhenSpendLimitIsReached");
   });
 
   await knex.schema.alterTable("subscriptions", async (table) => {

@@ -5,12 +5,14 @@ import { Account } from "../models";
  */
 const THRESHOLDS = [50, 75, 100] as const;
 
+export type SpendLimitThreshold = (typeof THRESHOLDS)[number];
+
 /**
  * Get the spend limit threshold that has been reached for the first time.
  */
 export async function getSpendLimitThreshold(
   account: Account,
-): Promise<number | null> {
+): Promise<SpendLimitThreshold | null> {
   const manager = account.$getSubscriptionManager();
 
   if (account.meteredSpendLimitByPeriod === null) {
@@ -23,7 +25,7 @@ export async function getSpendLimitThreshold(
   ]);
 
   const spendLimit = account.meteredSpendLimitByPeriod;
-  return THRESHOLDS.reduce<null | number>((acc, threshold) => {
+  return THRESHOLDS.reduce<null | SpendLimitThreshold>((acc, threshold) => {
     const limitAtThreshold = spendLimit * (threshold / 100);
     if (
       // The highest threshold is reached.

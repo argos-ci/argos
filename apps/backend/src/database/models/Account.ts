@@ -511,6 +511,19 @@ export class Account extends Model {
     }
   }
 
+  /**
+   * Get the owner ids associated with the account.
+   */
+  async $getOwnerIds(): Promise<string[]> {
+    if (this.userId && !this.teamId) {
+      return [this.userId];
+    }
+    if (this.teamId && !this.userId) {
+      return Team.getOwnerIds(this.teamId);
+    }
+    throw new Error("Incoherent account type");
+  }
+
   async $getPermissions(user: User | null): Promise<AccountPermission[]> {
     return Account.getPermissions(this, user);
   }

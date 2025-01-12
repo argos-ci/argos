@@ -170,6 +170,9 @@ importers:
       axios:
         specifier: ^1.7.9
         version: 1.7.9(debug@4.4.0)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       convict:
         specifier: ^6.2.4
         version: 6.2.4
