@@ -233,7 +233,6 @@ module.exports = {
   plugins: [
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("tailwindcss-animate"),
-    require("tailwindcss-react-aria-components"),
     tailwindPlugin(({ addVariant }) => {
       addVariant("search-cancel", "&::-webkit-search-cancel-button");
     }),
