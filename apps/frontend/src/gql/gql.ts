@@ -101,7 +101,7 @@ const documents = {
     "\n  query TeamNewForm_me {\n    me {\n      id\n      stripeCustomerId\n      hasSubscribedToTrial\n    }\n  }\n": types.TeamNewForm_MeDocument,
     "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      createdAt\n      teamName\n      teamDomain\n    }\n  }\n": types.TeamSlack_AccountFragmentDoc,
     "\n  mutation AccountSlack_UninstallSlack($accountId: ID!) {\n    uninstallSlack(input: { accountId: $accountId }) {\n      id\n      ...TeamSlack_Account\n    }\n  }\n": types.AccountSlack_UninstallSlackDocument,
-    "\n  fragment TeamSpendManagement_Account on Account {\n    id\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n": types.TeamSpendManagement_AccountFragmentDoc,
+    "\n  fragment TeamSpendManagement_Account on Account {\n    id\n    name\n    slug\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n": types.TeamSpendManagement_AccountFragmentDoc,
     "\n  mutation TeamSpendManagement_updateAccount(\n    $id: ID!\n    $meteredSpendLimitByPeriod: Int\n    $blockWhenSpendLimitIsReached: Boolean\n  ) {\n    updateAccount(\n      input: {\n        id: $id\n        meteredSpendLimitByPeriod: $meteredSpendLimitByPeriod\n        blockWhenSpendLimitIsReached: $blockWhenSpendLimitIsReached\n      }\n    ) {\n      ...TeamSpendManagement_Account\n    }\n  }\n": types.TeamSpendManagement_UpdateAccountDocument,
     "\n  query UpgradeDialog_me {\n    me {\n      id\n      slug\n      hasSubscribedToTrial\n      ...AccountItem_Account\n      teams {\n        id\n        slug\n        subscriptionStatus\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.UpgradeDialog_MeDocument,
     "\n  fragment UserAuth_Account on Account {\n    id\n    ... on User {\n      ...GitHubAuth_Account\n      ...GitLabAuth_Account\n      ...GoogleAuth_Account\n    }\n  }\n": types.UserAuth_AccountFragmentDoc,
@@ -512,7 +512,7 @@ export function graphql(source: "\n  mutation AccountSlack_UninstallSlack($accou
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment TeamSpendManagement_Account on Account {\n    id\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n"): (typeof documents)["\n  fragment TeamSpendManagement_Account on Account {\n    id\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n"];
+export function graphql(source: "\n  fragment TeamSpendManagement_Account on Account {\n    id\n    name\n    slug\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n"): (typeof documents)["\n  fragment TeamSpendManagement_Account on Account {\n    id\n    name\n    slug\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

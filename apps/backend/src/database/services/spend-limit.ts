@@ -10,9 +10,16 @@ export type SpendLimitThreshold = (typeof THRESHOLDS)[number];
 /**
  * Get the spend limit threshold that has been reached for the first time.
  */
-export async function getSpendLimitThreshold(
-  account: Account,
-): Promise<SpendLimitThreshold | null> {
+export async function getSpendLimitThreshold(input: {
+  account: Account;
+  /**
+   * Take in account the previous usage to compare with the current usage.
+   * Used to be sure that the threshold has been reached for the first time.
+   * Not needed when it's trigerred by an action.
+   */
+  comparePreviousUsage: boolean;
+}): Promise<SpendLimitThreshold | null> {
+  const { account, comparePreviousUsage } = input;
   const manager = account.$getSubscriptionManager();
 
   if (account.meteredSpendLimitByPeriod === null) {
@@ -21,7 +28,9 @@ export async function getSpendLimitThreshold(
 
   const [currentCost, previousUsageCost] = await Promise.all([
     manager.getAdditionalScreenshotCost(),
-    manager.getAdditionalScreenshotCost({ to: "previousUsage" }),
+    comparePreviousUsage
+      ? manager.getAdditionalScreenshotCost({ to: "previousUsage" })
+      : null,
   ]);
 
   const spendLimit = account.meteredSpendLimitByPeriod;
@@ -30,7 +39,7 @@ export async function getSpendLimitThreshold(
     if (
       // The highest threshold is reached.
       (acc === null || acc < threshold) &&
-      previousUsageCost <= limitAtThreshold &&
+      (previousUsageCost === null || previousUsageCost <= limitAtThreshold) &&
       currentCost > limitAtThreshold
     ) {
       return threshold;

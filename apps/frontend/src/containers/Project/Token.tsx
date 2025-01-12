@@ -178,6 +178,7 @@ function RegenerateTokenDialog(props: {
                   return true;
                 },
               })}
+              autoFocus
               className="mb-4"
               label={
                 <>

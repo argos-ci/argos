@@ -59,7 +59,7 @@ export function CircleProgress({
   radius: number;
   strokeWidth: number;
 }) {
-  const percent = Math.min(1, value / max);
+  const percent = max > 0 ? Math.min(1, value / max) : 1;
 
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - percent * circumference;

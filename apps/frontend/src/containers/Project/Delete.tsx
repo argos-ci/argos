@@ -85,6 +85,7 @@ function DeleteProjectButton(props: DeleteProjectButtonProps) {
                       return true;
                     },
                   })}
+                  autoFocus
                   className="mb-4"
                   label={
                     <>

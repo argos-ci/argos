@@ -132,14 +132,20 @@ describe("spent limit", () => {
       });
 
       it("returns null", async () => {
-        const threshold = await getSpendLimitThreshold(account);
+        const threshold = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: true,
+        });
         expect(threshold).toBeNull();
       });
     });
 
     describe("with spend limit", () => {
       it("returns the correct threshold", async () => {
-        const threshold = await getSpendLimitThreshold(account);
+        const threshold = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: true,
+        });
         expect(threshold).toBe(50);
       });
     });
@@ -152,7 +158,10 @@ describe("spent limit", () => {
       });
 
       it("returns the correct threshold", async () => {
-        const threshold = await getSpendLimitThreshold(account);
+        const threshold = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: true,
+        });
         expect(threshold).toBe(50);
       });
     });
@@ -165,8 +174,17 @@ describe("spent limit", () => {
       });
 
       it("returns null", async () => {
-        const threshold = await getSpendLimitThreshold(account);
+        const threshold = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: true,
+        });
         expect(threshold).toBeNull();
+
+        const thresholdWihoutPreviousUsage = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: false,
+        });
+        expect(thresholdWihoutPreviousUsage).toBe(50);
       });
     });
 
@@ -183,7 +201,10 @@ describe("spent limit", () => {
       });
 
       it("returns the highest threshold reached", async () => {
-        const threshold = await getSpendLimitThreshold(account);
+        const threshold = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: true,
+        });
         expect(threshold).toBe(100);
       });
     });

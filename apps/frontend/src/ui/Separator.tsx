@@ -7,7 +7,6 @@ export function Separator(
   },
 ) {
   const { separatorProps } = useSeparator(props);
-  console.log(separatorProps);
   return (
     <div
       {...separatorProps}

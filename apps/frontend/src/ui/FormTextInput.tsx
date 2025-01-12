@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { InfoIcon } from "lucide-react";
 import { useFormContext } from "react-hook-form";
 
 import { FormError } from "./FormError";
@@ -9,12 +10,14 @@ import {
   TextInputGroup,
   TextInputProps,
 } from "./TextInput";
+import { Tooltip } from "./Tooltip";
 
 type FormTextInputProps = {
   name: string;
   label: React.ReactNode;
   hiddenLabel?: boolean;
   addon?: React.ReactNode;
+  description?: React.ReactNode;
 } & TextInputProps;
 
 export function FormTextInput({
@@ -25,6 +28,7 @@ export function FormTextInput({
   disabled,
   className,
   addon,
+  description,
   ...props
 }: FormTextInputProps) {
   const form = useFormContext();
@@ -48,6 +52,11 @@ export function FormTextInput({
       {!hiddenLabel && (
         <Label htmlFor={id} invalid={invalid}>
           {label}
+          {description && (
+            <Tooltip content={description}>
+              <InfoIcon className="ml-1 inline size-[1em]" />
+            </Tooltip>
+          )}
         </Label>
       )}
       {addon ? (

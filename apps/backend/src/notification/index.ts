@@ -27,6 +27,9 @@ export async function sendNotification<
    */
   recipients: string[];
 }) {
+  if (input.recipients.length === 0) {
+    throw new Error("No recipients provided");
+  }
   const workflow = await transaction(async (trx) => {
     const workflow = await NotificationWorkflow.query(trx).insertAndFetch({
       type: input.type,

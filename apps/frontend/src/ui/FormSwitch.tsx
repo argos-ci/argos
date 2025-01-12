@@ -1,16 +1,21 @@
 import { useId } from "react";
-import { clsx } from "clsx";
+import { InfoIcon } from "lucide-react";
 import { FieldValues, useController } from "react-hook-form";
 
+import { Label } from "./Label";
 import { SwitchField, SwitchFieldProps } from "./Switch";
+import { Tooltip } from "./Tooltip";
 
 export function FormSwitch<TFieldValues extends FieldValues>({
   className,
   id: idProp,
   label,
+  description,
   ...props
-}: SwitchFieldProps<TFieldValues> & {
+}: Omit<SwitchFieldProps<TFieldValues>, "className"> & {
   label: React.ReactNode;
+  description?: React.ReactNode;
+  className?: string;
 }) {
   const genId = useId();
   const id = idProp ?? genId;
@@ -19,10 +24,15 @@ export function FormSwitch<TFieldValues extends FieldValues>({
     name: props.name,
   });
   return (
-    <div className={clsx(className, "flex flex-col gap-2")}>
-      <label htmlFor={id} className="text-low text-sm font-medium">
+    <div className={className}>
+      <Label htmlFor={id} className="text-low text-sm font-medium">
         {label}
-      </label>
+        {description && (
+          <Tooltip content={description}>
+            <InfoIcon className="ml-1 inline size-[1em]" />
+          </Tooltip>
+        )}
+      </Label>
       <div className="flex items-center gap-2">
         <SwitchField id={id} {...props} />
         <label
