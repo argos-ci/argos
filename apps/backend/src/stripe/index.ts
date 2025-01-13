@@ -7,13 +7,13 @@ import { Account, Plan, Subscription } from "@/database/models/index.js";
 
 export type { Stripe };
 
-const getPlanFromStripeProductId = async (stripeProductId: string) => {
+async function getPlanFromStripeProductId(stripeProductId: string) {
   return Plan.query()
     .findOne({ stripeProductId })
     .throwIfNotFound({
       message: `can't find plan with stripeProductId: "${stripeProductId}"`,
     });
-};
+}
 
 const StripeClientReferenceIdPayloadSchema = z.object({
   accountId: z.string(),
@@ -24,32 +24,36 @@ type StripeClientReferenceIdPayload = z.infer<
   typeof StripeClientReferenceIdPayloadSchema
 >;
 
-export const encodeStripeClientReferenceId = (
+export function encodeStripeClientReferenceId(
   payload: StripeClientReferenceIdPayload,
-) => {
+): string {
   return Buffer.from(JSON.stringify(payload), "utf8")
     .toString("base64")
     .replaceAll(/=/g, "_");
-};
+}
 
-const decodeStripeClientReferenceId = (clientReferenceId: string) => {
+function decodeStripeClientReferenceId(
+  clientReferenceId: string,
+): StripeClientReferenceIdPayload {
   const json = Buffer.from(
     clientReferenceId.replaceAll(/_/g, "="),
     "base64",
   ).toString("utf-8");
   return StripeClientReferenceIdPayloadSchema.parse(JSON.parse(json));
-};
+}
 
-const getClientReferenceIdFromSession = (session: Stripe.Checkout.Session) => {
+function getClientReferenceIdFromSession(
+  session: Stripe.Checkout.Session,
+): StripeClientReferenceIdPayload {
   const clientReferenceId = session.client_reference_id;
   invariant(
     clientReferenceId,
     `empty clientReferenceId in Stripe session "${session.id}"`,
   );
   return decodeStripeClientReferenceId(clientReferenceId);
-};
+}
 
-const getCustomerIdFromSession = (session: Stripe.Checkout.Session) => {
+function getCustomerIdFromSession(session: Stripe.Checkout.Session): string {
   invariant(
     session.customer,
     `empty customer in Stripe session "${session.id}"`,
@@ -60,12 +64,12 @@ const getCustomerIdFromSession = (session: Stripe.Checkout.Session) => {
   }
 
   return session.customer.id;
-};
+}
 
-const getStripeSubscriptionFromSession = async (
+async function getStripeSubscriptionFromSession(
   session: Stripe.Checkout.Session,
   stripe: Stripe,
-): Promise<Stripe.Subscription> => {
+): Promise<Stripe.Subscription> {
   invariant(
     session.subscription,
     `empty subscription in Stripe session "${session.id}"`,
@@ -76,36 +80,43 @@ const getStripeSubscriptionFromSession = async (
   }
 
   return session.subscription;
-};
+}
 
-const getFirstItemFromStripeSubscription = (
+function getPlanItemFromStripeSubscription(
   subscription: Stripe.Subscription,
-) => {
-  const first = subscription.items.data[0];
-  invariant(first, "no item found in Stripe subscription");
-  return first;
-};
+): Stripe.SubscriptionItem {
+  // All addons prices have a metadata (type: "addon")
+  // all others are considered as plan prices.
+  const planItems = subscription.items.data.filter(
+    (item) => item.metadata["type"] !== "addon",
+  );
+  const item = planItems[0];
+  invariant(item, "no plan items found");
+  invariant(planItems.length === 1, "multiple plan items found");
+  return item;
+}
 
-const getFirstProductIdFromSubscription = (
+function getPlanProductIdFromStripeSubscription(
   subscription: Stripe.Subscription,
-) => {
-  const first = getFirstItemFromStripeSubscription(subscription);
-  const { product } = first.price;
+): string {
+  const item = getPlanItemFromStripeSubscription(subscription);
+  const { product } = item.price;
   if (typeof product === "string") {
     return product;
   }
   return product.id;
-};
+}
 
-const timestampToISOString = (date: number) =>
-  new Date(date * 1000).toISOString();
+function timestampToISOString(date: number): string {
+  return new Date(date * 1000).toISOString();
+}
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
   apiVersion: "2024-12-18.acacia",
   typescript: true,
 });
 
-const createArgosSubscriptionFromCheckoutSession = async ({
+async function createArgosSubscriptionFromCheckoutSession({
   account,
   subscriberId,
   session,
@@ -115,7 +126,7 @@ const createArgosSubscriptionFromCheckoutSession = async ({
   subscriberId: string;
   session: Stripe.Checkout.Session;
   stripe: Stripe;
-}) => {
+}): Promise<Subscription> {
   const stripeSubscription = await getStripeSubscriptionFromSession(
     session,
     stripe,
@@ -125,20 +136,20 @@ const createArgosSubscriptionFromCheckoutSession = async ({
     subscriberId,
     stripeSubscription,
   });
-};
+}
 
-const getCustomerFromSubscription = async (
+async function getCustomerFromSubscription(
   subscription: Stripe.Subscription,
-) => {
+): Promise<Stripe.Customer | Stripe.DeletedCustomer> {
   if (typeof subscription.customer === "string") {
     return stripe.customers.retrieve(subscription.customer);
   }
   return subscription.customer;
-};
+}
 
-const checkSubscriptionPaymentMethodFilled = async (
+async function checkSubscriptionPaymentMethodFilled(
   subscription: Stripe.Subscription,
-) => {
+): Promise<boolean> {
   if (subscription.default_payment_method !== null) {
     return true;
   }
@@ -147,12 +158,16 @@ const checkSubscriptionPaymentMethodFilled = async (
     return false;
   }
   return customer.invoice_settings.default_payment_method !== null;
-};
+}
 
 type StripeFlatTier = Stripe.Price.Tier & {
   up_to: number;
   flat_amount: number;
   unit_amount: 0 | null;
+};
+
+type StripeUsageTier = Stripe.Price.Tier & {
+  unit_amount_decimal: string;
 };
 
 /**
@@ -163,11 +178,31 @@ function checkIsFlatTier(tier: Stripe.Price.Tier): tier is StripeFlatTier {
   return Boolean(tier.up_to && tier.flat_amount && !tier.unit_amount);
 }
 
-async function getIncludedScreenshotsFromStripeSubscription(
+/**
+ * Check if a tier is a usage tier.
+ * A usage tier has a unit_amount, an up_to value and no flat_amount.
+ */
+function checkIsUsageTier(tier: Stripe.Price.Tier): tier is StripeUsageTier {
+  return Boolean(tier.unit_amount_decimal);
+}
+
+const CurrencySchema = z.enum(["usd", "eur"]);
+
+/**
+ * Retried the price informations collected from a Stripe subscription
+ * and stored in Argos database.
+ */
+async function getPriceInfosFromStripeSubscription(
   stripeSubscription: Stripe.Subscription,
-) {
-  const firstItem = getFirstItemFromStripeSubscription(stripeSubscription);
+): Promise<
+  Pick<
+    Subscription,
+    "includedScreenshots" | "currency" | "additionalScreenshotPrice"
+  >
+> {
+  const firstItem = getPlanItemFromStripeSubscription(stripeSubscription);
   const price = firstItem.price;
+  const currency = CurrencySchema.parse(price.currency);
 
   switch (price.billing_scheme) {
     case "tiered": {
@@ -177,7 +212,7 @@ async function getIncludedScreenshotsFromStripeSubscription(
       invariant(tiers);
 
       // Find the highest flat tier "up_to" value
-      return tiers.reduce(
+      const includedScreenshots = tiers.reduce(
         (max, tier) => {
           if (!checkIsFlatTier(tier)) {
             return max;
@@ -186,6 +221,17 @@ async function getIncludedScreenshotsFromStripeSubscription(
         },
         null as null | number,
       );
+
+      const usageTiers = tiers.filter((tier) => checkIsUsageTier(tier));
+      const firstUsageTier = usageTiers[0];
+      invariant(firstUsageTier, "no usage tier found");
+      invariant(usageTiers.length === 1, "multiple usage tiers found");
+
+      return {
+        includedScreenshots,
+        currency,
+        additionalScreenshotPrice: Number(firstUsageTier.unit_amount_decimal),
+      };
     }
     case "per_unit": {
       if (!price.tiers_mode) {
@@ -197,25 +243,38 @@ async function getIncludedScreenshotsFromStripeSubscription(
             price.metadata["includedScreenshots"],
           );
           if (Number.isInteger(includedScreenshots)) {
-            return includedScreenshots;
+            return {
+              includedScreenshots,
+              currency,
+              additionalScreenshotPrice: null,
+            };
           }
         }
       }
-      return null;
+      return {
+        includedScreenshots: null,
+        currency,
+        additionalScreenshotPrice: null,
+      };
     }
     default:
-      return null;
+      return {
+        includedScreenshots: null,
+        currency,
+        additionalScreenshotPrice: null,
+      };
   }
 }
 
-const getArgosSubscriptionDataFromStripe = async (
+async function getArgosSubscriptionDataFromStripe(
   stripeSubscription: Stripe.Subscription,
-) => {
-  const stripeProductId = getFirstProductIdFromSubscription(stripeSubscription);
-  const [plan, paymentMethodFilled, includedScreenshots] = await Promise.all([
+) {
+  const stripeProductId =
+    getPlanProductIdFromStripeSubscription(stripeSubscription);
+  const [plan, paymentMethodFilled, infos] = await Promise.all([
     getPlanFromStripeProductId(stripeProductId),
     checkSubscriptionPaymentMethodFilled(stripeSubscription),
-    getIncludedScreenshotsFromStripeSubscription(stripeSubscription),
+    getPriceInfosFromStripeSubscription(stripeSubscription),
   ]);
   const startDate = timestampToISOString(
     stripeSubscription.current_period_start,
@@ -236,11 +295,11 @@ const getArgosSubscriptionDataFromStripe = async (
     trialEndDate,
     paymentMethodFilled,
     status: stripeSubscription.status,
-    includedScreenshots,
+    ...infos,
   } satisfies Partial<Subscription>;
-};
+}
 
-export const createArgosSubscriptionFromStripe = async ({
+export async function createArgosSubscriptionFromStripe({
   account,
   subscriberId,
   stripeSubscription,
@@ -248,14 +307,14 @@ export const createArgosSubscriptionFromStripe = async ({
   account: Account;
   subscriberId: string;
   stripeSubscription: Stripe.Subscription;
-}) => {
+}): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
   return Subscription.query().insertAndFetch({
     ...data,
     accountId: account.id,
     subscriberId,
   });
-};
+}
 
 export async function cancelStripeSubscription(subscriptionId: string) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -274,7 +333,9 @@ async function getArgosSubscriptionFromStripeSubscriptionId(
   return subscription ?? null;
 }
 
-export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
+export async function getStripePriceFromPlanOrThrow(
+  plan: Plan,
+): Promise<Stripe.Price> {
   const { stripeProductId } = plan;
   invariant(stripeProductId, `"stripeProductId" is empty on plan ${plan.id}`);
 
@@ -291,15 +352,27 @@ export const getStripePriceFromPlanOrThrow = async (plan: Plan) => {
   );
 
   return defaultPrice;
-};
+}
 
-export const updateStripeUsage = async ({
-  account,
-  totalScreenshots,
-}: {
+/**
+ * Check if a usage-based subscription is incomplete.
+ * Meaning some information are missing to be able to use it.
+ */
+function checkIsUsageBasedSubscriptionIncomplete(
+  subscription: Subscription,
+): boolean {
+  return (
+    subscription.includedScreenshots === null ||
+    subscription.additionalScreenshotPrice === null ||
+    subscription.currency === null
+  );
+}
+
+export async function updateStripeUsage(input: {
   account: Account;
   totalScreenshots: number;
-}) => {
+}): Promise<void> {
+  const { account, totalScreenshots } = input;
   const manager = account.$getSubscriptionManager();
   const subscription = await manager.getActiveSubscription();
 
@@ -328,26 +401,41 @@ export const updateStripeUsage = async ({
       subscription.stripeSubscriptionId,
     );
 
-    const item = getFirstItemFromStripeSubscription(stripeSubscription);
+    // If the subscription is incomplete, we need to update it,
+    // could happen if we added a new information in the database.
+    if (checkIsUsageBasedSubscriptionIncomplete(subscription)) {
+      await updateArgosSubscriptionFromStripe(subscription, stripeSubscription);
+    }
+
+    // Get timestamp at second precision
+    const timestamp = Math.ceil(Date.now() / 1000);
+    const item = getPlanItemFromStripeSubscription(stripeSubscription);
 
     await stripe.subscriptionItems.createUsageRecord(item.id, {
       action: "set",
       quantity: totalScreenshots,
+      timestamp,
+    });
+
+    await subscription.$query().patch({
+      usageUpdatedAt: new Date(timestamp * 1000).toISOString(),
     });
   } catch (error) {
     throw new Error("Error while updating stripe usage", {
       cause: error,
     });
   }
-};
+}
 
-export const getStripeProPlanOrThrow = async () => {
+export async function getStripeProPlanOrThrow(): Promise<Plan> {
   return Plan.query()
     .findOne({ name: "pro", usageBased: true })
     .throwIfNotFound();
-};
+}
 
-async function updateSubscriptionsFromCustomer(customerId: string) {
+async function updateSubscriptionsFromCustomer(
+  customerId: string,
+): Promise<void> {
   const stripeSubscriptions = await stripe.subscriptions.list({
     customer: customerId,
     expand: ["data.customer"],
@@ -370,15 +458,15 @@ async function updateSubscriptionsFromCustomer(customerId: string) {
 async function updateArgosSubscriptionFromStripe(
   argosSubscription: Subscription,
   stripeSubscription: Stripe.Subscription,
-) {
+): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
   return argosSubscription.$query().patchAndFetch(data);
 }
 
-export const handleStripeEvent = async ({
+export async function handleStripeEvent({
   data,
   type,
-}: Pick<Stripe.Event, "data" | "type">) => {
+}: Pick<Stripe.Event, "data" | "type">): Promise<void> {
   switch (type) {
     case "payment_method.attached": {
       const paymentMethod = data.object as Stripe.PaymentMethod;
@@ -464,7 +552,7 @@ export const handleStripeEvent = async ({
       throw new Error(`Unhandled event type ${type}`);
     }
   }
-};
+}
 
 /**
  * Get Stripe subscription data common to all subscriptions.
@@ -490,7 +578,7 @@ export function getSubscriptionData(args: {
   } satisfies Partial<Stripe.SubscriptionCreateParams>;
 }
 
-export const createStripeCheckoutSession = async ({
+export async function createStripeCheckoutSession({
   plan,
   teamAccount,
   trial,
@@ -504,7 +592,7 @@ export const createStripeCheckoutSession = async ({
   subscriberAccount: Account;
   successUrl: string;
   cancelUrl: string;
-}) => {
+}): Promise<Stripe.Response<Stripe.Checkout.Session>> {
   invariant(
     subscriberAccount.userId,
     "Subscriber account must be a user account",
@@ -538,11 +626,11 @@ export const createStripeCheckoutSession = async ({
       customer: teamAccount.stripeCustomerId,
     }),
   });
-};
+}
 
-const getCustomerByEmail = async (
+async function getCustomerByEmail(
   email: string,
-): Promise<Stripe.Customer | null> => {
+): Promise<Stripe.Customer | null> {
   const customers = await stripe.customers.list({ email });
   const first = customers.data[0];
   if (first) {
@@ -550,21 +638,21 @@ const getCustomerByEmail = async (
   }
 
   return null;
-};
+}
 
-const getOrCreateCustomerByEmail = async (
+async function getOrCreateCustomerByEmail(
   email: string,
-): Promise<Stripe.Customer> => {
+): Promise<Stripe.Customer> {
   const existingCustomer = await getCustomerByEmail(email);
   if (existingCustomer) {
     return existingCustomer;
   }
   return stripe.customers.create({ email });
-};
+}
 
-export const getCustomerIdFromUserAccount = async (
+export async function getCustomerIdFromUserAccount(
   userAccount: Account,
-): Promise<string | null> => {
+): Promise<string | null> {
   if (userAccount.stripeCustomerId) {
     return userAccount.stripeCustomerId;
   }
@@ -580,4 +668,4 @@ export const getCustomerIdFromUserAccount = async (
 
   const stripeCustomer = await getOrCreateCustomerByEmail(user.email);
   return stripeCustomer.id;
-};
+}

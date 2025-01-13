@@ -45,6 +45,7 @@ export const typeDefs = gql`
     stripeClientReferenceId: String!
     consumptionRatio: Float!
     currentPeriodScreenshots: Int!
+    additionalScreenshotsCost: Float!
     includedScreenshots: Int!
     slug: String!
     name: String
@@ -64,6 +65,8 @@ export const typeDefs = gql`
     slackInstallation: SlackInstallation
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
+    meteredSpendLimitByPeriod: Int
+    blockWhenSpendLimitIsReached: Boolean!
 
     me: TeamMember
     members(

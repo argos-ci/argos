@@ -11,6 +11,7 @@ import {
   Project,
   ScreenshotBucket,
 } from "@/database/models/index.js";
+import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { getRedisLock } from "@/util/redis/index.js";
 import { boom } from "@/web/util.js";
@@ -69,9 +70,10 @@ export async function createBuild(params: {
   invariant(account, "Account should be fetched");
 
   const manager = account.$getSubscriptionManager();
-  const [plan, outOfCapacityReason] = await Promise.all([
+  const [plan, outOfCapacityReason, isBlockedBySpendLimit] = await Promise.all([
     manager.getPlan(),
     manager.checkIsOutOfCapacity(),
+    checkIsBlockedBySpendLimit(account),
   ]);
 
   if (account.type === "team" && !plan) {
@@ -97,6 +99,32 @@ export async function createBuild(params: {
       );
     default:
       assertNever(outOfCapacityReason);
+  }
+
+  if (isBlockedBySpendLimit) {
+    const spendLimit = account.meteredSpendLimitByPeriod;
+    invariant(
+      spendLimit !== null,
+      "If we are over the spend limit, it should be set",
+    );
+    const subscription = await manager.getActiveSubscription();
+    invariant(
+      subscription,
+      "A subscription should be active if we are over the spend limit",
+    );
+    const currency = subscription.currency;
+    invariant(
+      currency,
+      "A currency should be set if we are over the spend limit",
+    );
+    const formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+    });
+    throw boom(
+      402,
+      `You have reached the spend limit of ${formatter.format(spendLimit)} for this billing period. Ask a owner to update the limit in your Team settings.`,
+    );
   }
 
   const buildName = params.buildName || "default";

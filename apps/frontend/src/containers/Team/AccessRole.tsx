@@ -53,6 +53,7 @@ export function TeamAccessRole(props: {
         level: data.level,
       },
     });
+    form.reset(data);
   };
 
   return (

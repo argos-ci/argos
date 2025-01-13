@@ -1,6 +1,7 @@
 import { Application, Router } from "express";
 
 import { apiMiddleware as githubApiMiddleware } from "../middlewares/github.js";
+import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend.js";
 import { subdomain } from "../util.js";
 import auth from "./auth.js";
 import builds from "./builds.js";
@@ -13,6 +14,7 @@ export const installApiRouter = (app: Application) => {
 
   router.use(status);
   router.use(githubApiMiddleware);
+  router.use(resendApiMiddleware);
   router.use("/v2", v2);
   router.use(builds);
   router.use(auth);

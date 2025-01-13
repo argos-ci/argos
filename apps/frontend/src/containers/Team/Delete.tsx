@@ -122,6 +122,7 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
                 },
               })}
               className="mb-4"
+              autoFocus
               label={
                 <>
                   Enter the team name <strong>{props.teamSlug}</strong> to

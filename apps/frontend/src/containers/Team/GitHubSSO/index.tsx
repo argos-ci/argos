@@ -3,6 +3,7 @@ import { useMutation } from "@apollo/client";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
+import { GithubAccountLink } from "@/containers/GithubAccountLink";
 import { DocumentType, graphql } from "@/gql";
 import {
   AccountSubscriptionStatus,
@@ -29,8 +30,7 @@ import { getGraphQLErrorMessage } from "@/ui/Form";
 import { FormError } from "@/ui/FormError";
 import { Modal } from "@/ui/Modal";
 
-import { GithubAccountLink } from "../GithubAccountLink";
-import { ConfigureGitHubSSO } from "./GitHubSSO/Configure";
+import { ConfigureGitHubSSO } from "./Configure";
 
 const _TeamFragment = graphql(`
   fragment TeamGitHubSSO_Team on Team {

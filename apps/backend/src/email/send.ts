@@ -1,9 +1,8 @@
+import { render } from "@react-email/render";
 import { Resend } from "resend";
 
 import config from "@/config/index.js";
 import logger from "@/logger/index.js";
-
-import { WelcomeEmail } from "./welcome.js";
 
 const production = config.get("env") === "production";
 const resendApiKey = config.get("resend.apiKey");
@@ -13,17 +12,33 @@ const resendApiKey = config.get("resend.apiKey");
 const resend =
   resendApiKey || production ? new Resend(config.get("resend.apiKey")) : null;
 
-const from = "Argos <contact@argos-ci.com>";
+const defaultFrom = "Argos <contact@argos-ci.com>";
 
-export async function sendWelcomeEmail({ to }: { to: string }) {
-  try {
-    await resend?.emails.send({
-      from,
-      to: [to],
-      subject: "Welcome to Argos!",
-      react: WelcomeEmail({ baseUrl: config.get("server.url") }),
-    });
-  } catch (error) {
-    logger.error(new Error("Failed to send welcome email", { cause: error }));
+/**
+ * Send an email using Resend.
+ */
+export async function sendEmail(options: {
+  /**
+   * Email address to send to.
+   */
+  to: string[];
+  /**
+   * Email subject.
+   */
+  subject: string;
+  /**
+   * Email body as React element.
+   */
+  react: React.ReactElement;
+}) {
+  if (production) {
+    if (!resend) {
+      logger.error("Resend API key is missing");
+      return null;
+    }
+  } else if (!resend) {
+    return null;
   }
+  const text = await render(options.react, { plainText: true });
+  return resend.emails.send({ ...options, text, from: defaultFrom });
 }

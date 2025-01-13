@@ -78,7 +78,6 @@ export function DialogDismiss(props: {
         props.onPress?.(event);
         state.close();
       }}
-      autoFocus
     >
       {props.children}
     </Button>

@@ -247,6 +247,15 @@ module.exports = {
             outlineOffset: "1px",
           },
         },
+        ".rac-focus-group": {
+          ".group:focus &": {
+            outline: "none",
+          },
+          ".group[data-focus-visible] &": {
+            outline: "var(--violet-10) auto 1px",
+            outlineOffset: "1px",
+          },
+        },
       });
     }),
   ],

@@ -9,7 +9,29 @@ export function TextInput(props: TextInputProps) {
       {...props}
       className={clsx(
         props.className,
-        "bg-app text invalid:border-danger [&:not([disabled])]:hover:border-hover focus:border-active disabled:opacity-disabled aria-invalid:border-danger block w-full appearance-none rounded border px-3 py-2 leading-tight focus:outline-none",
+        "bg-app text [&:not([disabled])]:hover:border-hover focus:border-active disabled:opacity-disabled aria-invalid:border-danger block w-full appearance-none rounded border px-3 py-2 leading-tight focus:outline-none",
+        "group-[]/text-input:rounded-r-none",
+      )}
+    />
+  );
+}
+
+export function TextInputGroup(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx("group/text-input flex items-stretch", props.className)}
+    />
+  );
+}
+
+export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx(
+        "bg-ui text-low flex select-none items-center rounded-r border border-l-0 p-2 text-sm",
+        props.className,
       )}
     />
   );

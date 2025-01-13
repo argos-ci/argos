@@ -6,10 +6,11 @@ import { useFormContext } from "react-hook-form";
 export const FormSuccess = ({
   className,
   children,
+  isSuccessful,
   ...props
-}: HTMLProps<HTMLDivElement>) => {
+}: HTMLProps<HTMLDivElement> & { isSuccessful?: boolean }) => {
   const { formState } = useFormContext();
-  if (!formState.isSubmitSuccessful) {
+  if (!isSuccessful && !formState.isSubmitSuccessful) {
     return null;
   }
   return (

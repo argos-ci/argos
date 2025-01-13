@@ -39,7 +39,16 @@ export class Subscription extends Model {
           "paused",
         ],
       },
-      includedScreenshots: { type: ["number", "null"] },
+      includedScreenshots: {
+        oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+      },
+      additionalScreenshotPrice: {
+        oneOf: [{ type: "null" }, { type: "number", minimum: 0 }],
+      },
+      usageUpdatedAt: { type: ["string", "null"] },
+      currency: {
+        oneOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
+      },
     },
   });
 
@@ -62,6 +71,9 @@ export class Subscription extends Model {
     | "incomplete_expired"
     | "paused";
   includedScreenshots!: number | null;
+  additionalScreenshotPrice!: number | null;
+  usageUpdatedAt!: string | null;
+  currency!: "usd" | "eur" | null;
 
   static override get relationMappings(): RelationMappings {
     return {

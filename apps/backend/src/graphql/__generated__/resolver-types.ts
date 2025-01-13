@@ -27,7 +27,9 @@ export type Scalars = {
 };
 
 export type IAccount = {
+  additionalScreenshotsCost: Scalars['Float']['output'];
   avatar: IAccountAvatar;
+  blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
   githubAccount?: Maybe<IGithubAccount>;
@@ -37,6 +39,7 @@ export type IAccount = {
   hasForcedPlan: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
+  meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
   metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
@@ -121,6 +124,7 @@ export type IAccountScreenshotMetrics = {
 
 export type IAccountSubscription = INode & {
   __typename?: 'AccountSubscription';
+  currency: ICurrency;
   endDate?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   paymentMethodFilled: Scalars['Boolean']['output'];
@@ -321,6 +325,11 @@ export type ICreateTeamResult = {
   redirectUrl: Scalars['String']['output'];
   team: ITeam;
 };
+
+export enum ICurrency {
+  Eur = 'EUR',
+  Usd = 'USD'
+}
 
 export type IDeleteTeamInput = {
   accountId: Scalars['ID']['input'];
@@ -1093,7 +1102,9 @@ export enum ISummaryCheck {
 
 export type ITeam = IAccount & INode & {
   __typename?: 'Team';
+  additionalScreenshotsCost: Scalars['Float']['output'];
   avatar: IAccountAvatar;
+  blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
   defaultUserLevel: ITeamDefaultUserLevel;
@@ -1109,6 +1120,7 @@ export type ITeam = IAccount & INode & {
   inviteLink?: Maybe<Scalars['String']['output']>;
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
+  meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
   metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
@@ -1233,8 +1245,10 @@ export type IUnlinkGitlabProjectInput = {
 };
 
 export type IUpdateAccountInput = {
+  blockWhenSpendLimitIsReached?: InputMaybe<Scalars['Boolean']['input']>;
   gitlabAccessToken?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
+  meteredSpendLimitByPeriod?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1256,7 +1270,9 @@ export type IUpdateProjectPrCommentInput = {
 
 export type IUser = IAccount & INode & {
   __typename?: 'User';
+  additionalScreenshotsCost: Scalars['Float']['output'];
   avatar: IAccountAvatar;
+  blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
   email?: Maybe<Scalars['String']['output']>;
@@ -1272,6 +1288,7 @@ export type IUser = IAccount & INode & {
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   lastSubscription?: Maybe<IAccountSubscription>;
+  meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
   metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
   oldPaidSubscription?: Maybe<IAccountSubscription>;
@@ -1429,6 +1446,7 @@ export type IResolversTypes = ResolversObject<{
   Connection: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Connection']>;
   CreateTeamInput: ICreateTeamInput;
   CreateTeamResult: ResolverTypeWrapper<Omit<ICreateTeamResult, 'team'> & { team: IResolversTypes['Team'] }>;
+  Currency: ICurrency;
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   DeleteTeamInput: IDeleteTeamInput;
@@ -1634,7 +1652,9 @@ export type IResolversParentTypes = ResolversObject<{
 
 export type IAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Account'] = IResolversParentTypes['Account']> = ResolversObject<{
   __resolveType: TypeResolveFn<'Team' | 'User', ParentType, ContextType>;
+  additionalScreenshotsCost?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
+  blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   githubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
@@ -1644,6 +1664,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IAccountMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
@@ -1700,6 +1721,7 @@ export type IAccountScreenshotMetricsResolvers<ContextType = Context, ParentType
 }>;
 
 export type IAccountSubscriptionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountSubscription'] = IResolversParentTypes['AccountSubscription']> = ResolversObject<{
+  currency?: Resolver<IResolversTypes['Currency'], ParentType, ContextType>;
   endDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   paymentMethodFilled?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
@@ -2174,7 +2196,9 @@ export type ISlackInstallationResolvers<ContextType = Context, ParentType extend
 }>;
 
 export type ITeamResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Team'] = IResolversParentTypes['Team']> = ResolversObject<{
+  additionalScreenshotsCost?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
+  blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   defaultUserLevel?: Resolver<IResolversTypes['TeamDefaultUserLevel'], ParentType, ContextType>;
@@ -2190,6 +2214,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
   members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
+  meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<ITeamMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
@@ -2255,7 +2280,9 @@ export interface ITimestampScalarConfig extends GraphQLScalarTypeConfig<IResolve
 }
 
 export type IUserResolvers<ContextType = Context, ParentType extends IResolversParentTypes['User'] = IResolversParentTypes['User']> = ResolversObject<{
+  additionalScreenshotsCost?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
+  blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   email?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2271,6 +2298,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
+  meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IUserMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;

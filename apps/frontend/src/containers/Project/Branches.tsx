@@ -6,7 +6,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Code } from "@/ui/Code";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
-import { FormCheckbox } from "@/ui/FormCheckbox";
+import { FormSwitch } from "@/ui/FormSwitch";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Link } from "@/ui/Link";
 
@@ -85,6 +85,7 @@ export const ProjectBranches = (props: {
           : data.autoApprovedBranchGlob,
       },
     });
+    form.reset(data);
   };
 
   const defaultBaseBranch = form.watch("defaultBaseBranch");
@@ -124,12 +125,13 @@ export const ProjectBranches = (props: {
               <h3 className="mb-1 font-semibold">Default base branch</h3>
               <p className="text-low text-sm">
                 Argos will find the first ancestor commit on base branch in Git
-                history. It uses pull-request base branch if avaible, else it
+                history. It uses pull-request base branch if avalaible, else it
                 defaults to the project default branch specified here.
               </p>
               <div className="mt-4">
-                <FormCheckbox
-                  {...form.register("noCustomDefaultBaseBranch")}
+                <FormSwitch
+                  control={form.control}
+                  name="noCustomDefaultBaseBranch"
                   label={
                     project.repository ? (
                       <>
@@ -138,7 +140,9 @@ export const ProjectBranches = (props: {
                         <Code>{project.repository.defaultBranch}</Code>
                       </>
                     ) : (
-                      "Use main branch"
+                      <>
+                        Use <Code>main</Code> as default base branch
+                      </>
                     )
                   }
                 />
@@ -171,16 +175,17 @@ export const ProjectBranches = (props: {
                 automatically approved and have a success status check.
               </p>
               <div className="mt-4">
-                <FormCheckbox
-                  {...form.register("noCustomApprovedBranchGlob")}
+                <FormSwitch
+                  control={form.control}
+                  name="noCustomApprovedBranchGlob"
                   label={
                     dynamicDefaultBaseBranch ? (
                       <>
-                        Automatically match branches based on the default base
-                        branch: <Code>{dynamicDefaultBaseBranch}</Code>
+                        Auto-approve only the default base branch:{" "}
+                        <Code>{dynamicDefaultBaseBranch}</Code>
                       </>
                     ) : (
-                      "Automatically match branches based on the default base branch"
+                      "Auto-approve only the default base branch"
                     )
                   }
                 />

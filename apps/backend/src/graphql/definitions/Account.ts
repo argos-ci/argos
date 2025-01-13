@@ -14,11 +14,13 @@ import {
   TeamUser,
 } from "@/database/models/index.js";
 import { checkAccountSlug } from "@/database/services/account.js";
+import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import {
   getAccountBuildMetrics,
   getAccountScreenshotMetrics,
 } from "@/metrics/account.js";
+import { sendNotification } from "@/notification/index.js";
 import { uninstallSlackInstallation } from "@/slack/index.js";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
@@ -114,6 +116,7 @@ export const typeDefs = gql`
     stripeClientReferenceId: String!
     consumptionRatio: Float!
     currentPeriodScreenshots: Int!
+    additionalScreenshotsCost: Float!
     includedScreenshots: Int!
     slug: String!
     name: String
@@ -132,6 +135,8 @@ export const typeDefs = gql`
     slackInstallation: SlackInstallation
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
+    meteredSpendLimitByPeriod: Int
+    blockWhenSpendLimitIsReached: Boolean!
   }
 
   input UpdateAccountInput {
@@ -139,6 +144,8 @@ export const typeDefs = gql`
     name: String
     slug: String
     gitlabAccessToken: String
+    meteredSpendLimitByPeriod: Int
+    blockWhenSpendLimitIsReached: Boolean
   }
 
   input UninstallSlackInput {
@@ -304,6 +311,10 @@ export const resolvers: IResolvers = {
     currentPeriodScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
       return manager.getCurrentPeriodScreenshots();
+    },
+    additionalScreenshotsCost: async (account) => {
+      const manager = account.$getSubscriptionManager();
+      return manager.getAdditionalScreenshotCost();
     },
     includedScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
@@ -475,6 +486,17 @@ export const resolvers: IResolvers = {
         data.slug = input.slug;
       }
 
+      if (input.meteredSpendLimitByPeriod !== undefined) {
+        data.meteredSpendLimitByPeriod = input.meteredSpendLimitByPeriod;
+      }
+
+      if (
+        input.blockWhenSpendLimitIsReached !== undefined &&
+        input.blockWhenSpendLimitIsReached !== null
+      ) {
+        data.blockWhenSpendLimitIsReached = input.blockWhenSpendLimitIsReached;
+      }
+
       if (input.name !== undefined) {
         data.name = input.name;
       }
@@ -514,7 +536,56 @@ export const resolvers: IResolvers = {
         }
       }
 
-      return account.$query().patchAndFetch(data);
+      const previousAccount = account.$clone();
+      await account.$query().patchAndFetch(data);
+
+      // If the spend limit has been updated, we may need to notify.
+      if (
+        input.meteredSpendLimitByPeriod !== undefined &&
+        input.meteredSpendLimitByPeriod !== null &&
+        previousAccount.meteredSpendLimitByPeriod !==
+          input.meteredSpendLimitByPeriod
+      ) {
+        await (async () => {
+          const [threshold, previousThreshold] = await Promise.all([
+            getSpendLimitThreshold({
+              account,
+              comparePreviousUsage: false,
+            }),
+            getSpendLimitThreshold({
+              account: previousAccount,
+              comparePreviousUsage: false,
+            }),
+          ]);
+
+          console.log({ threshold, previousThreshold });
+
+          // If there is threshold, we don't need to notify the user.
+          if (!threshold) {
+            return;
+          }
+
+          // If it's the same threshold, we don't need to notify the user.
+          if (threshold === previousThreshold) {
+            return;
+          }
+
+          const owners = await account.$getOwnerIds();
+          await sendNotification({
+            type: "spend_limit",
+            data: {
+              accountName: account.name,
+              accountSlug: account.slug,
+              blockWhenSpendLimitIsReached:
+                account.blockWhenSpendLimitIsReached,
+              threshold,
+            },
+            recipients: owners,
+          });
+        })();
+      }
+
+      return account;
     },
     uninstallSlack: async (_root, args, ctx) => {
       const { accountId } = args.input;

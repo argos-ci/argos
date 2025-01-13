@@ -8,6 +8,7 @@
     "e2e:setup": "NODE_ENV=test pnpm run --filter @argos/backend db:truncate && NODE_ENV=test pnpm run --filter @argos/backend db:seed",
     "e2e:start": "NODE_ENV=test playwright test",
     "setup": "turbo run setup",
+    "resend-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/H7XOiU60kSYJJTZs --target https://api.argos-ci.dev:4001/resend/event-handler",
     "github-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
     "github-light-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/T3JFnf2lr3Zq6 --target https://api.argos-ci.dev:4001/github-light/event-handler",
     "slack-webhook-proxy": "ngrok http --host-header=rewrite --domain=foal-great-publicly.ngrok-free.app https://app.argos-ci.dev:4001",

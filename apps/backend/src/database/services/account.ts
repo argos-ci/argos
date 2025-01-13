@@ -3,8 +3,8 @@ import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import slugify from "@sindresorhus/slugify";
 import type { PartialModelObject } from "objection";
 
-import { sendWelcomeEmail } from "@/email/send.js";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
+import { sendNotification } from "@/notification/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
 import { boom } from "@/web/util.js";
 
@@ -250,19 +250,22 @@ export async function getOrCreateUserAccountFromGhAccount(
   const baseSlug = slugify(ghAccount.login.toLowerCase());
   const slug = await resolveAccountSlug(baseSlug);
 
-  const account = await transaction(async (trx) => {
+  const { account, user } = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({ email });
-    return Account.query(trx).insertAndFetch({
+    const account = await Account.query(trx).insertAndFetch({
       userId: user.id,
       githubAccountId: ghAccount.id,
       name: ghAccount.name,
       slug,
     });
+    return { account, user };
   });
 
-  if (email) {
-    await sendWelcomeEmail({ to: email });
-  }
+  await sendNotification({
+    type: "welcome",
+    data: {},
+    recipients: [user.id],
+  });
 
   return account;
 }
@@ -373,19 +376,24 @@ async function getOrCreateUserAccountFromThirdParty<
 
   const slug = await resolveAccountSlug(slugify(baseSlug));
 
-  const account = await transaction(async (trx) => {
+  const { account, user } = await transaction(async (trx) => {
     const user = await User.query(trx).insertAndFetch({
       email,
       [thirdPartyKey]: model.id,
     });
-    return Account.query(trx).insertAndFetch({
+    const account = await Account.query(trx).insertAndFetch({
       userId: user.id,
       name: getName(model),
       slug,
     });
+    return { account, user };
   });
 
-  await sendWelcomeEmail({ to: email });
+  await sendNotification({
+    type: "welcome",
+    data: {},
+    recipients: [user.id],
+  });
 
   return account;
 }

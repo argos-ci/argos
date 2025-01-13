@@ -2,11 +2,14 @@ import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
+import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { createModelJob, UnretryableError } from "@/job-core/index.js";
+import { sendNotification } from "@/notification/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
 import { updateStripeUsage } from "@/stripe/index.js";
+import { getRedisLock } from "@/util/redis/index.js";
 
 import { concludeBuild } from "./concludeBuild.js";
 import { createBuildDiffs } from "./createBuildDiffs.js";
@@ -32,21 +35,43 @@ async function pushDiffs(input: {
 }
 
 /**
- * Update the stripe usage if needed.
+ * Update the usage in Stripe, also check the spend limit.
  */
-async function updateProjectConsumption(project: Project) {
+async function updateUsage(project: Project) {
   const { account } = project;
   invariant(account, "No account found", UnretryableError);
   const manager = account.$getSubscriptionManager();
-
-  const [usageBased, totalScreenshots] = await Promise.all([
+  const [usageBased, lock] = await Promise.all([
     manager.checkIsUsageBasedPlan(),
-    manager.getCurrentPeriodScreenshots(),
+    getRedisLock(),
   ]);
 
-  if (usageBased) {
-    await updateStripeUsage({ account, totalScreenshots });
+  if (!usageBased) {
+    return;
   }
+
+  return lock.acquire(["updateUsage", account.id], async () => {
+    const [totalScreenshots, spendLimitThreshold] = await Promise.all([
+      manager.getCurrentPeriodScreenshots(),
+      getSpendLimitThreshold({ account, comparePreviousUsage: true }),
+    ]);
+
+    await updateStripeUsage({ account, totalScreenshots });
+
+    if (spendLimitThreshold !== null) {
+      const ownerIds = await account.$getOwnerIds();
+      await sendNotification({
+        type: "spend_limit",
+        data: {
+          accountName: account.name,
+          accountSlug: account.slug,
+          blockWhenSpendLimitIsReached: account.blockWhenSpendLimitIsReached,
+          threshold: spendLimitThreshold,
+        },
+        recipients: ownerIds,
+      });
+    }
+  });
 }
 
 /**
@@ -102,10 +127,7 @@ export async function performBuild(build: Build) {
     }),
   ]);
 
-  await Promise.all([
-    updateProjectConsumption(project),
-    syncGitlabProject(project),
-  ]);
+  await Promise.all([updateUsage(project), syncGitlabProject(project)]);
 }
 
 export const job = createModelJob("build", Build, performBuild);
