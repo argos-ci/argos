@@ -180,10 +180,10 @@ function checkIsFlatTier(tier: Stripe.Price.Tier): tier is StripeFlatTier {
 
 /**
  * Check if a tier is a usage tier.
- * A usage tier has a unit_amount, an up_to value and no flat_amount.
+ * A usage tier has a unit_amount_decimal and no flat_amount.
  */
 function checkIsUsageTier(tier: Stripe.Price.Tier): tier is StripeUsageTier {
-  return Boolean(tier.unit_amount_decimal);
+  return Boolean(tier.unit_amount_decimal && !tier.flat_amount);
 }
 
 const CurrencySchema = z.enum(["usd", "eur"]);
