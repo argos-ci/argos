@@ -1,6 +1,6 @@
 # Argos Engineering Documentation & Technical References
 
-This document outlines Argos’ architecture, explains how it’s hosted on Heroku using AWS S3 for image storage, and describes where to find further engineering references. The Argos CLI is maintained in a separate repository at [argos-ci/argos-javascript](https://github.com/argos-ci/argos-javascript).
+This document outlines Argos’ architecture, explains how it’s hosted on Heroku using AWS S3 for image storage, and describes where to find further engineering references. The Argos SDK are maintained in a separate repository at [argos-ci/argos-javascript](https://github.com/argos-ci/argos-javascript).
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ Argos is a visual testing platform that helps teams:
 - Detect UI regressions quickly
 - Integrate seamlessly into various CI workflows
 
-It achieves this by hosting its core application on Heroku, uploading screenshots to AWS S3, and providing a companion CLI to facilitate automation from different CI services.
+It achieves this by hosting its core application on Heroku, uploading screenshots to AWS S3, and providing some SDKs to facilitate automation from different CI services and testing frameworks.
 
 ---
 
@@ -94,7 +94,7 @@ Argos relies on a modern, TypeScript-heavy toolchain and documentation scattered
    - Written in TypeScript.
    - Uses **knex** for database migrations and queries.
    - Interacts with AWS S3 for screenshot storage.
-   - GraphQL-related modules leverage **@graphql-codegen** for generating typed schema/resolvers.
+   - GraphQL-related modules leverage **graphql-codegen** for generating typed schema/resolvers.
 
 3. **Frontend Code**
 
@@ -107,7 +107,7 @@ Argos relies on a modern, TypeScript-heavy toolchain and documentation scattered
    - **Vitest** for unit and integration tests.
    - **Playwright** for end-to-end testing.
 
-5. **CLI Tool**
+5. **SDKs**
    - Found in a separate repo: [argos-ci/argos-javascript](https://github.com/argos-ci/argos-javascript).
    - Publishes screenshots from CI environments.
    - Shares authentication tokens and project info with the Argos backend.
