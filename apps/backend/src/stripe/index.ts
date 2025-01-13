@@ -88,7 +88,7 @@ function getPlanItemFromStripeSubscription(
   // All addons prices have a metadata (type: "addon")
   // all others are considered as plan prices.
   const planItems = subscription.items.data.filter(
-    (item) => item.metadata["type"] !== "addon",
+    (item) => item.price.metadata["type"] !== "addon",
   );
   const item = planItems[0];
   invariant(item, "no plan items found");
