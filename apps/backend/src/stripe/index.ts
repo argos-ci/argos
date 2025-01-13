@@ -230,7 +230,8 @@ async function getPriceInfosFromStripeSubscription(
       return {
         includedScreenshots,
         currency,
-        additionalScreenshotPrice: Number(firstUsageTier.unit_amount_decimal),
+        additionalScreenshotPrice:
+          Number(firstUsageTier.unit_amount_decimal) / 100,
       };
     }
     case "per_unit": {
