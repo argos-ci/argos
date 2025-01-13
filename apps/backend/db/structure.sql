@@ -3066,3 +3066,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025010
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105124212_spend-management.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105130307_remove-crawls-captures.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250111204217_user-notifications.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250113180732_clean-additional-screenshot-price.js', 1, NOW());
