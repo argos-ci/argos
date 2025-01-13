@@ -22,6 +22,7 @@ import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
 import { CircleProgress } from "@/ui/Progress";
 import { Separator } from "@/ui/Separator";
@@ -257,7 +258,16 @@ function SpendManagementForm(props: {
               ) : null}
             </div>
           </CardBody>
-          <FormCardFooter isSuccessful={isSuccessful} />
+          <FormCardFooter isSuccessful={isSuccessful}>
+            Learn more about{" "}
+            <Link
+              href="https://argos-ci.com/docs/spend-management"
+              target="_blank"
+            >
+              Spend Management
+            </Link>
+            .
+          </FormCardFooter>
         </Form>
       </FormProvider>
       <Modal
