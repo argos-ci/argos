@@ -46,9 +46,9 @@ const _BuildFragment = graphql(`
     createdAt
     branch
     type
+    baseBranch
     baseScreenshotBucket {
       id
-      branch
       createdAt
     }
     pullRequest {
@@ -666,7 +666,7 @@ const BuildScreenshots = memo(
           {props.build.baseScreenshotBucket ? (
             <BuildScreenshotHeader
               label="Baseline"
-              branch={props.build.baseScreenshotBucket.branch}
+              branch={props.build.baseBranch}
               date={props.build.baseScreenshotBucket.createdAt}
             />
           ) : (
@@ -734,7 +734,7 @@ export function BuildDetail(props: {
                 <BuildDetailToolbar
                   activeDiff={activeDiff}
                   repoUrl={props.repoUrl}
-                  baseBranch={build.baseScreenshotBucket?.branch ?? null}
+                  baseBranch={build.baseBranch ?? null}
                   compareBranch={build.branch}
                   bordered={scrolled}
                   prMerged={build.pullRequest?.merged ?? false}
