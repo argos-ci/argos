@@ -1017,6 +1017,7 @@ export type IScreenshotMetadata = {
   browser?: Maybe<IScreenshotMetadataBrowser>;
   colorScheme?: Maybe<IScreenshotMetadataColorScheme>;
   mediaType?: Maybe<IScreenshotMetadataMediaType>;
+  previewUrl?: Maybe<Scalars['String']['output']>;
   sdk: IScreenshotMetadataSdk;
   test?: Maybe<IScreenshotMetadataTest>;
   url?: Maybe<Scalars['String']['output']>;
@@ -2138,6 +2139,7 @@ export type IScreenshotMetadataResolvers<ContextType = Context, ParentType exten
   browser?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataBrowser']>, ParentType, ContextType>;
   colorScheme?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataColorScheme']>, ParentType, ContextType>;
   mediaType?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataMediaType']>, ParentType, ContextType>;
+  previewUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   sdk?: Resolver<IResolversTypes['ScreenshotMetadataSDK'], ParentType, ContextType>;
   test?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataTest']>, ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;

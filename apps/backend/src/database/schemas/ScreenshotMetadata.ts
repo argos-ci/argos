@@ -1,3 +1,4 @@
+import { JSONSchema } from "objection";
 import { z } from "zod";
 
 const ViewportSchema = z.object({
@@ -41,6 +42,7 @@ const SdkSchema = z.object({
 export const ScreenshotMetadataSchema = z
   .object({
     url: z.string().optional(),
+    previewUrl: z.string().optional(),
     viewport: ViewportSchema.optional(),
     colorScheme: z.enum(["light", "dark"]).optional(),
     mediaType: z.enum(["screen", "print"]).optional(),
@@ -51,20 +53,31 @@ export const ScreenshotMetadataSchema = z
   })
   .strict();
 
-export const ScreenshotMetadataJsonSchema = {
+export const ScreenshotMetadataJsonSchema: JSONSchema = {
+  description: "Metadata about a screenshot",
   type: ["object", "null"],
   properties: {
     url: {
+      description: "The URL of the page that was screenshotted",
       type: "string",
+      format: "uri",
+    },
+    previewUrl: {
+      description: "An URL to an accessible preview of the screenshot",
+      type: "string",
+      format: "uri",
     },
     viewport: {
+      description: "The viewport dimensions when the screenshot was taken",
       type: "object",
       properties: {
         width: {
+          description: "The width of the viewport",
           type: "integer",
           minimum: 0,
         },
         height: {
+          description: "The height of the viewport",
           type: "integer",
           minimum: 0,
         },
@@ -72,14 +85,17 @@ export const ScreenshotMetadataJsonSchema = {
       required: ["width", "height"],
     },
     colorScheme: {
+      description: "The color scheme when the screenshot was taken",
       type: "string",
       enum: ["light", "dark"],
     },
     mediaType: {
+      description: "The media type when the screenshot was taken",
       type: "string",
       enum: ["screen", "print"],
     },
     test: {
+      description: "The test that generated the screenshot",
       oneOf: [
         {
           type: "object",
@@ -134,6 +150,7 @@ export const ScreenshotMetadataJsonSchema = {
       ],
     },
     browser: {
+      description: "The browser that generated the screenshot",
       type: "object",
       properties: {
         name: {
@@ -146,6 +163,7 @@ export const ScreenshotMetadataJsonSchema = {
       required: ["name", "version"],
     },
     automationLibrary: {
+      description: "The automation library that generated the screenshot",
       type: "object",
       properties: {
         name: {
@@ -158,6 +176,7 @@ export const ScreenshotMetadataJsonSchema = {
       required: ["name", "version"],
     },
     sdk: {
+      description: "The Argos SDK that generated the screenshot",
       type: "object",
       properties: {
         name: {
