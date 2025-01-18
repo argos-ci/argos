@@ -42,13 +42,15 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   buildType: BuildType | null;
 }) {
   const metadata =
-    activeDiff.compareScreenshot?.metadata ??
-    activeDiff.baseScreenshot?.metadata;
+    activeDiff.status === ScreenshotDiffStatus.Removed
+      ? activeDiff.baseScreenshot?.metadata
+      : activeDiff.compareScreenshot?.metadata;
   const automationLibrary = metadata?.automationLibrary ?? null;
   const browser = metadata?.browser ?? null;
   const sdk = metadata?.sdk ?? null;
   const viewport = metadata?.viewport ?? null;
   const url = metadata?.url ?? null;
+  const previewUrl = metadata?.previewUrl ?? null;
   const colorScheme = metadata?.colorScheme ?? null;
   const mediaType = metadata?.mediaType ?? null;
   const test = metadata?.test ?? null;
@@ -115,14 +117,15 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
               <MediaTypeIndicator mediaType={mediaType} className="size-4" />
             )}
             {viewport && <ViewportIndicator viewport={viewport} />}
-            {url && (
+            {url && URL.canParse(url) ? (
               <UrlIndicator
                 url={url}
+                previewUrl={previewUrl}
                 isStorybook={
                   automationLibrary?.name === "@storybook/test-runner"
                 }
               />
-            )}
+            ) : null}
             {test && (
               <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
             )}

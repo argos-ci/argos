@@ -812,6 +812,7 @@ type ScreenshotMetadata {
   browser: ScreenshotMetadataBrowser
   colorScheme: ScreenshotMetadataColorScheme
   mediaType: ScreenshotMetadataMediaType
+  previewUrl: String
   sdk: ScreenshotMetadataSDK!
   test: ScreenshotMetadataTest
   url: String

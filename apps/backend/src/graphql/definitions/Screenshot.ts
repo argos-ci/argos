@@ -60,6 +60,7 @@ export const typeDefs = gql`
 
   type ScreenshotMetadata {
     url: String
+    previewUrl: String
     viewport: ScreenshotMetadataViewport
     colorScheme: ScreenshotMetadataColorScheme
     mediaType: ScreenshotMetadataMediaType
