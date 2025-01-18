@@ -19,11 +19,18 @@ export function MenuSeparator() {
 
 export { MenuTrigger } from "react-aria-components";
 
-export function Menu<T extends object>({ className, ...props }: MenuProps<T>) {
+export function Menu<T extends object>(
+  props: MenuProps<T> & {
+    ref?: React.Ref<HTMLDivElement>;
+  },
+) {
   return (
     <RACMenu<T>
-      className={clsx("select-none overflow-auto outline-none", className)}
       {...props}
+      className={clsx(
+        "select-none overflow-auto outline-none",
+        props.className,
+      )}
     />
   );
 }
@@ -31,8 +38,8 @@ export function Menu<T extends object>({ className, ...props }: MenuProps<T>) {
 type MenuItemVariant = "default" | "danger";
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: "text hover:bg-hover focus:bg-hover",
-  danger: "text-danger-low hover:bg-danger-hover focus:bg-danger-hover",
+  default: "text data-[focused]:bg-hover",
+  danger: "text-danger-low data-[focused]:bg-danger-hover",
 };
 
 export function MenuItem(
@@ -46,7 +53,7 @@ export function MenuItem(
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
-        "aria-disabled:opacity-disabled flex items-center rounded px-3 py-1.5 text-sm focus:outline-none aria-disabled:hover:bg-transparent",
+        "aria-disabled:opacity-disabled flex items-center rounded px-3 py-1.5 text-sm focus:outline-none data-[focused]:data-[disabled]:bg-transparent",
       )}
       {...props}
     >
