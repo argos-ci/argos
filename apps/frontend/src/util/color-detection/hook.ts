@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { captureException } from "@sentry/react";
 
 import type { Rect } from "./types";
 
@@ -11,10 +12,17 @@ export function useColoredRects(input: { url: string }): null | Rect[] {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
-    worker.onmessage = (event) => {
+    worker.addEventListener("message", (event) => {
       setRects(event.data);
-    };
+    });
+    worker.addEventListener("error", (event) => {
+      console.error(event.message);
+      captureException(`Worker error: ${event.message}`);
+    });
     worker.postMessage({ url: input.url });
+    return () => {
+      worker.terminate();
+    };
   }, [input.url]);
   return rects;
 }
