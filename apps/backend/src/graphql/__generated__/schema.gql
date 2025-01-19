@@ -766,6 +766,7 @@ type Screenshot implements Node {
   height: Int
   id: ID!
   metadata: ScreenshotMetadata
+  originalUrl: String!
   playwrightTraceUrl: String
   url: String!
   width: Int

@@ -6,8 +6,8 @@ import { DownloadIcon } from "lucide-react";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
-import { IconButtonLink } from "@/ui/IconButton";
-import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
+import { IconButton } from "@/ui/IconButton";
+import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -61,19 +61,16 @@ type BuildFragmentDocument = DocumentType<typeof _BuildFragment>;
 
 const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string; name: string }) => {
-    const downloadUrl = imgkit(props.url, ["orig=true", "ik-attachment=true"]);
     const [loading, setLoading] = useState(false);
 
     return (
       <Tooltip placement="left" content={props.tooltip}>
-        <IconButtonLink
+        <IconButton
           variant="contained"
           isDisabled={loading}
-          href={downloadUrl}
-          download={props.name}
           onPress={() => {
             setLoading(true);
-            fetchImage(downloadUrl)
+            fetchImage(props.url)
               .then((res) => res.blob())
               .then((blob) => {
                 const a = document.createElement("a");
@@ -89,7 +86,7 @@ const DownloadScreenshotButton = memo(
           }}
         >
           <DownloadIcon />
-        </IconButtonLink>
+        </IconButton>
       </Tooltip>
     );
   },
@@ -285,7 +282,7 @@ function DownloadBaseScreenshotButton({
 }) {
   return (
     <DownloadScreenshotButton
-      url={diff.baseScreenshot!.url}
+      url={diff.baseScreenshot!.originalUrl}
       tooltip="Download baseline screenshot"
       name={`Build #${buildId} - ${diff.name} - baseline.png`}
     />
@@ -407,7 +404,7 @@ function DownloadCompareScreenshotButton({
 }) {
   return (
     <DownloadScreenshotButton
-      url={diff.compareScreenshot!.url}
+      url={diff.compareScreenshot!.originalUrl}
       tooltip="Download changes screenshot"
       name={`Build #${buildId} - ${diff.name} - new.png`}
     />
