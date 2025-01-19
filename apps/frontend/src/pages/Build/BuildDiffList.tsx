@@ -269,7 +269,7 @@ function getImgAttributes(
     width: dimensions?.width,
     height: dimensions?.height,
     parameters: dimensions
-      ? [`tr=w-${dimensions.width},h-${dimensions.height},c-at_max,dpr-2`]
+      ? [`w-${dimensions.width}`, `h-${dimensions.height}`, `c-at_max`, `dpr-2`]
       : [],
   };
 }
