@@ -7,7 +7,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
-import { ImageKitPicture } from "@/ui/ImageKitPicture";
+import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -567,7 +567,7 @@ function CompareScreenshotChanged(props: {
       </ZoomPane>
       <DiffIndicator
         key={diff.url}
-        url={diff.url}
+        url={imgkit(diff.url, ["tr=orig-true"])}
         scale={scale}
         height={diff.height ?? null}
         visible={diffVisible}

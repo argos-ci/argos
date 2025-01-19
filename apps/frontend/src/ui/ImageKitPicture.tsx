@@ -39,7 +39,7 @@ export function ImageKitPicture(props: ImageKitPictureProps) {
   );
 }
 
-function imgkit(url: string, parameters: string[]): string {
+export function imgkit(url: string, parameters: string[]): string {
   if (!checkIsImageKitUrl(url)) {
     return url;
   }
