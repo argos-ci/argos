@@ -12,9 +12,15 @@ self.onmessage = (event) => {
   if (typeof url !== "string") {
     throw new Error("Expected url to be a string");
   }
-  detectColoredZones({ url }).then((rects) => {
-    self.postMessage(rects);
-  });
+  detectColoredZones({ url })
+    .then((rects) => {
+      self.postMessage(rects);
+    })
+    .catch((error) => {
+      setTimeout(() => {
+        throw error;
+      });
+    });
 };
 
 /**

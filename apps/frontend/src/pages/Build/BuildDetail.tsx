@@ -567,7 +567,7 @@ function CompareScreenshotChanged(props: {
       </ZoomPane>
       <DiffIndicator
         key={diff.url}
-        url={imgkit(diff.url, ["tr=orig-true"])}
+        url={imgkit(diff.url, ["f-jpg"])}
         scale={scale}
         height={diff.height ?? null}
         visible={diffVisible}
