@@ -14,13 +14,7 @@ export function ImageKitPicture(props: ImageKitPictureProps) {
   }
 
   if (original) {
-    return (
-      <img
-        ref={ref}
-        src={imgkit(src, ["orig=true", ...parameters])}
-        {...rest}
-      />
-    );
+    return <img ref={ref} src={imgkit(src, ["tr=orig-true"])} {...rest} />;
   }
   return (
     <picture>
@@ -45,7 +39,7 @@ export function ImageKitPicture(props: ImageKitPictureProps) {
   );
 }
 
-export function imgkit(url: string, parameters: string[]): string {
+function imgkit(url: string, parameters: string[]): string {
   if (!checkIsImageKitUrl(url)) {
     return url;
   }

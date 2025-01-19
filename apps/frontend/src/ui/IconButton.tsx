@@ -2,8 +2,6 @@ import { clsx } from "clsx";
 import {
   Button as RACButton,
   ButtonProps as RACButtonProps,
-  Link as RACLink,
-  LinkProps as RACLinkProps,
 } from "react-aria-components";
 
 type IconButtonVariant = "contained" | "outline";
@@ -71,27 +69,6 @@ export function IconButton({
       {...props}
       className={clsx(
         getIconButtonClassName({ color, variant, size }),
-        props.className,
-      )}
-    />
-  );
-}
-
-type IconButtonLinkProps = RACLinkProps &
-  IconButtonOptions & {
-    ref?: React.Ref<HTMLAnchorElement>;
-  };
-
-export function IconButtonLink({
-  color,
-  variant,
-  ...props
-}: IconButtonLinkProps) {
-  return (
-    <RACLink
-      {...props}
-      className={clsx(
-        getIconButtonClassName({ color, variant }),
         props.className,
       )}
     />

@@ -1,11 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import {
-  getPublicImageFileUrl,
-  getPublicUrl,
-  getTwicPicsUrl,
-} from "@/storage/index.js";
+import { getPublicImageFileUrl, getPublicUrl } from "@/storage/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 
@@ -73,6 +69,7 @@ export const typeDefs = gql`
   type Screenshot implements Node {
     id: ID!
     url: String!
+    originalUrl: String!
     width: Int
     height: Int
     metadata: ScreenshotMetadata
@@ -84,11 +81,19 @@ export const resolvers: IResolvers = {
   Screenshot: {
     url: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) {
-        return getTwicPicsUrl(screenshot.s3Id);
+        return getPublicUrl(screenshot.s3Id);
       }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
       return getPublicImageFileUrl(file);
+    },
+    originalUrl: async (screenshot, _args, ctx) => {
+      if (!screenshot.fileId) {
+        return getPublicUrl(screenshot.s3Id);
+      }
+      const file = await ctx.loaders.File.load(screenshot.fileId);
+      invariant(file, "File not found");
+      return getPublicUrl(file.key);
     },
     width: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) {
