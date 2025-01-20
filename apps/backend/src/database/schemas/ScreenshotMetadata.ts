@@ -60,7 +60,6 @@ export const ScreenshotMetadataJsonSchema: JSONSchema = {
     url: {
       description: "The URL of the page that was screenshotted",
       type: "string",
-      format: "uri",
     },
     previewUrl: {
       description: "An URL to an accessible preview of the screenshot",
