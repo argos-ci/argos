@@ -1,4 +1,5 @@
 import { getCSPScriptHash } from "@argos-ci/playwright";
+import { createArgosReporterOptions } from "@argos-ci/playwright/reporter";
 import { defineConfig, devices } from "@playwright/test";
 
 import argosConfig from "./apps/backend/src/config/index.js";
@@ -38,9 +39,9 @@ const config = defineConfig({
     ["html"],
     [
       "@argos-ci/playwright/reporter",
-      {
+      createArgosReporterOptions({
         uploadToArgos: !!process.env.CI,
-      },
+      }),
     ],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
