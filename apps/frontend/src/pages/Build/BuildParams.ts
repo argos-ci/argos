@@ -15,7 +15,13 @@ export const useBuildParams = (): BuildParams | null => {
       return null;
     }
     const numBuildNumber = Number(buildNumber);
-    const valid = Number.isInteger(numBuildNumber);
+    const valid =
+      // Integer.
+      Number.isInteger(numBuildNumber) &&
+      // Positive.
+      numBuildNumber > 0 &&
+      // Signed 32-bit.
+      numBuildNumber < 2147483647;
     if (!valid) {
       return null;
     }
