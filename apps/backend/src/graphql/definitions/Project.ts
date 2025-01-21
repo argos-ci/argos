@@ -848,6 +848,10 @@ export const resolvers: IResolvers = {
       });
     },
     deleteProject: async (_root, args, ctx) => {
+      const project = await Project.query().findById(args.id).select("id");
+      if (!project) {
+        return true;
+      }
       await deleteProject({ id: args.id, user: ctx.auth?.user });
       return true;
     },
