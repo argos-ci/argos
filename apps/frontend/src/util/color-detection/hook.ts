@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { captureException } from "@sentry/react";
 
 import type { MessageData, Rect } from "./types";
 
@@ -17,7 +16,6 @@ export function useColoredRects(input: { url: string }): null | Rect[] {
     });
     worker.addEventListener("error", (event) => {
       console.error(event.message);
-      captureException(`Worker error: ${event.message}`);
     });
     worker.postMessage({ url: input.url });
     return () => {
