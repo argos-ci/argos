@@ -55,7 +55,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",
     "use-debounce": "^10.0.4",
-    "vite": "^6.0.8"
+    "vite": "^6.0.9"
   },
   "dependencies": {
     "@number-flow/react": "^0.5.5",
