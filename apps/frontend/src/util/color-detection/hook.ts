@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { captureException } from "@sentry/react";
 
-import type { Rect } from "./types";
+import type { MessageData, Rect } from "./types";
 
 /**
  * Detects colored areas in the image provided by the URL.
@@ -12,7 +12,7 @@ export function useColoredRects(input: { url: string }): null | Rect[] {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
-    worker.addEventListener("message", (event) => {
+    worker.addEventListener("message", (event: MessageEvent<MessageData>) => {
       setRects(event.data);
     });
     worker.addEventListener("error", (event) => {

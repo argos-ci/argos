@@ -1,5 +1,5 @@
 import { fetchImage } from "../image";
-import type { Rect } from "./types";
+import type { MessageData, Rect } from "./types";
 
 /**
  * The size of the blocks to use when detecting colored zones.
@@ -14,7 +14,7 @@ self.onmessage = (event) => {
   }
   detectColoredZones({ url })
     .then((rects) => {
-      self.postMessage(rects);
+      self.postMessage(rects satisfies MessageData);
     })
     .catch((error) => {
       setTimeout(() => {
@@ -28,6 +28,11 @@ self.onmessage = (event) => {
  */
 async function fetchBitmapFromURL(url: string) {
   const response = await fetchImage(url);
+  const contentType = response.headers.get("content-type");
+  // We only support JPEG images.
+  if (contentType !== "image/jpeg") {
+    return null;
+  }
   const blob = await response.blob();
   const bmp = await createImageBitmap(blob);
   return bmp;
@@ -36,7 +41,9 @@ async function fetchBitmapFromURL(url: string) {
 /**
  * Detects colored zones in an image.
  */
-async function detectColoredZones(input: { url: string }): Promise<Rect[]> {
+async function detectColoredZones(input: {
+  url: string;
+}): Promise<Rect[] | null> {
   const { url } = input;
 
   // Create an offscreen canvas to draw the image.
@@ -50,6 +57,9 @@ async function detectColoredZones(input: { url: string }): Promise<Rect[]> {
 
   // Fetch the image and draw it on the canvas.
   const bitmap = await fetchBitmapFromURL(url);
+  if (!bitmap) {
+    return null;
+  }
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   context.drawImage(bitmap, 0, 0);

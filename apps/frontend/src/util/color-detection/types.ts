@@ -7,3 +7,5 @@ export type Rect = {
   width: number;
   height: number;
 };
+
+export type MessageData = Rect[] | null;
