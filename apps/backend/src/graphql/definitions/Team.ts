@@ -392,6 +392,9 @@ export const resolvers: IResolvers = {
       const team = await Team.verifyInviteToken(token, {
         withGraphFetched: "account",
       });
+      if (!team) {
+        return null;
+      }
       invariant(team, "Invalid token");
       invariant(team.account, "Team account not loaded");
       return team.account;
