@@ -322,7 +322,7 @@ function ChartLegendContent({
     <div
       ref={ref}
       className={clsx(
-        "flex flex-wrap items-center justify-center gap-x-6 gap-y-2",
+        "flex max-h-40 flex-wrap items-center justify-center gap-x-6 gap-y-2 overflow-auto",
         verticalAlign === "top" ? "pb-3" : "pt-3",
         className,
       )}
