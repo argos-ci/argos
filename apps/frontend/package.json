@@ -11,7 +11,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@apollo/client": "3.12.6",
+    "@apollo/client": "3.12.7",
     "@argos/config-types": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@argos/util": "workspace:*",
@@ -55,7 +55,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",
     "use-debounce": "^10.0.4",
-    "vite": "^6.0.8"
+    "vite": "^6.0.11"
   },
   "dependencies": {
     "@number-flow/react": "^0.5.5",
