@@ -28,11 +28,11 @@
   "engines": {
     "node": "22"
   },
-  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c",
+  "packageManager": "pnpm@10.0.0+sha512.b8fef5494bd3fe4cbd4edabd0745df2ee5be3e4b0b8b08fa643aa3e4c6702ccc0f00d68fa8a8c9858a735a0032485a44990ed2810526c875e416f001b17df12b",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",
     "@argos-ci/playwright": "^4.1.0",
-    "@eslint/js": "9.18.0",
+    "@eslint/js": "9.19.0",
     "@graphql-codegen/cli": "^5.0.3",
     "@graphql-codegen/client-preset": "^4.5.1",
     "@graphql-codegen/fragment-matcher": "^5.0.2",
@@ -40,23 +40,23 @@
     "@graphql-codegen/typescript": "^4.1.2",
     "@graphql-codegen/typescript-resolvers": "^4.4.1",
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
-    "@parcel/watcher": "^2.5.0",
-    "@playwright/test": "^1.49.1",
+    "@parcel/watcher": "^2.5.1",
+    "@playwright/test": "^1.50.0",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.9",
     "@types/eslint__js": "^8.42.3",
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.10.10",
     "@vitest/eslint-plugin": "^1.1.25",
-    "eslint": "9.18.0",
-    "knip": "^5.42.3",
+    "eslint": "9.19.0",
+    "knip": "^5.43.3",
     "prettier": "^3.4.2",
-    "prettier-plugin-tailwindcss": "^0.6.10",
+    "prettier-plugin-tailwindcss": "^0.6.11",
     "smee-client": "^2.0.4",
-    "turbo": "^2.3.3",
+    "turbo": "^2.3.4",
     "typescript": "5.7.3",
     "typescript-eslint": "^8.21.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.0.3"
+    "vitest": "^3.0.4"
   },
   "resolutions": {
     "@types/react": "19.0.1",
@@ -64,5 +64,16 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "undici": "6.21.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@apollo/protobufjs",
+      "@parcel/watcher",
+      "@sentry/cli",
+      "@swc/core",
+      "esbuild",
+      "odiff-bin",
+      "sharp"
+    ]
   }
 }
