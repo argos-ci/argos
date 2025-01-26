@@ -28,7 +28,6 @@ export default defineConfig(({ mode: argMode }) => {
         output: {
           experimentalMinChunkSize: 10_240,
           manualChunks: (id) => {
-            console.log(id);
             if (id.includes("node_modules")) {
               if (
                 id.includes("/react@") ||
