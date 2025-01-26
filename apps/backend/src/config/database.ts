@@ -14,7 +14,10 @@ export function loadDatabaseConfigFromURL(url: string, config: Config) {
   config.set("pg.connection.password", urlObj.password);
   config.set("pg.connection.database", urlObj.pathname.substring(1));
 
-  if (urlObj.hostname.endsWith("amazonaws.com")) {
+  const hostnameParts = urlObj.hostname.split(".");
+  const baseDomain = hostnameParts.slice(-2).join(".");
+  // If the database is hosted on AWS, enable SSL.
+  if (baseDomain === "amazonaws.com") {
     config.set("pg.connection.ssl", true);
   }
 }
