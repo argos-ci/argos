@@ -14,7 +14,7 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
       {...props}
       role="table"
       className={clsx(
-        "flex flex-col overflow-auto rounded border",
+        "flex flex-col overflow-auto rounded-sm border",
         props.className,
       )}
     />
@@ -29,7 +29,7 @@ export function ListRowLink(props: RACLinkProps) {
       {...props}
       className={clsx(
         listRowClassName,
-        "data-[hovered]:bg-hover data-[focus-visible]:bg-hover focus:outline-none",
+        "data-[hovered]:bg-hover data-[focus-visible]:bg-hover focus:outline-hidden",
         props.className,
       )}
     />

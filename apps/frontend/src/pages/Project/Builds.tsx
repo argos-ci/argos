@@ -111,7 +111,7 @@ function FakeLink({
   return (
     <div
       ref={ref}
-      className={clsx("text-low hover:text transition", className)}
+      className={clsx("text-low hover:text-default transition", className)}
       onClick={(event) => {
         event.preventDefault();
         window.open(href, "_blank")?.focus();

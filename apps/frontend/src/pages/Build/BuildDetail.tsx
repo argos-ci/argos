@@ -133,7 +133,7 @@ const MissingScreenshotInfo = memo(
   }) => {
     return (
       <div className="w-full">
-        <div className="bg-app flex flex-col items-center gap-4 rounded border p-8 text-center">
+        <div className="bg-app flex flex-col items-center gap-4 rounded-sm border p-8 text-center">
           <div className="flex flex-col items-center gap-2">
             <div className="*:size-10">{icon}</div>
             <div className="text-base font-medium">{title}</div>
@@ -602,7 +602,7 @@ function DiffIndicator(props: {
   return (
     <div
       className={clsx(
-        "bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded",
+        "bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm",
         !props.visible && "opacity-0",
       )}
     >

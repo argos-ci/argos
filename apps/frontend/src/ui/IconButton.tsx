@@ -20,13 +20,13 @@ const colorClassNames: Record<
 > = {
   contained: {
     neutral:
-      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text bg-ui/60 data-[focus-visible]:ring-default",
+      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text-default bg-ui/60 data-[focus-visible]:ring-default",
     danger: "", // not used
     success: "", // not used
   },
   outline: {
     neutral:
-      "data-[hovered]:border-hover text-low aria-pressed:bg-active aria-pressed:text data-[pressed]:bg-active data-[pressed]:text data-[focus-visible]:ring-default",
+      "data-[hovered]:border-hover text-low aria-pressed:bg-active aria-pressed:text-default data-[pressed]:bg-active data-[pressed]:text-default data-[focus-visible]:ring-default",
     danger:
       "data-[hovered]:border-danger-hover text-danger-low aria-pressed:bg-danger-active data-[pressed]:bg-danger-active data-[focus-visible]:ring-danger",
     success:
@@ -49,7 +49,7 @@ function getIconButtonClassName(options: IconButtonOptions) {
     /* Base */
     "data-[disabled]:opacity-disabled flex cursor-default border border-transparent text-sm",
     /* Focus */
-    "focus:outline-none data-[focus-visible]:ring-4",
+    "focus:outline-hidden data-[focus-visible]:ring-4",
   );
 }
 

@@ -3,6 +3,7 @@ import { memo } from "react";
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
+import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetail } from "./BuildDetail";
@@ -44,7 +45,7 @@ const BuildProgress = memo(function BuildProgress({
     <div className="flex min-h-0 flex-1 flex-col items-center gap-10 p-10">
       <div className="text-4xl">Your build is cooking...</div>
       <div>
-        <div className="egg-loader" data-visual-test="transparent" />
+        <EggLoader />
       </div>
       {parallel && (
         <div className="w-80">

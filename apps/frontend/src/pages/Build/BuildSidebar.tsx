@@ -27,9 +27,9 @@ function Tab(
   return (
     <RACTab
       className={clsx(
-        "text-low rac-focus cursor-default rounded px-2 text-sm font-medium leading-6",
+        "text-low rac-focus cursor-default rounded-sm px-2 text-sm font-medium leading-6",
         "data-[hovered]:bg-ui",
-        "data-[selected]:text data-[selected]:bg-ui",
+        "data-[selected]:text-default data-[selected]:bg-ui",
       )}
       {...props}
     />
@@ -55,7 +55,7 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
         type="text"
         autoFocus
         placeholder="Find..."
-        className="text placeholder:text-low w-full bg-transparent p-2 pl-6 text-xs leading-6 outline-none"
+        className="text-default placeholder:text-low outline-hidden w-full bg-transparent p-2 pl-6 text-xs leading-6"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onKeyDown={(event) => {

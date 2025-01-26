@@ -30,7 +30,7 @@ export function ColorSwatchPickerItem(
     <RACColorSwatchPickerItem
       {...props}
       className={clsx(
-        "rac-focus relative w-fit rounded outline-none forced-color-adjust-none",
+        "rac-focus outline-hidden relative w-fit rounded-sm forced-color-adjust-none",
         "data-[selected]:ring-primary-active data-[selected]:ring-1 data-[selected]:ring-offset-1",
         props.className,
       )}
@@ -46,7 +46,7 @@ export function ColorSwatch(
   return (
     <RACColorSwatch
       {...props}
-      className={clsx("size-6 rounded border", props.className)}
+      className={clsx("size-6 rounded-sm border", props.className)}
     />
   );
 }

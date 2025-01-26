@@ -121,7 +121,7 @@ export const ProjectBranches = (props: {
               </Link>
               .
             </CardParagraph>
-            <div className="mb-4 rounded border p-4">
+            <div className="mb-4 rounded-sm border p-4">
               <h3 className="mb-1 font-semibold">Default base branch</h3>
               <p className="text-low text-sm">
                 Argos will find the first ancestor commit on base branch in Git
@@ -168,7 +168,7 @@ export const ProjectBranches = (props: {
                 )}
               </div>
             </div>
-            <div className="rounded border p-4">
+            <div className="rounded-sm border p-4">
               <h3 className="mb-1 font-semibold">Auto-approved branches</h3>
               <p className="text-low text-sm">
                 Any branch that matches the specified pattern will be

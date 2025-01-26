@@ -83,7 +83,7 @@ export function EmailLayout(props: {
       <Preview>{props.preview}</Preview>
       <Tailwind>
         <Body className="m-auto bg-white font-sans">
-          <Container className="mx-auto my-10 rounded border border-solid border-gray-200 p-5">
+          <Container className="mx-auto my-10 rounded-sm border border-solid border-gray-200 p-5">
             <Section>
               <Img
                 src={

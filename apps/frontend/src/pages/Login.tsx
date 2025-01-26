@@ -32,11 +32,13 @@ export function Component() {
         <div className="mb-10 text-3xl font-semibold">Login to Argos</div>
 
         {error && (
-          <Alert className="border-danger mb-8 rounded border p-4">
+          <Alert className="border-danger mb-8 rounded-sm border p-4">
             <AlertTitle>Sorry, an error occurred.</AlertTitle>
             <AlertText>
               <p>It seems we've some trouble to log you in.</p>
-              <p className="text my-4 text-base">Error message: {error}</p>
+              <p className="text-default my-4 text-base">
+                Error message: {error}
+              </p>
               <p>
                 Try again, if the error persists, please reach us on{" "}
                 <Link href="https://argos-ci.com/discord" target="_blank">

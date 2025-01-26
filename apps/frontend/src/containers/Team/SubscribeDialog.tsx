@@ -90,7 +90,7 @@ export function TeamSubscribeDialog({
               />
             </div>
 
-            <p className="text mt-4 font-medium">
+            <p className="text-default mt-4 font-medium">
               You will be redirected to Stripe to{" "}
               {!hasSubscribedToTrial
                 ? "start a 14-day Pro plan trial"

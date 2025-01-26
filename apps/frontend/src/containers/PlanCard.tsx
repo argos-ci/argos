@@ -207,7 +207,7 @@ function ConsumptionBlock({
   );
 
   return (
-    <div className="flex flex-col gap-2 rounded border p-4">
+    <div className="flex flex-col gap-2 rounded-sm border p-4">
       <div className="font-medium">Projects</div>
       <div className="flex flex-col gap-1">
         <div className="flex justify-between font-medium">
@@ -404,7 +404,7 @@ export function PlanCard(props: {
               Your plan has a specific limit on screenshots. If you exceed this
               limit in your projects, upgrading to a Team is required.
             </p>
-            <div className="mt-4 rounded border p-2 text-sm">
+            <div className="mt-4 rounded-sm border p-2 text-sm">
               To take advantage of collaboration, create a Team and transfer
               your projects.
             </div>

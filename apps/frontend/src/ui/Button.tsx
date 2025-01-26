@@ -25,7 +25,7 @@ const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     "data-[focus-visible]:ring-primary text-white border-transparent bg-primary-solid data-[hovered]:bg-primary-solid-hover data-[pressed]:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
   secondary:
-    "data-[focus-visible]:ring-default text border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover",
+    "data-[focus-visible]:ring-default text-default border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover",
   destructive:
     "data-[focus-visible]:ring-danger text-white border-transparent bg-danger-solid data-[hovered]:bg-danger-solid-hover data-[pressed]:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
   github:
@@ -33,13 +33,13 @@ const variantClassNames: Record<ButtonVariant, string> = {
   gitlab:
     "data-[focus-visible]:ring-default text-white border-transparent bg-gitlab data-[hovered]:bg-gitlab-hover data-[pressed]:bg-gitlab-active aria-expanded:bg-gitlab-active",
   google:
-    "data-[focus-visible]:ring-default text border-transparent bg-google data-[hovered]:bg-google-hover data-[pressed]:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
+    "data-[focus-visible]:ring-default text-default border-transparent bg-google data-[hovered]:bg-google-hover data-[pressed]:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-  small: "group/button-small rounded py-1 px-2 text-xs",
+  small: "group/button-small rounded-sm py-1 px-2 text-xs",
   medium: "group/button-medium rounded-lg py-[calc(0.375rem-1px)] px-3 text-sm",
-  large: "group/button-large rounded py-3 px-8 text-base",
+  large: "group/button-large rounded-sm py-3 px-8 text-base",
 };
 
 function getButtonClassName(options: ButtonOptions) {
@@ -49,7 +49,7 @@ function getButtonClassName(options: ButtonOptions) {
   return clsx(
     variantClassName,
     sizeClassName,
-    "focus:outline-none data-[focus-visible]:ring-4",
+    "focus:outline-hidden data-[focus-visible]:ring-4",
     "items-center data-[disabled]:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium data-[disabled]:cursor-default",
   );
 }

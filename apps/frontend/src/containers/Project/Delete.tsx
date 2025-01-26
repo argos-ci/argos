@@ -72,7 +72,7 @@ function DeleteProjectButton(props: DeleteProjectButtonProps) {
                   This project will be deleted, along with all of its Builds,
                   Screenshots, Screenshot Diffs, and Settings.
                 </DialogText>
-                <div className="bg-danger-hover text-danger-low my-4 rounded p-2">
+                <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
                   <strong>Warning:</strong> This action is not reversible.
                   Please be certain.
                 </div>

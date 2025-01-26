@@ -237,7 +237,7 @@ const ListHeader = ({
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default select-none items-center border-t pr-2 text-left focus:outline-none",
+        "group/list-header bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle focus:outline-hidden z-10 flex w-full cursor-default select-none items-center border-t pr-2 text-left",
       )}
       style={style}
       onPress={onClick}
@@ -248,7 +248,7 @@ const ListHeader = ({
           !item.expanded && "-rotate-90",
         )}
       />
-      <div className="text flex-1 text-sm font-medium">
+      <div className="text-default flex-1 text-sm font-medium">
         {getGroupLabel(item.name)}
       </div>
       <Badge className="shrink-0">
@@ -470,7 +470,7 @@ function DiffCard(props: {
       <div
         className={clsx(
           "pointer-events-none absolute inset-0 z-20 rounded-lg",
-          active && "ring-primary-highlight ring-1 ring-inset",
+          active && "ring-(--violet-12) ring-1 ring-inset",
         )}
       />
     </div>
@@ -599,7 +599,7 @@ function ListItem({
     <ListItemButton
       ref={ref}
       data-index={index}
-      className="group/item relative size-full cursor-default text-left focus:outline-none"
+      className="group/item focus:outline-hidden relative size-full cursor-default text-left"
       onPress={() => {
         if (item.diff) {
           setActiveDiff(item.diff);

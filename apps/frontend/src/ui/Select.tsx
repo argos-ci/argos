@@ -25,7 +25,7 @@ export function SelectButton({
     <Button
       {...rest}
       className={clsx(
-        "bg-app text invalid:border-danger hover:border-hover focus:border-active disabled:opacity-disabled cursor-default appearance-none rounded border leading-tight focus:outline-none",
+        "bg-app text-default invalid:border-danger hover:border-hover focus:border-active disabled:opacity-disabled focus:outline-hidden cursor-default appearance-none rounded-sm border leading-tight",
         "flex w-full items-center justify-between",
         {
           md: "gap-2 px-3 py-2 text-base",

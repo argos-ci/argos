@@ -11,7 +11,7 @@ export const BreadcrumbItem = (props: HTMLProps<HTMLLIElement>) => {
 export const BreadcrumbLink = (props: HeadlessLinkProps) => {
   return (
     <HeadlessLink
-      className="text-low hover:text aria-[current=page]:text flex min-h-[28px] items-center gap-2 font-medium transition aria-[current=page]:cursor-default"
+      className="text-low hover:text-default aria-[current=page]:text-default flex min-h-[28px] items-center gap-2 font-medium transition aria-[current=page]:cursor-default"
       {...props}
     />
   );

@@ -6,7 +6,7 @@ import { Time } from "@/ui/Time";
 
 export function ProviderCard(props: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4 rounded border p-4 text-sm">
+    <div className="flex items-center gap-4 rounded-sm border p-4 text-sm">
       {props.children}
     </div>
   );

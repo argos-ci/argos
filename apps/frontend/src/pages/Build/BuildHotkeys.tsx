@@ -240,7 +240,7 @@ export function useBuildHotkey(
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="bg-ui inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-xs">
+    <kbd className="bg-ui inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-xs">
       {children}
     </kbd>
   );

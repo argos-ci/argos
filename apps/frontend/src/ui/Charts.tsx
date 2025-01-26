@@ -63,7 +63,7 @@ function ChartContainer({
         data-chart={chartId}
         ref={ref}
         className={clsx(
-          "[&_.recharts-cartesian-axis-tick_text]:fill-subtle [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "[&_.recharts-cartesian-axis-tick_text]:fill-subtle [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-sector[stroke='#fff']]:stroke-transparent",
           className,
         )}
         {...props}
@@ -213,7 +213,7 @@ function ChartTooltipContent({
                     !hideIndicator && (
                       <div
                         className={clsx(
-                          "shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]",
+                          "border-(--color-border) bg-(--color-bg) shrink-0 rounded-[2px]",
                           {
                             "h-2.5 w-2.5": indicator === "dot",
                             "w-1": indicator === "line",
@@ -244,7 +244,7 @@ function ChartTooltipContent({
                       </span>
                     </div>
                     {item.value && (
-                      <span className="text font-medium tabular-nums">
+                      <span className="text-default font-medium tabular-nums">
                         {item.value.toLocaleString()}
                       </span>
                     )}
