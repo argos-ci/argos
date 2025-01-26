@@ -64,5 +64,16 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "undici": "6.21.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@apollo/protobufjs",
+      "@parcel/watcher",
+      "@sentry/cli",
+      "@swc/core",
+      "esbuild",
+      "odiff-bin",
+      "sharp"
+    ]
   }
 }
