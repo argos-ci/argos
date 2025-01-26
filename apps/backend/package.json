@@ -74,6 +74,7 @@
     "morgan": "^1.10.0",
     "objection": "^3.1.4",
     "odiff-bin": "^3.2.0",
+    "ora": "^8.1.1",
     "p-retry": "^6.2.1",
     "p-timeout": "^6.1.4",
     "path-to-regexp": "^8.2.0",

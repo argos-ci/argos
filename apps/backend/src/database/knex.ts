@@ -1,12 +1,9 @@
 import Knex from "knex";
 
+import { getKnexConfig } from "@/config/database.js";
 import config from "@/config/index.js";
 
 import { transaction } from "./transaction.js";
 
-export const knex = Knex(config.get("pg"));
+export const knex = Knex(getKnexConfig(config));
 transaction.knex(knex);
-
-// process.on("SIGTERM", () => {
-//   knex.destroy();
-// });
