@@ -10,7 +10,7 @@ export function TextInput(props: TextInputProps) {
       className={clsx(
         props.className,
         "bg-app text-default not-disabled:hover:border-hover focus:border-active disabled:opacity-disabled aria-invalid:border-danger focus:outline-hidden block w-full appearance-none rounded-sm border px-3 py-2 leading-tight",
-        "group-[]/text-input:rounded-r-none",
+        "group-[*]/text-input:rounded-r-none",
       )}
     />
   );

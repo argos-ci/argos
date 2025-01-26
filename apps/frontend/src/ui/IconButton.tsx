@@ -40,7 +40,7 @@ function getIconButtonClassName(options: IconButtonOptions) {
   return clsx(
     variantClassName,
     /* Group */
-    "group-[]/button-group:rounded-none group-[]/button-group:first:rounded-l-lg group-[]/button-group:last:rounded-r-lg",
+    "group-[*]/button-group:rounded-none group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:last:rounded-r-lg",
     /* Size */
     {
       small: "p-[calc(0.25rem-1px)] *:size-4 rounded-md leading-4 text-sm",
