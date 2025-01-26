@@ -165,7 +165,7 @@ function RegenerateTokenDialog(props: {
             <DialogText>
               Regenerating the token if you suspect it has been compromised.
             </DialogText>
-            <div className="bg-danger-hover text-danger-low my-4 rounded p-2">
+            <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
               <strong>Warning:</strong> By regenerating the token, the current
               token will be invalidated immediately.
             </div>

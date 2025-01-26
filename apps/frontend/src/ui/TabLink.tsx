@@ -58,7 +58,7 @@ export function TabLink({
       href={resolvedHref}
       className={clsx(
         className,
-        "text-low hover:text aria-selected:text data-[focus-visible]:ring-default z-10 -mb-px inline-block rounded-t border-b-2 border-b-transparent p-3 text-sm font-medium transition focus:outline-none aria-selected:cursor-default aria-selected:border-b-current data-[focus-visible]:ring-2",
+        "text-low hover:text-default aria-selected:text-default data-[focus-visible]:ring-default focus:outline-hidden z-10 -mb-px inline-block rounded-t border-b-2 border-b-transparent p-3 text-sm font-medium transition aria-selected:cursor-default aria-selected:border-b-current data-[focus-visible]:ring-2",
       )}
       {...props}
     />

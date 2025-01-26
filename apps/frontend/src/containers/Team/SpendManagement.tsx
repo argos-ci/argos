@@ -159,7 +159,7 @@ function SpendManagementForm(props: {
               <strong>100%</strong> of the set amount. You can choose to pause
               builds when the spend amount limit is reached.
             </CardParagraph>
-            <div className="overflow-hidden rounded border">
+            <div className="overflow-hidden rounded-sm border">
               <div className="flex items-center justify-between gap-4 p-4">
                 <div className="flex items-center gap-2">
                   <CircleProgress

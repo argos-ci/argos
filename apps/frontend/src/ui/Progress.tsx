@@ -76,7 +76,7 @@ export function CircleProgress({
       aria-valuemax={max}
     >
       <circle
-        className="text-[--mauve-6]"
+        className="text-(--mauve-6)"
         strokeWidth={strokeWidth}
         stroke="currentColor"
         fill="transparent"
@@ -85,7 +85,7 @@ export function CircleProgress({
         cy={radius + strokeWidth}
       />
       <circle
-        className="text-[--violet-9] transition-[stroke-dashoffset]"
+        className="text-(--violet-9) transition-[stroke-dashoffset]"
         strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={offset}

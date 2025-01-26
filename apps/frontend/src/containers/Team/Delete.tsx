@@ -108,7 +108,7 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
               Argos recommends that you transfer projects you want to keep to
               another Team before deleting this Team.
             </DialogText>
-            <div className="bg-danger-hover text-danger-low my-4 rounded p-2">
+            <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
               <strong>Warning:</strong> This action is not reversible. Please be
               certain.
             </div>

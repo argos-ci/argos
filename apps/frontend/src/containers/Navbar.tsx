@@ -22,7 +22,7 @@ export function Navbar() {
           href="https://argos-ci.com/discord"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-low hover:text font-medium transition"
+          className="text-low hover:text-default font-medium transition"
         >
           Help & Community
         </a>
@@ -30,7 +30,7 @@ export function Navbar() {
           href="https://argos-ci.com/docs"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-low hover:text font-medium transition"
+          className="text-low hover:text-default font-medium transition"
         >
           Docs
         </a>

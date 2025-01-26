@@ -23,7 +23,7 @@ const BadgeBlock = (props: {
 }) => {
   const refUrl = `https://app.argos-ci.com/${props.projectSlug}/reference`;
   return (
-    <div className="rounded border p-4">
+    <div className="rounded-sm border p-4">
       <h3 className="mb-4 font-semibold">{props.title}</h3>
       <div className="mb-4 flex h-10">
         <a href={refUrl} title="Covered by Argos Visual Testing">

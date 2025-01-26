@@ -360,7 +360,7 @@ export function ZoomPane(props: {
   return (
     <div
       ref={paneRef}
-      className="group/pane bg-app flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded border"
+      className="group/pane bg-app flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded-sm border"
     >
       <div
         ref={contentRef}

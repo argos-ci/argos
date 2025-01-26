@@ -44,7 +44,7 @@ export function ProjectContributors(props: {
           level of access.
         </CardParagraph>
         {project.defaultUserLevel && (
-          <div className="rounded border p-2 text-sm">
+          <div className="rounded-sm border p-2 text-sm">
             The default access level for new contributors is set to{" "}
             <strong>
               {ProjectContributorLevelLabel[project.defaultUserLevel]}

@@ -14,7 +14,7 @@ function Switch(props: SwitchProps) {
       className={clsx("group flex items-center gap-2", props.className)}
     >
       <div className="rac-focus-group group-data-[pressed]:bg-primary-active group-data-[selected]:bg-primary-solid group-data-[selected]:group-data-[pressed]:bg-primary-solid-active bg-ui border-low group-data-[disabled]:opacity-disabled box-border flex h-[26px] w-[44px] shrink-0 cursor-default rounded-full border bg-clip-padding p-[3px] shadow-inner transition duration-200 ease-in-out">
-        <span className="size-[18px] translate-x-0 rounded-full bg-[#FDFCFD] shadow transition duration-200 ease-in-out group-data-[selected]:translate-x-full" />
+        <span className="size-[18px] translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out group-data-[selected]:translate-x-full" />
       </div>
     </RACSwitch>
   );

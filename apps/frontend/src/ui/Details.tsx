@@ -35,7 +35,7 @@ export function Summary(props: {
     <summary
       ref={ref}
       className={clsx(
-        "hover:bg-hover data-[pressed]:bg-active -mx-1 flex cursor-default list-none items-center gap-1.5 rounded px-1 py-0.5 font-medium transition group-open/details:mb-2",
+        "hover:bg-hover data-[pressed]:bg-active -mx-1 flex cursor-default list-none items-center gap-1.5 rounded-sm px-1 py-0.5 font-medium transition group-open/details:mb-2",
         props.className,
       )}
       data-pressed={isPressed ? "" : undefined}

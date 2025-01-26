@@ -476,7 +476,7 @@ function Count(props: { count: number | null }) {
       />
 
       {isLoading && (
-        <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded" />
+        <div className="bg-subtle absolute left-0 top-2 h-[1em] w-32 rounded-sm" />
       )}
     </div>
   );

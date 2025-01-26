@@ -12,10 +12,10 @@ export function Card(
       {...rest}
       className={clsx(
         rest.className,
-        "bg-app w-full overflow-hidden rounded border border-[--card-border]",
+        "bg-app border-(--card-border) w-full overflow-hidden rounded-sm border",
         intent === "danger"
-          ? "[--card-border:theme(borderColor.danger.hover)] [--card-footer-bg:theme(backgroundColor.danger.ui)]"
-          : "[--card-border:theme(borderColor.DEFAULT)]",
+          ? "[--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
+          : "[--card-border:var(--border-color-default)]",
       )}
     />
   );
@@ -30,7 +30,7 @@ export function CardFooter(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "border-t border-[--card-border] bg-[--card-footer-bg,theme(backgroundColor.app)] p-4 text-sm",
+        "border-(--card-border) bg-(--card-footer-bg,var(--background-color-app)) border-t p-4 text-sm",
         props.className,
       )}
     />

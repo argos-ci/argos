@@ -8,7 +8,7 @@ import {
 
 const overlayStyles = (props: ModalRenderProps) =>
   clsx(
-    "fixed top-0 left-0 w-full h-[--visual-viewport-height] isolate z-[900] bg-black/15 flex items-center justify-center p-4 text-center backdrop-blur-lg",
+    "fixed top-0 left-0 w-full h-(--visual-viewport-height) isolate z-[900] bg-black/15 flex items-center justify-center p-4 text-center backdrop-blur-lg",
     props.isEntering && "animate-in fade-in duration-200 ease-out",
     props.isExiting && "animate-out fade-out duration-200 ease-in",
   );

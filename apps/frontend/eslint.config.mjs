@@ -1,18 +1,12 @@
 import eslint from "@eslint/js";
 import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
-import tailwind from "eslint-plugin-tailwindcss";
 import tseslint from "typescript-eslint";
 
 const config = tseslint.config(
   {
     name: "argos/ignores",
-    ignores: [
-      "**/dist",
-      "postcss.config.js",
-      "tailwind.config.js",
-      "src/gql/**/*",
-    ],
+    ignores: ["**/dist", "src/gql/**/*"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -26,14 +20,6 @@ const config = tseslint.config(
           varsIgnorePattern: "^_",
         },
       ],
-    },
-  },
-  ...tailwind.configs["flat/recommended"],
-  {
-    name: "argos/tailwind-settings",
-    rules: {
-      // We use Prettier for formatting
-      "tailwindcss/classnames-order": "off",
     },
   },
   pluginReact.configs.flat.recommended,

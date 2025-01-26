@@ -203,7 +203,7 @@ function ReviewDescription(props: {
         This build is <strong>{descriptor.label}</strong> based on the state of
         its latest review.
       </p>
-      <div className="rounded border p-2 pb-0">
+      <div className="rounded-sm border p-2 pb-0">
         <h3 className="mb-1 text-xs font-semibold">Reviews</h3>
         <ul className="flex flex-col text-sm">
           {build.reviews.map((review) => {

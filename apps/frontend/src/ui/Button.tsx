@@ -25,7 +25,7 @@ const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     "data-[focus-visible]:ring-primary text-white border-transparent bg-primary-solid data-[hovered]:bg-primary-solid-hover data-[pressed]:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
   secondary:
-    "data-[focus-visible]:ring-default text border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover",
+    "data-[focus-visible]:ring-default text-default border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover",
   destructive:
     "data-[focus-visible]:ring-danger text-white border-transparent bg-danger-solid data-[hovered]:bg-danger-solid-hover data-[pressed]:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
   github:
@@ -33,25 +33,37 @@ const variantClassNames: Record<ButtonVariant, string> = {
   gitlab:
     "data-[focus-visible]:ring-default text-white border-transparent bg-gitlab data-[hovered]:bg-gitlab-hover data-[pressed]:bg-gitlab-active aria-expanded:bg-gitlab-active",
   google:
-    "data-[focus-visible]:ring-default text border-transparent bg-google data-[hovered]:bg-google-hover data-[pressed]:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
+    "data-[focus-visible]:ring-default text-default border-transparent bg-google data-[hovered]:bg-google-hover data-[pressed]:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-  small: "group/button-small rounded py-1 px-2 text-xs",
-  medium: "group/button-medium rounded-lg py-[calc(0.375rem-1px)] px-3 text-sm",
-  large: "group/button-large rounded py-3 px-8 text-base",
+  small: "rounded-sm py-1 px-2 text-xs",
+  medium: "rounded-lg py-[calc(0.375rem-1px)] px-3 text-sm",
+  large: "rounded-sm py-3 px-8 text-base",
 };
 
-function getButtonClassName(options: ButtonOptions) {
-  const { variant = "primary", size = "medium" } = options;
+function getButtonClassName(options: {
+  variant: ButtonVariant;
+  size: ButtonSize;
+}) {
+  const { variant, size } = options;
   const variantClassName = variantClassNames[variant];
   const sizeClassName = sizeClassNames[size];
   return clsx(
+    "group/button",
     variantClassName,
     sizeClassName,
-    "focus:outline-none data-[focus-visible]:ring-4",
+    "focus:outline-hidden data-[focus-visible]:ring-4",
     "items-center data-[disabled]:opacity-disabled inline-flex select-none whitespace-nowrap border font-sans font-medium data-[disabled]:cursor-default",
   );
+}
+
+function getButtonProps(options: ButtonOptions) {
+  const { variant = "primary", size = "medium" } = options;
+  return {
+    className: getButtonClassName({ variant, size }),
+    "data-size": size ?? "medium",
+  };
 }
 
 export type ButtonProps = RACButtonProps &
@@ -60,10 +72,11 @@ export type ButtonProps = RACButtonProps &
   };
 
 export function Button({ className, variant, size, ...props }: ButtonProps) {
-  const buttonClassName = getButtonClassName({ variant, size });
+  const buttonProps = getButtonProps({ variant, size });
   return (
     <RACButton
-      className={clsx(buttonClassName, "cursor-default", className)}
+      {...buttonProps}
+      className={clsx(buttonProps.className, "cursor-default", className)}
       {...props}
     />
   );
@@ -81,11 +94,12 @@ export function LinkButton({
   size,
   ...props
 }: LinkButtonProps) {
-  const buttonClassName = getButtonClassName({ variant, size });
+  const buttonProps = getButtonProps({ variant, size });
   return (
     <RACLink
       ref={ref}
-      className={clsx(buttonClassName, className)}
+      {...buttonProps}
+      className={clsx(buttonProps.className, className)}
       {...props}
     />
   );
@@ -107,20 +121,20 @@ export function ButtonIcon({
     "aria-hidden": true,
     className: clsx(
       "size-[1em]",
-      "group-[]/button-small:my-0.5",
-      "group-[]/button-medium:my-[0.1875rem]",
-      "group-[]/button-large:my-1",
+      "group-data-[size=small]/button:my-0.5",
+      "group-data-[size=medium]/button:my-[0.1875rem]",
+      "group-data-[size=large]/button:my-1",
       position === "left" &&
         clsx(
-          "group-[]/button-small:mr-1.5",
-          "group-[]/button-medium:mr-2",
-          "group-[]/button-large:mr-2.5",
+          "group-data-[size=small]/button:mr-1.5",
+          "group-data-[size=medium]/button:mr-2",
+          "group-data-[size=large]/button:mr-2.5",
         ),
       position === "right" &&
         clsx(
-          "group-[]/button-small:ml-1.5",
-          "group-[]/button-medium:ml-2",
-          "group-[]/button-large:ml-2.5",
+          "group-data-[size=small]/button:ml-1.5",
+          "group-data-[size=medium]/button:ml-2",
+          "group-data-[size=large]/button:ml-2.5",
         ),
       className,
     ),

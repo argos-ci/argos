@@ -19,7 +19,9 @@ function Dt(props: { children: React.ReactNode }) {
 }
 
 function Dd(props: { children: React.ReactNode }) {
-  return <dd className="text mb-6 text-sm font-medium">{props.children}</dd>;
+  return (
+    <dd className="text-default mb-6 text-sm font-medium">{props.children}</dd>
+  );
 }
 
 function CommitLink({

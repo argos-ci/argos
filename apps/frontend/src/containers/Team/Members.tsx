@@ -375,7 +375,7 @@ function InviteLinkButton(props: { inviteLink: string }) {
               Share this link with your friends to invite them to your team.
             </DialogText>
 
-            <div className="flex gap-2 rounded border p-2">
+            <div className="flex gap-2 rounded-sm border p-2">
               <pre className="w-0 flex-1 overflow-auto">
                 <code>{props.inviteLink}</code>
               </pre>

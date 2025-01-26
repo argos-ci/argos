@@ -84,7 +84,7 @@ export const TeamNewForm = (props: {
         />
         <p
           className={clsx(
-            "text mt-4 text-sm font-medium",
+            "text-default mt-4 text-sm font-medium",
             !data && "invisible",
           )}
         >

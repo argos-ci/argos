@@ -101,7 +101,7 @@ function PullRequestInfo(props: {
             onClick={(event) => {
               event.stopPropagation();
             }}
-            className="hover:bg-hover inline-flex items-center gap-2 rounded px-1"
+            className="hover:bg-hover inline-flex items-center gap-2 rounded-sm px-1"
           >
             <span className="flex min-w-0 max-w-prose items-center gap-2">
               <span className="min-w-0 flex-1 truncate">

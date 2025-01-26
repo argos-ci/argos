@@ -51,7 +51,7 @@ export function SliderTrack(props: SliderTrackProps) {
     <RACSliderTrack
       {...props}
       className={clsx(
-        "before:bg-border relative h-4 w-full [grid-area:track] before:absolute before:top-1/2 before:block before:h-1 before:w-full before:-translate-y-1/2 before:rounded before:content-['']",
+        "before:bg-(--border-color-default) relative h-4 w-full [grid-area:track] before:absolute before:top-1/2 before:block before:h-1 before:w-full before:-translate-y-1/2 before:rounded-sm before:content-['']",
         props.className,
       )}
     />

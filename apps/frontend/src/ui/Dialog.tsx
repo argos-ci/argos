@@ -95,7 +95,7 @@ export function Dialog({ className, size = "auto", ...props }: DialogProps) {
       ref={props.ref}
       className={clsx(
         className,
-        "relative max-h-[inherit] overflow-auto focus:outline-none",
+        "focus:outline-hidden relative max-h-[inherit] overflow-auto",
         size === "medium" && "w-[36rem]",
       )}
       {...props}

@@ -88,7 +88,7 @@ function TooltipOverlay({
       {...props}
       className={(props) =>
         clsx(
-          "bg-subtle text overflow-hidden rounded-md border shadow-md",
+          "bg-subtle text-default overflow-hidden rounded-md border shadow-md",
           disableHoverableContent && "pointer-events-none",
           getTooltipAnimationClassName(props),
           variantClassName,

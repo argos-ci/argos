@@ -28,7 +28,7 @@ export function Menu<T extends object>(
     <RACMenu<T>
       {...props}
       className={clsx(
-        "select-none overflow-auto outline-none",
+        "outline-hidden select-none overflow-auto",
         props.className,
       )}
     />
@@ -38,7 +38,7 @@ export function Menu<T extends object>(
 type MenuItemVariant = "default" | "danger";
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: "text data-[focused]:bg-hover",
+  default: "text-default data-[focused]:bg-hover",
   danger: "text-danger-low data-[focused]:bg-danger-hover",
 };
 
@@ -53,7 +53,7 @@ export function MenuItem(
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
-        "aria-disabled:opacity-disabled flex items-center rounded px-3 py-1.5 text-sm focus:outline-none data-[focused]:data-[disabled]:bg-transparent",
+        "aria-disabled:opacity-disabled focus:outline-hidden flex items-center rounded-sm px-3 py-1.5 text-sm data-[focused]:data-[disabled]:bg-transparent",
       )}
       {...props}
     >
@@ -62,7 +62,7 @@ export function MenuItem(
           return (
             <div className="flex flex-1 items-center justify-between gap-2">
               <div className="flex items-center">{props.children}</div>
-              <ChevronRightIcon className="text size-4" />
+              <ChevronRightIcon className="text-default size-4" />
             </div>
           );
         }
@@ -148,7 +148,7 @@ export function UpDownMenuButton({
   return (
     <Button
       className={clsx(
-        "border-default text-low data-[hovered]:border-hover data-[hovered]:text aria-expanded:bg-active aria-expanded:text rac-focus cursor-default rounded-md border p-0.5",
+        "border-default text-low data-[hovered]:border-hover data-[hovered]:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus cursor-default rounded-md border p-0.5",
         className,
       )}
       {...props}

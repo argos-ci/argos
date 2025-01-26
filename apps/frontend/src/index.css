@@ -1,57 +1,204 @@
-@import "@radix-ui/colors/gray";
-@import "@radix-ui/colors/gray-dark";
-@import "@radix-ui/colors/mauve";
-@import "@radix-ui/colors/mauve-dark";
-@import "@radix-ui/colors/violet";
-@import "@radix-ui/colors/violet-dark";
-@import "@radix-ui/colors/tomato";
-@import "@radix-ui/colors/tomato-dark";
-@import "@radix-ui/colors/amber";
-@import "@radix-ui/colors/amber-dark";
-@import "@radix-ui/colors/orange";
-@import "@radix-ui/colors/orange-dark";
-@import "@radix-ui/colors/grass";
-@import "@radix-ui/colors/grass-dark";
-@import "@radix-ui/colors/blue";
-@import "@radix-ui/colors/blue-dark";
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "@radix-ui/colors/gray" layer(base);
+@import "@radix-ui/colors/gray-dark" layer(base);
+@import "@radix-ui/colors/mauve" layer(base);
+@import "@radix-ui/colors/mauve-dark" layer(base);
+@import "@radix-ui/colors/violet" layer(base);
+@import "@radix-ui/colors/violet-dark" layer(base);
+@import "@radix-ui/colors/tomato" layer(base);
+@import "@radix-ui/colors/tomato-dark" layer(base);
+@import "@radix-ui/colors/amber" layer(base);
+@import "@radix-ui/colors/amber-dark" layer(base);
+@import "@radix-ui/colors/orange" layer(base);
+@import "@radix-ui/colors/orange-dark" layer(base);
+@import "@radix-ui/colors/grass" layer(base);
+@import "@radix-ui/colors/grass-dark" layer(base);
+@import "@radix-ui/colors/blue" layer(base);
+@import "@radix-ui/colors/blue-dark" layer(base);
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+
+  --color-*: initial;
+
+  --color-white: #fff;
+  --color-black: #000;
+
+  --opacity-disabled: 0.38;
+
+  --radius-chip: 20px;
+
+  --text-xxs: 0.6875rem;
+  --text-xxs--line-height: 1rem;
+
+  --color-progress-from: var(--violet-8);
+  --color-progress-to: var(--violet-10);
+
+  --text-color-default: var(--mauve-12);
+  --text-color-low: var(--mauve-11);
+
+  --text-color-primary: var(--violet-12);
+  --text-color-primary-low: var(--violet-11);
+
+  --text-color-danger: var(--tomato-12);
+  --text-color-danger-low: var(--tomato-11);
+
+  --text-color-warning: var(--orange-12);
+  --text-color-warning-low: var(--orange-11);
+
+  --text-color-info: var(--blue-12);
+  --text-color-info-low: var(--blue-11);
+
+  --text-color-pending: var(--amber-12);
+  --text-color-pending-low: var(--amber-11);
+
+  --text-color-success: var(--grass-12);
+  --text-color-success-low: var(--grass-11);
+
+  --background-color-app: var(--mauve-1);
+  --background-color-subtle: var(--mauve-2);
+  --background-color-ui: var(--mauve-3);
+  --background-color-hover: var(--mauve-4);
+  --background-color-active: var(--mauve-5);
+  --background-color-solid: var(--mauve-9);
+  --background-color-solid-hover: var(--mauve-10);
+  --background-color-solid-active: var(--mauve-11);
+
+  --background-color-primary-app: var(--violet-1);
+  --background-color-primary-subtle: var(--violet-2);
+  --background-color-primary-ui: var(--violet-3);
+  --background-color-primary-hover: var(--violet-4);
+  --background-color-primary-active: var(--violet-5);
+  --background-color-primary-solid: var(--violet-9);
+  --background-color-primary-solid-hover: var(--violet-10);
+  --background-color-primary-solid-active: var(--violet-11);
+
+  --background-color-danger-app: var(--tomato-1);
+  --background-color-danger-subtle: var(--tomato-2);
+  --background-color-danger-ui: var(--tomato-3);
+  --background-color-danger-hover: var(--tomato-4);
+  --background-color-danger-active: var(--tomato-5);
+  --background-color-danger-solid: var(--tomato-9);
+  --background-color-danger-solid-hover: var(--tomato-10);
+  --background-color-danger-solid-active: var(--tomato-11);
+
+  --background-color-warning-app: var(--orange-1);
+  --background-color-warning-subtle: var(--orange-2);
+  --background-color-warning-ui: var(--orange-3);
+  --background-color-warning-hover: var(--orange-4);
+  --background-color-warning-active: var(--orange-5);
+  --background-color-warning-solid: var(--orange-9);
+  --background-color-warning-solid-hover: var(--orange-10);
+  --background-color-warning-solid-active: var(--orange-11);
+
+  --background-color-info-app: var(--blue-1);
+  --background-color-info-subtle: var(--blue-2);
+  --background-color-info-ui: var(--blue-3);
+  --background-color-info-hover: var(--blue-4);
+  --background-color-info-active: var(--blue-5);
+  --background-color-info-solid: var(--blue-9);
+  --background-color-info-solid-hover: var(--blue-10);
+  --background-color-info-solid-active: var(--blue-11);
+
+  --background-color-pending-app: var(--amber-1);
+  --background-color-pending-subtle: var(--amber-2);
+  --background-color-pending-ui: var(--amber-3);
+  --background-color-pending-hover: var(--amber-4);
+  --background-color-pending-active: var(--amber-5);
+  --background-color-pending-solid: var(--amber-9);
+  --background-color-pending-solid-hover: var(--amber-10);
+  --background-color-pending-solid-active: var(--amber-11);
+
+  --background-color-success-app: var(--grass-1);
+  --background-color-success-subtle: var(--grass-2);
+  --background-color-success-ui: var(--grass-3);
+  --background-color-success-hover: var(--grass-4);
+  --background-color-success-active: var(--grass-5);
+  --background-color-success-solid: var(--grass-9);
+  --background-color-success-solid-hover: var(--grass-10);
+  --background-color-success-solid-active: var(--grass-11);
+
+  --background-color-github: rgb(36 41 46);
+  --background-color-github-hover: rgb(85 85 85);
+  --background-color-github-active: rgb(85 85 85);
+
+  --background-color-gitlab: rgb(226 67 41);
+  --background-color-gitlab-hover: rgb(252 109 38);
+  --background-color-gitlab-active: rgb(252 109 38);
+
+  --background-color-google: var(--gray-1);
+  --background-color-google-hover: var(--gray-2);
+  --background-color-google-active: var(--gray-3);
+
+  --border-color-default: var(--mauve-6);
+  --border-color-low: var(--mauve-4);
+  --border-color-hover: var(--mauve-8);
+  --border-color-active: var(--mauve-9);
+
+  --border-color-primary: var(--violet-6);
+
+  --border-color-danger: var(--tomato-6);
+  --border-color-danger-hover: var(--tomato-8);
+
+  --border-color-warning: var(--orange-6);
+
+  --border-color-info: var(--blue-6);
+
+  --border-color-pending: var(--amber-6);
+
+  --border-color-success: var(--grass-6);
+  --border-color-success-hover: var(--grass-8);
+
+  --ring-color-default: var(--border-color-default);
+
+  --ring-color-primary: var(--violet-6);
+  --ring-color-primary-hover: var(--violet-8);
+  --ring-color-primary-active: var(--violet-9);
+
+  --ring-color-danger: var(--tomato-6);
+  --ring-color-danger-hover: var(--tomato-8);
+  --ring-color-danger-active: var(--tomato-9);
+
+  --ring-color-danger: var(--grass-6);
+  --ring-color-danger-hover: var(--grass-8);
+  --ring-color-danger-active: var(--grass-9);
+
+  --ring-color-google: var(--gray-6);
+
+  --stroke-color-low: var(--border-color-low);
+
+  --fill-subtle: var(--background-color-subtle);
+}
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant search-cancel &::-webkit-search-cancel-button;
+
+@utility rac-focus {
+  &:focus {
+    @apply outline-none;
+  }
+
+  &[data-focus-visible] {
+    @apply outline-(--violet-10) outline-1 outline-offset-1;
+  }
+}
+
+@utility rac-focus-group {
+  .group:focus & {
+    @apply outline-none;
+  }
+
+  .group[data-focus-visible] & {
+    @apply outline-(--violet-10) outline-1 outline-offset-1;
+  }
+}
 
 @layer base {
-  html,
-  body {
-    font-family: theme("fontFamily.sans");
-    background-color: theme("backgroundColor.app");
-    color: theme("textColor.DEFAULT");
-    height: 100%;
-    -webkit-font-smoothing: antialiased;
-    color-scheme: only light;
-  }
-
-  html.dark body {
-    color-scheme: only dark;
-  }
-
-  #root {
-    height: 100%;
-  }
-
-  [data-backdrop]::after {
-    @apply bg-app absolute inset-0 opacity-60 backdrop-blur-sm;
-    content: "";
-  }
-
-  button,
-  [role="button"] {
-    cursor: default;
-  }
-
-  strong {
-    @apply font-semibold;
-  }
-
   :root {
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -89,80 +236,38 @@
   }
 }
 
-@layer utilities {
-  .text-wrap-balance {
-    text-wrap: balance;
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border-color-default, currentColor);
   }
-}
 
-.egg-loader {
-  width: 100px;
-  height: 100px;
-  display: block;
-  margin: auto;
-  position: relative;
-  background: #222;
-  border-radius: 50%;
-  box-sizing: border-box;
-  transform-origin: 170px 50px;
-  border: 4px solid #333;
-  box-shadow:
-    3px 4px #0003 inset,
-    0 0 6px #0002 inset;
-  animation: panmov 0.4s ease-in-out infinite alternate;
-}
-.egg-loader::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) skew(-15deg, 15deg) rotate(-15deg);
-  width: 55px;
-  height: 53px;
-  background: #fff;
-  background-image: radial-gradient(circle 3px, #fff6 90%, transparent 10%),
-    radial-gradient(circle 12px, #ffc400 90%, transparent 10%),
-    radial-gradient(circle 12px, #ffae00 100%, transparent 0);
-  background-repeat: no-repeat;
-  background-position:
-    -4px -6px,
-    -2px -2px,
-    -1px -1px;
-  box-shadow:
-    -2px -3px #0002 inset,
-    0 0 4px #0003 inset;
-  border-radius: 47% 36% 50% 50% / 49% 45% 42% 44%;
-  animation: ylmov 0.6s ease-in-out infinite alternate;
-}
-.egg-loader::after {
-  content: "";
-  position: absolute;
-  left: 100%;
-  top: 48px;
-  height: 15px;
-  width: 70px;
-  background: #222222;
-  border-radius: 0 8px 8px 0;
-  box-shadow: 3px 0 3px #eee2 inset;
-  transform: rotate(5deg) translateX(3px);
-}
+  html,
+  body {
+    @apply bg-app text-default scheme-only-light h-full font-sans antialiased;
+  }
 
-@keyframes panmov {
-  0%,
-  10% {
-    transform: rotate(5deg);
+  html.dark body {
+    @apply scheme-only-dark;
   }
-  90%,
-  100% {
-    transform: rotate(-5deg);
+
+  #root {
+    @apply h-full;
   }
-}
-@keyframes ylmov {
-  to {
-    border-radius: 50% 36% 50% 50% / 49% 50% 45% 45%;
-    background-position:
-      -2px -4px,
-      2px 2px,
-      1px 1px;
+
+  [data-backdrop]::after {
+    @apply bg-app backdrop-blur-xs absolute inset-0 opacity-60 content-[''];
+  }
+
+  button,
+  [role="button"] {
+    @apply cursor-default;
+  }
+
+  strong {
+    @apply font-semibold;
   }
 }
