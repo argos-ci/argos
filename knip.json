@@ -7,7 +7,8 @@
         "src/build/bin/*.ts",
         "src/database/bin/*.ts",
         "src/database/testing/index.ts",
-        "src/graphql/definitions/*.ts"
+        "src/graphql/definitions/*.ts",
+        "scripts/*.ts"
       ],
       "ignore": [
         "db/**/*",
