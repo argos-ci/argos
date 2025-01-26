@@ -339,13 +339,6 @@ importers:
         version: 7.0.0
 
   apps/frontend:
-    dependencies:
-      '@number-flow/react':
-        specifier: ^0.5.5
-        version: 0.5.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
-      recharts:
-        specifier: ^2.15.0
-        version: 2.15.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
     devDependencies:
       '@apollo/client':
         specifier: 3.12.7
@@ -365,6 +358,9 @@ importers:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.10.0)
+      '@number-flow/react':
+        specifier: ^0.5.5
+        version: 0.5.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@primer/octicons-react':
         specifier: ^19.14.0
         version: 19.14.0(react@19.0.0)
@@ -461,6 +457,9 @@ importers:
       react-stately:
         specifier: ^3.35.0
         version: 3.35.0(react@19.0.0)
+      recharts:
+        specifier: ^2.15.0
+        version: 2.15.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       tailwindcss:
         specifier: ^4.0.0
         version: 4.0.0

@@ -26,9 +26,41 @@ export default defineConfig(({ mode: argMode }) => {
       sourcemap: mode !== "development",
       rollupOptions: {
         output: {
+          experimentalMinChunkSize: 10_240,
           manualChunks: (id) => {
+            console.log(id);
             if (id.includes("node_modules")) {
-              return "vendor";
+              if (
+                id.includes("/react@") ||
+                id.includes("/react-dom@") ||
+                id.includes("/scheduler@") ||
+                id.includes("/react-transition-group@")
+              ) {
+                return "react";
+              }
+              if (id.includes("/@sentry+")) {
+                return "sentry";
+              }
+              if (
+                id.includes("/react-router-dom") ||
+                id.includes("/react-helmet") ||
+                id.includes("/graphql@") ||
+                id.includes("/react-hook-form")
+              ) {
+                return "core";
+              }
+              if (id.includes("/lucide-react") || id.includes("/@primer")) {
+                return "icons";
+              }
+              if (id.includes("/d3-")) {
+                return "d3";
+              }
+              if (id.includes("/lodash")) {
+                return "lodash";
+              }
+              if (id.includes("/recharts")) {
+                return "recharts";
+              }
             }
             return undefined;
           },

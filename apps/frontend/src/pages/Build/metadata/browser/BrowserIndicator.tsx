@@ -1,39 +1,27 @@
+import { lazy, Suspense } from "react";
+import { GlobeIcon } from "lucide-react";
+
 import { Tooltip } from "@/ui/Tooltip";
 
-import chromeIcon from "./logos/chrome.svg";
-import chromiumIcon from "./logos/chromium.svg";
-import edgeIcon from "./logos/edge.svg";
-import electronIcon from "./logos/electron.svg";
-import firefoxIcon from "./logos/firefox.svg";
-import safariIcon from "./logos/safari.svg";
-
-const Icons: Record<string, string> = {
-  edge: edgeIcon,
-  firefox: firefoxIcon,
-  safari: safariIcon,
-  chrome: chromeIcon,
-  chromium: chromiumIcon,
-  electron: electronIcon,
-};
+const LazyBrowserIcon = lazy(() =>
+  import("./BrowserIcon").then((mod) => ({ default: mod.BrowserIcon })),
+);
 
 export function BrowserIndicator({
   browser,
-  ...props
-}: Omit<React.ComponentPropsWithRef<"img">, "src" | "alt"> & {
+  className,
+}: {
+  className?: string;
   browser: {
     name: string;
     version: string;
   };
 }) {
-  const icon = Icons[browser.name];
-
-  if (!icon) {
-    return null;
-  }
-
   return (
     <Tooltip content={`${browser.name} v${browser.version}`}>
-      <img src={icon} alt={browser.name} {...props} />
+      <Suspense fallback={<GlobeIcon className={className} />}>
+        <LazyBrowserIcon browser={browser} className={className} />
+      </Suspense>
     </Tooltip>
   );
 }
