@@ -20,13 +20,16 @@
     "apps/frontend": {
       "ignore": [
         "src/gql/**/*",
-        "vite.config.ts",
+        "vite.config.mts",
         "src/util/color-detection/worker.ts"
       ],
       "ignoreDependencies": [
         "@radix-ui/colors",
         "@vitejs/plugin-react-swc",
-        "@sentry/vite-plugin"
+        "@sentry/vite-plugin",
+        "@tailwindcss/vite",
+        "tailwindcss",
+        "tailwindcss-animate"
       ],
       "vite": {
         "config": []
