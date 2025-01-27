@@ -16,5 +16,8 @@
     "secure": true,
     "url": "https://app.argos-ci.com",
     "httpsRedirect": true
+  },
+  "database": {
+    "ssl": true
   }
 }

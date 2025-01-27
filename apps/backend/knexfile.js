@@ -1,3 +1,4 @@
+import { getKnexConfig } from "./dist/config/database.js";
 import config from "./dist/config/index.js";
 
-export default config.get("pg");
+export default getKnexConfig(config);

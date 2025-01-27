@@ -92,6 +92,7 @@ export class ScreenshotDiff extends Model {
   baseScreenshot?: Screenshot | null;
   compareScreenshot?: Screenshot | null;
   test?: Test | null;
+  file?: File | null;
 
   static screenshotFailureRegexp = / \(failed\)\./;
 

@@ -5,7 +5,10 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import type { S3Client } from "@aws-sdk/client-s3";
 import mime from "mime";
 
-export const uploadFromFilePath = async ({
+/**
+ * Upload a file to S3 from a file path.
+ */
+export async function uploadFromFilePath({
   s3,
   inputPath,
   Key: KeyArg,
@@ -14,7 +17,7 @@ export const uploadFromFilePath = async ({
   s3: S3Client;
   inputPath: string;
   Key?: string;
-} & Omit<PutObjectCommand["input"], "Key">) => {
+} & Omit<PutObjectCommand["input"], "Key">) {
   const Key = KeyArg || randomUUID();
   const ContentType = mime.getType(inputPath);
   invariant(ContentType, `could not determine mime type for ${inputPath}`);
@@ -27,9 +30,12 @@ export const uploadFromFilePath = async ({
     }),
   );
   return { Key };
-};
+}
 
-export const uploadFromBuffer = async ({
+/**
+ * Upload a file to S3 from a buffer.
+ */
+export async function uploadFromBuffer({
   s3,
   buffer,
   contentType,
@@ -40,7 +46,7 @@ export const uploadFromBuffer = async ({
   buffer: Buffer;
   contentType: string;
   Key?: string;
-} & Omit<PutObjectCommand["input"], "Key">) => {
+} & Omit<PutObjectCommand["input"], "Key">) {
   const Key = KeyArg || randomUUID();
   await s3.send(
     new PutObjectCommand({
@@ -51,4 +57,4 @@ export const uploadFromBuffer = async ({
     }),
   );
   return { Key };
-};
+}
