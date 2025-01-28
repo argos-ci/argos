@@ -17,11 +17,18 @@ export function BrowserIndicator({
     version: string;
   };
 }) {
+  const tooltip = `${browser.name} v${browser.version}`;
   return (
-    <Tooltip content={`${browser.name} v${browser.version}`}>
-      <Suspense fallback={<GlobeIcon className={className} />}>
+    <Suspense
+      fallback={
+        <Tooltip content={tooltip}>
+          <GlobeIcon className={className} />
+        </Tooltip>
+      }
+    >
+      <Tooltip content={tooltip}>
         <LazyBrowserIcon browser={browser} className={className} />
-      </Suspense>
-    </Tooltip>
+      </Tooltip>
+    </Suspense>
   );
 }
