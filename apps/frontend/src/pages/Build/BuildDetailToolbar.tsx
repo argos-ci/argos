@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
@@ -26,6 +27,7 @@ import { SplitViewToggle, ViewToggle } from "./toolbar/ViewToggle";
 
 export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   activeDiff,
+  siblingDiffs,
   baseBranch,
   compareBranch,
   bordered,
@@ -34,6 +36,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   buildType,
 }: {
   activeDiff: Diff;
+  siblingDiffs: Diff[];
   bordered: boolean;
   repoUrl: string | null;
   baseBranch: string | null;
@@ -41,10 +44,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   prMerged: boolean;
   buildType: BuildType | null;
 }) {
-  const metadata =
-    activeDiff.status === ScreenshotDiffStatus.Removed
-      ? activeDiff.baseScreenshot?.metadata
-      : activeDiff.compareScreenshot?.metadata;
+  const metadata = resolveDiffMetadata(activeDiff);
   const automationLibrary = metadata?.automationLibrary ?? null;
   const browser = metadata?.browser ?? null;
   const sdk = metadata?.sdk ?? null;
@@ -62,11 +62,29 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     prMerged || test === activeDiff.baseScreenshot?.metadata?.test
       ? baseBranch
       : compareBranch;
-  const playwrightTraceUrl =
-    activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
+  const pwTraceUrl = activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
     buildType !== BuildType.Reference && checkCanBeReviewed(activeDiff.status);
   const isChanged = activeDiff.status === ScreenshotDiffStatus.Changed;
+  // Determine a sibling trace to show if the current trace is missing.
+  const siblingTrace = (() => {
+    if (pwTraceUrl) {
+      return null;
+    }
+    const sibling = siblingDiffs.find(
+      (diff) => diff.compareScreenshot?.playwrightTraceUrl,
+      [],
+    );
+    if (!sibling) {
+      return null;
+    }
+    const siblingPwTraceUrl = sibling?.compareScreenshot?.playwrightTraceUrl;
+    invariant(siblingPwTraceUrl, "Already filtered");
+    return {
+      pwTraceUrl: siblingPwTraceUrl,
+      retry: resolveDiffMetadata(sibling)?.test?.retry ?? undefined,
+    };
+  })();
   return (
     <div
       className={clsx(
@@ -129,9 +147,11 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             {test && (
               <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
             )}
-            {playwrightTraceUrl && (
-              <TraceIndicator traceUrl={playwrightTraceUrl} />
-            )}
+            {pwTraceUrl ? (
+              <TraceIndicator pwTraceUrl={pwTraceUrl} />
+            ) : siblingTrace ? (
+              <TraceIndicator {...siblingTrace} />
+            ) : null}
           </div>
         </div>
       </div>
@@ -160,3 +180,11 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     </div>
   );
 });
+
+function resolveDiffMetadata(diff: Diff) {
+  return (
+    (diff.status === ScreenshotDiffStatus.Removed
+      ? diff.baseScreenshot?.metadata
+      : diff.compareScreenshot?.metadata) ?? null
+  );
+}

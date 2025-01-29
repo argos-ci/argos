@@ -983,12 +983,15 @@ export type IScreenshotBucket = INode & {
 
 export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
+  /** Base name of the diff, same for all retries */
+  baseName: Scalars['String']['output'];
   baseScreenshot?: Maybe<IScreenshot>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  /** Name of the diff (either base or compare screenshot name) */
   name: Scalars['String']['output'];
   status: IScreenshotDiffStatus;
   threshold?: Maybe<Scalars['Float']['output']>;
@@ -2116,6 +2119,7 @@ export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends
 }>;
 
 export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiff'] = IResolversParentTypes['ScreenshotDiff']> = ResolversObject<{
+  baseName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;

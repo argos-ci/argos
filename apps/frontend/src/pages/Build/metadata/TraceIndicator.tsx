@@ -1,21 +1,23 @@
-import { PlayCircleIcon } from "lucide-react";
+import { BugPlayIcon } from "lucide-react";
 
 import { Chip } from "@/ui/Chip";
 import { Link } from "@/ui/Link";
 import { Tooltip } from "@/ui/Tooltip";
 
 export function TraceIndicator({
-  traceUrl,
+  pwTraceUrl,
   ...props
 }: {
-  traceUrl: string;
+  pwTraceUrl: string;
   className?: string;
+  retry?: number | undefined;
 }) {
   return (
     <Tooltip content="View trace in Playwright Trace Viewer">
-      <Chip icon={PlayCircleIcon} scale="xs" {...props}>
-        <Link href={traceUrl} target="_blank">
-          Playwright Trace
+      <Chip icon={BugPlayIcon} scale="xs" {...props}>
+        <Link href={pwTraceUrl} target="_blank">
+          Trace
+          {props.retry ? ` from retry #${props.retry + 1}` : null}
         </Link>
       </Chip>
     </Tooltip>

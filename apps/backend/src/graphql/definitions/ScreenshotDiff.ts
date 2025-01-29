@@ -3,8 +3,9 @@ import gqlTag from "graphql-tag";
 
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage/index.js";
 
-import type {
+import {
   IResolvers,
+  IScreenshotDiffResolvers,
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
 
@@ -27,7 +28,10 @@ export const typeDefs = gql`
     baseScreenshot: Screenshot
     compareScreenshot: Screenshot
     url: String
+    "Name of the diff (either base or compare screenshot name)"
     name: String!
+    "Base name of the diff, same for all retries"
+    baseName: String!
     width: Int
     height: Int
     status: ScreenshotDiffStatus!
@@ -40,6 +44,38 @@ export const typeDefs = gql`
     edges: [ScreenshotDiff!]!
   }
 `;
+
+const nameResolver: IScreenshotDiffResolvers["name"] = async (
+  screenshotDiff,
+  _args,
+  ctx,
+) => {
+  const [baseScreenshot, compareScreenshot] = await Promise.all([
+    screenshotDiff.baseScreenshotId
+      ? ctx.loaders.Screenshot.load(screenshotDiff.baseScreenshotId)
+      : null,
+    screenshotDiff.compareScreenshotId
+      ? ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId)
+      : null,
+  ]);
+  const name = baseScreenshot?.name || compareScreenshot?.name;
+  invariant(name, "screenshot diff without name");
+  return name;
+};
+
+const statusResolver: IScreenshotDiffResolvers["status"] = async (
+  screenshotDiff,
+  _args,
+  ctx,
+) => {
+  const diffStatus = await screenshotDiff.$getDiffStatus(async (id) => {
+    const screenshot = await ctx.loaders.Screenshot.load(id);
+    invariant(screenshot, "Screenshot not found");
+    return screenshot;
+  });
+
+  return diffStatus as IScreenshotDiffStatus;
+};
 
 export const resolvers: IResolvers = {
   ScreenshotDiff: {
@@ -66,17 +102,25 @@ export const resolvers: IResolvers = {
       invariant(file, "File not found");
       return getPublicImageFileUrl(file);
     },
-    name: async (screenshotDiff, _args, ctx) => {
-      const [baseScreenshot, compareScreenshot] = await Promise.all([
-        screenshotDiff.baseScreenshotId
-          ? ctx.loaders.Screenshot.load(screenshotDiff.baseScreenshotId)
-          : null,
-        screenshotDiff.compareScreenshotId
-          ? ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId)
-          : null,
+    name: nameResolver,
+    baseName: async (...args) => {
+      const [name, status] = await Promise.all([
+        nameResolver(...args),
+        statusResolver(...args),
       ]);
-      const name = baseScreenshot?.name || compareScreenshot?.name;
-      invariant(name, "screenshot diff without name");
+
+      if (
+        status === IScreenshotDiffStatus.Failure ||
+        status === IScreenshotDiffStatus.RetryFailure
+      ) {
+        // Match ":name #num (failed).png"
+        const match = name.match(/^(.*) #\d+ \(failed\)\.png$/);
+        if (match && match[1]) {
+          return match[1];
+        }
+        return name;
+      }
+
       return name;
     },
     width: async (screenshotDiff, _args, ctx) => {
@@ -95,15 +139,7 @@ export const resolvers: IResolvers = {
       invariant(file, "File not found");
       return file.height;
     },
-    status: async (screenshotDiff, _args, ctx) => {
-      const diffStatus = await screenshotDiff.$getDiffStatus(async (id) => {
-        const screenshot = await ctx.loaders.Screenshot.load(id);
-        invariant(screenshot, "Screenshot not found");
-        return screenshot;
-      });
-
-      return diffStatus as IScreenshotDiffStatus;
-    },
+    status: statusResolver,
     threshold: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.compareScreenshotId) {
         return null;

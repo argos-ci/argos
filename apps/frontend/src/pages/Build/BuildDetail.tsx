@@ -709,7 +709,7 @@ export function BuildDetail(props: {
   repoUrl: string | null;
 }) {
   const { build } = props;
-  const { activeDiff } = useBuildDiffState();
+  const { activeDiff, siblingDiffs } = useBuildDiffState();
   const containerRef = useRef<HTMLDivElement>(null);
   useScrollToTop(containerRef, activeDiff);
   const [scrolled, setScrolled] = useState(false);
@@ -730,6 +730,7 @@ export function BuildDetail(props: {
               <BuildDiffViewModeStateProvider>
                 <BuildDetailToolbar
                   activeDiff={activeDiff}
+                  siblingDiffs={siblingDiffs}
                   repoUrl={props.repoUrl}
                   baseBranch={build.baseBranch ?? null}
                   compareBranch={build.branch}
