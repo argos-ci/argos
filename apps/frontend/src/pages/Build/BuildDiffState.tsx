@@ -30,6 +30,7 @@ const ScreenshotDiffFragment = graphql(`
     status
     url
     name
+    baseName
     width
     height
     group
@@ -160,6 +161,11 @@ type BuildDiffContextValue = {
   stats: BuildStats | null;
   results: DiffResult[];
   hasNoResults: boolean;
+  /**
+   * Sibling diffs are diffs that have the same base name.
+   * This can be used to navigate between diffs that are similar.
+   */
+  siblingDiffs: Diff[];
 };
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
@@ -557,6 +563,16 @@ export function BuildDiffProvider(props: {
     [params.diffId, screenshotDiffs],
   );
 
+  const siblingDiffs = useMemo(
+    () =>
+      activeDiff
+        ? screenshotDiffs.filter(
+            (diff) => diff.baseName === activeDiff.baseName,
+          )
+        : [],
+    [activeDiff, screenshotDiffs],
+  );
+
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
   const statsGroups = useMemo(
@@ -656,6 +672,7 @@ export function BuildDiffProvider(props: {
       stats,
       results,
       hasNoResults,
+      siblingDiffs,
     }),
     [
       groups,
@@ -671,6 +688,7 @@ export function BuildDiffProvider(props: {
       stats,
       results,
       hasNoResults,
+      siblingDiffs,
     ],
   );
   return (
