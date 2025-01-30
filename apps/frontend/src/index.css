@@ -162,9 +162,9 @@
   --ring-color-danger-hover: var(--tomato-8);
   --ring-color-danger-active: var(--tomato-9);
 
-  --ring-color-danger: var(--grass-6);
-  --ring-color-danger-hover: var(--grass-8);
-  --ring-color-danger-active: var(--grass-9);
+  --ring-color-success: var(--grass-6);
+  --ring-color-success-hover: var(--grass-8);
+  --ring-color-success-active: var(--grass-9);
 
   --ring-color-google: var(--gray-6);
 
