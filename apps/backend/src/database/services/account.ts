@@ -1,11 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import type { PartialModelObject } from "objection";
-import slugify from "slugify";
 
 import type { RestEndpointMethodTypes } from "@/github/index.js";
 import { sendNotification } from "@/notification/index.js";
 import { getRedisLock } from "@/util/redis/index.js";
+import { slugify } from "@/util/slug.js";
 import { boom } from "@/web/util.js";
 
 import { Account } from "../models/Account.js";
@@ -247,7 +247,7 @@ export async function getOrCreateUserAccountFromGhAccount(
     }
   }
 
-  const baseSlug = slugify(ghAccount.login.toLowerCase(), { strict: true });
+  const baseSlug = slugify(ghAccount.login);
   const slug = await resolveAccountSlug(baseSlug);
 
   const { account, user } = await transaction(async (trx) => {

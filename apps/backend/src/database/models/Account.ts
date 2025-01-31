@@ -3,6 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import { memoize } from "lodash-es";
 import type { Pojo, RelationMappings } from "objection";
 
+import { slugJsonSchema } from "@/util/slug.js";
+
 import { Model } from "../util/model.js";
 import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
@@ -58,12 +60,7 @@ export class Account extends Model {
       stripeCustomerId: { type: ["string", "null"] },
       teamId: { type: ["string", "null"] },
       name: { type: ["string", "null"], maxLength: 40, minLength: 1 },
-      slug: {
-        type: "string",
-        minLength: 1,
-        maxLength: 48,
-        pattern: "^[-a-z0-9]+$",
-      },
+      slug: slugJsonSchema,
       githubAccountId: { type: ["string", "null"] },
       gitlabBaseUrl: { type: ["string", "null"] },
       slackInstallationId: { type: ["string", "null"] },

@@ -1,5 +1,6 @@
 import type { PartialModelObject } from "objection";
-import slugify from "slugify";
+
+import { slugify } from "@/util/slug.js";
 
 import { Account } from "../models/Account.js";
 import { Team } from "../models/Team.js";
@@ -7,7 +8,7 @@ import { TeamUser } from "../models/TeamUser.js";
 import { transaction } from "../transaction.js";
 
 const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
-  const nameSlug = slugify(name, { strict: true });
+  const nameSlug = slugify(name);
   const slug = index ? `${nameSlug}-${index}` : nameSlug;
 
   const existingAccount = await Account.query().select("id").findOne({ slug });
