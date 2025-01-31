@@ -7,7 +7,7 @@ import {
   Subscription,
   User,
 } from "@/database/models/index.js";
-import { getTokenOctokit } from "@/github/index.js";
+import { checkErrorStatus, getTokenOctokit } from "@/github/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { unauthenticated } from "../util.js";
@@ -115,17 +115,26 @@ export const resolvers: IResolvers = {
         return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
       }
       const octokit = getTokenOctokit(githubAccount.accessToken);
-      const apiInstallations =
-        await octokit.apps.listInstallationsForAuthenticatedUser({
-          per_page: 100,
-        });
-      return {
-        edges: apiInstallations.data.installations,
-        pageInfo: {
-          hasNextPage: false,
-          totalCount: apiInstallations.data.total_count,
-        },
-      };
+      try {
+        const apiInstallations =
+          await octokit.apps.listInstallationsForAuthenticatedUser({
+            per_page: 100,
+          });
+        return {
+          edges: apiInstallations.data.installations,
+          pageInfo: {
+            hasNextPage: false,
+            totalCount: apiInstallations.data.total_count,
+          },
+        };
+      } catch (error) {
+        // If the token has been revoked, we should return an empty list.
+        if (checkErrorStatus(401, error)) {
+          return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
+        }
+
+        throw error;
+      }
     },
     projectsContributedOn: async (account, args, ctx) => {
       const { first, after } = args;
