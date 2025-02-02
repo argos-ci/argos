@@ -13,6 +13,7 @@ import {
 
 import { Layout } from "@/containers/Layout";
 
+import { FeatureFlagProvider } from "./containers/FeatureFlag";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 
@@ -39,7 +40,9 @@ function Root() {
 
   return (
     <RouterProvider navigate={navigate} useHref={useAbsoluteHref}>
-      <Outlet />
+      <FeatureFlagProvider>
+        <Outlet />
+      </FeatureFlagProvider>
     </RouterProvider>
   );
 }
@@ -176,6 +179,11 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   path: "builds",
                   element: <Navigate to=".." replace={true} />,
+                },
+                {
+                  path: "test/:testId",
+                  HydrateFallback,
+                  lazy: () => import("./pages/Test"),
                 },
                 {
                   path: "settings",

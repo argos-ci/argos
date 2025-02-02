@@ -30,4 +30,7 @@ export interface ClientConfig {
   api: {
     baseUrl: string;
   };
+  bucket: {
+    publishableKey: string;
+  };
 }
