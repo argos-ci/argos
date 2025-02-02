@@ -92,7 +92,6 @@ describe("#computeScreenshotDiff", () => {
         name: compareScreenshot.name,
         projectId: project.id,
         buildName: "default",
-        status: "pending",
       });
       screenshotDiff = await factory.ScreenshotDiff.create({
         buildId: build.id,
