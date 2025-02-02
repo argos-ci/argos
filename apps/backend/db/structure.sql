@@ -1375,11 +1375,6 @@ CREATE TABLE public.tests (
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(1024) NOT NULL,
     "buildName" character varying(255) NOT NULL,
-    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
-    "resolvedDate" timestamp with time zone,
-    "resolvedStabilityScore" integer,
-    "muteUntil" timestamp with time zone,
-    muted boolean DEFAULT false NOT NULL,
     "projectId" bigint NOT NULL
 );
 
@@ -3067,3 +3062,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025010
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250105130307_remove-crawls-captures.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250111204217_user-notifications.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250113180732_clean-additional-screenshot-price.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250202084159_cleanup-test-table.js', 1, NOW());
