@@ -168,7 +168,6 @@ export const Test = defineFactory(models.Test, () => ({
   name: "test",
   projectId: Project.associate("id"),
   buildName: "default",
-  status: "pending",
 }));
 
 export const Screenshot = defineFactory(models.Screenshot, () => ({
