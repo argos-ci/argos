@@ -164,7 +164,6 @@ export async function seed() {
     screenshotsProps.map((screenshot) => ({
       name: screenshot.name,
       buildName: "default",
-      status: "pending",
       projectId: screenshot.screenshotBucket.projectId,
     })),
   );

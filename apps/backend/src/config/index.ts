@@ -388,6 +388,13 @@ export function createConfig() {
         env: "SLACK_STATE_SECRET",
       },
     },
+    bucket: {
+      publishableKey: {
+        doc: "Bucket.co (feature-flag) publishable key",
+        format: String,
+        default: "pub_deve_IEHZxQsLdVrHkzftm4sWDj",
+      },
+    },
   });
 
   const env = config.get("env");

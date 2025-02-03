@@ -92,7 +92,6 @@ describe("#computeScreenshotDiff", () => {
         name: compareScreenshot.name,
         projectId: project.id,
         buildName: "default",
-        status: "pending",
       });
       screenshotDiff = await factory.ScreenshotDiff.create({
         buildId: build.id,
@@ -115,22 +114,6 @@ describe("#computeScreenshotDiff", () => {
       // expect(pushBuildNotification).toBeCalledWith({
       //   buildId: build.id,
       //   type: "diff-detected",
-      // });
-    });
-
-    it('a muted test should notify "no-diff-detected"', async () => {
-      await Test.query().patch({ muted: true }).findById(test.id);
-      await computeScreenshotDiff(screenshotDiff, {
-        s3,
-        bucket: config.get("s3.screenshotsBucket"),
-      });
-
-      await screenshotDiff.reload();
-      expect(screenshotDiff.score! > 0).toBe(true);
-      expect(typeof screenshotDiff.s3Id === "string").toBe(true);
-      // expect(pushBuildNotification).toBeCalledWith({
-      //   buildId: build.id,
-      //   type: "no-diff-detected",
       // });
     });
   });

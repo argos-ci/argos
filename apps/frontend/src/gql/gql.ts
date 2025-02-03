@@ -30,6 +30,7 @@ const documents = {
     "\n  fragment BuildStatusChip_Build on Build {\n    ...BuildStatusDescription_Build\n    type\n    status\n    reviews {\n      id\n      date\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n": types.BuildStatusChip_BuildFragmentDoc,
     "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    mode\n    baseBranch\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n    ...ReviewDescription_Build\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
     "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n": types.ReviewDescription_BuildFragmentDoc,
+    "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n": types.FeatureFlagProvider_AccountDocument,
     "\n  fragment GithubAccountLink_GithubAccount on GithubAccount {\n    login\n    name\n    url\n  }\n": types.GithubAccountLink_GithubAccountFragmentDoc,
     "\n  fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": types.GithubInstallationsSelect_GhApiInstallationFragmentDoc,
     "\n  query GithubRepositoryList_ghApiInstallationRepositories(\n    $installationId: ID!\n    $page: Int!\n    $reposPerPage: Int\n    $fromAuthUser: Boolean!\n  ) {\n    ghApiInstallationRepositories(\n      installationId: $installationId\n      fromAuthUser: $fromAuthUser\n      page: $page\n      reposPerPage: $reposPerPage\n    ) {\n      edges {\n        id\n        name\n        updated_at\n        owner_login\n      }\n      pageInfo {\n        hasNextPage\n        totalCount\n      }\n    }\n  }\n": types.GithubRepositoryList_GhApiInstallationRepositoriesDocument,
@@ -225,6 +226,10 @@ export function graphql(source: "\n  fragment BuildStatusDescription_Build on Bu
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
