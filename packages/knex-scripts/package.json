@@ -20,7 +20,7 @@
   "dependencies": {
     "commander": "^13.1.0",
     "fast-glob": "^3.3.3",
-    "ora": "^8.1.1"
+    "ora": "^8.2.0"
   },
   "peerDependencies": {
     "knex": "^3.0.0"

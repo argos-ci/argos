@@ -3,8 +3,11 @@ description: "Install Node.js and dependencies"
 runs:
   using: "composite"
   steps:
-    - uses: pnpm/action-setup@v4
-      name: Install pnpm
+    - name: Install pnpm
+      shell: bash
+      run: |
+        npm install -g corepack@latest --force
+        corepack enable
 
     - name: Use Node.js
       uses: actions/setup-node@v4
