@@ -338,6 +338,11 @@ export function createConfig() {
           format: Boolean,
           default: false,
         },
+        port: {
+          doc: "Port",
+          format: Number,
+          default: 5432,
+        },
       },
     },
     discord: {

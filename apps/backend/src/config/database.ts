@@ -9,7 +9,7 @@ export function loadDatabaseConfigFromURL(url: string, config: Config) {
   const urlObj = new URL(url);
 
   config.set("pg.connection.host", urlObj.hostname);
-  config.set("pg.connection.port", urlObj.port);
+  config.set("pg.connection.port", urlObj.port ? Number(urlObj.port) : 5432);
   config.set("pg.connection.user", urlObj.username);
   config.set("pg.connection.password", urlObj.password);
   config.set("pg.connection.database", urlObj.pathname.substring(1));
@@ -39,6 +39,7 @@ export function getKnexConfig(config: Config): Knex.Config {
       database: config.get("pg.connection.database"),
       host: config.get("pg.connection.host"),
       user: config.get("pg.connection.user"),
+      port: config.get("pg.connection.port"),
       password: config.get("pg.connection.password") || "",
       timezone: "utc",
       ssl: config.get("pg.connection.ssl")
