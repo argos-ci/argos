@@ -135,7 +135,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
               <MediaTypeIndicator mediaType={mediaType} className="size-4" />
             )}
             {viewport && <ViewportIndicator viewport={viewport} />}
-            {url && URL.canParse(url) ? (
+            {url && checkIsValidURL(url) ? (
               <UrlIndicator
                 url={url}
                 previewUrl={previewUrl}
@@ -180,6 +180,25 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     </div>
   );
 });
+
+/**
+ * Check if a URL can be parsed.
+ */
+function checkIsValidURL(url: string) {
+  // If browser does not support URL, return false.
+  if (typeof URL !== "function") {
+    return false;
+  }
+  // If browser does not support URL.canParse, try to parse the URL.
+  if (typeof URL.canParse !== "function") {
+    try {
+      new URL(url);
+    } catch {
+      return false;
+    }
+  }
+  return URL.canParse(url);
+}
 
 function resolveDiffMetadata(diff: Diff) {
   return (
