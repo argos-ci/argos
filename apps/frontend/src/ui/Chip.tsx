@@ -95,8 +95,8 @@ function getChipClassName(props: {
       clsx(
         "rac-focus",
         "group-[*]/button-group:rounded-none",
-        "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:first:border-r-0",
-        "group-[*]/button-group:last:rounded-r-lg group-[*]/button-group:last:border-l-0",
+        "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:not-first:border-l-0",
+        "group-[*]/button-group:last:rounded-r-lg",
       ),
     scale === "xs" && "px-2 text-xs [--chip-gap:--spacing(1)]",
     scale === "sm" && "px-3 py-1 text-xs [--chip-gap:--spacing(1)]",
