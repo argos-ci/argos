@@ -1,6 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 
 import { config } from "@/config";
+import * as storage from "@/util/storage";
 
 type OAuthState = {
   nonce: string;
@@ -26,12 +27,12 @@ function getOAuthNonceKey(provider: AuthProvider): string {
  */
 function getNonce(provider: AuthProvider): string {
   const key = getOAuthNonceKey(provider);
-  const existing = window.localStorage.getItem(key);
+  const existing = storage.getItem(key);
   if (existing) {
     return existing;
   }
   const nonce = Math.random().toString(36).substring(2);
-  window.localStorage.setItem(getOAuthNonceKey(provider), nonce);
+  storage.setItem(getOAuthNonceKey(provider), nonce);
   return nonce;
 }
 
@@ -108,9 +109,7 @@ export function getRedirectFromState(input: {
     if (!checkIsValidOAuthState(parsed)) {
       throw new Error("Invalid OAuth state structure");
     }
-    const storedNonce = window.localStorage.getItem(
-      getOAuthNonceKey(input.provider),
-    );
+    const storedNonce = storage.getItem(getOAuthNonceKey(input.provider));
     if (!storedNonce) {
       throw new Error("Missing stored OAuth state nonce");
     }
