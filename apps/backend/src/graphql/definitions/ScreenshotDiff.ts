@@ -8,6 +8,7 @@ import {
   IScreenshotDiffResolvers,
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
+import { getVariantKey } from "../services/variant-key.js";
 
 const { gql } = gqlTag;
 
@@ -30,8 +31,8 @@ export const typeDefs = gql`
     url: String
     "Name of the diff (either base or compare screenshot name)"
     name: String!
-    "Base name of the diff, same for all retries"
-    baseName: String!
+    "Unique key to identify screenshot variant (browser, resolution, retries)"
+    variantKey: String!
     width: Int
     height: Int
     status: ScreenshotDiffStatus!
@@ -103,25 +104,9 @@ export const resolvers: IResolvers = {
       return getPublicImageFileUrl(file);
     },
     name: nameResolver,
-    baseName: async (...args) => {
-      const [name, status] = await Promise.all([
-        nameResolver(...args),
-        statusResolver(...args),
-      ]);
-
-      if (
-        status === IScreenshotDiffStatus.Failure ||
-        status === IScreenshotDiffStatus.RetryFailure
-      ) {
-        // Match ":name #num (failed).png"
-        const match = name.match(/^(.*) #\d+ \(failed\)\.png$/);
-        if (match && match[1]) {
-          return match[1];
-        }
-        return name;
-      }
-
-      return name;
+    variantKey: async (...args) => {
+      const name = await nameResolver(...args);
+      return getVariantKey(name);
     },
     width: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.fileId) {

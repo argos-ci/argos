@@ -1,13 +1,19 @@
 import { memo } from "react";
+import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
+import { generatePath, useMatch } from "react-router-dom";
 
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
+import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Separator } from "@/ui/Separator";
 
 import { checkCanBeReviewed, Diff } from "./BuildDiffState";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
-import { BrowserIndicator } from "./metadata/browser/BrowserIndicator";
+import {
+  BrowserIndicator,
+  BrowserIndicatorLink,
+} from "./metadata/browser/BrowserIndicator";
 import { ColorSchemeIndicator } from "./metadata/ColorSchemeIndicator";
 import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RepeatIndicator } from "./metadata/RepeatIndicator";
@@ -17,7 +23,10 @@ import { TestIndicator } from "./metadata/TestIndicator";
 import { ThresholdIndicator } from "./metadata/ThresholdIndicator";
 import { TraceIndicator } from "./metadata/TraceIndicator";
 import { UrlIndicator } from "./metadata/UrlIndicator";
-import { ViewportIndicator } from "./metadata/ViewportIndicator";
+import {
+  ViewportIndicator,
+  ViewportIndicatorLink,
+} from "./metadata/ViewportIndicator";
 import { FitToggle } from "./toolbar/FitToggle";
 import { NextButton, PreviousButton } from "./toolbar/NavButtons";
 import { OverlayToggle } from "./toolbar/OverlayToggle";
@@ -46,9 +55,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
 }) {
   const metadata = resolveDiffMetadata(activeDiff);
   const automationLibrary = metadata?.automationLibrary ?? null;
-  const browser = metadata?.browser ?? null;
   const sdk = metadata?.sdk ?? null;
-  const viewport = metadata?.viewport ?? null;
   const url = metadata?.url ?? null;
   const previewUrl = metadata?.previewUrl ?? null;
   const colorScheme = metadata?.colorScheme ?? null;
@@ -85,6 +92,28 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
       retry: resolveDiffMetadata(sibling)?.test?.retry ?? undefined,
     };
   })();
+
+  const getDiffPath = useGetDiffPath();
+  const siblingMetadataList = siblingDiffs
+    .map(resolveDiffMetadata)
+    .filter(checkIsNonNullable);
+
+  const browsers = getUniqueBrowsers(siblingMetadataList);
+  const activeBrowserKey = metadata?.browser
+    ? hashBrowser(metadata.browser)
+    : null;
+  const activeBrowserIndex = browsers.findIndex(
+    (b) => hashBrowser(b) === activeBrowserKey,
+  );
+
+  const viewports = getUniqueViewports(siblingMetadataList);
+  const activeViewportKey = metadata?.viewport
+    ? hashViewport(metadata.viewport)
+    : null;
+  const activeViewportIndex = viewports.findIndex(
+    (v) => hashViewport(v) === activeViewportKey,
+  );
+
   return (
     <div
       className={clsx(
@@ -112,8 +141,84 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
                 className="size-4"
               />
             )}
-            {browser && (
-              <BrowserIndicator browser={browser} className="size-4" />
+            {browsers.length > 0 && (
+              <ButtonGroup>
+                {browsers.map((browser, index) => {
+                  const key = hashBrowser(browser);
+
+                  if (browsers.length === 1) {
+                    return (
+                      <BrowserIndicator
+                        key={key}
+                        browser={browser}
+                        className="size-4"
+                      />
+                    );
+                  }
+
+                  const isActive = activeBrowserKey === key;
+                  const isNextActive =
+                    (activeBrowserIndex + 1) % browsers.length === index;
+                  const diff = isActive
+                    ? activeDiff
+                    : siblingDiffs.find((diff) => {
+                        const metadata = resolveDiffMetadata(diff);
+                        return (
+                          metadata?.browser &&
+                          hashBrowser(metadata.browser) === key
+                        );
+                      });
+                  invariant(diff, "diff cannot be null");
+                  return (
+                    <BrowserIndicatorLink
+                      key={key}
+                      browser={browser}
+                      className="size-4"
+                      aria-current={
+                        activeBrowserKey === key ? "page" : undefined
+                      }
+                      href={getDiffPath(diff.id) ?? ""}
+                      shortcutEnabled={isNextActive}
+                    />
+                  );
+                })}
+              </ButtonGroup>
+            )}
+            {viewports.length > 0 && (
+              <ButtonGroup>
+                {viewports.map((viewport, index) => {
+                  const key = hashViewport(viewport);
+
+                  if (viewports.length === 1) {
+                    return <ViewportIndicator key={key} viewport={viewport} />;
+                  }
+
+                  const isActive = activeViewportKey === key;
+                  const isNextActive =
+                    (activeViewportIndex + 1) % viewports.length === index;
+                  const diff = isActive
+                    ? activeDiff
+                    : siblingDiffs.find((diff) => {
+                        const metadata = resolveDiffMetadata(diff);
+                        return (
+                          metadata?.viewport &&
+                          hashViewport(metadata.viewport) === key
+                        );
+                      });
+
+                  invariant(diff, "diff cannot be null");
+
+                  return (
+                    <ViewportIndicatorLink
+                      key={key}
+                      viewport={viewport}
+                      aria-current={isActive ? "page" : undefined}
+                      href={getDiffPath(diff.id) ?? ""}
+                      shortcutEnabled={isNextActive}
+                    />
+                  );
+                })}
+              </ButtonGroup>
             )}
             {threshold !== null && <ThresholdIndicator threshold={threshold} />}
             {retry !== null && retries !== null && retries > 0 && (
@@ -134,7 +239,6 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             {mediaType && (
               <MediaTypeIndicator mediaType={mediaType} className="size-4" />
             )}
-            {viewport && <ViewportIndicator viewport={viewport} />}
             {url && checkIsValidURL(url) ? (
               <UrlIndicator
                 url={url}
@@ -180,6 +284,89 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     </div>
   );
 });
+
+type Metadata = NonNullable<NonNullable<Diff["baseScreenshot"]>["metadata"]>;
+type MetadataBrowser = NonNullable<Metadata["browser"]>;
+type MetadataViewport = NonNullable<Metadata["viewport"]>;
+
+/**
+ * Get a function to generate a diff path.
+ */
+function useGetDiffPath() {
+  const path = "/:accountSlug/:projectName/builds/:buildNumber/:diffId";
+  const match = useMatch(path);
+  return (diffId: string) => {
+    if (!match) {
+      return null;
+    }
+    const { accountSlug, projectName, buildNumber } = match.params;
+    if (!accountSlug || !projectName || !buildNumber) {
+      return null;
+    }
+    return generatePath(path, {
+      accountSlug,
+      projectName,
+      buildNumber,
+      diffId,
+    });
+  };
+}
+
+/**
+ * Get a list of unique viewports from a list of metadata.
+ */
+function getUniqueViewports(metadataList: Metadata[]): MetadataViewport[] {
+  const hashes = new Set<string>();
+  const viewports = metadataList.reduce<MetadataViewport[]>(
+    (viewports, metadata) => {
+      if (!metadata?.viewport) {
+        return viewports;
+      }
+      const hash = hashViewport(metadata.viewport);
+      if (hashes.has(hash)) {
+        return viewports;
+      }
+      hashes.add(hash);
+      viewports.push(metadata.viewport);
+      return viewports;
+    },
+    [],
+  );
+  return viewports.sort((a, b) => a.width - b.width);
+}
+
+/**
+ * Get a list of unique browsers from a list of metadata.
+ */
+function getUniqueBrowsers(metadataList: Metadata[]): MetadataBrowser[] {
+  const hashes = new Set<string>();
+  return metadataList.reduce<MetadataBrowser[]>((browsers, metadata) => {
+    if (!metadata?.browser) {
+      return browsers;
+    }
+    const hash = hashBrowser(metadata.browser);
+    if (hashes.has(hash)) {
+      return browsers;
+    }
+    hashes.add(hash);
+    browsers.push(metadata.browser);
+    return browsers;
+  }, []);
+}
+
+/**
+ * Hash a viewport object.
+ */
+function hashViewport(viewport: MetadataViewport): string {
+  return `${viewport.width}x${viewport.height}`;
+}
+
+/**
+ * Hash a browser object.
+ */
+function hashBrowser(browser: MetadataBrowser): string {
+  return `${browser.name} ${browser.version}`;
+}
 
 /**
  * Check if a URL can be parsed.

@@ -780,8 +780,6 @@ type ScreenshotBucket implements Node {
 }
 
 type ScreenshotDiff implements Node {
-  """Base name of the diff, same for all retries"""
-  baseName: String!
   baseScreenshot: Screenshot
   compareScreenshot: Screenshot
   createdAt: DateTime!
@@ -794,6 +792,11 @@ type ScreenshotDiff implements Node {
   status: ScreenshotDiffStatus!
   threshold: Float
   url: String
+
+  """
+  Unique key to identify screenshot variant (browser, resolution, retries)
+  """
+  variantKey: String!
   width: Int
 }
 

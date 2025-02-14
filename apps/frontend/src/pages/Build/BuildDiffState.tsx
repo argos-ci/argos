@@ -30,7 +30,7 @@ const ScreenshotDiffFragment = graphql(`
     status
     url
     name
-    baseName
+    variantKey
     width
     height
     group
@@ -567,7 +567,7 @@ export function BuildDiffProvider(props: {
     () =>
       activeDiff
         ? screenshotDiffs.filter(
-            (diff) => diff.baseName === activeDiff.baseName,
+            (diff) => diff.variantKey === activeDiff.variantKey,
           )
         : [],
     [activeDiff, screenshotDiffs],

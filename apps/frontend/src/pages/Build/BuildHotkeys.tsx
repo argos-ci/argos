@@ -68,6 +68,16 @@ const hotkeyGroups = [
         displayKeys: ["6"],
         description: "Go to first retried failure screenshot",
       },
+      switchViewport: {
+        keys: ["KeyV"],
+        displayKeys: ["V"],
+        description: "Switch viewport",
+      },
+      switchBrowser: {
+        keys: ["KeyB"],
+        displayKeys: ["B"],
+        description: "Switch browser",
+      },
     },
   },
   {
@@ -216,6 +226,10 @@ export function useBuildHotkey(
         // Ignore modifier keys
         if (key === "⌘") {
           return true;
+        }
+        if (key.startsWith("Key")) {
+          const letter = key.slice(3);
+          return letter === event.key || letter.toLowerCase() === event.key;
         }
         return key === event.code || key === event.key;
       });

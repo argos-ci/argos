@@ -140,15 +140,19 @@
   --border-color-active: var(--mauve-9);
 
   --border-color-primary: var(--violet-6);
+  --border-color-primary-hover: var(--violet-8);
 
   --border-color-danger: var(--tomato-6);
   --border-color-danger-hover: var(--tomato-8);
 
   --border-color-warning: var(--orange-6);
+  --border-color-warning-hover: var(--orange-8);
 
   --border-color-info: var(--blue-6);
+  --border-color-info-hover: var(--blue-8);
 
   --border-color-pending: var(--amber-6);
+  --border-color-pending-hover: var(--amber-8);
 
   --border-color-success: var(--grass-6);
   --border-color-success-hover: var(--grass-8);
@@ -180,7 +184,7 @@
 @custom-variant search-cancel &::-webkit-search-cancel-button;
 
 @utility rac-focus {
-  &:focus {
+  &[data-focused]:not([data-focus-visible]) {
     @apply outline-none;
   }
 
