@@ -93,6 +93,7 @@
   },
   "devDependencies": {
     "@argos/config-types": "workspace:*",
+    "@argos/error-types": "workspace:*",
     "@argos/knex-scripts": "workspace:*",
     "@types/amqplib": "^0.10.6",
     "@types/auth-header": "^1.0.6",

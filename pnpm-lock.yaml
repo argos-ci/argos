@@ -292,6 +292,9 @@ importers:
       '@argos/config-types':
         specifier: workspace:*
         version: link:../../packages/config-types
+      '@argos/error-types':
+        specifier: workspace:*
+        version: link:../../packages/error-types
       '@types/amqplib':
         specifier: ^0.10.6
         version: 0.10.6
@@ -356,6 +359,9 @@ importers:
       '@argos/config-types':
         specifier: workspace:*
         version: link:../../packages/config-types
+      '@argos/error-types':
+        specifier: workspace:*
+        version: link:../../packages/error-types
       '@argos/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -487,6 +493,8 @@ importers:
         version: 6.1.0(@types/node@22.13.1)(jiti@2.4.2)(lightningcss@1.29.1)(yaml@2.7.0)
 
   packages/config-types: {}
+
+  packages/error-types: {}
 
   packages/knex-scripts:
     dependencies:
