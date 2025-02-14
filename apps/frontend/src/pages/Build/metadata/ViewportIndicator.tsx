@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { AppWindow } from "lucide-react";
+import { LaptopIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Chip, ChipLink, ChipLinkProps, ChipProps } from "@/ui/Chip";
@@ -8,12 +8,24 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildHotkey } from "../BuildHotkeys";
 
-type ViewportIndicatorOptions = {
-  viewport: {
-    width: number;
-    height: number;
-  };
+type Viewport = {
+  width: number;
+  height: number;
 };
+
+type ViewportIndicatorOptions = {
+  viewport: Viewport;
+};
+
+function getViewportIcon(viewport: Viewport) {
+  if (viewport.width >= 1025) {
+    return LaptopIcon;
+  }
+  if (viewport.width >= 641) {
+    return TabletIcon;
+  }
+  return SmartphoneIcon;
+}
 
 function useViewportIndicator<
   T extends ViewportIndicatorOptions & {
@@ -23,7 +35,7 @@ function useViewportIndicator<
   const { viewport, className, ...rest } = props;
   return {
     chipProps: {
-      icon: AppWindow,
+      icon: getViewportIcon(viewport),
       scale: "xs",
       className: clsx("font-mono", className),
       children: viewport.width,
