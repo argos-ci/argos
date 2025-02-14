@@ -63,7 +63,8 @@
     "@types/react-dom": "19.0.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "undici": "6.21.1"
+    "undici": "6.21.1",
+    "esbuild": "0.25.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
