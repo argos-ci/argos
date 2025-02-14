@@ -1,4 +1,5 @@
 import { STATUS_CODES } from "node:http";
+import type { ErrorCode } from "@argos/error-types";
 import type { RequestHandler } from "express";
 
 import config from "@/config/index.js";
@@ -49,6 +50,7 @@ type HttpErrorOptions = ErrorOptions & {
   details?: {
     message: string;
   }[];
+  code?: ErrorCode;
 };
 
 /**
@@ -56,6 +58,7 @@ type HttpErrorOptions = ErrorOptions & {
  */
 export class HTTPError extends Error {
   public statusCode: number;
+  public code: ErrorCode | null;
   public details:
     | {
         message: string;
@@ -70,6 +73,7 @@ export class HTTPError extends Error {
     super(message || STATUS_CODES[statusCode], options);
     this.statusCode = statusCode;
     this.details = options?.details;
+    this.code = options?.code || null;
   }
 }
 

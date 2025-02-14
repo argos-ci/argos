@@ -1,29 +1,46 @@
+import type { ErrorCode } from "@argos/error-types";
+
 import { config } from "@/config";
 
-function extractErrorMessageFromData(data: unknown) {
+/**
+ * Extract error information from an API response.
+ */
+function extractErrorInfos(data: unknown): {
+  message: string;
+  code: ErrorCode | null;
+} {
   if (
     data &&
     typeof data === "object" &&
     "error" in data &&
     data.error &&
-    typeof data.error === "object" &&
-    "message" in data.error &&
-    typeof data.error.message === "string"
+    typeof data.error === "object"
   ) {
-    return data.error.message;
+    const message =
+      "message" in data.error && typeof data.error.message === "string"
+        ? data.error.message
+        : "Unknown API error";
+    const code =
+      "code" in data.error && typeof data.error.code === "string"
+        ? data.error.code
+        : null;
+    return { message, code: code as ErrorCode | null };
   }
-  return "Unknown API error";
+  return { message: "Unknown API error", code: null };
 }
 
 export class APIError<TData> extends Error {
   public readonly status: number;
   public readonly data: unknown;
+  public readonly code: ErrorCode | null;
 
   constructor(options: { status: number; data: TData }) {
-    super(extractErrorMessageFromData(options.data));
+    const infos = extractErrorInfos(options.data);
+    super(infos.message);
     this.name = "APIError";
     this.status = options.status;
     this.data = options.data;
+    this.code = infos.code;
   }
 }
 

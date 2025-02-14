@@ -191,6 +191,7 @@ export async function getOrCreateUserAccountFromGhAccount(
       throw boom(
         400,
         "GitHub account is already attached to another Argos account",
+        { code: "GITHUB_ACCOUNT_ALREADY_ATTACHED" },
       );
     }
 
@@ -201,6 +202,7 @@ export async function getOrCreateUserAccountFromGhAccount(
       throw boom(
         400,
         "Argos account is already attached to another GitHub account",
+        { code: "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB" },
       );
     }
 

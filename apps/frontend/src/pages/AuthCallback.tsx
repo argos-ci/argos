@@ -140,10 +140,17 @@ export function Component() {
   return (
     <Sentry.ErrorBoundary
       beforeCapture={(scope, error) => {
-        // Invalid grant errors are not errors that should be reported.
-        // See https://stackoverflow.com/a/38433986
-        if (error instanceof APIError && error.message === "invalid_grant") {
-          scope.setLevel("info");
+        if (error instanceof APIError) {
+          // Invalid grant errors are not errors that should be reported.
+          // See https://stackoverflow.com/a/38433986
+          if (error.message === "invalid_grant") {
+            scope.setLevel("info");
+          }
+          // If the account is already attached, we don't need to report it,
+          // as it's a user error.
+          if (error.code === "GITHUB_ACCOUNT_ALREADY_ATTACHED") {
+            scope.setLevel("info");
+          }
         }
       }}
       fallback={({ error }) => (
