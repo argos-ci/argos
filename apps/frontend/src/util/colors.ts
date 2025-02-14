@@ -7,16 +7,6 @@ export type UIColor =
   | "danger"
   | "warning";
 
-export const textColorClassNames: Record<UIColor, string> = {
-  primary: "text-primary",
-  info: "text-info",
-  success: "text-success",
-  neutral: "text",
-  pending: "text-pending",
-  danger: "text-danger",
-  warning: "text-warning",
-};
-
 export const lowTextColorClassNames: Record<UIColor, string> = {
   primary: "text-primary-low",
   info: "text-info-low",

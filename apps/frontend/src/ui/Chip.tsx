@@ -1,8 +1,6 @@
 import { cloneElement, ComponentProps, isValidElement } from "react";
 import { clsx } from "clsx";
 import {
-  Button as RACButton,
-  ButtonProps as RACButtonProps,
   Link as RACLink,
   LinkProps as RACLinkProps,
 } from "react-aria-components";
@@ -159,18 +157,6 @@ export type ChipProps = Omit<React.ComponentPropsWithRef<"div">, "color"> &
 export function Chip(props: ChipProps) {
   const { chipProps } = useChip({ ...props, elementType: "div" });
   return <div {...chipProps} />;
-}
-
-export type ChipButtonProps = Omit<
-  RACButtonProps,
-  "color" | "className" | "children"
-> &
-  Pick<ComponentProps<"button">, "className" | "children"> &
-  ChipOptions;
-
-export function ChipButton(props: ChipButtonProps) {
-  const { chipProps } = useChip({ ...props, elementType: "button" });
-  return <RACButton {...chipProps} />;
 }
 
 export type ChipLinkProps = Omit<
