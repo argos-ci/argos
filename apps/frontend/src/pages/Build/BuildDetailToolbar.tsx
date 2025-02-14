@@ -7,6 +7,7 @@ import { generatePath, useMatch } from "react-router-dom";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Separator } from "@/ui/Separator";
+import { canParseURL } from "@/util/url";
 
 import { checkCanBeReviewed, Diff } from "./BuildDiffState";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
@@ -239,7 +240,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             {mediaType && (
               <MediaTypeIndicator mediaType={mediaType} className="size-4" />
             )}
-            {url && checkIsValidURL(url) ? (
+            {url && canParseURL(url) ? (
               <UrlIndicator
                 url={url}
                 previewUrl={previewUrl}
@@ -366,25 +367,6 @@ function hashViewport(viewport: MetadataViewport): string {
  */
 function hashBrowser(browser: MetadataBrowser): string {
   return `${browser.name} ${browser.version}`;
-}
-
-/**
- * Check if a URL can be parsed.
- */
-function checkIsValidURL(url: string) {
-  // If browser does not support URL, return false.
-  if (typeof URL !== "function") {
-    return false;
-  }
-  // If browser does not support URL.canParse, try to parse the URL.
-  if (typeof URL.canParse !== "function") {
-    try {
-      new URL(url);
-    } catch {
-      return false;
-    }
-  }
-  return URL.canParse(url);
 }
 
 function resolveDiffMetadata(diff: Diff) {
