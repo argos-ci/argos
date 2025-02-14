@@ -99,7 +99,7 @@ export function BrowserIndicatorLink(
   }
 
   return (
-    <HotkeyTooltip keys={hotkey.displayKeys} description={hotkey.description}>
+    <HotkeyTooltip keys={hotkey.displayKeys} description={tooltipProps.content}>
       {chipLink}
     </HotkeyTooltip>
   );
