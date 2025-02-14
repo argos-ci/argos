@@ -983,8 +983,6 @@ export type IScreenshotBucket = INode & {
 
 export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
-  /** Base name of the diff, same for all retries */
-  baseName: Scalars['String']['output'];
   baseScreenshot?: Maybe<IScreenshot>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
@@ -996,6 +994,8 @@ export type IScreenshotDiff = INode & {
   status: IScreenshotDiffStatus;
   threshold?: Maybe<Scalars['Float']['output']>;
   url?: Maybe<Scalars['String']['output']>;
+  /** Unique key to identify screenshot variant (browser, resolution, retries) */
+  variantKey: Scalars['String']['output'];
   width?: Maybe<Scalars['Int']['output']>;
 };
 
@@ -2119,7 +2119,6 @@ export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends
 }>;
 
 export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiff'] = IResolversParentTypes['ScreenshotDiff']> = ResolversObject<{
-  baseName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
@@ -2130,6 +2129,7 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   status?: Resolver<IResolversTypes['ScreenshotDiffStatus'], ParentType, ContextType>;
   threshold?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  variantKey?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
