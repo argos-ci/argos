@@ -21,6 +21,7 @@ import { Card } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
+import * as storage from "@/util/storage";
 
 import { useSafeQuery } from "../Apollo";
 import { getMainGitHubAppInstallURL, GitHubLoginButton } from "../GitHub";
@@ -276,14 +277,14 @@ const buttonLabels: Record<ConnectRepositoryProps["variant"], string> = {
 
 export function ConnectRepository(props: ConnectRepositoryProps) {
   const [provider, setProvider] = useState<GitProvider | null>(
-    window.localStorage.getItem("gitProvider") as GitProvider | null,
+    storage.getItem("gitProvider") as GitProvider | null,
   );
   const setAndStoreProvider = useCallback((provider: GitProvider | null) => {
     setProvider(provider);
     if (provider) {
-      window.localStorage.setItem("gitProvider", provider);
+      storage.setItem("gitProvider", provider);
     } else {
-      window.localStorage.removeItem("gitProvider");
+      storage.removeItem("gitProvider");
     }
   }, []);
 
