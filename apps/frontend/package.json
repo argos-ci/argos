@@ -11,7 +11,7 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@apollo/client": "3.13.0",
+    "@apollo/client": "3.13.1",
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
     "@argos/tsconfig": "workspace:*",
