@@ -1,7 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { DownloadIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -11,6 +11,7 @@ import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { fetchImage } from "@/util/image";
@@ -180,14 +181,17 @@ type ScreenshotPictureProps = Omit<
   height?: number | null | undefined;
 };
 
-const PIXELATED_SCALE_THRESHOLD = 2.5;
+function useImageRendering() {
+  const transform = useZoomTransform();
+  const [imgScale] = useScaleContext();
+  return transform.scale * imgScale > 2.5 ? "pixelated" : undefined;
+}
 
 function ScreenshotPicture(props: ScreenshotPictureProps) {
   const { src, style, width, height, ...attrs } = props;
   const ref = useRef<HTMLImageElement>(null);
-  const transform = useZoomTransform();
-  const [imgScale, setImgScale] = useScaleContext();
-  const realScale = transform.scale * imgScale;
+  const [, setImgScale] = useScaleContext();
+  const imageRendering = useImageRendering();
   // Absolute images do not affect the scale context.
   const canAffectScale = !props.className?.includes("absolute");
 
@@ -236,8 +240,7 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
         ...style,
         aspectRatio:
           width && height ? getAspectRatio({ width, height }) : undefined,
-        imageRendering:
-          realScale > PIXELATED_SCALE_THRESHOLD ? "pixelated" : undefined,
+        imageRendering,
       }}
       {...attrs}
     />
@@ -586,20 +589,22 @@ function CompareScreenshotChanged(props: {
         url={imgkit(diff.url, ["f-jpg"])}
         scale={imgScale}
         height={diff.height ?? null}
-        visible={diffVisible}
       />
     </>
   );
 }
 
 function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
-  const style = useBuildDiffColorStyle({ height: props.height });
+  const style = useBuildDiffColorStyle({ src: props.src });
+  const imageRendering = useImageRendering();
   return (
-    <ScreenshotPicture
-      alt="Changes screenshot"
-      {...props}
-      style={{ ...style, ...props.style }}
-    />
+    <span style={{ ...style, imageRendering, ...props.style }}>
+      <ScreenshotPicture
+        alt="Changes screenshot"
+        {...props}
+        style={{ opacity: 0, display: "block" }}
+      />
+    </span>
   );
 }
 
@@ -610,57 +615,83 @@ function DiffIndicator(props: {
   url: string;
   scale: number | null;
   height: number | null;
-  visible: boolean;
 }) {
+  const { scale, height } = props;
   const rects = useColoredRects({ url: props.url });
-  const transform = useZoomTransform();
-
-  return (
-    <div
-      className={clsx(
-        "bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm",
-        !props.visible && "opacity-0",
-      )}
-    >
-      {rects && props.scale && props.height ? (
-        <div
-          className="absolute top-0 origin-top"
-          style={{
-            height: props.height,
-            transform: `scaleY(${transform.scale}) translateY(${transform.y / transform.scale}px)`,
-          }}
-        >
-          <div
-            className="absolute inset-y-0 origin-top"
-            style={{ transform: `scaleY(${props.scale})` }}
-          >
-            {rects.map((rect, index) => (
-              <DiffIndicatorRect
-                key={index}
-                className="absolute w-1.5"
-                style={{
-                  top: rect.y,
-                  height: rect.height,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function DiffIndicatorRect(props: React.ComponentPropsWithoutRef<"div">) {
   const { color } = useBuildDiffColorState();
+  const transform = useZoomTransform();
+  const [containerHeight, setContainerHeight] = useState<number | null>(null);
+  const containerRef = useResizeObserver((entry) => {
+    setContainerHeight(entry.contentRect.height);
+  });
+
+  const indicators = (() => {
+    if (!rects || !scale || !height || !containerHeight) {
+      return { top: false, bottom: false };
+    }
+    const top = transform.y / scale / transform.scale;
+    const h = containerHeight / scale / transform.scale;
+    const hasRectAbove = rects.some((rect) => rect.y < -top);
+    const hasRectBelow = rects.some((rect) => rect.y + rect.height > h - top);
+    return { top: hasRectAbove, bottom: hasRectBelow };
+  })();
+
   return (
-    <div
-      {...props}
-      style={{
-        backgroundColor: color,
-        ...props.style,
-      }}
-    />
+    <>
+      {indicators.top && (
+        <Tooltip content="Scroll up to see more changes">
+          <ChevronUpIcon
+            className="text-info-app animate-bounce-up absolute -left-3.5 -top-2.5 size-3"
+            style={{ color }}
+          />
+        </Tooltip>
+      )}
+      <div
+        ref={containerRef}
+        className="bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm"
+      >
+        {(() => {
+          if (!rects || !scale || !height || !containerHeight) {
+            return null;
+          }
+
+          return (
+            <div
+              className="absolute top-0 origin-top"
+              style={{
+                height,
+                transform: `scaleY(${transform.scale}) translateY(${transform.y / transform.scale}px)`,
+              }}
+            >
+              <div
+                className="absolute inset-y-0 origin-top"
+                style={{ transform: `scaleY(${scale})` }}
+              >
+                {rects.map((rect, index) => (
+                  <div
+                    key={index}
+                    className="absolute w-1.5"
+                    style={{
+                      backgroundColor: color,
+                      top: rect.y,
+                      height: rect.height,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+      {indicators.bottom && (
+        <Tooltip content="Scroll down to see more changes">
+          <ChevronDownIcon
+            className="text-info-app animate-bounce-down absolute -bottom-2.5 -left-3.5 size-3"
+            style={{ color }}
+          />
+        </Tooltip>
+      )}
+    </>
   );
 }
 

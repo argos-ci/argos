@@ -176,6 +176,30 @@
   --stroke-color-low: var(--border-color-low);
 
   --fill-subtle: var(--background-color-subtle);
+
+  --animate-bounce-down: bounce-down 1s infinite;
+
+  @keyframes bounce-down {
+    0%,
+    100% {
+      transform: translateY(25%);
+    }
+    50% {
+      transform: none;
+    }
+  }
+
+  --animate-bounce-up: bounce-up 1s infinite;
+
+  @keyframes bounce-up {
+    0%,
+    100% {
+      transform: translateY(-25%);
+    }
+    50% {
+      transform: none;
+    }
+  }
 }
 
 @plugin "tailwindcss-animate";
