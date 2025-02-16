@@ -1,4 +1,6 @@
 import {
+  Children,
+  cloneElement,
   createContext,
   memo,
   use,
@@ -31,7 +33,7 @@ type ZoomPaneListener = {
 };
 
 const MIN_ZOOM_SCALE = 0.1;
-const MAX_ZOOM_SCALE = 34;
+const MAX_ZOOM_SCALE = 96;
 
 const isWrappedWithClass = (event: any, className: string | undefined) =>
   Boolean(event.target.closest(`.${className}`));
@@ -43,10 +45,16 @@ class Zoomer {
   selection: Selection<Element, unknown, null, undefined>;
   listeners: ZoomPaneListener[];
 
-  constructor(element: Element) {
+  constructor(
+    element: Element,
+    scales: {
+      minScale: number;
+      maxScale: number;
+    },
+  ) {
     this.listeners = [];
     this.zoom = zoom()
-      .scaleExtent([MIN_ZOOM_SCALE, MAX_ZOOM_SCALE])
+      .scaleExtent([scales.minScale, scales.maxScale])
       .filter((event: any) => {
         if (isWrappedWithClass(event, ZOOMER_CONTROLS_CLASS)) {
           return false;
@@ -335,16 +343,41 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
 });
 
 export function ZoomPane(props: {
-  children: React.ReactNode;
+  children: React.ReactElement<{ ref?: React.Ref<HTMLDivElement | null> }>;
+  dimensions: { width: number; height: number } | undefined;
   controls?: React.ReactNode;
 }) {
+  const { dimensions } = props;
   const paneRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const imgContainerRef = useRef<HTMLDivElement>(null);
   const { register, getInitialTransform } = useZoomerSyncContext();
   const [transform, setTransform] = useState<Transform>(identityTransform);
+  const [scales, setScales] = useState<{ minScale: number; maxScale: number }>({
+    minScale: MIN_ZOOM_SCALE,
+    maxScale: MAX_ZOOM_SCALE,
+  });
   useLayoutEffect(() => {
-    const pane = paneRef.current as Element;
-    const zoomer = new Zoomer(pane);
+    const pane = paneRef.current;
+    invariant(pane);
+    const imgContainer = imgContainerRef.current;
+    invariant(imgContainer);
+
+    // Compute the scales based on the dimensions of the image
+    // to ensure that the scales are relative to the zoom on the image.
+    const scales = (() => {
+      if (dimensions) {
+        const scale =
+          imgContainer.getBoundingClientRect().width / dimensions.width;
+        const minScale = Math.min(MIN_ZOOM_SCALE, scale) / scale;
+        const maxScale = MAX_ZOOM_SCALE / scale;
+        return { minScale, maxScale };
+      }
+      return { minScale: MIN_ZOOM_SCALE, maxScale: MAX_ZOOM_SCALE };
+    })();
+
+    setScales(scales);
+    const zoomer = new Zoomer(pane, scales);
+
     zoomer.subscribe((event) => {
       setTransform((previous) => {
         if (checkIsTransformEqual(previous, event.state)) {
@@ -356,18 +389,17 @@ export function ZoomPane(props: {
     const initialTransform = getInitialTransform();
     zoomer.update(initialTransform);
     return register(zoomer);
-  }, [register, getInitialTransform]);
+  }, [register, getInitialTransform, dimensions]);
   return (
     <div
       ref={paneRef}
       className="group/pane bg-app flex min-h-0 flex-1 cursor-grab select-none overflow-hidden rounded-sm border"
     >
       <div
-        ref={contentRef}
         className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
         style={{ transform: transformToCss(transform) }}
       >
-        {props.children}
+        {cloneElement(Children.only(props.children), { ref: imgContainerRef })}
       </div>
       {props.controls && (
         <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
@@ -379,8 +411,8 @@ export function ZoomPane(props: {
           >
             {props.controls}
             <FitViewButton />
-            <ZoomInButton disabled={transform.scale >= MAX_ZOOM_SCALE} />
-            <ZoomOutButton disabled={transform.scale <= MIN_ZOOM_SCALE} />
+            <ZoomInButton disabled={transform.scale >= scales.maxScale} />
+            <ZoomOutButton disabled={transform.scale <= scales.minScale} />
           </div>
         </div>
       )}

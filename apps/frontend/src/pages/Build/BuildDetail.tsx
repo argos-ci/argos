@@ -145,13 +145,8 @@ const MissingScreenshotInfo = memo(
   },
 );
 
-function getAspectRatio(dimensions: {
-  width?: number | null | undefined;
-  height?: number | null | undefined;
-}) {
-  return dimensions.width && dimensions.height
-    ? `${dimensions.width}/${dimensions.height}`
-    : undefined;
+function getAspectRatio(dimensions: { width: number; height: number }) {
+  return `${dimensions.width}/${dimensions.height}`;
 }
 
 function getScreenshotPictureProps(screenshot: {
@@ -186,20 +181,36 @@ type ScreenshotPictureProps = Omit<
   onScaleChange?: (scale: number | null) => void;
 };
 
+const PIXELATED_SCALE_THRESHOLD = 3;
+
 function ScreenshotPicture(props: ScreenshotPictureProps) {
   const { src, style, width, height, onScaleChange, ...attrs } = props;
-  const transform = useZoomTransform();
   const ref = useRef<HTMLImageElement>(null);
+  const dimensions = extractDimensions({ width, height });
+  const transform = useZoomTransform();
   const [pixelated, setPixelated] = useState(false);
+
   useEffect(() => {
-    if (transform.scale && ref.current) {
-      if (!Number.isNaN(ref.current.naturalWidth)) {
-        const realScale = transform.scale - getImageScale(ref.current);
-        setPixelated(realScale > 1.5);
-      }
+    const img = ref.current;
+    invariant(img);
+
+    const updatePixelated = () => {
+      const imgScale = getImageScale(img);
+      const realScale = transform.scale / imgScale;
+      setPixelated(realScale > PIXELATED_SCALE_THRESHOLD);
+    };
+
+    if (img.complete) {
+      updatePixelated();
+      return undefined;
     }
+
+    img.addEventListener("load", updatePixelated);
+    return () => img.removeEventListener("load", updatePixelated);
   }, [transform.scale]);
+
   const onScaleChangeRef = useLiveRef(onScaleChange);
+
   useEffect(() => {
     const onScaleChange = onScaleChangeRef.current;
     if (!onScaleChange) {
@@ -209,23 +220,40 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
       onScaleChange(null);
     };
   }, [onScaleChangeRef]);
+
   useEffect(() => {
     const onScaleChange = onScaleChangeRef.current;
-    const img = ref.current;
-    if (onScaleChange && img?.complete) {
-      onScaleChange(getImageScale(img));
+    if (!onScaleChange) {
+      return undefined;
     }
+
+    const img = ref.current;
+    invariant(img);
+
+    if (img.complete) {
+      onScaleChange(getImageScale(img));
+      return undefined;
+    }
+
+    const handleLoad = () => onScaleChange(getImageScale(img));
+    img.addEventListener("load", handleLoad);
+    return () => img.removeEventListener("load", handleLoad);
+  }, [
+    onScaleChangeRef,
     // Watch classname, because it can change the size of the image
-  }, [onScaleChangeRef, props.className]);
+    props.className,
+  ]);
+
   return (
     <ImageKitPicture
+      // Ensure to reload the image when the src changes
       key={src}
       ref={ref}
       src={src}
       original
       style={{
         ...style,
-        aspectRatio: getAspectRatio({ width, height }),
+        aspectRatio: dimensions ? getAspectRatio(dimensions) : undefined,
         imageRendering: pixelated ? "pixelated" : undefined,
       }}
       onLoad={
@@ -241,29 +269,30 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
   );
 }
 
-function ScreenshotContainer({
-  dimensions,
-  contained,
-  children,
-}: {
-  dimensions: {
-    width?: number | null;
-    height?: number | null;
-  };
+function ScreenshotContainer(props: {
+  ref?: React.Ref<HTMLDivElement>;
+  dimensions:
+    | {
+        width: number;
+        height: number;
+      }
+    | undefined;
   contained: boolean;
   children: React.ReactNode;
 }) {
+  const { ref, dimensions, contained, children } = props;
   return (
     <div
+      ref={ref}
       className={clsx(
         "relative min-h-0 min-w-0",
         contained && "max-h-full max-w-full",
       )}
       style={
-        contained
+        contained && dimensions
           ? {
               aspectRatio: getAspectRatio(dimensions),
-              height: dimensions.height ?? undefined,
+              height: dimensions.height,
             }
           : undefined
       }
@@ -289,7 +318,17 @@ function DownloadBaseScreenshotButton({
   );
 }
 
-const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
+function extractDimensions(dimensions: {
+  width?: number | undefined | null;
+  height?: number | undefined | null;
+}) {
+  const { width, height } = dimensions;
+  return typeof width === "number" && typeof height === "number"
+    ? { width: width, height: height }
+    : undefined;
+}
+
+function BaseScreenshot({ diff, buildId }: { diff: Diff; buildId: string }) {
   const { contained } = useBuildDiffFitState();
   switch (diff.status) {
     case ScreenshotDiffStatus.Added:
@@ -348,36 +387,42 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
         />
       );
     case ScreenshotDiffStatus.Removed: {
+      invariant(
+        diff.baseScreenshot,
+        "baseScreenshot is defined for removed screenshots",
+      );
+      const dimensions = extractDimensions(diff.baseScreenshot);
       return (
         <ZoomPane
+          dimensions={dimensions}
           controls={
             <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
           }
         >
-          <ScreenshotContainer
-            dimensions={diff.baseScreenshot!}
-            contained={contained}
-          >
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
               className={clsx(contained && "max-h-full")}
               alt="Baseline screenshot"
-              {...getScreenshotPictureProps(diff.baseScreenshot!)}
+              {...getScreenshotPictureProps(diff.baseScreenshot)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.Changed: {
+      const dimensions = extractDimensions(diff);
+      invariant(diff.url, "Expected diff.url to be defined");
       return (
         <ZoomPane
+          dimensions={dimensions}
           controls={
             <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
           }
         >
-          <ScreenshotContainer dimensions={diff} contained={contained}>
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
               className={clsx("relative opacity-0", contained && "max-h-full")}
-              src={diff.url!}
+              src={diff.url}
               width={diff.width}
               height={diff.height}
             />
@@ -393,7 +438,7 @@ const BaseScreenshot = ({ diff, buildId }: { diff: Diff; buildId: string }) => {
     default:
       return null;
   }
-};
+}
 
 function DownloadCompareScreenshotButton({
   diff,
@@ -411,91 +456,86 @@ function DownloadCompareScreenshotButton({
   );
 }
 
-const CompareScreenshot = ({
-  diff,
-  buildId,
-}: {
-  diff: Diff;
-  buildId: string;
-}) => {
+function CompareScreenshot(props: { diff: Diff; buildId: string }) {
+  const { diff, buildId } = props;
   const { visible } = useBuildDiffVisibleState();
   const { contained } = useBuildDiffFitState();
   switch (diff.status) {
     case ScreenshotDiffStatus.Added: {
+      invariant(diff.compareScreenshot);
+      const dimensions = extractDimensions(diff.compareScreenshot);
       return (
         <ZoomPane
+          dimensions={dimensions}
           controls={
             <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
-          <ScreenshotContainer
-            dimensions={diff.compareScreenshot!}
-            contained={contained}
-          >
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
               className={clsx(contained && "max-h-full max-w-full")}
               alt="Changes screenshot"
-              {...getScreenshotPictureProps(diff.compareScreenshot!)}
+              {...getScreenshotPictureProps(diff.compareScreenshot)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.Failure: {
+      invariant(diff.compareScreenshot);
+      const dimensions = extractDimensions(diff.compareScreenshot);
       return (
         <ZoomPane
+          dimensions={dimensions}
           controls={
             <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
-          <ScreenshotContainer
-            dimensions={diff.compareScreenshot!}
-            contained={contained}
-          >
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
-              className={clsx(contained && "max-h-full")}
+              className={clsx(contained && "max-h-full max-w-full")}
               alt="Failure screenshot"
-              {...getScreenshotPictureProps(diff.compareScreenshot!)}
+              {...getScreenshotPictureProps(diff.compareScreenshot)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.RetryFailure: {
+      invariant(diff.compareScreenshot);
+      const dimensions = extractDimensions(diff.compareScreenshot);
       return (
         <ZoomPane
+          dimensions={dimensions}
           controls={
             <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
-          <ScreenshotContainer
-            dimensions={diff.compareScreenshot!}
-            contained={contained}
-          >
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
-              className={clsx(contained && "max-h-full")}
+              className={clsx(contained && "max-h-full max-w-full")}
               alt="Retried failure screenshot"
-              {...getScreenshotPictureProps(diff.compareScreenshot!)}
+              {...getScreenshotPictureProps(diff.compareScreenshot)}
             />
           </ScreenshotContainer>
         </ZoomPane>
       );
     }
     case ScreenshotDiffStatus.Unchanged: {
+      invariant(diff.compareScreenshot);
+      const dimensions = extractDimensions(diff.compareScreenshot);
       return (
         <ZoomPane
+          dimensions={dimensions}
           controls={
             <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
           }
         >
-          <ScreenshotContainer
-            dimensions={diff.compareScreenshot!}
-            contained={contained}
-          >
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
-              className={clsx(contained && "max-h-full")}
+              className={clsx(contained && "max-h-full max-w-full")}
               alt="Baseline screenshot"
-              {...getScreenshotPictureProps(diff.compareScreenshot!)}
+              {...getScreenshotPictureProps(diff.compareScreenshot)}
             />
           </ScreenshotContainer>
         </ZoomPane>
@@ -528,7 +568,7 @@ const CompareScreenshot = ({
     default:
       return null;
   }
-};
+}
 
 function CompareScreenshotChanged(props: {
   diff: Diff;
@@ -537,16 +577,18 @@ function CompareScreenshotChanged(props: {
   contained: boolean;
 }) {
   const { diff, buildId, diffVisible, contained } = props;
+  const dimensions = extractDimensions(diff);
   const [scale, setScale] = useState<number | null>(null);
-  invariant(diff.url, "Expected diff.url to be defined");
+  invariant(diff.url);
   return (
     <>
       <ZoomPane
+        dimensions={dimensions}
         controls={
           <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
         }
       >
-        <ScreenshotContainer dimensions={diff} contained={contained}>
+        <ScreenshotContainer dimensions={dimensions} contained={contained}>
           <ScreenshotPicture
             className={clsx(
               "absolute left-0 top-0",
