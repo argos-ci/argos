@@ -1,6 +1,4 @@
 import {
-  Children,
-  cloneElement,
   createContext,
   memo,
   use,
@@ -22,6 +20,7 @@ import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildHotkey } from "./BuildHotkeys";
+import { useScaleContext } from "./ScaleContext";
 
 type ZoomPaneEvent = {
   state: Transform;
@@ -182,10 +181,10 @@ const ZoomerSyncContext = createContext<ZoomerSyncContextValue | null>(null);
 
 const initialTransform = { scale: 1, x: 0, y: 0 };
 
-export const ZoomerSyncProvider = (props: {
+export function ZoomerSyncProvider(props: {
   children: React.ReactNode;
   id: string;
-}) => {
+}) {
   const refInstances = useRef<Zoomer[]>([]);
   const subscribersRef = useRef<ZoomerSyncCallback[]>([]);
   const transformRef = useRef<Transform>(initialTransform);
@@ -252,7 +251,7 @@ export const ZoomerSyncProvider = (props: {
     [register, subscribe, getInitialTransform, reset, zoomIn, zoomOut],
   );
   return <ZoomerSyncContext value={value}>{props.children}</ZoomerSyncContext>;
-};
+}
 
 export const useZoomerSyncContext = () => {
   const ctx = use(ZoomerSyncContext);
@@ -343,36 +342,30 @@ const ZoomOutButton = memo((props: { disabled: boolean }) => {
 });
 
 export function ZoomPane(props: {
-  children: React.ReactElement<{ ref?: React.Ref<HTMLDivElement | null> }>;
+  children: React.ReactNode;
   dimensions: { width: number; height: number } | undefined;
   controls?: React.ReactNode;
 }) {
   const { dimensions } = props;
   const paneRef = useRef<HTMLDivElement>(null);
-  const imgContainerRef = useRef<HTMLDivElement>(null);
   const { register, getInitialTransform } = useZoomerSyncContext();
+  const [imgScale] = useScaleContext();
   const [transform, setTransform] = useState<Transform>(identityTransform);
   const [scales, setScales] = useState<{ minScale: number; maxScale: number }>({
     minScale: MIN_ZOOM_SCALE,
     maxScale: MAX_ZOOM_SCALE,
   });
+
   useLayoutEffect(() => {
     const pane = paneRef.current;
     invariant(pane);
-    const imgContainer = imgContainerRef.current;
-    invariant(imgContainer);
 
     // Compute the scales based on the dimensions of the image
     // to ensure that the scales are relative to the zoom on the image.
     const scales = (() => {
-      if (dimensions) {
-        const scale =
-          imgContainer.getBoundingClientRect().width / dimensions.width;
-        const minScale = Math.min(MIN_ZOOM_SCALE, scale) / scale;
-        const maxScale = MAX_ZOOM_SCALE / scale;
-        return { minScale, maxScale };
-      }
-      return { minScale: MIN_ZOOM_SCALE, maxScale: MAX_ZOOM_SCALE };
+      const minScale = Math.min(MIN_ZOOM_SCALE, imgScale) / imgScale;
+      const maxScale = MAX_ZOOM_SCALE / imgScale;
+      return { minScale, maxScale };
     })();
 
     setScales(scales);
@@ -389,7 +382,8 @@ export function ZoomPane(props: {
     const initialTransform = getInitialTransform();
     zoomer.update(initialTransform);
     return register(zoomer);
-  }, [register, getInitialTransform, dimensions]);
+  }, [register, getInitialTransform, dimensions, imgScale]);
+
   return (
     <div
       ref={paneRef}
@@ -399,7 +393,7 @@ export function ZoomPane(props: {
         className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
         style={{ transform: transformToCss(transform) }}
       >
-        {cloneElement(Children.only(props.children), { ref: imgContainerRef })}
+        {props.children}
       </div>
       {props.controls && (
         <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
