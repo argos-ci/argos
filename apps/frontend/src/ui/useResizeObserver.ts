@@ -1,0 +1,41 @@
+import { useCallback } from "react";
+
+import { useLiveRef } from "./useLiveRef";
+
+/**
+ * Listen resize of an element.
+ * You can pass a callback function that will be called whenever the element is resized.
+ * The callback function will receive a ResizeObserverEntry as an argument.
+ */
+export function useResizeObserver(
+  callback: (entry: ResizeObserverEntry) => void,
+  ref?: (element: HTMLElement | null) => void,
+) {
+  const callbackRef = useLiveRef(callback);
+  return useCallback(
+    (element: HTMLElement | null) => {
+      if (!element) {
+        return undefined;
+      }
+      ref?.(element);
+
+      let req: number;
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) {
+          req = window.requestAnimationFrame(() => {
+            callbackRef.current(entry);
+          });
+        }
+      });
+      observer.observe(element);
+      return () => {
+        observer.disconnect();
+        if (req) {
+          window.cancelAnimationFrame(req);
+        }
+      };
+    },
+    [callbackRef, ref],
+  );
+}

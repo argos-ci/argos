@@ -21,19 +21,15 @@ export function useBuildDiffColorState() {
   return context;
 }
 
-export function useBuildDiffColorStyle(props: {
-  height: number | string | null | undefined;
-}) {
+export function useBuildDiffColorStyle(props: { src: string }) {
   const { color, opacity } = useBuildDiffColorState();
-  if (!props.height) {
-    return {};
-  }
-  const unitHeight =
-    typeof props.height === "number" ? `${props.height}px` : props.height;
   return {
-    filter: `drop-shadow(0 ${unitHeight} 0 ${color})`,
-    transform: `translateY(-${unitHeight})`,
-    overflow: "hidden",
+    background: color,
+    maskImage: `url(${props.src})`,
+    maskSize: "100%",
+    maskRepeat: "no-repeat",
+    maskPosition: "center",
+    display: "inline-block",
     opacity,
   };
 }

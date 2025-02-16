@@ -325,7 +325,7 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
             <ImageKitPicture
               key={compareKey}
               {...compareAttrs}
-              className="opacity-disabled absolute w-full"
+              className="opacity-disabled absolute top-0 w-full"
             />
             <DiffPicture
               key={diffKey}
@@ -342,8 +342,12 @@ const DiffImage = memo(({ diff }: { diff: Diff }) => {
 });
 
 function DiffPicture(props: ImageKitPictureProps) {
-  const style = useBuildDiffColorStyle({ height: props.height });
-  return <ImageKitPicture {...props} style={{ ...style, ...props.style }} />;
+  const style = useBuildDiffColorStyle({ src: props.src });
+  return (
+    <span className="z-10" style={{ ...style, ...props.style }}>
+      <ImageKitPicture {...props} style={{ opacity: 0, display: "block" }} />
+    </span>
+  );
 }
 
 const CardStack = ({
