@@ -122,7 +122,6 @@ export const resolvers: IResolvers = {
       const url = await getPublicUrl(file.key);
       const searchParams = new URLSearchParams();
       searchParams.set("trace", url);
-      console.log(url, `https://trace.playwright.dev/?${searchParams}`);
       return `https://trace.playwright.dev/?${searchParams}`;
     },
   },

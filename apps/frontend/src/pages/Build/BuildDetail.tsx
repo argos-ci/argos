@@ -11,7 +11,6 @@ import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
-import { useLiveRef } from "@/ui/useLiveRef";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { fetchImage } from "@/util/image";
@@ -31,6 +30,7 @@ import {
   BuildDiffVisibleStateProvider,
   useBuildDiffVisibleState,
 } from "./BuildDiffVisibleState";
+import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import {
   BuildDiffViewModeStateProvider,
   useBuildDiffViewModeState,
@@ -178,92 +178,67 @@ type ScreenshotPictureProps = Omit<
   src: string;
   width?: number | null | undefined;
   height?: number | null | undefined;
-  onScaleChange?: (scale: number | null) => void;
 };
 
-const PIXELATED_SCALE_THRESHOLD = 3;
+const PIXELATED_SCALE_THRESHOLD = 2.5;
 
 function ScreenshotPicture(props: ScreenshotPictureProps) {
-  const { src, style, width, height, onScaleChange, ...attrs } = props;
+  const { src, style, width, height, ...attrs } = props;
   const ref = useRef<HTMLImageElement>(null);
-  const dimensions = extractDimensions({ width, height });
   const transform = useZoomTransform();
-  const [pixelated, setPixelated] = useState(false);
+  const [imgScale, setImgScale] = useScaleContext();
+  const realScale = transform.scale * imgScale;
+  // Absolute images do not affect the scale context.
+  const canAffectScale = !props.className?.includes("absolute");
 
+  // Update scale when image is loaded.
   useEffect(() => {
-    const img = ref.current;
-    invariant(img);
-
-    const updatePixelated = () => {
-      const imgScale = getImageScale(img);
-      const realScale = transform.scale / imgScale;
-      setPixelated(realScale > PIXELATED_SCALE_THRESHOLD);
-    };
-
-    if (img.complete) {
-      updatePixelated();
-      return undefined;
-    }
-
-    img.addEventListener("load", updatePixelated);
-    return () => img.removeEventListener("load", updatePixelated);
-  }, [transform.scale]);
-
-  const onScaleChangeRef = useLiveRef(onScaleChange);
-
-  useEffect(() => {
-    const onScaleChange = onScaleChangeRef.current;
-    if (!onScaleChange) {
-      return undefined;
-    }
-    return () => {
-      onScaleChange(null);
-    };
-  }, [onScaleChangeRef]);
-
-  useEffect(() => {
-    const onScaleChange = onScaleChangeRef.current;
-    if (!onScaleChange) {
+    if (!canAffectScale) {
       return undefined;
     }
 
     const img = ref.current;
     invariant(img);
 
+    const update = () => setImgScale(getImageScale(img));
+
     if (img.complete) {
-      onScaleChange(getImageScale(img));
+      update();
       return undefined;
     }
 
-    const handleLoad = () => onScaleChange(getImageScale(img));
-    img.addEventListener("load", handleLoad);
-    return () => img.removeEventListener("load", handleLoad);
+    img.addEventListener("load", update);
+    return () => img.removeEventListener("load", update);
   }, [
-    onScaleChangeRef,
+    canAffectScale,
+    setImgScale,
     // Watch classname, because it can change the size of the image
     props.className,
+    // Watch src, because it can change the size of the image
+    src,
   ]);
+
+  // Reset scale when component is unmounted.
+  useEffect(() => {
+    if (!canAffectScale) {
+      return undefined;
+    }
+    return () => setImgScale(1);
+  }, [canAffectScale, setImgScale]);
 
   return (
     <ImageKitPicture
-      // Ensure to reload the image when the src changes
       key={src}
       ref={ref}
       src={src}
       original
       style={{
         ...style,
-        aspectRatio: dimensions ? getAspectRatio(dimensions) : undefined,
-        imageRendering: pixelated ? "pixelated" : undefined,
+        aspectRatio:
+          width && height ? getAspectRatio({ width, height }) : undefined,
+        imageRendering:
+          realScale > PIXELATED_SCALE_THRESHOLD ? "pixelated" : undefined,
       }}
-      onLoad={
-        onScaleChange
-          ? (event) => {
-              const img = event.target as HTMLImageElement;
-              onScaleChange?.(getImageScale(img));
-            }
-          : undefined
-      }
       {...attrs}
     />
   );
@@ -578,7 +553,7 @@ function CompareScreenshotChanged(props: {
 }) {
   const { diff, buildId, diffVisible, contained } = props;
   const dimensions = extractDimensions(diff);
-  const [scale, setScale] = useState<number | null>(null);
+  const [imgScale] = useScaleContext();
   invariant(diff.url);
   return (
     <>
@@ -602,7 +577,6 @@ function CompareScreenshotChanged(props: {
             src={diff.url}
             width={diff.width}
             height={diff.height}
-            onScaleChange={setScale}
             style={diffVisible ? undefined : { opacity: 0 }}
           />
         </ScreenshotContainer>
@@ -610,7 +584,7 @@ function CompareScreenshotChanged(props: {
       <DiffIndicator
         key={diff.url}
         url={imgkit(diff.url, ["f-jpg"])}
-        scale={scale}
+        scale={imgScale}
         height={diff.height ?? null}
         visible={diffVisible}
       />
@@ -712,7 +686,9 @@ const BuildScreenshots = memo(
             <div className="h-[2.625rem]" />
           )}
           <div className="relative flex min-h-0 flex-1 justify-center">
-            <BaseScreenshot diff={props.diff} buildId={props.build.id} />
+            <ScaleProvider>
+              <BaseScreenshot diff={props.diff} buildId={props.build.id} />
+            </ScaleProvider>
           </div>
         </div>
         <div
@@ -725,7 +701,9 @@ const BuildScreenshots = memo(
             date={props.build.createdAt}
           />
           <div className="relative flex min-h-0 flex-1 justify-center">
-            <CompareScreenshot diff={props.diff} buildId={props.build.id} />
+            <ScaleProvider>
+              <CompareScreenshot diff={props.diff} buildId={props.build.id} />
+            </ScaleProvider>
           </div>
         </div>
       </div>

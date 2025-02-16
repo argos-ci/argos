@@ -558,8 +558,6 @@ export const resolvers: IResolvers = {
             }),
           ]);
 
-          console.log({ threshold, previousThreshold });
-
           // If there is threshold, we don't need to notify the user.
           if (!threshold) {
             return;
