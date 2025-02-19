@@ -10,7 +10,6 @@ import {
   Screenshot,
 } from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
-import logger from "@/logger/index.js";
 
 import { finalizeBuild } from "./finalizeBuild.js";
 import { job as buildJob } from "./job.js";
