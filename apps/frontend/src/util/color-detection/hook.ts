@@ -8,6 +8,8 @@ import type { MessageData, Rect } from "./types";
 export function useColoredRects(input: { url: string }): null | Rect[] {
   const [rects, setRects] = useState<null | Rect[]>(null);
   useEffect(() => {
+    setRects(null);
+
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
