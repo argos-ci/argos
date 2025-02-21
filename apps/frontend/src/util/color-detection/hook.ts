@@ -5,7 +5,11 @@ import type { MessageData, Rect } from "./types";
 /**
  * Detects colored areas in the image provided by the URL.
  */
-export function useColoredRects(input: { url: string }): null | Rect[] {
+export function useColoredRects(input: {
+  url: string;
+  blockSize: number;
+}): null | Rect[] {
+  const { url, blockSize } = input;
   const [rects, setRects] = useState<null | Rect[]>(null);
   useEffect(() => {
     setRects(null);
@@ -19,10 +23,10 @@ export function useColoredRects(input: { url: string }): null | Rect[] {
     worker.addEventListener("error", (event) => {
       console.error(event.message);
     });
-    worker.postMessage({ url: input.url });
+    worker.postMessage({ url, blockSize });
     return () => {
       worker.terminate();
     };
-  }, [input.url]);
+  }, [url, blockSize]);
   return rects;
 }

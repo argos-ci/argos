@@ -1,18 +1,16 @@
 import { fetchImage } from "../image";
 import type { MessageData, Rect } from "./types";
 
-/**
- * The size of the blocks to use when detecting colored zones.
- */
-const BLOCK_SIZE = 5;
-
 // Listens for messages from the main thread and detects colored zones in an image.
 self.onmessage = (event) => {
-  const url = event.data.url;
+  const { url, blockSize } = event.data;
   if (typeof url !== "string") {
     throw new Error("Expected url to be a string");
   }
-  detectColoredZones({ url })
+  if (typeof blockSize !== "number") {
+    throw new Error("Expected blockSize to be a number");
+  }
+  detectColoredZones({ url, blockSize })
     .then((rects) => {
       self.postMessage(rects satisfies MessageData);
     })
@@ -43,8 +41,9 @@ async function fetchBitmapFromURL(url: string) {
  */
 async function detectColoredZones(input: {
   url: string;
+  blockSize: number;
 }): Promise<Rect[] | null> {
-  const { url } = input;
+  const { url, blockSize } = input;
 
   // Create an offscreen canvas to draw the image.
   const canvas = new OffscreenCanvas(1, 1);
@@ -70,20 +69,24 @@ async function detectColoredZones(input: {
   const data = imageData.data;
 
   // Create a 2d array to store the detected blocks.
-  const rows = Math.ceil(canvas.height / BLOCK_SIZE);
-  const cols = Math.ceil(canvas.width / BLOCK_SIZE);
-  const grid: boolean[][] = Array.from({ length: rows }, () => []);
+  const rows = Math.ceil(canvas.height / blockSize);
+  const cols = Math.ceil(canvas.width / blockSize);
+  const grid: boolean[][] = Array.from({ length: rows }, () =>
+    Array(cols).fill(false),
+  );
 
   /**
    * Checks if a block contains any color.
    */
   const containsColor = (x: number, y: number) => {
-    for (let i = y; i < y + BLOCK_SIZE; i++) {
-      for (let j = x; j < x + BLOCK_SIZE; j++) {
+    for (let i = y; i < y + blockSize; i++) {
+      for (let j = x; j < x + blockSize; j++) {
         const index = (i * canvas.width + j) * 4;
         const red = data[index];
+        const green = data[index + 1];
+        const blue = data[index + 2];
 
-        if (red === 255) {
+        if (red || green || blue) {
           return true;
         }
       }
@@ -92,14 +95,20 @@ async function detectColoredZones(input: {
   };
 
   // Fill the grid with the detected blocks.
-  for (let y = 0; y < canvas.height; y += BLOCK_SIZE) {
-    for (let x = 0; x < canvas.width; x += BLOCK_SIZE) {
-      const row = Math.floor(y / BLOCK_SIZE);
-      const col = Math.floor(x / BLOCK_SIZE);
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = col * blockSize;
+      const y = row * blockSize;
       grid[row]![col] = containsColor(x, y);
     }
   }
 
+  return groupRects(grid, blockSize);
+}
+
+function groupRects(grid: boolean[][], blockSize: number): Rect[] {
+  const rows = grid.length;
+  const cols = grid[0]!.length;
   const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
   const groups: Rect[] = [];
 
@@ -115,8 +124,8 @@ async function detectColoredZones(input: {
    */
   const floodFill = (row: number, col: number) => {
     const stack = [{ row, col }];
-    let minX = col * BLOCK_SIZE;
-    let minY = row * BLOCK_SIZE;
+    let minX = col * blockSize;
+    let minY = row * blockSize;
     let maxX = minX;
     let maxY = minY;
 
@@ -134,8 +143,8 @@ async function detectColoredZones(input: {
       }
       visited[row]![col] = true;
 
-      const x = col * BLOCK_SIZE;
-      const y = row * BLOCK_SIZE;
+      const x = col * blockSize;
+      const y = row * blockSize;
       if (x < minX) {
         minX = x;
       }
@@ -157,8 +166,8 @@ async function detectColoredZones(input: {
     groups.push({
       x: minX,
       y: minY,
-      width: maxX - minX + BLOCK_SIZE,
-      height: maxY - minY + BLOCK_SIZE,
+      width: maxX - minX + blockSize,
+      height: maxY - minY + blockSize,
     });
   };
 

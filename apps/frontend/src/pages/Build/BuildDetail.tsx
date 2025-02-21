@@ -1,8 +1,10 @@
 import {
   memo,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -18,9 +20,11 @@ import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { useEventCallback } from "@/ui/useEventCallback";
 import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
+import { Rect } from "@/util/color-detection/types";
 import { fetchImage } from "@/util/image";
 
 import { BuildDetailToolbar } from "./BuildDetailToolbar";
@@ -33,6 +37,10 @@ import {
   useBuildDiffFitState,
 } from "./BuildDiffFitState";
 import { getGroupIcon } from "./BuildDiffGroup";
+import {
+  Highlighter,
+  useBuildDiffHighlighterContext,
+} from "./BuildDiffHighlighterContext";
 import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
   BuildDiffVisibleStateProvider,
@@ -43,7 +51,12 @@ import {
   BuildDiffViewModeStateProvider,
   useBuildDiffViewModeState,
 } from "./useBuildDiffViewModeState";
-import { useZoomTransform, ZoomerSyncProvider, ZoomPane } from "./Zoomer";
+import {
+  useZoomerSyncContext,
+  useZoomTransform,
+  ZoomerSyncProvider,
+  ZoomPane,
+} from "./Zoomer";
 
 const _BuildFragment = graphql(`
   fragment BuildDetail_Build on Build {
@@ -191,7 +204,7 @@ type ScreenshotPictureProps = Omit<
 function useImageRendering() {
   const transform = useZoomTransform();
   const [imgScale] = useScaleContext();
-  return transform.scale * imgScale > 2.5 ? "pixelated" : undefined;
+  return transform.scale * imgScale > 1.99 ? "pixelated" : undefined;
 }
 
 function ScreenshotPicture(props: ScreenshotPictureProps) {
@@ -206,7 +219,10 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
     if (canAffectScale) {
       const img = imageRef.current;
       if (img && img.complete) {
-        setImgScale(getImageScale(img));
+        const imgScale = getImageScale(img);
+        startTransition(() => {
+          setImgScale(imgScale);
+        });
       }
     }
   }, [setImgScale, canAffectScale]);
@@ -552,39 +568,184 @@ function CompareScreenshotChanged(props: {
   contained: boolean;
 }) {
   const { diff, buildId, diffVisible, contained } = props;
-  const dimensions = extractDimensions(diff);
-  invariant(diff.url);
+  const { url } = diff;
+  const dimensions = useMemo(() => extractDimensions(diff), [diff]);
+  invariant(url);
+  const [paneSize, setPaneSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const paneRef = useResizeObserver((entry) => {
+    startTransition(() => {
+      setPaneSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+  });
+  const jpgUrl = useMemo(() => imgkit(url, ["f-jpg"]), [url]);
   return (
     <>
-      <ZoomPane
-        dimensions={dimensions}
-        controls={
-          <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
-        }
-      >
-        <ScreenshotContainer dimensions={dimensions} contained={contained}>
-          <ScreenshotPicture
-            className={clsx(
-              "absolute left-0 top-0",
-              diffVisible && "opacity-disabled",
-            )}
-            {...getScreenshotPictureProps(diff.compareScreenshot!)}
+      <div className="relative flex min-h-0 flex-1 select-none overflow-hidden rounded">
+        <ZoomPane
+          ref={paneRef}
+          dimensions={dimensions}
+          controls={
+            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+          }
+        >
+          <ScreenshotContainer dimensions={dimensions} contained={contained}>
+            <ScreenshotPicture
+              className={clsx(
+                "absolute left-0 top-0",
+                diffVisible && "opacity-disabled",
+              )}
+              {...getScreenshotPictureProps(diff.compareScreenshot!)}
+            />
+            <ChangesScreenshotPicture
+              className={clsx("relative z-10", contained && "max-h-full")}
+              alt="Changes screenshot"
+              src={url}
+              width={diff.width}
+              height={diff.height}
+              style={diffVisible ? undefined : { opacity: 0 }}
+            />
+          </ScreenshotContainer>
+        </ZoomPane>
+        {dimensions && paneSize && (
+          <RectHighlights
+            url={jpgUrl}
+            paneSize={paneSize}
+            imgSize={dimensions}
           />
-          <ChangesScreenshotPicture
-            className={clsx("relative z-10", contained && "max-h-full")}
-            alt="Changes screenshot"
-            src={diff.url}
-            width={diff.width}
-            height={diff.height}
-            style={diffVisible ? undefined : { opacity: 0 }}
-          />
-        </ScreenshotContainer>
-      </ZoomPane>
-      {diff.height != null && (
-        <DiffIndicator url={imgkit(diff.url, ["f-jpg"])} height={diff.height} />
+        )}
+      </div>
+      {dimensions && paneSize && (
+        <DiffIndicator url={jpgUrl} imgSize={dimensions} />
       )}
     </>
   );
+}
+
+function RectHighlights(props: {
+  url: string;
+  paneSize: { width: number; height: number };
+  imgSize: { width: number; height: number };
+}) {
+  const { url, paneSize, imgSize } = props;
+  const { color } = useBuildDiffColorState();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const transform = useZoomTransform();
+  const rects = useColoredRects({ url, blockSize: 24 });
+  const [imgScale] = useScaleContext();
+  const realScale = imgScale ? imgScale * transform.scale : null;
+  // Convert image coordinates to pane coordinates.
+  // Image is centered in the pane and scaled with imgScale.
+  const imgToWorkspace = (x: number, y: number): [number, number] => {
+    const x1 = (paneSize.width - imgSize.width * imgScale) / 2;
+    return [x * imgScale + x1, y * imgScale];
+  };
+  const { registerHighlighter } = useBuildDiffHighlighterContext();
+  const highlight: Highlighter["highlight"] = useEventCallback(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const elements = Array.from(container.children);
+    elements.forEach((element) => {
+      const circle = element.firstChild;
+      invariant(circle instanceof SVGCircleElement);
+      const className = "animate-highlight-svg";
+      if (!circle.classList.contains(className)) {
+        circle.classList.add(className);
+        circle.addEventListener("animationend", () => {
+          circle.classList.remove(className);
+        });
+      }
+    });
+  });
+
+  const [index, setIndex] = useState<number | null>(null);
+  const { zoomTo } = useZoomerSyncContext();
+  const go: Highlighter["go"] = useEventCallback((direction) => {
+    invariant(rects);
+    const i = index === null ? (direction === 1 ? -1 : rects.length) : index;
+    const nextIndex = (i + direction + rects.length) % rects.length;
+    const rect = rects[nextIndex];
+    invariant(rect);
+    const [x, y] = imgToWorkspace(rect.x, rect.y);
+    const maxScale = 2 / imgScale;
+    zoomTo(
+      {
+        x,
+        y,
+        width: rect.width * imgScale,
+        height: rect.height * imgScale,
+      },
+      { maxScale },
+    );
+    setIndex(nextIndex);
+  });
+
+  const highlighter: Highlighter = useMemo(
+    () => ({ highlight, go }),
+    [highlight, go],
+  );
+
+  const registerContainer = useEventCallback(
+    (element: HTMLDivElement | null) => {
+      containerRef.current = element;
+      return registerHighlighter(highlighter);
+    },
+  );
+
+  if (!rects || !realScale) {
+    return null;
+  }
+
+  return (
+    <div ref={registerContainer}>
+      {rects.map((rect, index) => {
+        const square = rectToSquare(rect, 40 / realScale);
+        const [x, y] = imgToWorkspace(square.x, square.y);
+
+        return (
+          <svg
+            key={index}
+            className="pointer-events-none absolute z-10 origin-center overflow-visible"
+            style={{
+              top: y * transform.scale + transform.y,
+              left: x * transform.scale + transform.x,
+              width: square.width * imgScale * transform.scale,
+              height: square.height * imgScale * transform.scale,
+            }}
+          >
+            <circle
+              className="opacity-0"
+              cx="50%"
+              cy="50%"
+              r="50%"
+              fill="none"
+              stroke={color}
+              strokeWidth="1"
+            />
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
+function rectToSquare(rect: Rect, minSize: number): Rect {
+  const size = Math.max(rect.width, rect.height, minSize);
+  const x = rect.x + (rect.width - size) / 2;
+  const y = rect.y + (rect.height - size) / 2;
+  return {
+    x,
+    y,
+    width: size,
+    height: size,
+  };
 }
 
 function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
@@ -606,24 +767,30 @@ function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
  */
 const DiffIndicator = memo(function DiffIndicator(props: {
   url: string;
-  height: number;
+  imgSize: { width: number; height: number };
 }) {
-  const { height, url } = props;
+  const { imgSize, url } = props;
   const [imgScale] = useScaleContext();
-  const rects = useColoredRects({ url });
+  const rects = useColoredRects({ url, blockSize: 5 });
   const { color } = useBuildDiffColorState();
   const transform = useZoomTransform();
-  const [containerHeight, setContainerHeight] = useState<number | null>(null);
+  const [containerSize, setContainerSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const containerRef = useResizeObserver((entry) => {
-    setContainerHeight(entry.contentRect.height);
+    setContainerSize({
+      width: entry.contentRect.width,
+      height: entry.contentRect.height,
+    });
   });
 
   const indicators = (() => {
-    if (!rects || !imgScale || !containerHeight) {
+    if (!rects || !imgScale || !containerSize) {
       return { top: false, bottom: false };
     }
     const top = transform.y / imgScale / transform.scale;
-    const h = containerHeight / imgScale / transform.scale;
+    const h = containerSize.height / imgScale / transform.scale;
     const hasRectAbove = rects.some((rect) => rect.y < -top);
     const hasRectBelow = rects.some((rect) => rect.y + rect.height > h - top);
     return { top: hasRectAbove, bottom: hasRectBelow };
@@ -643,7 +810,7 @@ const DiffIndicator = memo(function DiffIndicator(props: {
         className="bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm"
       >
         {(() => {
-          if (!rects || !imgScale || !containerHeight) {
+          if (!rects || !imgScale || !containerSize) {
             return null;
           }
 
@@ -651,7 +818,7 @@ const DiffIndicator = memo(function DiffIndicator(props: {
             <div
               className="absolute top-0 origin-top"
               style={{
-                height,
+                height: imgSize.height,
                 transform: `scaleY(${transform.scale}) translateY(${transform.y / transform.scale}px)`,
               }}
             >

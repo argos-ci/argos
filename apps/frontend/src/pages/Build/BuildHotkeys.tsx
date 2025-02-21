@@ -88,6 +88,21 @@ const hotkeyGroups = [
         displayKeys: ["D"],
         description: "Toggle changes overlay",
       },
+      highlightChanges: {
+        keys: ["KeyH"],
+        displayKeys: ["H"],
+        description: "Highlight changes",
+      },
+      goToNextChanges: {
+        keys: ["KeyK"],
+        displayKeys: ["K"],
+        description: "Go to next changes",
+      },
+      goToPreviousChanges: {
+        keys: ["KeyJ"],
+        displayKeys: ["J"],
+        description: "Go to previous changes",
+      },
       showBaseline: {
         keys: ["ArrowLeft"],
         displayKeys: ["←"],

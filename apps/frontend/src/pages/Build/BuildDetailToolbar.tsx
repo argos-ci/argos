@@ -29,7 +29,12 @@ import {
   ViewportIndicatorLink,
 } from "./metadata/ViewportIndicator";
 import { FitToggle } from "./toolbar/FitToggle";
+import { HighlightButton } from "./toolbar/HighlightButton";
 import { NextButton, PreviousButton } from "./toolbar/NavButtons";
+import {
+  GoToNextChangesButton,
+  GoToPreviousChangesButton,
+} from "./toolbar/NavChangesButton";
 import { OverlayToggle } from "./toolbar/OverlayToggle";
 import { SettingsButton } from "./toolbar/SettingsButton";
 import { TrackButtons } from "./toolbar/TrackButtons";
@@ -268,6 +273,11 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
           <>
             <Separator orientation="vertical" className="mx-1 !h-6" />
             <OverlayToggle />
+            <ButtonGroup>
+              <GoToPreviousChangesButton />
+              <HighlightButton />
+              <GoToNextChangesButton />
+            </ButtonGroup>
             <SettingsButton />
           </>
         )}
@@ -277,7 +287,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
           render={({ children }) => (
             <>
               <Separator orientation="vertical" className="mx-1 !h-6" />
-              <div className="flex gap-1">{children}</div>
+              <div className="flex gap-1.5">{children}</div>
             </>
           )}
         />
