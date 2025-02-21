@@ -148,7 +148,10 @@ export function Component() {
           }
           // If the account is already attached, we don't need to report it,
           // as it's a user error.
-          if (error.code === "GITHUB_ACCOUNT_ALREADY_ATTACHED") {
+          if (
+            error.code === "GITHUB_ACCOUNT_ALREADY_ATTACHED" ||
+            error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB"
+          ) {
             scope.setLevel("info");
           }
         }

@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 import pTimeout from "p-timeout";
 
 import {
@@ -9,7 +10,6 @@ import {
   Screenshot,
 } from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
-import logger from "@/logger/index.js";
 
 import { finalizeBuild } from "./finalizeBuild.js";
 import { job as buildJob } from "./job.js";
@@ -111,7 +111,9 @@ export async function checkIsPartialBuild(input: {
 
     return partial;
   } catch (error) {
-    logger.error("Failed to check if the build is a partial build", error);
+    captureException(error, {
+      extra: { context: "Failed to check if build is partial" },
+    });
     return false;
   }
 }
