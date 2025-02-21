@@ -553,7 +553,6 @@ function CompareScreenshotChanged(props: {
 }) {
   const { diff, buildId, diffVisible, contained } = props;
   const dimensions = extractDimensions(diff);
-  const [imgScale] = useScaleContext();
   invariant(diff.url);
   return (
     <>
@@ -581,12 +580,9 @@ function CompareScreenshotChanged(props: {
           />
         </ScreenshotContainer>
       </ZoomPane>
-      <DiffIndicator
-        key={diff.url}
-        url={imgkit(diff.url, ["f-jpg"])}
-        scale={imgScale}
-        height={diff.height ?? null}
-      />
+      {diff.height != null && (
+        <DiffIndicator url={imgkit(diff.url, ["f-jpg"])} height={diff.height} />
+      )}
     </>
   );
 }
@@ -608,13 +604,13 @@ function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
 /**
  * Detects colored areas in the image provided by the URL.
  */
-function DiffIndicator(props: {
+const DiffIndicator = memo(function DiffIndicator(props: {
   url: string;
-  scale: number | null;
-  height: number | null;
+  height: number;
 }) {
-  const { scale, height } = props;
-  const rects = useColoredRects({ url: props.url });
+  const { height, url } = props;
+  const [imgScale] = useScaleContext();
+  const rects = useColoredRects({ url });
   const { color } = useBuildDiffColorState();
   const transform = useZoomTransform();
   const [containerHeight, setContainerHeight] = useState<number | null>(null);
@@ -623,36 +619,31 @@ function DiffIndicator(props: {
   });
 
   const indicators = (() => {
-    if (!rects || !scale || !height || !containerHeight) {
+    if (!rects || !imgScale || !containerHeight) {
       return { top: false, bottom: false };
     }
-    const top = transform.y / scale / transform.scale;
-    const h = containerHeight / scale / transform.scale;
+    const top = transform.y / imgScale / transform.scale;
+    const h = containerHeight / imgScale / transform.scale;
     const hasRectAbove = rects.some((rect) => rect.y < -top);
     const hasRectBelow = rects.some((rect) => rect.y + rect.height > h - top);
     return { top: hasRectAbove, bottom: hasRectBelow };
   })();
 
-  const realScale = scale ? scale * transform.scale : null;
+  const realScale = imgScale ? imgScale * transform.scale : null;
   // Compute the size of a pixel on the screen.
   const screenPixelSize = realScale ? 1 / realScale : null;
 
   return (
     <>
       {indicators.top && (
-        <Tooltip content="Scroll up to see more changes">
-          <ChevronUpIcon
-            className="text-info-app animate-bounce-up absolute -left-3.5 -top-2.5 size-3"
-            style={{ color }}
-          />
-        </Tooltip>
+        <OutOfScreenDiffIndicator position="top" color={color} />
       )}
       <div
         ref={containerRef}
         className="bg-ui absolute inset-y-0 -left-3 m-px w-1.5 overflow-hidden rounded-sm"
       >
         {(() => {
-          if (!rects || !scale || !height || !containerHeight) {
+          if (!rects || !imgScale || !containerHeight) {
             return null;
           }
 
@@ -666,7 +657,7 @@ function DiffIndicator(props: {
             >
               <div
                 className="absolute inset-y-0 origin-top"
-                style={{ transform: `scaleY(${scale})` }}
+                style={{ transform: `scaleY(${imgScale})` }}
               >
                 {rects.map((rect, index) => (
                   <div
@@ -689,16 +680,45 @@ function DiffIndicator(props: {
         })()}
       </div>
       {indicators.bottom && (
-        <Tooltip content="Scroll down to see more changes">
-          <ChevronDownIcon
-            className="text-info-app animate-bounce-down absolute -bottom-2.5 -left-3.5 size-3"
-            style={{ color }}
-          />
-        </Tooltip>
+        <OutOfScreenDiffIndicator position="bottom" color={color} />
       )}
     </>
   );
-}
+});
+
+const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
+  position: "top" | "bottom";
+  color: string;
+}) {
+  const { position, color } = props;
+  const { Icon, tooltip, className } = (() => {
+    switch (position) {
+      case "top":
+        return {
+          Icon: ChevronUpIcon,
+          tooltip: "Scroll up to see more changes",
+          className: "animate-bounce-up -top-2.5",
+        };
+      case "bottom":
+        return {
+          Icon: ChevronDownIcon,
+          tooltip: "Scroll down to see more changes",
+          className: "animate-bounce-down -bottom-2.5",
+        };
+    }
+  })();
+  return (
+    <Tooltip content={tooltip}>
+      <Icon
+        className={clsx(
+          "text-info-app absolute -left-3.5 size-3 focus:outline-none",
+          className,
+        )}
+        style={{ color }}
+      />
+    </Tooltip>
+  );
+});
 
 const BuildScreenshots = memo(
   (props: { diff: Diff; build: BuildFragmentDocument }) => {
