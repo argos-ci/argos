@@ -9,15 +9,23 @@ import { useLiveRef } from "./useLiveRef";
  */
 export function useResizeObserver(
   callback: (entry: ResizeObserverEntry) => void,
-  ref?: (element: HTMLElement | null) => void,
+  ref?: React.Ref<HTMLElement>,
 ) {
   const callbackRef = useLiveRef(callback);
   return useCallback(
     (element: HTMLElement | null) => {
+      // Handle ref forwarding.
+      if (ref) {
+        if (typeof ref === "function") {
+          ref(element);
+        } else {
+          ref.current = element;
+        }
+      }
+
       if (!element) {
         return undefined;
       }
-      ref?.(element);
 
       let req: number;
       const observer = new ResizeObserver((entries) => {

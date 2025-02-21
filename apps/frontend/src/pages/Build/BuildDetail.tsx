@@ -1,4 +1,11 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
@@ -189,38 +196,27 @@ function useImageRendering() {
 
 function ScreenshotPicture(props: ScreenshotPictureProps) {
   const { src, style, width, height, ...attrs } = props;
-  const ref = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const [, setImgScale] = useScaleContext();
   const imageRendering = useImageRendering();
   // Absolute images do not affect the scale context.
   const canAffectScale = !props.className?.includes("absolute");
 
+  const updateScale = useCallback(() => {
+    if (canAffectScale) {
+      const img = imageRef.current;
+      if (img && img.complete) {
+        setImgScale(getImageScale(img));
+      }
+    }
+  }, [setImgScale, canAffectScale]);
+
+  const ref = useResizeObserver(() => updateScale(), imageRef);
+
   // Update scale when image is loaded.
   useEffect(() => {
-    if (!canAffectScale) {
-      return undefined;
-    }
-
-    const img = ref.current;
-    invariant(img);
-
-    const update = () => setImgScale(getImageScale(img));
-
-    if (img.complete) {
-      update();
-      return undefined;
-    }
-
-    img.addEventListener("load", update);
-    return () => img.removeEventListener("load", update);
-  }, [
-    canAffectScale,
-    setImgScale,
-    // Watch classname, because it can change the size of the image
-    props.className,
-    // Watch src, because it can change the size of the image
-    src,
-  ]);
+    updateScale();
+  }, [updateScale]);
 
   // Reset scale when component is unmounted.
   useEffect(() => {
@@ -242,6 +238,7 @@ function ScreenshotPicture(props: ScreenshotPictureProps) {
           width && height ? getAspectRatio({ width, height }) : undefined,
         imageRendering,
       }}
+      onLoad={() => updateScale()}
       {...attrs}
     />
   );
