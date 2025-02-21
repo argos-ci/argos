@@ -633,6 +633,10 @@ function DiffIndicator(props: {
     return { top: hasRectAbove, bottom: hasRectBelow };
   })();
 
+  const realScale = scale ? scale * transform.scale : null;
+  // Compute the size of a pixel on the screen.
+  const screenPixelSize = realScale ? 1 / realScale : null;
+
   return (
     <>
       {indicators.top && (
@@ -671,7 +675,11 @@ function DiffIndicator(props: {
                     style={{
                       backgroundColor: color,
                       top: rect.y,
-                      height: rect.height,
+                      // Ensure that the display height is at least 1 visible pixel.
+                      height:
+                        screenPixelSize !== null
+                          ? Math.max(screenPixelSize, rect.height)
+                          : rect.height,
                     }}
                   />
                 ))}
