@@ -200,6 +200,27 @@
       transform: none;
     }
   }
+
+  --animate-highlight-svg: highlight-svg 1s cubic-bezier(0.4, 0, 0.2, 1)
+    forwards;
+
+  @keyframes highlight-svg {
+    0% {
+      r: 0;
+      opacity: 0;
+      stroke-width: 0;
+    }
+    40% {
+      r: 50%;
+      opacity: 1;
+      stroke-width: 2;
+    }
+    100% {
+      r: 0;
+      opacity: 1;
+      stroke-width: 1;
+    }
+  }
 }
 
 @plugin "tailwindcss-animate";
