@@ -1,13 +1,29 @@
+import { assertNever } from "@argos/util/assertNever";
 import axios from "axios";
 import { z } from "zod";
 
 import logger from "@/logger";
+import { boom } from "@/web/util";
 
-const RetrieveTokenResponseSchema = z.object({
-  access_token: z.string(),
-  token_type: z.literal("bearer"),
-  scope: z.string(),
-});
+const RetrieveTokenErrorSchema = z.enum([
+  "incorrect_client_credentials",
+  "redirect_uri_mismatch",
+  "bad_verification_code",
+  "unverified_user_email",
+]);
+
+const RetrieveTokenResponseSchema = z.union([
+  z.object({
+    access_token: z.string(),
+    token_type: z.literal("bearer"),
+    scope: z.string(),
+  }),
+  z.object({
+    error: RetrieveTokenErrorSchema,
+    error_description: z.string(),
+    error_uri: z.string(),
+  }),
+]);
 
 export async function retrieveOAuthToken(args: {
   clientId: string;
@@ -33,7 +49,15 @@ export async function retrieveOAuthToken(args: {
   );
 
   try {
-    return RetrieveTokenResponseSchema.parse(result.data);
+    const data = RetrieveTokenResponseSchema.parse(result.data);
+
+    if ("error" in data) {
+      throw boom(400, data.error_description, {
+        code: getErrorCode(data.error),
+      });
+    }
+
+    return data;
   } catch (error) {
     logger.info("GitHub OAuth response errored", {
       status: result.status,
@@ -42,5 +66,20 @@ export async function retrieveOAuthToken(args: {
     throw new Error("Failed to parse GitHub OAuth response", {
       cause: error,
     });
+  }
+}
+
+function getErrorCode(authError: z.infer<typeof RetrieveTokenErrorSchema>) {
+  switch (authError) {
+    case "incorrect_client_credentials":
+      return "GITHUB_AUTH_INCORRECT_CLIENT_CREDENTIALS";
+    case "redirect_uri_mismatch":
+      return "GITHUB_AUTH_REDIRECT_URI_MISMATCH";
+    case "bad_verification_code":
+      return "GITHUB_AUTH_BAD_VERIFICATION_CODE";
+    case "unverified_user_email":
+      return "GITHUB_AUTH_UNVERIFIED_USER_EMAIL";
+    default:
+      assertNever(authError);
   }
 }
