@@ -158,13 +158,10 @@ function createTeamUserFromGithubAccountMemberLoader() {
 function createBuildFromCompareScreenshotBucketIdLoader() {
   return new DataLoader<string, Build | null>(
     async (compareScreenshotBucketIds) => {
-      const builds = await Build.query()
-        .select("builds.*")
-        .joinRelated("compareScreenshotBucket")
-        .whereIn(
-          "compareScreenshotBucketId",
-          compareScreenshotBucketIds as string[],
-        );
+      const builds = await Build.query().whereIn(
+        "compareScreenshotBucketId",
+        compareScreenshotBucketIds as string[],
+      );
       const buildsMap: Record<string, Build> = {};
       for (const build of builds) {
         buildsMap[build.compareScreenshotBucketId] = build;
