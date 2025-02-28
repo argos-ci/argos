@@ -199,20 +199,19 @@ async function handleUpdateParallel(ctx: Context) {
 async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
   await transaction(async (trx) => {
+    const metadata = ctx.body.metadata ?? null;
     const [screenshotCount] = await Promise.all([
       insertFilesAndScreenshots({
         screenshots: body.screenshots,
         build,
         trx,
       }),
-      ctx.body.metadata
-        ? build.$clone().$query(trx).patch({ metadata: ctx.body.metadata })
-        : null,
+      metadata ? build.$clone().$query(trx).patch({ metadata }) : null,
     ]);
 
     await build.compareScreenshotBucket!.$query(trx).patchAndFetch({
       complete: true,
-      valid: checkIsBucketValidFromMetadata(build.metadata),
+      valid: checkIsBucketValidFromMetadata(metadata),
       screenshotCount,
     });
   });
