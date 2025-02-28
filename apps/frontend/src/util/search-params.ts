@@ -49,7 +49,7 @@ export function useMultipleSearchParamsState<T extends Key>(
     : defaultValue;
   const checkIsDirty = (value: Set<T>) =>
     value.size !== defaultValue.size ||
-    value.intersection(defaultValue).size !== value.size;
+    intersection(value, defaultValue).size !== value.size;
   const setValue = useEventCallback((value: Set<T>) => {
     setSearchParams((params) => {
       const newParams = new URLSearchParams(params);
@@ -63,4 +63,11 @@ export function useMultipleSearchParamsState<T extends Key>(
   });
   const isDirty = checkIsDirty(value);
   return [value, setValue, isDirty] as const;
+}
+
+/**
+ * Compute the intersection of two sets.
+ */
+function intersection<T>(a: Set<T>, b: Set<T>): Set<T> {
+  return new Set(Array.from(a).filter((value) => b.has(value)));
 }
