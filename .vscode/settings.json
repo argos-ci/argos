@@ -3,5 +3,6 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "files.associations": {
     "*.css": "tailwindcss"
-  }
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

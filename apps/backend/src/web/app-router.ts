@@ -76,6 +76,22 @@ export const installAppRouter = async (app: express.Application) => {
 
   await apolloServer.start();
 
+  const cspReportUri = getCSPReportURI();
+
+  if (cspReportUri) {
+    router.use((_req, res, next) => {
+      res.setHeader(
+        "Report-To",
+        JSON.stringify({
+          group: "csp-endpoint",
+          max_age: 10886400,
+          endpoints: [{ url: cspReportUri }],
+        }),
+      );
+      next();
+    });
+  }
+
   router.use(
     "/graphql",
     // Handle cases where the request stream is not readable
@@ -92,6 +108,20 @@ export const installAppRouter = async (app: express.Application) => {
       next();
     },
     express.json(),
+    helmet({
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+      contentSecurityPolicy: {
+        directives: {
+          "frame-ancestors": ["'none'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: false,
+      crossOriginOpenerPolicy: false,
+      frameguard: {
+        action: "deny", // Disallow embedded iframe
+      },
+    }),
     createApolloMiddleware(),
   );
 
@@ -138,22 +168,6 @@ export const installAppRouter = async (app: express.Application) => {
       index: false,
     }),
   );
-
-  const cspReportUri = getCSPReportURI();
-
-  if (cspReportUri) {
-    router.use((_req, res, next) => {
-      res.setHeader(
-        "Report-To",
-        JSON.stringify({
-          group: "csp-endpoint",
-          max_age: 10886400,
-          endpoints: [{ url: cspReportUri }],
-        }),
-      );
-      next();
-    });
-  }
 
   router.use(
     helmet({
