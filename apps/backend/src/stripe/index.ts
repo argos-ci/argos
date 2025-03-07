@@ -112,7 +112,7 @@ function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2025-01-27.acacia",
+  apiVersion: "2025-02-24.acacia",
   typescript: true,
 });
 
