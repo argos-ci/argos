@@ -13,6 +13,7 @@ import { transaction } from "@/database/transaction.js";
 import { uninstallSlackInstallation } from "@/slack/index.js";
 import { cancelStripeSubscription } from "@/stripe/index.js";
 
+import { forbidden } from "../util.js";
 import { unsafe_deleteProject } from "./project.js";
 
 /**
@@ -30,7 +31,9 @@ export async function getAdminAccount(args: {
   }
   const account = await query;
   const permissions = await account.$getPermissions(args.user);
-  invariant(permissions.includes("admin"), "not admin");
+  if (!permissions.includes("admin")) {
+    throw forbidden("user is not an admin of the account");
+  }
   return account;
 }
 
