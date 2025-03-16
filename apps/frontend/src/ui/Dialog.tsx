@@ -87,16 +87,27 @@ export function DialogDismiss(props: {
 type DialogProps = RACDialogProps & {
   ref?: React.Ref<HTMLDivElement>;
   size?: "auto" | "medium";
+  /**
+   * Whether the dialog should be scrollable or not.
+   * @default true
+   */
+  scrollable?: boolean;
 };
 
-export function Dialog({ className, size = "auto", ...props }: DialogProps) {
+export function Dialog({
+  className,
+  size = "auto",
+  scrollable = true,
+  ...props
+}: DialogProps) {
   return (
     <RACDialog
       ref={props.ref}
       className={clsx(
         className,
-        "focus:outline-hidden relative max-h-[inherit] overflow-auto",
+        "focus:outline-hidden relative max-h-[inherit]",
         size === "medium" && "w-[36rem]",
+        scrollable === false ? "overflow-hidden" : "overflow-auto",
       )}
       {...props}
     />

@@ -5,16 +5,28 @@ import { Control, FieldValues, Path, useController } from "react-hook-form";
 
 import { mergeRefs } from "@/util/merge-refs";
 
-type SwitchProps = ComponentPropsWithRef<typeof RACSwitch>;
+type SwitchProps = ComponentPropsWithRef<typeof RACSwitch> & {
+  size?: "sm" | "md";
+};
 
-function Switch(props: SwitchProps) {
+export function Switch(props: SwitchProps) {
+  const { size = "md", ...rest } = props;
   return (
-    <RACSwitch
-      {...props}
-      className={clsx("group flex items-center gap-2", props.className)}
-    >
-      <div className="rac-focus-group group-data-[pressed]:bg-primary-active group-data-[selected]:bg-primary-solid group-data-[selected]:group-data-[pressed]:bg-primary-solid-active bg-ui border-low group-data-[disabled]:opacity-disabled box-border flex h-[26px] w-[44px] shrink-0 cursor-default rounded-full border bg-clip-padding p-[3px] shadow-inner transition duration-200 ease-in-out">
-        <span className="size-[18px] translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out group-data-[selected]:translate-x-full" />
+    <RACSwitch {...rest} className={clsx("group", rest.className)}>
+      <div
+        className={clsx(
+          "rac-focus-group group-data-[pressed]:bg-primary-active group-data-[selected]:bg-primary-solid group-data-[selected]:group-data-[pressed]:bg-primary-solid-active bg-ui border-low group-data-[disabled]:opacity-disabled box-border flex shrink-0 cursor-default rounded-full border bg-clip-padding shadow-inner transition duration-200 ease-in-out",
+          size === "sm" && "h-[18px] w-[31px] p-[2px]",
+          size === "md" && "h-[26px] w-[44px] p-[3px]",
+        )}
+      >
+        <span
+          className={clsx(
+            "translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out group-data-[selected]:translate-x-full",
+            size === "sm" && "h-[12px] w-[12px]",
+            size === "md" && "h-[18px] w-[18px]",
+          )}
+        />
       </div>
     </RACSwitch>
   );

@@ -76,7 +76,11 @@ export const typeDefs = gql`
       levels: [TeamUserLevel!]
       sso: Boolean
     ): TeamMemberConnection!
-    githubMembers(after: Int = 0, first: Int = 30): TeamGithubMemberConnection
+    githubMembers(
+      after: Int = 0
+      first: Int = 30
+      isTeamMember: Boolean
+    ): TeamGithubMemberConnection
     inviteLink: String
     ssoGithubAccount: GithubAccount
     defaultUserLevel: TeamDefaultUserLevel!
@@ -317,11 +321,30 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      const result = await GithubAccountMember.query()
-        .withGraphJoined("githubMember")
-        .where("githubAccountId", team.ssoGithubAccountId)
+      const query = GithubAccountMember.query()
+        .where(
+          "github_account_members.githubAccountId",
+          team.ssoGithubAccountId,
+        )
         .orderBy("githubMember.login", "asc")
         .range(after, after + first - 1);
+
+      if (args.isTeamMember) {
+        query
+          .withGraphJoined("githubMember.account")
+          .where(
+            "github_account_members.githubAccountId",
+            team.ssoGithubAccountId,
+          )
+          .whereIn(
+            "githubMember:account.userId",
+            TeamUser.query().select("userId").where("teamId", team.id),
+          );
+      } else {
+        query.withGraphJoined("githubMember");
+      }
+
+      const result = await query;
 
       return paginateResult({ result, first, after });
     },
