@@ -1147,6 +1147,7 @@ export type ITeam = IAccount & INode & {
 export type ITeamGithubMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  isTeamMember?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 

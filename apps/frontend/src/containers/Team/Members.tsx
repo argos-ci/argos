@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import { Reference, useMutation } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -38,6 +38,7 @@ import {
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
+import { Switch } from "@/ui/Switch";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "../AccountAvatar";
@@ -72,10 +73,15 @@ const TeamMembersQuery = graphql(`
 `);
 
 const TeamGithubMembersQuery = graphql(`
-  query TeamMembers_githubMembers($id: ID!, $first: Int!, $after: Int!) {
+  query TeamMembers_githubMembers(
+    $id: ID!
+    $first: Int!
+    $after: Int!
+    $isTeamMember: Boolean
+  ) {
     team: teamById(id: $id) {
       id
-      githubMembers(first: $first, after: $after) {
+      githubMembers(first: $first, after: $after, isTeamMember: $isTeamMember) {
         edges {
           id
           githubAccount {
@@ -518,7 +524,7 @@ const _TeamGithubMembersListGithubAccountFragment = graphql(`
   }
 `);
 
-function TeamGithubMembersList(props: {
+interface TeamGithubMembersListProps {
   teamId: string;
   teamName: string;
   amOwner: boolean;
@@ -527,14 +533,44 @@ function TeamGithubMembersList(props: {
     typeof _TeamGithubMembersListGithubAccountFragment
   >;
   hasFineGrainedAccessControl: boolean;
-}) {
+}
+
+function TeamGithubMembersList(props: TeamGithubMembersListProps) {
   const { githubAccount } = props;
+  const [showPendingMembers, setShowPendingMembers] = useState(false);
+  return (
+    <div className="my-4">
+      <div className="flex items-center gap-2">
+        <ListTitle className="flex-1">
+          <MarkGithubIcon className="mr-1.5 inline-block size-4" />
+          GitHub members synced from{" "}
+          <GithubAccountLink githubAccount={githubAccount} />
+        </ListTitle>
+        <ShowPendingSwitch
+          isSelected={showPendingMembers}
+          onChange={setShowPendingMembers}
+        />
+      </div>
+      <TeamGithubMembersFetchList
+        {...props}
+        showPendingMembers={showPendingMembers}
+      />
+    </div>
+  );
+}
+
+interface TeamGithubMembersFetchListProps extends TeamGithubMembersListProps {
+  showPendingMembers: boolean;
+}
+
+function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
   const authPayload = useAssertAuthTokenPayload();
   const { data, fetchMore } = useSafeQuery(TeamGithubMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,
       first: NB_MEMBERS_PER_PAGE,
+      isTeamMember: !props.showPendingMembers,
     },
   });
   if (!data) {
@@ -546,12 +582,7 @@ function TeamGithubMembersList(props: {
   }
   const members = data.team.githubMembers.edges;
   return (
-    <div className="my-4">
-      <ListTitle>
-        <MarkGithubIcon className="mr-1.5 inline-block size-4" />
-        GitHub members synced from{" "}
-        <GithubAccountLink githubAccount={githubAccount} />
-      </ListTitle>
+    <>
       <List>
         {members.map((member) => {
           const teamMember = member.teamMember ?? null;
@@ -649,6 +680,20 @@ function TeamGithubMembersList(props: {
           </Button>
         </div>
       )}
+    </>
+  );
+}
+
+function ShowPendingSwitch(props: {
+  isSelected: boolean;
+  onChange: (isSelected: boolean) => void;
+}) {
+  const { onChange, isSelected } = props;
+  const id = useId();
+  return (
+    <div className="mb-2 flex select-none items-center gap-1.5 text-sm font-medium">
+      <label htmlFor={id}>Show pending members</label>
+      <Switch id={id} size="sm" onChange={onChange} isSelected={isSelected} />
     </div>
   );
 }

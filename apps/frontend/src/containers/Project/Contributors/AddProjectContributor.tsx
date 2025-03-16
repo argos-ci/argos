@@ -215,7 +215,7 @@ export function ProjectContributorsAdd(props: {
     <DialogTrigger>
       <Button variant="secondary">Add contributor</Button>
       <Modal>
-        <Dialog size="medium">
+        <Dialog size="medium" scrollable={false}>
           <DialogBody>
             <DialogTitle>Add contributor</DialogTitle>
             <DialogText>
