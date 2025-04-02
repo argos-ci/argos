@@ -17,7 +17,6 @@ import { useLocation } from "react-router-dom";
 
 import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
-import { useBuildHotkeysDialogState } from "@/pages/Build/BuildHotkeysDialogState";
 import { LinkButton } from "@/ui/Button";
 import {
   Menu,
@@ -30,6 +29,7 @@ import {
 import { Popover } from "@/ui/Popover";
 
 import { AccountAvatar } from "./AccountAvatar";
+import { useBuildHotkeysDialogState } from "./Build/BuildHotkeysDialogState";
 import { ColorMode, useColorMode } from "./ColorMode";
 import { InitialAvatar } from "./InitialAvatar";
 

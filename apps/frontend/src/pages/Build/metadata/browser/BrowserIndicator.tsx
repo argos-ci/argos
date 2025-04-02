@@ -2,11 +2,10 @@ import { lazy, Suspense } from "react";
 import { GlobeIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { ChipLink, ChipLinkProps } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
-
-import { useBuildHotkey } from "../../BuildHotkeys";
 
 const LazyBrowserIcon = lazy(() =>
   import("./BrowserIcon").then((mod) => ({ default: mod.BrowserIcon })),

@@ -122,6 +122,8 @@
   --background-color-success-solid-hover: var(--grass-10);
   --background-color-success-solid-active: var(--grass-11);
 
+  --background-color-bar: var(--violet-8);
+
   --background-color-github: rgb(36 41 46);
   --background-color-github-hover: rgb(85 85 85);
   --background-color-github-active: rgb(85 85 85);
@@ -173,9 +175,10 @@
 
   --ring-color-google: var(--gray-6);
 
-  --stroke-color-low: var(--border-color-low);
+  --stroke-low: var(--border-color-low);
 
   --fill-subtle: var(--background-color-subtle);
+  --fill-text-low: var(--text-color-low);
 
   --animate-bounce-down: bounce-down 1s infinite;
 

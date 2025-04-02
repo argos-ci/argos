@@ -1,15 +1,28 @@
 import { memo } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { clsx } from "clsx";
-import { generatePath, useMatch } from "react-router-dom";
+import { useFeature } from "@bucketco/react-sdk";
+import { generatePath, Link, useMatch } from "react-router-dom";
 
+import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
+import {
+  NextButton,
+  PreviousButton,
+} from "@/containers/Build/toolbar/NavButtons";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Separator } from "@/ui/Separator";
 import { canParseURL } from "@/util/url";
 
-import { checkCanBeReviewed, Diff } from "./BuildDiffState";
+import { useProjectParams } from "../Project/ProjectParams";
+import {
+  checkCanBeReviewed,
+  Diff,
+  useGoToNextDiff,
+  useGoToPreviousDiff,
+  useHasNextDiff,
+  useHasPreviousDiff,
+} from "./BuildDiffState";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
 import {
   BrowserIndicator,
@@ -28,38 +41,27 @@ import {
   ViewportIndicator,
   ViewportIndicatorLink,
 } from "./metadata/ViewportIndicator";
-import { FitToggle } from "./toolbar/FitToggle";
-import { HighlightButton } from "./toolbar/HighlightButton";
-import { NextButton, PreviousButton } from "./toolbar/NavButtons";
-import {
-  GoToNextChangesButton,
-  GoToPreviousChangesButton,
-} from "./toolbar/NavChangesButton";
-import { OverlayToggle } from "./toolbar/OverlayToggle";
-import { SettingsButton } from "./toolbar/SettingsButton";
-import { TrackButtons } from "./toolbar/TrackButtons";
-import { SplitViewToggle, ViewToggle } from "./toolbar/ViewToggle";
+import { TrackButtons } from "./TrackButtons";
 
-export const BuildDetailToolbar = memo(function BuildDetailToolbar({
-  activeDiff,
-  siblingDiffs,
-  baseBranch,
-  compareBranch,
-  bordered,
-  repoUrl,
-  prMerged,
-  buildType,
-}: {
-  activeDiff: Diff;
+export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
+  diff: Diff;
   siblingDiffs: Diff[];
-  bordered: boolean;
   repoUrl: string | null;
   baseBranch: string | null;
   compareBranch: string | null | undefined;
   prMerged: boolean;
   buildType: BuildType | null;
 }) {
-  const metadata = resolveDiffMetadata(activeDiff);
+  const {
+    diff,
+    siblingDiffs,
+    baseBranch,
+    compareBranch,
+    repoUrl,
+    prMerged,
+    buildType,
+  } = props;
+  const metadata = resolveDiffMetadata(diff);
   const automationLibrary = metadata?.automationLibrary ?? null;
   const sdk = metadata?.sdk ?? null;
   const url = metadata?.url ?? null;
@@ -70,15 +72,14 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
   const retry = test?.retry ?? null;
   const retries = test?.retries ?? null;
   const repeat = test?.repeat ?? null;
-  const threshold = activeDiff.threshold ?? null;
+  const threshold = diff.threshold ?? null;
   const branch =
-    prMerged || test === activeDiff.baseScreenshot?.metadata?.test
+    prMerged || test === diff.baseScreenshot?.metadata?.test
       ? baseBranch
       : compareBranch;
-  const pwTraceUrl = activeDiff.compareScreenshot?.playwrightTraceUrl ?? null;
+  const pwTraceUrl = diff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
-    buildType !== BuildType.Reference && checkCanBeReviewed(activeDiff.status);
-  const isChanged = activeDiff.status === ScreenshotDiffStatus.Changed;
+    buildType !== BuildType.Reference && checkCanBeReviewed(diff.status);
   // Determine a sibling trace to show if the current trace is missing.
   const siblingTrace = (() => {
     if (pwTraceUrl) {
@@ -120,21 +121,27 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
     (v) => hashViewport(v) === activeViewportKey,
   );
 
+  const params = useProjectParams();
+  invariant(params, "can't be used outside of a project route");
+
+  const testDetailsFeature = useFeature("test-details");
+
   return (
-    <div
-      className={clsx(
-        "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors has-[[data-meta]:empty]:items-center",
-        !bordered && "border-b-transparent",
-      )}
-    >
-      <div className="flex shrink-0 gap-1">
-        <PreviousButton />
-        <NextButton />
-      </div>
+    <>
+      <BuildNavButtons />
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <div className="min-w-0 flex-1">
           <div role="heading" className="line-clamp-2 text-xs font-medium">
-            {activeDiff.name}
+            {diff.test && testDetailsFeature.isEnabled ? (
+              <Link
+                to={`/${params.accountSlug}/${params.projectName}/tests/${diff.test.id}`}
+                className="hover:underline"
+              >
+                <span className="font-mono">{diff.test.id}</span> • {diff.name}
+              </Link>
+            ) : (
+              diff.name
+            )}
           </div>
           <div
             data-meta=""
@@ -165,8 +172,8 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
                   const isActive = activeBrowserKey === key;
                   const isNextActive =
                     (activeBrowserIndex + 1) % browsers.length === index;
-                  const diff = isActive
-                    ? activeDiff
+                  const resolvedDiff = isActive
+                    ? diff
                     : siblingDiffs.find((diff) => {
                         const metadata = resolveDiffMetadata(diff);
                         return (
@@ -174,7 +181,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
                           hashBrowser(metadata.browser) === key
                         );
                       });
-                  invariant(diff, "diff cannot be null");
+                  invariant(resolvedDiff, "diff cannot be null");
                   return (
                     <BrowserIndicatorLink
                       key={key}
@@ -183,7 +190,7 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
                       aria-current={
                         activeBrowserKey === key ? "page" : undefined
                       }
-                      href={getDiffPath(diff.id) ?? ""}
+                      href={getDiffPath(resolvedDiff.id) ?? ""}
                       shortcutEnabled={isNextActive}
                     />
                   );
@@ -202,8 +209,8 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
                   const isActive = activeViewportKey === key;
                   const isNextActive =
                     (activeViewportIndex + 1) % viewports.length === index;
-                  const diff = isActive
-                    ? activeDiff
+                  const resolvedDiff = isActive
+                    ? diff
                     : siblingDiffs.find((diff) => {
                         const metadata = resolveDiffMetadata(diff);
                         return (
@@ -212,14 +219,14 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
                         );
                       });
 
-                  invariant(diff, "diff cannot be null");
+                  invariant(resolvedDiff, "diff cannot be null");
 
                   return (
                     <ViewportIndicatorLink
                       key={key}
                       viewport={viewport}
                       aria-current={isActive ? "page" : undefined}
-                      href={getDiffPath(diff.id) ?? ""}
+                      href={getDiffPath(resolvedDiff.id) ?? ""}
                       shortcutEnabled={isNextActive}
                     />
                   );
@@ -265,24 +272,9 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
           </div>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <ViewToggle />
-        <SplitViewToggle />
-        <FitToggle />
-        {isChanged && (
-          <>
-            <Separator orientation="vertical" className="mx-1 !h-6" />
-            <OverlayToggle />
-            <ButtonGroup>
-              <GoToPreviousChangesButton />
-              <HighlightButton />
-              <GoToNextChangesButton />
-            </ButtonGroup>
-            <SettingsButton />
-          </>
-        )}
+      <BuildDiffDetailToolbar diff={diff}>
         <TrackButtons
-          diff={activeDiff}
+          diff={diff}
           disabled={!canBeReviewed}
           render={({ children }) => (
             <>
@@ -291,7 +283,23 @@ export const BuildDetailToolbar = memo(function BuildDetailToolbar({
             </>
           )}
         />
-      </div>
+      </BuildDiffDetailToolbar>
+    </>
+  );
+});
+
+const BuildNavButtons = memo(function BuildNavButtons() {
+  const goToNextDiff = useGoToNextDiff();
+  const hasNextDiff = useHasNextDiff();
+  const goToPreviousDiff = useGoToPreviousDiff();
+  const hasPreviousDiff = useHasPreviousDiff();
+  return (
+    <div className="flex shrink-0 gap-1">
+      <PreviousButton
+        onPress={goToPreviousDiff}
+        isDisabled={!hasPreviousDiff}
+      />
+      <NextButton onPress={goToNextDiff} isDisabled={!hasNextDiff} />
     </div>
   );
 });

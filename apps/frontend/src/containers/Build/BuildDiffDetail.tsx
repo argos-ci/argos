@@ -11,6 +11,7 @@ import {
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
+import { useObjectRef } from "react-aria";
 
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -27,7 +28,6 @@ import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
 import { fetchImage } from "@/util/image";
 
-import { BuildDetailToolbar } from "./BuildDetailToolbar";
 import {
   useBuildDiffColorState,
   useBuildDiffColorStyle,
@@ -38,10 +38,10 @@ import {
 } from "./BuildDiffFitState";
 import { getGroupIcon } from "./BuildDiffGroup";
 import {
+  BuildDiffHighlighterProvider,
   Highlighter,
   useBuildDiffHighlighterContext,
 } from "./BuildDiffHighlighterContext";
-import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
   BuildDiffVisibleStateProvider,
   useBuildDiffVisibleState,
@@ -59,7 +59,7 @@ import {
 } from "./Zoomer";
 
 const _BuildFragment = graphql(`
-  fragment BuildDetail_Build on Build {
+  fragment BuildDiffDetail_Build on Build {
     id
     stats {
       total
@@ -78,7 +78,108 @@ const _BuildFragment = graphql(`
   }
 `);
 
+const _DiffFragment = graphql(`
+  fragment BuildDiffDetail_ScreenshotDiff on ScreenshotDiff {
+    id
+    status
+    url
+    name
+    variantKey
+    width
+    height
+    group
+    threshold
+    test {
+      id
+    }
+    baseScreenshot {
+      id
+      url
+      originalUrl
+      width
+      height
+      metadata {
+        url
+        previewUrl
+        colorScheme
+        mediaType
+        automationLibrary {
+          name
+          version
+        }
+        browser {
+          name
+          version
+        }
+        sdk {
+          name
+          version
+        }
+        viewport {
+          width
+          height
+        }
+        test {
+          id
+          title
+          titlePath
+          location {
+            file
+            line
+          }
+          retry
+          retries
+          repeat
+        }
+      }
+    }
+    compareScreenshot {
+      id
+      url
+      originalUrl
+      width
+      height
+      metadata {
+        url
+        previewUrl
+        colorScheme
+        mediaType
+        automationLibrary {
+          name
+          version
+        }
+        browser {
+          name
+          version
+        }
+        sdk {
+          name
+          version
+        }
+        viewport {
+          width
+          height
+        }
+        test {
+          id
+          title
+          titlePath
+          location {
+            file
+            line
+          }
+          retry
+          retries
+          repeat
+        }
+      }
+      playwrightTraceUrl
+    }
+  }
+`);
+
 type BuildFragmentDocument = DocumentType<typeof _BuildFragment>;
+export type BuildDiffDetailDocument = DocumentType<typeof _DiffFragment>;
 
 const DownloadScreenshotButton = memo(
   (props: { url: string; tooltip: string; name: string }) => {
@@ -297,7 +398,7 @@ function DownloadBaseScreenshotButton({
   diff,
   buildId,
 }: {
-  diff: Diff;
+  diff: BuildDiffDetailDocument;
   buildId: string;
 }) {
   return (
@@ -319,7 +420,13 @@ function extractDimensions(dimensions: {
     : undefined;
 }
 
-function BaseScreenshot({ diff, buildId }: { diff: Diff; buildId: string }) {
+function BaseScreenshot({
+  diff,
+  buildId,
+}: {
+  diff: BuildDiffDetailDocument;
+  buildId: string;
+}) {
   const { contained } = useBuildDiffFitState();
   switch (diff.status) {
     case ScreenshotDiffStatus.Added:
@@ -435,7 +542,7 @@ function DownloadCompareScreenshotButton({
   diff,
   buildId,
 }: {
-  diff: Diff;
+  diff: BuildDiffDetailDocument;
   buildId: string;
 }) {
   return (
@@ -447,7 +554,10 @@ function DownloadCompareScreenshotButton({
   );
 }
 
-function CompareScreenshot(props: { diff: Diff; buildId: string }) {
+function CompareScreenshot(props: {
+  diff: BuildDiffDetailDocument;
+  buildId: string;
+}) {
   const { diff, buildId } = props;
   const { visible } = useBuildDiffVisibleState();
   const { contained } = useBuildDiffFitState();
@@ -562,7 +672,7 @@ function CompareScreenshot(props: { diff: Diff; buildId: string }) {
 }
 
 function CompareScreenshotChanged(props: {
-  diff: Diff;
+  diff: BuildDiffDetailDocument;
   buildId: string;
   diffVisible: boolean;
   contained: boolean;
@@ -888,7 +998,7 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 });
 
 const BuildScreenshots = memo(
-  (props: { diff: Diff; build: BuildFragmentDocument }) => {
+  (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
     const { viewMode } = useBuildDiffViewModeState();
     const showBaseline = viewMode === "split" || viewMode === "baseline";
     const showChanges = viewMode === "split" || viewMode === "changes";
@@ -936,7 +1046,7 @@ const BuildScreenshots = memo(
 
 const useScrollToTop = (
   ref: React.RefObject<HTMLElement | null>,
-  activeDiff: Diff | null,
+  activeDiff: BuildDiffDetailDocument | null,
 ) => {
   useLayoutEffect(() => {
     if (activeDiff && ref.current) {
@@ -947,14 +1057,17 @@ const useScrollToTop = (
   }, [ref, activeDiff]);
 };
 
-export function BuildDetail(props: {
+export function BuildDiffDetail(props: {
   build: BuildFragmentDocument;
+  diff: BuildDiffDetailDocument | null;
   repoUrl: string | null;
+  className?: string;
+  header?: React.ReactNode;
+  ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { build } = props;
-  const { activeDiff, siblingDiffs } = useBuildDiffState();
-  const containerRef = useRef<HTMLDivElement>(null);
-  useScrollToTop(containerRef, activeDiff);
+  const { build, diff, header, className } = props;
+  const containerRef = useObjectRef(props.ref);
+  useScrollToTop(containerRef, diff);
   const [scrolled, setScrolled] = useState(false);
   useScrollListener((event) => {
     setScrolled(
@@ -964,27 +1077,30 @@ export function BuildDetail(props: {
   return (
     <div
       ref={containerRef}
-      className="bg-subtle flex min-h-0 flex-1 flex-col overflow-y-auto pb-4"
+      className={clsx(
+        "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4",
+        className,
+      )}
     >
-      {activeDiff ? (
-        <ZoomerSyncProvider id={activeDiff.id}>
-          <BuildDiffVisibleStateProvider>
-            <BuildDiffFitStateProvider>
-              <BuildDiffViewModeStateProvider>
-                <BuildDetailToolbar
-                  activeDiff={activeDiff}
-                  siblingDiffs={siblingDiffs}
-                  repoUrl={props.repoUrl}
-                  baseBranch={build.baseBranch ?? null}
-                  compareBranch={build.branch}
-                  bordered={scrolled}
-                  prMerged={build.pullRequest?.merged ?? false}
-                  buildType={build.type ?? null}
-                />
-                <BuildScreenshots build={build} diff={activeDiff} />
-              </BuildDiffViewModeStateProvider>
-            </BuildDiffFitStateProvider>
-          </BuildDiffVisibleStateProvider>
+      {diff ? (
+        <ZoomerSyncProvider id={diff.id}>
+          <BuildDiffHighlighterProvider>
+            <BuildDiffVisibleStateProvider>
+              <BuildDiffFitStateProvider>
+                <BuildDiffViewModeStateProvider>
+                  <div
+                    className={clsx(
+                      "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors has-[[data-meta]:empty]:items-center",
+                      !scrolled && "border-b-transparent",
+                    )}
+                  >
+                    {header}
+                  </div>
+                  <BuildScreenshots build={build} diff={diff} />
+                </BuildDiffViewModeStateProvider>
+              </BuildDiffFitStateProvider>
+            </BuildDiffVisibleStateProvider>
+          </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>
       ) : build.stats?.total === 0 ? (
         <div className="flex h-full min-h-0 flex-1 items-center justify-center">

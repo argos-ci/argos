@@ -1,4 +1,4 @@
-import { Children, useCallback, useEffect, useState } from "react";
+import { Children, useCallback, useLayoutEffect, useState } from "react";
 import moment from "moment";
 
 import { Tooltip } from "./Tooltip";
@@ -28,7 +28,8 @@ export function Time({
     [hasChildren, format, date],
   );
   const [fromNow, setFromNow] = useState(getFormattedDate);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setFromNow(getFormattedDate());
     const id = setInterval(() => setFromNow(getFormattedDate()), 1000);
     return () => clearInterval(id);
   }, [getFormattedDate]);

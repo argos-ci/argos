@@ -9,13 +9,13 @@ import {
   Tabs,
 } from "react-aria-components";
 
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
 import { BuildDiffList } from "./BuildDiffList";
 import { useSearchModeState, useSearchState } from "./BuildDiffState";
-import { useBuildHotkey } from "./BuildHotkeys";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
 

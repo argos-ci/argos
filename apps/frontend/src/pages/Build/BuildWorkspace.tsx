@@ -1,12 +1,14 @@
 import { memo } from "react";
 
+import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
 
-import { BuildDetail } from "./BuildDetail";
+import { BuildDetailHeader } from "./BuildDetailHeader";
+import { useBuildDiffState } from "./BuildDiffState";
 import { BuildOrphanDialog } from "./BuildOrphanDialog";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
@@ -15,7 +17,7 @@ const _BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
     ...BuildSidebar_Build
     ...BuildStatusDescription_Build
-    ...BuildDetail_Build
+    ...BuildDiffDetail_Build
     ...BuildOrphanDialog_Build
     status
     parallel {
@@ -51,7 +53,7 @@ const BuildProgress = memo(function BuildProgress({
         <div className="w-80">
           {parallel.total > 0 && (
             <Progress
-              className="mb-2"
+              className="mb-2 w-full"
               value={parallel.received}
               max={parallel.total}
               min={0}
@@ -113,5 +115,34 @@ export function BuildWorkspace(props: {
         }
       })()}
     </div>
+  );
+}
+
+function BuildDetail(props: {
+  build: DocumentType<typeof _BuildFragment>;
+  repoUrl: string | null;
+}) {
+  const { activeDiff, siblingDiffs } = useBuildDiffState();
+  const { build, repoUrl } = props;
+  return (
+    <BuildDiffDetail
+      build={build}
+      diff={activeDiff}
+      repoUrl={repoUrl}
+      className="bg-subtle"
+      header={
+        activeDiff ? (
+          <BuildDetailHeader
+            diff={activeDiff}
+            siblingDiffs={siblingDiffs}
+            repoUrl={props.repoUrl}
+            baseBranch={build.baseBranch ?? null}
+            compareBranch={build.branch}
+            prMerged={build.pullRequest?.merged ?? false}
+            buildType={build.type ?? null}
+          />
+        ) : null
+      }
+    />
   );
 }

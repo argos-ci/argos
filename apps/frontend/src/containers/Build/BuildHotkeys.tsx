@@ -4,7 +4,10 @@ import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
 
-import { HotkeysDialogState } from "./BuildHotkeysDialogState";
+import {
+  HotkeysDialogState,
+  useBuildHotkeysDialogState,
+} from "./BuildHotkeysDialogState";
 
 export type Hotkey = {
   keys: string[];
@@ -275,7 +278,12 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const BuildHotkeysDialog = memo(
+export function BuildHotkeysDialog() {
+  const state = useBuildHotkeysDialogState();
+  return state ? <BuildHotkeysDialogWithState state={state} /> : null;
+}
+
+const BuildHotkeysDialogWithState = memo(
   (props: { state: HotkeysDialogState }) => {
     useBuildHotkey("toggleHotkeysDialog", () =>
       props.state.setIsOpen((value) => !value),

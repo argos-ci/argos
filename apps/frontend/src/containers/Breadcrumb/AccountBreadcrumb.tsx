@@ -64,15 +64,13 @@ export function AccountBreadcrumbItem() {
   const loggedIn = useIsLoggedIn();
 
   return (
-    <>
-      <BreadcrumbItem>
-        {accountSlug ? (
-          <AccountBreadcrumbLink accountSlug={accountSlug} />
-        ) : (
-          <HomeBreadcrumbLink />
-        )}
-        {loggedIn && <AccountBreadcrumbMenu />}
-      </BreadcrumbItem>
-    </>
+    <BreadcrumbItem>
+      {accountSlug ? (
+        <AccountBreadcrumbLink accountSlug={accountSlug} />
+      ) : (
+        <HomeBreadcrumbLink />
+      )}
+      {loggedIn && <AccountBreadcrumbMenu />}
+    </BreadcrumbItem>
   );
 }

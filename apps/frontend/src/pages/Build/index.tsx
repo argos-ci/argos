@@ -1,8 +1,9 @@
 import { Helmet } from "react-helmet";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
+import { BuildHotkeysDialog } from "@/containers/Build/BuildHotkeys";
+import { BuildHotkeysDialogStateProvider } from "@/containers/Build/BuildHotkeysDialogState";
 
-import { BuildHotkeysDialogStateProvider } from "./BuildHotkeysDialogState";
 import { BuildNotFound } from "./BuildNotFound";
 import { BuildPage } from "./BuildPage";
 import { useBuildParams } from "./BuildParams";
@@ -23,6 +24,7 @@ export function Component() {
       </Helmet>
       <BuildHotkeysDialogStateProvider>
         <BuildPage params={params} />
+        <BuildHotkeysDialog />
       </BuildHotkeysDialogStateProvider>
     </>
   );

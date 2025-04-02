@@ -13,12 +13,14 @@ export function Progress({
   max,
   min,
   scale = "md",
+  color,
 }: {
   className?: string;
   value: number;
   max: number;
   min: number;
   scale?: ProgressScale;
+  color?: string;
 }) {
   const percent = Math.min(1, value / max);
 
@@ -29,7 +31,7 @@ export function Progress({
       aria-valuemin={min}
       aria-valuemax={max}
       className={clsx(
-        "bg-ui w-full overflow-hidden rounded-md",
+        "bg-ui overflow-hidden rounded-md",
         scaleClasses[scale],
         className,
       )}
@@ -38,6 +40,7 @@ export function Progress({
         className="from-progress-from to-progress-to h-2 bg-gradient-to-r transition-[width]"
         style={{
           width: `${percent * 100}%`,
+          background: color,
         }}
       />
     </div>
@@ -51,6 +54,8 @@ export function CircleProgress({
   min,
   radius,
   strokeWidth,
+  color = "var(--violet-9)",
+  title,
 }: {
   className?: string;
   value: number;
@@ -58,6 +63,8 @@ export function CircleProgress({
   min: number;
   radius: number;
   strokeWidth: number;
+  color?: string;
+  title?: string;
 }) {
   const percent = max > 0 ? Math.min(1, value / max) : 1;
 
@@ -66,7 +73,7 @@ export function CircleProgress({
 
   return (
     <svg
-      className={clsx("-rotate-90", className)}
+      className={clsx(className)}
       width={radius * 2}
       height={radius * 2}
       viewBox={`0 0 ${radius * 2 + strokeWidth * 2} ${radius * 2 + strokeWidth * 2}`}
@@ -75,27 +82,32 @@ export function CircleProgress({
       aria-valuemin={min}
       aria-valuemax={max}
     >
-      <circle
-        className="text-(--mauve-6)"
-        strokeWidth={strokeWidth}
-        stroke="currentColor"
-        fill="transparent"
-        r={radius}
-        cx={radius + strokeWidth}
-        cy={radius + strokeWidth}
-      />
-      <circle
-        className="text-(--violet-9) transition-[stroke-dashoffset]"
-        strokeWidth={strokeWidth}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="butt"
-        stroke="currentColor"
-        fill="transparent"
-        r={radius}
-        cx={radius + strokeWidth}
-        cy={radius + strokeWidth}
-      />
+      <title>{title}</title>
+      <g
+        transform={`rotate(-90, ${radius + strokeWidth}, ${radius + strokeWidth})`}
+      >
+        <circle
+          className="text-(--mauve-6)"
+          strokeWidth={strokeWidth}
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={radius + strokeWidth}
+          cy={radius + strokeWidth}
+        />
+        <circle
+          className="transition-[stroke-dashoffset]"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="butt"
+          stroke={color}
+          fill="transparent"
+          r={radius}
+          cx={radius + strokeWidth}
+          cy={radius + strokeWidth}
+        />
+      </g>
     </svg>
   );
 }

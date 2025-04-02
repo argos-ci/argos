@@ -151,6 +151,7 @@ function LoggedReviewButton(props: {
             value={progression.reviewed.length}
             min={0}
             max={progression.toReview.length}
+            className="w-full"
           />
         </div>
       </Tooltip>

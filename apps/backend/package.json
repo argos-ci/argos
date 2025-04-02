@@ -21,8 +21,8 @@
     "db:migrate:rollback": "knex migrate:rollback",
     "db:migrate:make": "knex migrate:make",
     "db:reset": "pnpm run db:drop && pnpm run db:create && pnpm run db:load",
-    "watch-server-build-and-synchronize": "node --watch ./dist/processes/proc/build-and-synchronize.js",
-    "watch-server-screenshot-diff": "node --watch ./dist/processes/proc/screenshot-diff.js",
+    "xwatch-server-build-and-synchronize": "node --watch ./dist/processes/proc/build-and-synchronize.js",
+    "xwatch-server-screenshot-diff": "node --watch ./dist/processes/proc/screenshot-diff.js",
     "watch-server-web": "node --watch ./dist/processes/proc/web.js",
     "watch-server": "sleep 2 && concurrently \"npm:watch-server-*\""
   },
@@ -85,6 +85,7 @@
     "redis": "^5.0.1",
     "resend": "^4.5.1",
     "sharp": "^0.34.1",
+    "sqids": "^0.3.0",
     "stripe": "^17.7.0",
     "tmp": "^0.2.3",
     "undici": "^7.9.0",

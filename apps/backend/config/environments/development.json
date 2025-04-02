@@ -1,4 +1,8 @@
 {
+  "s3": {
+    "screenshotsBucket": "argos-ci-production",
+    "publicImageBaseUrl": "https://files.argos-ci.com/"
+  },
   "sentry": {
     "serverDsn": ""
   },

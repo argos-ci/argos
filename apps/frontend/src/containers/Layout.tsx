@@ -8,6 +8,8 @@ import { ErrorPage } from "@/pages/ErrorPage";
 import { PageLoader } from "@/ui/PageLoader";
 
 import { AuthenticationError, logout } from "./Auth";
+import { BuildHotkeysDialog } from "./Build/BuildHotkeys";
+import { BuildHotkeysDialogStateProvider } from "./Build/BuildHotkeysDialogState";
 import { Navbar } from "./Navbar";
 
 function Main(props: {
@@ -44,9 +46,12 @@ function Main(props: {
 }
 
 export function Layout(props: { children: React.ReactNode }) {
-  const fullSize = useMatch("/:accountSlug/:projectName");
-  return (
-    <div className={clsx(fullSize && "h-screen", "flex min-h-full flex-col")}>
+  const isFullSize = Boolean(useMatch("/:accountSlug/:projectName"));
+  const hasShortcuts = Boolean(
+    useMatch("/:accountSlug/:projectName/tests/:testId"),
+  );
+  const content = (
+    <div className={clsx(isFullSize && "h-screen", "flex min-h-full flex-col")}>
       <header className="shrink-0">
         <Navbar />
       </header>
@@ -54,6 +59,15 @@ export function Layout(props: { children: React.ReactNode }) {
         <Suspense fallback={<PageLoader />}>{props.children}</Suspense>
       </Main>
     </div>
+  );
+
+  return hasShortcuts ? (
+    <BuildHotkeysDialogStateProvider>
+      {content}
+      <BuildHotkeysDialog />
+    </BuildHotkeysDialogStateProvider>
+  ) : (
+    content
   );
 }
 

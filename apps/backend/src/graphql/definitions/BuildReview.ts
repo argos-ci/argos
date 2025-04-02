@@ -27,7 +27,7 @@ export const typeDefs = gql`
 export const resolvers: IResolvers = {
   BuildReview: {
     date: (review) => {
-      return review.createdAt;
+      return new Date(review.createdAt);
     },
     state: (review) => {
       switch (review.state) {
