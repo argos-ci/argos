@@ -25,50 +25,9 @@ const RetrieveTokenResponseSchema = z.union([
   }),
 ]);
 
-export async function retrieveOAuthToken(args: {
-  clientId: string;
-  clientSecret: string;
-  code: string;
-  redirectUri: string;
-}) {
-  const body = {
-    client_id: args.clientId,
-    client_secret: args.clientSecret,
-    code: args.code,
-    redirect_uri: args.redirectUri,
-  };
-
-  const result = await axios.post(
-    "https://github.com/login/oauth/access_token",
-    body,
-    {
-      headers: {
-        accept: "application/json",
-      },
-    },
-  );
-
-  try {
-    const data = RetrieveTokenResponseSchema.parse(result.data);
-
-    if ("error" in data) {
-      throw boom(400, data.error_description, {
-        code: getErrorCode(data.error),
-      });
-    }
-
-    return data;
-  } catch (error) {
-    logger.info("GitHub OAuth response errored", {
-      status: result.status,
-      data: result.data,
-    });
-    throw new Error("Failed to parse GitHub OAuth response", {
-      cause: error,
-    });
-  }
-}
-
+/**
+ * Get the error code from the GitHub OAuth error response.
+ */
 function getErrorCode(authError: z.infer<typeof RetrieveTokenErrorSchema>) {
   switch (authError) {
     case "incorrect_client_credentials":
@@ -82,4 +41,50 @@ function getErrorCode(authError: z.infer<typeof RetrieveTokenErrorSchema>) {
     default:
       assertNever(authError);
   }
+}
+
+export async function retrieveOAuthToken(args: {
+  clientId: string;
+  clientSecret: string;
+  code: string;
+  redirectUri: string;
+}) {
+  const body = {
+    client_id: args.clientId,
+    client_secret: args.clientSecret,
+    code: args.code,
+    redirect_uri: args.redirectUri,
+  };
+
+  const response = await axios.post(
+    "https://github.com/login/oauth/access_token",
+    body,
+    {
+      headers: {
+        accept: "application/json",
+      },
+    },
+  );
+
+  const data = (() => {
+    try {
+      return RetrieveTokenResponseSchema.parse(response.data);
+    } catch (error) {
+      logger.info("GitHub OAuth response errored", {
+        status: response.status,
+        data: response.data,
+      });
+      throw new Error("Failed to parse GitHub OAuth response", {
+        cause: error,
+      });
+    }
+  })();
+
+  if ("error" in data) {
+    throw boom(400, data.error_description, {
+      code: getErrorCode(data.error),
+    });
+  }
+
+  return data;
 }
