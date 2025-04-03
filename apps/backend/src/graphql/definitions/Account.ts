@@ -283,14 +283,17 @@ export const resolvers: IResolvers = {
                   .select(1)
                   .clone()
                   .where("userLevel", "contributor"),
-              )
+              ).where((qb) => {
                 // And is a contributor to the project
-                .whereExists(
+                qb.whereExists(
                   ProjectUser.query()
                     .select(1)
                     .whereRaw(`projects.id = project_users."projectId"`)
                     .where("userId", auth.user.id),
-                );
+                )
+                  // Or where there is a default user level set on the project
+                  .orWhereNotNull("projects.defaultUserLevel");
+              });
             });
           });
 
