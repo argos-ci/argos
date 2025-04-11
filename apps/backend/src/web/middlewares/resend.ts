@@ -64,7 +64,7 @@ const verifyWebhookSignature: RequestHandler = (req, res, next) => {
 };
 
 const EventSchema = z.object({
-  type: z.enum(["email.delivered", "email.clicked"]),
+  type: z.enum(["email.delivered", "email.clicked", "email.sent"]),
   data: z.object({
     email_id: z.string(),
   }),
@@ -103,6 +103,10 @@ router.post(
             .$query()
             .patch({ linkClickedAt: new Date().toISOString() });
         }
+        break;
+      }
+      case "email.sent": {
+        // Ignore it, they send us this but we don't subscribe to it
         break;
       }
       default:
