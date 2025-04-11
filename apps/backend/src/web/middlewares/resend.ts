@@ -76,12 +76,7 @@ router.post(
   verifyWebhookSignature,
   asyncHandler(async (req, res) => {
     const body = JSON.parse(req.body);
-    const parsed = EventSchema.safeParse(body);
-    if (!parsed.success) {
-      res.status(400).send("Invalid payload");
-      return;
-    }
-    const event = parsed.data;
+    const event = EventSchema.parse(body);
 
     const message = await NotificationMessage.query()
       .where("channel", "email")
