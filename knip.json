@@ -39,5 +39,10 @@
   },
   "exclude": ["classMembers"],
   "ignore": ["playwright.config.mts"],
+  "ignoreDependencies": [
+    "@types/express-serve-static-core",
+    "@types/express",
+    "express"
+  ],
   "ignoreBinaries": ["stripe", "sleep", "ngrok", "op"]
 }
