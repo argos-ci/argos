@@ -210,7 +210,7 @@ export const installAppRouter = async (app: express.Application) => {
     }),
   );
 
-  router.get("/*splat", (_req, res) => {
+  router.get("/{*splat}", (_req, res) => {
     res.sendFile(join(distDir, "index.html"));
   });
 
