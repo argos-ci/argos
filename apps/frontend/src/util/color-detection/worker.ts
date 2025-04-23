@@ -45,6 +45,11 @@ async function detectColoredZones(input: {
 }): Promise<Rect[] | null> {
   const { url, blockSize } = input;
 
+  // If OffscreenCanvas is not supported, return null.
+  if (typeof OffscreenCanvas === "undefined") {
+    return null;
+  }
+
   // Create an offscreen canvas to draw the image.
   const canvas = new OffscreenCanvas(1, 1);
 
