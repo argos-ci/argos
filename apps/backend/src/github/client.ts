@@ -1,6 +1,7 @@
 import { createAppAuth } from "@octokit/auth-app";
 import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
+import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
 
 import config from "@/config/index.js";
 import { GithubInstallation } from "@/database/models/index.js";
@@ -28,8 +29,29 @@ const apps: Record<
   },
 };
 
+/**
+ * Proxy fetch function to use with Octokit.
+ * This is used to send requests through a proxy server.
+ * This is useful for sending requests through a static IP address.
+ */
+async function proxyFetch(url: string, init: RequestInit): Promise<Response> {
+  const proxyUrl = config.get("github.proxyUrl");
+  if (!proxyUrl) {
+    throw new Error("Proxy URL is not set");
+  }
+  const response = await fetch(url, {
+    ...init,
+    dispatcher: new ProxyAgent(proxyUrl),
+  });
+  return response;
+}
+
 export function getAppOctokit(input: {
   app: GithubInstallation["app"];
+  /**
+   * Use a proxy to send requests through a static IP address.
+   */
+  proxy: boolean;
 }): Octokit {
   return new Octokit({
     debug: config.get("env") === "development",
@@ -37,6 +59,9 @@ export function getAppOctokit(input: {
     auth: {
       appId: apps[input.app].appId,
       privateKey: apps[input.app].privateKey,
+    },
+    request: {
+      fetch: input.proxy ? proxyFetch : undefined,
     },
   });
 }
@@ -49,14 +74,12 @@ export function getTokenOctokit(token: string): Octokit {
 }
 
 export async function getInstallationOctokit(
-  installationId: string,
+  installation: GithubInstallation,
   appOctokit?: Octokit,
 ): Promise<Octokit | null> {
-  const installation = await GithubInstallation.query()
-    .findById(installationId)
-    .throwIfNotFound();
-
-  appOctokit = appOctokit ?? getAppOctokit({ app: installation.app });
+  appOctokit =
+    appOctokit ??
+    getAppOctokit({ app: installation.app, proxy: installation.proxy });
 
   if (installation.githubToken && installation.githubTokenExpiresAt) {
     const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
@@ -86,14 +109,14 @@ export async function getInstallationOctokit(
     }
   })();
   if (!result) {
-    await GithubInstallation.query().findById(installationId).patch({
+    await GithubInstallation.query().findById(installation.id).patch({
       deleted: true,
       githubToken: null,
       githubTokenExpiresAt: null,
     });
     return null;
   }
-  await GithubInstallation.query().findById(installationId).patch({
+  await GithubInstallation.query().findById(installation.id).patch({
     deleted: false,
     githubToken: result.token,
     githubTokenExpiresAt: result.expiresAt,

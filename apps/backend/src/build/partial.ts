@@ -56,7 +56,7 @@ export async function checkIsPartialBuild(input: {
     return false;
   }
 
-  const octokit = await getInstallationOctokit(installation.id);
+  const octokit = await getInstallationOctokit(installation);
 
   if (!octokit) {
     return false;

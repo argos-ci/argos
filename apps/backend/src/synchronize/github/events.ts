@@ -205,7 +205,7 @@ export async function handleGitHubEvents(
           deleted: false,
         });
 
-        const octokit = await getInstallationOctokit(installation.id);
+        const octokit = await getInstallationOctokit(installation);
 
         if (!octokit) {
           return;

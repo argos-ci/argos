@@ -18,12 +18,14 @@ export const resolvers: IResolvers = {
       return loaders.GhApiInstallation.load({
         app: installation.app,
         installationId: installation.githubId,
+        proxy: installation.proxy,
       });
     },
     ghAccount: async (installation, _args, { loaders }) => {
       const ghInstallation = await loaders.GhApiInstallation.load({
         app: installation.app,
         installationId: installation.githubId,
+        proxy: installation.proxy,
       });
       if (
         !ghInstallation ||

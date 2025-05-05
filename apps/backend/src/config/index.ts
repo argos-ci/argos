@@ -164,6 +164,12 @@ export function createConfig() {
         default: "https://github.com/marketplace/argos-ci",
         env: "GITHUB_MARKETPLACE_URL",
       },
+      proxyUrl: {
+        doc: "Proxy URL",
+        format: String,
+        default: "",
+        env: "GITHUB_PROXY_URL",
+      },
     },
     githubLight: {
       appId: {
