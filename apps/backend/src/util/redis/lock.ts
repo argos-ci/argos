@@ -1,6 +1,4 @@
-import type { createClient } from "redis";
-
-type RedisClient = ReturnType<typeof createClient>;
+import type { RedisClientType } from "redis";
 
 const acquireLock = ({
   client,
@@ -8,7 +6,7 @@ const acquireLock = ({
   timeout,
   retryDelay,
 }: {
-  client: RedisClient;
+  client: RedisClientType;
   name: string;
   timeout: number;
   retryDelay: { min: number; max: number };
@@ -38,7 +36,7 @@ const acquireLock = ({
   });
 };
 
-export const createRedisLock = (client: RedisClient) => {
+export const createRedisLock = (client: RedisClientType) => {
   async function acquire<T>(
     key: (string | number)[],
     task: () => Promise<T>,
