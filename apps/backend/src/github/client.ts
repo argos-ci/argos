@@ -68,12 +68,9 @@ function getOctokit(options: GetOctokitOptions): Octokit {
   });
 }
 
-interface GetAppOctokitOptions extends Pick<GetOctokitOptions, "proxy"> {
-  /**
-   * The type of app to use for authentication.
-   */
-  app: GithubInstallation["app"];
-}
+interface GetAppOctokitOptions
+  extends Pick<GetOctokitOptions, "proxy">,
+    Pick<GithubInstallation, "app"> {}
 
 /**
  * Get an Octokit instance for a GitHub App.
