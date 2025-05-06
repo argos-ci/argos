@@ -110,6 +110,7 @@
     "@types/tmp": "^0.2.6",
     "concurrently": "^9.1.2",
     "factory-girl-ts": "^2.3.1",
+    "formidable": ">=3.5.3",
     "moment": "^2.30.1",
     "openapi3-ts": "^4.4.0",
     "rimraf": "^6.0.1",
