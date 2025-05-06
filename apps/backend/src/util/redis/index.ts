@@ -20,7 +20,7 @@ export const redisClient: RedisClientType = createClient({
       ? {
           tls: true,
           host: redisURL.hostname,
-          rejectUnauthorized: true,
+          rejectUnauthorized: false,
         }
       : { tls: false },
 });
