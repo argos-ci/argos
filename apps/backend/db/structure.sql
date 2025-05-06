@@ -429,6 +429,7 @@ CREATE TABLE public.github_installations (
     "githubToken" character varying(255),
     "githubTokenExpiresAt" timestamp with time zone,
     app text DEFAULT 'main'::text NOT NULL,
+    proxy boolean DEFAULT false NOT NULL,
     CONSTRAINT github_installations_app_check CHECK ((app = ANY (ARRAY['main'::text, 'light'::text])))
 );
 
@@ -3063,3 +3064,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025010
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250111204217_user-notifications.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250113180732_clean-additional-screenshot-price.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250202084159_cleanup-test-table.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250505143128_proxy-github.js', 1, NOW());

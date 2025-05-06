@@ -685,7 +685,7 @@ export const resolvers: IResolvers = {
           ? "light"
           : "main";
 
-      const appOctokit = getAppOctokit({ app });
+      const appOctokit = getAppOctokit({ app, proxy: installation.proxy });
 
       const ghInstallation = await appOctokit.apps.getInstallation({
         installation_id: installation.githubId,
@@ -697,7 +697,7 @@ export const resolvers: IResolvers = {
       const githubAccount = await getOrCreateGithubAccount(ghOrg);
       invariant(githubAccount, "GitHub account not found");
 
-      const octokit = await getInstallationOctokit(installation.id, appOctokit);
+      const octokit = await getInstallationOctokit(installation, appOctokit);
       invariant(octokit, "Invalid installation");
 
       const { teamId } = teamAccount;

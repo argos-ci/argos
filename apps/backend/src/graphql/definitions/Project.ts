@@ -8,6 +8,7 @@ import {
   Account,
   Build,
   BUILD_EXPIRATION_DELAY_MS,
+  GithubInstallation,
   GitlabProject,
   Project,
   ProjectUser,
@@ -296,12 +297,16 @@ async function getGitHubOctokitFromAppType(input: {
       );
       return getTokenOctokit(userAccount.githubAccount.accessToken);
     }
-    case "light":
+    case "light": {
       invariant(
         input.account.githubLightInstallationId,
         "GitHub Light installation not found",
       );
-      return getInstallationOctokit(input.account.githubLightInstallationId);
+      const installation = await GithubInstallation.query()
+        .findById(input.account.githubLightInstallationId)
+        .throwIfNotFound();
+      return getInstallationOctokit(installation);
+    }
     default:
       assertNever(input.app);
   }

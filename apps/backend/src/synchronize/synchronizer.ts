@@ -247,8 +247,11 @@ export async function synchronizeInstallation(installationId: string) {
     .findById(installationId)
     .throwIfNotFound();
 
-  const appOctokit = getAppOctokit({ app: installation.app });
-  const octokit = await getInstallationOctokit(installation.id, appOctokit);
+  const appOctokit = getAppOctokit({
+    app: installation.app,
+    proxy: installation.proxy,
+  });
+  const octokit = await getInstallationOctokit(installation, appOctokit);
 
   // If we don't get an octokit, then the installation has been removed
   // we delete the installation

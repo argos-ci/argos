@@ -173,12 +173,12 @@ function createBuildFromCompareScreenshotBucketIdLoader() {
 
 function createGhApiInstallationLoader() {
   return new DataLoader<
-    { app: GithubInstallation["app"]; installationId: number },
+    { app: GithubInstallation["app"]; installationId: number; proxy: boolean },
     GhApiInstallation | null
   >(async (inputs) => {
     return Promise.all(
       inputs.map(async (input) => {
-        const octokit = getAppOctokit({ app: input.app });
+        const octokit = getAppOctokit({ app: input.app, proxy: input.proxy });
         const result = await octokit.apps.getInstallation({
           installation_id: input.installationId,
         });

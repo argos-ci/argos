@@ -179,15 +179,16 @@ export async function getOrCreateInstallation({
         deleted: true,
         githubToken: null,
         githubTokenExpiresAt: null,
+        proxy: false,
       }
     : { app, githubId, deleted: false };
   const installation = await GithubInstallation.query().findOne({ githubId });
   if (installation) {
     if (installation.deleted !== deleted) {
-      return GithubInstallation.query().patchAndFetchById(
-        installation.id,
-        data,
-      );
+      return GithubInstallation.query().patchAndFetchById(installation.id, {
+        ...data,
+        proxy: installation.proxy,
+      });
     }
     return installation;
   }

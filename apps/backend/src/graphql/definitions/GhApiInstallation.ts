@@ -70,7 +70,7 @@ export const resolvers: IResolvers = {
         if (!installation) {
           throw notFound("Installation not found");
         }
-        const octokit = await getInstallationOctokit(installation.id);
+        const octokit = await getInstallationOctokit(installation);
         if (!octokit) {
           throw forbidden("Access to installation failed");
         }

@@ -95,7 +95,7 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     return;
   }
 
-  const octokit = await getInstallationOctokit(installation.id);
+  const octokit = await getInstallationOctokit(installation);
 
   if (!octokit) {
     logger.info("Failed to get an Octokit for installation", {
