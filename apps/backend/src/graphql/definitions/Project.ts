@@ -1,4 +1,3 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
@@ -20,7 +19,7 @@ import {
   resolveProjectName,
 } from "@/database/services/project.js";
 import { notifyDiscord } from "@/discord/index.js";
-import { getInstallationOctokit, getTokenOctokit } from "@/github/client.js";
+import { getInstallationOctokit } from "@/github/client.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
 
@@ -153,7 +152,7 @@ export const typeDefs = gql`
     repo: String!
     owner: String!
     accountSlug: String!
-    app: GitHubAppType!
+    installationId: String!
   }
 
   input ImportGitlabProjectInput {
@@ -181,7 +180,7 @@ export const typeDefs = gql`
     projectId: ID!
     repo: String!
     owner: String!
-    app: GitHubAppType!
+    installationId: String!
   }
 
   input UnlinkGithubRepositoryInput {
@@ -281,43 +280,12 @@ ${input.account.slug} / ${input.project.name}
   });
 }
 
-async function getGitHubOctokitFromAppType(input: {
-  account: Account;
-  creator: User;
-  app: "main" | "light";
-}) {
-  switch (input.app) {
-    case "main": {
-      const userAccount = await input.creator
-        .$relatedQuery("account")
-        .withGraphFetched("githubAccount");
-      invariant(
-        userAccount?.githubAccount?.accessToken,
-        "Should be linked to a GitHub account with an access token",
-      );
-      return getTokenOctokit(userAccount.githubAccount.accessToken);
-    }
-    case "light": {
-      invariant(
-        input.account.githubLightInstallationId,
-        "GitHub Light installation not found",
-      );
-      const installation = await GithubInstallation.query()
-        .findById(input.account.githubLightInstallationId)
-        .throwIfNotFound();
-      return getInstallationOctokit(installation);
-    }
-    default:
-      assertNever(input.app);
-  }
-}
-
 async function importGithubProject(props: {
   accountSlug: string;
   creator: User;
   repo: string;
   owner: string;
-  app: "main" | "light";
+  installationId: string;
 }) {
   const account = await Account.query()
     .findOne({ slug: props.accountSlug })
@@ -329,11 +297,11 @@ async function importGithubProject(props: {
     throw forbidden();
   }
 
-  const octokit = await getGitHubOctokitFromAppType({
-    account,
-    creator: props.creator,
-    app: props.app,
-  });
+  const installation = await GithubInstallation.query()
+    .findOne({ githubId: props.installationId })
+    .throwIfNotFound();
+
+  const octokit = await getInstallationOctokit(installation);
 
   invariant(octokit, "Octokit not found");
 
@@ -704,7 +672,7 @@ export const resolvers: IResolvers = {
         repo: args.input.repo,
         owner: args.input.owner,
         creator: ctx.auth.user,
-        app: args.input.app,
+        installationId: args.input.installationId,
       });
     },
     importGitlabProject: async (_root, args, ctx) => {
@@ -768,11 +736,11 @@ export const resolvers: IResolvers = {
 
       invariant(project.account, "account not fetched");
 
-      const octokit = await getGitHubOctokitFromAppType({
-        account: project.account,
-        creator: ctx.auth.user,
-        app: args.input.app,
-      });
+      const installation = await GithubInstallation.query()
+        .findOne({ githubId: args.input.installationId })
+        .throwIfNotFound();
+
+      const octokit = await getInstallationOctokit(installation);
 
       invariant(octokit, "Octokit not found");
 

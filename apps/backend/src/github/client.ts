@@ -1,4 +1,5 @@
 import { createAppAuth } from "@octokit/auth-app";
+import type { OctokitOptions } from "@octokit/core";
 import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
@@ -31,8 +32,8 @@ const apps: Record<
 
 /**
  * Proxy fetch function to use with Octokit.
- * This is used to send requests through a proxy server.
- * This is useful for sending requests through a static IP address.
+ * It has the same signature as the fetch function but it uses a proxy
+ * to send requests through a static IP address.
  */
 async function proxyFetch(url: string, init: RequestInit): Promise<Response> {
   const proxyUrl = config.get("github.proxyUrl");
@@ -46,33 +47,73 @@ async function proxyFetch(url: string, init: RequestInit): Promise<Response> {
   return response;
 }
 
-export function getAppOctokit(input: {
-  app: GithubInstallation["app"];
+interface GetOctokitOptions extends Omit<OctokitOptions, "debug" | "request"> {
   /**
    * Use a proxy to send requests through a static IP address.
    */
   proxy: boolean;
-}): Octokit {
+}
+
+/**
+ * Get an Octokit instance.
+ */
+function getOctokit(options: GetOctokitOptions): Octokit {
+  const { proxy, ...rest } = options;
   return new Octokit({
     debug: config.get("env") === "development",
+    request: {
+      fetch: proxy ? proxyFetch : undefined,
+    },
+    ...rest,
+  });
+}
+
+interface GetAppOctokitOptions extends Pick<GetOctokitOptions, "proxy"> {
+  /**
+   * The type of app to use for authentication.
+   */
+  app: GithubInstallation["app"];
+}
+
+/**
+ * Get an Octokit instance for a GitHub App.
+ * This is used to authenticate as a GitHub App.
+ */
+export function getAppOctokit(options: GetAppOctokitOptions): Octokit {
+  const { app, ...rest } = options;
+  return getOctokit({
+    ...rest,
     authStrategy: createAppAuth,
     auth: {
-      appId: apps[input.app].appId,
-      privateKey: apps[input.app].privateKey,
-    },
-    request: {
-      fetch: input.proxy ? proxyFetch : undefined,
+      appId: apps[app].appId,
+      privateKey: apps[app].privateKey,
     },
   });
 }
 
-export function getTokenOctokit(token: string): Octokit {
-  return new Octokit({
-    debug: config.get("env") === "development",
+interface GetTokenOctokitOptions extends Pick<GetOctokitOptions, "proxy"> {
+  /**
+   * The token to use for authentication.
+   */
+  token: string;
+}
+
+/**
+ * Get an Octokit instance for a token.
+ * This is used to authenticate as a user or an installation.
+ */
+export function getTokenOctokit(options: GetTokenOctokitOptions): Octokit {
+  const { token, ...rest } = options;
+  return getOctokit({
+    ...rest,
     auth: token,
   });
 }
 
+/**
+ * Get an Octokit instance for a GitHub App installation.
+ * Automatically refreshes the token if it is expired.
+ */
 export async function getInstallationOctokit(
   installation: GithubInstallation,
   appOctokit?: Octokit,
@@ -88,7 +129,7 @@ export async function getInstallationOctokit(
     const expired = expiredAt < now + delay;
     if (!expired) {
       const token = installation.githubToken;
-      return getTokenOctokit(token);
+      return getTokenOctokit({ token, proxy: installation.proxy });
     }
   }
   const result = await (async () => {
@@ -121,7 +162,7 @@ export async function getInstallationOctokit(
     githubToken: result.token,
     githubTokenExpiresAt: result.expiresAt,
   });
-  return getTokenOctokit(result.token);
+  return getTokenOctokit({ token: result.token, proxy: installation.proxy });
 }
 
 /**

@@ -18,14 +18,14 @@ const ImportGithubProjectMutation = graphql(`
     $repo: String!
     $owner: String!
     $accountSlug: String!
-    $app: GitHubAppType!
+    $installationId: String!
   ) {
     importGithubProject(
       input: {
         repo: $repo
         owner: $owner
         accountSlug: $accountSlug
-        app: $app
+        installationId: $installationId
       }
     ) {
       id
@@ -120,13 +120,13 @@ export function Component() {
             variant="import"
             disabled={loading}
             accountSlug={accountSlug}
-            onSelectRepository={(repo, app) => {
+            onSelectRepository={({ repo, installationId }) => {
               importGithubProject({
                 variables: {
                   repo: repo.name,
                   owner: repo.owner_login,
                   accountSlug: accountSlug,
-                  app,
+                  installationId,
                 },
               }).catch((error) => {
                 // TODO: Show error in UI

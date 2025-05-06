@@ -114,17 +114,19 @@ export const resolvers: IResolvers = {
       if (!githubAccount?.accessToken) {
         return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
       }
-      const octokit = getTokenOctokit(githubAccount.accessToken);
+      const octokit = getTokenOctokit({
+        token: githubAccount.accessToken,
+        proxy: false,
+      });
       try {
-        const apiInstallations =
-          await octokit.apps.listInstallationsForAuthenticatedUser({
-            per_page: 100,
-          });
+        const result = await octokit.paginate(
+          octokit.apps.listInstallationsForAuthenticatedUser,
+        );
         return {
-          edges: apiInstallations.data.installations,
+          edges: result,
           pageInfo: {
             hasNextPage: false,
-            totalCount: apiInstallations.data.total_count,
+            totalCount: result.length,
           },
         };
       } catch (error) {

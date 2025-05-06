@@ -50,26 +50,32 @@ export const resolvers: IResolvers = {
       }
       const reposPerPage = Math.min(args.reposPerPage || 100, 100);
       const ghRepositories = await (async () => {
+        const installation = await GithubInstallation.query().findOne({
+          githubId: args.installationId,
+          deleted: false,
+        });
+
+        if (!installation) {
+          throw notFound("Installation not found");
+        }
+
         if (args.fromAuthUser) {
           const githubAccount =
             await auth.account.$relatedQuery("githubAccount");
           if (!githubAccount?.accessToken) {
             return null;
           }
-          const octokit = getTokenOctokit(githubAccount.accessToken);
+          const octokit = getTokenOctokit({
+            token: githubAccount.accessToken,
+            proxy: installation.proxy,
+          });
           return octokit.apps.listInstallationReposForAuthenticatedUser({
             installation_id: Number(args.installationId),
             per_page: reposPerPage,
             page: args.page,
           });
         }
-        const installation = await GithubInstallation.query().findOne({
-          githubId: args.installationId,
-          deleted: false,
-        });
-        if (!installation) {
-          throw notFound("Installation not found");
-        }
+
         const octokit = await getInstallationOctokit(installation);
         if (!octokit) {
           throw forbidden("Access to installation failed");

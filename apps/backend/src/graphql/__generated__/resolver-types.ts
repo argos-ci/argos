@@ -493,7 +493,7 @@ export type IGoogleUser = INode & {
 
 export type IImportGithubProjectInput = {
   accountSlug: Scalars['String']['input'];
-  app: IGitHubAppType;
+  installationId: Scalars['String']['input'];
   owner: Scalars['String']['input'];
   repo: Scalars['String']['input'];
 };
@@ -516,7 +516,7 @@ export type ILeaveTeamInput = {
 };
 
 export type ILinkGithubRepositoryInput = {
-  app: IGitHubAppType;
+  installationId: Scalars['String']['input'];
   owner: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
   repo: Scalars['String']['input'];
