@@ -86,14 +86,14 @@ type GitlabNamespace = NonNullable<
 
 type GithubInstallationsProps = {
   installations: GithubInstallation[];
-  onSelectRepository: (
+  onSelectRepository: (args: {
     repo: {
       name: string;
       owner_login: string;
       id: string;
-    },
-    app: GitHubAppType,
-  ) => void;
+    };
+    installationId: string;
+  }) => void;
   disabled?: boolean;
   connectButtonLabel: string;
   onSwitch: () => void;
@@ -104,22 +104,26 @@ type GithubInstallationsProps = {
 function GithubInstallations(props: GithubInstallationsProps) {
   const firstInstallation = props.installations[0];
   invariant(firstInstallation, "no installations");
-  const [value, setValue] = useState<string>(firstInstallation.id);
+  const [installationId, setInstallationId] = useState<string>(
+    firstInstallation.id,
+  );
   return (
     <div className="flex max-w-4xl flex-col gap-4" style={{ height: 400 }}>
       <GithubInstallationsSelect
         disabled={props.disabled}
         installations={props.installations}
-        value={value}
-        setValue={setValue}
+        value={installationId}
+        setValue={setInstallationId}
         onSwitchProvider={props.onSwitch}
         app={props.app}
         accountId={props.accountId}
       />
       <GithubRepositoryList
-        installationId={value}
+        installationId={installationId}
         disabled={props.disabled}
-        onSelectRepository={(repo) => props.onSelectRepository(repo, props.app)}
+        onSelectRepository={(repo) =>
+          props.onSelectRepository({ repo, installationId })
+        }
         connectButtonLabel={props.connectButtonLabel}
         app={props.app}
         accountId={props.accountId}

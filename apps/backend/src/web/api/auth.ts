@@ -95,7 +95,10 @@ router.use(
       redirectUri: `${config.get("server.url")}/auth/github/callback`,
     });
 
-    const octokit = getTokenOctokit(result.access_token);
+    const octokit = getTokenOctokit({
+      token: result.access_token,
+      proxy: false,
+    });
     const [profile, emails] = await Promise.all([
       octokit.users.getAuthenticated(),
       octokit.users.listEmailsForAuthenticatedUser(),

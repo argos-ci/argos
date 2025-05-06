@@ -458,7 +458,7 @@ type GoogleUser implements Node {
 
 input ImportGithubProjectInput {
   accountSlug: String!
-  app: GitHubAppType!
+  installationId: String!
   owner: String!
   repo: String!
 }
@@ -483,7 +483,7 @@ input LeaveTeamInput {
 }
 
 input LinkGithubRepositoryInput {
-  app: GitHubAppType!
+  installationId: String!
   owner: String!
   projectId: ID!
   repo: String!

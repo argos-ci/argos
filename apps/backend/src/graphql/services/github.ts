@@ -130,7 +130,10 @@ export async function checkUserHasAccessToInstallation(
   if (!githubAccount.accessToken) {
     return false;
   }
-  const octokit = getTokenOctokit(githubAccount.accessToken);
+  const octokit = getTokenOctokit({
+    token: githubAccount.accessToken,
+    proxy: false,
+  });
   const result = await octokit.paginate(
     octokit.apps.listInstallationsForAuthenticatedUser,
   );
