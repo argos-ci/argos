@@ -7,9 +7,10 @@ type CopyButtonProps = React.ComponentProps<typeof CopyButton>;
 type PreProps = Omit<React.ComponentPropsWithRef<"pre">, "children"> &
   Pick<CopyButtonProps, "copyRef"> & {
     code: string;
+    overrideTextToCopy?: string;
   };
 
-export function Pre({ code, copyRef, ...rest }: PreProps) {
+export function Pre({ code, overrideTextToCopy, copyRef, ...rest }: PreProps) {
   return (
     <pre
       {...rest}
@@ -20,7 +21,7 @@ export function Pre({ code, copyRef, ...rest }: PreProps) {
     >
       <CopyButton
         className="absolute right-2 top-4 text-lg"
-        text={code}
+        text={overrideTextToCopy ?? code}
         copyRef={copyRef}
       />
       <code>{code}</code>
