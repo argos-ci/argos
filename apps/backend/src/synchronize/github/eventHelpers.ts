@@ -181,7 +181,7 @@ export async function getOrCreateInstallation({
         githubTokenExpiresAt: null,
         proxy: false,
       }
-    : { app, githubId, deleted: false };
+    : { app, githubId, deleted: false, proxy: false };
   const installation = await GithubInstallation.query().findOne({ githubId });
   if (installation) {
     if (installation.deleted !== deleted) {
