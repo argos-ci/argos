@@ -436,8 +436,11 @@ export const resolvers: IResolvers = {
           if (filters?.name) {
             query.where("name", filters.name);
           }
-          if (filters?.type) {
-            query.whereIn("type", filters.type);
+          const type = filters?.type;
+          if (type) {
+            query.where((qb) => {
+              qb.whereIn("type", type).orWhereNull("type");
+            });
           }
           const status = filters?.status;
           if (status) {
