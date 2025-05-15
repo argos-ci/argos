@@ -1,5 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, XIcon } from "lucide-react";
 
 import {
   BuildModeDescription,
@@ -106,13 +106,10 @@ function TestReportStatusLabel(props: { status: TestReportStatus }) {
     case TestReportStatus.Interrupted:
       return (
         <>
-          <>
-            <CheckIcon
-              className="text-danger-low mr-1 inline-block"
-              size="1em"
-            />
+          <div>
+            <XIcon className="text-danger-low mr-1 inline-block" size="1em" />
             Failed
-          </>
+          </div>
           <Description>
             Some tests failed. This build is not eligible to be used as a
             baseline.
