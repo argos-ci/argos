@@ -24,6 +24,9 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      - run: git fetch --update-head-ok --depth 200 origin test-ci:test-ci
+      - run: git fetch --update-head-ok --depth 200 origin main:main
+      - run: git merge-base test-ci main
       - run: git fetch --depth=200 origin ${{ github.sha }}
       - run: git log --format="%H" --max-count=200 ${{ github.sha }}
 
