@@ -25,6 +25,7 @@ jobs:
         uses: ./.github/actions/setup-deps
 
       - run: git fetch --depth=200 origin ${{ github.sha }}
+      - run: git log --format="%H" --max-count=200 ${{ github.sha }}
 
       - name: Build
         run: pnpm exec -- turbo run build --filter=\!@argos/frontend
