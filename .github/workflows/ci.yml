@@ -24,6 +24,8 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      - run: git fetch --depth=200 origin ${{ github.sha }}
+
       - name: Build
         run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
