@@ -56,6 +56,11 @@ export async function checkIsPartialBuild(input: {
     return false;
   }
 
+  // For now we don't support partial builds for light installations.
+  if (installation.app === "light") {
+    return false;
+  }
+
   const octokit = await getInstallationOctokit(installation);
 
   if (!octokit) {
