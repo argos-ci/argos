@@ -1,3 +1,4 @@
+import type { ErrorCode } from "@argos/error-types";
 import { invariant } from "@argos/util/invariant";
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import type { PartialModelObject } from "objection";
@@ -283,6 +284,10 @@ async function getOrCreateUserAccountFromThirdParty<
   getName: (model: TModel) => string | null;
   getPotentialEmails: (model: TModel) => string[];
   thirdPartyKey: NonNullable<keyof PartialModelObject<User>>;
+  errorCodes: {
+    alreadyAttachedToArgosAccount: ErrorCode;
+    alreadyAttachedToThirdPartyAccount: ErrorCode;
+  };
 }) {
   const {
     provider,
@@ -293,6 +298,7 @@ async function getOrCreateUserAccountFromThirdParty<
     getName,
     getPotentialEmails,
     thirdPartyKey,
+    errorCodes,
   } = input;
   const email = getEmail(model).trim().toLowerCase();
 
@@ -310,6 +316,7 @@ async function getOrCreateUserAccountFromThirdParty<
         throw boom(
           400,
           `${provider} account is already attached to another Argos account`,
+          { code: errorCodes.alreadyAttachedToArgosAccount },
         );
       }
     }
@@ -318,6 +325,7 @@ async function getOrCreateUserAccountFromThirdParty<
       throw boom(
         400,
         `Argos Account is already attached to another ${provider} account`,
+        { code: errorCodes.alreadyAttachedToThirdPartyAccount },
       );
     }
 
@@ -414,6 +422,11 @@ export async function getOrCreateUserAccountFromGitlabUser(input: {
     getName: (model) => model.name,
     getPotentialEmails: (model) => [model.email],
     thirdPartyKey: "gitlabUserId",
+    errorCodes: {
+      alreadyAttachedToArgosAccount: "GITLAB_ACCOUNT_ALREADY_ATTACHED",
+      alreadyAttachedToThirdPartyAccount:
+        "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITLAB",
+    },
   });
 }
 
@@ -447,5 +460,10 @@ export async function getOrCreateUserAccountFromGoogleUser(input: {
       return model.emails;
     },
     thirdPartyKey: "googleUserId",
+    errorCodes: {
+      alreadyAttachedToArgosAccount: "GOOGLE_ACCOUNT_ALREADY_ATTACHED",
+      alreadyAttachedToThirdPartyAccount:
+        "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE",
+    },
   });
 }
