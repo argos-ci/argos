@@ -4,6 +4,7 @@ import {
   NotificationWorkflowData,
   NotificationWorkflowType,
 } from "../workflow-types";
+import * as build_report from "./build_report"; // Import the new handler
 import * as spend_limit from "./spend_limit";
 import * as welcome from "./welcome";
 
@@ -24,6 +25,7 @@ export type Handler<Type extends NotificationWorkflowType> = {
 export const handlers = {
   welcome,
   spend_limit,
+  build_report, // Add the new handler
 } satisfies {
   [K in NotificationWorkflowType]: Handler<K>;
 };

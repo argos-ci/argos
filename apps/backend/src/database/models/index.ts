@@ -23,6 +23,7 @@ export * from "./NotificationWorkflowRecipient.js";
 export * from "./Screenshot.js";
 export * from "./ScreenshotBucket.js";
 export * from "./ScreenshotDiff.js";
+export * from "./ProjectSlackNotificationSetting.js";
 export * from "./SlackInstallation.js";
 export * from "./Subscription.js";
 export * from "./Team.js";

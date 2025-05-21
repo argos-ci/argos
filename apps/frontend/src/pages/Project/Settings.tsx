@@ -17,6 +17,7 @@ import { ProjectTransfer } from "@/containers/Project/Transfer";
 import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
+import ProjectSlackSettings from "./ProjectSlackSettings"; // Import the new component
 import { NotFound } from "@/pages/NotFound";
 import {
   Page,
@@ -140,6 +141,15 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       )}
       {hasAdminPermission && <ProjectTransfer project={project} />}
       {hasAdminPermission && <ProjectDelete project={project} />}
+      {/* Add Slack Notification Settings Section */}
+      {hasAdminPermission && (
+        <ProjectSlackSettings
+          projectId={project.id}
+          activeSlackInstallationId={
+            project.account?.slackInstallationId || null
+          } // Pass slackInstallationId from account if available
+        />
+      )}
     </SettingsLayout>
   );
 }

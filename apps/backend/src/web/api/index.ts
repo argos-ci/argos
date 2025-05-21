@@ -5,6 +5,7 @@ import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend.js";
 import { subdomain } from "../util.js";
 import auth from "./auth.js";
 import builds from "./builds.js";
+import projectSlackNotificationSettings from "./projectSlackNotificationSettings.js";
 import status from "./status.js";
 import stripe from "./stripe.js";
 import v2 from "./v2.js";
@@ -19,6 +20,7 @@ export const installApiRouter = (app: Application) => {
   router.use(builds);
   router.use(auth);
   router.use(stripe);
+  router.use(projectSlackNotificationSettings); // Add the new router
 
   app.use(subdomain(router, "api"));
 };
