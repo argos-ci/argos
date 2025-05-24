@@ -1090,7 +1090,7 @@ export function BuildDiffDetail(props: {
                 <BuildDiffViewModeStateProvider>
                   <div
                     className={clsx(
-                      "sticky top-0 z-20 flex shrink-0 items-start justify-between gap-4 border-b p-4 transition-colors has-[[data-meta]:empty]:items-center",
+                      "sticky top-0 z-20 flex shrink-0 flex-wrap items-start justify-between gap-4 border-b p-4 transition-colors has-[[data-meta]:empty]:items-center",
                       !scrolled && "border-b-transparent",
                     )}
                   >

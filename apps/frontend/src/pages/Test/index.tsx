@@ -672,14 +672,14 @@ function BuildHeader(props: {
   };
   return (
     <>
-      <div className="mb-4 flex min-w-0 flex-1 flex-wrap items-center gap-4">
-        <div className="flex shrink-0 gap-1">
-          <PreviousButton
-            onPress={goToPreviousDiff}
-            isDisabled={!previousChange}
-          />
-          <NextButton onPress={goToNextDiff} isDisabled={!nextChange} />
-        </div>
+      <div className="flex shrink-0 gap-1">
+        <PreviousButton
+          onPress={goToPreviousDiff}
+          isDisabled={!previousChange}
+        />
+        <NextButton onPress={goToNextDiff} isDisabled={!nextChange} />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 max-2xl:order-[-1] max-2xl:basis-full max-2xl:border-b max-2xl:pb-4 xl:gap-4">
         <div className="flex flex-col gap-0.5 self-center">
           <div className="text-sm font-medium">Change variant</div>
           <div className="text-low font-mono text-xs">{change.id}</div>
@@ -718,7 +718,7 @@ function BuildHeader(props: {
           </CounterValue>
         </Counter>
         <Separator
-          className="h-auto! self-stretch max-2xl:hidden"
+          className="h-auto! self-stretch max-lg:hidden"
           orientation="vertical"
         />
         <div className="flex gap-x-6 gap-y-0.5">
