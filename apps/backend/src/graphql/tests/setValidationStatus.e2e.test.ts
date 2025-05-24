@@ -71,7 +71,7 @@ describe("GraphQL", () => {
           score: 0,
         },
       ]);
-      await concludeBuild({ buildId: build.id, notify: false });
+      await concludeBuild({ build, notify: false });
       build = await build.$query();
     });
 

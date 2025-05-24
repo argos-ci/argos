@@ -255,6 +255,5 @@ export const computeScreenshotDiff = async (
   // Unlink images
   await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
 
-  // Conclude build if it's the last diff
-  await concludeBuild({ buildId: screenshotDiff.build.id });
+  await concludeBuild({ build: screenshotDiff.build });
 };

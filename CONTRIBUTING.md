@@ -179,6 +179,13 @@ Ensure your code follows the project’s coding standards:
 pnpm run lint
 ```
 
+### Set up the test database
+
+```sh
+NODE_ENV=test pnpm run --filter @argos/backend db:create
+NODE_ENV=test pnpm run --filter @argos/backend db:load
+```
+
 ### Unit and Integration Tests
 
 ```sh

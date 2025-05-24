@@ -1,6 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
+import { AutomationEvent, triggerAutomation } from "@/automation/index.js";
 import { job as buildNotificationJob } from "@/build-notification/job.js";
 import { transaction } from "@/database/index.js";
 import { Build, BuildConclusion, BuildNotification } from "@/database/models";
@@ -9,11 +10,9 @@ import { Build, BuildConclusion, BuildNotification } from "@/database/models";
  * Concludes the build by updating the conclusion and the stats.
  * Called when all diffs are processed.
  */
-export async function concludeBuild(input: {
-  buildId: string;
-  notify?: boolean;
-}) {
-  const { buildId, notify = true } = input;
+export async function concludeBuild(input: { build: Build; notify?: boolean }) {
+  const { build, notify = true } = input;
+  const buildId = build.id;
   const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
   const [[conclusion], [stats]] = await Promise.all([
     Build.computeConclusions([buildId], statuses),
@@ -39,7 +38,10 @@ export async function concludeBuild(input: {
         }),
       ]);
     });
-    await buildNotificationJob.push(buildNotification.id);
+    await Promise.all([
+      buildNotificationJob.push(buildNotification.id),
+      triggerAutomation(build.projectId, AutomationEvent.BuildCompleted, build),
+    ]);
   } else {
     await Build.query().findById(buildId).patch({
       conclusion,
