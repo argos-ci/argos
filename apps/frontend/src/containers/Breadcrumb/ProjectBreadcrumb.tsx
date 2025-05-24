@@ -17,7 +17,7 @@ export function ProjectBreadcrumbItem(props: {
   const { accountSlug, projectName } = props;
 
   const loggedIn = useIsLoggedIn();
-  const isCurrent = useMatch("/:accountSlug/:projectName/builds");
+  const isCurrent = useMatch("/:accountSlug/:projectName/:any?");
 
   return (
     <BreadcrumbItem>

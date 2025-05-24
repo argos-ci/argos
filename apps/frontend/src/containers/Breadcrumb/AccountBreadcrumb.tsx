@@ -29,14 +29,17 @@ const AccountQuery = graphql(`
 `);
 
 function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
-  const match = useMatch(`/${accountSlug}`);
+  const isRoot = useMatch(`/${accountSlug}`);
+  const isAnalytics = useMatch(`/${accountSlug}/~/analytics`);
+  const isSettings = useMatch(`/${accountSlug}/settings`);
+  const isCurrent = isRoot || isAnalytics || isSettings;
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
   });
   return (
     <BreadcrumbLink
       href={`/${accountSlug}`}
-      aria-current={match ? "page" : undefined}
+      aria-current={isCurrent ? "page" : undefined}
     >
       <BreadcrumbItemIcon>
         {data.account ? (
