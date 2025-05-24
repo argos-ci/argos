@@ -24,7 +24,7 @@ export function Component() {
       </Helmet>
       <BuildHotkeysDialogStateProvider>
         <BuildPage params={params} />
-        <BuildHotkeysDialog />
+        <BuildHotkeysDialog env="build" />
       </BuildHotkeysDialogStateProvider>
     </>
   );

@@ -64,7 +64,7 @@ export function Layout(props: { children: React.ReactNode }) {
   return hasShortcuts ? (
     <BuildHotkeysDialogStateProvider>
       {content}
-      <BuildHotkeysDialog />
+      <BuildHotkeysDialog env="test" />
     </BuildHotkeysDialogStateProvider>
   ) : (
     content
