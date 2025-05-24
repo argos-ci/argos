@@ -7,6 +7,8 @@ import {
 } from "graphql-scalars";
 import gqlTag from "graphql-tag";
 
+import type { IResolvers } from "../__generated__/resolver-types";
+
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
@@ -17,7 +19,7 @@ export const typeDefs = gql`
   scalar JSONObject
 `;
 
-export const resolvers = {
+export const resolvers: IResolvers = {
   Date: GraphQLDate,
   DateTime: GraphQLDateTime,
   Time: GraphQLTime,

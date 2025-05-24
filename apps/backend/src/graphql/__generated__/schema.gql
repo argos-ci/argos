@@ -597,19 +597,19 @@ type Plan implements Node {
 }
 
 type Project implements Node {
-  """Owner of the repository"""
+  """Owner of the project"""
   account: Account!
 
   """Glob pattern for auto-approved branches"""
   autoApprovedBranchGlob: String!
 
-  """A single build linked to the repository"""
+  """A single build linked to the project"""
   build(number: Int!): Build
 
   """Build names"""
   buildNames: [String!]!
 
-  """Builds associated to the repository"""
+  """Builds associated to the project"""
   builds(after: Int = 0, filters: BuildsFilterInput, first: Int = 30): BuildConnection!
 
   """Contributors"""
@@ -658,6 +658,9 @@ type Project implements Node {
 
   """Summary check"""
   summaryCheck: SummaryCheck!
+
+  """Test associated to the project"""
+  test(id: ID!): Test
   token: String
 
   """Total screenshots used"""
@@ -781,6 +784,7 @@ type ScreenshotBucket implements Node {
 
 type ScreenshotDiff implements Node {
   baseScreenshot: Screenshot
+  build: Build!
   compareScreenshot: Screenshot
   createdAt: DateTime!
   group: String
@@ -790,6 +794,7 @@ type ScreenshotDiff implements Node {
   """Name of the diff (either base or compare screenshot name)"""
   name: String!
   status: ScreenshotDiffStatus!
+  test: Test
   threshold: Float
   url: String
 
@@ -967,6 +972,51 @@ enum TeamUserLevel {
   owner
 }
 
+type Test implements Node {
+  changes(after: Int!, first: Int!, from: DateTime!): TestChangesConnection!
+  firstSeenDiff: ScreenshotDiff!
+  id: ID!
+  lastSeenDiff: ScreenshotDiff!
+  metrics(input: TestMetricsInput): TestMetrics!
+  name: String!
+  status: TestStatus!
+}
+
+type TestChange implements Node {
+  firstSeenDiff: ScreenshotDiff!
+  id: ID!
+  lastSeenDiff: ScreenshotDiff!
+  totalOccurences: Int!
+}
+
+type TestChangesConnection implements Connection {
+  edges: [TestChange!]!
+  pageInfo: PageInfo!
+}
+
+type TestMetricData {
+  changes: Int!
+  total: Int!
+  uniqueChanges: Int!
+}
+
+type TestMetricDataPoint {
+  changes: Int!
+  total: Int!
+  ts: Timestamp!
+  uniqueChanges: Int!
+}
+
+type TestMetrics {
+  all: TestMetricData!
+  series: [TestMetricDataPoint!]!
+}
+
+input TestMetricsInput {
+  from: DateTime
+  to: DateTime
+}
+
 type TestReport {
   stats: TestReportStats
   status: TestReportStatus!
@@ -982,6 +1032,11 @@ enum TestReportStatus {
   interrupted
   passed
   timedout
+}
+
+enum TestStatus {
+  ONGOING
+  REMOVED
 }
 
 scalar Time

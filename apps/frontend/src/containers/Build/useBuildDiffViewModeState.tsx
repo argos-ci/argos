@@ -14,25 +14,23 @@ const DiffViewModeContext = createContext<DiffViewModeContextValue | null>(
   null,
 );
 
-export const useBuildDiffViewModeState = () => {
+export function useBuildDiffViewModeState() {
   const context = use(DiffViewModeContext);
   invariant(
     context,
     "useBuildDiffViewModeState must be used within a BuildDiffViewModeStateProvider",
   );
   return context;
-};
+}
 
 const storageKey = "preferences.diffViewMode";
 
-export const BuildDiffViewModeStateProvider = ({
-  children,
-}: {
+export function BuildDiffViewModeStateProvider(props: {
   children: React.ReactNode;
-}) => {
-  const [viewMode, setViewMode] = useStorageState(
+}) {
+  const [viewMode, setViewMode] = useStorageState<ViewMode>(
     storageKey,
-    "split" as ViewMode,
+    "split",
   );
   const value = useMemo(
     (): DiffViewModeContextValue => ({
@@ -41,5 +39,7 @@ export const BuildDiffViewModeStateProvider = ({
     }),
     [viewMode, setViewMode],
   );
-  return <DiffViewModeContext value={value}>{children}</DiffViewModeContext>;
-};
+  return (
+    <DiffViewModeContext value={value}>{props.children}</DiffViewModeContext>
+  );
+}

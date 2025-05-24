@@ -406,6 +406,17 @@ export function createConfig() {
         default: "pub_deve_IEHZxQsLdVrHkzftm4sWDj",
       },
     },
+    sqids: {
+      // Use a custom alphabet to avoid ambiguous characters.
+      // This alphabet is URL-safe and case-insensitive.
+      // This alphabet should never change, as it would break existing IDs.
+      alphabet: {
+        doc: "Custom alphabet for Sqids",
+        format: String,
+        default: "FN5LTPGRW98EB2X3ZYHDCU0AS7KJQV64MO1I",
+        env: "SQIDS_ALPHABET",
+      },
+    },
   });
 
   const env = config.get("env");

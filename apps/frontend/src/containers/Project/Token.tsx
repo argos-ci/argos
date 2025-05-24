@@ -5,7 +5,7 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import { useProjectContext } from "@/pages/Project";
+import { useProjectOutletContext } from "@/pages/Project/ProjectOutletContext";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -89,7 +89,7 @@ export function ProjectToken(props: {
 function RegenerateTokenButton(
   props: ComponentProps<typeof RegenerateTokenDialog>,
 ) {
-  const { permissions } = useProjectContext();
+  const { permissions } = useProjectOutletContext();
   const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
   if (!hasAdminPermission) {
     return null;

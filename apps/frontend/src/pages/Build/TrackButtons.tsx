@@ -1,20 +1,21 @@
 import { memo, startTransition, useEffect, useRef } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { usePrevious } from "@/ui/usePrevious";
+import { useNonNullable } from "@/util/useNonNullable";
 
-import { useProjectPermissions } from "../BuildContext";
-import { Diff } from "../BuildDiffState";
-import { useBuildHotkey } from "../BuildHotkeys";
+import { Diff } from "./BuildDiffState";
 import {
   EvaluationStatus,
   useAcknowledgeMarkedDiff,
   useBuildDiffStatusState,
-} from "../BuildReviewState";
+} from "./BuildReviewState";
 
 function useEvaluationToggle(props: {
   diffId: string;
@@ -123,8 +124,8 @@ export const TrackButtons = memo(function TrackButtons(props: {
   disabled: boolean;
   render: (renderProps: { children: React.ReactNode }) => React.ReactNode;
 }) {
-  const permissions = useProjectPermissions();
-  if (!permissions || !permissions.includes(ProjectPermission.Review)) {
+  const permissions = useNonNullable(ProjectPermissionsContext);
+  if (!permissions.includes(ProjectPermission.Review)) {
     return null;
   }
   return props.render({

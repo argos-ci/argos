@@ -4,6 +4,7 @@ import * as React from "react";
 import { invariant } from "@argos/util/invariant";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
+import moment from "moment";
 import * as RechartsPrimitive from "recharts";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -41,7 +42,7 @@ function useChart() {
   return context;
 }
 
-function ChartContainer({
+export function ChartContainer({
   ref,
   id,
   className,
@@ -63,7 +64,7 @@ function ChartContainer({
         data-chart={chartId}
         ref={ref}
         className={clsx(
-          "[&_.recharts-cartesian-axis-tick_text]:fill-subtle [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-sector[stroke='#fff']]:stroke-transparent",
+          "[&_.recharts-cartesian-axis-tick_text]:fill-text-low [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-sector[stroke='#fff']]:stroke-transparent",
           className,
         )}
         {...props}
@@ -110,9 +111,9 @@ ${colorConfig
   );
 };
 
-const ChartTooltip = RechartsPrimitive.Tooltip;
+export const ChartTooltip = RechartsPrimitive.Tooltip;
 
-function ChartTooltipContent({
+export function ChartTooltipContent({
   ref,
   active,
   payload,
@@ -298,9 +299,9 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config];
 }
 
-const ChartLegend = RechartsPrimitive.Legend;
+export const ChartLegend = RechartsPrimitive.Legend;
 
-function ChartLegendContent({
+export function ChartLegendContent({
   ref,
   className,
   hideIcon = false,
@@ -362,10 +363,20 @@ function ChartLegendContent({
   );
 }
 
-export {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-};
+/**
+ * Get ticks for a given date range and unit.
+ */
+export function getTimeTicks(
+  from: Date,
+  to: Date,
+  unit: moment.unitOfTime.Base,
+  step = 1,
+) {
+  const ticks = [];
+  const current = moment(from).add(1, unit).startOf(unit);
+  while (current.isBefore(to)) {
+    ticks.push(current.toDate().getTime());
+    current.add(step, unit);
+  }
+  return ticks;
+}

@@ -15,6 +15,11 @@ const config: CodegenConfig = {
         contextType: "../context.js#Context",
         useTypeImports: true,
         typesPrefix: "I",
+        scalars: {
+          DateTime: "Date",
+          Date: "Date",
+          Timestamp: "Number",
+        },
         mappers: {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
@@ -37,11 +42,14 @@ const config: CodegenConfig = {
           Screenshot: "../../database/models/index.js#Screenshot",
           ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
           ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",
+          SlackInstallation: "../../database/models/index.js#SlackInstallation",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",
           TeamMember: "../../database/models/index.js#TeamUser",
           TeamGithubMember:
             "../../database/models/index.js#GithubAccountMember",
+          Test: "../../database/models/index.js#Test",
+          TestMetrics: "../../graphql/definitions/Test.js#TestMetrics",
           User: "../../database/models/index.js#Account",
         },
       },

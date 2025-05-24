@@ -1,39 +1,36 @@
-import { RepoIcon } from "@primer/octicons-react";
-import { useParams } from "react-router-dom";
+import { FolderCode } from "lucide-react";
+import { useMatch } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLink,
-  BreadcrumbSeparator,
 } from "@/ui/Breadcrumb";
 
 import { ProjectBreadcrumbMenu } from "./ProjectBreadcrumbMenu";
 
-export const ProjectBreadcrumbItem = () => {
-  const { accountSlug, projectName } = useParams();
-  const loggedIn = useIsLoggedIn();
+export function ProjectBreadcrumbItem(props: {
+  accountSlug: string;
+  projectName: string;
+}) {
+  const { accountSlug, projectName } = props;
 
-  if (!projectName) {
-    return null;
-  }
+  const loggedIn = useIsLoggedIn();
+  const isCurrent = useMatch("/:accountSlug/:projectName/:any?");
 
   return (
-    <>
-      <BreadcrumbSeparator />
-      <BreadcrumbItem>
-        <BreadcrumbLink
-          href={`${accountSlug}/${projectName}/builds`}
-          aria-current="page"
-        >
-          <BreadcrumbItemIcon>
-            <RepoIcon size={18} />
-          </BreadcrumbItemIcon>
-          {projectName}
-        </BreadcrumbLink>
-        {loggedIn && <ProjectBreadcrumbMenu />}
-      </BreadcrumbItem>
-    </>
+    <BreadcrumbItem>
+      <BreadcrumbLink
+        href={`${accountSlug}/${projectName}/builds`}
+        aria-current={isCurrent ? "page" : undefined}
+      >
+        <BreadcrumbItemIcon>
+          <FolderCode size={18} />
+        </BreadcrumbItemIcon>
+        {projectName}
+      </BreadcrumbLink>
+      {loggedIn && <ProjectBreadcrumbMenu />}
+    </BreadcrumbItem>
   );
-};
+}

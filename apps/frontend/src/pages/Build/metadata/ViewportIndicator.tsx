@@ -2,11 +2,10 @@ import { clsx } from "clsx";
 import { LaptopIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Chip, ChipLink, ChipLinkProps, ChipProps } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
-
-import { useBuildHotkey } from "../BuildHotkeys";
 
 type Viewport = {
   width: number;

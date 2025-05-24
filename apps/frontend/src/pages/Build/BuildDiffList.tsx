@@ -1,5 +1,4 @@
 import {
-  ComponentPropsWithRef,
   memo,
   useCallback,
   useEffect,
@@ -24,12 +23,6 @@ import {
   ThumbsUpIcon,
 } from "lucide-react";
 import {
-  AriaButtonProps,
-  HoverProps,
-  useButton,
-  useObjectRef,
-} from "react-aria";
-import {
   Button as RACButton,
   ButtonProps as RACButtonProps,
   Tooltip as RACTooltip,
@@ -37,25 +30,33 @@ import {
   TooltipTrigger,
 } from "react-aria-components";
 
+import {
+  getGroupLabel,
+  type DiffGroup,
+} from "@/containers/Build/BuildDiffGroup";
+import {
+  DiffCard,
+  DiffCardFooter,
+  DiffCardFooterText,
+  DiffImage,
+  getDiffDimensions,
+  ListItemButton,
+  type DiffCardProps,
+} from "@/containers/Build/BuildDiffListPrimitives";
+import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { getTooltipAnimationClassName } from "@/ui/Tooltip";
-import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
-import { useBuildDiffColorStyle } from "./BuildDiffColorState";
-import { getGroupLabel } from "./BuildDiffGroup";
 import {
   Diff,
-  DiffGroup,
   DiffResult,
   useBuildDiffState,
   useSearchModeState,
 } from "./BuildDiffState";
-import { useBuildHotkey } from "./BuildHotkeys";
 import {
   EvaluationStatus,
   useBuildDiffStatusState,
@@ -64,6 +65,13 @@ import {
   useWatchItemReview,
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
+
+const DIFF_IMAGE_CONFIG = {
+  maxWidth: 262,
+  maxHeight: 400,
+  defaultHeight: 300,
+  minHeight: 100,
+};
 
 interface ListHeaderRow {
   type: "header";
@@ -94,62 +102,53 @@ interface ListGroupItemRow {
 
 type ListRow = ListHeaderRow | ListItemRow | ListGroupItemRow;
 
-const createHeaderRow = ({
-  group,
-  expanded,
-  borderBottom,
-}: {
+function createHeaderRow(input: {
   group: DiffGroup;
   expanded: boolean;
   borderBottom: boolean;
-}): ListHeaderRow => ({
-  type: "header",
-  name: group.name,
-  count: group.diffs.length,
-  expanded,
-  borderBottom,
-  group,
-});
+}): ListHeaderRow {
+  return {
+    type: "header",
+    name: input.group.name,
+    count: input.group.diffs.length,
+    expanded: input.expanded,
+    borderBottom: input.borderBottom,
+    group: input.group,
+  };
+}
 
-const createListItemRow = ({
-  diff,
-  first,
-  last,
-  result,
-}: {
+function createListItemRow(input: {
   diff: Diff | null;
   first: boolean;
   last: boolean;
   result: DiffResult | null;
-}): ListItemRow => ({
-  type: "item",
-  diff,
-  first,
-  last,
-  result,
-});
+}): ListItemRow {
+  return {
+    type: "item",
+    diff: input.diff,
+    first: input.first,
+    last: input.last,
+    result: input.result,
+  };
+}
 
-const createGroupItemRow = ({
-  diff,
-  first,
-  last,
-  expanded,
-  result,
-}: {
+function createGroupItemRow(input: {
   diff: Diff;
   first: boolean;
   last: boolean;
   expanded: boolean;
   result: DiffResult | null;
-}): ListGroupItemRow => ({
-  type: "group-item",
-  diff,
-  first,
-  last,
-  result,
-  expanded,
-  group: [diff],
-});
+}): ListGroupItemRow {
+  return {
+    type: "group-item",
+    diff: input.diff,
+    first: input.first,
+    last: input.last,
+    result: input.result,
+    expanded: input.expanded,
+    group: [input.diff],
+  };
+}
 
 function getRows(
   groups: DiffGroup[],
@@ -221,17 +220,13 @@ function getRows(
   );
 }
 
-const ListHeader = ({
-  style,
-  onClick,
-  item,
-  activeIndex,
-}: {
+function ListHeader(props: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
   onClick: RACButtonProps["onPress"];
   item: ListHeaderRow;
   activeIndex: number;
-}) => {
+}) {
+  const { style, onClick, item, activeIndex } = props;
   const borderB = item.borderBottom ? "border-b border-b-border" : "";
   return (
     <RACButton
@@ -257,108 +252,14 @@ const ListHeader = ({
       </Badge>
     </RACButton>
   );
-};
-
-function getImgAttributes(
-  url: string,
-  dimensions?: { width: number; height: number },
-) {
-  return {
-    key: url,
-    src: url,
-    width: dimensions?.width,
-    height: dimensions?.height,
-    parameters: dimensions
-      ? [`w-${dimensions.width}`, `h-${dimensions.height}`, `c-at_max`, `dpr-2`]
-      : [],
-  };
 }
 
-const DiffImage = memo(({ diff }: { diff: Diff }) => {
-  const dimensions = getDiffDimensions(diff);
-
-  switch (diff.status) {
-    case "added":
-    case "unchanged":
-    case "failure":
-    case "retryFailure": {
-      const { key, ...attrs } = getImgAttributes(
-        diff.compareScreenshot!.url,
-        dimensions,
-      );
-      return (
-        <ImageKitPicture
-          key={key}
-          {...attrs}
-          className="max-h-full max-w-full object-contain"
-        />
-      );
-    }
-    case "removed": {
-      const { key, ...attrs } = getImgAttributes(
-        diff.baseScreenshot!.url,
-        dimensions,
-      );
-      return (
-        <ImageKitPicture
-          key={key}
-          {...attrs}
-          className="max-h-full max-w-full object-contain"
-        />
-      );
-    }
-    case "changed": {
-      const dimensions = getDiffDimensions(diff);
-      const { key: compareKey, ...compareAttrs } = getImgAttributes(
-        diff.compareScreenshot!.url,
-      );
-      const { key: diffKey, ...diffAttrs } = getImgAttributes(
-        diff.url!,
-        dimensions,
-      );
-      return (
-        <div className="flex h-full items-center justify-center">
-          <div
-            className="relative"
-            style={{ width: dimensions.width, height: dimensions.height }}
-          >
-            <ImageKitPicture
-              key={compareKey}
-              {...compareAttrs}
-              className="opacity-disabled absolute top-0 w-full"
-            />
-            <DiffPicture
-              key={diffKey}
-              {...diffAttrs}
-              className="relative z-10 max-h-full w-full"
-            />
-          </div>
-        </div>
-      );
-    }
-    default:
-      return null;
-  }
-});
-
-function DiffPicture(props: ImageKitPictureProps) {
-  const style = useBuildDiffColorStyle({ src: props.src });
-  return (
-    <span className="z-10" style={{ ...style, ...props.style }}>
-      <ImageKitPicture {...props} style={{ opacity: 0, display: "block" }} />
-    </span>
-  );
-}
-
-const CardStack = ({
-  isFirst,
-  isLast,
-  status,
-}: {
+function CardStack(props: {
   isFirst: boolean;
   isLast: boolean;
   status: EvaluationStatus | null;
-}) => {
+}) {
+  const { isFirst, isLast, status } = props;
   return (
     <div
       className={clsx(
@@ -372,7 +273,7 @@ const CardStack = ({
       tabIndex={-1}
     />
   );
-};
+}
 
 function ShowSubItemToggle(
   props: ButtonProps & {
@@ -422,62 +323,6 @@ function ShowSubItemToggle(
         {props.count} similar
       </Button>
     </HotkeyTooltip>
-  );
-}
-
-function DiffCard(props: {
-  active: boolean;
-  status: EvaluationStatus;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  const { active, status, children, className } = props;
-  const ring = (() => {
-    switch (status) {
-      case EvaluationStatus.Accepted:
-        return active
-          ? "ring-3 ring-inset ring-success-active"
-          : children
-            ? "ring-1 ring-inset ring-success group-hover/item:ring-success-hover"
-            : "";
-      case EvaluationStatus.Rejected:
-        return active
-          ? "ring-3 ring-inset ring-danger-active"
-          : children
-            ? "ring-1 ring-inset ring-danger group-hover/item:ring-danger-hover"
-            : "";
-      case EvaluationStatus.Pending:
-        return active
-          ? "ring-3 ring-inset ring-primary-active"
-          : children
-            ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
-            : "";
-      default:
-        assertNever(status);
-    }
-  })();
-
-  return (
-    <div
-      className={clsx(
-        "bg-app relative flex h-full items-center justify-center overflow-hidden rounded-lg",
-        className,
-      )}
-    >
-      {children}
-      <div
-        className={clsx(
-          "pointer-events-none absolute inset-0 z-20 rounded-lg",
-          ring,
-        )}
-      />
-      <div
-        className={clsx(
-          "pointer-events-none absolute inset-0 z-20 rounded-lg",
-          active && "ring-(--violet-12) ring-1 ring-inset",
-        )}
-      />
-    </div>
   );
 }
 
@@ -550,17 +395,7 @@ function useDelayedHover(props: {
   };
 }
 
-function ListItem({
-  style,
-  item,
-  index,
-  active,
-  setActiveDiff,
-  onToggleGroupItem,
-  observer,
-  isHovered,
-  onHoverChange,
-}: {
+function ListItem(props: {
   style: React.HTMLProps<HTMLButtonElement>["style"];
   item: ListItemRow | ListGroupItemRow;
   index: number;
@@ -571,6 +406,17 @@ function ListItem({
   isHovered: boolean;
   onHoverChange: (isHovered: boolean) => void;
 }) {
+  const {
+    style,
+    item,
+    index,
+    active,
+    setActiveDiff,
+    observer,
+    onToggleGroupItem,
+    isHovered,
+    onHoverChange,
+  } = props;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = ref.current;
@@ -603,29 +449,24 @@ function ListItem({
     <ListItemButton
       ref={ref}
       data-index={index}
-      className="group/item focus:outline-hidden relative size-full cursor-default text-left"
       onPress={() => {
         if (item.diff) {
           setActiveDiff(item.diff);
         }
       }}
       isDisabled={!item.diff}
+      className="size-full"
       {...hoverProps}
     >
-      <DiffCard active={active} status={status}>
+      <StatusDiffCard isActive={active} status={status}>
         {item.diff ? (
           <>
-            <DiffImage diff={item.diff} />
-            <div
-              className={clsx(
-                "bg-app absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 truncate px-2",
-                !searchMode && status === EvaluationStatus.Pending
-                  ? "opacity-0 transition-opacity group-focus-within/item:opacity-100 group-hover/sidebar:opacity-100"
-                  : null,
-              )}
+            <DiffImage diff={item.diff} config={DIFF_IMAGE_CONFIG} />
+            <DiffCardFooter
+              alwaysVisible={searchMode || status !== EvaluationStatus.Pending}
             >
               <EvaluationStatusIndicator status={status} />
-              <Truncable className="bg-app text-xxs flex-1 pb-1.5 pt-1 font-medium">
+              <DiffCardFooterText>
                 {item.result ? (
                   <>
                     {item.result.key.slice(
@@ -646,7 +487,7 @@ function ListItem({
                 ) : (
                   item.diff.name
                 )}
-              </Truncable>
+              </DiffCardFooterText>
               {isGroupItem && (
                 <div className="shrink-0 py-2">
                   <ShowSubItemToggle
@@ -662,10 +503,10 @@ function ListItem({
                   />
                 </div>
               )}
-            </div>
+            </DiffCardFooter>
           </>
         ) : null}
-      </DiffCard>
+      </StatusDiffCard>
     </ListItemButton>
   );
 
@@ -720,34 +561,36 @@ function DiffTooltip(props: {
       }
       style={{ zIndex: 900 }}
     >
-      <DiffCard active={false} status={props.status}>
-        <DiffImage diff={diff} />
-      </DiffCard>
+      <StatusDiffCard isActive={false} status={props.status}>
+        <DiffImage diff={diff} config={DIFF_IMAGE_CONFIG} />
+      </StatusDiffCard>
     </RACTooltip>
   );
 }
 
-function ListItemButton(
-  props: Pick<AriaButtonProps<"div">, "onPress" | "isDisabled"> &
-    Pick<HoverProps, "onHoverChange"> &
-    ComponentPropsWithRef<"div">,
+function StatusDiffCard(
+  props: Omit<DiffCardProps, "variant"> & {
+    status: EvaluationStatus;
+  },
 ) {
-  const { ref: propRef, onPress, isDisabled, ...rest } = props;
-  const ref = useObjectRef(propRef);
-  const { buttonProps } = useButton(
-    {
-      elementType: "div",
-      onPress,
-      isDisabled,
-    },
-    ref,
-  );
-  return <div ref={ref} {...rest} {...buttonProps} />;
+  const variant = (() => {
+    switch (props.status) {
+      case EvaluationStatus.Accepted:
+        return "success" as const;
+      case EvaluationStatus.Rejected:
+        return "danger" as const;
+      case EvaluationStatus.Pending:
+        return "primary" as const;
+      default:
+        assertNever(props.status);
+    }
+  })();
+  return <DiffCard {...props} variant={variant} />;
 }
 
-const useInViewportIndices = (
+function useInViewportIndices(
   containerRef: React.RefObject<HTMLElement | null>,
-) => {
+) {
   const [observer, setObserver] = useState<IntersectionObserver | null>(null);
   const inViewportIndices = useRef<Set<number>>(new Set());
 
@@ -781,54 +624,7 @@ const useInViewportIndices = (
   }, []);
 
   return { observer, getIndicesInViewport };
-};
-
-const MAX_HEIGHT = 400;
-const MIN_HEIGHT = 100;
-const MAX_WIDTH = 262;
-const DEFAULT_IMAGE_HEIGHT = 300;
-
-const constraint = ({ width, height }: { width: number; height: number }) => {
-  const wp = MAX_WIDTH / width;
-  const hp = MAX_HEIGHT / height;
-  const ratio = Math.min(wp, hp, 1);
-  return {
-    width: Math.round(width * ratio),
-    height: Math.round(height * ratio),
-  };
-};
-
-const getDiffDimensions = (diff: Diff | null) => {
-  if (diff && diff.width != null && diff.height != null) {
-    return constraint({ width: diff.width, height: diff.height });
-  }
-
-  if (
-    diff &&
-    diff.compareScreenshot &&
-    diff.compareScreenshot.width != null &&
-    diff.compareScreenshot.height != null
-  ) {
-    return constraint({
-      width: diff.compareScreenshot.width,
-      height: diff.compareScreenshot.height,
-    });
-  }
-
-  if (
-    diff &&
-    diff.baseScreenshot &&
-    diff.baseScreenshot.width != null &&
-    diff.baseScreenshot.height != null
-  ) {
-    return constraint({
-      width: diff.baseScreenshot.width,
-      height: diff.baseScreenshot.height,
-    });
-  }
-
-  return { height: DEFAULT_IMAGE_HEIGHT, width: MAX_WIDTH };
-};
+}
 
 const preloaded: string[] = [];
 const preloadImage = (src: string) => {
@@ -908,8 +704,8 @@ function getRowStyle(
       }
     }
 
-    const dimensions = getDiffDimensions(row.diff);
-    return Math.max(dimensions.height, MIN_HEIGHT);
+    const dimensions = getDiffDimensions(row.diff, DIFF_IMAGE_CONFIG);
+    return Math.max(dimensions.height, DIFF_IMAGE_CONFIG.minHeight);
   })();
 
   const gap = 12;

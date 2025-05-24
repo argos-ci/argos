@@ -399,7 +399,6 @@ export async function seed() {
         buildScreenshotDiffs[buildId]!.map((screenshotDiff) => {
           return {
             ...screenshotDiff,
-            stabilityScore: 100,
             buildId,
           };
         }),

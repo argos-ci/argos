@@ -52,7 +52,8 @@
     },
     "watch-server": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL"]
     },
     "//#watch-codegen": {
       "persistent": true,

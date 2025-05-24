@@ -29,6 +29,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   getChartColorFromIndex,
+  getTimeTicks,
 } from "@/ui/Charts";
 import { IconButton } from "@/ui/IconButton";
 import {
@@ -568,11 +569,11 @@ function EvolutionChart(props: {
   const ticks = useMemo(() => {
     switch (groupBy) {
       case TimeSeriesGroupBy.Day:
-        return getTicks(from, to, "day", 4);
+        return getTimeTicks(from, to, "day", 4);
       case TimeSeriesGroupBy.Week:
-        return getTicks(from, to, "week");
+        return getTimeTicks(from, to, "week");
       case TimeSeriesGroupBy.Month:
-        return getTicks(from, to, "month");
+        return getTimeTicks(from, to, "month");
     }
   }, [from, to, groupBy]);
   return (
@@ -668,21 +669,6 @@ function EvolutionChart(props: {
       </AreaChart>
     </ChartContainer>
   );
-}
-
-function getTicks(
-  from: Date,
-  to: Date,
-  unit: moment.unitOfTime.Base,
-  step = 1,
-) {
-  const ticks = [];
-  const current = moment(from).add(1, unit).startOf(unit);
-  while (current.isBefore(to)) {
-    ticks.push(current.toDate().getTime());
-    current.add(step, unit);
-  }
-  return ticks;
 }
 
 type Period = "last-7-days" | "last-30-days" | "last-90-days" | "last-365-days";

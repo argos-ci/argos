@@ -158,21 +158,18 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: null,
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
-        stabilityScore: null,
       });
       expect(addDiffWithoutFile).toMatchObject({
         buildId: build.id,
         baseScreenshotId: null,
         compareScreenshotId: newScreenshotWithoutFile!.id,
         jobStatus: "pending",
-        stabilityScore: null,
       });
       expect(updatedDiff).toMatchObject({
         buildId: build.id,
         baseScreenshotId: classicDiffBaseScreenshot!.id,
         compareScreenshotId: classicDiffCompareScreenshot!.id,
         jobStatus: "pending",
-        stabilityScore: null,
       });
       expect(removedDiff).toMatchObject({
         buildId: build.id,
@@ -187,7 +184,6 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: noFileBaseScreenshotCompare!.id,
         jobStatus: "pending",
         score: null,
-        stabilityScore: null,
       });
       expect(noFileCompareScreenshotDiff).toMatchObject({
         buildId: build.id,
@@ -195,14 +191,12 @@ describe("#createBuildDiffs", () => {
         compareScreenshotId: noFileCompareScreenshotCompare!.id,
         jobStatus: "pending",
         score: null,
-        stabilityScore: null,
       });
       expect(sameFileDiff).toMatchObject({
         buildId: build.id,
         baseScreenshotId: sameFileScreenshotBase!.id,
         compareScreenshotId: sameFileScreenshotCompare!.id,
         jobStatus: "complete",
-        stabilityScore: null,
       });
     });
 
@@ -270,14 +264,12 @@ describe("#createBuildDiffs", () => {
         baseScreenshotId: null,
         compareScreenshotId: newScreenshot!.id,
         jobStatus: "complete",
-        stabilityScore: null,
       });
       expect(diffs[1]).toMatchObject({
         buildId: build.id,
         baseScreenshotId: null,
         compareScreenshotId: newScreenshotWithoutFile!.id,
         jobStatus: "pending",
-        stabilityScore: null,
       });
     });
 

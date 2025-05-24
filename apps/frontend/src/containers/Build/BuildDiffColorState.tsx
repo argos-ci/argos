@@ -45,8 +45,8 @@ export function BuildDiffColorStateProvider(props: {
     "preferences.overlay.opacity",
     0.8,
   );
-  const value = useMemo(
-    (): DiffColorContextValue => ({ color, setColor, opacity, setOpacity }),
+  const value = useMemo<DiffColorContextValue>(
+    () => ({ color, setColor, opacity, setOpacity }),
     [color, setColor, opacity, setOpacity],
   );
   return <DiffColorContext value={value}>{props.children}</DiffColorContext>;

@@ -172,6 +172,7 @@ export async function createBuildDiffs(build: Build) {
         compareScreenshotId: null,
         jobStatus: "complete" as const,
         score: null,
+        testId: baseScreenshot.testId,
       })) ?? [];
 
   const allInserts = [...inserts, ...removedScreenshots];

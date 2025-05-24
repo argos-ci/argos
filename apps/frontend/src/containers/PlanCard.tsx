@@ -219,7 +219,12 @@ function ConsumptionBlock({
             / {includedScreenshots.toLocaleString()}
           </div>
         </div>
-        <Progress value={screenshotsSum} max={includedScreenshots} min={0} />
+        <Progress
+          value={screenshotsSum}
+          max={includedScreenshots}
+          min={0}
+          className="w-full"
+        />
       </div>
 
       {projects.length > 0 && (

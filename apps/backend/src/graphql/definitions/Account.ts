@@ -98,12 +98,6 @@ export const typeDefs = gql`
     builds: AccountBuildsMetrics!
   }
 
-  enum TimeSeriesGroupBy {
-    month
-    week
-    day
-  }
-
   input AccountMetricsInput {
     projectIds: [ID!]
     from: DateTime!
