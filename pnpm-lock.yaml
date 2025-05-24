@@ -13,6 +13,13 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@argos/util':
+        specifier: file:packages/util
+        version: link:packages/util
+      zod:
+        specifier: ^3.24.4
+        version: 3.24.4
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: ^1.12.16
@@ -56,6 +63,12 @@ importers:
       '@swc/core':
         specifier: ^1.11.24
         version: 1.11.24(@swc/helpers@0.5.17)
+      '@tsconfig/node20':
+        specifier: ^20.1.5
+        version: 20.1.5
+      '@tsconfig/strictest':
+        specifier: ^2.0.5
+        version: 2.0.5
       '@types/express':
         specifier: ^5.0.1
         version: 5.0.1

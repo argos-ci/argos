@@ -45,6 +45,8 @@
     "@playwright/test": "^1.52.0",
     "@swc/cli": "^0.7.7",
     "@swc/core": "^1.11.24",
+    "@tsconfig/node20": "^20.1.5",
+    "@tsconfig/strictest": "^2.0.5",
     "@types/express": "^5.0.1",
     "@types/express-serve-static-core": "^5.0.6",
     "@types/node": "^22.15.18",
@@ -78,5 +80,9 @@
       "@types/express-serve-static-core": "$@types/express-serve-static-core",
       "undici": "$undici"
     }
+  },
+  "dependencies": {
+    "@argos/util": "file:packages/util",
+    "zod": "^3.24.4"
   }
 }

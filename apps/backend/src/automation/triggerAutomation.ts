@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import type { Transaction } from "objection";
+import { z } from "zod";
 
 import {
   AutomationActionRun,
@@ -16,6 +17,7 @@ import {
   BuildTypeCondition,
 } from "./types/conditions";
 import { AutomationEvent, AutomationEventPayloadMap } from "./types/events";
+import { actionRegistry, ActionPayloadSchema } from "./actionRegistry"; // Import actionRegistry and ActionPayloadSchema
 
 function getBuildFromPayload(
   event: AutomationEvent,
@@ -28,7 +30,8 @@ function getBuildFromPayload(
       return payload as AutomationEventPayloadMap[AutomationEvent.BuildCompleted];
     default:
       logger.error(
-        `[AutomationEngine] Unhandled event type for getBuildFromPayload: ${event}`,
+        `[AutomationEngine] Unhandled event type for getBuildFromPayload`,
+        { eventType: event },
       );
       return null;
   }
@@ -46,7 +49,7 @@ function checkBuildTypeCondition(
   if (!build) {
     logger.error(
       `[AutomationEngine] Build not found in payload for BuildTypeCondition`,
-      { condition, event },
+      { condition, eventType: event },
     );
     return false;
   }
@@ -65,7 +68,7 @@ function checkBuildConclusionCondition(
   if (!build) {
     logger.error(
       `[AutomationEngine] Build not found in payload for BuildConclusionCondition`,
-      { condition, event },
+      { condition, eventType: event },
     );
     return false;
   }
@@ -95,7 +98,7 @@ function evaluateCondition(
       payload,
     );
   }
-  logger.error(`[AutomationEngine] Unknown condition structure`, { condition });
+  logger.error(`[AutomationEngine] Unknown condition structure`, { condition, eventType: event });
   return false;
 }
 
@@ -106,20 +109,22 @@ function evaluateAllCondition(
   allCondition: AllCondition,
   event: AutomationEvent,
   payload: AutomationEventPayloadMap[AutomationEvent],
+  ruleContext: Record<string, any>,
 ): boolean {
   if (!allCondition.all || allCondition.all.length === 0) {
-    logger.info(
+    logger.debug(
       `[AutomationEngine] No conditions in 'all', evaluating to true.`,
+      ruleContext,
     );
     return true;
   }
   for (const condition of allCondition.all) {
     if (!evaluateCondition(condition, event, payload)) {
-      logger.info(`[AutomationEngine] Condition failed`, { condition });
+      logger.debug(`[AutomationEngine] Condition failed`, { ...ruleContext, condition });
       return false;
     }
   }
-  logger.info(`[AutomationEngine] All conditions passed.`);
+  logger.debug(`[AutomationEngine] All conditions passed.`, ruleContext);
   return true;
 }
 
@@ -139,13 +144,14 @@ export async function triggerAutomation<Event extends AutomationEvent>(
       .whereRaw(`"on" @> ?::jsonb`, [JSON.stringify([event])]);
 
     for (const rule of rules) {
-      const conditionsMet = evaluateAllCondition(rule.if, event, payload);
+      const ruleContext = { projectId, automationRuleId: rule.id, eventType: event };
+      const conditionsMet = evaluateAllCondition(rule.if, event, payload, ruleContext);
+      // METRIC: automation_rules_evaluated_total, { projectId, eventType: event, ruleId: rule.id, conditionsMet }
 
       if (conditionsMet) {
-        logger.info(`[AutomationEngine] Conditions met for rule: ${rule.id}`);
+        logger.info(`[AutomationEngine] Conditions met for rule`, ruleContext);
 
         let buildId: string | null = null;
-
         const associatedBuild = getBuildFromPayload(event, payload);
         if (associatedBuild) {
           buildId = associatedBuild.id;
@@ -156,57 +162,59 @@ export async function triggerAutomation<Event extends AutomationEvent>(
           event: event,
           buildId: buildId,
         });
+        // METRIC: automation_runs_created_total, { projectId, eventType: event, ruleId: rule.id }
         logger.info(
-          `[AutomationEngine] Created AutomationRun: ${automationRun.id} for rule: ${rule.id}`,
+          `[AutomationEngine] Created AutomationRun`,
+          { ...ruleContext, automationRunId: automationRun.id },
         );
 
-        for (const actionDefinition of rule.then) {
-          let finalActionPayload;
+        for (const ruleAction of rule.then) {
+          const actionContext = { ...ruleContext, actionType: ruleAction.type };
+          const registeredAction = actionRegistry.get(ruleAction.type);
 
-          switch (actionDefinition.type) {
-            case "send_slack_message": {
-              const ruleActionPayload = actionDefinition.payload;
-              finalActionPayload = {
-                channelId: ruleActionPayload.channelId,
-              };
-              break;
-            }
-
-            default: {
-              logger.info(
-                `[AutomationEngine] Unknown action type: ${actionDefinition.type}`,
-                { actionDefinition },
-              );
-              finalActionPayload = actionDefinition.payload;
-            }
+          if (!registeredAction) {
+            logger.warn(
+              `[AutomationEngine] Action type is not registered. Skipping action.`,
+              actionContext,
+            );
+            continue;
           }
 
-          const ActionRun = await AutomationActionRun.query(trx).insertAndFetch(
-            {
-              jobStatus: "pending",
-              conclusion: null,
-              failureReason: null,
-              automationRunId: automationRun.id,
-              action: actionDefinition.type,
-              actionPayload: finalActionPayload,
-              processedAt: null,
-              attempts: 0,
-              completedAt: null,
-            },
-          );
+          let validatedPayload;
+          try {
+            validatedPayload = registeredAction.payloadSchema.parse(ruleAction.payload);
+          } catch (validationError) {
+            logger.warn(
+              `[AutomationEngine] Payload validation failed. Skipping action.`,
+              { ...actionContext, error: validationError, originalPayload: ruleAction.payload },
+            );
+            continue;
+          }
+
+          const newActionRun = await AutomationActionRun.query(trx).insertAndFetch({
+            jobStatus: "pending",
+            conclusion: null,
+            failureReason: null,
+            automationRunId: automationRun.id,
+            action: ruleAction.type,
+            actionPayload: validatedPayload,
+            processedAt: null,
+            attempts: 0,
+            completedAt: null,
+          });
+          // METRIC: automation_action_runs_created_total, { projectId, eventType: event, ruleId: rule.id, actionType: ruleAction.type }
           logger.info(
-            `[AutomationEngine] Created ActionRun: ${ActionRun.id} for AutomationRun: ${automationRun.id} with action type ${actionDefinition.type}`,
+            `[AutomationEngine] Created AutomationActionRun`,
+            { ...actionContext, automationActionRunId: newActionRun.id, automationRunId: automationRun.id },
           );
         }
       }
     }
   } catch (error) {
-    console.log(error);
-    logger.error("[AutomationEngine] Error in triggerAutomation:", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+    logger.error("[AutomationEngine] Error in triggerAutomation", {
+      error, // Keep the original error object for Sentry
       projectId,
-      event,
+      eventType: event,
     });
   }
 }
