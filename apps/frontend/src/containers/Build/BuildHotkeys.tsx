@@ -1,7 +1,9 @@
 import { memo, useEffect } from "react";
 import clsx from "clsx";
+import { XIcon } from "lucide-react";
 
 import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
+import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
 
@@ -325,6 +327,13 @@ const BuildHotkeysDialogWithState = memo(
         <Dialog>
           <DialogBody>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <IconButton
+              slot="close"
+              aria-label="Close"
+              className="absolute right-3 top-3 z-10"
+            >
+              <XIcon />
+            </IconButton>
             <div
               className={clsx(
                 "gap-12 space-y-6 md:columns-2",
