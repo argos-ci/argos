@@ -15,6 +15,7 @@
       "ScreenshotDiffConnection",
       "TeamGithubMemberConnection",
       "TeamMemberConnection",
+      "TestChangesConnection",
       "UserConnection"
     ],
     "Node": [
@@ -43,6 +44,8 @@
       "Team",
       "TeamGithubMember",
       "TeamMember",
+      "Test",
+      "TestChange",
       "User"
     ],
     "PullRequest": [

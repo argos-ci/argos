@@ -181,7 +181,8 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   element: <Navigate to=".." replace={true} />,
                 },
                 {
-                  path: "test/:testId",
+                  id: "test",
+                  path: "tests/:testId",
                   HydrateFallback,
                   lazy: () => import("./pages/Test"),
                 },

@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
-import { RepoIcon } from "@primer/octicons-react";
-import { PlusCircleIcon } from "lucide-react";
+import { FolderCodeIcon, PlusCircleIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
 import { useParams } from "react-router-dom";
 
@@ -54,7 +53,7 @@ function Projects(props: { accountSlug: string }) {
             href={`${props.accountSlug}/${projectName}`}
           >
             <MenuItemIcon>
-              <RepoIcon size={18} />
+              <FolderCodeIcon size={18} />
             </MenuItemIcon>
             {projectName}
           </MenuItem>

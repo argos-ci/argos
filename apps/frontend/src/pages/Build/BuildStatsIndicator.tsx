@@ -3,19 +3,21 @@ import { assertNever } from "@argos/util/assertNever";
 import { clsx } from "clsx";
 import { Button as RACButton } from "react-aria-components";
 
+import {
+  DIFF_GROUPS,
+  getGroupColor,
+  getGroupIcon,
+  getGroupLabel,
+  type DiffGroupName,
+} from "@/containers/Build/BuildDiffGroup";
+import {
+  useBuildHotkey,
+  type HotkeyName,
+} from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
-
-import {
-  getGroupColor,
-  getGroupIcon,
-  getGroupLabel,
-  GROUPS,
-} from "./BuildDiffGroup";
-import type { DiffGroup } from "./BuildDiffState";
-import { HotkeyName, useBuildHotkey } from "./BuildHotkeys";
 
 type StatCountColor = "danger" | "warning" | "success" | "neutral";
 
@@ -45,7 +47,7 @@ const getStatCountColorClassName = (
   }
 };
 
-const getStatHotkeyName = (group: DiffGroup["name"]): HotkeyName => {
+const getStatHotkeyName = (group: DiffGroupName): HotkeyName => {
   switch (group) {
     case ScreenshotDiffStatus.Failure:
       return "goToFirstFailure";
@@ -144,13 +146,13 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
   tooltip = true,
 }: {
   stats: DocumentType<typeof _BuildStatsFragment>;
-  onClickGroup?: (group: DiffGroup["name"]) => void;
+  onClickGroup?: (group: DiffGroupName) => void;
   className?: string;
   tooltip?: boolean;
 }) {
   return (
     <div className={clsx(className, "flex items-center")}>
-      {GROUPS.map((group) => {
+      {DIFF_GROUPS.map((group) => {
         const count = stats[group];
         if (!onClickGroup) {
           if (count === 0) {

@@ -26,7 +26,7 @@ import {
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
 
-import { useProjectContext } from ".";
+import { useProjectOutletContext } from "./ProjectOutletContext";
 
 const ProjectQuery = graphql(`
   query ProjectSettings_project($accountSlug: String!, $projectName: String!) {
@@ -59,7 +59,7 @@ const ProjectQuery = graphql(`
 /** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
-  const { permissions } = useProjectContext();
+  const { permissions } = useProjectOutletContext();
 
   if (!accountSlug || !projectName) {
     return <NotFound />;
@@ -104,7 +104,7 @@ export function Component() {
 }
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
-  const { permissions } = useProjectContext();
+  const { permissions } = useProjectOutletContext();
   const {
     data: { account, project },
   } = useSuspenseQuery(ProjectQuery, {

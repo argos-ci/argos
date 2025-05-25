@@ -1,15 +1,24 @@
 import { memo, useEffect } from "react";
+import clsx from "clsx";
+import { XIcon } from "lucide-react";
 
 import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
+import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
 
-import { HotkeysDialogState } from "./BuildHotkeysDialogState";
+import {
+  HotkeysDialogState,
+  useBuildHotkeysDialogState,
+} from "./BuildHotkeysDialogState";
+
+type HotkeyEnv = "test" | "build";
 
 export type Hotkey = {
   keys: string[];
   displayKeys: string[];
   description: string;
+  envs: Array<HotkeyEnv>;
 };
 
 type HotkeyGroup = {
@@ -21,62 +30,96 @@ const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
 const hotkeyGroups = [
   {
+    name: "General",
+    hotkeys: {
+      toggleHotkeysDialog: {
+        keys: ["?"],
+        displayKeys: ["?"],
+        description: "Open this dialog",
+        envs: ["test", "build"],
+      },
+      enterSearchMode: {
+        keys: ["⌘", "KeyF"],
+        displayKeys: ["⌘", "F"],
+        description: "Find screenshot",
+        envs: ["build"],
+      },
+      leaveSearchMode: {
+        keys: ["Escape"],
+        displayKeys: ["Esc"],
+        description: "Exit search",
+        envs: ["build"],
+      },
+    },
+  },
+  {
     name: "Navigation",
     hotkeys: {
       goToPreviousDiff: {
         keys: ["ArrowUp"],
         displayKeys: ["↑"],
         description: "Go to previous screenshot",
+        envs: ["test", "build"],
       },
       goToNextDiff: {
         keys: ["ArrowDown"],
         displayKeys: ["↓"],
         description: "Go to next screenshot",
+        envs: ["test", "build"],
       },
       toggleDiffGroup: {
         keys: ["KeyG"],
         displayKeys: ["G"],
         description: "Toggle group",
+        envs: ["build"],
       },
       goToFirstFailure: {
         keys: ["Digit1"],
         displayKeys: ["1"],
         description: "Go to first failure screenshot",
+        envs: ["build"],
       },
       goToFirstChanged: {
         keys: ["Digit2"],
         displayKeys: ["2"],
         description: "Go to first changed screenshot",
+        envs: ["build"],
       },
       goToFirstAdded: {
         keys: ["Digit3"],
         displayKeys: ["3"],
         description: "Go to first added screenshot",
+        envs: ["build"],
       },
       goToFirstRemoved: {
         keys: ["Digit4"],
         displayKeys: ["4"],
         description: "Go to first removed screenshot",
+        envs: ["build"],
       },
       goToFirstUnchanged: {
         keys: ["Digit5"],
         displayKeys: ["5"],
         description: "Go to first unchanged screenshot",
+        envs: ["build"],
       },
       goToFirstRetryFailure: {
         keys: ["Digit6"],
         displayKeys: ["6"],
         description: "Go to first retried failure screenshot",
+        envs: ["build"],
       },
       switchViewport: {
         keys: ["KeyV"],
         displayKeys: ["V"],
         description: "Switch viewport",
+        envs: ["build"],
       },
       switchBrowser: {
         keys: ["KeyB"],
         displayKeys: ["B"],
         description: "Switch browser",
+        envs: ["build"],
       },
     },
   },
@@ -87,46 +130,55 @@ const hotkeyGroups = [
         keys: ["KeyD"],
         displayKeys: ["D"],
         description: "Toggle changes overlay",
+        envs: ["test", "build"],
       },
       highlightChanges: {
         keys: ["KeyH"],
         displayKeys: ["H"],
         description: "Highlight changes",
+        envs: ["test", "build"],
       },
       goToNextChanges: {
         keys: ["KeyK"],
         displayKeys: ["K"],
         description: "Go to next changes",
+        envs: ["test", "build"],
       },
       goToPreviousChanges: {
         keys: ["KeyJ"],
         displayKeys: ["J"],
         description: "Go to previous changes",
+        envs: ["test", "build"],
       },
       showBaseline: {
         keys: ["ArrowLeft"],
         displayKeys: ["←"],
         description: "Show only baseline",
+        envs: ["test", "build"],
       },
       showChanges: {
         keys: ["ArrowRight"],
         displayKeys: ["→"],
         description: "Show only changes",
+        envs: ["test", "build"],
       },
       toggleSplitView: {
         keys: ["KeyS"],
         displayKeys: ["S"],
         description: "Toggle side by side mode",
+        envs: ["test", "build"],
       },
       toggleDiffFit: {
         keys: ["Space"],
         displayKeys: ["Space"],
         description: "Toggle fit to screen",
+        envs: ["test", "build"],
       },
       fitView: {
         keys: ["Digit0"],
         displayKeys: ["0"],
         description: "Fit view into screen",
+        envs: ["test", "build"],
       },
     },
   },
@@ -137,31 +189,13 @@ const hotkeyGroups = [
         keys: ["KeyY"],
         displayKeys: ["Y"],
         description: "Mark individual change as accepted",
+        envs: ["build"],
       },
       rejectDiff: {
         keys: ["KeyN"],
         displayKeys: ["N"],
         description: "Mark individual change as rejected",
-      },
-    },
-  },
-  {
-    name: "General",
-    hotkeys: {
-      toggleHotkeysDialog: {
-        keys: ["?"],
-        displayKeys: ["?"],
-        description: "Open this dialog",
-      },
-      enterSearchMode: {
-        keys: ["⌘", "KeyF"],
-        displayKeys: ["⌘", "F"],
-        description: "Find screenshot",
-      },
-      leaveSearchMode: {
-        keys: ["Escape"],
-        displayKeys: ["Esc"],
-        description: "Exit search",
+        envs: ["build"],
       },
     },
   },
@@ -275,45 +309,64 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const BuildHotkeysDialog = memo(
-  (props: { state: HotkeysDialogState }) => {
+export function BuildHotkeysDialog(props: { env: HotkeyEnv }) {
+  const state = useBuildHotkeysDialogState();
+  return state ? (
+    <BuildHotkeysDialogWithState state={state} {...props} />
+  ) : null;
+}
+
+const BuildHotkeysDialogWithState = memo(
+  (props: { state: HotkeysDialogState; env: HotkeyEnv }) => {
+    const { env, state } = props;
     useBuildHotkey("toggleHotkeysDialog", () =>
-      props.state.setIsOpen((value) => !value),
+      state.setIsOpen((value) => !value),
     );
     return (
-      <Modal
-        isOpen={props.state.isOpen}
-        onOpenChange={props.state.setIsOpen}
-        isDismissable
-      >
+      <Modal isOpen={state.isOpen} onOpenChange={state.setIsOpen} isDismissable>
         <Dialog>
           <DialogBody>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <IconButton
+              slot="close"
+              aria-label="Close"
+              className="absolute right-3 top-3 z-10"
+            >
+              <XIcon />
+            </IconButton>
             <div
-              className="gap-12 space-y-6 md:max-h-[500px] md:columns-2"
+              className={clsx(
+                "gap-12 space-y-6 md:columns-2",
+                { test: "md:max-h-[20rem]", build: "md:max-h-[32rem]" }[env],
+              )}
               style={{ columnFill: "auto" }}
             >
               {plainHotkeyGroups.map((group, index) => {
+                const entries = Object.entries(group.hotkeys).filter(
+                  ([, hotKey]) =>
+                    hotKey.description && hotKey.envs.includes(env),
+                );
+                if (entries.length === 0) {
+                  return null;
+                }
                 return (
                   <div key={index} className="break-inside-avoid-column">
                     <h3 className="mb-2 text-sm font-medium">{group.name}</h3>
                     <div className="flex flex-col gap-2">
-                      {Object.entries(group.hotkeys)
-                        .filter(([, hotKey]) => hotKey.description)
-                        .map(([name, hotKey]) => {
-                          return (
-                            <div key={name} className="flex items-center gap-2">
-                              <div className="w-72 text-sm">
-                                {hotKey.description}
-                              </div>
-                              <div className="flex flex-1 justify-end gap-2">
-                                {hotKey.displayKeys.map((key) => (
-                                  <Kbd key={key}>{key}</Kbd>
-                                ))}
-                              </div>
+                      {entries.map(([name, hotKey]) => {
+                        return (
+                          <div key={name} className="flex items-center gap-2">
+                            <div className="w-72 text-sm">
+                              {hotKey.description}
                             </div>
-                          );
-                        })}
+                            <div className="flex flex-1 justify-end gap-2">
+                              {hotKey.displayKeys.map((key) => (
+                                <Kbd key={key}>{key}</Kbd>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );

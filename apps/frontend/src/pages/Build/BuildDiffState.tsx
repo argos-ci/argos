@@ -16,11 +16,11 @@ import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
+import { DIFF_GROUPS, type DiffGroup } from "@/containers/Build/BuildDiffGroup";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import { GROUPS } from "./BuildDiffGroup";
 import type { BuildParams } from "./BuildParams";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -35,6 +35,9 @@ const ScreenshotDiffFragment = graphql(`
     height
     group
     threshold
+    test {
+      id
+    }
     baseScreenshot {
       id
       url
@@ -118,28 +121,18 @@ const ScreenshotDiffFragment = graphql(`
       }
       playwrightTraceUrl
     }
+    ...BuildDiffDetail_ScreenshotDiff
   }
 `);
 
 export type Diff = ResultOf<typeof ScreenshotDiffFragment>;
-
-export interface DiffGroup {
-  name:
-    | ScreenshotDiffStatus.Failure
-    | ScreenshotDiffStatus.Changed
-    | ScreenshotDiffStatus.Added
-    | ScreenshotDiffStatus.Removed
-    | ScreenshotDiffStatus.Unchanged
-    | ScreenshotDiffStatus.RetryFailure;
-  diffs: (Diff | null)[];
-}
 
 function createDiffs(count: number): null[] {
   return Array.from({ length: count }, () => null);
 }
 
 function getGroupsFromStats(stats: NonNullable<BuildStats>): DiffGroup[] {
-  return GROUPS.map((group) => ({
+  return DIFF_GROUPS.map((group) => ({
     name: group,
     diffs: createDiffs(stats[group]),
   }));
@@ -413,8 +406,8 @@ function hydrateGroups(groups: DiffGroup[], screenshotDiffs: Diff[]) {
 
 function checkIsGroupDiffStatus(
   value: unknown,
-): value is (typeof GROUPS)[number] {
-  return GROUPS.includes(value as (typeof GROUPS)[number]);
+): value is (typeof DIFF_GROUPS)[number] {
+  return DIFF_GROUPS.includes(value as (typeof DIFF_GROUPS)[number]);
 }
 
 function groupDiffs(diffs: Diff[]): DiffGroup[] {

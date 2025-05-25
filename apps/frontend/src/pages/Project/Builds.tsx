@@ -29,7 +29,6 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 
-import { useProjectContext } from ".";
 import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
 import { NotFound } from "../NotFound";
 import { BuildNameFilter, useBuildNameFilterState } from "./BuildNameFilter";
@@ -39,6 +38,7 @@ import {
 } from "./BuildStatusFilter";
 import { BuildTypeFilter, useBuildTypeFilterState } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
+import { useProjectOutletContext } from "./ProjectOutletContext";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -297,8 +297,8 @@ const BuildsList = ({
   );
 };
 
-const PageContent = (props: { accountSlug: string; projectName: string }) => {
-  const { permissions } = useProjectContext();
+function PageContent(props: { accountSlug: string; projectName: string }) {
+  const { permissions } = useProjectOutletContext();
   const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
   const [, setSearchParams] = useSearchParams();
   const clearFilters = () => {
@@ -458,7 +458,7 @@ const PageContent = (props: { accountSlug: string; projectName: string }) => {
       </div>
     </PageContainer>
   );
-};
+}
 
 /** @route */
 export function Component() {

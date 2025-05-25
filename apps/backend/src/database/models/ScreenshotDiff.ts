@@ -26,7 +26,6 @@ export class ScreenshotDiff extends Model {
       s3Id: { type: ["string", "null"] },
       fileId: { type: ["string", "null"] },
       score: { type: ["number", "null"], minimum: 0, maximum: 1 },
-      stabilityScore: { type: ["number", "null"], minimum: 0, maximum: 100 },
       testId: { type: ["string", "null"] },
       group: { type: ["string", "null"] },
     },
@@ -38,7 +37,6 @@ export class ScreenshotDiff extends Model {
   s3Id!: string | null;
   fileId!: string | null;
   score!: number | null;
-  stabilityScore!: number | null;
   jobStatus!: JobStatus;
   testId!: string | null;
   group!: string | null;

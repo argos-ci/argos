@@ -10,9 +10,9 @@ import {
 
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 
-import type { DiffGroup } from "./BuildDiffState";
+import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 
-export const GROUPS = [
+export const DIFF_GROUPS = [
   ScreenshotDiffStatus.Failure,
   ScreenshotDiffStatus.Changed,
   ScreenshotDiffStatus.Added,
@@ -21,7 +21,14 @@ export const GROUPS = [
   ScreenshotDiffStatus.RetryFailure,
 ] as const;
 
-export const getGroupColor = (name: DiffGroup["name"]) => {
+export type DiffGroupName = (typeof DIFF_GROUPS)[number];
+
+export interface DiffGroup {
+  name: DiffGroupName;
+  diffs: (BuildDiffDetailDocument | null)[];
+}
+
+export const getGroupColor = (name: DiffGroupName) => {
   switch (name) {
     case ScreenshotDiffStatus.Failure:
       return "danger" as const;
@@ -38,7 +45,7 @@ export const getGroupColor = (name: DiffGroup["name"]) => {
   }
 };
 
-export const getGroupLabel = (name: DiffGroup["name"]) => {
+export const getGroupLabel = (name: DiffGroupName) => {
   switch (name) {
     case ScreenshotDiffStatus.Failure:
       return "End-to-end test failures";
@@ -57,7 +64,7 @@ export const getGroupLabel = (name: DiffGroup["name"]) => {
   }
 };
 
-export const getGroupIcon = (name: DiffGroup["name"]) => {
+export const getGroupIcon = (name: DiffGroupName) => {
   switch (name) {
     case ScreenshotDiffStatus.Added:
       return <PlusCircleIcon />;

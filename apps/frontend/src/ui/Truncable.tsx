@@ -5,9 +5,10 @@ import { useObjectRef } from "react-aria";
 
 import { Tooltip } from "./Tooltip";
 
-type TruncableProps = Omit<React.ComponentPropsWithRef<"div">, "children"> & {
+export interface TruncableProps
+  extends Omit<React.ComponentPropsWithRef<"div">, "children"> {
   children: React.ReactNode;
-};
+}
 
 export function Truncable({ ref: propRef, children, ...rest }: TruncableProps) {
   const ref = useObjectRef(propRef);

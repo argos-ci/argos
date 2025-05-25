@@ -223,6 +223,7 @@ function createBuildUniqueReviewsLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
+  Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),

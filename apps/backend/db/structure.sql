@@ -1113,7 +1113,6 @@ CREATE TABLE public.screenshot_diffs (
     "updatedAt" timestamp with time zone NOT NULL,
     "s3Id" character varying(255),
     "fileId" bigint,
-    "stabilityScore" integer,
     "testId" bigint,
     "group" character varying(255)
 );
@@ -3065,3 +3064,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250113180732_clean-additional-screenshot-price.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250202084159_cleanup-test-table.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250505143128_proxy-github.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250524183823_clean-stability-store.js', 1, NOW());

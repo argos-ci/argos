@@ -1,16 +1,13 @@
 import { useEffect } from "react";
 
 import { useSafeQuery } from "@/containers/Apollo";
+import { BuildDiffColorStateProvider } from "@/containers/Build/BuildDiffColorState";
 import { PaymentBanner } from "@/containers/PaymentBanner";
+import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 
-import { BuildContextProvider } from "./BuildContext";
-import { BuildDiffColorStateProvider } from "./BuildDiffColorState";
-import { BuildDiffHighlighterProvider } from "./BuildDiffHighlighterContext";
 import { BuildDiffProvider } from "./BuildDiffState";
-import { BuildHotkeysDialog } from "./BuildHotkeys";
-import { useBuildHotkeysDialogState } from "./BuildHotkeysDialogState";
 import { BuildNotFound } from "./BuildNotFound";
 import type { BuildParams } from "./BuildParams";
 import { BuildReviewDialogProvider } from "./BuildReviewDialog";
@@ -63,7 +60,6 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
       (build.status === BuildStatus.Pending ||
         build.status === BuildStatus.Progress),
   );
-  const hotkeysDialog = useBuildHotkeysDialogState();
 
   useEffect(() => {
     if (buildStatusProgress) {
@@ -81,46 +77,43 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   }
 
   return (
-    <BuildContextProvider permissions={data?.project?.permissions ?? null}>
+    <ProjectPermissionsContext value={data?.project?.permissions ?? null}>
       <BuildDiffProvider params={params} build={build}>
         <BuildDiffColorStateProvider>
-          <BuildDiffHighlighterProvider>
-            <BuildReviewStateProvider
-              params={params}
-              buildStatus={data?.project?.build?.status ?? null}
-            >
-              <BuildReviewDialogProvider project={data?.project ?? null}>
-                {hotkeysDialog && <BuildHotkeysDialog state={hotkeysDialog} />}
-                <div className="flex h-screen min-h-0 flex-col">
-                  {data?.project?.account && (
-                    <>
-                      <PaymentBanner account={data.project.account} />
-                      <OvercapacityBanner
-                        account={data.project.account}
-                        accountSlug={params.accountSlug}
-                      />
-                    </>
-                  )}
-                  <BuildHeader
-                    buildNumber={params.buildNumber}
-                    accountSlug={params.accountSlug}
-                    projectName={params.projectName}
-                    build={build}
-                    project={data?.project ?? null}
-                  />
-                  {project && build ? (
-                    <BuildWorkspace
-                      params={params}
-                      build={build}
-                      project={project}
+          <BuildReviewStateProvider
+            params={params}
+            buildStatus={data?.project?.build?.status ?? null}
+          >
+            <BuildReviewDialogProvider project={data?.project ?? null}>
+              <div className="flex h-screen min-h-0 flex-col">
+                {data?.project?.account && (
+                  <>
+                    <PaymentBanner account={data.project.account} />
+                    <OvercapacityBanner
+                      account={data.project.account}
+                      accountSlug={params.accountSlug}
                     />
-                  ) : null}
-                </div>
-              </BuildReviewDialogProvider>
-            </BuildReviewStateProvider>
-          </BuildDiffHighlighterProvider>
+                  </>
+                )}
+                <BuildHeader
+                  buildNumber={params.buildNumber}
+                  accountSlug={params.accountSlug}
+                  projectName={params.projectName}
+                  build={build}
+                  project={data?.project ?? null}
+                />
+                {project && build ? (
+                  <BuildWorkspace
+                    params={params}
+                    build={build}
+                    project={project}
+                  />
+                ) : null}
+              </div>
+            </BuildReviewDialogProvider>
+          </BuildReviewStateProvider>
         </BuildDiffColorStateProvider>
       </BuildDiffProvider>
-    </BuildContextProvider>
+    </ProjectPermissionsContext>
   );
 };

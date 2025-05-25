@@ -26,6 +26,7 @@ export const typeDefs = gql`
   type ScreenshotDiff implements Node {
     id: ID!
     createdAt: DateTime!
+    build: Build!
     baseScreenshot: Screenshot
     compareScreenshot: Screenshot
     url: String
@@ -38,6 +39,7 @@ export const typeDefs = gql`
     status: ScreenshotDiffStatus!
     group: String
     threshold: Float
+    test: Test
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -80,6 +82,11 @@ const statusResolver: IScreenshotDiffResolvers["status"] = async (
 
 export const resolvers: IResolvers = {
   ScreenshotDiff: {
+    build: async (screenshotDiff, _args, ctx) => {
+      const build = await ctx.loaders.Build.load(screenshotDiff.buildId);
+      invariant(build, "Build not found");
+      return build;
+    },
     baseScreenshot: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.baseScreenshotId) {
         return null;
@@ -133,6 +140,14 @@ export const resolvers: IResolvers = {
         screenshotDiff.compareScreenshotId,
       );
       return compareScreenshot?.threshold ?? null;
+    },
+    test: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.testId) {
+        return null;
+      }
+      const test = await ctx.loaders.Test.load(screenshotDiff.testId);
+      invariant(test, "Test not found");
+      return test;
     },
   },
 };

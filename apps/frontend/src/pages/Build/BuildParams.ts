@@ -1,17 +1,21 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
-export interface BuildParams {
-  accountSlug: string;
-  projectName: string;
+import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
+
+export interface BuildParams extends ProjectParams {
   buildNumber: number;
   diffId: string | null;
 }
 
-export const useBuildParams = (): BuildParams | null => {
-  const { accountSlug, projectName, buildNumber, diffId } = useParams();
+/**
+ * Returns parameters for a build page.
+ */
+export function useBuildParams(): BuildParams | null {
+  const { buildNumber, diffId } = useParams();
+  const projectParams = useProjectParams();
   const params = useMemo(() => {
-    if (!accountSlug || !projectName || !buildNumber) {
+    if (!projectParams || !buildNumber) {
       return null;
     }
     const numBuildNumber = Number(buildNumber);
@@ -26,11 +30,10 @@ export const useBuildParams = (): BuildParams | null => {
       return null;
     }
     return {
-      accountSlug,
-      projectName,
+      ...projectParams,
       buildNumber: numBuildNumber,
       diffId: diffId ?? null,
     };
-  }, [accountSlug, projectName, buildNumber, diffId]);
+  }, [projectParams, buildNumber, diffId]);
   return params;
-};
+}

@@ -63,7 +63,11 @@ function ViewButton(props: {
       keys={props.hotkey.displayKeys}
       keysEnabled={viewMode !== props.viewMode}
     >
-      <IconButton aria-pressed={viewMode === props.viewMode} onPress={activate}>
+      <IconButton
+        variant="contained"
+        aria-pressed={viewMode === props.viewMode}
+        onPress={activate}
+      >
         {props.children}
       </IconButton>
     </HotkeyTooltip>

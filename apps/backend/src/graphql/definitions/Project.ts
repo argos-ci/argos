@@ -30,6 +30,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types.js";
 import { deleteProject, getAdminProject } from "../services/project.js";
+import { parseTestId } from "../services/test.js";
 import { badUserInput, forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -88,21 +89,23 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     token: String
-    "Builds associated to the repository"
+    "Builds associated to the project"
     builds(
       first: Int = 30
       after: Int = 0
       filters: BuildsFilterInput
     ): BuildConnection!
-    "A single build linked to the repository"
+    "A single build linked to the project"
     build(number: Int!): Build
+    "Test associated to the project"
+    test(id: ID!): Test
     "Latest auto-approved build"
     latestAutoApprovedBuild: Build
     "Latest build"
     latestBuild: Build
     "Determine permissions of the current user"
     permissions: [ProjectPermission!]!
-    "Owner of the repository"
+    "Owner of the project"
     account: Account!
     "Repository associated to the project"
     repository: Repository
@@ -532,6 +535,20 @@ export const resolvers: IResolvers = {
         number: args.number,
       });
       return build ?? null;
+    },
+    test: async (project, args, ctx) => {
+      const { testId, projectName } = parseTestId(args.id);
+      if (project.name.toUpperCase() !== projectName) {
+        return null;
+      }
+      const test = await ctx.loaders.Test.load(testId);
+      if (!test) {
+        return null;
+      }
+      if (test.projectId !== project.id) {
+        return null;
+      }
+      return test;
     },
     permissions: async (project, _args, ctx) => {
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
