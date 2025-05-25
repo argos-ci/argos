@@ -87,7 +87,7 @@ export function BuildFlakyIndicator(props: {
         <div className="flex flex-col items-start gap-1">
           <p>Flaky test score (last 7 days).</p>
           <p>
-            Based on {data.project.test.metrics.all.total} reference builds.{" "}
+            Based on {data.project.test.metrics.all.total} auto-approved builds.{" "}
             <Link
               to={`/${accountSlug}/${projectName}/tests/${data.project.test.id}`}
               className="underline decoration-1 underline-offset-2"
