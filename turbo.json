@@ -53,7 +53,11 @@
     "watch-server": {
       "persistent": true,
       "cache": false,
-      "env": ["DATABASE_URL"]
+      "env": [
+        "DATABASE_URL",
+        "S3_PUBLIC_IMAGE_BASE_URL",
+        "AWS_SCREENSHOTS_BUCKET"
+      ]
     },
     "//#watch-codegen": {
       "persistent": true,
