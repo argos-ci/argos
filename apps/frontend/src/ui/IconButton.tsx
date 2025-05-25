@@ -20,7 +20,7 @@ const colorClassNames: Record<
 > = {
   contained: {
     neutral:
-      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text-default bg-ui/60 data-[focus-visible]:ring-default",
+      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text-default bg-ui/60 data-[focus-visible]:ring-default data-[pressed]:bg-active data-[pressed]:text-default aria-pressed:bg-active aria-pressed:text-default",
     danger: "", // not used
     success: "", // not used
   },
@@ -40,7 +40,7 @@ function getIconButtonClassName(options: IconButtonOptions) {
   return clsx(
     variantClassName,
     /* Group */
-    "group-[*]/button-group:rounded-none group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:last:rounded-r-lg text-xs",
+    "group-[*]/button-group:rounded-none group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:last:rounded-r-lg text-xs font-medium",
     /* Size */
     {
       small: "p-[calc(0.25rem-1px)] *:size-4 rounded-md leading-4 text-sm",
