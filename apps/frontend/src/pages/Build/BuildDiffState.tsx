@@ -599,6 +599,7 @@ export function BuildDiffProvider(props: {
         `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${diff.id}`,
         { replace: true },
       );
+
       if (scroll) {
         startTransition(() => {
           setScrolledDiff(diff);

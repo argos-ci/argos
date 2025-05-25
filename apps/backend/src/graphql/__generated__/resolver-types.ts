@@ -1257,6 +1257,9 @@ export type ITestChangesConnection = IConnection & {
 export type ITestMetricData = {
   __typename?: 'TestMetricData';
   changes: Scalars['Int']['output'];
+  consistency: Scalars['Float']['output'];
+  flakiness: Scalars['Float']['output'];
+  stability: Scalars['Float']['output'];
   total: Scalars['Int']['output'];
   uniqueChanges: Scalars['Int']['output'];
 };
@@ -2391,6 +2394,9 @@ export type ITestChangesConnectionResolvers<ContextType = Context, ParentType ex
 
 export type ITestMetricDataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestMetricData'] = IResolversParentTypes['TestMetricData']> = ResolversObject<{
   changes?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  consistency?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
+  flakiness?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
+  stability?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   uniqueChanges?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

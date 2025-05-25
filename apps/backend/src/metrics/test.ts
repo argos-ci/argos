@@ -42,7 +42,18 @@ export async function getTestAllMetrics(input: {
 
   const all = allResult.rows[0];
   invariant(all);
-  return all;
+
+  const stability =
+    all.changes > 0 ? Math.round((1 - all.changes / all.total) * 100) / 100 : 1;
+
+  const consistency =
+    all.uniqueChanges > 0
+      ? Math.round((all.uniqueChanges / all.changes) * 100) / 100
+      : 1;
+
+  const flakiness = Math.round((1 - (stability + consistency) / 2) * 100) / 100;
+
+  return { ...all, stability, consistency, flakiness };
 }
 
 /**

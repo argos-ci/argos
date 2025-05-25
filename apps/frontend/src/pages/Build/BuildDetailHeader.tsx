@@ -5,6 +5,7 @@ import { useFeature } from "@bucketco/react-sdk";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
+import { BuildFlakyIndicator } from "@/containers/Build/BuildFlakyIndicator";
 import {
   NextButton,
   PreviousButton,
@@ -12,6 +13,7 @@ import {
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Separator } from "@/ui/Separator";
+import { Tooltip } from "@/ui/Tooltip";
 import { canParseURL } from "@/util/url";
 
 import { useProjectParams } from "../Project/ProjectParams";
@@ -127,164 +129,169 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const testDetailsFeature = useFeature("test-details");
 
   return (
-    <>
-      <BuildNavButtons />
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+    <div className="flex flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <BuildNavButtons />
         <div className="min-w-0 flex-1">
-          <div role="heading" className="line-clamp-2 text-xs font-medium">
-            {diff.test && testDetailsFeature.isEnabled ? (
-              <Link
-                to={`/${params.accountSlug}/${params.projectName}/tests/${diff.test.id}`}
-                className="hover:underline"
-              >
-                <span className="font-mono">{diff.test.id}</span> • {diff.name}
-              </Link>
-            ) : (
-              diff.name
-            )}
-          </div>
-          <div
-            data-meta=""
-            className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden"
-          >
-            {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
-            {automationLibrary && (
-              <AutomationLibraryIndicator
-                automationLibrary={automationLibrary}
-                className="size-4"
+          {diff.test && testDetailsFeature.isEnabled ? (
+            <div className="flex items-center gap-2">
+              <BuildFlakyIndicator
+                accountSlug={params.accountSlug}
+                projectName={params.projectName}
+                testId={diff.test.id}
+                className="size-8"
               />
-            )}
-            {browsers.length > 0 && (
-              <ButtonGroup>
-                {browsers.map((browser, index) => {
-                  const key = hashBrowser(browser);
-
-                  if (browsers.length === 1) {
-                    return (
-                      <BrowserIndicator
-                        key={key}
-                        browser={browser}
-                        className="size-4"
-                      />
-                    );
-                  }
-
-                  const isActive = activeBrowserKey === key;
-                  const isNextActive =
-                    (activeBrowserIndex + 1) % browsers.length === index;
-                  const resolvedDiff = isActive
-                    ? diff
-                    : siblingDiffs.find((diff) => {
-                        const metadata = resolveDiffMetadata(diff);
-                        return (
-                          metadata?.browser &&
-                          hashBrowser(metadata.browser) === key
-                        );
-                      });
-                  invariant(resolvedDiff, "diff cannot be null");
-                  return (
-                    <BrowserIndicatorLink
-                      key={key}
-                      browser={browser}
-                      className="size-4"
-                      aria-current={
-                        activeBrowserKey === key ? "page" : undefined
-                      }
-                      href={getDiffPath(resolvedDiff.id) ?? ""}
-                      shortcutEnabled={isNextActive}
-                    />
-                  );
-                })}
-              </ButtonGroup>
-            )}
-            {viewports.length > 0 && (
-              <ButtonGroup>
-                {viewports.map((viewport, index) => {
-                  const key = hashViewport(viewport);
-
-                  if (viewports.length === 1) {
-                    return <ViewportIndicator key={key} viewport={viewport} />;
-                  }
-
-                  const isActive = activeViewportKey === key;
-                  const isNextActive =
-                    (activeViewportIndex + 1) % viewports.length === index;
-                  const resolvedDiff = isActive
-                    ? diff
-                    : siblingDiffs.find((diff) => {
-                        const metadata = resolveDiffMetadata(diff);
-                        return (
-                          metadata?.viewport &&
-                          hashViewport(metadata.viewport) === key
-                        );
-                      });
-
-                  invariant(resolvedDiff, "diff cannot be null");
-
-                  return (
-                    <ViewportIndicatorLink
-                      key={key}
-                      viewport={viewport}
-                      aria-current={isActive ? "page" : undefined}
-                      href={getDiffPath(resolvedDiff.id) ?? ""}
-                      shortcutEnabled={isNextActive}
-                    />
-                  );
-                })}
-              </ButtonGroup>
-            )}
-            {threshold !== null && <ThresholdIndicator threshold={threshold} />}
-            {retry !== null && retries !== null && retries > 0 && (
-              <RetryIndicator retry={retry} retries={retries} />
-            )}
-            {repeat !== null && repeat > 0 && (
-              <RepeatIndicator
-                repeat={repeat}
-                isPlaywright={automationLibrary?.name === "@playwright/test"}
-              />
-            )}
-            {colorScheme && (
-              <ColorSchemeIndicator
-                colorScheme={colorScheme}
-                className="size-4"
-              />
-            )}
-            {mediaType && (
-              <MediaTypeIndicator mediaType={mediaType} className="size-4" />
-            )}
-            {url && canParseURL(url) ? (
-              <UrlIndicator
-                url={url}
-                previewUrl={previewUrl}
-                isStorybook={
-                  automationLibrary?.name === "@storybook/test-runner"
-                }
-              />
-            ) : null}
-            {test && (
-              <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
-            )}
-            {pwTraceUrl ? (
-              <TraceIndicator pwTraceUrl={pwTraceUrl} />
-            ) : siblingTrace ? (
-              <TraceIndicator {...siblingTrace} />
-            ) : null}
-          </div>
-        </div>
-      </div>
-      <BuildDiffDetailToolbar diff={diff}>
-        <TrackButtons
-          diff={diff}
-          disabled={!canBeReviewed}
-          render={({ children }) => (
-            <>
-              <Separator orientation="vertical" className="mx-1 !h-6" />
-              <div className="flex gap-1.5">{children}</div>
-            </>
+              <Tooltip content="Go to test details">
+                <Link
+                  to={`/${params.accountSlug}/${params.projectName}/tests/${diff.test.id}`}
+                  className="hover:underline"
+                >
+                  <span
+                    role="heading"
+                    aria-level={1}
+                    className="line-clamp-2 text-sm font-medium"
+                  >
+                    {diff.name}
+                  </span>
+                </Link>
+              </Tooltip>
+            </div>
+          ) : (
+            <div role="heading" className="line-clamp-2 text-xs font-medium">
+              {diff.name}
+            </div>
           )}
-        />
-      </BuildDiffDetailToolbar>
-    </>
+        </div>
+        <BuildDiffDetailToolbar diff={diff}>
+          <TrackButtons
+            diff={diff}
+            disabled={!canBeReviewed}
+            render={({ children }) => (
+              <>
+                <Separator orientation="vertical" className="mx-1 !h-6" />
+                <div className="flex gap-1.5">{children}</div>
+              </>
+            )}
+          />
+        </BuildDiffDetailToolbar>
+      </div>
+      <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
+        {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
+        {automationLibrary && (
+          <AutomationLibraryIndicator
+            automationLibrary={automationLibrary}
+            className="size-4"
+          />
+        )}
+        {browsers.length > 0 && (
+          <ButtonGroup>
+            {browsers.map((browser, index) => {
+              const key = hashBrowser(browser);
+
+              if (browsers.length === 1) {
+                return (
+                  <BrowserIndicator
+                    key={key}
+                    browser={browser}
+                    className="size-4"
+                  />
+                );
+              }
+
+              const isActive = activeBrowserKey === key;
+              const isNextActive =
+                (activeBrowserIndex + 1) % browsers.length === index;
+              const resolvedDiff = isActive
+                ? diff
+                : siblingDiffs.find((diff) => {
+                    const metadata = resolveDiffMetadata(diff);
+                    return (
+                      metadata?.browser && hashBrowser(metadata.browser) === key
+                    );
+                  });
+              invariant(resolvedDiff, "diff cannot be null");
+              return (
+                <BrowserIndicatorLink
+                  key={key}
+                  browser={browser}
+                  className="size-4"
+                  aria-current={activeBrowserKey === key ? "page" : undefined}
+                  href={getDiffPath(resolvedDiff.id) ?? ""}
+                  shortcutEnabled={isNextActive}
+                />
+              );
+            })}
+          </ButtonGroup>
+        )}
+        {viewports.length > 0 && (
+          <ButtonGroup>
+            {viewports.map((viewport, index) => {
+              const key = hashViewport(viewport);
+
+              if (viewports.length === 1) {
+                return <ViewportIndicator key={key} viewport={viewport} />;
+              }
+
+              const isActive = activeViewportKey === key;
+              const isNextActive =
+                (activeViewportIndex + 1) % viewports.length === index;
+              const resolvedDiff = isActive
+                ? diff
+                : siblingDiffs.find((diff) => {
+                    const metadata = resolveDiffMetadata(diff);
+                    return (
+                      metadata?.viewport &&
+                      hashViewport(metadata.viewport) === key
+                    );
+                  });
+
+              invariant(resolvedDiff, "diff cannot be null");
+
+              return (
+                <ViewportIndicatorLink
+                  key={key}
+                  viewport={viewport}
+                  aria-current={isActive ? "page" : undefined}
+                  href={getDiffPath(resolvedDiff.id) ?? ""}
+                  shortcutEnabled={isNextActive}
+                />
+              );
+            })}
+          </ButtonGroup>
+        )}
+        {threshold !== null && <ThresholdIndicator threshold={threshold} />}
+        {retry !== null && retries !== null && retries > 0 && (
+          <RetryIndicator retry={retry} retries={retries} />
+        )}
+        {repeat !== null && repeat > 0 && (
+          <RepeatIndicator
+            repeat={repeat}
+            isPlaywright={automationLibrary?.name === "@playwright/test"}
+          />
+        )}
+        {colorScheme && (
+          <ColorSchemeIndicator colorScheme={colorScheme} className="size-4" />
+        )}
+        {mediaType && (
+          <MediaTypeIndicator mediaType={mediaType} className="size-4" />
+        )}
+        {url && canParseURL(url) ? (
+          <UrlIndicator
+            url={url}
+            previewUrl={previewUrl}
+            isStorybook={automationLibrary?.name === "@storybook/test-runner"}
+          />
+        ) : null}
+        {test && (
+          <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
+        )}
+        {pwTraceUrl ? (
+          <TraceIndicator pwTraceUrl={pwTraceUrl} />
+        ) : siblingTrace ? (
+          <TraceIndicator {...siblingTrace} />
+        ) : null}
+      </div>
+    </div>
   );
 });
 

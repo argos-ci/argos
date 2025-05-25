@@ -73,9 +73,7 @@ export function CircleProgress({
 
   return (
     <svg
-      className={clsx(className)}
-      width={radius * 2}
-      height={radius * 2}
+      className={className}
       viewBox={`0 0 ${radius * 2 + strokeWidth * 2} ${radius * 2 + strokeWidth * 2}`}
       role="progressbar"
       aria-valuenow={value}

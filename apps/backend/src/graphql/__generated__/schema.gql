@@ -996,6 +996,9 @@ type TestChangesConnection implements Connection {
 
 type TestMetricData {
   changes: Int!
+  consistency: Float!
+  flakiness: Float!
+  stability: Float!
   total: Int!
   uniqueChanges: Int!
 }

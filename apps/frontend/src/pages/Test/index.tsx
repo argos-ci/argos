@@ -26,6 +26,7 @@ import {
 } from "@/containers/Build/toolbar/NavButtons";
 import { featureGuardHoc } from "@/containers/FeatureFlag";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { graphql, type DocumentType } from "@/gql";
 import { TestStatus } from "@/gql/graphql";
 import {
@@ -37,7 +38,6 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { HeadlessLink } from "@/ui/Link";
-import { CircleProgress } from "@/ui/Progress";
 import { Separator } from "@/ui/Separator";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -92,7 +92,6 @@ const TestQuery = graphql(`
           all {
             total
             changes
-            uniqueChanges
           }
         }
         metrics(input: { from: $from }) {
@@ -106,6 +105,9 @@ const TestQuery = graphql(`
             total
             changes
             uniqueChanges
+            stability
+            consistency
+            flakiness
           }
         }
       }
@@ -174,23 +176,6 @@ export const Component = featureGuardHoc("test-details")(function Component() {
     return <Navigate to="/" />;
   }
 
-  const stabilityRatio =
-    test.metrics.all.changes > 0
-      ? Math.round(
-          (1 - test.metrics.all.changes / test.metrics.all.total) * 100,
-        ) / 100
-      : 1;
-
-  const consistencyRatio =
-    test.metrics.all.uniqueChanges > 0
-      ? Math.round(
-          (test.metrics.all.uniqueChanges / test.metrics.all.changes) * 100,
-        ) / 100
-      : 1;
-
-  const flakinessRatio =
-    Math.round((1 - stabilityRatio * consistencyRatio) * 100) / 100;
-
   return (
     <Page>
       <PageContainer>
@@ -236,7 +221,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                 <CounterLabel>Builds</CounterLabel>
               </Tooltip>
               <CounterValue>
-                {compactFormatter.format(test.globalMetrics.all.total)}
+                {compactFormatter.format(test.metrics.all.total)}
               </CounterValue>
             </Counter>
             <Counter>
@@ -248,7 +233,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                 <CounterLabel>Changes</CounterLabel>
               </Tooltip>
               <CounterValue>
-                {compactFormatter.format(test.globalMetrics.all.changes)}
+                {compactFormatter.format(test.metrics.all.changes)}
               </CounterValue>
             </Counter>
           </div>
@@ -263,7 +248,10 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                     <Tooltip content="Indicates how flaky this test is by analyzing its stability and its consistency.">
                       <CounterLabel>Flakiness</CounterLabel>
                     </Tooltip>
-                    <FlakinessIndicator value={flakinessRatio} />
+                    <FlakinessCircleIndicator
+                      value={test.metrics.all.flakiness}
+                      className="size-[4.375rem]"
+                    />
                   </Counter>
                   <div className="flex flex-col justify-between self-stretch">
                     <Counter>
@@ -325,7 +313,9 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                         <CounterLabel>Stability</CounterLabel>
                       </Tooltip>
                       <CounterValue>
-                        {compactFormatter.format(stabilityRatio * 100)}
+                        {compactFormatter.format(
+                          test.metrics.all.stability * 100,
+                        )}
                         <CounterValueUnit>%</CounterValueUnit>
                       </CounterValue>
                     </Counter>
@@ -344,7 +334,9 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                         <CounterLabel>Consistency</CounterLabel>
                       </Tooltip>
                       <CounterValue>
-                        {compactFormatter.format(consistencyRatio * 100)}
+                        {compactFormatter.format(
+                          test.metrics.all.consistency * 100,
+                        )}
                         <CounterValueUnit>%</CounterValueUnit>
                       </CounterValue>
                     </Counter>
@@ -410,39 +402,6 @@ function getBuildUrl(args: {
 }) {
   const { params, buildNumber, diffId } = args;
   return `/${params.accountSlug}/${params.projectName}/builds/${buildNumber}/${diffId}`;
-}
-
-function FlakinessIndicator(props: { value: number }) {
-  const { value } = props;
-  const compactFormatter = useNumberFormatter({
-    notation: "compact",
-  });
-  const color = (() => {
-    if (value < 0.2) {
-      return "var(--grass-10)";
-    } else if (value < 0.5) {
-      return "var(--orange-10)";
-    } else {
-      return "var(--tomato-10)";
-    }
-  })();
-  return (
-    <div className="relative">
-      <CircleProgress
-        radius={35}
-        strokeWidth={10}
-        value={value}
-        min={0}
-        max={1}
-        color={color}
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-base font-bold tabular-nums" style={{ color }}>
-          {compactFormatter.format(value * 100)}
-        </span>
-      </div>
-    </div>
-  );
 }
 
 function Seen(props: {
@@ -671,7 +630,7 @@ function BuildHeader(props: {
     }
   };
   return (
-    <>
+    <div className="flex flex-wrap items-start justify-between gap-4 has-[[data-meta]:empty]:items-center">
       <div className="flex shrink-0 gap-1">
         <PreviousButton
           onPress={goToPreviousDiff}
@@ -745,7 +704,7 @@ function BuildHeader(props: {
         </div>
       </div>
       <BuildDiffDetailToolbar diff={change.lastSeenDiff} />
-    </>
+    </div>
   );
 }
 

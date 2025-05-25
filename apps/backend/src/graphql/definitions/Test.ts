@@ -27,6 +27,9 @@ export const typeDefs = gql`
     total: Int!
     changes: Int!
     uniqueChanges: Int!
+    stability: Float!
+    consistency: Float!
+    flakiness: Float!
   }
 
   type TestMetrics {
