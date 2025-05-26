@@ -43,5 +43,5 @@ export function useBuildParams(): BuildParams | null {
 }
 
 export function getBuildURL(params: BuildParams): string {
-  return `${getProjectURL(params)}/builds/${params.buildNumber}/${params.diffId ? `/${params.diffId}` : ""}`;
+  return `${getProjectURL(params)}/builds/${params.buildNumber}${params.diffId ? `/${params.diffId}` : ""}`;
 }
