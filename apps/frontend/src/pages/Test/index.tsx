@@ -701,6 +701,9 @@ function ChangesList(props: {
   onSelect: (diffId: string) => void;
 }) {
   const { test, onSelect, activeChange } = props;
+  const compactFormatter = useNumberFormatter({
+    notation: "compact",
+  });
   return (
     <div className="group/sidebar flex min-h-0 flex-col gap-4 overflow-auto">
       {test.changes.edges.map((change) => {
@@ -714,8 +717,12 @@ function ChangesList(props: {
               />
               <DiffCardFooter>
                 <DiffCardFooterText>
-                  {change.totalOccurences} occurences •{" "}
-                  {getRecurrenceRatio({ change, test }) * 100}%
+                  {change.totalOccurences}{" "}
+                  {change.totalOccurences > 1 ? "occurences" : "occurrence"} •{" "}
+                  {compactFormatter.format(
+                    getRecurrenceRatio({ change, test }) * 100,
+                  )}
+                  %
                 </DiffCardFooterText>
               </DiffCardFooter>
             </DiffCard>
