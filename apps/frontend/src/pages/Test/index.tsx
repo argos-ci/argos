@@ -352,28 +352,30 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                   className="h-auto! self-stretch"
                   orientation="vertical"
                 />
-                <div className="flex flex-col gap-2">
-                  <Seen
-                    title="First seen"
-                    date={test.firstSeenDiff.createdAt}
-                    buildNumber={test.firstSeenDiff.build.number}
-                    buildUrl={getBuildUrl({
-                      params,
-                      buildNumber: test.firstSeenDiff.build.number,
-                      diffId: test.firstSeenDiff.id,
-                    })}
-                  />
-                  <Seen
-                    title="Last seen"
-                    date={test.lastSeenDiff.createdAt}
-                    buildNumber={test.lastSeenDiff.build.number}
-                    buildUrl={getBuildUrl({
-                      params,
-                      buildNumber: test.lastSeenDiff.build.number,
-                      diffId: test.lastSeenDiff.id,
-                    })}
-                  />
-                </div>
+                {test.firstSeenDiff && test.lastSeenDiff ? (
+                  <div className="flex flex-col gap-2">
+                    <Seen
+                      title="First seen"
+                      date={test.firstSeenDiff.createdAt}
+                      buildNumber={test.firstSeenDiff.build.number}
+                      buildUrl={getBuildUrl({
+                        params,
+                        buildNumber: test.firstSeenDiff.build.number,
+                        diffId: test.firstSeenDiff.id,
+                      })}
+                    />
+                    <Seen
+                      title="Last seen"
+                      date={test.lastSeenDiff.createdAt}
+                      buildNumber={test.lastSeenDiff.build.number}
+                      buildUrl={getBuildUrl({
+                        params,
+                        buildNumber: test.lastSeenDiff.build.number,
+                        diffId: test.lastSeenDiff.id,
+                      })}
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

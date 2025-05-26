@@ -974,9 +974,9 @@ enum TeamUserLevel {
 
 type Test implements Node {
   changes(after: Int!, first: Int!, from: DateTime!): TestChangesConnection!
-  firstSeenDiff: ScreenshotDiff!
+  firstSeenDiff: ScreenshotDiff
   id: ID!
-  lastSeenDiff: ScreenshotDiff!
+  lastSeenDiff: ScreenshotDiff
   metrics(input: TestMetricsInput): TestMetrics!
   name: String!
   status: TestStatus!

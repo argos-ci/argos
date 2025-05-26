@@ -63,8 +63,8 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     status: TestStatus!
-    firstSeenDiff: ScreenshotDiff!
-    lastSeenDiff: ScreenshotDiff!
+    firstSeenDiff: ScreenshotDiff
+    lastSeenDiff: ScreenshotDiff
     changes(from: DateTime!, after: Int!, first: Int!): TestChangesConnection!
     metrics(input: TestMetricsInput): TestMetrics!
   }
@@ -101,20 +101,18 @@ export const resolvers: IResolvers = {
         .where("testId", test.id)
         .whereNotNull("fileId")
         .orderBy("createdAt", "asc")
-        .first()
-        .throwIfNotFound();
+        .first();
 
-      return result;
+      return result ?? null;
     },
     lastSeenDiff: async (test) => {
       const result = await ScreenshotDiff.query()
         .where("testId", test.id)
         .whereNotNull("fileId")
         .orderBy("createdAt", "desc")
-        .first()
-        .throwIfNotFound();
+        .first();
 
-      return result;
+      return result ?? null;
     },
     changes: async (test, args, ctx) => {
       const { from, after, first } = args;
