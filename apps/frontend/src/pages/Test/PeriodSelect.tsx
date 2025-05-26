@@ -11,7 +11,6 @@ export type PeriodsDefinition = Record<string, PeriodEntry>;
 
 interface PeriodEntry {
   from: Date;
-  to: Date | null;
   label: string;
 }
 

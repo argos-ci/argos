@@ -122,47 +122,38 @@ export const resolvers: IResolvers = {
         JOIN builds b on b.id = sd."buildId"
         WHERE sd."fileId" = screenshot_diffs."fileId"
         AND sd."testId" = screenshot_diffs."testId"
-        AND b.type = 'reference'`;
+        AND sd."createdAt" > :from
+        AND b.type = 'reference'
+        `;
+
+      const diffQuery = ScreenshotDiff.query()
+        .select("screenshot_diffs.id")
+        .distinctOn("screenshot_diffs.fileId")
+        .joinRelated("build")
+        .where("screenshot_diffs.testId", test.id)
+        .where("screenshot_diffs.score", ">", 0)
+        .where("build.type", "reference")
+        .where("build.createdAt", ">", from)
+        .whereNotNull("screenshot_diffs.fileId")
+        .orderBy("screenshot_diffs.fileId");
 
       const lastSeenQuery = ScreenshotDiff.query()
         .select(
           "screenshot_diffs.*",
-          raw(`(${totalOccurencesQuery}) AS "totalOccurences"`),
+          raw(`(${totalOccurencesQuery}) AS "totalOccurences"`, { from }),
         )
         .whereIn(
           "id",
-          ScreenshotDiff.query()
-            .select("screenshot_diffs.id")
-            .distinctOn("screenshot_diffs.fileId")
-            .joinRelated("build")
-            .joinRelated("build.compareScreenshotBucket")
-            .where("screenshot_diffs.testId", test.id)
-            .where("screenshot_diffs.score", ">", 0)
-            .where("build.type", "reference")
-            .where("build:compareScreenshotBucket.createdAt", ">", from)
-            .whereNotNull("screenshot_diffs.fileId")
-            .orderBy("screenshot_diffs.fileId")
-            .orderBy("screenshot_diffs.createdAt", "desc"),
+          diffQuery.clone().orderBy("screenshot_diffs.createdAt", "desc"),
         )
-        .orderByRaw(`(${totalOccurencesQuery}) DESC`)
+        .orderByRaw(`(${totalOccurencesQuery}) DESC`, { from })
         .range(after, after + first - 1);
 
       const firstSeenQuery = ScreenshotDiff.query()
         .select("screenshot_diffs.*")
         .whereIn(
           "id",
-          ScreenshotDiff.query()
-            .select("screenshot_diffs.id")
-            .distinctOn("screenshot_diffs.fileId")
-            .joinRelated("build")
-            .joinRelated("build.compareScreenshotBucket")
-            .where("screenshot_diffs.testId", test.id)
-            .where("screenshot_diffs.score", ">", 0)
-            .where("build.type", "reference")
-            .where("build:compareScreenshotBucket.createdAt", ">", from)
-            .whereNotNull("screenshot_diffs.fileId")
-            .orderBy("screenshot_diffs.fileId")
-            .orderBy("screenshot_diffs.createdAt", "asc"),
+          diffQuery.clone().orderBy("screenshot_diffs.createdAt", "asc"),
         )
         .range(after, after + first - 1);
 

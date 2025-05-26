@@ -27,7 +27,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-function getTicksFromBoundaries(from: Date, to: Date | null) {
+function getTicksFromBoundaries(from: Date, to?: Date) {
   to = to ?? new Date();
   const diff = to.getTime() - from.getTime();
   if (diff <= 24 * 60 * 60 * 1000) {
@@ -51,10 +51,9 @@ function getTicksFromBoundaries(from: Date, to: Date | null) {
 export function ChangesChart(props: {
   series: TestMetricDataPoint[];
   from: Date;
-  to: Date | null;
   className?: string;
 }) {
-  const { series, from, to, className } = props;
+  const { series, from, className } = props;
   const tickFormatter = useDateFormatter({
     month: "short",
     day: "numeric",
@@ -62,7 +61,7 @@ export function ChangesChart(props: {
     minute: "2-digit",
     hour12: false,
   });
-  const ticks = useMemo(() => getTicksFromBoundaries(from, to), [from, to]);
+  const ticks = useMemo(() => getTicksFromBoundaries(from), [from]);
   const transformedSeries = useMemo(() => {
     return series.map((item) => ({
       ...item,
