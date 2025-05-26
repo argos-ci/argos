@@ -3,10 +3,10 @@
  */
 export function getFlakinessColor(value: number): string {
   if (value < 0.35) {
-    return "var(--grass-10)";
+    return "var(--background-color-success-solid)";
   } else if (value < 0.5) {
-    return "var(--orange-10)";
+    return "var(--background-color-warning-solid)";
   } else {
-    return "var(--tomato-10)";
+    return "var(--background-color-danger-solid)";
   }
 }

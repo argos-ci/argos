@@ -30,7 +30,7 @@ export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
     >
       <CircleProgress
         radius={48}
-        strokeWidth={14}
+        strokeWidth={12}
         value={value}
         min={0}
         max={1}

@@ -58,7 +58,7 @@ export function BuildFlakyIndicator(props: {
         <FlakinessCircleIndicator
           className={clsx(className, "animate-pulse")}
           value={0}
-          label="-"
+          label="—"
           color="var(--text-color-low)"
         />
       </Tooltip>

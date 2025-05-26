@@ -190,6 +190,7 @@ export const resolvers: IResolvers = {
               !isNaN(totalOccurences),
               "totalOccurences should be a number",
             );
+
             const firstSeenDiff = firstSeen.results.find(
               (firstSeenDiff) => firstSeenDiff.fileId === lastSeenDiff.fileId,
             );

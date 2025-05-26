@@ -415,10 +415,7 @@ function Seen(props: {
     <div className="flex flex-col gap-0.5">
       <div className="text-sm">
         <span className="font-semibold">{title}</span>{" "}
-        <Time
-          date={date}
-          className="underline decoration-dotted decoration-1 underline-offset-1"
-        />
+        <Time date={date} className="underline-emphasis" />
       </div>
       <div className="text-low text-xs">
         In build{" "}
@@ -445,7 +442,7 @@ function CounterLabel(props: ComponentProps<"div">) {
       {...props}
       className={clsx(
         "text-low text-xs font-medium",
-        "underline decoration-dotted decoration-1 underline-offset-1",
+        "underline-emphasis",
         props.className,
       )}
     />
@@ -558,7 +555,7 @@ function ChangesExplorer(props: {
           </EmptyStateIcon>
           <Heading>No changes</Heading>
           <Text slot="description">
-            All good! No changes detected in this test in the{" "}
+            This test remained unchanged over the{" "}
             {periodState.definition[periodState.value].label.toLowerCase()}.
           </Text>
         </EmptyState>
@@ -639,11 +636,6 @@ function BuildHeader(props: {
         <NextButton onPress={goToNextDiff} isDisabled={!nextChange} />
       </div>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 max-2xl:order-[-1] max-2xl:basis-full max-2xl:border-b max-2xl:pb-4 xl:gap-4">
-        <div className="flex flex-col gap-0.5 self-center">
-          <div className="text-sm font-medium">Change variant</div>
-          <div className="text-low font-mono text-xs">{change.id}</div>
-        </div>
-        <Separator className="h-auto! self-stretch" orientation="vertical" />
         <Counter>
           <Tooltip
             content={

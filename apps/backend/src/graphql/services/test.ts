@@ -36,7 +36,7 @@ export function formatTestChangeId(input: {
   fileId: string;
 }) {
   const { projectName, fileId } = input;
-  return `${projectName.toUpperCase()}-VAR-${sqids.encode([Number(fileId)])}`;
+  return `${projectName.toUpperCase()}-CHG-${sqids.encode([Number(fileId)])}`;
 }
 
 /**

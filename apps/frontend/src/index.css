@@ -251,6 +251,10 @@
   }
 }
 
+@utility underline-emphasis {
+  @apply underline decoration-dotted decoration-1 underline-offset-1;
+}
+
 @layer base {
   :root {
     --chart-1: 12 76% 61%;

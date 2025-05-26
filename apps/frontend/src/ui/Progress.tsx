@@ -54,7 +54,7 @@ export function CircleProgress({
   min,
   radius,
   strokeWidth,
-  color = "var(--violet-9)",
+  color = "var(--background-color-primary-solid)",
   title,
 }: {
   className?: string;
@@ -85,16 +85,15 @@ export function CircleProgress({
         transform={`rotate(-90, ${radius + strokeWidth}, ${radius + strokeWidth})`}
       >
         <circle
-          className="text-(--mauve-6)"
           strokeWidth={strokeWidth}
-          stroke="currentColor"
+          stroke="var(--border-color-default)"
           fill="transparent"
           r={radius}
           cx={radius + strokeWidth}
           cy={radius + strokeWidth}
         />
         <circle
-          className="transition-[stroke-dashoffset]"
+          className="transition-[stroke-dashoffset] duration-300"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
