@@ -5,6 +5,7 @@ import { MenuSection } from "react-aria-components";
 import { useParams } from "react-router-dom";
 
 import { graphql } from "@/gql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
 import {
   Menu,
@@ -83,7 +84,7 @@ export function ProjectBreadcrumbMenu() {
                 <MenuTitle>{title}</MenuTitle>
                 <MenuLoader />
               </MenuSection>
-              <MenuItem href={`/${accountSlug}/new`}>
+              <MenuItem href={`${getAccountURL({ accountSlug })}/new`}>
                 <MenuItemIcon>
                   <PlusCircleIcon />
                 </MenuItemIcon>
@@ -97,7 +98,7 @@ export function ProjectBreadcrumbMenu() {
               <MenuTitle>{title}</MenuTitle>
               <Projects accountSlug={accountSlug} />
             </MenuSection>
-            <MenuItem href={`/${accountSlug}/new`}>
+            <MenuItem href={`${getAccountURL({ accountSlug })}/new`}>
               <MenuItemIcon>
                 <PlusCircleIcon />
               </MenuItemIcon>

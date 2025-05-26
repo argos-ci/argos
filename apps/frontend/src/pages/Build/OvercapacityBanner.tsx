@@ -5,6 +5,8 @@ import { DocumentType, graphql } from "@/gql";
 import { Banner } from "@/ui/Banner";
 import { Link } from "@/ui/Link";
 
+import { getAccountURL } from "../Account/AccountParams";
+
 const _AccountFragment = graphql(`
   fragment OvercapacityBanner_Account on Account {
     plan {
@@ -38,7 +40,9 @@ export const OvercapacityBanner = memo(
           You&apos;ve hit {Math.floor(consumptionRatio * 100)}% of the{" "}
           {plan.displayName} plan limit.
         </span>
-        <Link href={`/${accountSlug}/settings`}>Upgrade plan</Link>
+        <Link href={`${getAccountURL({ accountSlug })}/settings`}>
+          Upgrade plan
+        </Link>
       </Banner>
     );
   },

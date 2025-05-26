@@ -4,6 +4,7 @@ import { AccountSelector } from "@/containers/AccountSelector";
 import { useSafeQuery } from "@/containers/Apollo";
 import { graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
   Dialog,
@@ -107,7 +108,7 @@ export function TeamSubscribeDialog({
               successUrl={
                 team
                   ? new URL(
-                      `/${team.slug}?checkout=success`,
+                      `${getAccountURL({ accountSlug: team.slug })}?checkout=success`,
                       window.location.origin,
                     ).href
                   : window.location.href
@@ -115,7 +116,7 @@ export function TeamSubscribeDialog({
               cancelUrl={
                 team
                   ? new URL(
-                      `/${team.slug}?checkout=cancel`,
+                      `${getAccountURL({ accountSlug: team.slug })}?checkout=cancel`,
                       window.location.origin,
                     ).href
                   : window.location.href

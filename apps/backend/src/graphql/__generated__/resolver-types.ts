@@ -2,7 +2,7 @@ import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } f
 import type { AccountAvatar, Subscription, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
-import type { TestMetrics } from '../../graphql/definitions/Test.js';
+import type { TestMetrics, TestChange } from '../../graphql/definitions/Test.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -993,6 +993,8 @@ export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<IScreenshot>;
   build: IBuild;
+  /** Change ID of the screenshot diff. Used to be indefied in a test. */
+  changeId?: Maybe<Scalars['String']['output']>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
   group?: Maybe<Scalars['String']['output']>;
@@ -1242,8 +1244,18 @@ export type ITestMetricsArgs = {
 
 export type ITestChange = INode & {
   __typename?: 'TestChange';
-  firstSeenDiff: IScreenshotDiff;
   id: Scalars['ID']['output'];
+  stats: ITestChangeStats;
+};
+
+
+export type ITestChangeStatsArgs = {
+  from: Scalars['DateTime']['input'];
+};
+
+export type ITestChangeStats = {
+  __typename?: 'TestChangeStats';
+  firstSeenDiff: IScreenshotDiff;
   lastSeenDiff: IScreenshotDiff;
   totalOccurences: Scalars['Int']['output'];
 };
@@ -1497,7 +1509,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( Omit<ITestChange, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: _RefType['ScreenshotDiff'], lastSeenDiff: _RefType['ScreenshotDiff'] } ) | ( Account );
+  Node: ( Subscription ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChange ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1614,7 +1626,8 @@ export type IResolversTypes = ResolversObject<{
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
-  TestChange: ResolverTypeWrapper<Omit<ITestChange, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversTypes['ScreenshotDiff'], lastSeenDiff: IResolversTypes['ScreenshotDiff'] }>;
+  TestChange: ResolverTypeWrapper<TestChange>;
+  TestChangeStats: ResolverTypeWrapper<Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversTypes['ScreenshotDiff'], lastSeenDiff: IResolversTypes['ScreenshotDiff'] }>;
   TestChangesConnection: ResolverTypeWrapper<Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversTypes['TestChange']> }>;
   TestMetricData: ResolverTypeWrapper<ITestMetricData>;
   TestMetricDataPoint: ResolverTypeWrapper<ITestMetricDataPoint>;
@@ -1731,7 +1744,8 @@ export type IResolversParentTypes = ResolversObject<{
   TeamMember: TeamUser;
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
-  TestChange: Omit<ITestChange, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversParentTypes['ScreenshotDiff'], lastSeenDiff: IResolversParentTypes['ScreenshotDiff'] };
+  TestChange: TestChange;
+  TestChangeStats: Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversParentTypes['ScreenshotDiff'], lastSeenDiff: IResolversParentTypes['ScreenshotDiff'] };
   TestChangesConnection: Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversParentTypes['TestChange']> };
   TestMetricData: ITestMetricData;
   TestMetricDataPoint: ITestMetricDataPoint;
@@ -2219,6 +2233,7 @@ export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends
 export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiff'] = IResolversParentTypes['ScreenshotDiff']> = ResolversObject<{
   baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   build?: Resolver<IResolversTypes['Build'], ParentType, ContextType>;
+  changeId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2379,8 +2394,13 @@ export type ITestResolvers<ContextType = Context, ParentType extends IResolversP
 }>;
 
 export type ITestChangeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestChange'] = IResolversParentTypes['TestChange']> = ResolversObject<{
-  firstSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  stats?: Resolver<IResolversTypes['TestChangeStats'], ParentType, ContextType, RequireFields<ITestChangeStatsArgs, 'from'>>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITestChangeStatsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestChangeStats'] = IResolversParentTypes['TestChangeStats']> = ResolversObject<{
+  firstSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
   lastSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
   totalOccurences?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2549,6 +2569,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;
   Test?: ITestResolvers<ContextType>;
   TestChange?: ITestChangeResolvers<ContextType>;
+  TestChangeStats?: ITestChangeStatsResolvers<ContextType>;
   TestChangesConnection?: ITestChangesConnectionResolvers<ContextType>;
   TestMetricData?: ITestMetricDataResolvers<ContextType>;
   TestMetricDataPoint?: ITestMetricDataPointResolvers<ContextType>;

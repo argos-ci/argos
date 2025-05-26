@@ -1,7 +1,8 @@
 import { useMutation } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
@@ -12,6 +13,8 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+
+import { useAccountParams } from "./AccountParams";
 
 const ImportGithubProjectMutation = graphql(`
   mutation NewProject_importGithubProject(
@@ -50,7 +53,8 @@ const ImportGitlabProjectMutation = graphql(`
 
 /** @route */
 export function Component() {
-  const { accountSlug } = useParams();
+  const params = useAccountParams();
+  invariant(params, "Cannot create a new project outside of an account");
   const navigate = useNavigate();
   const [importGithubProject, { loading: githubImportLoading }] = useMutation(
     ImportGithubProjectMutation,
@@ -96,10 +100,6 @@ export function Component() {
 
   const loading = githubImportLoading || gitlabImportLoading;
 
-  if (!accountSlug) {
-    return null;
-  }
-
   return (
     <Page>
       <Helmet>
@@ -119,13 +119,13 @@ export function Component() {
           <ConnectRepository
             variant="import"
             disabled={loading}
-            accountSlug={accountSlug}
+            accountSlug={params.accountSlug}
             onSelectRepository={({ repo, installationId }) => {
               importGithubProject({
                 variables: {
                   repo: repo.name,
                   owner: repo.owner_login,
-                  accountSlug: accountSlug,
+                  accountSlug: params.accountSlug,
                   installationId,
                 },
               }).catch((error) => {
@@ -137,7 +137,7 @@ export function Component() {
               importGitLabProject({
                 variables: {
                   gitlabProjectId: glProject.id,
-                  accountSlug: accountSlug,
+                  accountSlug: params.accountSlug,
                 },
               }).catch((error) => {
                 // TODO: Show error in UI

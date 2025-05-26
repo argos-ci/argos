@@ -6,6 +6,7 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AccountPlanChip } from "@/containers/AccountPlanChip";
 import { useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
@@ -29,16 +30,17 @@ const AccountQuery = graphql(`
 `);
 
 function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
-  const isRoot = useMatch(`/${accountSlug}`);
-  const isAnalytics = useMatch(`/${accountSlug}/~/analytics`);
-  const isSettings = useMatch(`/${accountSlug}/settings`);
+  const accountURL = getAccountURL({ accountSlug });
+  const isRoot = useMatch(accountURL);
+  const isAnalytics = useMatch(`${accountURL}/~/analytics`);
+  const isSettings = useMatch(`${accountURL}/settings`);
   const isCurrent = isRoot || isAnalytics || isSettings;
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: accountSlug },
   });
   return (
     <BreadcrumbLink
-      href={`/${accountSlug}`}
+      href={accountURL}
       aria-current={isCurrent ? "page" : undefined}
     >
       <BreadcrumbItemIcon>

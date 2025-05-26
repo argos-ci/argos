@@ -8,6 +8,7 @@ import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildType } from "@/gql/graphql";
+import { getProjectURL } from "@/pages/Project/ProjectParams";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip } from "@/ui/Chip";
 import { HeadlessLink } from "@/ui/Link";
@@ -49,7 +50,7 @@ const BrandLink = memo(
     return (
       <Tooltip content="See all builds">
         <HeadlessLink
-          href={`/${accountSlug}/${projectName}/builds`}
+          href={`${getProjectURL({ accountSlug, projectName })}/builds`}
           className="transition hover:brightness-125"
         >
           <BrandShield height={32} />
@@ -70,7 +71,7 @@ const ProjectLink = memo(
     return (
       <Tooltip content="See all builds">
         <HeadlessLink
-          href={`/${accountSlug}/${projectName}/builds`}
+          href={`${getProjectURL({ accountSlug, projectName })}/builds`}
           className="text-low data-[hovered]:text-default rac-focus text-xs leading-none transition"
         >
           {accountSlug}/{projectName}

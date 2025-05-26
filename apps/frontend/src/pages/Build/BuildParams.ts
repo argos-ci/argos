@@ -1,11 +1,15 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
-import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
+import {
+  getProjectURL,
+  useProjectParams,
+  type ProjectParams,
+} from "../Project/ProjectParams";
 
 export interface BuildParams extends ProjectParams {
   buildNumber: number;
-  diffId: string | null;
+  diffId?: string | null | undefined;
 }
 
 /**
@@ -36,4 +40,8 @@ export function useBuildParams(): BuildParams | null {
     };
   }, [projectParams, buildNumber, diffId]);
   return params;
+}
+
+export function getBuildURL(params: BuildParams): string {
+  return `${getProjectURL(params)}/builds/${params.buildNumber}${params.diffId ? `/${params.diffId}` : ""}`;
 }

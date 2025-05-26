@@ -50,6 +50,7 @@ const config: CodegenConfig = {
             "../../database/models/index.js#GithubAccountMember",
           Test: "../../database/models/index.js#Test",
           TestMetrics: "../../graphql/definitions/Test.js#TestMetrics",
+          TestChange: "../../graphql/definitions/Test.js#TestChange",
           User: "../../database/models/index.js#Account",
         },
       },

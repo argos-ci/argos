@@ -12,6 +12,8 @@ import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
 
+import { getAccountURL } from "./Account/AccountParams";
+
 const InvitationQuery = graphql(`
   query Invite_invitation($token: String!) {
     invitation(token: $token) {
@@ -52,8 +54,7 @@ const JoinTeamButton = (props: {
     },
     onCompleted(data) {
       const team = data.acceptInvitation;
-      const teamUrl = `/${team.slug}`;
-      navigate(teamUrl, { replace: true });
+      navigate(getAccountURL({ accountSlug: team.slug }), { replace: true });
     },
   });
   return (
@@ -121,7 +122,10 @@ export function Component() {
                     <p className="mb-10 text-xl">
                       You are a member of {teamTitle}.
                     </p>
-                    <LinkButton size="large" href={`/${team.slug}`}>
+                    <LinkButton
+                      size="large"
+                      href={getAccountURL({ accountSlug: team.slug })}
+                    >
                       View Team Projects
                     </LinkButton>
                   </>

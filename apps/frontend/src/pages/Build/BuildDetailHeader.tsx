@@ -17,6 +17,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { canParseURL } from "@/util/url";
 
 import { useProjectParams } from "../Project/ProjectParams";
+import { getTestURL } from "../Test/TestParams";
 import {
   checkCanBeReviewed,
   Diff,
@@ -139,11 +140,15 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
                 accountSlug={params.accountSlug}
                 projectName={params.projectName}
                 testId={diff.test.id}
+                changeId={diff.changeId}
                 className="size-8"
               />
-              <Tooltip content="Go to test details">
+              <Tooltip content="View test details">
                 <Link
-                  to={`/${params.accountSlug}/${params.projectName}/tests/${diff.test.id}`}
+                  to={getTestURL(
+                    { ...params, testId: diff.test.id },
+                    { change: diff.changeId },
+                  )}
                   className="hover:underline"
                 >
                   <span

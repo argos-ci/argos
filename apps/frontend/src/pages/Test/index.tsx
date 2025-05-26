@@ -44,6 +44,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import useViewportSize from "@/ui/useViewportSize";
 
+import { getBuildURL } from "../Build/BuildParams";
 import { ChangesChart } from "./ChangesChart";
 import {
   PeriodSelect,
@@ -51,7 +52,7 @@ import {
   type PeriodsDefinition,
   type PeriodState,
 } from "./PeriodSelect";
-import { useTestParams, type TestParams } from "./TestParams";
+import { useTestParams, type TestSearchParams } from "./TestParams";
 
 const TestQuery = graphql(`
   query TestPage_Project(
@@ -152,6 +153,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
   const periodState = usePeriodState({
     defaultValue: "last-7-days",
     definition: PERIODS,
+    paramName: "period" satisfies keyof TestSearchParams,
   });
   const period = periodState.definition[periodState.value];
   const { data } = useSuspenseQuery(TestQuery, {
@@ -352,8 +354,8 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                       title="First seen"
                       date={test.firstSeenDiff.createdAt}
                       buildNumber={test.firstSeenDiff.build.number}
-                      buildUrl={getBuildUrl({
-                        params,
+                      buildUrl={getBuildURL({
+                        ...params,
                         buildNumber: test.firstSeenDiff.build.number,
                         diffId: test.firstSeenDiff.id,
                       })}
@@ -362,8 +364,8 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                       title="Last seen"
                       date={test.lastSeenDiff.createdAt}
                       buildNumber={test.lastSeenDiff.build.number}
-                      buildUrl={getBuildUrl({
-                        params,
+                      buildUrl={getBuildURL({
+                        ...params,
                         buildNumber: test.lastSeenDiff.build.number,
                         diffId: test.lastSeenDiff.id,
                       })}
@@ -390,15 +392,6 @@ export const Component = featureGuardHoc("test-details")(function Component() {
     </Page>
   );
 });
-
-function getBuildUrl(args: {
-  params: TestParams;
-  buildNumber: number;
-  diffId: string;
-}) {
-  const { params, buildNumber, diffId } = args;
-  return `/${params.accountSlug}/${params.projectName}/builds/${buildNumber}/${diffId}`;
-}
 
 function Seen(props: {
   title: string;
@@ -470,39 +463,41 @@ type TestDocument = NonNullable<
 const _ChangesFragment = graphql(`
   fragment TestChangeFragment on TestChange {
     id
-    totalOccurences
-    lastSeenDiff {
-      id
-      createdAt
-      status
-      width
-      height
-      url
-      compareScreenshot {
+    stats(from: $from) {
+      totalOccurences
+      lastSeenDiff {
         id
+        createdAt
+        status
         width
         height
         url
+        compareScreenshot {
+          id
+          width
+          height
+          url
+        }
+        baseScreenshot {
+          id
+          width
+          height
+          url
+        }
+        build {
+          id
+          number
+          ...BuildDiffDetail_Build
+        }
+        ...BuildDiffState_ScreenshotDiff
       }
-      baseScreenshot {
+      firstSeenDiff {
         id
-        width
-        height
-        url
-      }
-      build {
-        id
-        number
-        ...BuildDiffDetail_Build
-      }
-      ...BuildDiffState_ScreenshotDiff
-    }
-    firstSeenDiff {
-      id
-      createdAt
-      build {
-        id
-        number
+        createdAt
+        build {
+          id
+          number
+        }
       }
     }
   }
@@ -510,7 +505,7 @@ const _ChangesFragment = graphql(`
 
 type TestChangeDocument = DocumentType<typeof _ChangesFragment>;
 
-const CHANGE_PARAM = "variant";
+const CHANGE_PARAM = "change" satisfies keyof TestSearchParams;
 
 function useActiveChange(props: { test: TestDocument }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -570,8 +565,8 @@ function ChangesExplorer(props: {
         </div>
         {activeChange && (
           <BuildDiffDetail
-            build={activeChange.lastSeenDiff.build}
-            diff={activeChange.lastSeenDiff}
+            build={activeChange.stats.lastSeenDiff.build}
+            diff={activeChange.stats.lastSeenDiff}
             repoUrl={null}
             header={
               <BuildHeader
@@ -593,7 +588,9 @@ function getRecurrenceRatio(args: {
 }) {
   const { change, test } = args;
   return (
-    Math.round((change.totalOccurences / test.metrics.all.changes) * 100) / 100
+    Math.round(
+      (change.stats.totalOccurences / test.metrics.all.changes) * 100,
+    ) / 100
   );
 }
 
@@ -645,7 +642,7 @@ function BuildHeader(props: {
             <CounterLabel>Occurences</CounterLabel>
           </Tooltip>
           <CounterValue>
-            {compactFormatter.format(change.totalOccurences)}
+            {compactFormatter.format(change.stats.totalOccurences)}
           </CounterValue>
         </Counter>
         <Counter>
@@ -671,27 +668,27 @@ function BuildHeader(props: {
         <div className="flex gap-x-6 gap-y-0.5">
           <Seen
             title="First seen"
-            date={change.firstSeenDiff.createdAt}
-            buildNumber={change.firstSeenDiff.build.number}
-            buildUrl={getBuildUrl({
-              params,
-              buildNumber: change.firstSeenDiff.build.number,
-              diffId: change.firstSeenDiff.id,
+            date={change.stats.firstSeenDiff.createdAt}
+            buildNumber={change.stats.firstSeenDiff.build.number}
+            buildUrl={getBuildURL({
+              ...params,
+              buildNumber: change.stats.firstSeenDiff.build.number,
+              diffId: change.stats.firstSeenDiff.id,
             })}
           />
           <Seen
             title="Last seen"
-            date={change.lastSeenDiff.createdAt}
-            buildNumber={change.lastSeenDiff.build.number}
-            buildUrl={getBuildUrl({
-              params,
-              buildNumber: change.lastSeenDiff.build.number,
-              diffId: change.lastSeenDiff.id,
+            date={change.stats.lastSeenDiff.createdAt}
+            buildNumber={change.stats.lastSeenDiff.build.number}
+            buildUrl={getBuildURL({
+              ...params,
+              buildNumber: change.stats.lastSeenDiff.build.number,
+              diffId: change.stats.lastSeenDiff.id,
             })}
           />
         </div>
       </div>
-      <BuildDiffDetailToolbar diff={change.lastSeenDiff} />
+      <BuildDiffDetailToolbar diff={change.stats.lastSeenDiff} />
     </div>
   );
 }
@@ -708,6 +705,9 @@ function ChangesList(props: {
   onSelect: (diffId: string) => void;
 }) {
   const { test, onSelect, activeChange } = props;
+  const compactFormatter = useNumberFormatter({
+    notation: "compact",
+  });
   return (
     <div className="group/sidebar flex min-h-0 flex-col gap-4 overflow-auto">
       {test.changes.edges.map((change) => {
@@ -716,13 +716,20 @@ function ChangesList(props: {
           <ListItemButton key={change.id} onPress={() => onSelect(change.id)}>
             <DiffCard isActive={isActive} variant="primary">
               <DiffImage
-                diff={change.lastSeenDiff}
+                diff={change.stats.lastSeenDiff}
                 config={DIFF_IMAGE_CONFIG}
               />
               <DiffCardFooter>
                 <DiffCardFooterText>
-                  {change.totalOccurences} occurences •{" "}
-                  {getRecurrenceRatio({ change, test }) * 100}%
+                  {change.stats.totalOccurences}{" "}
+                  {change.stats.totalOccurences > 1
+                    ? "occurences"
+                    : "occurrence"}{" "}
+                  •{" "}
+                  {compactFormatter.format(
+                    getRecurrenceRatio({ change, test }) * 100,
+                  )}
+                  %
                 </DiffCardFooterText>
               </DiffCardFooter>
             </DiffCard>

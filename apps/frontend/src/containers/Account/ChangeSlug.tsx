@@ -3,6 +3,7 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
@@ -49,7 +50,9 @@ export const AccountChangeSlug = (props: {
         slug: data.slug,
       },
     });
-    navigate(`/${data.slug}/settings`, { replace: true });
+    navigate(`${getAccountURL({ accountSlug: data.slug })}/settings`, {
+      replace: true,
+    });
   };
   return (
     <Card>

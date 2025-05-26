@@ -8,6 +8,7 @@ import {
   IScreenshotDiffResolvers,
   IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
+import { formatTestChangeId } from "../services/test.js";
 import { getVariantKey } from "../services/variant-key.js";
 
 const { gql } = gqlTag;
@@ -34,6 +35,8 @@ export const typeDefs = gql`
     name: String!
     "Unique key to identify screenshot variant (browser, resolution, retries)"
     variantKey: String!
+    "Change ID of the screenshot diff. Used to be indefied in a test."
+    changeId: String
     width: Int
     height: Int
     status: ScreenshotDiffStatus!
@@ -82,9 +85,22 @@ const statusResolver: IScreenshotDiffResolvers["status"] = async (
 
 export const resolvers: IResolvers = {
   ScreenshotDiff: {
+    changeId: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
+        return null;
+      }
+      const build = await ctx.loaders.Build.load(screenshotDiff.buildId);
+      invariant(build, "ScreenshotDiff without build");
+      const project = await ctx.loaders.Project.load(build.projectId);
+      invariant(project, "Build without project");
+      return formatTestChangeId({
+        projectName: project.name,
+        fileId: screenshotDiff.fileId,
+      });
+    },
     build: async (screenshotDiff, _args, ctx) => {
       const build = await ctx.loaders.Build.load(screenshotDiff.buildId);
-      invariant(build, "Build not found");
+      invariant(build, "ScreenshotDiff without build");
       return build;
     },
     baseScreenshot: async (screenshotDiff, _args, ctx) => {

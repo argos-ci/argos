@@ -529,12 +529,19 @@ export const resolvers: IResolvers = {
 
       return paginateResult({ result, first, after });
     },
-    build: async (project, args) => {
+    build: async (project, args, ctx) => {
       const build = await Build.query().findOne({
         projectId: project.id,
         number: args.number,
       });
-      return build ?? null;
+
+      if (!build) {
+        return null;
+      }
+
+      ctx.loaders.Build.prime(build.id, build);
+
+      return build;
     },
     test: async (project, args, ctx) => {
       const { testId, projectName } = parseTestId(args.id);
@@ -641,6 +648,8 @@ export const resolvers: IResolvers = {
         return null;
       }
 
+      ctx.loaders.Project.prime(project.id, project);
+
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
 
       if (!permissions.includes("view")) {
@@ -657,6 +666,8 @@ export const resolvers: IResolvers = {
       if (!project) {
         return null;
       }
+
+      ctx.loaders.Project.prime(project.id, project);
 
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
 

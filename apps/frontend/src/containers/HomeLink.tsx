@@ -1,5 +1,6 @@
 import { useLocation, useParams } from "react-router-dom";
 
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { HeadlessLink, HeadlessLinkProps } from "@/ui/Link";
 
 import { getLatestVisitedAccount } from "./AccountHistory";
@@ -19,7 +20,7 @@ export function HomeLink(props: Omit<HeadlessLinkProps, "to">) {
       href={
         pathname === "/login" || pathname === "/signup"
           ? "https://argos-ci.com"
-          : `/${accountSlug}`
+          : getAccountURL({ accountSlug })
       }
       {...props}
     />

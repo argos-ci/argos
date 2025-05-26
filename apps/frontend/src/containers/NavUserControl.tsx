@@ -17,6 +17,7 @@ import { useLocation } from "react-router-dom";
 
 import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
 import {
   Menu,
@@ -144,7 +145,9 @@ function UserMenu() {
       </RACButton>
       <Popover placement="bottom end">
         <Menu className="w-60">
-          <MenuItem href={`/${authPayload.account.slug}/new`}>
+          <MenuItem
+            href={`${getAccountURL({ accountSlug: authPayload.account.slug })}/new`}
+          >
             <MenuItemIcon>
               <PlusCircleIcon />
             </MenuItemIcon>
@@ -156,7 +159,9 @@ function UserMenu() {
             </MenuItemIcon>
             New Team
           </MenuItem>
-          <MenuItem href={`/${authPayload.account.slug}/settings`}>
+          <MenuItem
+            href={`${getAccountURL({ accountSlug: authPayload.account.slug })}/settings`}
+          >
             <MenuItemIcon>
               <SettingsIcon />
             </MenuItemIcon>
