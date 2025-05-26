@@ -2,6 +2,7 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -56,7 +57,7 @@ function DeleteProjectButton(props: DeleteProjectButtonProps) {
         projectId: props.projectId,
       },
     });
-    window.location.replace(`/${props.accountSlug}`);
+    window.location.replace(getAccountURL({ accountSlug: props.accountSlug }));
   };
   const slug = `${props.accountSlug}/${props.projectName}`;
   return (

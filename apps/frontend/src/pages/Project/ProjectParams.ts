@@ -1,8 +1,13 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
-export interface ProjectParams {
-  accountSlug: string;
+import {
+  getAccountURL,
+  useAccountParams,
+  type AccountParams,
+} from "../Account/AccountParams";
+
+export interface ProjectParams extends AccountParams {
   projectName: string;
 }
 
@@ -10,15 +15,20 @@ export interface ProjectParams {
  * Returns parameters for a project page.
  */
 export function useProjectParams(): ProjectParams | null {
-  const { accountSlug, projectName } = useParams();
+  const { projectName } = useParams();
+  const accountParams = useAccountParams();
   const params = useMemo(() => {
-    if (!accountSlug || !projectName) {
+    if (!accountParams || !projectName) {
       return null;
     }
     return {
-      accountSlug,
+      ...accountParams,
       projectName,
     };
-  }, [accountSlug, projectName]);
+  }, [accountParams, projectName]);
   return params;
+}
+
+export function getProjectURL(params: ProjectParams): string {
+  return `${getAccountURL(params)}/${params.projectName}`;
 }

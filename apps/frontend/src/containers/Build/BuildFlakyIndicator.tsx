@@ -4,6 +4,7 @@ import moment from "moment";
 import { Link } from "react-router-dom";
 
 import { graphql } from "@/gql";
+import { getTestURL } from "@/pages/Test/TestParams";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { FlakinessCircleIndicator } from "../Test/FlakinessCircleIndicator";
@@ -36,9 +37,10 @@ export function BuildFlakyIndicator(props: {
   accountSlug: string;
   projectName: string;
   testId: string;
+  changeId?: string | null;
   className?: string;
 }) {
-  const { className, accountSlug, projectName, testId } = props;
+  const { className, accountSlug, projectName, testId, changeId } = props;
   const { data, error } = useQuery(TestQuery, {
     variables: {
       accountSlug,
@@ -89,7 +91,14 @@ export function BuildFlakyIndicator(props: {
           <p>
             Based on {data.project.test.metrics.all.total} auto-approved builds.{" "}
             <Link
-              to={`/${accountSlug}/${projectName}/tests/${data.project.test.id}`}
+              to={getTestURL(
+                {
+                  accountSlug,
+                  projectName,
+                  testId: data.project.test.id,
+                },
+                { change: changeId },
+              )}
               className="underline decoration-1 underline-offset-2"
             >
               See details

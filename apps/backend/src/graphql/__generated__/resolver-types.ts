@@ -993,6 +993,8 @@ export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<IScreenshot>;
   build: IBuild;
+  /** Change ID of the screenshot diff. Used to be indefied in a test. */
+  changeId?: Maybe<Scalars['String']['output']>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
   group?: Maybe<Scalars['String']['output']>;
@@ -2219,6 +2221,7 @@ export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends
 export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiff'] = IResolversParentTypes['ScreenshotDiff']> = ResolversObject<{
   baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   build?: Resolver<IResolversTypes['Build'], ParentType, ContextType>;
+  changeId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;

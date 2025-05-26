@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
 import { PaymentBanner } from "@/containers/PaymentBanner";
@@ -9,7 +9,9 @@ import { ProjectPermission } from "@/gql/graphql";
 import { TabLink, TabLinkList, TabLinkPanel, TabsLink } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
+import { useTestParams } from "../Test/TestParams";
 import type { ProjectOutletContext } from "./ProjectOutletContext";
+import { useProjectParams, type ProjectParams } from "./ProjectParams";
 
 const ProjectQuery = graphql(`
   query Project_project($accountSlug: String!, $projectName: String!) {
@@ -59,12 +61,9 @@ function ProjectTabs(props: {
   );
 }
 
-function Project(props: {
-  accountSlug: string;
-  projectName: string;
-  testId: string | undefined;
-}) {
-  const { accountSlug, projectName, testId } = props;
+function Project(props: ProjectParams) {
+  const { accountSlug, projectName } = props;
+  const testParams = useTestParams();
   const {
     data: { project },
   } = useSuspenseQuery(ProjectQuery, {
@@ -89,7 +88,10 @@ function Project(props: {
     />
   );
 
-  if (project.permissions.includes(ProjectPermission.ViewSettings) && !testId) {
+  if (
+    project.permissions.includes(ProjectPermission.ViewSettings) &&
+    !testParams
+  ) {
     return (
       <ProjectTabs account={project.account} permissions={project.permissions}>
         {outlet}
@@ -105,22 +107,15 @@ function Project(props: {
   );
 }
 
-function useProjectParams() {
-  const { accountSlug, projectName, testId } = useParams();
-  invariant(accountSlug);
-  invariant(projectName);
-  return { accountSlug, projectName, testId };
-}
-
 /** @route */
 export function Component() {
-  const { accountSlug, projectName, testId } = useProjectParams();
-  useVisitAccount(accountSlug);
+  const params = useProjectParams();
+  invariant(params, "Can't be used outside of a test route");
+  useVisitAccount(params.accountSlug);
   return (
     <Project
-      accountSlug={accountSlug}
-      projectName={projectName}
-      testId={testId}
+      accountSlug={params.accountSlug}
+      projectName={params.projectName}
     />
   );
 }

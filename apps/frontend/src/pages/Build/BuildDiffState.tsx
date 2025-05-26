@@ -21,7 +21,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import type { BuildParams } from "./BuildParams";
+import { getBuildURL, type BuildParams } from "./BuildParams";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -31,6 +31,7 @@ const ScreenshotDiffFragment = graphql(`
     url
     name
     variantKey
+    changeId
     width
     height
     group
@@ -536,10 +537,9 @@ export function BuildDiffProvider(props: {
   // Set the initial diff id to the first diff id if it's not set
   useEffect(() => {
     if (!params.diffId && firstDiffId) {
-      navigate(
-        `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${firstDiffId}`,
-        { replace: true },
-      );
+      navigate(getBuildURL({ ...params, diffId: firstDiffId }), {
+        replace: true,
+      });
       setInitialDiffId(firstDiffId);
     }
   }, [params, firstDiffId, navigate]);
@@ -596,7 +596,12 @@ export function BuildDiffProvider(props: {
   const setActiveDiff = useCallback(
     (diff: Diff, scroll?: boolean) => {
       navigate(
-        `/${params.accountSlug}/${params.projectName}/builds/${params.buildNumber}/${diff.id}`,
+        getBuildURL({
+          accountSlug: params.accountSlug,
+          buildNumber: params.buildNumber,
+          projectName: params.projectName,
+          diffId: diff.id,
+        }),
         { replace: true },
       );
 

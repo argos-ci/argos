@@ -10,7 +10,8 @@ import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
-import { BuildParams } from "./BuildParams";
+import { getProjectURL } from "../Project/ProjectParams";
+import { BuildParams, getBuildURL } from "./BuildParams";
 
 function Dt(props: { children: React.ReactNode }) {
   return (
@@ -67,20 +68,12 @@ function BranchLink({
   );
 }
 
-function BuildLink({
-  accountSlug,
-  projectName,
-  buildNumber,
-}: {
+function BuildLink(props: {
   accountSlug: string;
   projectName: string;
   buildNumber: number;
 }) {
-  return (
-    <Link href={`/${accountSlug}/${projectName}/builds/${buildNumber}`}>
-      Build {buildNumber}
-    </Link>
-  );
+  return <Link href={getBuildURL(props)}>Build {props.buildNumber}</Link>;
 }
 
 function TestReportStatusLabel(props: { status: TestReportStatus }) {
@@ -166,7 +159,7 @@ export function BuildInfos(props: {
   build: DocumentType<typeof _BuildFragment>;
   params: BuildParams;
 }) {
-  const { build } = props;
+  const { build, params } = props;
   return (
     <dl>
       <Dt>Created</Dt>
@@ -201,8 +194,8 @@ export function BuildInfos(props: {
       <Dd>
         {build.baseBuild ? (
           <BuildLink
-            accountSlug={props.params.accountSlug}
-            projectName={props.params.projectName}
+            accountSlug={params.accountSlug}
+            projectName={params.projectName}
             buildNumber={build.baseBuild.number}
           />
         ) : (
@@ -218,7 +211,7 @@ export function BuildInfos(props: {
             {build.baseBranchResolvedFrom ? (
               <Description>
                 <BaseBranchResolvedFrom
-                  projectUrl={`/${props.params.accountSlug}/${props.params.projectName}`}
+                  projectUrl={getProjectURL(params)}
                   resolvedFrom={build.baseBranchResolvedFrom}
                   pullRequest={build.pullRequest}
                 />

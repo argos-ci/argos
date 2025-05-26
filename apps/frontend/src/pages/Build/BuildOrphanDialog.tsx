@@ -15,6 +15,9 @@ import {
 import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
 
+import { getProjectURL } from "../Project/ProjectParams";
+import type { BuildParams } from "./BuildParams";
+
 const _BuildFragment = graphql(`
   fragment BuildOrphanDialog_Build on Build {
     baseBranch
@@ -23,17 +26,11 @@ const _BuildFragment = graphql(`
   }
 `);
 
-const _ProjectFragment = graphql(`
-  fragment BuildOrphanDialog_Project on Project {
-    slug
-  }
-`);
-
 export function BuildOrphanDialog(props: {
   build: DocumentType<typeof _BuildFragment>;
-  project: DocumentType<typeof _ProjectFragment>;
+  params: BuildParams;
 }) {
-  const { build, project } = props;
+  const { build, params } = props;
 
   if (build.type !== BuildType.Orphan || !build.baseBranch) {
     return null;
@@ -73,7 +70,7 @@ export function BuildOrphanDialog(props: {
                     <p className="text-low mt-2">
                       <LightBulbIcon className="inline" /> You can configure
                       auto-approved branches in{" "}
-                      <Link href={`/${project.slug}/settings`}>
+                      <Link href={`${getProjectURL(params)}/settings`}>
                         project's settings
                       </Link>
                       .

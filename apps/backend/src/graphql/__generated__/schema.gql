@@ -785,6 +785,9 @@ type ScreenshotBucket implements Node {
 type ScreenshotDiff implements Node {
   baseScreenshot: Screenshot
   build: Build!
+
+  """Change ID of the screenshot diff. Used to be indefied in a test."""
+  changeId: String
   compareScreenshot: Screenshot
   createdAt: DateTime!
   group: String

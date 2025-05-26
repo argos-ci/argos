@@ -88,7 +88,7 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
         teamAccountId: props.teamAccountId,
       },
     });
-    window.location.replace(`/`);
+    window.location.replace("/");
   };
   return (
     <Dialog size="medium">

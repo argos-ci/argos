@@ -3,6 +3,7 @@ import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
+import { getProjectURL } from "@/pages/Project/ProjectParams";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
@@ -51,9 +52,12 @@ export const ProjectChangeName = (props: {
         name: data.name,
       },
     });
-    await navigate(`/${project.account.slug}/${data.name}/settings`, {
-      replace: true,
-    });
+    await navigate(
+      `${getProjectURL({ accountSlug: project.account.slug, projectName: data.name })}/settings`,
+      {
+        replace: true,
+      },
+    );
   };
   return (
     <Card>

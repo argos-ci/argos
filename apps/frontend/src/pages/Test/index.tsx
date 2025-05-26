@@ -44,6 +44,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import useViewportSize from "@/ui/useViewportSize";
 
+import { getBuildURL } from "../Build/BuildParams";
 import { ChangesChart } from "./ChangesChart";
 import {
   PeriodSelect,
@@ -51,7 +52,7 @@ import {
   type PeriodsDefinition,
   type PeriodState,
 } from "./PeriodSelect";
-import { useTestParams, type TestParams } from "./TestParams";
+import { useTestParams, type TestSearchParams } from "./TestParams";
 
 const TestQuery = graphql(`
   query TestPage_Project(
@@ -152,6 +153,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
   const periodState = usePeriodState({
     defaultValue: "last-7-days",
     definition: PERIODS,
+    paramName: "period" satisfies keyof TestSearchParams,
   });
   const period = periodState.definition[periodState.value];
   const { data } = useSuspenseQuery(TestQuery, {
@@ -352,8 +354,8 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                       title="First seen"
                       date={test.firstSeenDiff.createdAt}
                       buildNumber={test.firstSeenDiff.build.number}
-                      buildUrl={getBuildUrl({
-                        params,
+                      buildUrl={getBuildURL({
+                        ...params,
                         buildNumber: test.firstSeenDiff.build.number,
                         diffId: test.firstSeenDiff.id,
                       })}
@@ -362,8 +364,8 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                       title="Last seen"
                       date={test.lastSeenDiff.createdAt}
                       buildNumber={test.lastSeenDiff.build.number}
-                      buildUrl={getBuildUrl({
-                        params,
+                      buildUrl={getBuildURL({
+                        ...params,
                         buildNumber: test.lastSeenDiff.build.number,
                         diffId: test.lastSeenDiff.id,
                       })}
@@ -390,15 +392,6 @@ export const Component = featureGuardHoc("test-details")(function Component() {
     </Page>
   );
 });
-
-function getBuildUrl(args: {
-  params: TestParams;
-  buildNumber: number;
-  diffId: string;
-}) {
-  const { params, buildNumber, diffId } = args;
-  return `/${params.accountSlug}/${params.projectName}/builds/${buildNumber}/${diffId}`;
-}
 
 function Seen(props: {
   title: string;
@@ -510,7 +503,7 @@ const _ChangesFragment = graphql(`
 
 type TestChangeDocument = DocumentType<typeof _ChangesFragment>;
 
-const CHANGE_PARAM = "variant";
+const CHANGE_PARAM = "change" satisfies keyof TestSearchParams;
 
 function useActiveChange(props: { test: TestDocument }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -673,8 +666,8 @@ function BuildHeader(props: {
             title="First seen"
             date={change.firstSeenDiff.createdAt}
             buildNumber={change.firstSeenDiff.build.number}
-            buildUrl={getBuildUrl({
-              params,
+            buildUrl={getBuildURL({
+              ...params,
               buildNumber: change.firstSeenDiff.build.number,
               diffId: change.firstSeenDiff.id,
             })}
@@ -683,8 +676,8 @@ function BuildHeader(props: {
             title="Last seen"
             date={change.lastSeenDiff.createdAt}
             buildNumber={change.lastSeenDiff.build.number}
-            buildUrl={getBuildUrl({
-              params,
+            buildUrl={getBuildURL({
+              ...params,
               buildNumber: change.lastSeenDiff.build.number,
               diffId: change.lastSeenDiff.id,
             })}

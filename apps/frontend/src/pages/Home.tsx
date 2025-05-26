@@ -3,6 +3,8 @@ import { Navigate } from "react-router-dom";
 import { getLatestVisitedAccount } from "@/containers/AccountHistory";
 import { AuthGuard } from "@/containers/AuthGuard";
 
+import { getAccountURL } from "./Account/AccountParams";
+
 /** @route */
 export function Component() {
   return (
@@ -10,7 +12,7 @@ export function Component() {
       {({ authPayload }) => {
         const accountSlug =
           getLatestVisitedAccount() ?? authPayload.account.slug;
-        return <Navigate replace to={`/${accountSlug}`} />;
+        return <Navigate replace to={getAccountURL({ accountSlug })} />;
       }}
     </AuthGuard>
   );

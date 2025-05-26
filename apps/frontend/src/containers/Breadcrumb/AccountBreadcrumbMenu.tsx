@@ -5,6 +5,7 @@ import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
+import { getAccountURL } from "@/pages/Account/AccountParams";
 import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
 import {
   Menu,
@@ -46,7 +47,7 @@ function resolveAccountPath(slug: string, pathname: string) {
     const parts = pathname.split("/");
     return "/" + [slug, ...parts.slice(2)].join("/");
   }
-  return `/${slug}`;
+  return getAccountURL({ accountSlug: slug });
 }
 
 function AccountMenuItems(props: { accounts: Account[] }) {

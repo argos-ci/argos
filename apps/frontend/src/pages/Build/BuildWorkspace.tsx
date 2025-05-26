@@ -30,7 +30,6 @@ const _BuildFragment = graphql(`
 
 const _ProjectFragment = graphql(`
   fragment BuildWorkspace_Project on Project {
-    ...BuildOrphanDialog_Project
     repository {
       id
       url
@@ -84,12 +83,12 @@ export function BuildWorkspace(props: {
   build: DocumentType<typeof _BuildFragment>;
   project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const { build, project } = props;
+  const { build, project, params } = props;
   const repoUrl = project.repository?.url ?? null;
 
   return (
     <div className="flex min-h-0 flex-1">
-      <BuildSidebar build={build} repoUrl={repoUrl} params={props.params} />
+      <BuildSidebar build={build} repoUrl={repoUrl} params={params} />
       {(() => {
         switch (build.status) {
           case BuildStatus.Aborted:
@@ -108,7 +107,7 @@ export function BuildWorkspace(props: {
               build && (
                 <>
                   <BuildDetail build={build} repoUrl={repoUrl} />
-                  <BuildOrphanDialog build={build} project={project} />
+                  <BuildOrphanDialog params={params} build={build} />
                 </>
               )
             );

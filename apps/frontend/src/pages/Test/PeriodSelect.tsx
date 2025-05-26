@@ -39,27 +39,29 @@ function parsePeriod<TDef extends PeriodsDefinition>(input: {
 export function usePeriodState<TDef extends PeriodsDefinition>(input: {
   defaultValue: PeriodKey<TDef>;
   definition: TDef;
+  paramName: string;
 }): PeriodState<TDef> {
+  const { paramName } = input;
   const { defaultValue, definition } = input;
   const [params, setParams] = useSearchParams();
   const value = parsePeriod({
     defaultValue,
     definition,
-    value: params.get("period"),
+    value: params.get(paramName),
   });
 
   const setValue = useEventCallback((value: PeriodKey<TDef>) => {
     if (value === defaultValue) {
-      if (params.has("period")) {
+      if (params.has(paramName)) {
         const next = new URLSearchParams(params);
-        next.delete("period");
+        next.delete(paramName);
         setParams(next);
       }
       return;
     }
-    if (String(value) !== params.get("period")) {
+    if (String(value) !== params.get(paramName)) {
       const next = new URLSearchParams(params);
-      next.set("period", String(value));
+      next.set(paramName, String(value));
       setParams(next);
     }
   });

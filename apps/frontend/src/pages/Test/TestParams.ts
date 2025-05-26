@@ -1,9 +1,13 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
-import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
+import {
+  getProjectURL,
+  useProjectParams,
+  type ProjectParams,
+} from "../Project/ProjectParams";
 
-export interface TestParams extends ProjectParams {
+interface TestParams extends ProjectParams {
   testId: string;
 }
 
@@ -21,4 +25,19 @@ export function useTestParams(): TestParams | null {
     };
   }, [projectParams, testId]);
   return params;
+}
+
+export interface TestSearchParams {
+  period?: string | null;
+  change?: string | null;
+}
+
+export function getTestURL(
+  params: TestParams,
+  searchParams?: TestSearchParams,
+): string {
+  const urlSearchParams = searchParams
+    ? new URLSearchParams(Object.entries(searchParams)).toString()
+    : null;
+  return `${getProjectURL(params)}/tests/${params.testId}${urlSearchParams ? `?${urlSearchParams}` : ""}`;
 }

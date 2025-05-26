@@ -5,6 +5,9 @@ import { graphql } from "@/gql";
 import { NotFound } from "@/pages/NotFound";
 import { Container } from "@/ui/Container";
 
+import { getBuildURL } from "../Build/BuildParams";
+import { getProjectURL } from "./ProjectParams";
+
 const ProjectQuery = graphql(`
   query ProjectLatestAutoApproved_project(
     $accountSlug: String!
@@ -42,13 +45,20 @@ function NavigateToLatestAutoApproved({
 
   if (!project.latestAutoApprovedBuild) {
     return (
-      <Navigate to={`/${accountSlug}/${projectName}/builds`} replace={true} />
+      <Navigate
+        to={`${getProjectURL({ accountSlug, projectName })}/builds`}
+        replace={true}
+      />
     );
   }
 
   return (
     <Navigate
-      to={`/${accountSlug}/${projectName}/builds/${project.latestAutoApprovedBuild.number}`}
+      to={getBuildURL({
+        accountSlug,
+        projectName,
+        buildNumber: project.latestAutoApprovedBuild.number,
+      })}
       replace={true}
     />
   );
