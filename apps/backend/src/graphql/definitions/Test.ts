@@ -44,6 +44,10 @@ export const typeDefs = gql`
 
   type TestChange implements Node {
     id: ID!
+    stats(from: DateTime!): TestChangeStats!
+  }
+
+  type TestChangeStats {
     totalOccurences: Int!
     firstSeenDiff: ScreenshotDiff!
     lastSeenDiff: ScreenshotDiff!
@@ -196,9 +200,12 @@ export const resolvers: IResolvers = {
                 projectName: project.name,
                 fileId: lastSeenDiff.fileId,
               }),
-              totalOccurences,
-              lastSeenDiff,
-              firstSeenDiff,
+              stats: {
+                from,
+                totalOccurences,
+                lastSeenDiff,
+                firstSeenDiff,
+              },
             };
           }),
         },
@@ -223,6 +230,25 @@ export const resolvers: IResolvers = {
       };
     },
   },
+  TestChange: {
+    stats: (testChange, params) => {
+      const { from, ...stats } = testChange.stats;
+      if (from.toISOString() !== params.from.toISOString()) {
+        throw new Error("from date must match the one used in the connection");
+      }
+      return stats;
+    },
+  },
+};
+
+export type TestChange = {
+  id: string;
+  stats: {
+    from: Date;
+    totalOccurences: number;
+    firstSeenDiff: ScreenshotDiff;
+    lastSeenDiff: ScreenshotDiff;
+  };
 };
 
 export type TestMetrics = {

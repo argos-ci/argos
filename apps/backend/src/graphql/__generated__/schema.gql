@@ -986,8 +986,12 @@ type Test implements Node {
 }
 
 type TestChange implements Node {
-  firstSeenDiff: ScreenshotDiff!
   id: ID!
+  stats(from: DateTime!): TestChangeStats!
+}
+
+type TestChangeStats {
+  firstSeenDiff: ScreenshotDiff!
   lastSeenDiff: ScreenshotDiff!
   totalOccurences: Int!
 }

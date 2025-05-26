@@ -463,39 +463,41 @@ type TestDocument = NonNullable<
 const _ChangesFragment = graphql(`
   fragment TestChangeFragment on TestChange {
     id
-    totalOccurences
-    lastSeenDiff {
-      id
-      createdAt
-      status
-      width
-      height
-      url
-      compareScreenshot {
+    stats(from: $from) {
+      totalOccurences
+      lastSeenDiff {
         id
+        createdAt
+        status
         width
         height
         url
+        compareScreenshot {
+          id
+          width
+          height
+          url
+        }
+        baseScreenshot {
+          id
+          width
+          height
+          url
+        }
+        build {
+          id
+          number
+          ...BuildDiffDetail_Build
+        }
+        ...BuildDiffState_ScreenshotDiff
       }
-      baseScreenshot {
+      firstSeenDiff {
         id
-        width
-        height
-        url
-      }
-      build {
-        id
-        number
-        ...BuildDiffDetail_Build
-      }
-      ...BuildDiffState_ScreenshotDiff
-    }
-    firstSeenDiff {
-      id
-      createdAt
-      build {
-        id
-        number
+        createdAt
+        build {
+          id
+          number
+        }
       }
     }
   }
@@ -563,8 +565,8 @@ function ChangesExplorer(props: {
         </div>
         {activeChange && (
           <BuildDiffDetail
-            build={activeChange.lastSeenDiff.build}
-            diff={activeChange.lastSeenDiff}
+            build={activeChange.stats.lastSeenDiff.build}
+            diff={activeChange.stats.lastSeenDiff}
             repoUrl={null}
             header={
               <BuildHeader
@@ -586,7 +588,9 @@ function getRecurrenceRatio(args: {
 }) {
   const { change, test } = args;
   return (
-    Math.round((change.totalOccurences / test.metrics.all.changes) * 100) / 100
+    Math.round(
+      (change.stats.totalOccurences / test.metrics.all.changes) * 100,
+    ) / 100
   );
 }
 
@@ -638,7 +642,7 @@ function BuildHeader(props: {
             <CounterLabel>Occurences</CounterLabel>
           </Tooltip>
           <CounterValue>
-            {compactFormatter.format(change.totalOccurences)}
+            {compactFormatter.format(change.stats.totalOccurences)}
           </CounterValue>
         </Counter>
         <Counter>
@@ -664,27 +668,27 @@ function BuildHeader(props: {
         <div className="flex gap-x-6 gap-y-0.5">
           <Seen
             title="First seen"
-            date={change.firstSeenDiff.createdAt}
-            buildNumber={change.firstSeenDiff.build.number}
+            date={change.stats.firstSeenDiff.createdAt}
+            buildNumber={change.stats.firstSeenDiff.build.number}
             buildUrl={getBuildURL({
               ...params,
-              buildNumber: change.firstSeenDiff.build.number,
-              diffId: change.firstSeenDiff.id,
+              buildNumber: change.stats.firstSeenDiff.build.number,
+              diffId: change.stats.firstSeenDiff.id,
             })}
           />
           <Seen
             title="Last seen"
-            date={change.lastSeenDiff.createdAt}
-            buildNumber={change.lastSeenDiff.build.number}
+            date={change.stats.lastSeenDiff.createdAt}
+            buildNumber={change.stats.lastSeenDiff.build.number}
             buildUrl={getBuildURL({
               ...params,
-              buildNumber: change.lastSeenDiff.build.number,
-              diffId: change.lastSeenDiff.id,
+              buildNumber: change.stats.lastSeenDiff.build.number,
+              diffId: change.stats.lastSeenDiff.id,
             })}
           />
         </div>
       </div>
-      <BuildDiffDetailToolbar diff={change.lastSeenDiff} />
+      <BuildDiffDetailToolbar diff={change.stats.lastSeenDiff} />
     </div>
   );
 }
@@ -712,13 +716,16 @@ function ChangesList(props: {
           <ListItemButton key={change.id} onPress={() => onSelect(change.id)}>
             <DiffCard isActive={isActive} variant="primary">
               <DiffImage
-                diff={change.lastSeenDiff}
+                diff={change.stats.lastSeenDiff}
                 config={DIFF_IMAGE_CONFIG}
               />
               <DiffCardFooter>
                 <DiffCardFooterText>
-                  {change.totalOccurences}{" "}
-                  {change.totalOccurences > 1 ? "occurences" : "occurrence"} •{" "}
+                  {change.stats.totalOccurences}{" "}
+                  {change.stats.totalOccurences > 1
+                    ? "occurences"
+                    : "occurrence"}{" "}
+                  •{" "}
                   {compactFormatter.format(
                     getRecurrenceRatio({ change, test }) * 100,
                   )}
