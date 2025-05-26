@@ -163,6 +163,7 @@ function SpendManagementForm(props: {
               <div className="flex items-center justify-between gap-4 p-4">
                 <div className="flex items-center gap-2">
                   <CircleProgress
+                    className="size-12"
                     radius={24}
                     strokeWidth={12}
                     value={isSpendLimitEnabled ? additionalScreenshotsCost : 0}

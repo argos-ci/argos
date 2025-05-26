@@ -27,6 +27,9 @@ export const typeDefs = gql`
     total: Int!
     changes: Int!
     uniqueChanges: Int!
+    stability: Float!
+    consistency: Float!
+    flakiness: Float!
   }
 
   type TestMetrics {
@@ -187,6 +190,7 @@ export const resolvers: IResolvers = {
               !isNaN(totalOccurences),
               "totalOccurences should be a number",
             );
+
             const firstSeenDiff = firstSeen.results.find(
               (firstSeenDiff) => firstSeenDiff.fileId === lastSeenDiff.fileId,
             );
