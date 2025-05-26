@@ -108,7 +108,7 @@ const AccountQuery = graphql(`
   }
 `);
 
-function Avatar(props: { slug: string }) {
+function Avatar(props: { slug: string; className?: string }) {
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: { slug: props.slug },
   });
@@ -117,7 +117,9 @@ function Avatar(props: { slug: string }) {
     return null;
   }
 
-  return <AccountAvatar avatar={data.account.avatar} />;
+  return (
+    <AccountAvatar avatar={data.account.avatar} className={props.className} />
+  );
 }
 
 function UserMenu() {
@@ -131,13 +133,13 @@ function UserMenu() {
   return (
     <MenuTrigger>
       <RACButton
-        className="rac-focus shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:brightness-125 aria-expanded:brightness-125"
+        className="rac-focus bg-ui size-6 shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:brightness-125 aria-expanded:brightness-125"
         aria-label="User settings"
       >
         <Suspense
           fallback={<InitialAvatar initial="" color="var(--mauve-3)" />}
         >
-          <Avatar slug={authPayload.account.slug} />
+          <Avatar slug={authPayload.account.slug} className="size-6" />
         </Suspense>
       </RACButton>
       <Popover placement="bottom end">
