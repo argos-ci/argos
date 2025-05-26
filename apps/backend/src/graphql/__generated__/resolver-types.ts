@@ -1220,9 +1220,9 @@ export enum ITeamUserLevel {
 export type ITest = INode & {
   __typename?: 'Test';
   changes: ITestChangesConnection;
-  firstSeenDiff: IScreenshotDiff;
+  firstSeenDiff?: Maybe<IScreenshotDiff>;
   id: Scalars['ID']['output'];
-  lastSeenDiff: IScreenshotDiff;
+  lastSeenDiff?: Maybe<IScreenshotDiff>;
   metrics: ITestMetrics;
   name: Scalars['String']['output'];
   status: ITestStatus;
@@ -2369,9 +2369,9 @@ export type ITeamMemberConnectionResolvers<ContextType = Context, ParentType ext
 
 export type ITestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Test'] = IResolversParentTypes['Test']> = ResolversObject<{
   changes?: Resolver<IResolversTypes['TestChangesConnection'], ParentType, ContextType, RequireFields<ITestChangesArgs, 'after' | 'first' | 'from'>>;
-  firstSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
+  firstSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  lastSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
+  lastSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['TestMetrics'], ParentType, ContextType, Partial<ITestMetricsArgs>>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['TestStatus'], ParentType, ContextType>;

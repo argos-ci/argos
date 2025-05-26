@@ -120,27 +120,22 @@ const now = new Date();
 const PERIODS = {
   "last-24-hours": {
     from: moment(now).subtract(24, "hours").toDate(),
-    to: null,
     label: "Last 24 hours",
   },
   "last-3-days": {
     from: moment(now).subtract(3, "days").toDate(),
-    to: null,
     label: "Last 3 days",
   },
   "last-7-days": {
     from: moment(now).subtract(7, "days").toDate(),
-    to: null,
     label: "Last 7 days",
   },
   "last-30-days": {
     from: moment(now).subtract(30, "days").toDate(),
-    to: null,
     label: "Last 30 days",
   },
   "last-90-days": {
     from: moment(now).subtract(90, "days").toDate(),
-    to: null,
     label: "Last 90 days",
   },
 } satisfies PeriodsDefinition;
@@ -345,35 +340,36 @@ export const Component = featureGuardHoc("test-details")(function Component() {
                     className="h-22 max-w- min-w-0 flex-1"
                     series={test.metrics.series}
                     from={period.from}
-                    to={period.to}
                   />
                 </div>
                 <Separator
                   className="h-auto! self-stretch"
                   orientation="vertical"
                 />
-                <div className="flex flex-col gap-2">
-                  <Seen
-                    title="First seen"
-                    date={test.firstSeenDiff.createdAt}
-                    buildNumber={test.firstSeenDiff.build.number}
-                    buildUrl={getBuildUrl({
-                      params,
-                      buildNumber: test.firstSeenDiff.build.number,
-                      diffId: test.firstSeenDiff.id,
-                    })}
-                  />
-                  <Seen
-                    title="Last seen"
-                    date={test.lastSeenDiff.createdAt}
-                    buildNumber={test.lastSeenDiff.build.number}
-                    buildUrl={getBuildUrl({
-                      params,
-                      buildNumber: test.lastSeenDiff.build.number,
-                      diffId: test.lastSeenDiff.id,
-                    })}
-                  />
-                </div>
+                {test.firstSeenDiff && test.lastSeenDiff ? (
+                  <div className="flex flex-col gap-2">
+                    <Seen
+                      title="First seen"
+                      date={test.firstSeenDiff.createdAt}
+                      buildNumber={test.firstSeenDiff.build.number}
+                      buildUrl={getBuildUrl({
+                        params,
+                        buildNumber: test.firstSeenDiff.build.number,
+                        diffId: test.firstSeenDiff.id,
+                      })}
+                    />
+                    <Seen
+                      title="Last seen"
+                      date={test.lastSeenDiff.createdAt}
+                      buildNumber={test.lastSeenDiff.build.number}
+                      buildUrl={getBuildUrl({
+                        params,
+                        buildNumber: test.lastSeenDiff.build.number,
+                        diffId: test.lastSeenDiff.id,
+                      })}
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
