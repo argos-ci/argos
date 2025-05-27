@@ -71,3 +71,16 @@ export class NotificationWorkflow<
   recipients?: NotificationWorkflowRecipient[];
   messages?: NotificationMessage[];
 }
+
+function checkIsNotificationWorkflowOfType<T extends HandlersName>(
+  type: T,
+  w: NotificationWorkflow<any>,
+): w is NotificationWorkflow<T> {
+  return w.type === type;
+}
+
+const w = NotificationWorkflow.fromJson({});
+
+if (checkIsNotificationWorkflowOfType("spend_limit", w)) {
+  const x = w.data.foo;
+}
