@@ -27,7 +27,7 @@ export class Screenshot extends Model {
           screenshotBucketId: { type: "string" },
           fileId: { type: ["string", "null"] },
           testId: { type: ["string", "null"] },
-          metadata: ScreenshotMetadataJsonSchema,
+          metadata: { oneOf: [ScreenshotMetadataJsonSchema, { type: "null" }] },
           playwrightTraceFileId: { type: ["string", "null"] },
           buildShardId: { type: ["string", "null"] },
           threshold: { type: ["number", "null"], minimum: 0, maximum: 1 },
