@@ -23,7 +23,7 @@ export const handler = defineNotificationHandler({
     threshold: SpendLimitThresholdSchema,
     accountName: z.string().nullable().optional(),
     accountSlug: z.string(),
-    blockWhenSpendLimitIsReached: z.boolean().default(true),
+    blockWhenSpendLimitIsReached: z.boolean(),
   }),
   previewData: {
     threshold: 100,
