@@ -13,6 +13,7 @@ export class Plan extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: [
           "name",
           "includedScreenshots",

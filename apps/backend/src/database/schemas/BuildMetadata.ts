@@ -22,6 +22,6 @@ export const BuildMetadataSchema = z
 
 export type BuildMetadata = z.infer<typeof BuildMetadataSchema>;
 
-export const BuildMetadataJsonSchema = zodToJsonSchema(
-  BuildMetadataSchema,
-) as JSONSchema;
+export const BuildMetadataJsonSchema = zodToJsonSchema(BuildMetadataSchema, {
+  removeAdditionalStrategy: "strict",
+}) as JSONSchema;

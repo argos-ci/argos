@@ -16,6 +16,7 @@ export class BuildShard extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["buildId"],
         properties: {
           buildId: { type: "string" },

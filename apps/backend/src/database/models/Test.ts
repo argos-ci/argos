@@ -13,6 +13,7 @@ export class Test extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["name", "projectId", "buildName"],
         properties: {
           name: { type: "string", maxLength: 1024 },

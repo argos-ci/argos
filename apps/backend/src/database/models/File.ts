@@ -8,6 +8,7 @@ export class File extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["key", "type"],
         properties: {
           key: { type: ["string"] },

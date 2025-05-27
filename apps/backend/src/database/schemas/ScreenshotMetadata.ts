@@ -101,6 +101,7 @@ export const ScreenshotMetadataSchema = z
 
 export const ScreenshotMetadataJsonSchema = zodToJsonSchema(
   ScreenshotMetadataSchema,
+  { removeAdditionalStrategy: "strict" },
 ) as JSONSchema;
 
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;

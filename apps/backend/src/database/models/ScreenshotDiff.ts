@@ -18,6 +18,7 @@ export class ScreenshotDiff extends Model {
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
         required: ["buildId", "baseScreenshotId", "compareScreenshotId"],
         properties: {
           buildId: { type: "string" },

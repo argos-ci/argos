@@ -11,6 +11,7 @@ export class GithubRepositoryInstallation extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["githubRepositoryId", "githubInstallationId"],
         properties: {
           githubRepositoryId: { type: "string" },

@@ -11,6 +11,7 @@ export class GoogleUser extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["googleId"],
         properties: {
           googleId: { type: "string" },

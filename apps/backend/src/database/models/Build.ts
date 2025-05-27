@@ -77,6 +77,7 @@ export class Build extends Model {
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
         required: ["compareScreenshotBucketId", "projectId"],
         properties: {
           name: { type: "string", maxLength: 255 },

@@ -13,6 +13,7 @@ export class BuildNotification extends Model {
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
         required: ["type", "buildId"],
         properties: {
           type: {

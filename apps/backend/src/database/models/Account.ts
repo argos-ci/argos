@@ -56,6 +56,7 @@ export class Account extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["slug"],
         properties: {
           userId: { type: ["string", "null"] },

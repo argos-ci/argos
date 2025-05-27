@@ -13,6 +13,7 @@ export class ProjectUser extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["userId", "projectId", "userLevel"],
         properties: {
           userId: { type: "string" },

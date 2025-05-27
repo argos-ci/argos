@@ -15,6 +15,7 @@ export class ScreenshotBucket extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["name", "commit", "branch", "complete", "valid"],
         properties: {
           name: { type: "string" },

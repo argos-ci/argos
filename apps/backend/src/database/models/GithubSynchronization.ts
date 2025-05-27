@@ -10,6 +10,7 @@ export class GithubSynchronization extends Model {
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
         required: ["githubInstallationId"],
         properties: {
           githubInstallationId: { type: "string" },

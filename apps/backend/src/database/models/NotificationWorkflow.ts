@@ -30,7 +30,9 @@ export class NotificationWorkflow<
           type: "object",
           properties: {
             type: { const: h.type },
-            data: zodToJsonSchema(h.schema) as JSONSchema,
+            data: zodToJsonSchema(h.schema, {
+              removeAdditionalStrategy: "strict",
+            }) as JSONSchema,
           },
           required: ["type", "data"],
         })),

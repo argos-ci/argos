@@ -15,6 +15,7 @@ export class GithubRepository extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: [
           "name",
           "private",

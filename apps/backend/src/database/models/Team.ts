@@ -22,6 +22,7 @@ export class Team extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["defaultUserLevel"],
         properties: {
           inviteSecret: { type: ["null", "string"] },

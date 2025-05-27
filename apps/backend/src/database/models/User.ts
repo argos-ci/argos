@@ -18,7 +18,7 @@ export class User extends Model {
     allOf: [
       timestampsSchema,
       {
-        required: [],
+        type: "object",
         properties: {
           email: {
             oneOf: [{ type: "string", format: "email" }, { type: "null" }],

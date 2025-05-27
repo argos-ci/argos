@@ -12,6 +12,7 @@ export class TeamUser extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["userId", "teamId", "userLevel"],
         properties: {
           userId: { type: "string" },

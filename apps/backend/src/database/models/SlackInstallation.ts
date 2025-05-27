@@ -12,6 +12,7 @@ export class SlackInstallation extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["installation", "teamId", "teamDomain", "teamName"],
         properties: {
           teamId: { type: "string" },

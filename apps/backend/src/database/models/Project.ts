@@ -37,6 +37,7 @@ export class Project extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["name", "accountId"],
         properties: {
           name: {

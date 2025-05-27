@@ -15,6 +15,7 @@ export class Subscription extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["accountId", "planId", "provider", "startDate", "status"],
         properties: {
           planId: { type: ["string"] },

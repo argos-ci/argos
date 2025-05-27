@@ -11,6 +11,7 @@ export class GitlabUser extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: [
           "name",
           "email",

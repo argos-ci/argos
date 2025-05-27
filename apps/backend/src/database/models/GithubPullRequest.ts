@@ -18,6 +18,7 @@ export class GithubPullRequest extends Model {
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
         required: ["githubRepositoryId", "number"],
         properties: {
           commentDeleted: { type: "boolean" },

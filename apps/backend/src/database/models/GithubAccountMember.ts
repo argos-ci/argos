@@ -11,6 +11,7 @@ export class GithubAccountMember extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["githubAccountId", "githubMemberId"],
         properties: {
           githubAccountId: { type: "string" },

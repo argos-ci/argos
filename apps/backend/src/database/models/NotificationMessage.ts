@@ -21,6 +21,7 @@ export class NotificationMessage extends Model {
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
         required: ["userId", "workflowId", "channel"],
         properties: {
           userId: { type: "string" },

@@ -12,6 +12,7 @@ export class BuildReview extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["buildId", "state"],
         properties: {
           buildId: { type: "string" },

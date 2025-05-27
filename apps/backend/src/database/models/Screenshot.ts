@@ -18,6 +18,7 @@ export class Screenshot extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["name", "s3Id", "screenshotBucketId"],
         properties: {
           name: { type: "string", maxLength: 1024 },

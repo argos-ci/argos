@@ -8,6 +8,7 @@ export class GithubInstallation extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["githubId", "proxy"],
         properties: {
           githubId: { type: "number" },

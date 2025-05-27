@@ -12,6 +12,7 @@ export class NotificationWorkflowRecipient extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: ["userId", "workflowId"],
         properties: {
           userId: { type: "string" },

@@ -11,6 +11,7 @@ export class GitlabProject extends Model {
     allOf: [
       timestampsSchema,
       {
+        type: "object",
         required: [
           "name",
           "path",
