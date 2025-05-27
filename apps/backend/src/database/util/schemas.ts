@@ -27,6 +27,7 @@ const jobStatuses = [
 export type JobStatus = (typeof jobStatuses)[number];
 
 export const jobModelSchema: JSONSchema = {
+  type: "object",
   required: ["jobStatus"],
   properties: {
     jobStatus: {
