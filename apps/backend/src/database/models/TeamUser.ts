@@ -1,21 +1,29 @@
 import { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
 
 export class TeamUser extends Model {
   static override tableName = "team_users";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["userId", "teamId", "userLevel"],
-    properties: {
-      userId: { type: "string" },
-      teamId: { type: "string" },
-      userLevel: { type: "string", enum: ["owner", "member", "contributor"] },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        required: ["userId", "teamId", "userLevel"],
+        properties: {
+          userId: { type: "string" },
+          teamId: { type: "string" },
+          userLevel: {
+            type: "string",
+            enum: ["owner", "member", "contributor"],
+          },
+        },
+      },
+    ],
+  };
 
   userId!: string;
   teamId!: string;

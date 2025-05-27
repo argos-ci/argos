@@ -36,21 +36,3 @@ export const jobModelSchema: JSONSchema = {
     },
   },
 };
-
-export const mergeSchemas = (...schemas: JSONSchema[]): JSONSchema => {
-  return schemas.reduce(
-    (mergedSchema, schema) => ({
-      ...mergedSchema,
-      ...schema,
-      required: [...(mergedSchema.required ?? []), ...(schema.required ?? [])],
-      properties: {
-        ...mergedSchema.properties,
-        ...schema.properties,
-      },
-    }),
-    {
-      required: [],
-      properties: {},
-    } as JSONSchema,
-  );
-};

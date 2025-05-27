@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
 import { GithubPullRequest } from "./GithubPullRequest.js";
 import { GithubRepositoryInstallation } from "./GithubRepositoryInstallation.js";
@@ -11,22 +11,27 @@ import { Project } from "./Project.js";
 export class GithubRepository extends Model {
   static override tableName = "github_repositories";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: [
-      "name",
-      "private",
-      "defaultBranch",
-      "githubId",
-      "githubAccountId",
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        required: [
+          "name",
+          "private",
+          "defaultBranch",
+          "githubId",
+          "githubAccountId",
+        ],
+        properties: {
+          name: { type: "string" },
+          private: { type: "boolean" },
+          defaultBranch: { type: "string" },
+          githubId: { type: "number" },
+          githubAccountId: { type: "string" },
+        },
+      },
     ],
-    properties: {
-      name: { type: "string" },
-      private: { type: "boolean" },
-      defaultBranch: { type: "string" },
-      githubId: { type: "number" },
-      githubAccountId: { type: "string" },
-    },
-  });
+  };
 
   name!: string;
   private!: boolean;

@@ -4,7 +4,6 @@ import { Model } from "../util/model.js";
 import {
   jobModelSchema,
   JobStatus,
-  mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
 import { Build } from "./Build.js";
@@ -14,25 +13,31 @@ import { GithubRepository } from "./GithubRepository.js";
 export class GithubPullRequest extends Model {
   static override tableName = "github_pull_requests";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["githubRepositoryId", "number"],
-    properties: {
-      commentDeleted: { type: "boolean" },
-      commentId: { type: ["string", "null"] },
-      githubRepositoryId: { type: "string" },
-      number: { type: "integer" },
-      title: { type: ["string", "null"] },
-      baseRef: { type: ["string", "null"] },
-      baseSha: { type: ["string", "null"] },
-      state: { type: ["string", "null"], enum: ["open", "closed"] },
-      date: { type: ["string", "null"] },
-      closedAt: { type: ["string", "null"] },
-      mergedAt: { type: ["string", "null"] },
-      creatorId: { type: ["string", "null"] },
-      merged: { type: ["boolean", "null"] },
-      draft: { type: ["boolean", "null"] },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      jobModelSchema,
+      {
+        required: ["githubRepositoryId", "number"],
+        properties: {
+          commentDeleted: { type: "boolean" },
+          commentId: { type: ["string", "null"] },
+          githubRepositoryId: { type: "string" },
+          number: { type: "integer" },
+          title: { type: ["string", "null"] },
+          baseRef: { type: ["string", "null"] },
+          baseSha: { type: ["string", "null"] },
+          state: { type: ["string", "null"], enum: ["open", "closed"] },
+          date: { type: ["string", "null"] },
+          closedAt: { type: ["string", "null"] },
+          mergedAt: { type: ["string", "null"] },
+          creatorId: { type: ["string", "null"] },
+          merged: { type: ["boolean", "null"] },
+          draft: { type: ["boolean", "null"] },
+        },
+      },
+    ],
+  };
 
   commentDeleted!: boolean;
   commentId!: string | null;

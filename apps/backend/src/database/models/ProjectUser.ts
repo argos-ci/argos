@@ -1,7 +1,7 @@
 import { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level.js";
 import { Project } from "./Project.js";
 import { User } from "./User.js";
@@ -9,14 +9,19 @@ import { User } from "./User.js";
 export class ProjectUser extends Model {
   static override tableName = "project_users";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["userId", "projectId", "userLevel"],
-    properties: {
-      userId: { type: "string" },
-      projectId: { type: "string" },
-      userLevel: UserLevelJsonSchema,
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        required: ["userId", "projectId", "userLevel"],
+        properties: {
+          userId: { type: "string" },
+          projectId: { type: "string" },
+          userLevel: UserLevelJsonSchema,
+        },
+      },
+    ],
+  };
 
   userId!: string;
   projectId!: string;

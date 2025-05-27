@@ -5,23 +5,28 @@ import {
   BuildMetadataJsonSchema,
 } from "../schemas/BuildMetadata.js";
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { Build } from "./Build.js";
 import { Screenshot } from "./Screenshot.js";
 
 export class BuildShard extends Model {
   static override tableName = "build_shards";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["buildId"],
-    properties: {
-      buildId: { type: "string" },
-      index: { type: ["integer", "null"] },
-      metadata: {
-        oneOf: [BuildMetadataJsonSchema, { type: "null" }],
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        required: ["buildId"],
+        properties: {
+          buildId: { type: "string" },
+          index: { type: ["integer", "null"] },
+          metadata: {
+            oneOf: [BuildMetadataJsonSchema, { type: "null" }],
+          },
+        },
       },
-    },
-  });
+    ],
+  };
 
   buildId!: string;
   index!: number | null;

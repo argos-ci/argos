@@ -1,21 +1,26 @@
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { Build } from "./Build.js";
 import { User } from "./User.js";
 
 export class BuildReview extends Model {
   static override tableName = "build_reviews";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["buildId", "state"],
-    properties: {
-      buildId: { type: "string" },
-      userId: { type: ["string", "null"] },
-      state: { type: "string", enum: ["pending", "approved", "rejected"] },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        required: ["buildId", "state"],
+        properties: {
+          buildId: { type: "string" },
+          userId: { type: ["string", "null"] },
+          state: { type: "string", enum: ["pending", "approved", "rejected"] },
+        },
+      },
+    ],
+  };
 
   buildId!: string;
   userId!: string | null;

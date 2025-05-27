@@ -3,7 +3,7 @@ import type { RelationMappings } from "objection";
 import { SHA1_REGEX } from "@/web/constants.js";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import type { BuildMode } from "./Build.js";
 import { Project } from "./Project.js";
 import { Screenshot } from "./Screenshot.js";
@@ -11,19 +11,24 @@ import { Screenshot } from "./Screenshot.js";
 export class ScreenshotBucket extends Model {
   static override tableName = "screenshot_buckets";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["name", "commit", "branch", "complete", "valid"],
-    properties: {
-      name: { type: "string" },
-      commit: { type: "string", pattern: SHA1_REGEX.source },
-      branch: { type: "string" },
-      projectId: { type: "string" },
-      screenshotCount: { type: "integer" },
-      mode: { type: "string", enum: ["ci", "monitoring"] },
-      complete: { type: "boolean" },
-      valid: { type: "boolean" },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        required: ["name", "commit", "branch", "complete", "valid"],
+        properties: {
+          name: { type: "string" },
+          commit: { type: "string", pattern: SHA1_REGEX.source },
+          branch: { type: "string" },
+          projectId: { type: "string" },
+          screenshotCount: { type: "integer" },
+          mode: { type: "string", enum: ["ci", "monitoring"] },
+          complete: { type: "boolean" },
+          valid: { type: "boolean" },
+        },
+      },
+    ],
+  };
 
   /**
    * The name of the screenshot bucket, identic to the build name.

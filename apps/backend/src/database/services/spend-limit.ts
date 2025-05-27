@@ -2,13 +2,13 @@ import { z } from "zod";
 
 import { Account } from "../models";
 
-export type SpendLimitThreshold = z.infer<typeof SpendLimitThresholdSchema>;
-
 export const SpendLimitThresholdSchema = z.union([
   z.literal(50),
   z.literal(75),
   z.literal(100),
 ]);
+
+type SpendLimitThreshold = z.infer<typeof SpendLimitThresholdSchema>;
 
 /**
  * Spend limit thresholds in percentage.

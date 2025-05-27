@@ -4,7 +4,6 @@ import { Model } from "../util/model.js";
 import {
   jobModelSchema,
   JobStatus,
-  mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
 import { NotificationWorkflow } from "./NotificationWorkflow.js";
@@ -17,18 +16,24 @@ type NotificationChannel = (typeof channels)[number];
 export class NotificationMessage extends Model {
   static override tableName = "notification_messages";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["userId", "workflowId", "channel"],
-    properties: {
-      userId: { type: "string" },
-      workflowId: { type: "string" },
-      channel: { type: "string", enum: channels as unknown as string[] },
-      sentAt: { type: ["string", "null"] },
-      deliveredAt: { type: ["string", "null"] },
-      linkClickedAt: { type: ["string", "null"] },
-      externalId: { type: ["string", "null"] },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      jobModelSchema,
+      {
+        required: ["userId", "workflowId", "channel"],
+        properties: {
+          userId: { type: "string" },
+          workflowId: { type: "string" },
+          channel: { type: "string", enum: channels as unknown as string[] },
+          sentAt: { type: ["string", "null"] },
+          deliveredAt: { type: ["string", "null"] },
+          linkClickedAt: { type: ["string", "null"] },
+          externalId: { type: ["string", "null"] },
+        },
+      },
+    ],
+  };
 
   jobStatus!: JobStatus;
   userId!: string;
