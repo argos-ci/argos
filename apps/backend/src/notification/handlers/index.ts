@@ -1,29 +1,21 @@
-import type * as React from "react";
-
-import {
-  NotificationWorkflowData,
-  NotificationWorkflowType,
-} from "../workflow-types";
+import type { Handler } from "../workflow-types";
+import * as foo from "./foo";
 import * as spend_limit from "./spend_limit";
-import * as welcome from "./welcome";
 
-export type HandlerContext = {
-  user: {
-    name: string | null;
-  };
-};
+const handlers = [foo.handler, spend_limit.handler] satisfies Handler<
+  string,
+  any
+>[];
 
-export type Handler<Type extends NotificationWorkflowType> = {
-  previewData: NotificationWorkflowData[Type];
-  email: (props: NotificationWorkflowData[Type] & { ctx: HandlerContext }) => {
-    subject: string;
-    body: React.JSX.Element;
-  };
-};
+export type HandlersType = (typeof handlers)[number];
+export type HandlersName = HandlersType["name"];
 
-export const handlers = {
-  welcome,
-  spend_limit,
-} satisfies {
-  [K in NotificationWorkflowType]: Handler<K>;
-};
+export function getHandler<T extends HandlersName>(
+  name: T,
+): Extract<HandlersType, { name: T }> {
+  const handler = handlers.find((h) => h.name === name);
+  if (!handler) {
+    throw new Error(`Handler not found: ${name}`);
+  }
+  return handler as Extract<HandlersType, { name: T }>;
+}

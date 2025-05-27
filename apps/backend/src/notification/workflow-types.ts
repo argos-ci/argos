@@ -1,15 +1,24 @@
-import type { SpendLimitThreshold } from "../database/services/spend-limit";
+import type * as React from "react";
+import type { z } from "zod";
 
-export const WORKFLOW_TYPES = ["welcome", "spend_limit"] as const;
-
-export type NotificationWorkflowType = (typeof WORKFLOW_TYPES)[number];
-
-export type NotificationWorkflowData = {
-  spend_limit: {
-    threshold: SpendLimitThreshold;
-    accountName: string | null;
-    accountSlug: string;
-    blockWhenSpendLimitIsReached: boolean;
+export type HandlerContext = {
+  user: {
+    name: string | null;
   };
-  welcome: Record<string, never>;
 };
+
+export type Handler<TName extends string, TData> = {
+  name: TName;
+  schema: z.ZodType<TData>;
+  previewData: TData;
+  email: (props: TData & { ctx: HandlerContext }) => {
+    subject: string;
+    body: React.JSX.Element;
+  };
+};
+
+export function defineHandler<TName extends string, TData>(
+  handler: Handler<TName, TData>,
+): Handler<TName, TData> {
+  return handler;
+}

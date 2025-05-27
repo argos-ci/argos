@@ -1,15 +1,16 @@
-import * as React from "react";
 import { z } from "zod";
 
 import { defineHandler } from "../workflow-types";
 
 export const handler = defineHandler({
-  name: "spend_limit",
+  name: "foo",
   schema: z.object({
-    foo: z.string(),
+    a: z.string(),
+    b: z.number(),
   }),
   previewData: {
-    foo: "example",
+    a: "example",
+    b: 42,
   },
   email: () => ({ subject: "", body: <div /> }),
 });
