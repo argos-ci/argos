@@ -4,6 +4,7 @@ import { defineHandler } from "../workflow-types";
 
 export const handler = defineHandler({
   name: "foo",
+  jsonSchema: {},
   schema: z.object({
     a: z.string(),
     b: z.number(),

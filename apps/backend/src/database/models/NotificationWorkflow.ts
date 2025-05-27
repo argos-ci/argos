@@ -1,37 +1,51 @@
 import type { RelationMappings } from "objection";
 
 import {
-  NotificationWorkflowData,
-  NotificationWorkflowType,
-  WORKFLOW_TYPES,
-} from "@/notification/workflow-types.js";
+  handlers,
+  type GetHandlerData,
+  type HandlersName,
+} from "@/notification/handlers/index.js";
+
+// import {
+//   NotificationWorkflowData,
+//   NotificationWorkflowType,
+//   WORKFLOW_TYPES,
+// } from "@/notification/workflow-types.js";
 
 import { Model } from "../util/model.js";
 import {
   jobModelSchema,
   JobStatus,
-  mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
 import { NotificationMessage } from "./NotificationMessage.js";
 import { NotificationWorkflowRecipient } from "./NotificationWorkflowRecipient.js";
 
 export class NotificationWorkflow<
-  Type extends NotificationWorkflowType = NotificationWorkflowType,
+  T extends HandlersName = HandlersName,
 > extends Model {
   static override tableName = "notification_workflows";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["type", "data"],
-    properties: {
-      type: { type: "string", enum: WORKFLOW_TYPES as unknown as string[] },
-      data: { type: "object" },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      jobModelSchema,
+      {
+        oneOf: handlers.map((h) => ({
+          type: "object",
+          properties: {
+            type: { const: h.name },
+            data: h.jsonSchema,
+          },
+          required: ["type", "data"],
+        })),
+      },
+    ],
+  };
 
   jobStatus!: JobStatus;
-  type!: Type;
-  data!: NotificationWorkflowData[Type];
+  type!: T;
+  data!: GetHandlerData<T>;
 
   static override get relationMappings(): RelationMappings {
     return {

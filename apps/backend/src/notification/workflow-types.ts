@@ -1,4 +1,5 @@
 import type * as React from "react";
+import type { JSONSchema } from "objection";
 import type { z } from "zod";
 
 export type HandlerContext = {
@@ -10,6 +11,7 @@ export type HandlerContext = {
 export type Handler<TName extends string, TData> = {
   name: TName;
   schema: z.ZodType<TData>;
+  jsonSchema: JSONSchema;
   previewData: TData;
   email: (props: TData & { ctx: HandlerContext }) => {
     subject: string;
