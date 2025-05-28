@@ -11,7 +11,7 @@ import config from "@/config/index.js";
 
 import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
+import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level.js";
 import { Account } from "./Account.js";
 import { Build } from "./Build.js";
@@ -33,33 +33,27 @@ const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
 export class Project extends Model {
   static override tableName = "projects";
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      {
-        type: "object",
-        required: ["name", "accountId"],
-        properties: {
-          name: {
-            type: "string",
-            minLength: 1,
-            maxLength: 100,
-            pattern: "^[a-zA-Z0-9_\\-.]+$",
-          },
-          token: { type: "string" },
-          private: { type: ["null", "boolean"] },
-          defaultBaseBranch: { type: ["null", "string"] },
-          autoApprovedBranchGlob: { type: ["null", "string"] },
-          accountId: { type: "string" },
-          githubRepositoryId: { type: ["null", "string"] },
-          gitlabProjectId: { type: ["null", "string"] },
-          prCommentEnabled: { type: "boolean" },
-          summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
-          defaultUserLevel: { oneOf: [{ type: "null" }, UserLevelJsonSchema] },
-        },
+  static override jsonSchema = mergeSchemas(timestampsSchema, {
+    required: ["name", "accountId"],
+    properties: {
+      name: {
+        type: "string",
+        minLength: 1,
+        maxLength: 100,
+        pattern: "^[a-zA-Z0-9_\\-.]+$",
       },
-    ],
-  };
+      token: { type: "string" },
+      private: { type: ["null", "boolean"] },
+      defaultBaseBranch: { type: ["null", "string"] },
+      autoApprovedBranchGlob: { type: ["null", "string"] },
+      accountId: { type: "string" },
+      githubRepositoryId: { type: ["null", "string"] },
+      gitlabProjectId: { type: ["null", "string"] },
+      prCommentEnabled: { type: "boolean" },
+      summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
+      defaultUserLevel: { oneOf: [{ type: "null" }, UserLevelJsonSchema] },
+    },
+  });
 
   name!: string;
   token!: string;

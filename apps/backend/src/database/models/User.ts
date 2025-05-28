@@ -1,7 +1,7 @@
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
+import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import {
   Account,
   AccountPermission,
@@ -14,22 +14,15 @@ import { Team } from "./Team.js";
 export class User extends Model {
   static override tableName = "users";
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      {
-        type: "object",
-        properties: {
-          email: {
-            oneOf: [{ type: "string", format: "email" }, { type: "null" }],
-          },
-          gitlabUserId: { type: ["string", "null"] },
-          googleUserId: { type: ["string", "null"] },
-          staff: { type: "boolean" },
-        },
-      },
-    ],
-  };
+  static override jsonSchema = mergeSchemas(timestampsSchema, {
+    required: [],
+    properties: {
+      email: { oneOf: [{ type: "string", format: "email" }, { type: "null" }] },
+      gitlabUserId: { type: ["string", "null"] },
+      googleUserId: { type: ["string", "null"] },
+      staff: { type: "boolean" },
+    },
+  });
 
   email!: string | null;
   gitlabUserId!: string | null;

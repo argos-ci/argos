@@ -1,7 +1,7 @@
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
+import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
 import { Project } from "./Project.js";
 import { Screenshot } from "./Screenshot.js";
 import { ScreenshotDiff } from "./ScreenshotDiff.js";
@@ -9,20 +9,14 @@ import { ScreenshotDiff } from "./ScreenshotDiff.js";
 export class Test extends Model {
   static override tableName = "tests";
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      {
-        type: "object",
-        required: ["name", "projectId", "buildName"],
-        properties: {
-          name: { type: "string", maxLength: 1024 },
-          projectId: { type: "string" },
-          buildName: { type: "string", maxLength: 255 },
-        },
-      },
-    ],
-  };
+  static override jsonSchema = mergeSchemas(timestampsSchema, {
+    required: ["name", "projectId", "buildName"],
+    properties: {
+      name: { type: "string", maxLength: 1024 },
+      projectId: { type: "string" },
+      buildName: { type: "string", maxLength: 255 },
+    },
+  });
 
   name!: string;
   projectId!: string;

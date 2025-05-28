@@ -3,13 +3,13 @@ import { Request as ExpressRequest, Router } from "express";
 
 import { asyncHandler } from "@/web/util.js";
 
-import { notificationHandlers } from "./handlers";
+import { handlers } from "./handlers/index.js";
 
 const router: Router = Router();
 
-notificationHandlers.forEach((handler) => {
+Object.entries(handlers).forEach(([type, handler]) => {
   router.get(
-    `/${handler.type}`,
+    `/${type}`,
     asyncHandler(async (req, res) => {
       const rendered = handler.email({
         ctx: { user: { name: "James" } },
