@@ -1,21 +1,27 @@
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 
 export class File extends Model {
   static override tableName = "files";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["key", "type"],
-    properties: {
-      key: { type: ["string"] },
-      width: { type: ["number", "null"], minimum: 0 },
-      height: { type: ["number", "null"], minimum: 0 },
-      type: {
-        type: "string",
-        enum: ["screenshot", "screenshotDiff", "playwrightTrace"],
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: ["key", "type"],
+        properties: {
+          key: { type: ["string"] },
+          width: { type: ["number", "null"], minimum: 0 },
+          height: { type: ["number", "null"], minimum: 0 },
+          type: {
+            type: "string",
+            enum: ["screenshot", "screenshotDiff", "playwrightTrace"],
+          },
+        },
       },
-    },
-  });
+    ],
+  };
 
   key!: string;
   width!: number | null;
