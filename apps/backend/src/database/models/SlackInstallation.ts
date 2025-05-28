@@ -8,6 +8,10 @@ import { Account } from "./Account.js";
 export class SlackInstallation extends Model {
   static override tableName = "slack_installations";
 
+  static override get jsonAttributes() {
+    return ["installation"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

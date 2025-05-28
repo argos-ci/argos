@@ -14,6 +14,10 @@ import { Test } from "./Test.js";
 export class Screenshot extends Model {
   static override tableName = "screenshots";
 
+  static override get jsonAttributes() {
+    return ["metadata"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

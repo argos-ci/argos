@@ -21,6 +21,10 @@ export class NotificationWorkflow<
 > extends Model {
   static override tableName = "notification_workflows";
 
+  static override get jsonAttributes() {
+    return ["data"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

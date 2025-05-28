@@ -72,6 +72,10 @@ type BuildStats = {
 export class Build extends Model {
   static override tableName = "builds";
 
+  static override get jsonAttributes() {
+    return ["parentCommits", "metadata", "stats"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

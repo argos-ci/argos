@@ -12,6 +12,10 @@ import { Screenshot } from "./Screenshot.js";
 export class BuildShard extends Model {
   static override tableName = "build_shards";
 
+  static override get jsonAttributes() {
+    return ["metadata"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

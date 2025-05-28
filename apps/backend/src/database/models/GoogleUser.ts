@@ -7,6 +7,10 @@ import { User } from "./User.js";
 export class GoogleUser extends Model {
   static override tableName = "google_users";
 
+  static override get jsonAttributes() {
+    return ["emails"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
