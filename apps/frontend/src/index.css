@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @import "@radix-ui/colors/gray" layer(base);
 @import "@radix-ui/colors/gray-dark" layer(base);

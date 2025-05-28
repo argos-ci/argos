@@ -417,6 +417,14 @@ export function createConfig() {
         env: "SQIDS_ALPHABET",
       },
     },
+    openai: {
+      apiKey: {
+        doc: "OpenAI API key",
+        format: String,
+        default: "",
+        env: "OPENAI_API_KEY",
+      },
+    },
   });
 
   const env = config.get("env");

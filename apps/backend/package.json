@@ -27,6 +27,7 @@
     "watch-server": "sleep 2 && concurrently \"npm:watch-server-*\""
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
     "@apollo/server": "^4.12.1",
     "@argos/knex-scripts": "workspace:*",
     "@argos/tsconfig": "workspace:*",
@@ -48,6 +49,7 @@
     "@sentry/node": "^9.19.0",
     "@sindresorhus/slugify": "^2.2.1",
     "@slack/bolt": "^4.3.0",
+    "ai": "^4.3.16",
     "ajv": "^8.17.1",
     "amqplib": "^0.10.8",
     "auth-header": "^1.0.0",

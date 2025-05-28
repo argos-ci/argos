@@ -3,6 +3,7 @@ import { Application, Router } from "express";
 import { apiMiddleware as githubApiMiddleware } from "../middlewares/github.js";
 import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend.js";
 import { subdomain } from "../util.js";
+import ai from "./ai.js";
 import auth from "./auth.js";
 import builds from "./builds.js";
 import status from "./status.js";
@@ -19,6 +20,7 @@ export const installApiRouter = (app: Application) => {
   router.use(builds);
   router.use(auth);
   router.use(stripe);
+  router.use(ai);
 
   app.use(subdomain(router, "api"));
 };

@@ -28,6 +28,7 @@ import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
 import { fetchImage } from "@/util/image";
 
+import { AIRoast } from "./AIRoast";
 import {
   useBuildDiffColorState,
   useBuildDiffColorStyle,
@@ -1096,7 +1097,14 @@ export function BuildDiffDetail(props: {
                   >
                     {header}
                   </div>
-                  <BuildScreenshots build={build} diff={diff} />
+                  <div className="flex min-h-0 flex-1 gap-4">
+                    <div className="min-w-0 flex-1">
+                      <BuildScreenshots build={build} diff={diff} />
+                    </div>
+                    <div className="w-80">
+                      <AIRoast diffId={diff.id} />
+                    </div>
+                  </div>
                 </BuildDiffViewModeStateProvider>
               </BuildDiffFitStateProvider>
             </BuildDiffVisibleStateProvider>
