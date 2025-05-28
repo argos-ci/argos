@@ -30,13 +30,11 @@ export class NotificationWorkflow<
       timestampsSchema,
       jobModelSchema,
       {
-        oneOf: notificationHandlers.map((h) => ({
+        anyOf: notificationHandlers.map((h) => ({
           type: "object",
           properties: {
             type: { const: h.type },
-            data: zodToJsonSchema(h.schema, {
-              removeAdditionalStrategy: "strict",
-            }) as JSONSchema,
+            data: zodToJsonSchema(h.schema) as JSONSchema,
           },
           required: ["type", "data"],
         })),
