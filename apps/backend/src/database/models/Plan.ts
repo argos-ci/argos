@@ -1,7 +1,7 @@
 import { firstUpper } from "@argos/util/string";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import type { SubscriptionInterval } from "./Subscription.js";
 
 const FREE_PLAN_NAME = "free";
@@ -9,26 +9,32 @@ const FREE_PLAN_NAME = "free";
 export class Plan extends Model {
   static override tableName = "plans";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: [
-      "name",
-      "includedScreenshots",
-      "usageBased",
-      "githubSsoIncluded",
-      "fineGrainedAccessControlIncluded",
-      "interval",
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: [
+          "name",
+          "includedScreenshots",
+          "usageBased",
+          "githubSsoIncluded",
+          "fineGrainedAccessControlIncluded",
+          "interval",
+        ],
+        properties: {
+          name: { type: "string" },
+          includedScreenshots: { type: "number" },
+          githubPlanId: { type: ["number", "null"] },
+          stripeProductId: { type: ["string", "null"] },
+          usageBased: { type: "boolean" },
+          githubSsoIncluded: { type: "boolean" },
+          fineGrainedAccessControlIncluded: { type: "boolean" },
+          interval: { type: "string", enum: ["month", "year"] },
+        },
+      },
     ],
-    properties: {
-      name: { type: "string" },
-      includedScreenshots: { type: "number" },
-      githubPlanId: { type: ["number", "null"] },
-      stripeProductId: { type: ["string", "null"] },
-      usageBased: { type: "boolean" },
-      githubSsoIncluded: { type: "boolean" },
-      fineGrainedAccessControlIncluded: { type: "boolean" },
-      interval: { type: "string", enum: ["month", "year"] },
-    },
-  });
+  };
 
   name!: string;
   includedScreenshots!: number;

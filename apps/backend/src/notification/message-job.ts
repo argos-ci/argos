@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { NotificationMessage } from "@/database/models/index.js";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core/index.js";
-import { handlers } from "@/notification/handlers/index.js";
+import { getHandler } from "@/notification/handlers/index.js";
 
 export const notificationMessageJob = createModelJob(
   "notificationMessage",
@@ -27,7 +27,7 @@ async function processMessage(message: NotificationMessage) {
   }
 
   const to = [message.user.email];
-  const handler = handlers[message.workflow.type];
+  const handler = getHandler(message.workflow.type);
   const data = message.workflow.data;
   const ctx = {
     user: {

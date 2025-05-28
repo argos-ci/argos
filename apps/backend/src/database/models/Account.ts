@@ -6,7 +6,7 @@ import type { Pojo, RelationMappings } from "objection";
 import { slugJsonSchema } from "@/util/slug.js";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
 import { GithubInstallation } from "./GithubInstallation.js";
 import { Plan } from "./Plan.js";
@@ -52,25 +52,31 @@ export const ALL_ACCOUNT_PERMISSIONS: AccountPermission[] = ["admin", "view"];
 export class Account extends Model {
   static override tableName = "accounts";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["slug"],
-    properties: {
-      userId: { type: ["string", "null"] },
-      forcedPlanId: { type: ["string", "null"] },
-      stripeCustomerId: { type: ["string", "null"] },
-      teamId: { type: ["string", "null"] },
-      name: { type: ["string", "null"], maxLength: 40, minLength: 1 },
-      slug: slugJsonSchema,
-      githubAccountId: { type: ["string", "null"] },
-      gitlabBaseUrl: { type: ["string", "null"] },
-      slackInstallationId: { type: ["string", "null"] },
-      githubLightInstallationId: { type: ["string", "null"] },
-      meteredSpendLimitByPeriod: {
-        oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: ["slug"],
+        properties: {
+          userId: { type: ["string", "null"] },
+          forcedPlanId: { type: ["string", "null"] },
+          stripeCustomerId: { type: ["string", "null"] },
+          teamId: { type: ["string", "null"] },
+          name: { type: ["string", "null"], maxLength: 40, minLength: 1 },
+          slug: slugJsonSchema,
+          githubAccountId: { type: ["string", "null"] },
+          gitlabBaseUrl: { type: ["string", "null"] },
+          slackInstallationId: { type: ["string", "null"] },
+          githubLightInstallationId: { type: ["string", "null"] },
+          meteredSpendLimitByPeriod: {
+            oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+          },
+          blockWhenSpendLimitIsReached: { type: "boolean" },
+        },
       },
-      blockWhenSpendLimitIsReached: { type: "boolean" },
-    },
-  });
+    ],
+  };
 
   userId!: string | null;
   forcedPlanId!: string | null;

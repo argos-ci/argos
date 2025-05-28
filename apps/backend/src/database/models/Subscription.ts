@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
 import { Plan } from "./Plan.js";
 
@@ -11,46 +11,52 @@ export type SubscriptionInterval = "month" | "year";
 export class Subscription extends Model {
   static override tableName = "subscriptions";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["accountId", "planId", "provider", "startDate", "status"],
-    properties: {
-      planId: { type: ["string"] },
-      provider: {
-        type: ["string"],
-        enum: ["github", "stripe"],
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: ["accountId", "planId", "provider", "startDate", "status"],
+        properties: {
+          planId: { type: ["string"] },
+          provider: {
+            type: ["string"],
+            enum: ["github", "stripe"],
+          },
+          stripeSubscriptionId: { type: ["string", "null"] },
+          accountId: { type: ["string"] },
+          subscriberId: { type: ["string", "null"] },
+          startDate: { type: ["string"] },
+          endDate: { type: ["string", "null"] },
+          trialEndDate: { type: ["string", "null"] },
+          paymentMethodFilled: { type: "boolean" },
+          status: {
+            type: ["string"],
+            enum: [
+              "active",
+              "canceled",
+              "trialing",
+              "past_due",
+              "incomplete",
+              "unpaid",
+              "incomplete_expired",
+              "paused",
+            ],
+          },
+          includedScreenshots: {
+            oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+          },
+          additionalScreenshotPrice: {
+            oneOf: [{ type: "null" }, { type: "number", minimum: 0 }],
+          },
+          usageUpdatedAt: { type: ["string", "null"] },
+          currency: {
+            oneOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
+          },
+        },
       },
-      stripeSubscriptionId: { type: ["string", "null"] },
-      accountId: { type: ["string"] },
-      subscriberId: { type: ["string", "null"] },
-      startDate: { type: ["string"] },
-      endDate: { type: ["string", "null"] },
-      trialEndDate: { type: ["string", "null"] },
-      paymentMethodFilled: { type: "boolean" },
-      status: {
-        type: ["string"],
-        enum: [
-          "active",
-          "canceled",
-          "trialing",
-          "past_due",
-          "incomplete",
-          "unpaid",
-          "incomplete_expired",
-          "paused",
-        ],
-      },
-      includedScreenshots: {
-        oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
-      },
-      additionalScreenshotPrice: {
-        oneOf: [{ type: "null" }, { type: "number", minimum: 0 }],
-      },
-      usageUpdatedAt: { type: ["string", "null"] },
-      currency: {
-        oneOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
-      },
-    },
-  });
+    ],
+  };
 
   planId!: string;
   provider!: "github" | "stripe";

@@ -1,4 +1,6 @@
+import type { JSONSchema } from "objection";
 import { z } from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
 
 export const BuildMetadataSchema = z
   .object({
@@ -20,33 +22,6 @@ export const BuildMetadataSchema = z
 
 export type BuildMetadata = z.infer<typeof BuildMetadataSchema>;
 
-export const BuildMetadataJsonSchema = {
-  type: "object",
-  properties: {
-    testReport: {
-      type: "object",
-      properties: {
-        status: {
-          type: "string",
-          enum: ["passed", "failed", "timedout", "interrupted"],
-        },
-        stats: {
-          type: "object",
-          properties: {
-            startTime: {
-              type: "string",
-            },
-            duration: {
-              type: "number",
-            },
-          },
-          additionalProperties: false,
-          required: [],
-        },
-      },
-      additionalProperties: false,
-      required: ["status"],
-    },
-  },
-  additionalProperties: false,
-};
+export const BuildMetadataJsonSchema = zodToJsonSchema(BuildMetadataSchema, {
+  removeAdditionalStrategy: "strict",
+}) as JSONSchema;

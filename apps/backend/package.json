@@ -91,7 +91,8 @@
     "undici": "^7.9.0",
     "yaml": "^2.8.0",
     "zod": "^3.24.4",
-    "zod-openapi": "^4.2.4"
+    "zod-openapi": "^4.2.4",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
     "@argos/config-types": "workspace:*",

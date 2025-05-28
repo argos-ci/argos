@@ -1,16 +1,16 @@
-import type { RelationMappings } from "objection";
+import type { JSONSchema, RelationMappings } from "objection";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 import {
-  NotificationWorkflowData,
-  NotificationWorkflowType,
-  WORKFLOW_TYPES,
-} from "@/notification/workflow-types.js";
+  notificationHandlers,
+  type NotificationWorkflowData,
+  type NotificationWorkflowType,
+} from "@/notification/handlers/index.js";
 
 import { Model } from "../util/model.js";
 import {
   jobModelSchema,
   JobStatus,
-  mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
 import { NotificationMessage } from "./NotificationMessage.js";
@@ -21,17 +21,28 @@ export class NotificationWorkflow<
 > extends Model {
   static override tableName = "notification_workflows";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
-    required: ["type", "data"],
-    properties: {
-      type: { type: "string", enum: WORKFLOW_TYPES as unknown as string[] },
-      data: { type: "object" },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      jobModelSchema,
+      {
+        oneOf: notificationHandlers.map((h) => ({
+          type: "object",
+          properties: {
+            type: { const: h.type },
+            data: zodToJsonSchema(h.schema, {
+              removeAdditionalStrategy: "strict",
+            }) as JSONSchema,
+          },
+          required: ["type", "data"],
+        })),
+      },
+    ],
+  };
 
   jobStatus!: JobStatus;
   type!: Type;
-  data!: NotificationWorkflowData[Type];
+  data!: NotificationWorkflowData<Type>;
 
   static override get relationMappings(): RelationMappings {
     return {

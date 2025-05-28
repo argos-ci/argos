@@ -5,7 +5,7 @@ import config from "@/config/index.js";
 
 import { generateRandomHexString } from "../services/crypto.js";
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import {
   Account,
   AccountPermission,
@@ -18,14 +18,20 @@ import { User } from "./User.js";
 export class Team extends Model {
   static override tableName = "teams";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["defaultUserLevel"],
-    properties: {
-      inviteSecret: { type: ["null", "string"] },
-      ssoGithubAccountId: { type: ["null", "string"] },
-      defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: ["defaultUserLevel"],
+        properties: {
+          inviteSecret: { type: ["null", "string"] },
+          ssoGithubAccountId: { type: ["null", "string"] },
+          defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
+        },
+      },
+    ],
+  };
 
   inviteSecret!: string | null;
   ssoGithubAccountId!: string | null;
