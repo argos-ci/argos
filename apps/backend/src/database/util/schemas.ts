@@ -1,29 +1,55 @@
 import type { JSONSchema } from "objection";
-import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
 
-export const timestampsSchema = zodToJsonSchema(
-  z.object({
-    id: z.string().optional(),
-    createdAt: z.string().optional(),
-    updatedAt: z.string().optional(),
-  }),
-  { removeAdditionalStrategy: "strict" },
-) as JSONSchema;
+export const timestampsSchema: JSONSchema = {
+  type: "object",
+  required: [],
+  properties: {
+    id: {
+      type: "string",
+    },
+    createdAt: {
+      type: "string",
+    },
+    updatedAt: {
+      type: "string",
+    },
+  },
+};
 
-const JobStatusSchema = z.enum([
+const jobStatuses = [
   "pending",
   "progress",
   "complete",
   "error",
   "aborted",
-]);
+] as const;
 
-export type JobStatus = z.infer<typeof JobStatusSchema>;
+export type JobStatus = (typeof jobStatuses)[number];
 
-export const jobModelSchema = zodToJsonSchema(
-  z.object({
-    jobStatus: JobStatusSchema,
-  }),
-  { removeAdditionalStrategy: "strict" },
-) as JSONSchema;
+export const jobModelSchema: JSONSchema = {
+  required: ["jobStatus"],
+  properties: {
+    jobStatus: {
+      type: "string",
+      enum: jobStatuses as unknown as string[],
+    },
+  },
+};
+
+export const mergeSchemas = (...schemas: JSONSchema[]): JSONSchema => {
+  return schemas.reduce(
+    (mergedSchema, schema) => ({
+      ...mergedSchema,
+      ...schema,
+      required: [...(mergedSchema.required ?? []), ...(schema.required ?? [])],
+      properties: {
+        ...mergedSchema.properties,
+        ...schema.properties,
+      },
+    }),
+    {
+      required: [],
+      properties: {},
+    } as JSONSchema,
+  );
+};

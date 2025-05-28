@@ -20,6 +20,7 @@ import { Model } from "../util/model.js";
 import {
   jobModelSchema,
   JobStatus,
+  mergeSchemas,
   timestampsSchema,
 } from "../util/schemas.js";
 import { BuildReview } from "./BuildReview.js";
@@ -72,98 +73,91 @@ type BuildStats = {
 export class Build extends Model {
   static override tableName = "builds";
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      jobModelSchema,
-      {
-        type: "object",
-        required: ["compareScreenshotBucketId", "projectId"],
-        properties: {
-          name: { type: "string", maxLength: 255 },
-          baseScreenshotBucketId: { type: ["string", "null"] },
-          compareScreenshotBucketId: { type: "string" },
-          projectId: { type: "string" },
-          number: { type: "integer" },
-          externalId: { type: ["string", "null"] },
-          batchCount: { type: ["integer", "null"] },
-          totalBatch: { type: ["integer", "null"] },
-          type: {
-            oneOf: [
-              { type: "null" },
-              { type: "string", enum: ["reference", "check", "orphan"] },
-            ],
-          },
-          prNumber: { type: ["integer", "null"] },
-          prHeadCommit: { type: ["string", "null"] },
-          githubPullRequestId: { type: ["string", "null"] },
-          baseCommit: {
-            oneOf: [
-              { type: "null" },
-              { type: "string", pattern: SHA1_REGEX.source },
-            ],
-          },
-          parentCommits: {
-            oneOf: [
-              { type: "null" },
-              {
-                type: "array",
-                items: { type: "string", pattern: SHA1_REGEX.source },
-              },
-            ],
-          },
-          baseBranch: { type: ["string", "null"] },
-          baseBranchResolvedFrom: {
-            oneOf: [
-              { type: "null" },
-              { type: "string", enum: ["user", "pull-request", "project"] },
-            ],
-          },
-          mode: { type: "string", enum: ["ci", "monitoring"] },
-          ciProvider: { type: ["string", "null"] },
-          argosSdk: { type: ["string", "null"] },
-          runId: { type: ["string", "null"] },
-          runAttempt: { type: ["integer", "null"] },
-          partial: { type: ["boolean", "null"] },
-          metadata: {
-            oneOf: [BuildMetadataJsonSchema, { type: "null" }],
-          },
-          conclusion: {
-            oneOf: [
-              { type: "null" },
-              { type: "string", enum: ["no-changes", "changes-detected"] },
-            ],
-          },
-          stats: {
-            oneOf: [
-              { type: "null" },
-              {
-                type: "object",
-                properties: {
-                  failure: { type: "integer" },
-                  added: { type: "integer" },
-                  unchanged: { type: "integer" },
-                  changed: { type: "integer" },
-                  removed: { type: "integer" },
-                  total: { type: "integer" },
-                  retryFailure: { type: "integer" },
-                },
-                required: [
-                  "failure",
-                  "added",
-                  "unchanged",
-                  "changed",
-                  "removed",
-                  "total",
-                  "retryFailure",
-                ],
-              },
-            ],
-          },
-        },
+  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
+    required: ["compareScreenshotBucketId", "projectId"],
+    properties: {
+      name: { type: "string", maxLength: 255 },
+      baseScreenshotBucketId: { type: ["string", "null"] },
+      compareScreenshotBucketId: { type: "string" },
+      projectId: { type: "string" },
+      number: { type: "integer" },
+      externalId: { type: ["string", "null"] },
+      batchCount: { type: ["integer", "null"] },
+      totalBatch: { type: ["integer", "null"] },
+      type: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["reference", "check", "orphan"] },
+        ],
       },
-    ],
-  };
+      prNumber: { type: ["integer", "null"] },
+      prHeadCommit: { type: ["string", "null"] },
+      githubPullRequestId: { type: ["string", "null"] },
+      baseCommit: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", pattern: SHA1_REGEX.source },
+        ],
+      },
+      parentCommits: {
+        oneOf: [
+          { type: "null" },
+          {
+            type: "array",
+            items: { type: "string", pattern: SHA1_REGEX.source },
+          },
+        ],
+      },
+      baseBranch: { type: ["string", "null"] },
+      baseBranchResolvedFrom: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["user", "pull-request", "project"] },
+        ],
+      },
+      mode: { type: "string", enum: ["ci", "monitoring"] },
+      ciProvider: { type: ["string", "null"] },
+      argosSdk: { type: ["string", "null"] },
+      runId: { type: ["string", "null"] },
+      runAttempt: { type: ["integer", "null"] },
+      partial: { type: ["boolean", "null"] },
+      metadata: {
+        oneOf: [BuildMetadataJsonSchema, { type: "null" }],
+      },
+      conclusion: {
+        oneOf: [
+          { type: "null" },
+          { type: "string", enum: ["no-changes", "changes-detected"] },
+        ],
+      },
+      stats: {
+        oneOf: [
+          { type: "null" },
+          {
+            type: "object",
+            properties: {
+              failure: { type: "integer" },
+              added: { type: "integer" },
+              unchanged: { type: "integer" },
+              changed: { type: "integer" },
+              removed: { type: "integer" },
+              total: { type: "integer" },
+              retryFailure: { type: "integer" },
+            },
+            required: [
+              "failure",
+              "added",
+              "unchanged",
+              "changed",
+              "removed",
+              "total",
+              "retryFailure",
+            ],
+          },
+        ],
+      },
+    },
+  });
 
   name!: string;
   jobStatus!: JobStatus;

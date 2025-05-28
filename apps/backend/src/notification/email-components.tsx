@@ -18,7 +18,7 @@ import clsx from "clsx";
 
 import config from "@/config";
 
-import type { HandlerContext } from "./workflow-types";
+import { HandlerContext } from "./handlers";
 
 export function Paragraph(props: {
   children: React.ReactNode;

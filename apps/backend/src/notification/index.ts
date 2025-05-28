@@ -4,11 +4,11 @@ import {
   NotificationWorkflowRecipient,
 } from "@/database/models/index.js";
 
-import type {
+import { notificationWorkflowJob } from "./workflow-job.js";
+import {
   NotificationWorkflowData,
   NotificationWorkflowType,
-} from "./handlers/index.js";
-import { notificationWorkflowJob } from "./workflow-job.js";
+} from "./workflow-types.js";
 
 /**
  * Send a notification to a list of recipients.
@@ -23,7 +23,7 @@ export async function sendNotification<
   /**
    * Data for the notification.
    */
-  data: NotificationWorkflowData<Type>;
+  data: NotificationWorkflowData[Type];
   /**
    * User IDs to send the notification to.
    */

@@ -4,7 +4,11 @@ import type { Pojo, RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import type { JobStatus } from "../util/schemas.js";
-import { jobModelSchema, timestampsSchema } from "../util/schemas.js";
+import {
+  jobModelSchema,
+  mergeSchemas,
+  timestampsSchema,
+} from "../util/schemas.js";
 import { Build } from "./Build.js";
 import { File } from "./File.js";
 import { Screenshot } from "./Screenshot.js";
@@ -13,26 +17,19 @@ import { Test } from "./Test.js";
 export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      jobModelSchema,
-      {
-        type: "object",
-        required: ["buildId", "baseScreenshotId", "compareScreenshotId"],
-        properties: {
-          buildId: { type: "string" },
-          baseScreenshotId: { type: ["string", "null"] },
-          compareScreenshotId: { type: ["string", "null"] },
-          s3Id: { type: ["string", "null"] },
-          fileId: { type: ["string", "null"] },
-          score: { type: ["number", "null"], minimum: 0, maximum: 1 },
-          testId: { type: ["string", "null"] },
-          group: { type: ["string", "null"] },
-        },
-      },
-    ],
-  };
+  static override jsonSchema = mergeSchemas(timestampsSchema, jobModelSchema, {
+    required: ["buildId", "baseScreenshotId", "compareScreenshotId"],
+    properties: {
+      buildId: { type: "string" },
+      baseScreenshotId: { type: ["string", "null"] },
+      compareScreenshotId: { type: ["string", "null"] },
+      s3Id: { type: ["string", "null"] },
+      fileId: { type: ["string", "null"] },
+      score: { type: ["number", "null"], minimum: 0, maximum: 1 },
+      testId: { type: ["string", "null"] },
+      group: { type: ["string", "null"] },
+    },
+  });
 
   buildId!: string;
   baseScreenshotId!: string | null;
