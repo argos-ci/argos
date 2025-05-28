@@ -74,7 +74,7 @@ function CompanyAndUserProvider(
   });
 
   if (!data) {
-    return props.children;
+    return <UserProvider {...props} />;
   }
 
   return (
