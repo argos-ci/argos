@@ -1,19 +1,25 @@
 import { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
 
 export class GithubAccountMember extends Model {
   static override tableName = "github_account_members";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["githubAccountId", "githubMemberId"],
-    properties: {
-      githubAccountId: { type: "string" },
-      githubMemberId: { type: "string" },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: ["githubAccountId", "githubMemberId"],
+        properties: {
+          githubAccountId: { type: "string" },
+          githubMemberId: { type: "string" },
+        },
+      },
+    ],
+  };
 
   githubAccountId!: string;
   githubMemberId!: string;

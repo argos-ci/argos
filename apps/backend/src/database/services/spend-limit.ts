@@ -1,11 +1,19 @@
+import { z } from "zod";
+
 import { Account } from "../models";
+
+export const SpendLimitThresholdSchema = z.union([
+  z.literal(50),
+  z.literal(75),
+  z.literal(100),
+]);
+
+type SpendLimitThreshold = z.infer<typeof SpendLimitThresholdSchema>;
 
 /**
  * Spend limit thresholds in percentage.
  */
-const THRESHOLDS = [50, 75, 100] as const;
-
-export type SpendLimitThreshold = (typeof THRESHOLDS)[number];
+const SPEND_LIMIT_THRESHOLDS = [50, 75, 100] satisfies SpendLimitThreshold[];
 
 /**
  * Get the spend limit threshold that has been reached for the first time.
@@ -34,18 +42,21 @@ export async function getSpendLimitThreshold(input: {
   ]);
 
   const spendLimit = account.meteredSpendLimitByPeriod;
-  return THRESHOLDS.reduce<null | SpendLimitThreshold>((acc, threshold) => {
-    const limitAtThreshold = spendLimit * (threshold / 100);
-    if (
-      // The highest threshold is reached.
-      (acc === null || acc < threshold) &&
-      (previousUsageCost === null || previousUsageCost <= limitAtThreshold) &&
-      currentCost > limitAtThreshold
-    ) {
-      return threshold;
-    }
-    return acc;
-  }, null);
+  return SPEND_LIMIT_THRESHOLDS.reduce<null | SpendLimitThreshold>(
+    (acc, threshold) => {
+      const limitAtThreshold = spendLimit * (threshold / 100);
+      if (
+        // The highest threshold is reached.
+        (acc === null || acc < threshold) &&
+        (previousUsageCost === null || previousUsageCost <= limitAtThreshold) &&
+        currentCost > limitAtThreshold
+      ) {
+        return threshold;
+      }
+      return acc;
+    },
+    null,
+  );
 }
 
 /**

@@ -1,20 +1,26 @@
 import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
-import { mergeSchemas, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { NotificationWorkflow } from "./NotificationWorkflow.js";
 import { User } from "./User.js";
 
 export class NotificationWorkflowRecipient extends Model {
   static override tableName = "notification_workflow_recipients";
 
-  static override jsonSchema = mergeSchemas(timestampsSchema, {
-    required: ["userId", "workflowId"],
-    properties: {
-      userId: { type: "string" },
-      workflowId: { type: "string" },
-    },
-  });
+  static override jsonSchema = {
+    allOf: [
+      timestampsSchema,
+      {
+        type: "object",
+        required: ["userId", "workflowId"],
+        properties: {
+          userId: { type: "string" },
+          workflowId: { type: "string" },
+        },
+      },
+    ],
+  };
 
   userId!: string;
   workflowId!: string;
