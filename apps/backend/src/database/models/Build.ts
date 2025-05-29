@@ -93,7 +93,7 @@ export class Build extends Model {
           batchCount: { type: ["integer", "null"] },
           totalBatch: { type: ["integer", "null"] },
           type: {
-            oneOf: [
+            anyOf: [
               { type: "null" },
               { type: "string", enum: ["reference", "check", "orphan"] },
             ],
@@ -102,13 +102,13 @@ export class Build extends Model {
           prHeadCommit: { type: ["string", "null"] },
           githubPullRequestId: { type: ["string", "null"] },
           baseCommit: {
-            oneOf: [
+            anyOf: [
               { type: "null" },
               { type: "string", pattern: SHA1_REGEX.source },
             ],
           },
           parentCommits: {
-            oneOf: [
+            anyOf: [
               { type: "null" },
               {
                 type: "array",
@@ -118,7 +118,7 @@ export class Build extends Model {
           },
           baseBranch: { type: ["string", "null"] },
           baseBranchResolvedFrom: {
-            oneOf: [
+            anyOf: [
               { type: "null" },
               { type: "string", enum: ["user", "pull-request", "project"] },
             ],
@@ -130,16 +130,16 @@ export class Build extends Model {
           runAttempt: { type: ["integer", "null"] },
           partial: { type: ["boolean", "null"] },
           metadata: {
-            oneOf: [BuildMetadataJsonSchema, { type: "null" }],
+            anyOf: [BuildMetadataJsonSchema, { type: "null" }],
           },
           conclusion: {
-            oneOf: [
+            anyOf: [
               { type: "null" },
               { type: "string", enum: ["no-changes", "changes-detected"] },
             ],
           },
           stats: {
-            oneOf: [
+            anyOf: [
               { type: "null" },
               {
                 type: "object",

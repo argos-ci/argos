@@ -26,7 +26,7 @@ export class BuildShard extends Model {
           buildId: { type: "string" },
           index: { type: ["integer", "null"] },
           metadata: {
-            oneOf: [BuildMetadataJsonSchema, { type: "null" }],
+            anyOf: [BuildMetadataJsonSchema, { type: "null" }],
           },
         },
       },

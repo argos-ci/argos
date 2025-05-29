@@ -19,7 +19,11 @@ const LocationSchema = z
 
 const TestSchema = z
   .object({
-    id: z.string().optional().describe("The unique identifier of the test"),
+    id: z
+      .string()
+      .optional()
+      .nullable()
+      .describe("The unique identifier of the test"),
     title: z.string().describe("The title of the test"),
     titlePath: z
       .array(z.string())
@@ -29,18 +33,21 @@ const TestSchema = z
       .int()
       .min(0)
       .optional()
+      .nullable()
       .describe("The number of retries for the test"),
     retry: z
       .number()
       .int()
       .min(0)
       .optional()
+      .nullable()
       .describe("The current retry count"),
     repeat: z
       .number()
       .int()
       .min(0)
       .optional()
+      .nullable()
       .describe("The repeat count for the test"),
     location: LocationSchema.optional().describe(
       "The location of the test in the source code",
@@ -76,23 +83,27 @@ export const ScreenshotMetadataSchema = z
       .string()
       .url()
       .optional()
+      .nullable()
       .describe("The URL of the page that was screenshotted"),
     previewUrl: z
       .string()
       .url()
       .optional()
+      .nullable()
       .describe("An URL to an accessible preview of the screenshot"),
-    viewport: ViewportSchema.optional(),
+    viewport: ViewportSchema.optional().nullable(),
     colorScheme: z
       .enum(["light", "dark"])
       .optional()
+      .nullable()
       .describe("The color scheme when the screenshot was taken"),
     mediaType: z
       .enum(["screen", "print"])
       .optional()
+      .nullable()
       .describe("The media type when the screenshot was taken"),
-    test: TestSchema.nullable().optional(),
-    browser: BrowserSchema.optional(),
+    test: TestSchema.nullable().optional().nullable(),
+    browser: BrowserSchema.optional().nullable(),
     automationLibrary: AutomationLibrarySchema,
     sdk: SdkSchema,
   })

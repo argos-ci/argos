@@ -21,7 +21,7 @@ export class User extends Model {
         type: "object",
         properties: {
           email: {
-            oneOf: [{ type: "string", format: "email" }, { type: "null" }],
+            anyOf: [{ type: "string", format: "email" }, { type: "null" }],
           },
           gitlabUserId: { type: ["string", "null"] },
           googleUserId: { type: ["string", "null"] },
