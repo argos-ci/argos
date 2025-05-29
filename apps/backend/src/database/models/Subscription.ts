@@ -44,14 +44,14 @@ export class Subscription extends Model {
             ],
           },
           includedScreenshots: {
-            oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+            anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
           additionalScreenshotPrice: {
-            oneOf: [{ type: "null" }, { type: "number", minimum: 0 }],
+            anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
           },
           usageUpdatedAt: { type: ["string", "null"] },
           currency: {
-            oneOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
+            anyOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
           },
         },
       },

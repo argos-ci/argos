@@ -22,7 +22,7 @@ export class GoogleUser extends Model {
           name: { type: ["string", "null"] },
           primaryEmail: { type: ["string", "null"] },
           emails: {
-            oneOf: [
+            anyOf: [
               { type: "array", items: { type: "string" } },
               { type: "null" },
             ],

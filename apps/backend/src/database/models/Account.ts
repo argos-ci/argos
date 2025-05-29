@@ -70,7 +70,7 @@ export class Account extends Model {
           slackInstallationId: { type: ["string", "null"] },
           githubLightInstallationId: { type: ["string", "null"] },
           meteredSpendLimitByPeriod: {
-            oneOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+            anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
         },
