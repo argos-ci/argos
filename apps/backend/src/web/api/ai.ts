@@ -71,14 +71,14 @@ router.post("/diffs/:diffId/roast", async (req, res) => {
           {
             type: "text",
             text: `
-Please review the following UI changes and provide UX feedback.
-Focus on clarity, usability, consistency, and potential confusion for users.
-Suggest specific improvements. Be short and concise in your feedback.
-
 The three images represent in order:
 1. The original screenshot before the changes.
 2. The new screenshot after the changes.
 3. The diff screenshot highlighting the changes.
+
+Review the UI changes and provide UX feedback.
+Focus on clarity, usability, consistency, and potential confusion for users.
+Be short and concise, ideally under 100 words.
             `,
           },
         ],
