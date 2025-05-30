@@ -31,7 +31,7 @@ async function pushDiffs(input: {
     return;
   }
 
-  await concludeBuild({ buildId: input.build.id });
+  await concludeBuild({ build: input.build });
 }
 
 /**
