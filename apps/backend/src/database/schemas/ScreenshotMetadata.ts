@@ -81,13 +81,11 @@ export const ScreenshotMetadataSchema = z
   .object({
     url: z
       .string()
-      .url()
       .optional()
       .nullable()
       .describe("The URL of the page that was screenshotted"),
     previewUrl: z
       .string()
-      .url()
       .optional()
       .nullable()
       .describe("An URL to an accessible preview of the screenshot"),
