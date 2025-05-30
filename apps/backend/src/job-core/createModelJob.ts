@@ -35,16 +35,7 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
         await Model.query().patch({ jobStatus: "error" }).where({ id });
       },
       complete: async (id) => {
-        const model = await Model.query().findById(id);
-        invariant(
-          model,
-          `${Model.name} ${id} not found for completion handling`,
-        );
-        const patch: Record<string, any> = { jobStatus: "complete" };
-        if ("completedAt" in model) {
-          patch["completedAt"] = new Date().toISOString();
-        }
-        await Model.query().patch(patch).where({ id });
+        await Model.query().patch({ jobStatus: "complete" }).where({ id });
       },
     },
     params,

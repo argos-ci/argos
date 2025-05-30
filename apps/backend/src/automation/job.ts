@@ -33,9 +33,24 @@ async function processAutomationActionRun(
     UnretryableError,
   );
 
-  // Process the action
+  // Process the action and update the conclusion status
   const jobContext: AutomationActionContext = { automationActionRun };
-  await actionDefinition.process({ ...validatedPayload, ctx: jobContext });
+  try {
+    await actionDefinition.process({ ...validatedPayload, ctx: jobContext });
+    await AutomationActionRun.query().findById(automationActionRun.id).patch({
+      conclusion: "success",
+      completedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    await AutomationActionRun.query()
+      .findById(automationActionRun.id)
+      .patch({
+        conclusion: "failed",
+        completedAt: new Date().toISOString(),
+        failureReason: error instanceof Error ? error.message : String(error),
+      });
+    throw error;
+  }
 }
 
 export const job = createModelJob(
