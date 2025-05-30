@@ -16,7 +16,20 @@ export async function getTestAllMetrics(input: {
   SELECT
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE sd."score" > 0) AS changes,
-      COUNT(DISTINCT sd."fileId") FILTER (WHERE sd."score" > 0) AS "uniqueChanges"
+      (
+        SELECT COUNT(*) FROM (
+          SELECT sd2."fileId"
+          FROM screenshot_diffs sd2
+          JOIN builds b2 ON sd2."buildId" = b2.id
+          WHERE sd2."testId" = :testId
+            AND sd2."score" > 0
+            AND sd2."createdAt" >= :from::timestamp
+            AND sd2."createdAt" <= :to
+            AND b2.type = 'reference'
+          GROUP BY sd2."fileId"
+          HAVING COUNT(*) = 1
+        ) AS unique_files
+      ) AS "uniqueChanges"
     FROM screenshot_diffs sd
     JOIN builds b ON sd."buildId" = b.id
     WHERE sd."testId" = :testId
@@ -47,8 +60,10 @@ export async function getTestAllMetrics(input: {
     all.changes > 0 ? Math.round((1 - all.changes / all.total) * 100) / 100 : 1;
 
   const consistency =
-    all.uniqueChanges > 0
-      ? Math.round((all.uniqueChanges / all.changes) * 100) / 100
+    all.changes > 0
+      ? all.uniqueChanges > 0
+        ? Math.round((all.uniqueChanges / all.changes) * 100) / 100
+        : 0
       : 1;
 
   const flakiness = Math.round((1 - (stability + consistency) / 2) * 100) / 100;
