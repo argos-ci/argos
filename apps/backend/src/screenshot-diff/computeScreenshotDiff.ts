@@ -220,11 +220,26 @@ export const computeScreenshotDiff = async (
     }
   }
 
-  // Update screenshot diff status
-  await ScreenshotDiff.query()
-    .findById(screenshotDiff.id)
-    .patch({ jobStatus: "complete" });
+  await Promise.all([
+    // Group similar diffs
+    groupSimilarDiffs({ diffKey, buildId }),
+    // Unlink images
+    baseImage?.unlink(),
+    compareImage.unlink(),
+  ]);
 
+  // Conclude build if it's the last diff
+  await concludeBuild({ buildId: screenshotDiff.build.id });
+};
+
+/**
+ * Group similar diffs by their `diffKey`.
+ */
+async function groupSimilarDiffs(input: {
+  diffKey: string | null;
+  buildId: string;
+}) {
+  const { diffKey, buildId } = input;
   if (diffKey) {
     const similarDiffCount = await ScreenshotDiff.query()
       .where({ buildId, s3Id: diffKey })
@@ -251,10 +266,4 @@ export const computeScreenshotDiff = async (
       }
     }
   }
-
-  // Unlink images
-  await Promise.all([baseImage?.unlink(), compareImage.unlink()]);
-
-  // Conclude build if it's the last diff
-  await concludeBuild({ buildId: screenshotDiff.build.id });
-};
+}
