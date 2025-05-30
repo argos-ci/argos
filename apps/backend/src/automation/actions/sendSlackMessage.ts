@@ -15,7 +15,6 @@ import {
   AutomationActionContext,
   defineAutomationAction,
 } from "../defineAutomationAction";
-import { ActionRunError } from "./util";
 
 const payloadSchema = z.object({
   channelId: z.string().min(1, "Channel ID is required"),
@@ -78,11 +77,9 @@ export async function sendSlackMessage(
   );
 
   if (!slackChannel) {
-    return ActionRunError({
-      actionRunId: richActionRun.id,
-      failureReason: `Slack channel removed ${channelId}`,
-    });
+    throw new Error(`Slack channel removed ${channelId}`);
   }
+
   invariant(
     slackChannel.slackInstallation,
     `Slack installation not found for slack channel id ${slackChannel.id}`,
@@ -112,12 +109,6 @@ export async function sendSlackMessage(
     channel: slackChannel.slackId,
     text: getEventDescription(event),
     blocks,
-  });
-
-  await richActionRun.$query().patch({
-    jobStatus: "complete",
-    conclusion: "success",
-    completedAt: new Date().toISOString(),
   });
 }
 
