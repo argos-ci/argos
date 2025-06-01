@@ -179,11 +179,6 @@ export async function triggerAutomation<Event extends AutomationEvent>({
           const { action: actionName, actionPayload: payload } = ruleAction;
           const actionDefinition = getAutomationAction(actionName);
 
-          invariant(
-            actionDefinition,
-            `[AutomationEngine] Unsupported action type: ${actionName}. Action not found.`,
-          );
-
           const {
             success: parsingSuccess,
             error: parsingError,

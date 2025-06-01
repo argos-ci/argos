@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AutomationActionRun } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { postMessageToSlackChannel } from "@/slack";
 
-import { postMessageToSlackChannel } from "../../slack";
 import { sendSlackMessage } from "./sendSlackMessage";
 
-vi.mock("../../slack", () => ({
+vi.mock("@/slack", () => ({
   __esModule: true,
   postMessageToSlackChannel: vi.fn(),
 }));
@@ -19,7 +18,7 @@ describe("sendSlackMessage", () => {
     mockPostMessageToSlackChannel.mockClear();
   });
 
-  it("sends a Slack message and marks task as success", async () => {
+  it("sends a Slack message with valid payload", async () => {
     const [project, slackChannel] = await Promise.all([
       factory.Project.create(),
       factory.SlackChannel.create(),
@@ -44,34 +43,26 @@ describe("sendSlackMessage", () => {
         blocks: expect.any(Array),
       }),
     );
-    const updatedTask = await AutomationActionRun.query().findById(
-      automationActionRun.id,
-    );
-    expect(updatedTask?.conclusion).toBe("success");
-    expect(updatedTask?.completedAt).not.toBeNull();
   });
 
-  it("marks task as failed if Slack channel is missing", async () => {
-    const project = await factory.Project.create();
+  it("throws if Slack channel does not exist", async () => {
+    const [project] = await Promise.all([factory.Project.create()]);
     const build = await factory.Build.create({ projectId: project.id });
+    const automationRule = await factory.AutomationRule.create();
     const automationRun = await factory.AutomationRun.create({
+      automationRuleId: automationRule.id,
       buildId: build.id,
     });
     const automationActionRun = await factory.AutomationActionRun.create({
       automationRunId: automationRun.id,
-      actionPayload: { channelId: "5555" },
+      actionPayload: { channelId: "nonexistent-channel" },
     });
 
-    await sendSlackMessage({
-      channelId: "1234",
-      ctx: { automationActionRun },
-    });
-    expect(mockPostMessageToSlackChannel).not.toHaveBeenCalled();
-    const updatedTask = await AutomationActionRun.query().findById(
-      automationActionRun.id,
-    );
-    expect(updatedTask?.conclusion).toBe("failed");
-    expect(updatedTask?.failureReason).toContain("Slack channel removed");
-    expect(updatedTask?.jobStatus).toBe("complete");
+    await expect(
+      sendSlackMessage({
+        channelId: "1245",
+        ctx: { automationActionRun },
+      }),
+    ).rejects.toThrow("Slack channel removed");
   });
 });

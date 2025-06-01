@@ -1,22 +1,15 @@
-import { invariant } from "@argos/util/invariant";
-
 import { AutomationActionRun } from "@/database/models/index.js";
-import { createModelJob, UnretryableError } from "@/job-core/index.js";
+import { createModelJob } from "@/job-core/index.js";
 
 import { getAutomationAction } from "./actions";
+import { AutomationActionFailureError } from "./automationActionError";
 import { AutomationActionContext } from "./defineAutomationAction";
 
-async function processAutomationActionRun(
+export async function processAutomationActionRun(
   automationActionRun: AutomationActionRun,
 ): Promise<void> {
   // Get the action
   const actionDefinition = getAutomationAction(automationActionRun.action);
-
-  invariant(
-    actionDefinition,
-    `Unsupported action type: ${automationActionRun.action}. Action not found in registry.`,
-    UnretryableError,
-  );
 
   // Validate the payload schema
   const {
@@ -27,28 +20,32 @@ async function processAutomationActionRun(
     automationActionRun.actionPayload,
   );
 
-  invariant(
-    parsingSuccess,
-    `Invalid payload for action ${automationActionRun.action}: ${parsingError}`,
-    UnretryableError,
-  );
+  if (!parsingSuccess) {
+    throw new AutomationActionFailureError(
+      `Invalid payload for action ${automationActionRun.action}: ${parsingError}`,
+    );
+  }
 
   // Process the action and update the conclusion status
   const jobContext: AutomationActionContext = { automationActionRun };
   try {
     await actionDefinition.process({ ...validatedPayload, ctx: jobContext });
     await AutomationActionRun.query().findById(automationActionRun.id).patch({
-      conclusion: "success",
+      jobStatus: "complete",
       completedAt: new Date().toISOString(),
+      conclusion: "success",
     });
   } catch (error) {
-    await AutomationActionRun.query()
-      .findById(automationActionRun.id)
-      .patch({
-        conclusion: "failed",
+    if (error instanceof AutomationActionFailureError) {
+      await AutomationActionRun.query().findById(automationActionRun.id).patch({
+        jobStatus: "complete",
         completedAt: new Date().toISOString(),
-        failureReason: error instanceof Error ? error.message : String(error),
+        conclusion: "failed",
+        failureReason: error.message,
       });
+      return;
+    }
+
     throw error;
   }
 }

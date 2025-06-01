@@ -146,7 +146,8 @@ CREATE TABLE public.automation_action_runs (
     action character varying(255) NOT NULL,
     "actionPayload" jsonb NOT NULL,
     "processedAt" timestamp with time zone,
-    "completedAt" timestamp with time zone
+    "completedAt" timestamp with time zone,
+    CONSTRAINT automation_action_runs_conclusion_requires_completed_status CHECK (((conclusion IS NULL) OR (("jobStatus")::text = 'complete'::text)))
 );
 
 
@@ -3413,11 +3414,7 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250119081939_slack_channels.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250202084159_cleanup-test-table.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250505143128_proxy-github.js', 1, NOW());
-<<<<<<< HEAD
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250523070743_create_automation_tables.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250524183823_clean-stability-store.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250602091017_test-stats.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250607160713_remove-test-activities.js', 1, NOW());
-=======
-INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250523070743_create_automation_tables.js', 1, NOW());
-INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250524183823_clean-stability-store.js', 1, NOW());
->>>>>>> 34be127f (feat: automations backend)

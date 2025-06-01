@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import type { ModelClass } from "objection";
 
 import logger from "@/logger/index.js";

@@ -1,16 +1,15 @@
-import { invariant } from "@argos/util/invariant";
 import { JSONSchema } from "objection";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
 import { SlackChannel } from "@/database/models/index.js";
-import { UnretryableError } from "@/job-core";
 import { postMessageToSlackChannel } from "@/slack";
 import {
   getBuildStatusMessage,
   getEventDescription,
 } from "@/slack/buildStatusMessage";
 
+import { AutomationActionFailureError } from "../automationActionError";
 import {
   AutomationActionContext,
   defineAutomationAction,
@@ -49,42 +48,46 @@ export async function sendSlackMessage(
       .withGraphFetched("slackInstallation"),
   ]);
 
-  invariant(richActionRun, "AutomationActionRun not found", UnretryableError);
-  invariant(
-    richActionRun.automationRun,
-    "AutomationRun not found",
-    UnretryableError,
-  );
-  invariant(
-    richActionRun.automationRun.automationRule,
-    "AutomationRule not found",
-    UnretryableError,
-  );
-  invariant(
-    richActionRun.automationRun.build,
-    "Build not found",
-    UnretryableError,
-  );
-  invariant(
-    richActionRun.automationRun.build.project,
-    "Project not found",
-    UnretryableError,
-  );
-  invariant(
-    richActionRun.automationRun.event,
-    "AutomationEvent not found",
-    UnretryableError,
-  );
-
-  if (!slackChannel) {
-    throw new Error(`Slack channel removed ${channelId}`);
+  if (!richActionRun) {
+    throw new AutomationActionFailureError(
+      `AutomationActionRun not found with id: '${automationActionRun.id}'`,
+    );
   }
-
-  invariant(
-    slackChannel.slackInstallation,
-    `Slack installation not found for slack channel id ${slackChannel.id}`,
-    UnretryableError,
-  );
+  if (!richActionRun) {
+    throw new AutomationActionFailureError(
+      `AutomationRun related to automationActionRun ${automationActionRun.id} not found`,
+    );
+  }
+  if (!richActionRun.automationRun) {
+    throw new AutomationActionFailureError(
+      `AutomationRule related to automationActionRun ${automationActionRun.id} not found`,
+    );
+  }
+  if (!richActionRun.automationRun.build) {
+    throw new AutomationActionFailureError(
+      `Build related to automationActionRun ${automationActionRun.id} not found`,
+    );
+  }
+  if (!richActionRun.automationRun.build.project) {
+    throw new AutomationActionFailureError(
+      `Project related to automationActionRun ${automationActionRun.id} not found`,
+    );
+  }
+  if (!richActionRun.automationRun.event) {
+    throw new AutomationActionFailureError(
+      `AutomationEvent related to automationActionRun ${automationActionRun.id} not found`,
+    );
+  }
+  if (!slackChannel) {
+    throw new AutomationActionFailureError(
+      `Slack channel removed ${channelId}`,
+    );
+  }
+  if (!slackChannel.slackInstallation) {
+    throw new AutomationActionFailureError(
+      `Slack installation not found for slack channel id ${slackChannel.id}`,
+    );
+  }
 
   const {
     build,

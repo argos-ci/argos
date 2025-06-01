@@ -48,6 +48,9 @@ export async function up(knex) {
     table.timestamp("processedAt").nullable();
     table.timestamp("completedAt").nullable();
   });
+  await knex.raw(
+    "ALTER TABLE automation_action_runs ADD CONSTRAINT automation_action_runs_conclusion_requires_completed_status CHECK (conclusion IS NULL OR \"jobStatus\" = 'complete')",
+  );
 }
 
 /**
