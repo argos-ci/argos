@@ -81,7 +81,10 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
     }
 
     if (distinctName) {
-      filterQuery.distinctOn("builds.name").orderBy("builds.name");
+      filterQuery
+        .distinctOn("builds.name")
+        .orderBy("builds.name")
+        .orderBy("builds.id", "desc");
     }
 
     const builds = await Build.query()

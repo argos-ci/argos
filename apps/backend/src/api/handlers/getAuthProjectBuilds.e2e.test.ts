@@ -103,7 +103,10 @@ describe("getAuthProjectBuilds", () => {
   describe('with "distinctName" params', () => {
     it("returns only the latest builds by `builds.name`", async () => {
       const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
-      const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
+      // Sort by id desc to ensure the latest builds are first
+      const [withPrHeadCommit, withCompareScreenshotBucket] = builds.sort(
+        (a: Build, b: Build) => a.id.localeCompare(b.id),
+      );
       invariant(withPrHeadCommit && withCompareScreenshotBucket);
       await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
 
@@ -122,7 +125,7 @@ describe("getAuthProjectBuilds", () => {
         .expect((res) => {
           expect(res.body.results).toHaveLength(1);
           expect(res.body.results.map((b: Build) => b.id)).toEqual([
-            withPrHeadCommit.id,
+            withCompareScreenshotBucket.id,
           ]);
         });
     });
