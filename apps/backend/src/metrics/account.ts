@@ -15,7 +15,7 @@ export async function getAccountScreenshotMetrics(input: {
 }) {
   const interval = `1 ${input.groupBy}`;
   const query = `
-    WITH aggregated AS (
+  WITH aggregated AS (
     SELECT
       date_trunc(:groupBy, sb."createdAt") AS date,
       p.id AS "projectId",
