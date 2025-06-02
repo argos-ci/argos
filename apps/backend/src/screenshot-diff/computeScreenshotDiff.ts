@@ -223,6 +223,10 @@ export const computeScreenshotDiff = async (
   await Promise.all([
     // Group similar diffs
     groupSimilarDiffs({ diffKey, buildId }),
+    // Update the job status to complete to be able to "conclude" the build
+    ScreenshotDiff.query()
+      .findById(screenshotDiff.id)
+      .patch({ jobStatus: "complete" }),
     // Unlink images
     baseImage?.unlink(),
     compareImage.unlink(),
