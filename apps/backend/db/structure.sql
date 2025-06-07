@@ -1366,6 +1366,33 @@ CREATE TABLE public.test_activities (
 ALTER TABLE public.test_activities OWNER TO postgres;
 
 --
+-- Name: test_stats_builds; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test_stats_builds (
+    "testId" bigint NOT NULL,
+    date timestamp with time zone NOT NULL,
+    value integer NOT NULL
+);
+
+
+ALTER TABLE public.test_stats_builds OWNER TO postgres;
+
+--
+-- Name: test_stats_changes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test_stats_changes (
+    "testId" bigint NOT NULL,
+    "fileId" bigint NOT NULL,
+    date timestamp with time zone NOT NULL,
+    value integer NOT NULL
+);
+
+
+ALTER TABLE public.test_stats_changes OWNER TO postgres;
+
+--
 -- Name: tests; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2037,6 +2064,22 @@ ALTER TABLE ONLY public.team_users
 
 ALTER TABLE ONLY public.teams
     ADD CONSTRAINT teams_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_stats_builds test_stats_builds_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_builds
+    ADD CONSTRAINT test_stats_builds_pkey PRIMARY KEY ("testId", date);
+
+
+--
+-- Name: test_stats_changes test_stats_changes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_changes
+    ADD CONSTRAINT test_stats_changes_pkey PRIMARY KEY ("testId", "fileId", date);
 
 
 --
@@ -2895,6 +2938,30 @@ ALTER TABLE ONLY public.teams
 
 
 --
+-- Name: test_stats_builds test_stats_builds_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_builds
+    ADD CONSTRAINT test_stats_builds_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
+-- Name: test_stats_changes test_stats_changes_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_changes
+    ADD CONSTRAINT test_stats_changes_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
+
+
+--
+-- Name: test_stats_changes test_stats_changes_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_changes
+    ADD CONSTRAINT test_stats_changes_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
 -- Name: tests tests_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3065,3 +3132,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250202084159_cleanup-test-table.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250505143128_proxy-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250524183823_clean-stability-store.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250602091017_test-stats.js', 1, NOW());

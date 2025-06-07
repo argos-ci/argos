@@ -1,6 +1,127 @@
 import { invariant } from "@argos/util/invariant";
+import moment from "moment";
 
 import { knex } from "@/database";
+import { get20MinutesSlot } from "@/util/date";
+
+/**
+ * Upsert the test stats for a date and a file.
+ */
+export async function upsertTestStats(input: {
+  /**
+   * Test ID to update.
+   */
+  testId: string;
+  /**
+   * Date to use (usually the screenshot diff created date).
+   */
+  date: Date;
+  /**
+   * File id to process (if the diff is a change).
+   */
+  fileId: string | null;
+}) {
+  const { date, fileId, testId } = input;
+  const queries: Promise<any>[] = [];
+  const from = get20MinutesSlot(date);
+  const fromISOStr = from.toISOString();
+  const to = moment(from).add("20", "minutes").toDate();
+  const toISOStr = to.toISOString();
+
+  if (fileId) {
+    queries.push(
+      knex.raw(
+        `
+    -- Upsert into "test_stats_changes"
+    WITH
+      COUNT AS (
+        SELECT
+          COUNT(*) AS value
+        FROM
+          screenshot_diffs sd
+          JOIN builds b ON sd."buildId" = b.id
+        WHERE
+          sd."testId" = :testId
+          AND sd."fileId" = :fileId
+          AND sd."createdAt" >= :from
+          AND sd."createdAt" < :to
+          AND b.type = 'reference'
+      )
+    INSERT INTO
+      test_stats_changes ("testId", "fileId", "date", "value")
+    VALUES
+      (
+        :testId,
+        :fileId,
+        :from,
+        (
+          SELECT
+            COUNT.value
+          FROM
+            COUNT
+        )
+      )
+    ON CONFLICT ("testId", "fileId", "date") DO
+    UPDATE
+    SET
+      "value" = (
+        SELECT
+          COUNT.value
+        FROM
+          COUNT
+      ); 
+  `,
+        { testId, fileId, from: fromISOStr, to: toISOStr },
+      ),
+    );
+  }
+
+  queries.push(
+    knex.raw(
+      `
+    -- Upsert into "test_stats_builds"
+    WITH
+      COUNT AS (
+        SELECT
+          COUNT(*) AS value
+        FROM
+          screenshot_diffs sd
+          JOIN builds b ON sd."buildId" = b.id
+        WHERE
+          sd."testId" = :testId
+          AND sd."createdAt" >= :from
+          AND sd."createdAt" < :to
+          AND b.type = 'reference'
+      )
+    INSERT INTO
+      test_stats_builds ("testId", "date", "value")
+    VALUES
+      (
+        :testId,
+        :from,
+        (
+          SELECT
+            COUNT.value
+          FROM
+            COUNT
+        )
+      )
+    ON CONFLICT ("testId", "date") DO
+    UPDATE
+    SET
+      "value" = (
+        SELECT
+          COUNT.value
+        FROM
+          COUNT
+      )
+  `,
+      { testId, from: fromISOStr, to: toISOStr },
+    ),
+  );
+
+  await Promise.all(queries);
+}
 
 /**
  * Get the changes metrics for a test.
@@ -13,7 +134,7 @@ export async function getTestAllMetrics(input: {
   const { testId, from = new Date(0), to = new Date() } = input;
 
   const allQuery = `
-  SELECT
+    SELECT
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE sd."score" > 0) AS changes,
       (
@@ -24,7 +145,7 @@ export async function getTestAllMetrics(input: {
           WHERE sd2."testId" = :testId
             AND sd2."score" > 0
             AND sd2."createdAt" >= :from::timestamp
-            AND sd2."createdAt" <= :to
+            AND sd2."createdAt" < :to
             AND b2.type = 'reference'
           GROUP BY sd2."fileId"
           HAVING COUNT(*) = 1
@@ -34,7 +155,7 @@ export async function getTestAllMetrics(input: {
     JOIN builds b ON sd."buildId" = b.id
     WHERE sd."testId" = :testId
       AND sd."createdAt" >= :from::timestamp
-      AND sd."createdAt" <= :to
+      AND sd."createdAt" < :to
       AND b.type = 'reference'
 `;
 
@@ -104,7 +225,7 @@ export async function getTestSeriesMetrics(input: {
     JOIN builds b ON sd."buildId" = b.id
     WHERE sd."testId" = :testId
       AND sd."createdAt" >= :from
-      AND sd."createdAt" <= :to
+      AND sd."createdAt" < :to
       AND b.type = 'reference'
     GROUP BY date
   ),
@@ -160,21 +281,27 @@ export async function getTestSeriesMetrics(input: {
 function getTickDistance(from: Date, to: Date) {
   const diff = to.getTime() - from.getTime();
 
+  // 1 day (72 points)
   if (diff <= 24 * 60 * 60 * 1000) {
     return "20 minutes";
   }
+  // 3 days (72 points)
   if (diff <= 3 * 24 * 60 * 60 * 1000) {
     return "1 hour";
   }
+  // 7 days (84 points)
   if (diff <= 7 * 24 * 60 * 60 * 1000) {
     return "2 hours";
   }
+  // 14 days (84 points)
   if (diff <= 14 * 24 * 60 * 60 * 1000) {
     return "4 hours";
   }
+  // 30 days (60 points)
   if (diff <= 30 * 24 * 60 * 60 * 1000) {
     return "12 hours";
   }
+  // 90 days (90 points)
   if (diff <= 90 * 24 * 60 * 60 * 1000) {
     return "1 day";
   }

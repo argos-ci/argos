@@ -7,6 +7,7 @@ import type { TransactionOrKnex } from "objection";
 import { concludeBuild } from "@/build/concludeBuild.js";
 import { transaction } from "@/database/index.js";
 import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
+import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
 import { getRedisLock } from "@/util/redis/index.js";
@@ -144,20 +145,22 @@ export const computeScreenshotDiff = async (
       "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
     );
 
-  invariant(screenshotDiff.build, "no build");
-  invariant(screenshotDiff.compareScreenshot, "no compare screenshot");
+  const { baseScreenshot, compareScreenshot, build } = screenshotDiff;
 
-  const baseImage = screenshotDiff.baseScreenshot?.s3Id
+  invariant(build, "no build");
+  invariant(compareScreenshot, "no compare screenshot");
+
+  const baseImage = baseScreenshot?.s3Id
     ? new S3ImageFile({
         s3,
         bucket: bucket,
-        key: screenshotDiff.baseScreenshot.s3Id,
+        key: baseScreenshot.s3Id,
         dimensions:
-          screenshotDiff.baseScreenshot.file?.width != null &&
-          screenshotDiff.baseScreenshot.file?.height != null
+          baseScreenshot.file?.width != null &&
+          baseScreenshot.file?.height != null
             ? {
-                width: screenshotDiff.baseScreenshot.file.width,
-                height: screenshotDiff.baseScreenshot.file.height,
+                width: baseScreenshot.file.width,
+                height: baseScreenshot.file.height,
               }
             : null,
       })
@@ -166,13 +169,13 @@ export const computeScreenshotDiff = async (
   const compareImage = new S3ImageFile({
     s3,
     bucket: bucket,
-    key: screenshotDiff.compareScreenshot.s3Id,
+    key: compareScreenshot.s3Id,
     dimensions:
-      screenshotDiff.compareScreenshot.file?.width != null &&
-      screenshotDiff.compareScreenshot.file?.height != null
+      compareScreenshot.file?.width != null &&
+      compareScreenshot.file?.height != null
         ? {
-            width: screenshotDiff.compareScreenshot.file.width,
-            height: screenshotDiff.compareScreenshot.file.height,
+            width: compareScreenshot.file.width,
+            height: compareScreenshot.file.height,
           }
         : null,
   });
@@ -180,73 +183,86 @@ export const computeScreenshotDiff = async (
   const { buildId } = screenshotDiff;
 
   // Patching cannot be done in parallel since the file can be the same and must be created only
-  if (baseImage && screenshotDiff.baseScreenshot) {
+  if (baseImage && baseScreenshot) {
     await ensureFileDimensions({
-      screenshot: screenshotDiff.baseScreenshot,
+      screenshot: baseScreenshot,
       s3Image: baseImage,
     });
   }
 
   await ensureFileDimensions({
-    screenshot: screenshotDiff.compareScreenshot,
+    screenshot: compareScreenshot,
     s3Image: compareImage,
   });
 
-  let diffKey: string | null = null;
-
-  if (baseImage && baseImage.key !== compareImage.key && !screenshotDiff.s3Id) {
-    const diffResult = await diffImages(
+  const diffData = await (async () => {
+    if (!baseImage) {
+      return {};
+    }
+    if (baseImage.key === compareImage.key) {
+      return { score: 0 };
+    }
+    const result = await diffImages(
       baseImage,
       compareImage,
-      screenshotDiff.compareScreenshot.threshold ?? DEFAULT_THRESHOLD,
+      compareScreenshot.threshold ?? DEFAULT_THRESHOLD,
     );
-    if (diffResult === null) {
-      await ScreenshotDiff.query()
-        .findById(screenshotDiff.id)
-        .patch({ score: 0 });
-    } else {
-      diffKey = await hashFile(diffResult.filepath);
-      const diffFile = await getOrCreateDiffFile({
-        filepath: diffResult.filepath,
-        width: diffResult.width,
-        height: diffResult.height,
-        s3,
-        bucket,
-        key: diffKey,
-      });
-      await ScreenshotDiff.query()
-        .findById(screenshotDiff.id)
-        .patch({ s3Id: diffKey, score: diffResult.score, fileId: diffFile.id });
+    if (result === null) {
+      return { score: 0 };
     }
-  }
+    const diffFileKey = await hashFile(result.filepath);
+    const diffFile = await getOrCreateDiffFile({
+      filepath: result.filepath,
+      width: result.width,
+      height: result.height,
+      s3,
+      bucket,
+      key: diffFileKey,
+    });
+    return {
+      s3Id: diffFileKey,
+      score: result.score,
+      fileId: diffFile.id,
+    };
+  })();
+
+  await ScreenshotDiff.query()
+    .findById(screenshotDiff.id)
+    .patch({
+      ...diffData,
+      jobStatus: "complete",
+    });
 
   await Promise.all([
     // Group similar diffs
-    groupSimilarDiffs({ diffKey, buildId }),
-    // Update the job status to complete to be able to "conclude" the build
-    ScreenshotDiff.query()
-      .findById(screenshotDiff.id)
-      .patch({ jobStatus: "complete" }),
+    groupSimilarDiffs({ diffFileKey: diffData.s3Id ?? null, buildId }),
     // Unlink images
     baseImage?.unlink(),
     compareImage.unlink(),
+    screenshotDiff.testId
+      ? upsertTestStats({
+          testId: screenshotDiff.testId,
+          date: new Date(screenshotDiff.createdAt),
+          fileId: diffData.fileId ?? null,
+        })
+      : null,
   ]);
 
   // Conclude build if it's the last diff
-  await concludeBuild({ buildId: screenshotDiff.build.id });
+  await concludeBuild({ buildId: build.id });
 };
 
 /**
  * Group similar diffs by their `diffKey`.
  */
 async function groupSimilarDiffs(input: {
-  diffKey: string | null;
+  diffFileKey: string | null;
   buildId: string;
 }) {
-  const { diffKey, buildId } = input;
-  if (diffKey) {
+  const { diffFileKey, buildId } = input;
+  if (diffFileKey) {
     const similarDiffCount = await ScreenshotDiff.query()
-      .where({ buildId, s3Id: diffKey })
+      .where({ buildId, s3Id: diffFileKey })
       .resultSize();
 
     // Patch group on screenshot diffs
@@ -254,7 +270,7 @@ async function groupSimilarDiffs(input: {
       // Collect diffs to update
       const diffs = await ScreenshotDiff.query()
         .select("id")
-        .where({ buildId, s3Id: diffKey, group: null });
+        .where({ buildId, s3Id: diffFileKey, group: null });
 
       const diffIds = diffs.map(({ id }) => id);
 
@@ -266,7 +282,7 @@ async function groupSimilarDiffs(input: {
         // Having `s3Id` in the where clause causes a deadlock
         await ScreenshotDiff.query()
           .whereIn("id", diffIdsChunk)
-          .patch({ group: diffKey });
+          .patch({ group: diffFileKey });
       }
     }
   }
