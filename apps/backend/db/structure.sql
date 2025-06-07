@@ -1350,22 +1350,6 @@ ALTER SEQUENCE public.teams_id_seq OWNED BY public.teams.id;
 
 
 --
--- Name: test_activities; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.test_activities (
-    "userId" character varying(255) NOT NULL,
-    "createdAt" timestamp with time zone NOT NULL,
-    "updatedAt" timestamp with time zone NOT NULL,
-    date timestamp with time zone,
-    action character varying(255),
-    data jsonb
-);
-
-
-ALTER TABLE public.test_activities OWNER TO postgres;
-
---
 -- Name: test_stats_builds; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3133,3 +3117,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025020
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250505143128_proxy-github.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250524183823_clean-stability-store.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250602091017_test-stats.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250607160713_remove-test-activities.js', 1, NOW());
