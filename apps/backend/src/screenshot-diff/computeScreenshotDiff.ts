@@ -249,7 +249,7 @@ export const computeScreenshotDiff = async (
   ]);
 
   // Conclude build if it's the last diff
-  await concludeBuild({ buildId: build.id });
+  await concludeBuild({ build });
 };
 
 /**

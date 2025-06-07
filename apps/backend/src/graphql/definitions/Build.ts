@@ -2,6 +2,8 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import { triggerAndRunAutomation } from "@/automation/index.js";
+import { AutomationEvents } from "@/automation/types/events.js";
 import { pushBuildNotification } from "@/build-notification/index.js";
 import { Build, BuildReview, ScreenshotDiff } from "@/database/models/index.js";
 
@@ -81,7 +83,7 @@ export const typeDefs = gql`
     screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
     "The screenshot bucket that serves as base for comparison"
     baseScreenshotBucket: ScreenshotBucket
-    "The base build that contains the base screeenshot bucket"
+    "The base build that contains the base screenshot bucket"
     baseBuild: Build
     "Continuous number. It is incremented after each build"
     number: Int!
@@ -315,23 +317,25 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot approve or reject this build");
       }
 
-      await BuildReview.query().insert({
+      const buildReview = await BuildReview.query().insert({
         buildId,
         userId: auth.user.id,
         state: validationStatus === "accepted" ? "approved" : "rejected",
       });
 
       // That might be better suited into a $afterUpdate hook.
-      switch (validationStatus) {
-        case "accepted": {
-          await pushBuildNotification({ buildId, type: "diff-accepted" });
-          break;
-        }
-        case "rejected": {
-          await pushBuildNotification({ buildId, type: "diff-rejected" });
-          break;
-        }
-      }
+      await Promise.all([
+        pushBuildNotification({
+          buildId,
+          type:
+            validationStatus === "accepted" ? "diff-accepted" : "diff-rejected",
+        }),
+        triggerAndRunAutomation({
+          projectId: build.projectId,
+          event: AutomationEvents.BuildReviewed,
+          payload: { build, buildReview },
+        }),
+      ]);
 
       return build;
     },
