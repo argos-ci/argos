@@ -7,7 +7,7 @@ import type { TransactionOrKnex } from "objection";
 import { concludeBuild } from "@/build/concludeBuild.js";
 import { transaction } from "@/database/index.js";
 import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
-import { upsertTestStats } from "@/metrics/test.js";
+// import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
 import { getRedisLock } from "@/util/redis/index.js";
@@ -239,13 +239,13 @@ export const computeScreenshotDiff = async (
     // Unlink images
     baseImage?.unlink(),
     compareImage.unlink(),
-    screenshotDiff.testId
-      ? upsertTestStats({
-          testId: screenshotDiff.testId,
-          date: new Date(screenshotDiff.createdAt),
-          fileId: diffData.fileId ?? null,
-        })
-      : null,
+    // screenshotDiff.testId
+    //   ? upsertTestStats({
+    //       testId: screenshotDiff.testId,
+    //       date: new Date(screenshotDiff.createdAt),
+    //       fileId: diffData.fileId ?? null,
+    //     })
+    //   : null,
   ]);
 
   // Conclude build if it's the last diff
