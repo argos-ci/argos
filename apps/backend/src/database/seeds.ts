@@ -5,6 +5,9 @@ import { Build } from "./models/Build.js";
 import { BuildReview } from "./models/BuildReview.js";
 import { File } from "./models/File.js";
 import { GithubAccount } from "./models/GithubAccount.js";
+import { GithubInstallation } from "./models/GithubInstallation.js";
+import { GithubRepository } from "./models/GithubRepository.js";
+import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation.js";
 import { Plan } from "./models/Plan.js";
 import { Project } from "./models/Project.js";
 import { Screenshot } from "./models/Screenshot.js";
@@ -84,7 +87,7 @@ export async function seed() {
     { email: "jeremy@smooth-code.com" },
   ]);
 
-  const [gregGhAccount, jeremyGhAccount] =
+  const [gregGhAccount, jeremyGhAccount, argosGhAccount] =
     await GithubAccount.query().insertAndFetch([
       {
         githubId: 266302,
@@ -99,6 +102,13 @@ export async function seed() {
         login: "jsfez",
         email: "jeremy@smooth-code.com",
         type: "user",
+      },
+      {
+        githubId: 24552866,
+        name: "Argos",
+        login: "argos-ci",
+        email: null,
+        type: "organization",
       },
     ]);
 
@@ -158,6 +168,34 @@ export async function seed() {
       accountId: jeremyAccount!.id,
     },
   ]);
+
+  const ghInstallation = await GithubInstallation.query().insertAndFetch({
+    createdAt: "2016-12-08T22:59:55Z",
+    updatedAt: "2016-12-08T22:59:55Z",
+    githubId: 70324597,
+    deleted: false,
+    githubTokenExpiresAt: "2025-06-08 07:39:55+00",
+    app: "main",
+    proxy: false,
+  });
+
+  const argosTestRepositoryGhRepository =
+    await GithubRepository.query().insertAndFetch({
+      name: "argos-test-repository",
+      private: false,
+      defaultBranch: "main",
+      githubId: 123456789,
+      githubAccountId: argosGhAccount!.id,
+      createdAt: "2016-12-08T22:59:55Z",
+      updatedAt: "2016-12-08T22:59:55Z",
+    });
+
+  await GithubRepositoryInstallation.query().insertAndFetch({
+    githubRepositoryId: argosTestRepositoryGhRepository!.id,
+    githubInstallationId: ghInstallation!.id,
+    createdAt: "2016-12-08T22:59:55Z",
+    updatedAt: "2016-12-08T22:59:55Z",
+  });
 
   const screenshotBucketProps = {
     name: "default",
