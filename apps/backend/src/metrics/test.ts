@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import moment from "moment";
 
 import { knex } from "@/database";
+import { ScreenshotDiff } from "@/database/models";
 import { get20MinutesSlot } from "@/util/date";
 
 /**
@@ -22,105 +23,66 @@ export async function upsertTestStats(input: {
   fileId: string | null;
 }) {
   const { date, fileId, testId } = input;
-  const queries: Promise<any>[] = [];
+  const promises: Promise<void>[] = [];
   const from = get20MinutesSlot(date);
   const fromISOStr = from.toISOString();
   const to = moment(from).add("20", "minutes").toDate();
   const toISOStr = to.toISOString();
 
   if (fileId) {
-    queries.push(
-      knex.raw(
-        `
-    -- Upsert into "test_stats_changes"
-    WITH
-      COUNT AS (
-        SELECT
-          COUNT(*) AS value
-        FROM
-          screenshot_diffs sd
-          JOIN builds b ON sd."buildId" = b.id
-        WHERE
-          sd."testId" = :testId
-          AND sd."fileId" = :fileId
-          AND sd."createdAt" >= :from
-          AND sd."createdAt" < :to
-          AND b.type = 'reference'
-      )
-    INSERT INTO
-      test_stats_changes ("testId", "fileId", "date", "value")
-    VALUES
-      (
-        :testId,
-        :fileId,
-        :from,
-        (
-          SELECT
-            COUNT.value
-          FROM
-            COUNT
-        )
-      )
-    ON CONFLICT ("testId", "fileId", "date") DO
-    UPDATE
-    SET
-      "value" = (
-        SELECT
-          COUNT.value
-        FROM
-          COUNT
-      ); 
-  `,
-        { testId, fileId, from: fromISOStr, to: toISOStr },
-      ),
+    promises.push(
+      (async () => {
+        const count = await ScreenshotDiff.query()
+          .joinRelated("build")
+          .where("screenshot_diffs.testId", testId)
+          .where("screenshot_diffs.fileId", fileId)
+          .where("screenshot_diffs.createdAt", ">=", fromISOStr)
+          .where("screenshot_diffs.createdAt", "<", toISOStr)
+          .where("build.type", "reference")
+          .resultSize();
+        await knex.raw(
+          `
+            INSERT INTO test_stats_changes ("testId", "fileId", "date", "value")
+            VALUES (:testId, :fileId, :from, :value)
+            ON CONFLICT ("testId", "fileId", "date") DO
+            UPDATE SET "value" = :value`,
+          {
+            testId,
+            fileId,
+            from: fromISOStr,
+            value: count,
+          },
+        );
+      })(),
     );
   }
 
-  queries.push(
-    knex.raw(
-      `
-    -- Upsert into "test_stats_builds"
-    WITH
-      COUNT AS (
-        SELECT
-          COUNT(*) AS value
-        FROM
-          screenshot_diffs sd
-          JOIN builds b ON sd."buildId" = b.id
-        WHERE
-          sd."testId" = :testId
-          AND sd."createdAt" >= :from
-          AND sd."createdAt" < :to
-          AND b.type = 'reference'
-      )
-    INSERT INTO
-      test_stats_builds ("testId", "date", "value")
-    VALUES
-      (
-        :testId,
-        :from,
-        (
-          SELECT
-            COUNT.value
-          FROM
-            COUNT
-        )
-      )
+  promises.push(
+    (async () => {
+      const count = await ScreenshotDiff.query()
+        .joinRelated("build")
+        .where("screenshot_diffs.testId", testId)
+        .where("screenshot_diffs.createdAt", ">=", fromISOStr)
+        .where("screenshot_diffs.createdAt", "<", toISOStr)
+        .where("build.type", "reference")
+        .resultSize();
+
+      await knex.raw(
+        `
+    INSERT INTO test_stats_builds ("testId", "date", "value")
+    VALUES (:testId, :from, :value)
     ON CONFLICT ("testId", "date") DO
-    UPDATE
-    SET
-      "value" = (
-        SELECT
-          COUNT.value
-        FROM
-          COUNT
-      )
-  `,
-      { testId, from: fromISOStr, to: toISOStr },
-    ),
+    UPDATE SET "value" = :value`,
+        {
+          testId,
+          from: fromISOStr,
+          value: count,
+        },
+      );
+    })(),
   );
 
-  await Promise.all(queries);
+  await Promise.all(promises);
 }
 
 /**
