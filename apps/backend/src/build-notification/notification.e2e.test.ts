@@ -37,7 +37,7 @@ describe("#getNotificationPayload", () => {
       buildNotification = await factory.BuildNotification.create({
         buildId: build.id,
       });
-      await concludeBuild({ build, notify: false });
+      await concludeBuild({ buildId: build.id, notify: false });
       build = await build.$query();
     });
 
@@ -73,7 +73,7 @@ describe("#getNotificationPayload", () => {
       buildNotification = await factory.BuildNotification.create({
         buildId: build.id,
       });
-      await concludeBuild({ build, notify: false });
+      await concludeBuild({ buildId: build.id, notify: false });
       build = await build.$query();
     });
 

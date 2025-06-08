@@ -175,7 +175,7 @@ export type Build = Node & {
   baseBranch?: Maybe<Scalars['String']['output']>;
   /** Base branch resolved from */
   baseBranchResolvedFrom?: Maybe<BaseBranchResolution>;
-  /** The base build that contains the base screenshot bucket */
+  /** The base build that contains the base screeenshot bucket */
   baseBuild?: Maybe<Build>;
   /** The screenshot bucket that serves as base for comparison */
   baseScreenshotBucket?: Maybe<ScreenshotBucket>;

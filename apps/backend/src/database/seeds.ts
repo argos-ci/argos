@@ -22,58 +22,6 @@ function duplicate<T>(obj: T, count: number): T[] {
 }
 
 export async function seed() {
-  const plans = await Plan.query().insert([
-    {
-      name: "free",
-      includedScreenshots: 7000,
-      githubPlanId: 7772,
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "starter",
-      includedScreenshots: 40000,
-      githubPlanId: 7786,
-      stripeProductId: "prod_MzEZEfBDYFIc53",
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "standard",
-      includedScreenshots: 250000,
-      githubPlanId: 7787,
-      stripeProductId: "prod_MzEavomA8VeCvW",
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "Pro (legacy)",
-      includedScreenshots: 1000000,
-      githubPlanId: 7788,
-      stripeProductId: "prod_MzEawyq1kFcHEn",
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "pro",
-      includedScreenshots: 15000,
-      githubPlanId: null,
-      stripeProductId: "prod_Njgin72JdGT9Yu",
-      usageBased: true,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-  ]);
-
   const [smoothTeam, helloTeam] = await Team.query().insertAndFetch([
     { defaultUserLevel: "member" },
     { defaultUserLevel: "member" },
@@ -103,12 +51,7 @@ export async function seed() {
     ]);
 
   const [smoothAccount, helloAccount] = await Account.query().insertAndFetch([
-    {
-      teamId: smoothTeam!.id,
-      name: "Smooth",
-      slug: "smooth",
-      forcedPlanId: plans[0]!.id,
-    },
+    { teamId: smoothTeam!.id, name: "Smooth", slug: "smooth" },
     { teamId: helloTeam!.id, name: "Hello You", slug: "hello-you" },
   ]);
 
@@ -137,24 +80,24 @@ export async function seed() {
   const [bigProject] = await Project.query().insertAndFetch([
     {
       name: "big",
-      token: "big-650ded7d72e85b52e099df6e56aa204d4fe9",
+      token: "big-xxx",
       accountId: smoothAccount!.id,
       private: false,
     },
     {
       name: "awesome",
-      token: "awesome-650ded7d72e85b52e099df6e56aa204d",
+      token: "awesome-xxx",
       accountId: helloAccount!.id,
       defaultBaseBranch: "main",
     },
     {
       name: "zone-51",
-      token: "zone-51-650ded7d72e85b52e099df6e56aa204d",
+      token: "zone-51-xxx",
       accountId: gregAccount!.id,
     },
     {
       name: "lalouland",
-      token: "lalouland-650ded7d72e85b52e099df6e56aa20",
+      token: "lalouland-xxx",
       accountId: jeremyAccount!.id,
     },
   ]);
@@ -472,8 +415,60 @@ export async function seed() {
     }),
   );
 
+  await Plan.query().insert([
+    {
+      name: "free",
+      includedScreenshots: 7000,
+      githubPlanId: 7772,
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "starter",
+      includedScreenshots: 40000,
+      githubPlanId: 7786,
+      stripeProductId: "prod_MzEZEfBDYFIc53",
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "standard",
+      includedScreenshots: 250000,
+      githubPlanId: 7787,
+      stripeProductId: "prod_MzEavomA8VeCvW",
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "Pro (legacy)",
+      includedScreenshots: 1000000,
+      githubPlanId: 7788,
+      stripeProductId: "prod_MzEawyq1kFcHEn",
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "pro",
+      includedScreenshots: 15000,
+      githubPlanId: null,
+      stripeProductId: "prod_Njgin72JdGT9Yu",
+      usageBased: true,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+  ]);
+
   const completeBuilds = await Build.query().where("jobStatus", "complete");
   for (const build of completeBuilds) {
-    await concludeBuild({ build, notify: false });
+    await concludeBuild({ buildId: build.id, notify: false });
   }
 }

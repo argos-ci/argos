@@ -19,8 +19,6 @@ import {
 } from "@/database/models";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
 
-export type SlackMessageBlock = Bolt.types.AnyBlock;
-
 /**
  * Set the accountId in the cookies.
  */
@@ -174,13 +172,7 @@ const receiver = new Bolt.ExpressReceiver({
   clientId: config.get("slack.clientId"),
   clientSecret: config.get("slack.clientSecret"),
   stateSecret: config.get("slack.stateSecret"),
-  scopes: [
-    "links:read",
-    "links:write",
-    "team:read",
-    "chat:write",
-    "chat:write.public",
-  ],
+  scopes: ["links:read", "links:write", "team:read"],
   installationStore,
   redirectUri: config.get("server.url") + "/auth/slack/oauth_redirect",
   installerOptions: {
@@ -211,9 +203,7 @@ const receiver = new Bolt.ExpressReceiver({
         const account = await Account.query()
           .findById(accountId)
           .throwIfNotFound();
-        res.writeHead(302, {
-          Location: `/${account.slug}/settings#slack-integration`,
-        });
+        res.writeHead(302, { Location: `/${account.slug}/settings#slack` });
         res.end();
       },
     },
@@ -399,25 +389,6 @@ export async function uninstallSlackInstallation(
       trx,
     ),
   ]);
-}
-
-/**
- * Post a message to a Slack channel.
- */
-export async function postMessageToSlackChannel({
-  installation,
-  channel,
-  text,
-  blocks,
-}: {
-  installation: SlackInstallation;
-  channel: string;
-  text: string;
-  blocks?: SlackMessageBlock[];
-}) {
-  const token = installation.installation.bot?.token;
-  invariant(token, "Expected bot token to be defined");
-  await boltApp.client.chat.postMessage({ token, channel, text, blocks });
 }
 
 export const slackMiddleware: Router = receiver.router;

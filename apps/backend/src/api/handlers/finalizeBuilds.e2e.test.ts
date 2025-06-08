@@ -59,7 +59,7 @@ describe("finalizeBuilds", () => {
   describe("with a bucket already complete", () => {
     beforeEach(async () => {
       await compareScreenshotBucket.$query().patch({ complete: true });
-      await concludeBuild({ build, notify: false });
+      await concludeBuild({ buildId: build.id, notify: false });
     });
 
     it("returns 200 with the finalized build", async () => {
@@ -108,7 +108,7 @@ describe("finalizeBuilds", () => {
 
   describe("with a valid build", () => {
     it("returns 200 status code", async () => {
-      await concludeBuild({ build, notify: false });
+      await concludeBuild({ buildId: build.id, notify: false });
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")
