@@ -7,7 +7,7 @@ import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
 import { buildTypeDescriptors } from "@/util/build";
-import { bgColorClassNames, lowTextColorClassNames } from "@/util/colors";
+import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
 import { useMultipleSearchParamsState } from "@/util/search-params";
 
 const buildTypes = [BuildType.Check, BuildType.Orphan, BuildType.Reference];
@@ -36,7 +36,7 @@ export function BuildTypeFilter(props: {
                 className={clsx(
                   "size-2.5 rounded-full border",
                   value.has(type)
-                    ? bgColorClassNames[buildTypeDescriptors[type].color]
+                    ? bgSolidColorClassNames[buildTypeDescriptors[type].color]
                     : "bg-app",
                 )}
               />

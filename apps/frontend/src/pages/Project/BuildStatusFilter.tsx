@@ -7,7 +7,7 @@ import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
 import { buildStatusDescriptors } from "@/util/build";
-import { bgColorClassNames, lowTextColorClassNames } from "@/util/colors";
+import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
 import { useMultipleSearchParamsState } from "@/util/search-params";
 
 const buildStatuses = [
@@ -53,7 +53,9 @@ export function BuildStatusFilter(props: {
                 className={clsx(
                   "size-2.5 rounded-full border",
                   value.has(status)
-                    ? bgColorClassNames[buildStatusDescriptors[status].color]
+                    ? bgSolidColorClassNames[
+                        buildStatusDescriptors[status].color
+                      ]
                     : "bg-app",
                 )}
               />

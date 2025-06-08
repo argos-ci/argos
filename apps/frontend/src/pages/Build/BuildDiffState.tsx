@@ -36,9 +36,6 @@ const ScreenshotDiffFragment = graphql(`
     height
     group
     threshold
-    test {
-      id
-    }
     baseScreenshot {
       id
       url

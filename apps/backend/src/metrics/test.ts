@@ -1,5 +1,3 @@
-import { invariant } from "@argos/util/invariant";
-
 import { knex } from "@/database";
 import { get20MinutesSlot } from "@/util/date";
 
@@ -66,70 +64,111 @@ export async function upsertTestStats(input: {
 /**
  * Get the changes metrics for a test.
  */
-export async function getTestAllMetrics(input: {
-  testId: string;
-  from?: Date | undefined;
-  to?: Date | undefined;
-}) {
-  const { testId, from = new Date(0), to = new Date() } = input;
+export async function getTestAllMetrics(
+  testIds: string[],
+  options: {
+    from?: Date | undefined;
+    to?: Date | undefined;
+  },
+): Promise<
+  {
+    total: number;
+    changes: number;
+    uniqueChanges: number;
+    stability: number;
+    consistency: number;
+    flakiness: number;
+  }[]
+> {
+  const { from = new Date(0), to = new Date() } = options;
 
   const allQuery = `
+    WITH unique_files AS (
+      SELECT
+        sd2."testId",
+        sd2."fileId"
+      FROM screenshot_diffs sd2
+      JOIN builds b2 ON sd2."buildId" = b2.id
+      WHERE sd2."testId" = ANY(:testIds)
+        AND sd2."score" > 0
+        AND sd2."createdAt" >= :from::timestamp
+        AND sd2."createdAt" < :to
+        AND b2.type = 'reference'
+      GROUP BY sd2."testId", sd2."fileId"
+      HAVING COUNT(*) = 1
+    )
     SELECT
+      sd."testId",
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE sd."score" > 0) AS changes,
-      (
-        SELECT COUNT(*) FROM (
-          SELECT sd2."fileId"
-          FROM screenshot_diffs sd2
-          JOIN builds b2 ON sd2."buildId" = b2.id
-          WHERE sd2."testId" = :testId
-            AND sd2."score" > 0
-            AND sd2."createdAt" >= :from::timestamp
-            AND sd2."createdAt" < :to
-            AND b2.type = 'reference'
-          GROUP BY sd2."fileId"
-          HAVING COUNT(*) = 1
-        ) AS unique_files
-      ) AS "uniqueChanges"
+      (SELECT COUNT(*) FROM unique_files uf WHERE uf."testId" = sd."testId") AS "uniqueChanges"
     FROM screenshot_diffs sd
     JOIN builds b ON sd."buildId" = b.id
-    WHERE sd."testId" = :testId
+    WHERE sd."testId" = ANY(:testIds)
       AND sd."createdAt" >= :from::timestamp
       AND sd."createdAt" < :to
       AND b.type = 'reference'
-`;
+    GROUP BY sd."testId"
+  `;
 
   const fromISOString = from.toISOString();
   const toISOString = to.toISOString();
 
   const allResult = await knex.raw<{
     rows: {
+      testId: string;
       total: number;
       changes: number;
       uniqueChanges: number;
     }[];
   }>(allQuery, {
-    testId,
+    testIds,
     from: fromISOString,
     to: toISOString,
   });
 
-  const all = allResult.rows[0];
-  invariant(all);
+  // Map for fast lookup
+  const rowByTestId = Object.fromEntries(
+    allResult.rows.map((row) => [row.testId, row]),
+  );
 
-  const stability =
-    all.changes > 0 ? Math.round((1 - all.changes / all.total) * 100) / 100 : 1;
+  // Keep result order same as input
+  return testIds.map((testId) => {
+    const row = rowByTestId[testId];
+    if (!row) {
+      return {
+        total: 0,
+        changes: 0,
+        uniqueChanges: 0,
+        stability: 1,
+        consistency: 1,
+        flakiness: 0,
+      };
+    }
+    const stability =
+      row.changes > 0
+        ? Math.round((1 - row.changes / row.total) * 100) / 100
+        : 1;
 
-  const consistency =
-    all.changes > 0
-      ? all.uniqueChanges > 0
-        ? Math.round((all.uniqueChanges / all.changes) * 100) / 100
-        : 0
-      : 1;
+    const consistency =
+      row.changes > 0
+        ? row.uniqueChanges > 0
+          ? Math.round((row.uniqueChanges / row.changes) * 100) / 100
+          : 0
+        : 1;
 
-  const flakiness = Math.round((1 - (stability + consistency) / 2) * 100) / 100;
+    const flakiness =
+      Math.round((1 - (stability + consistency) / 2) * 100) / 100;
 
-  return { ...all, stability, consistency, flakiness };
+    return {
+      total: Number(row.total),
+      changes: Number(row.changes),
+      uniqueChanges: Number(row.uniqueChanges),
+      stability,
+      consistency,
+      flakiness,
+    };
+  });
 }
 
 /**

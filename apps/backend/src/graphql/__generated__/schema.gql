@@ -494,6 +494,14 @@ input LinkGitlabProjectInput {
   projectId: ID!
 }
 
+enum MetricsPeriod {
+  LAST_3_DAYS
+  LAST_7_DAYS
+  LAST_24_HOURS
+  LAST_30_DAYS
+  LAST_90_DAYS
+}
+
 type Mutation {
   """Accept an invitation to join a team"""
   acceptInvitation(token: String!): Team!
@@ -793,6 +801,7 @@ type ScreenshotDiff implements Node {
   group: String
   height: Int
   id: ID!
+  last7daysOccurences: Int!
 
   """Name of the diff (either base or compare screenshot name)"""
   name: String!
@@ -976,18 +985,18 @@ enum TeamUserLevel {
 }
 
 type Test implements Node {
-  changes(after: Int!, first: Int!, from: DateTime!): TestChangesConnection!
+  changes(after: Int!, first: Int!, period: MetricsPeriod!): TestChangesConnection!
   firstSeenDiff: ScreenshotDiff
   id: ID!
   lastSeenDiff: ScreenshotDiff
-  metrics(input: TestMetricsInput): TestMetrics!
+  metrics(period: MetricsPeriod): TestMetrics!
   name: String!
   status: TestStatus!
 }
 
 type TestChange implements Node {
   id: ID!
-  stats(from: DateTime!): TestChangeStats!
+  stats(period: MetricsPeriod!): TestChangeStats!
 }
 
 type TestChangeStats {
@@ -1020,11 +1029,6 @@ type TestMetricDataPoint {
 type TestMetrics {
   all: TestMetricData!
   series: [TestMetricDataPoint!]!
-}
-
-input TestMetricsInput {
-  from: DateTime
-  to: DateTime
 }
 
 type TestReport {

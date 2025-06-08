@@ -43,6 +43,7 @@ export const typeDefs = gql`
     group: String
     threshold: Float
     test: Test
+    last7daysOccurences: Int!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -164,6 +165,16 @@ export const resolvers: IResolvers = {
       const test = await ctx.loaders.Test.load(screenshotDiff.testId);
       invariant(test, "Test not found");
       return test;
+    },
+    last7daysOccurences: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId || !screenshotDiff.testId) {
+        return 0;
+      }
+      const count = await ctx.loaders.ChangeOccurencesLoader.load({
+        fileId: screenshotDiff.fileId,
+        testId: screenshotDiff.testId,
+      });
+      return count;
     },
   },
 };

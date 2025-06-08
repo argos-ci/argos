@@ -28,7 +28,7 @@ import { featureGuardHoc } from "@/containers/FeatureFlag";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { graphql, type DocumentType } from "@/gql";
-import { TestStatus } from "@/gql/graphql";
+import { MetricsPeriod, TestStatus } from "@/gql/graphql";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -59,7 +59,7 @@ const TestQuery = graphql(`
     $accountSlug: String!
     $projectName: String!
     $testId: ID!
-    $from: DateTime!
+    $period: MetricsPeriod!
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
@@ -84,7 +84,7 @@ const TestQuery = graphql(`
             number
           }
         }
-        changes(from: $from, after: 0, first: 30) {
+        changes(period: $period, after: 0, first: 30) {
           edges {
             ...TestChangeFragment
           }
@@ -95,7 +95,7 @@ const TestQuery = graphql(`
             changes
           }
         }
-        metrics(input: { from: $from }) {
+        metrics(period: $period) {
           series {
             ts
             total
@@ -119,23 +119,23 @@ const TestQuery = graphql(`
 const now = new Date();
 
 const PERIODS = {
-  "last-24-hours": {
+  [MetricsPeriod.Last_24Hours]: {
     from: moment(now).subtract(24, "hours").toDate(),
     label: "Last 24 hours",
   },
-  "last-3-days": {
+  [MetricsPeriod.Last_3Days]: {
     from: moment(now).subtract(3, "days").toDate(),
     label: "Last 3 days",
   },
-  "last-7-days": {
+  [MetricsPeriod.Last_7Days]: {
     from: moment(now).subtract(7, "days").toDate(),
     label: "Last 7 days",
   },
-  "last-30-days": {
+  [MetricsPeriod.Last_30Days]: {
     from: moment(now).subtract(30, "days").toDate(),
     label: "Last 30 days",
   },
-  "last-90-days": {
+  [MetricsPeriod.Last_90Days]: {
     from: moment(now).subtract(90, "days").toDate(),
     label: "Last 90 days",
   },
@@ -151,7 +151,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
   const periodState = usePeriodState({
-    defaultValue: "last-7-days",
+    defaultValue: MetricsPeriod.Last_7Days,
     definition: PERIODS,
     paramName: "period" satisfies keyof TestSearchParams,
   });
@@ -161,7 +161,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
       accountSlug: params.accountSlug,
       projectName: params.projectName,
       testId: params.testId,
-      from: period.from.toISOString(),
+      period: periodState.value,
     },
   });
 
@@ -463,7 +463,7 @@ type TestDocument = NonNullable<
 const _ChangesFragment = graphql(`
   fragment TestChangeFragment on TestChange {
     id
-    stats(from: $from) {
+    stats(period: $period) {
       totalOccurences
       lastSeenDiff {
         id
@@ -582,18 +582,6 @@ function ChangesExplorer(props: {
   );
 }
 
-function getRecurrenceRatio(args: {
-  change: TestChangeDocument;
-  test: TestDocument;
-}) {
-  const { change, test } = args;
-  return (
-    Math.round(
-      (change.stats.totalOccurences / test.metrics.all.changes) * 100,
-    ) / 100
-  );
-}
-
 function BuildHeader(props: {
   change: TestChangeDocument;
   test: TestDocument;
@@ -604,7 +592,6 @@ function BuildHeader(props: {
   invariant(params, "Can't be used outside of a test route");
 
   const compactFormatter = useNumberFormatter({ notation: "compact" });
-  const recurrenceRatio = getRecurrenceRatio({ change, test });
 
   const changeIndex = test.changes.edges.findIndex((c) => c.id === change.id);
   const previousChange = test.changes.edges[changeIndex - 1];
@@ -633,32 +620,22 @@ function BuildHeader(props: {
           <Tooltip
             content={
               <>
-                The number of times this variant has been detected. This is
-                useful to understand how often this change occurs and whether it
-                is a one-off or a recurring issue.
+                Number of auto-approved builds in which this exact diff
+                reappears. A value {">"} 1 flags potential flakiness, showing
+                the change isn’t a one-off but a recurring issue.
               </>
             }
           >
             <CounterLabel>Occurences</CounterLabel>
           </Tooltip>
-          <CounterValue>
-            {compactFormatter.format(change.stats.totalOccurences)}
-          </CounterValue>
-        </Counter>
-        <Counter>
-          <Tooltip
-            content={
-              <>
-                The ratio of changes that are represented by this variant of the
-                test.
-              </>
-            }
+          <CounterValue
+            className={clsx(
+              "tabular-nums",
+              change.stats.totalOccurences > 1 ? "text-danger-low" : undefined,
+            )}
           >
-            <CounterLabel>Recurrence</CounterLabel>
-          </Tooltip>
-          <CounterValue>
-            {compactFormatter.format(recurrenceRatio * 100)}
-            <CounterValueUnit>%</CounterValueUnit>
+            {compactFormatter.format(change.stats.totalOccurences)}{" "}
+            <small>/ {compactFormatter.format(test.metrics.all.total)}</small>
           </CounterValue>
         </Counter>
         <Separator
@@ -721,15 +698,8 @@ function ChangesList(props: {
               />
               <DiffCardFooter>
                 <DiffCardFooterText>
-                  {change.stats.totalOccurences}{" "}
-                  {change.stats.totalOccurences > 1
-                    ? "occurences"
-                    : "occurrence"}{" "}
-                  •{" "}
-                  {compactFormatter.format(
-                    getRecurrenceRatio({ change, test }) * 100,
-                  )}
-                  %
+                  {compactFormatter.format(change.stats.totalOccurences)} /{" "}
+                  {compactFormatter.format(test.metrics.all.total)}
                 </DiffCardFooterText>
               </DiffCardFooter>
             </DiffCard>
