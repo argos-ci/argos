@@ -7,7 +7,7 @@ import type { TransactionOrKnex } from "objection";
 import { concludeBuild } from "@/build/concludeBuild.js";
 import { transaction } from "@/database/index.js";
 import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
-// import { upsertTestStats } from "@/metrics/test.js";
+import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
 import { getRedisLock } from "@/util/redis/index.js";
@@ -226,64 +226,72 @@ export const computeScreenshotDiff = async (
     };
   })();
 
-  await ScreenshotDiff.query()
-    .findById(screenshotDiff.id)
-    .patch({
-      ...diffData,
-      jobStatus: "complete",
-    });
-
   await Promise.all([
-    // Group similar diffs
-    groupSimilarDiffs({ diffFileKey: diffData.s3Id ?? null, buildId }),
     // Unlink images
     baseImage?.unlink(),
     compareImage.unlink(),
-    // screenshotDiff.testId
-    //   ? upsertTestStats({
-    //       testId: screenshotDiff.testId,
-    //       date: new Date(screenshotDiff.createdAt),
-    //       fileId: diffData.fileId ?? null,
-    //     })
-    //   : null,
   ]);
 
-  // Conclude build if it's the last diff
+  // Group similar diffs
+  if (diffData.s3Id) {
+    const lock = await getRedisLock();
+    await lock.acquire(["diff-group", diffData.s3Id], async () => {
+      await ScreenshotDiff.query().findById(screenshotDiff.id).patch(diffData);
+      await groupSimilarDiffs({ diffFileKey: diffData.s3Id, buildId });
+    });
+  }
+
+  // Insert stats
+  if (screenshotDiff.testId && build.type === "reference") {
+    await upsertTestStats({
+      testId: screenshotDiff.testId,
+      date: new Date(screenshotDiff.createdAt),
+      fileId: diffData.fileId ?? null,
+    });
+  }
+
+  await ScreenshotDiff.query()
+    .findById(screenshotDiff.id)
+    .patch({ ...diffData, jobStatus: "complete" });
+
+  // Conclude the build if it's the last diff
   await concludeBuild({ build });
 };
 
 /**
- * Group similar diffs by their `diffKey`.
+ * Group similar diffs by file key.
  */
 async function groupSimilarDiffs(input: {
-  diffFileKey: string | null;
+  diffFileKey: string;
   buildId: string;
 }) {
   const { diffFileKey, buildId } = input;
-  if (diffFileKey) {
-    const similarDiffCount = await ScreenshotDiff.query()
-      .where({ buildId, s3Id: diffFileKey })
-      .resultSize();
+  const similarDiffCount = await ScreenshotDiff.query()
+    .where({ buildId, s3Id: diffFileKey })
+    .resultSize();
 
-    // Patch group on screenshot diffs
-    if (similarDiffCount > 1) {
-      // Collect diffs to update
-      const diffs = await ScreenshotDiff.query()
-        .select("id")
-        .where({ buildId, s3Id: diffFileKey, group: null });
+  // Patch group on screenshot diffs
+  if (similarDiffCount > 1) {
+    // Collect diffs to update
+    const diffs = await ScreenshotDiff.query()
+      .select("id")
+      .where({ buildId, s3Id: diffFileKey, group: null });
 
-      const diffIds = diffs.map(({ id }) => id);
+    const diffIds = diffs.map(({ id }) => id);
 
-      const diffIdsChunks = chunk(diffIds, 50);
+    const diffIdsChunks = chunk(diffIds, 50);
 
-      for (const diffIdsChunk of diffIdsChunks) {
-        // Update diffs
-        // We don't do the where in this query because of deadlock issues
-        // Having `s3Id` in the where clause causes a deadlock
-        await ScreenshotDiff.query()
-          .whereIn("id", diffIdsChunk)
-          .patch({ group: diffFileKey });
-      }
+    for (const diffIdsChunk of diffIdsChunks) {
+      // Update diffs
+      // We don't do the where in this query because of deadlock issues
+      // Having `s3Id` in the where clause causes a deadlock
+      await ScreenshotDiff.query()
+        .whereIn("id", diffIdsChunk)
+        .patch({ group: diffFileKey });
     }
+
+    return diffFileKey;
   }
+
+  return null;
 }

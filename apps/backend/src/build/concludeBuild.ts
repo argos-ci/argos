@@ -39,6 +39,7 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
         }),
       ]);
     });
+
     await Promise.all([
       buildNotificationJob.push(buildNotification.id),
       triggerAndRunAutomation({
