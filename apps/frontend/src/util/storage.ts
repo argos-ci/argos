@@ -23,17 +23,20 @@ export function getItem(key: string): string | null {
 /**
  * Set an item in local storage safely.
  */
-export function setItem(key: string, value: string) {
+export function setItem(key: string, value: string): boolean {
   try {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(key, value);
+      return true;
     }
     if (typeof sessionStorage !== "undefined") {
-      return sessionStorage.setItem(key, value);
+      sessionStorage.setItem(key, value);
+      return true;
     }
+    return false;
   } catch (error) {
     if (checkIsSecurityError(error)) {
-      return;
+      return false;
     }
     throw error;
   }

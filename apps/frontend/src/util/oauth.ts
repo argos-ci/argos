@@ -32,7 +32,12 @@ function getNonce(provider: AuthProvider): string {
     return existing;
   }
   const nonce = Math.random().toString(36).substring(2);
-  storage.setItem(getOAuthNonceKey(provider), nonce);
+  const stored = storage.setItem(getOAuthNonceKey(provider), nonce);
+  if (!stored) {
+    throw new Error(
+      "Failed to store OAuth nonce, please check localStorage permissions.",
+    );
+  }
   return nonce;
 }
 
