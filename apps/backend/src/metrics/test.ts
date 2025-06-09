@@ -1,8 +1,6 @@
 import { invariant } from "@argos/util/invariant";
-import moment from "moment";
 
 import { knex } from "@/database";
-import { ScreenshotDiff } from "@/database/models";
 import { get20MinutesSlot } from "@/util/date";
 
 /**
@@ -24,33 +22,22 @@ export async function upsertTestStats(input: {
 }) {
   const { date, fileId, testId } = input;
   const promises: Promise<void>[] = [];
-  const from = get20MinutesSlot(date);
-  const fromISOStr = from.toISOString();
-  const to = moment(from).add("20", "minutes").toDate();
-  const toISOStr = to.toISOString();
+  const slotDate = get20MinutesSlot(date);
+  const slotISODate = slotDate.toISOString();
 
   if (fileId) {
     promises.push(
       (async () => {
-        const count = await ScreenshotDiff.query()
-          .joinRelated("build")
-          .where("screenshot_diffs.testId", testId)
-          .where("screenshot_diffs.fileId", fileId)
-          .where("screenshot_diffs.createdAt", ">=", fromISOStr)
-          .where("screenshot_diffs.createdAt", "<", toISOStr)
-          .where("build.type", "reference")
-          .resultSize();
         await knex.raw(
           `
             INSERT INTO test_stats_changes ("testId", "fileId", "date", "value")
-            VALUES (:testId, :fileId, :from, :value)
+            VALUES (:testId, :fileId, :date, 1)
             ON CONFLICT ("testId", "fileId", "date") DO
-            UPDATE SET "value" = :value`,
+            UPDATE SET value = test_stats_changes.value + 1`,
           {
             testId,
             fileId,
-            from: fromISOStr,
-            value: count,
+            date: slotISODate,
           },
         );
       })(),
@@ -59,24 +46,15 @@ export async function upsertTestStats(input: {
 
   promises.push(
     (async () => {
-      const count = await ScreenshotDiff.query()
-        .joinRelated("build")
-        .where("screenshot_diffs.testId", testId)
-        .where("screenshot_diffs.createdAt", ">=", fromISOStr)
-        .where("screenshot_diffs.createdAt", "<", toISOStr)
-        .where("build.type", "reference")
-        .resultSize();
-
       await knex.raw(
         `
     INSERT INTO test_stats_builds ("testId", "date", "value")
-    VALUES (:testId, :from, :value)
+    VALUES (:testId, :date, 1)
     ON CONFLICT ("testId", "date") DO
-    UPDATE SET "value" = :value`,
+    UPDATE SET value = test_stats_builds.value + 1`,
         {
           testId,
-          from: fromISOStr,
-          value: count,
+          date: slotISODate,
         },
       );
     })(),

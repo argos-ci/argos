@@ -62,7 +62,7 @@ describe("upsertTestStats", () => {
       expect(buildsStats[0]).toEqual({
         testId: test.id,
         date: new Date("2025-06-02T09:00:00.000Z"),
-        value: 2,
+        value: 1,
       });
 
       // Change with a wrong value
@@ -80,13 +80,46 @@ describe("upsertTestStats", () => {
       expect(newBuildsStats[0]).toEqual({
         testId: test.id,
         date: new Date("2025-06-02T09:00:00.000Z"),
-        value: 2,
+        value: 1,
       });
     });
   });
 
   describe('with "fileId"', () => {
     it("upsert stats into test_stats_changes and test_stats_builds", async () => {
+      await upsertTestStats({
+        testId: test.id,
+        date: new Date("2025-06-02T09:18:00.000Z"),
+        fileId: file.id,
+      });
+
+      const [buildsStats, changesStats] = await Promise.all([
+        knex("test_stats_builds"),
+        knex("test_stats_changes"),
+      ]);
+      expect(buildsStats).toHaveLength(1);
+      expect(buildsStats[0]).toEqual({
+        testId: test.id,
+        date: new Date("2025-06-02T09:00:00.000Z"),
+        value: 1,
+      });
+
+      expect(changesStats).toHaveLength(1);
+      expect(changesStats[0]).toEqual({
+        testId: test.id,
+        fileId: file.id,
+        date: new Date("2025-06-02T09:00:00.000Z"),
+        value: 1,
+      });
+    });
+
+    it("suppports if already present in database", async () => {
+      await upsertTestStats({
+        testId: test.id,
+        date: new Date("2025-06-02T09:18:00.000Z"),
+        fileId: file.id,
+      });
+
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
@@ -109,7 +142,7 @@ describe("upsertTestStats", () => {
         testId: test.id,
         fileId: file.id,
         date: new Date("2025-06-02T09:00:00.000Z"),
-        value: 1,
+        value: 2,
       });
     });
   });
