@@ -556,7 +556,7 @@ function ChangesExplorer(props: {
   return (
     <BuildDiffColorStateProvider>
       <div className="bg-app flex gap-4 rounded-lg border" style={{ height }}>
-        <div className="flex border-r p-4">
+        <div className="flex min-w-60 border-r">
           <ChangesList
             test={test}
             onSelect={setActiveChangeId}
@@ -686,7 +686,7 @@ function ChangesList(props: {
     notation: "compact",
   });
   return (
-    <div className="group/sidebar flex min-h-0 flex-col gap-4 overflow-auto">
+    <div className="group/sidebar flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
       {test.changes.edges.map((change) => {
         const isActive = activeChange?.id === change.id;
         return (
