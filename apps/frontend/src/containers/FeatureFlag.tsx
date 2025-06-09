@@ -74,7 +74,7 @@ function CompanyAndUserProvider(
   });
 
   if (!data) {
-    return <UserProvider {...props} />;
+    return null;
   }
 
   return (
