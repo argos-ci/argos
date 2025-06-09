@@ -1,12 +1,11 @@
-/**
- * Get the UIColor based on the flakiness value.
- */
-export function getFlakinessColor(value: number): string {
+import type { UIColor } from "@/util/colors";
+
+export function getFlakinessUIColor(value: number) {
   if (value < 0.35) {
-    return "var(--background-color-success-solid)";
+    return "success" satisfies UIColor;
   } else if (value < 0.5) {
-    return "var(--background-color-warning-solid)";
+    return "warning" satisfies UIColor;
   } else {
-    return "var(--background-color-danger-solid)";
+    return "danger" satisfies UIColor;
   }
 }

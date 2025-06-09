@@ -1,11 +1,13 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import { raw } from "objection";
 
 import { Build, ScreenshotDiff } from "@/database/models";
-import { getTestAllMetrics, getTestSeriesMetrics } from "@/metrics/test";
+import { getTestSeriesMetrics } from "@/metrics/test";
 
 import {
+  IMetricsPeriod,
   ITestStatus,
   type IResolvers,
   type ITestMetrics,
@@ -37,14 +39,9 @@ export const typeDefs = gql`
     all: TestMetricData!
   }
 
-  input TestMetricsInput {
-    from: DateTime
-    to: DateTime
-  }
-
   type TestChange implements Node {
     id: ID!
-    stats(from: DateTime!): TestChangeStats!
+    stats(period: MetricsPeriod!): TestChangeStats!
   }
 
   type TestChangeStats {
@@ -63,14 +60,26 @@ export const typeDefs = gql`
     REMOVED
   }
 
+  enum MetricsPeriod {
+    LAST_24_HOURS
+    LAST_3_DAYS
+    LAST_7_DAYS
+    LAST_30_DAYS
+    LAST_90_DAYS
+  }
+
   type Test implements Node {
     id: ID!
     name: String!
     status: TestStatus!
     firstSeenDiff: ScreenshotDiff
     lastSeenDiff: ScreenshotDiff
-    changes(from: DateTime!, after: Int!, first: Int!): TestChangesConnection!
-    metrics(input: TestMetricsInput): TestMetrics!
+    changes(
+      period: MetricsPeriod!
+      after: Int!
+      first: Int!
+    ): TestChangesConnection!
+    metrics(period: MetricsPeriod): TestMetrics!
   }
 `;
 
@@ -119,7 +128,8 @@ export const resolvers: IResolvers = {
       return result ?? null;
     },
     changes: async (test, args, ctx) => {
-      const { from, after, first } = args;
+      const { period, after, first } = args;
+      const from = getStartDateFromPeriod(period);
 
       const totalOccurencesQuery = `
       SELECT COUNT(*) FROM screenshot_diffs sd
@@ -201,7 +211,7 @@ export const resolvers: IResolvers = {
                 fileId: lastSeenDiff.fileId,
               }),
               stats: {
-                from,
+                period,
                 totalOccurences,
                 lastSeenDiff,
                 firstSeenDiff,
@@ -213,28 +223,28 @@ export const resolvers: IResolvers = {
         after,
       });
     },
-    metrics: async (test, { input }) => {
+    metrics: async (test, { period }, ctx) => {
+      const from = getStartDateFromPeriod(period ?? null);
       return {
         series: () =>
           getTestSeriesMetrics({
             testId: test.id,
-            from: input?.from ? new Date(input.from) : undefined,
-            to: input?.to ? new Date(input.to) : undefined,
+            from,
           }),
-        all: () =>
-          getTestAllMetrics({
+        all: async () => {
+          return ctx.loaders.TestAllMetrics.load({
             testId: test.id,
-            from: input?.from ? new Date(input.from) : undefined,
-            to: input?.to ? new Date(input.to) : undefined,
-          }),
+            from,
+          });
+        },
       };
     },
   },
   TestChange: {
     stats: (testChange, params) => {
-      const { from, ...stats } = testChange.stats;
-      if (from.toISOString() !== params.from.toISOString()) {
-        throw new Error("from date must match the one used in the connection");
+      const { period, ...stats } = testChange.stats;
+      if (period !== params.period) {
+        throw new Error("period must match the one used in the connection");
       }
       return stats;
     },
@@ -244,7 +254,7 @@ export const resolvers: IResolvers = {
 export type TestChange = {
   id: string;
   stats: {
-    from: Date;
+    period: IMetricsPeriod;
     totalOccurences: number;
     firstSeenDiff: ScreenshotDiff;
     lastSeenDiff: ScreenshotDiff;
@@ -255,3 +265,23 @@ export type TestMetrics = {
   series: () => Promise<ITestMetrics["series"]>;
   all: () => Promise<ITestMetrics["all"]>;
 };
+
+function getStartDateFromPeriod(period: IMetricsPeriod | null): Date {
+  const now = new Date();
+  switch (period) {
+    case IMetricsPeriod.Last_24Hours:
+      return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    case IMetricsPeriod.Last_3Days:
+      return new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    case IMetricsPeriod.Last_7Days:
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case IMetricsPeriod.Last_30Days:
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    case IMetricsPeriod.Last_90Days:
+      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    case null:
+      return new Date(0); // Default to epoch if no period is specified
+    default:
+      assertNever(period, `Unknown period: ${period}`);
+  }
+}

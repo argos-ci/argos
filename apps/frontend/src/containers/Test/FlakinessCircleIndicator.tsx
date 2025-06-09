@@ -3,13 +3,19 @@ import clsx from "clsx";
 import { useNumberFormatter } from "react-aria";
 
 import { CircleProgress } from "@/ui/Progress";
+import { bgSolidColors } from "@/util/colors";
 
-import { getFlakinessColor } from "./Flakiness";
+import { getFlakinessUIColor } from "./Flakiness";
 
 interface FlakinessCircleIndicatorProps extends ComponentPropsWithRef<"div"> {
   value: number;
   label?: string;
   color?: string;
+}
+
+function getColor(value: number) {
+  const uiColor = getFlakinessUIColor(value);
+  return bgSolidColors[uiColor];
 }
 
 export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
@@ -18,7 +24,7 @@ export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
     value,
     label,
     className,
-    color = getFlakinessColor(value),
+    color = getColor(value),
     ...domProps
   } = props;
   const compactFormatter = useNumberFormatter({ notation: "compact" });

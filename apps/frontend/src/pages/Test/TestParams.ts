@@ -37,7 +37,9 @@ export function getTestURL(
   searchParams?: TestSearchParams,
 ): string {
   const urlSearchParams = searchParams
-    ? new URLSearchParams(Object.entries(searchParams)).toString()
+    ? new URLSearchParams(
+        Object.entries(searchParams).filter(([, v]) => v != null),
+      ).toString()
     : null;
   return `${getProjectURL(params)}/tests/${params.testId}${urlSearchParams ? `?${urlSearchParams}` : ""}`;
 }

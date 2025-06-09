@@ -136,13 +136,6 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         <div className="min-w-0 flex-1">
           {diff.test && testDetailsFeature.isEnabled ? (
             <div className="flex items-center gap-2">
-              <BuildFlakyIndicator
-                accountSlug={params.accountSlug}
-                projectName={params.projectName}
-                testId={diff.test.id}
-                changeId={diff.changeId}
-                className="size-8"
-              />
               <Tooltip content="View test details">
                 <Link
                   to={getTestURL(
@@ -181,6 +174,13 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         </BuildDiffDetailToolbar>
       </div>
       <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
+        {diff.test ? (
+          <BuildFlakyIndicator
+            accountSlug={params.accountSlug}
+            projectName={params.projectName}
+            diff={diff}
+          />
+        ) : null}
         {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
         {automationLibrary && (
           <AutomationLibraryIndicator

@@ -528,6 +528,14 @@ export type ILinkGitlabProjectInput = {
   projectId: Scalars['ID']['input'];
 };
 
+export enum IMetricsPeriod {
+  Last_3Days = 'LAST_3_DAYS',
+  Last_7Days = 'LAST_7_DAYS',
+  Last_24Hours = 'LAST_24_HOURS',
+  Last_30Days = 'LAST_30_DAYS',
+  Last_90Days = 'LAST_90_DAYS'
+}
+
 export type IMutation = {
   __typename?: 'Mutation';
   /** Accept an invitation to join a team */
@@ -1000,6 +1008,7 @@ export type IScreenshotDiff = INode & {
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
+  last7daysOccurences: Scalars['Int']['output'];
   /** Name of the diff (either base or compare screenshot name) */
   name: Scalars['String']['output'];
   status: IScreenshotDiffStatus;
@@ -1234,12 +1243,12 @@ export type ITest = INode & {
 export type ITestChangesArgs = {
   after: Scalars['Int']['input'];
   first: Scalars['Int']['input'];
-  from: Scalars['DateTime']['input'];
+  period: IMetricsPeriod;
 };
 
 
 export type ITestMetricsArgs = {
-  input?: InputMaybe<ITestMetricsInput>;
+  period?: InputMaybe<IMetricsPeriod>;
 };
 
 export type ITestChange = INode & {
@@ -1250,7 +1259,7 @@ export type ITestChange = INode & {
 
 
 export type ITestChangeStatsArgs = {
-  from: Scalars['DateTime']['input'];
+  period: IMetricsPeriod;
 };
 
 export type ITestChangeStats = {
@@ -1288,11 +1297,6 @@ export type ITestMetrics = {
   __typename?: 'TestMetrics';
   all: ITestMetricData;
   series: Array<ITestMetricDataPoint>;
-};
-
-export type ITestMetricsInput = {
-  from?: InputMaybe<Scalars['DateTime']['input']>;
-  to?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export type ITestReport = {
@@ -1581,6 +1585,7 @@ export type IResolversTypes = ResolversObject<{
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
+  MetricsPeriod: IMetricsPeriod;
   Mutation: ResolverTypeWrapper<{}>;
   Node: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Node']>;
   PageInfo: ResolverTypeWrapper<IPageInfo>;
@@ -1632,7 +1637,6 @@ export type IResolversTypes = ResolversObject<{
   TestMetricData: ResolverTypeWrapper<ITestMetricData>;
   TestMetricDataPoint: ResolverTypeWrapper<ITestMetricDataPoint>;
   TestMetrics: ResolverTypeWrapper<TestMetrics>;
-  TestMetricsInput: ITestMetricsInput;
   TestReport: ResolverTypeWrapper<ITestReport>;
   TestReportStats: ResolverTypeWrapper<ITestReportStats>;
   TestReportStatus: ITestReportStatus;
@@ -1750,7 +1754,6 @@ export type IResolversParentTypes = ResolversObject<{
   TestMetricData: ITestMetricData;
   TestMetricDataPoint: ITestMetricDataPoint;
   TestMetrics: TestMetrics;
-  TestMetricsInput: ITestMetricsInput;
   TestReport: ITestReport;
   TestReportStats: ITestReportStats;
   Time: Scalars['Time']['output'];
@@ -2239,6 +2242,7 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  last7daysOccurences?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['ScreenshotDiffStatus'], ParentType, ContextType>;
   test?: Resolver<Maybe<IResolversTypes['Test']>, ParentType, ContextType>;
@@ -2383,7 +2387,7 @@ export type ITeamMemberConnectionResolvers<ContextType = Context, ParentType ext
 }>;
 
 export type ITestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Test'] = IResolversParentTypes['Test']> = ResolversObject<{
-  changes?: Resolver<IResolversTypes['TestChangesConnection'], ParentType, ContextType, RequireFields<ITestChangesArgs, 'after' | 'first' | 'from'>>;
+  changes?: Resolver<IResolversTypes['TestChangesConnection'], ParentType, ContextType, RequireFields<ITestChangesArgs, 'after' | 'first' | 'period'>>;
   firstSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   lastSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
@@ -2395,7 +2399,7 @@ export type ITestResolvers<ContextType = Context, ParentType extends IResolversP
 
 export type ITestChangeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestChange'] = IResolversParentTypes['TestChange']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  stats?: Resolver<IResolversTypes['TestChangeStats'], ParentType, ContextType, RequireFields<ITestChangeStatsArgs, 'from'>>;
+  stats?: Resolver<IResolversTypes['TestChangeStats'], ParentType, ContextType, RequireFields<ITestChangeStatsArgs, 'period'>>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
