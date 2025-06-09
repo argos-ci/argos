@@ -3,7 +3,11 @@ import { useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { PartyPopperIcon } from "lucide-react";
+import {
+  CircleCheckIcon,
+  PartyPopperIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 import moment from "moment";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
@@ -631,7 +635,9 @@ function BuildHeader(props: {
           <CounterValue
             className={clsx(
               "tabular-nums",
-              change.stats.totalOccurences > 1 ? "text-danger-low" : undefined,
+              change.stats.totalOccurences > 1
+                ? "text-danger-low"
+                : "text-success-low",
             )}
           >
             {compactFormatter.format(change.stats.totalOccurences)}{" "}
@@ -698,8 +704,19 @@ function ChangesList(props: {
               />
               <DiffCardFooter>
                 <DiffCardFooterText>
-                  {compactFormatter.format(change.stats.totalOccurences)} /{" "}
-                  {compactFormatter.format(test.metrics.all.total)}
+                  {change.stats.totalOccurences > 1 ? (
+                    <>
+                      <TriangleAlertIcon className="text-danger-low mr-1 inline size-3" />
+                      Recurring -{" "}
+                      {compactFormatter.format(change.stats.totalOccurences)}
+                      <small>x</small>
+                    </>
+                  ) : (
+                    <>
+                      <CircleCheckIcon className="text-success-low mr-1 inline size-3" />
+                      One-off
+                    </>
+                  )}
                 </DiffCardFooterText>
               </DiffCardFooter>
             </DiffCard>

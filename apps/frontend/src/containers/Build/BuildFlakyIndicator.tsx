@@ -2,7 +2,7 @@ import type { ComponentPropsWithRef } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
-import { ShieldCheckIcon, WavesIcon, type LucideIcon } from "lucide-react";
+import { CircleCheckIcon, WavesIcon, type LucideIcon } from "lucide-react";
 import { useNumberFormatter } from "react-aria";
 import { Link } from "react-router-dom";
 
@@ -39,7 +39,7 @@ export function BuildFlakyIndicator(props: {
     </Link>
   );
 
-  if (diff.last7daysOccurences > 0) {
+  if (diff.last7daysOccurences > 1) {
     return (
       <Tooltip
         disableHoverableContent={false}
@@ -127,7 +127,7 @@ export function BuildFlakyIndicator(props: {
         </TooltipContainer>
       }
     >
-      <Chip icon={ShieldCheckIcon} color="success" scale="xs" {...props}>
+      <Chip icon={CircleCheckIcon} color="success" scale="xs" {...props}>
         Stable
       </Chip>
     </Tooltip>
