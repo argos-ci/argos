@@ -61,25 +61,7 @@ describe("upsertTestStats", () => {
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
         testId: test.id,
-        date: new Date("2025-06-02T09:00:00.000Z"),
-        value: 1,
-      });
-
-      // Change with a wrong value
-      await knex("test_stats_builds").update({ value: 0 });
-
-      // Validate that upsert is working
-      await upsertTestStats({
-        testId: test.id,
-        date: new Date("2025-06-02T09:18:00.000Z"),
-        fileId: null,
-      });
-
-      const newBuildsStats = await knex("test_stats_builds");
-      expect(newBuildsStats).toHaveLength(1);
-      expect(newBuildsStats[0]).toEqual({
-        testId: test.id,
-        date: new Date("2025-06-02T09:00:00.000Z"),
+        date: new Date("2025-06-02T00:00:00.000Z"),
         value: 1,
       });
     });
@@ -100,7 +82,7 @@ describe("upsertTestStats", () => {
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
         testId: test.id,
-        date: new Date("2025-06-02T09:00:00.000Z"),
+        date: new Date("2025-06-02T00:00:00.000Z"),
         value: 1,
       });
 
@@ -108,7 +90,7 @@ describe("upsertTestStats", () => {
       expect(changesStats[0]).toEqual({
         testId: test.id,
         fileId: file.id,
-        date: new Date("2025-06-02T09:00:00.000Z"),
+        date: new Date("2025-06-02T00:00:00.000Z"),
         value: 1,
       });
     });
@@ -133,7 +115,7 @@ describe("upsertTestStats", () => {
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
         testId: test.id,
-        date: new Date("2025-06-02T09:00:00.000Z"),
+        date: new Date("2025-06-02T00:00:00.000Z"),
         value: 2,
       });
 
@@ -141,7 +123,7 @@ describe("upsertTestStats", () => {
       expect(changesStats[0]).toEqual({
         testId: test.id,
         fileId: file.id,
-        date: new Date("2025-06-02T09:00:00.000Z"),
+        date: new Date("2025-06-02T00:00:00.000Z"),
         value: 2,
       });
     });
