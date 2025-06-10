@@ -194,6 +194,7 @@ export async function createBuild(params: {
         return build;
       });
     },
+    { timeout: 40_000 }, // 40 seconds
   );
 
   await pushBuildNotification({ buildId: build.id, type: "queued" });

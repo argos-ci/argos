@@ -237,6 +237,7 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
 
       return createBuildFromRequest(ctx);
     },
+    { timeout: 40_000 }, // 40 seconds
   );
 
   return { build, screenshots, pwTraces };
