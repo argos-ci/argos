@@ -5,7 +5,6 @@ import { useFeature } from "@bucketco/react-sdk";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
-import { BuildFlakyIndicator } from "@/containers/Build/BuildFlakyIndicator";
 import {
   NextButton,
   PreviousButton,
@@ -174,13 +173,13 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         </BuildDiffDetailToolbar>
       </div>
       <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
-        {diff.test ? (
+        {/* {diff.test ? (
           <BuildFlakyIndicator
             accountSlug={params.accountSlug}
             projectName={params.projectName}
             diff={diff}
           />
-        ) : null}
+        ) : null} */}
         {sdk && <SdkIndicator sdk={sdk} className="size-4" />}
         {automationLibrary && (
           <AutomationLibraryIndicator
