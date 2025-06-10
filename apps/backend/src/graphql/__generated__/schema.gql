@@ -122,6 +122,82 @@ input AddContributorToProjectInput {
   userAccountId: ID!
 }
 
+type AutomationAction {
+  action: AutomationActionType!
+  actionPayload: AutomationActionSendSlackMessagePayload!
+}
+
+input AutomationActionInput {
+  payload: AutomationActionSendSlackMessagePayloadInput!
+  type: AutomationActionType!
+}
+
+type AutomationActionSendSlackMessagePayload {
+  channelId: Int!
+  name: String!
+  slackId: String!
+}
+
+input AutomationActionSendSlackMessagePayloadInput {
+  channelId: String
+  name: String!
+  slackId: String!
+}
+
+enum AutomationActionType {
+  sendSlackMessage
+}
+
+type AutomationCondition {
+  type: AutomationConditionType!
+  value: String!
+}
+
+input AutomationConditionInput {
+  type: AutomationConditionType!
+  value: String!
+}
+
+enum AutomationConditionType {
+  buildConclusion
+  buildName
+  buildType
+}
+
+type AutomationConditions {
+  all: [AutomationCondition!]!
+}
+
+enum AutomationEvent {
+  buildCompleted
+  buildReviewed
+}
+
+type AutomationRule implements Node {
+  active: Boolean!
+  createdAt: DateTime!
+  id: ID!
+  if: AutomationConditions!
+  lastAutomationRunDate: DateTime
+  name: String!
+  on: [AutomationEvent!]!
+  then: [AutomationAction!]!
+  updatedAt: DateTime!
+}
+
+type AutomationRuleConnection implements Connection {
+  edges: [AutomationRule!]!
+  pageInfo: PageInfo!
+}
+
+type AutomationRun implements Node {
+  buildId: String
+  createdAt: DateTime!
+  event: AutomationEvent!
+  id: ID!
+  updatedAt: DateTime!
+}
+
 enum BaseBranchResolution {
   """Base branch is resolved from the project settings"""
   project
@@ -292,6 +368,14 @@ input BuildsFilterInput {
 interface Connection {
   edges: [Node!]!
   pageInfo: PageInfo!
+}
+
+input CreateAutomationRuleInput {
+  actions: [AutomationActionInput!]!
+  conditions: [AutomationConditionInput!]!
+  events: [AutomationEvent!]!
+  name: String!
+  projectId: String!
 }
 
 input CreateTeamInput {
@@ -509,8 +593,14 @@ type Mutation {
   """Add contributor to project"""
   addOrUpdateProjectContributor(input: AddContributorToProjectInput!): ProjectContributor!
 
+  """Create automation"""
+  createAutomationRule(input: CreateAutomationRuleInput!): AutomationRule!
+
   """Create a team"""
   createTeam(input: CreateTeamInput!): CreateTeamResult!
+
+  """Deactivate automation"""
+  deactivateAutomationRule(id: String!): AutomationRule!
 
   """Delete Project"""
   deleteProject(id: ID!): Boolean!
@@ -580,6 +670,9 @@ type Mutation {
   """Update Account"""
   updateAccount(input: UpdateAccountInput!): Account!
 
+  """Update automation"""
+  updateAutomationRule(input: UpdateAutomationRuleInput!): AutomationRule!
+
   """Update Project"""
   updateProject(input: UpdateProjectInput!): Project!
 
@@ -610,6 +703,9 @@ type Project implements Node {
 
   """Glob pattern for auto-approved branches"""
   autoApprovedBranchGlob: String!
+
+  """Automation rules"""
+  automationRules(after: Int = 0, first: Int = 30): AutomationRuleConnection!
 
   """A single build linked to the project"""
   build(number: Int!): Build
@@ -729,6 +825,9 @@ type Query {
 
   """Get Account by id"""
   accountById(id: ID!): Account
+
+  """Get automation rule by ID"""
+  automationRule(id: String!): AutomationRule
   ghApiInstallationRepositories(fromAuthUser: Boolean!, installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
   glApiProjects(accountId: ID!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
   invitation(token: String!): Team
@@ -1088,6 +1187,14 @@ input UpdateAccountInput {
   meteredSpendLimitByPeriod: Int
   name: String
   slug: String
+}
+
+input UpdateAutomationRuleInput {
+  actions: [AutomationActionInput!]!
+  conditions: [AutomationConditionInput!]!
+  events: [AutomationEvent!]!
+  id: String!
+  name: String!
 }
 
 input UpdateProjectInput {

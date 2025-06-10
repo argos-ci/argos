@@ -1,0 +1,303 @@
+import { useApolloClient } from "@apollo/client";
+import { Heading, Text } from "react-aria-components";
+import { Helmet } from "react-helmet";
+import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { useSafeQuery } from "@/containers/Apollo";
+import { SettingsLayout } from "@/containers/Layout";
+import { DocumentType, graphql } from "@/gql";
+import {
+  AutomationActionType,
+  AutomationConditionType,
+  AutomationEvent,
+} from "@/gql/graphql";
+import { Button, LinkButton } from "@/ui/Button";
+import { Card, CardBody, CardFooter } from "@/ui/Card";
+import {
+  Page,
+  PageContainer,
+  PageHeader,
+  PageHeaderContent,
+} from "@/ui/Layout";
+import { PageLoader } from "@/ui/PageLoader";
+
+import { Form } from "../../ui/Form";
+import { NotFound } from "../NotFound";
+import { AutomationNameField, FormErrors } from "./AutomationForm";
+import { AutomationActionsStep } from "./AutomationFormActionsStep";
+import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
+import { AutomationWhenStep } from "./AutomationFormWhenStep";
+
+const ProjectQuery = graphql(`
+  query ProjectEditAutomation_project(
+    $accountSlug: String!
+    $projectName: String!
+  ) {
+    project(accountSlug: $accountSlug, projectName: $projectName) {
+      id
+      buildNames
+    }
+  }
+`);
+
+const AutomationRuleQuery = graphql(`
+  query ProjectEditAutomation_automationRule($id: String!) {
+    automationRule(id: $id) {
+      id
+      name
+      on
+      if {
+        all {
+          type
+          value
+        }
+      }
+      then {
+        action
+        actionPayload {
+          ... on AutomationActionSendSlackMessagePayload {
+            channelId
+            slackId
+            name
+          }
+        }
+      }
+    }
+  }
+`);
+
+const UpdateAutomationMutation = graphql(`
+  mutation EditAutomation_updateAutomation(
+    $id: String!
+    $name: String!
+    $events: [AutomationEvent!]!
+    $conditions: [AutomationConditionInput!]!
+    $actions: [AutomationActionInput!]!
+  ) {
+    updateAutomationRule(
+      input: {
+        id: $id
+        name: $name
+        events: $events
+        conditions: $conditions
+        actions: $actions
+      }
+    ) {
+      id
+      name
+      on
+      if {
+        all {
+          type
+          value
+        }
+      }
+      then {
+        action
+        actionPayload {
+          ... on AutomationActionSendSlackMessagePayload {
+            channelId
+            slackId
+            name
+          }
+        }
+      }
+    }
+  }
+`);
+
+type ProjectRuleDocument = DocumentType<typeof ProjectQuery>;
+type Project = NonNullable<ProjectRuleDocument["project"]>;
+type AutomationRuleDocument = DocumentType<typeof AutomationRuleQuery>;
+type AutomationRule = NonNullable<AutomationRuleDocument["automationRule"]>;
+
+export type EditAutomationInputs = {
+  name: string;
+  events: AutomationEvent[];
+  conditions: Record<AutomationConditionType, string>;
+  actions: { type: AutomationActionType; payload: any }[];
+};
+
+function entries<T extends object>(obj: T): [keyof T, T[keyof T]][] {
+  return Object.entries(obj) as [keyof T, T[keyof T]][];
+}
+
+function EditAutomationForm({
+  automationRule,
+  project,
+  accountSlug,
+  projectName,
+}: {
+  automationRule: AutomationRule;
+  project: Project;
+  accountSlug: string;
+  projectName: string;
+}) {
+  const client = useApolloClient();
+  const navigate = useNavigate();
+
+  const form = useForm<EditAutomationInputs>({
+    defaultValues: {
+      name: automationRule?.name || "",
+      events: automationRule?.on || [],
+      conditions:
+        automationRule?.if?.all?.reduce(
+          (acc, c) => {
+            acc[c.type as AutomationConditionType] = c.value;
+            return acc;
+          },
+          {} as Record<AutomationConditionType, string>,
+        ) || {},
+      actions:
+        automationRule?.then?.map((a) => ({
+          type: a.action,
+          payload: a.actionPayload,
+        })) || [],
+    },
+  });
+
+  const onSubmit: SubmitHandler<EditAutomationInputs> = async (data) => {
+    const variables = {
+      id: automationRule.id,
+      name: data.name,
+      events: data.events,
+      conditions: entries(data.conditions).map(([type, value]) => ({
+        type,
+        value,
+      })),
+      actions: data.actions.map(({ type, payload }) => {
+        switch (type) {
+          case AutomationActionType.SendSlackMessage:
+            return {
+              type: type,
+              payload: {
+                channelId: payload.channelId,
+                name: payload.name,
+                slackId: payload.slackId,
+              },
+            };
+          default:
+            throw new Error(`Unknown action type: ${type}`);
+        }
+      }),
+    };
+
+    await client.mutate({ mutation: UpdateAutomationMutation, variables });
+    navigate(`/${accountSlug}/${projectName}/automations`, {
+      replace: true,
+    });
+  };
+
+  return (
+    <Page>
+      <Helmet>
+        <title>Edit Automation</title>
+      </Helmet>
+      <PageContainer>
+        <PageHeader>
+          <PageHeaderContent>
+            <Heading>Edit Automation Rule</Heading>
+            <Text slot="headline">Edit this automation for the project.</Text>
+          </PageHeaderContent>
+        </PageHeader>
+        <SettingsLayout>
+          <Card>
+            <FormProvider {...form}>
+              <Form onSubmit={onSubmit}>
+                <CardBody>
+                  <div className="flex flex-col gap-6">
+                    <AutomationNameField />
+                    <AutomationWhenStep />
+                    <AutomationConditionsStep
+                      projectBuildNames={project.buildNames}
+                    />
+                    <AutomationActionsStep />
+                    <FormErrors />
+                  </div>
+                </CardBody>
+
+                <CardFooter>
+                  <div className="flex justify-end gap-2">
+                    <LinkButton href={`../automations`} variant="secondary">
+                      Cancel
+                    </LinkButton>
+                    <Button
+                      type="submit"
+                      isDisabled={form.formState.isSubmitting}
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Form>
+            </FormProvider>
+          </Card>
+        </SettingsLayout>
+      </PageContainer>
+    </Page>
+  );
+}
+
+function PageContent(props: {
+  accountSlug: string;
+  projectName: string;
+  automationId: string;
+}) {
+  const projectResult = useSafeQuery(ProjectQuery, {
+    variables: {
+      accountSlug: props.accountSlug,
+      projectName: props.projectName,
+    },
+  });
+
+  const project = projectResult.data?.project;
+
+  const automationRuleResult = useSafeQuery(AutomationRuleQuery, {
+    variables: { id: props.automationId },
+    skip: !project,
+  });
+
+  const automationRule = automationRuleResult.data?.automationRule;
+
+  if (!projectResult.data || !automationRuleResult.data) {
+    return <PageLoader />;
+  }
+
+  if (!project || !automationRule) {
+    return <NotFound />;
+  }
+
+  return (
+    <EditAutomationForm
+      automationRule={automationRule}
+      project={project}
+      accountSlug={props.accountSlug}
+      projectName={props.projectName}
+    />
+  );
+}
+
+/** @route */
+export function Component() {
+  const { accountSlug, projectName, automationId } = useParams();
+
+  if (!accountSlug || !projectName || !automationId) {
+    return <NotFound />;
+  }
+
+  return (
+    <Page>
+      <Helmet>
+        <title>
+          {accountSlug}/{projectName} • Edit Automation
+        </title>
+      </Helmet>
+      <PageContent
+        accountSlug={accountSlug}
+        projectName={projectName}
+        automationId={automationId}
+      />
+    </Page>
+  );
+}

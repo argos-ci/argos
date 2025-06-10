@@ -191,6 +191,27 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   HydrateFallback,
                   lazy: () => import("./pages/Project/Settings"),
                 },
+                {
+                  path: "automations",
+                  HydrateFallback,
+                  children: [
+                    {
+                      index: true,
+                      HydrateFallback,
+                      lazy: () => import("./pages/Automation"),
+                    },
+                    {
+                      path: "new",
+                      HydrateFallback,
+                      lazy: () => import("./pages/Automation/NewAutomation"),
+                    },
+                    {
+                      path: ":automationId",
+                      HydrateFallback,
+                      lazy: () => import("./pages/Automation/EditAutomation"),
+                    },
+                  ],
+                },
               ],
             },
             {

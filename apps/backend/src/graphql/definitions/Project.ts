@@ -5,6 +5,7 @@ import type { PartialModelObject } from "objection";
 
 import {
   Account,
+  AutomationRule,
   Build,
   BUILD_EXPIRATION_DELAY_MS,
   GithubInstallation,
@@ -135,6 +136,8 @@ export const typeDefs = gql`
     buildNames: [String!]!
     "Contributors"
     contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
+    "Automation rules"
+    automationRules(after: Int = 0, first: Int = 30): AutomationRuleConnection!
     "Default user access level applied to members that are not contributors"
     defaultUserLevel: ProjectUserLevel
   }
@@ -634,6 +637,18 @@ export const resolvers: IResolvers = {
         )
         .range(after, after + first - 1);
 
+      return paginateResult({ result, first, after });
+    },
+    automationRules: async (project, args, ctx) => {
+      const { first, after } = args;
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const result = await AutomationRule.query()
+        .where({ projectId: project.id, active: true })
+        .orderBy("createdAt", "desc")
+        .range(after, after + first - 1);
       return paginateResult({ result, first, after });
     },
   },

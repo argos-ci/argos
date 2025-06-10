@@ -37,6 +37,9 @@ function ProjectTabLinkList(props: { permissions: ProjectPermission[] }) {
     <TabLinkList aria-label="Project navigation">
       <TabLink href="">Builds</TabLink>
       {permissions.includes(ProjectPermission.ViewSettings) && (
+        <TabLink href="automations">Automations</TabLink>
+      )}
+      {permissions.includes(ProjectPermission.ViewSettings) && (
         <TabLink href="settings">Project Settings</TabLink>
       )}
     </TabLinkList>

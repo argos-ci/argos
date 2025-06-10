@@ -2,6 +2,7 @@ import type { DocumentNode } from "graphql";
 
 import * as Account from "./Account.js";
 import * as AccountSubscription from "./AccountSubscription.js";
+import * as AutomationRule from "./AutomationRule.js";
 import * as Build from "./Build.js";
 import * as BuildReview from "./BuildReview.js";
 import * as Connection from "./Connection.js";
@@ -38,6 +39,7 @@ import * as ValidationStatus from "./ValidationStatus.js";
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Account,
   AccountSubscription,
+  AutomationRule,
   Build,
   BuildReview,
   Connection,
@@ -61,10 +63,10 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   PullRequest,
   Repository,
   schema,
-  SlackInstallation,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  SlackInstallation,
   Team,
   Test,
   TimeSeries,
