@@ -1,5 +1,6 @@
+import moment from "moment";
+
 import { knex } from "@/database";
-import { get20MinutesSlot } from "@/util/date";
 
 /**
  * Upsert the test stats for a date and a file.
@@ -20,8 +21,7 @@ export async function upsertTestStats(input: {
 }) {
   const { date, fileId, testId } = input;
   const promises: Promise<void>[] = [];
-  const slotDate = get20MinutesSlot(date);
-  const slotISODate = slotDate.toISOString();
+  const dayISODate = moment(date).startOf("day").toDate().toISOString();
 
   if (fileId) {
     promises.push(
@@ -35,7 +35,7 @@ export async function upsertTestStats(input: {
           {
             testId,
             fileId,
-            date: slotISODate,
+            date: dayISODate,
           },
         );
       })(),
@@ -52,7 +52,7 @@ export async function upsertTestStats(input: {
     UPDATE SET value = test_stats_builds.value + 1`,
         {
           testId,
-          date: slotISODate,
+          date: dayISODate,
         },
       );
     })(),
