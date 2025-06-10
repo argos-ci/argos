@@ -7,7 +7,7 @@ import type { TransactionOrKnex } from "objection";
 import { concludeBuild } from "@/build/concludeBuild.js";
 import { transaction } from "@/database/index.js";
 import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
-import { upsertTestStats } from "@/metrics/test.js";
+// import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
 import { getRedisLock } from "@/util/redis/index.js";
@@ -242,13 +242,13 @@ export const computeScreenshotDiff = async (
   }
 
   // Insert stats
-  if (screenshotDiff.testId && build.type === "reference") {
-    await upsertTestStats({
-      testId: screenshotDiff.testId,
-      date: new Date(screenshotDiff.createdAt),
-      fileId: diffData.fileId ?? null,
-    });
-  }
+  // if (screenshotDiff.testId && build.type === "reference") {
+  //   await upsertTestStats({
+  //     testId: screenshotDiff.testId,
+  //     date: new Date(screenshotDiff.createdAt),
+  //     fileId: diffData.fileId ?? null,
+  //   });
+  // }
 
   await ScreenshotDiff.query()
     .findById(screenshotDiff.id)
