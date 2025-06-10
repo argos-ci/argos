@@ -89,17 +89,20 @@ const _DiffFragment = graphql(`
     height
     group
     threshold
-    last7daysOccurences
-    changeId
     test {
       id
-      last7daysMetrics: metrics(period: LAST_7_DAYS) {
-        all {
-          total
-          flakiness
-        }
-      }
     }
+    # last7daysOccurences
+    # changeId
+    # test {
+    #   id
+    #   last7daysMetrics: metrics(period: LAST_7_DAYS) {
+    #     all {
+    #       total
+    #       flakiness
+    #     }
+    #   }
+    # }
     baseScreenshot {
       id
       url
