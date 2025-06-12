@@ -7,6 +7,7 @@ import { useParams } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
 import { graphql } from "@/gql";
+import { ProjectPermission } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import {
   EmptyState,
@@ -21,19 +22,8 @@ import {
 import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
+import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { AutomationRulesList } from "./AutomationRulesList";
-
-const ProjectQuery = graphql(`
-  query ProjectAutomations_project(
-    $accountSlug: String!
-    $projectName: String!
-  ) {
-    project(accountSlug: $accountSlug, projectName: $projectName) {
-      id
-      slug
-    }
-  }
-`);
 
 const ProjectAutomationsQuery = graphql(`
   query ProjectAutomations_project_Automations(
@@ -54,7 +44,6 @@ const ProjectAutomationsQuery = graphql(`
           createdAt
           name
           on
-          lastAutomationRunDate
         }
       }
     }
@@ -85,58 +74,17 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
 }
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
-  const projectResult = useSafeQuery(ProjectQuery, {
-    variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
-    },
-  });
-
   const automationsResult = useSafeQuery(ProjectAutomationsQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
       after: 0,
-      first: 20,
+      first: 50,
     },
   });
 
-  const { fetchMore } = automationsResult;
   const automationResultRef = useRef(automationsResult);
   automationResultRef.current = automationsResult;
-
-  const fetchNextPage = useCallback(() => {
-    const displayCount =
-      automationResultRef.current.data?.project?.automationRules.edges.length;
-    fetchMore({
-      variables: {
-        after: displayCount,
-      },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (
-          !prev.project?.automationRules?.edges ||
-          !fetchMoreResult?.project?.automationRules
-        ) {
-          return fetchMoreResult;
-        }
-
-        return {
-          ...prev,
-          project: {
-            ...prev.project,
-            automationRules: {
-              ...prev.project.automationRules,
-              ...fetchMoreResult.project.automationRules,
-              edges: [
-                ...prev.project.automationRules.edges,
-                ...fetchMoreResult.project.automationRules.edges,
-              ],
-            },
-          },
-        };
-      },
-    });
-  }, [fetchMore]);
 
   const [deactivateAutomationRule] = useMutation(
     DeactivateAutomationRuleMutation,
@@ -148,8 +96,8 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
         const projectId = cache.identify({
           __typename: "Project",
           id:
-            projectResult.data?.project?.id ||
-            projectResult.previousData?.project?.id,
+            automationsResult.data?.project?.id ||
+            automationsResult.previousData?.project?.id,
         });
         if (!projectId) return;
         cache.modify({
@@ -184,24 +132,22 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     [deactivateAutomationRule],
   );
 
-  if (
-    !(projectResult.data || projectResult.previousData) ||
-    !(automationsResult.data || automationsResult.previousData)
-  ) {
+  if (!(automationsResult.data || automationsResult.previousData)) {
     return <PageLoader />;
   }
 
   const project =
-    projectResult.data?.project || projectResult.previousData?.project;
-  const automationRules =
+    automationsResult.data?.project || automationsResult.previousData?.project;
+
+  const automationRuleConnection =
     automationsResult.data?.project?.automationRules ||
     automationsResult.previousData?.project?.automationRules;
 
-  if (!project || !automationRules) {
+  if (!project || !automationRuleConnection) {
     return <NotFound />;
   }
 
-  if (automationRules.pageInfo.totalCount === 0) {
+  if (automationRuleConnection.pageInfo.totalCount === 0) {
     return (
       <PageContainer>
         <EmptyState>
@@ -235,9 +181,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       </PageHeader>
       <div className="relative flex-1">
         <AutomationRulesList
-          automationRules={automationRules}
-          fetchNextPage={fetchNextPage}
-          fetching={automationsResult.loading}
+          automationRules={automationRuleConnection.edges}
           onDelete={handleDelete}
         />
       </div>
@@ -248,8 +192,10 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
 /** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
+  const { permissions } = useProjectOutletContext();
+  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
 
-  if (!accountSlug || !projectName) {
+  if (!accountSlug || !projectName || !hasAdminPermission) {
     return <NotFound />;
   }
 

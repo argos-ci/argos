@@ -133,7 +133,7 @@ input AutomationActionInput {
 }
 
 type AutomationActionSendSlackMessagePayload {
-  channelId: Int!
+  channelId: String!
   name: String!
   slackId: String!
 }

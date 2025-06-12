@@ -10,7 +10,7 @@ import {
 
 import { Label } from "./Label";
 
-export interface CheckboxGroupProps extends AriaCheckboxGroupProps {
+interface CheckboxGroupProps extends AriaCheckboxGroupProps {
   label?: string;
   description?: string;
   errorMessage?: string | ((validation: AriaValidationResult) => string);

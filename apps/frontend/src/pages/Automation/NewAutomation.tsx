@@ -1,4 +1,5 @@
 import { useApolloClient } from "@apollo/client";
+import { assertNever } from "@argos/util/assertNever";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
@@ -6,11 +7,12 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
-import { DocumentType, graphql } from "@/gql";
+import { graphql } from "@/gql";
 import {
   AutomationActionType,
   AutomationConditionType,
   AutomationEvent,
+  ProjectPermission,
 } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
@@ -22,8 +24,10 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
+import { entries } from "@/util/entries";
 
 import { NotFound } from "../NotFound";
+import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { AutomationNameField, FormErrors } from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
@@ -40,9 +44,6 @@ const ProjectQuery = graphql(`
     }
   }
 `);
-
-type ProjectDocument = DocumentType<typeof ProjectQuery>;
-export type Project = NonNullable<ProjectDocument["project"]>;
 
 const CreateAutomationMutation = graphql(`
   mutation NewAutomation_createAutomation(
@@ -72,10 +73,6 @@ export type NewAutomationInputs = {
   conditions: Record<AutomationConditionType, string>;
   actions: { type: AutomationActionType; payload: any }[];
 };
-
-function entries<T extends object>(obj: T): [keyof T, T[keyof T]][] {
-  return Object.entries(obj) as [keyof T, T[keyof T]][];
-}
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
   const client = useApolloClient();
@@ -130,7 +127,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
               };
 
             default:
-              throw new Error(`Unknown action type: ${type}`);
+              assertNever(type, `Unknown action type: ${type}`);
           }
         }),
       },
@@ -161,13 +158,14 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
               <Form onSubmit={onSubmit}>
                 <CardBody>
                   <div className="flex flex-col gap-6">
-                    <AutomationNameField />
-                    <AutomationWhenStep />
+                    <AutomationNameField form={form} name="name" />
+                    <AutomationWhenStep form={form} />
                     <AutomationConditionsStep
+                      form={form}
                       projectBuildNames={project.buildNames}
                     />
-                    <AutomationActionsStep />
-                    <FormErrors />
+                    <AutomationActionsStep form={form} />
+                    <FormErrors form={form} />
                   </div>
                 </CardBody>
 
@@ -196,8 +194,10 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
 /** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
+  const { permissions } = useProjectOutletContext();
+  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
 
-  if (!accountSlug || !projectName) {
+  if (!accountSlug || !projectName || !hasAdminPermission) {
     return <NotFound />;
   }
 

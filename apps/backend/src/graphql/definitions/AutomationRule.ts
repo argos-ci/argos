@@ -61,7 +61,7 @@ export const typeDefs = gql`
   }
 
   type AutomationActionSendSlackMessagePayload {
-    channelId: Int!
+    channelId: String!
     slackId: String!
     name: String!
   }
@@ -287,7 +287,7 @@ async function toGraphQLAutomationActions(
         return {
           action: IAutomationActionType.SendSlackMessage,
           actionPayload: {
-            channelId: Number(actionPayload.channelId),
+            channelId: actionPayload.channelId,
             slackId: slackChannel.slackId,
             name: slackChannel.name,
           },
@@ -363,7 +363,7 @@ async function updateSlackChannels(
   });
 }
 
-async function toGraphQLAutomationRule(
+export async function toGraphQLAutomationRule(
   automationRule: AutomationRule,
 ): Promise<IAutomationRule> {
   const then = await toGraphQLAutomationActions(automationRule.then);
@@ -385,25 +385,6 @@ function validAutomationRuleName(name: string): boolean {
 
 export const resolvers: IResolvers = {
   AutomationRule: {
-    createdAt: (automationRule): Date => {
-      return new Date(automationRule.createdAt);
-    },
-    updatedAt: (automationRule): Date => {
-      return new Date(automationRule.updatedAt);
-    },
-    on: (automationRule): IAutomationEvent[] => {
-      return (automationRule.on as unknown as AutomationEvent[]).map(
-        toGraphQLAutomationEvent,
-      );
-    },
-    if: (automationRule): IAutomationConditions => {
-      return toGraphQLAutomationConditions(
-        automationRule.if as unknown as { all: AutomationCondition[] },
-      );
-    },
-    then: async (automationRule): Promise<IAutomationAction[]> => {
-      return toGraphQLAutomationActions(automationRule.then);
-    },
     lastAutomationRunDate: async (automationRule) => {
       const lastRun = await AutomationRun.query()
         .findOne({ automationRuleId: automationRule.id })

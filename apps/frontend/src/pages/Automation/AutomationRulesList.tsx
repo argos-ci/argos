@@ -1,5 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef, useState } from "react";
 import { MoreVerticalIcon } from "lucide-react";
 import { useParams } from "react-router-dom";
 
@@ -13,18 +12,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/ui/Dialog";
-import { List, ListHeaderRow, ListRowLink, ListRowLoader } from "@/ui/List";
+import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
 import { Menu, MenuItem, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 
 import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
-
-type AutomationRules = {
-  edges: AutomationRule[];
-  pageInfo: { totalCount: number; hasNextPage: boolean };
-};
 
 type AutomationRule = {
   id: string;
@@ -72,13 +66,11 @@ function DeleteAutomationDialog({
   );
 }
 
-const AutomationRow = memo(function AutomationRow({
+function AutomationRow({
   automationRule,
-  style,
   onDelete,
 }: {
   automationRule: AutomationRule;
-  style: React.CSSProperties;
   onDelete: (id: string) => void;
 }) {
   const { accountSlug, projectName } = useParams();
@@ -88,7 +80,6 @@ const AutomationRow = memo(function AutomationRow({
     <ListRowLink
       href={`/${accountSlug}/${projectName}/automations/${automationRule.id}`}
       className="items-center p-4 text-sm"
-      style={style}
     >
       <div className="w-44 shrink-0 md:w-auto md:grow">
         <div className="truncate">{automationRule.name}</div>
@@ -143,42 +134,16 @@ const AutomationRow = memo(function AutomationRow({
       </div>
     </ListRowLink>
   );
-});
+}
 
 export function AutomationRulesList({
   automationRules,
-  fetching,
-  fetchNextPage,
   onDelete,
 }: {
-  automationRules: AutomationRules;
-  fetching: boolean;
-  fetchNextPage: () => void;
+  automationRules: AutomationRule[];
   onDelete: (id: string) => void;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { hasNextPage } = automationRules.pageInfo;
-  const displayCount = automationRules.edges.length;
-  const rowVirtualizer = useVirtualizer({
-    count: hasNextPage ? displayCount + 1 : displayCount,
-    estimateSize: () => 75,
-    getScrollElement: () => parentRef.current,
-    overscan: 20,
-  });
-
-  const virtualItems = rowVirtualizer.getVirtualItems();
-  const lastItem = virtualItems[virtualItems.length - 1];
-
-  useEffect(() => {
-    if (
-      lastItem &&
-      lastItem.index === displayCount &&
-      !fetching &&
-      hasNextPage
-    ) {
-      fetchNextPage();
-    }
-  }, [lastItem, displayCount, fetching, hasNextPage, fetchNextPage]);
 
   return (
     <List
@@ -186,20 +151,8 @@ export function AutomationRulesList({
       className="absolute max-h-full w-full"
       style={{ display: "block" }}
     >
-      <div
-        className="relative"
-        style={{ height: rowVirtualizer.getTotalSize() + 50 }}
-      >
-        <ListHeaderRow
-          key="header"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: 50,
-          }}
-        >
+      <div className="relative">
+        <ListHeaderRow>
           <div className="w-44 shrink-0 md:w-auto md:grow">
             Automation rule name
           </div>
@@ -208,41 +161,14 @@ export function AutomationRulesList({
           <div className="w-28 shrink-0">Created</div>
           <div className="w-8 shrink-0" />
         </ListHeaderRow>
-        {virtualItems.map((virtualRow) => {
-          const automationRule = automationRules.edges[virtualRow.index];
-          if (!automationRule) {
-            return (
-              <ListRowLoader
-                key={`loader-${virtualRow.index}`}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: virtualRow.size,
-                  transform: `translateY(${virtualRow.start + 50}px)`,
-                }}
-              >
-                Fetching automations...
-              </ListRowLoader>
-            );
-          }
-          return (
-            <AutomationRow
-              key={`automation-${automationRule.id}`}
-              automationRule={automationRule}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: virtualRow.size,
-                transform: `translateY(${virtualRow.start + 50}px)`,
-              }}
-              onDelete={onDelete}
-            />
-          );
-        })}
+
+        {automationRules.map((automationRule) => (
+          <AutomationRow
+            key={`automation-${automationRule.id}`}
+            automationRule={automationRule}
+            onDelete={onDelete}
+          />
+        ))}
       </div>
     </List>
   );

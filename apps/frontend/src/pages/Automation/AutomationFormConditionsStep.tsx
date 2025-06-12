@@ -1,12 +1,18 @@
+import { assertNever } from "@argos/util/assertNever";
 import { Key } from "react-aria";
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, Path, PathValue, useFormContext } from "react-hook-form";
 
 import { AutomationConditionType, BuildStatus, BuildType } from "@/gql/graphql";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
-import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
+import {
+  ActionBadge,
+  AutomationRuleFormInputs,
+  RemovableTask,
+  StepTitle,
+} from "./AutomationForm";
 import { NewAutomationInputs } from "./NewAutomation";
 
 type Condition = { type: AutomationConditionType; label: string };
@@ -25,8 +31,7 @@ const BuildConclusionCondition = () => {
   const fieldName = `conditions.${AutomationConditionType.BuildConclusion}`;
 
   const toReadableConclusion = (conclusion: string | null) => {
-    if (!conclusion) return null;
-    return conclusion.toLowerCase().replace(/_/g, " ");
+    return conclusion ? conclusion.toLowerCase().replace(/_/g, " ") : "";
   };
 
   return (
@@ -38,6 +43,8 @@ const BuildConclusionCondition = () => {
         control={form.control}
         render={({ field }) => (
           <Select
+            aria-label="Build Conclusion"
+            id={fieldName}
             name={field.name}
             selectedKey={field.value}
             onSelectionChange={field.onChange}
@@ -146,7 +153,7 @@ const ConditionDetail = ({
   conditionType,
   projectBuildNames,
 }: {
-  conditionType: string;
+  conditionType: AutomationConditionType;
   projectBuildNames: string[];
 }) => {
   switch (conditionType) {
@@ -160,25 +167,19 @@ const ConditionDetail = ({
       return <BuildTypeCondition />;
 
     default:
-      return (
-        <div key={conditionType} className="text-danger-low">
-          Unknown condition type: {conditionType}
-        </div>
-      );
+      assertNever(conditionType, `Unknown condition type: ${conditionType}`);
   }
 };
 
-function keys<T extends object>(obj: T): (keyof T)[] {
-  return Object.keys(obj) as (keyof T)[];
-}
-
-export const AutomationConditionsStep = ({
+export const AutomationConditionsStep = <T extends AutomationRuleFormInputs>({
+  form,
   projectBuildNames,
 }: {
+  form: ReturnType<typeof useFormContext<T>>;
   projectBuildNames: string[];
 }) => {
-  const form = useFormContext<NewAutomationInputs>();
-  const selectedConditions = form.watch("conditions");
+  const conditionsField = "conditions" as Path<T>;
+  const selectedConditions: T["conditions"] = form.watch(conditionsField);
   const unselectedConditions = CONDITIONS.filter(
     (c) => !Object.keys(selectedConditions).includes(c.type),
   );
@@ -186,30 +187,35 @@ export const AutomationConditionsStep = ({
   function onRemoveCondition(conditionType: AutomationConditionType) {
     const newConditions = { ...selectedConditions };
     delete newConditions[conditionType];
-    form.setValue("conditions", newConditions);
+    form.setValue(
+      conditionsField,
+      newConditions as unknown as PathValue<T, Path<T>>,
+    );
   }
 
   function onSelectionChange(key: Key) {
-    form.setValue("conditions", {
+    form.setValue(conditionsField, {
       ...selectedConditions,
       [key as AutomationConditionType]: "",
-    });
+    } as PathValue<T, Path<T>>);
   }
 
   return (
     <div>
       <StepTitle>
-        <ActionBadge>IF</ActionBadge> the following conditions are all met
+        <ActionBadge>If</ActionBadge> the following conditions are all met
       </StepTitle>
 
       <div className="flex flex-col gap-2">
-        {keys(selectedConditions).map((conditionType) => (
+        {Object.keys(selectedConditions).map((conditionType) => (
           <RemovableTask
             key={conditionType}
-            onRemove={() => onRemoveCondition(conditionType)}
+            onRemove={() =>
+              onRemoveCondition(conditionType as AutomationConditionType)
+            }
           >
             <ConditionDetail
-              conditionType={conditionType}
+              conditionType={conditionType as AutomationConditionType}
               projectBuildNames={projectBuildNames}
             />
           </RemovableTask>

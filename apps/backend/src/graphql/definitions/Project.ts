@@ -33,6 +33,7 @@ import {
 import { deleteProject, getAdminProject } from "../services/project.js";
 import { parseTestId } from "../services/test.js";
 import { badUserInput, forbidden, unauthenticated } from "../util.js";
+import { toGraphQLAutomationRule } from "./AutomationRule.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -645,11 +646,21 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const result = await AutomationRule.query()
+      const range = await AutomationRule.query()
         .where({ projectId: project.id, active: true })
         .orderBy("createdAt", "desc")
         .range(after, after + first - 1);
-      return paginateResult({ result, first, after });
+
+      const automationRules = await Promise.all(
+        range.results.map(async (automationRule) =>
+          toGraphQLAutomationRule(automationRule),
+        ),
+      );
+      return paginateResult({
+        result: { ...range, results: automationRules },
+        first,
+        after,
+      });
     },
   },
   Query: {

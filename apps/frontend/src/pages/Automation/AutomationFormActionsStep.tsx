@@ -1,5 +1,5 @@
 import { Key } from "react-aria";
-import { useFormContext } from "react-hook-form";
+import { Path, PathValue, useFormContext } from "react-hook-form";
 
 import { AutomationActionType } from "@/gql/graphql";
 import { FormTextInput } from "@/ui/FormTextInput";
@@ -7,7 +7,12 @@ import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
-import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
+import {
+  ActionBadge,
+  AutomationRuleFormInputs,
+  RemovableTask,
+  StepTitle,
+} from "./AutomationForm";
 import { NewAutomationInputs } from "./NewAutomation";
 
 type Action = {
@@ -59,47 +64,49 @@ const ActionDetail = ({
   actionType,
   actionIndex,
 }: {
-  actionType: string;
+  actionType: AutomationActionType;
   actionIndex: number;
 }) => {
   switch (actionType) {
-    case "sendSlackMessage":
+    case AutomationActionType.SendSlackMessage:
       return <SendSlackMessageAction actionIndex={actionIndex} />;
 
     default:
       return (
-        <div key={actionType} className="text-danger-low">
-          Unknown action type: {actionType}
-        </div>
+        <div className="text-danger-low">Unknown action type: {actionType}</div>
       );
   }
 };
 
-export const AutomationActionsStep = () => {
-  const form = useFormContext<NewAutomationInputs>();
-  const selectedActions = form.watch("actions");
+export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
+  form,
+}: {
+  form: ReturnType<typeof useFormContext<T>>;
+}) => {
+  const actionsField = "actions" as Path<T>;
+  const selectedActions: T["actions"] = form.watch(actionsField);
 
   function onRemove(index: number) {
     form.setValue(
-      "actions",
-      selectedActions.filter((_, i) => i !== index),
+      actionsField,
+      selectedActions.filter((_, i) => i !== index) as PathValue<T, Path<T>>,
     );
   }
 
   function onSelectionChange(key: Key) {
-    form.setValue("actions", [
+    form.setValue(actionsField, [
       ...selectedActions,
       {
         type: key as AutomationActionType,
         payload: {},
       },
-    ]);
+    ] as PathValue<T, Path<T>>);
   }
 
   return (
     <div>
       <StepTitle>
-        <ActionBadge>THEN</ActionBadge> perform these actions
+        <ActionBadge>Then</ActionBadge> perform these actions
       </StepTitle>
       <div className="flex flex-col gap-2">
         {selectedActions.map((selectedAction, index) => {

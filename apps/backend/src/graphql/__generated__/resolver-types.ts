@@ -179,7 +179,7 @@ export type IAutomationActionInput = {
 
 export type IAutomationActionSendSlackMessagePayload = {
   __typename?: 'AutomationActionSendSlackMessagePayload';
-  channelId: Scalars['Int']['output'];
+  channelId: Scalars['String']['output'];
   name: Scalars['String']['output'];
   slackId: Scalars['String']['output'];
 };
@@ -2019,7 +2019,7 @@ export type IAutomationActionResolvers<ContextType = Context, ParentType extends
 }>;
 
 export type IAutomationActionSendSlackMessagePayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationActionSendSlackMessagePayload'] = IResolversParentTypes['AutomationActionSendSlackMessagePayload']> = ResolversObject<{
-  channelId?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  channelId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   slackId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

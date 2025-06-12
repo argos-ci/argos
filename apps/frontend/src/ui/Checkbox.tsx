@@ -6,8 +6,6 @@ import {
   type CheckboxProps,
 } from "react-aria-components";
 
-export type { CheckboxProps };
-
 export const Checkbox = ({ className, children, ...props }: CheckboxProps) => (
   <AriaCheckbox
     className={composeRenderProps(className, (className) =>

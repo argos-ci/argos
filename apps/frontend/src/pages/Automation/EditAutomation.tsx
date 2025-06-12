@@ -1,4 +1,5 @@
 import { useApolloClient } from "@apollo/client";
+import { assertNever } from "@argos/util/assertNever";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
@@ -11,6 +12,7 @@ import {
   AutomationActionType,
   AutomationConditionType,
   AutomationEvent,
+  ProjectPermission,
 } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
@@ -21,9 +23,11 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
+import { entries } from "@/util/entries";
 
 import { Form } from "../../ui/Form";
 import { NotFound } from "../NotFound";
+import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { AutomationNameField, FormErrors } from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
@@ -119,10 +123,6 @@ export type EditAutomationInputs = {
   actions: { type: AutomationActionType; payload: any }[];
 };
 
-function entries<T extends object>(obj: T): [keyof T, T[keyof T]][] {
-  return Object.entries(obj) as [keyof T, T[keyof T]][];
-}
-
 function EditAutomationForm({
   automationRule,
   project,
@@ -177,8 +177,9 @@ function EditAutomationForm({
                 slackId: payload.slackId,
               },
             };
+
           default:
-            throw new Error(`Unknown action type: ${type}`);
+            assertNever(type, `Unknown action type: ${type}`);
         }
       }),
     };
@@ -207,13 +208,14 @@ function EditAutomationForm({
               <Form onSubmit={onSubmit}>
                 <CardBody>
                   <div className="flex flex-col gap-6">
-                    <AutomationNameField />
-                    <AutomationWhenStep />
+                    <AutomationNameField form={form} name="name" />
+                    <AutomationWhenStep form={form} />
                     <AutomationConditionsStep
+                      form={form}
                       projectBuildNames={project.buildNames}
                     />
-                    <AutomationActionsStep />
-                    <FormErrors />
+                    <AutomationActionsStep form={form} />
+                    <FormErrors form={form} />
                   </div>
                 </CardBody>
 
@@ -281,8 +283,10 @@ function PageContent(props: {
 /** @route */
 export function Component() {
   const { accountSlug, projectName, automationId } = useParams();
+  const { permissions } = useProjectOutletContext();
+  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
 
-  if (!accountSlug || !projectName || !automationId) {
+  if (!accountSlug || !projectName || !automationId || !hasAdminPermission) {
     return <NotFound />;
   }
 

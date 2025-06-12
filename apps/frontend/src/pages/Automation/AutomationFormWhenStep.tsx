@@ -1,4 +1,5 @@
 import { Controller, useFormContext } from "react-hook-form";
+import type { Path } from "react-hook-form";
 
 import { AutomationEvent } from "@/gql/graphql";
 import { Checkbox } from "@/ui/Checkbox";
@@ -10,18 +11,20 @@ import {
   StepTitle,
 } from "./AutomationForm";
 
-export const AutomationWhenStep = () => {
-  const form = useFormContext<AutomationRuleFormInputs>();
-
+export const AutomationWhenStep = <T extends AutomationRuleFormInputs>({
+  form,
+}: {
+  form: ReturnType<typeof useFormContext<T>>;
+}) => {
   return (
     <div>
       <StepTitle>
-        <ActionBadge>WHEN</ActionBadge> any of the following event happens
+        <ActionBadge>When</ActionBadge> any of the following event happens
       </StepTitle>
 
       <Controller
         control={form.control}
-        name="events"
+        name={"events" as Path<T>}
         render={({ field }) => (
           <CheckboxGroup
             className="text-sm"
