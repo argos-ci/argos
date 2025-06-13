@@ -3,8 +3,11 @@ import { assertNever } from "@argos/util/assertNever";
 import { AutomationEvent, AutomationEvents } from "@/automation/types/events";
 
 import { SlackMessageBlock } from ".";
+import { getBuildLabel } from "../build/label";
+import { getStatsMessage } from "../build/stats";
 import {
   Build,
+  BuildAggregatedStatus,
   GithubPullRequest,
   Project,
   ScreenshotBucket,
@@ -20,91 +23,108 @@ export function getEventDescription(event: AutomationEvent): string {
       assertNever(event);
   }
 }
+function getRepositoryUrl(project: Project): string | undefined {
+  const isGitHubProject = Boolean(project.githubRepositoryId);
+
+  if (isGitHubProject) {
+    return project.githubRepository && project.githubRepository.githubAccount
+      ? `https://github.com/${
+          project.githubRepository.githubAccount.login
+        }/${project.githubRepository.name}`
+      : undefined;
+  }
+
+  return project.gitlabProject
+    ? `https://gitlab.com/${project.gitlabProject.pathWithNamespace}/-`
+    : undefined;
+}
 
 // Slack blocks can be tests in the playground: https://app.slack.com/block-kit-builder/
-
 export function getBuildStatusMessage({
   build,
   buildUrl,
   pullRequest,
   compareScreenshotBucket,
   project,
-  event,
+  status,
 }: {
   build: Build;
   buildUrl: string;
   pullRequest: GithubPullRequest | null | undefined;
   compareScreenshotBucket: ScreenshotBucket | undefined;
   project: Project;
-  event: AutomationEvent;
+  status: BuildAggregatedStatus;
 }): SlackMessageBlock[] {
   const commit = compareScreenshotBucket?.commit;
-  const commitShort = commit ? String(commit).substring(0, 7) : "N/A";
+  const commitShort = commit ? String(commit).substring(0, 7) : null;
+  const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
+  const buildLabel = getBuildLabel(build.type, status);
+  const branch = compareScreenshotBucket?.branch;
 
-  const blocks: SlackMessageBlock[] = [
-    {
-      type: "header",
-      text: {
-        type: "plain_text",
-        text: getEventDescription(event),
-        emoji: true,
-      },
-    },
-    {
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: `<${buildUrl}|Build #${build.number}: ${build.name}> on *${project.name}*`,
-        },
-      ],
-    },
-    { type: "divider" },
-    {
-      type: "section",
-      fields: [
-        { type: "mrkdwn", text: `*Type:* ${build.type ?? "N/A"}` },
-        { type: "mrkdwn", text: `*Commit:* ${commitShort}` },
-        {
-          type: "mrkdwn",
-          text: `*Branch:* ${compareScreenshotBucket?.branch ?? "N/A"}`,
-        },
-        {
-          type: "mrkdwn",
-          text: `*Screenshots:* ${compareScreenshotBucket?.screenshotCount ?? 0}`,
-        },
-      ],
-    },
-  ];
+  const repositoryURL = getRepositoryUrl(project);
+  const branchUrl =
+    branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : undefined;
+  const commitUrl =
+    commit && repositoryURL ? `${repositoryURL}/commit/${commit}` : undefined;
 
-  if (pullRequest && pullRequest.number && pullRequest.title) {
-    const prUrl = `https://github.com/pull/${pullRequest.number}`;
-    blocks.push({
-      type: "section",
-      fields: [
-        {
-          type: "mrkdwn",
-          text: `*Pull Request:* <${prUrl}|#${pullRequest.number}: ${pullRequest.title}>`,
-        },
-      ],
-    });
-  }
+  const contextBlock: SlackMessageBlock = {
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: `*<${buildUrl}|Build #${build.number}${build.name !== "default" ? ` (${build.name})` : ""}>*`,
+    },
+  };
 
-  blocks.push({
-    type: "actions",
+  const projectBlock: SlackMessageBlock = {
+    type: "context",
     elements: [
       {
-        type: "button",
-        text: {
-          type: "plain_text",
-          text: "View Build",
-        },
-        url: buildUrl,
-        action_id: "view-build-button",
-        style: "primary",
+        type: "mrkdwn",
+        text: `Project: *${project.name}*`,
       },
     ],
-  });
+  };
 
-  return blocks;
+  const labelBlock: SlackMessageBlock = {
+    type: "section",
+    text: { type: "mrkdwn", text: buildLabel },
+  };
+
+  const detailsBlock: SlackMessageBlock = {
+    type: "section",
+    fields: [
+      statsMessage
+        ? {
+            type: "mrkdwn" as const,
+            text: `*Screenshots:* ${statsMessage}`,
+          }
+        : null,
+      pullRequest?.number != null
+        ? {
+            type: "mrkdwn" as const,
+            text: `*PR:* <${`https://github.com/pull/${pullRequest.number}`}|#${pullRequest.number}> ${pullRequest.title ?? ""}`,
+          }
+        : null,
+      commitShort
+        ? {
+            type: "mrkdwn" as const,
+            text: `*Commit:* ${commitUrl ? `<${commitUrl}|${commitShort}>` : commitShort}`,
+          }
+        : null,
+      branch
+        ? {
+            type: "mrkdwn" as const,
+            text: `*Branch:* ${branchUrl ? `<${branchUrl}|${branch}>` : branch}`,
+          }
+        : null,
+    ].filter((e) => e !== null),
+  };
+
+  return [
+    contextBlock,
+    projectBlock,
+    labelBlock,
+    { type: "divider" },
+    detailsBlock,
+  ];
 }

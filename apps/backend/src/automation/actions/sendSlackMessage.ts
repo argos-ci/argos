@@ -1,8 +1,9 @@
+import { invariant } from "@argos/util/invariant";
 import { JSONSchema } from "objection";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
-import { SlackChannel } from "@/database/models/index.js";
+import { Build, SlackChannel } from "@/database/models/index.js";
 import { postMessageToSlackChannel } from "@/slack";
 import {
   getBuildStatusMessage,
@@ -36,8 +37,17 @@ export async function sendSlackMessage(
       automationRun.[
         build.[
           compareScreenshotBucket,
-          project
-          pullRequest
+          project.[
+            githubRepository.[
+              githubAccount
+            ]
+            gitlabProject
+          ]
+          pullRequest.[
+            githubRepository.[
+              githubAccount
+            ]
+          ]
         ]
         automationRule
       ],
@@ -94,9 +104,13 @@ export async function sendSlackMessage(
     event,
     build: { project, compareScreenshotBucket, pullRequest },
   } = richActionRun.automationRun;
-  const { slackInstallation } = slackChannel;
 
-  const buildUrl = await build.getUrl();
+  const [buildUrl, [status]] = await Promise.all([
+    build.getUrl(),
+    Build.getAggregatedBuildStatuses([build]),
+  ]);
+
+  invariant(status, "Status should be loaded");
 
   const blocks = getBuildStatusMessage({
     build,
@@ -104,11 +118,11 @@ export async function sendSlackMessage(
     compareScreenshotBucket,
     project,
     pullRequest,
-    event,
+    status,
   });
 
   await postMessageToSlackChannel({
-    installation: slackInstallation,
+    installation: slackChannel.slackInstallation,
     channel: slackChannel.slackId,
     text: getEventDescription(event),
     blocks,

@@ -1,8 +1,9 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { AutomationEvents } from "@/automation/types/events.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 
+import { Build } from "../database/models";
 import { getBuildStatusMessage } from "./buildStatusMessage";
 
 describe("getBuildStatusMessage", () => {
@@ -26,8 +27,12 @@ describe("getBuildStatusMessage", () => {
       factory.Build.create({ projectId: project.id, type: "check" }),
       factory.PullRequest.create(),
     ]);
-    const buildUrl = await build.getUrl();
-    const event = AutomationEvents.BuildCompleted;
+    const [buildUrl, [status]] = await Promise.all([
+      build.getUrl(),
+      Build.getAggregatedBuildStatuses([build]),
+    ]);
+
+    invariant(status, "Status should be loaded");
 
     const slackBlocks = getBuildStatusMessage({
       build,
@@ -35,16 +40,15 @@ describe("getBuildStatusMessage", () => {
       compareScreenshotBucket,
       project,
       pullRequest,
-      event,
+      status,
     });
 
     const expectedBlocks = [
       {
-        type: "header",
+        type: "section",
         text: {
-          type: "plain_text",
-          text: "Build complete",
-          emoji: true,
+          type: "mrkdwn",
+          text: "*<http://localhost:3000/awesome-team/awesome-project/builds/1|Build #1>*",
         },
       },
       {
@@ -52,9 +56,16 @@ describe("getBuildStatusMessage", () => {
         elements: [
           {
             type: "mrkdwn",
-            text: "<http://localhost:3000/awesome-team/awesome-project/builds/1|Build #1: default> on *awesome-project*",
+            text: "Project: *awesome-project*",
           },
         ],
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "✅ No changes detected",
+        },
       },
       {
         type: "divider",
@@ -64,7 +75,7 @@ describe("getBuildStatusMessage", () => {
         fields: [
           {
             type: "mrkdwn",
-            text: "*Type:* check",
+            text: "*PR:* <https://github.com/pull/99|#99> Fix bug",
           },
           {
             type: "mrkdwn",
@@ -73,34 +84,6 @@ describe("getBuildStatusMessage", () => {
           {
             type: "mrkdwn",
             text: "*Branch:* master",
-          },
-          {
-            type: "mrkdwn",
-            text: "*Screenshots:* 12",
-          },
-        ],
-      },
-      {
-        type: "section",
-        fields: [
-          {
-            type: "mrkdwn",
-            text: "*Pull Request:* <https://github.com/pull/99|#99: Fix bug>",
-          },
-        ],
-      },
-      {
-        type: "actions",
-        elements: [
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: "View Build",
-            },
-            url: "http://localhost:3000/awesome-team/awesome-project/builds/1",
-            action_id: "view-build-button",
-            style: "primary",
           },
         ],
       },
