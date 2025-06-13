@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
+import { useFeature } from "@bucketco/react-sdk";
 import { Outlet } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -31,11 +32,21 @@ type Account = NonNullable<
   NonNullable<DocumentType<typeof ProjectQuery>["project"]>["account"]
 >;
 
-function ProjectTabLinkList(props: { permissions: ProjectPermission[] }) {
-  const { permissions } = props;
+function ProjectTabLinkList(props: {
+  permissions: ProjectPermission[];
+  isTeam: boolean;
+}) {
+  const { permissions, isTeam } = props;
+  const automationFeature = useFeature("automations");
+  const showAutomationsTab =
+    isTeam &&
+    permissions.includes(ProjectPermission.ViewSettings) &&
+    automationFeature.isEnabled;
+
   return (
     <TabLinkList aria-label="Project navigation">
       <TabLink href="">Builds</TabLink>
+      {showAutomationsTab && <TabLink href="automations">Automations</TabLink>}
       {permissions.includes(ProjectPermission.ViewSettings) && (
         <TabLink href="settings">Project Settings</TabLink>
       )}
@@ -49,9 +60,11 @@ function ProjectTabs(props: {
   children: React.ReactNode;
 }) {
   const { account, children, permissions } = props;
+  const isTeam = account.__typename === "Team";
+
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <ProjectTabLinkList permissions={permissions} />
+      <ProjectTabLinkList permissions={permissions} isTeam={isTeam} />
       <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel className="flex min-h-0 flex-1 flex-col">

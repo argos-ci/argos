@@ -5,6 +5,7 @@
       "User"
     ],
     "Connection": [
+      "AutomationRuleConnection",
       "BuildConnection",
       "GhApiInstallationConnection",
       "GhApiRepositoryConnection",
@@ -20,6 +21,8 @@
     ],
     "Node": [
       "AccountSubscription",
+      "AutomationRule",
+      "AutomationRun",
       "Build",
       "BuildReview",
       "GhApiInstallation",

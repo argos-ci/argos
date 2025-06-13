@@ -13,7 +13,7 @@ import {
 
 import { Layout } from "@/containers/Layout";
 
-import { FeatureFlagProvider } from "./containers/FeatureFlag";
+import { FeatureFlagProvider, featureGuardHoc } from "./containers/FeatureFlag";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 
@@ -190,6 +190,46 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   path: "settings",
                   HydrateFallback,
                   lazy: () => import("./pages/Project/Settings"),
+                },
+                {
+                  path: "automations",
+                  HydrateFallback,
+                  children: [
+                    {
+                      index: true,
+                      HydrateFallback,
+                      lazy: () =>
+                        import("./pages/Automation").then((module) => ({
+                          Component: featureGuardHoc("automations")(
+                            module.Component,
+                          ),
+                        })),
+                    },
+                    {
+                      path: "new",
+                      HydrateFallback,
+                      lazy: () =>
+                        import("./pages/Automation/NewAutomation").then(
+                          (module) => ({
+                            Component: featureGuardHoc("automations")(
+                              module.Component,
+                            ),
+                          }),
+                        ),
+                    },
+                    {
+                      path: ":automationId",
+                      HydrateFallback,
+                      lazy: () =>
+                        import("./pages/Automation/EditAutomation").then(
+                          (module) => ({
+                            Component: featureGuardHoc("automations")(
+                              module.Component,
+                            ),
+                          }),
+                        ),
+                    },
+                  ],
                 },
               ],
             },

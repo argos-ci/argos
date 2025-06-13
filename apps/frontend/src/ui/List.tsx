@@ -21,7 +21,7 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
   );
 }
 
-const listRowClassName = "bg-app flex gap-6 border-b last:border-b-0";
+const listRowClassName = "bg-app flex min-w-max gap-6 border-b last:border-b-0";
 
 export function ListRowLink(props: RACLinkProps) {
   return (
@@ -100,6 +100,19 @@ export function ListTitle(props: ComponentPropsWithRef<"h3">) {
     <h3
       {...props}
       className={clsx("mb-2 text-sm font-semibold", props.className)}
+    />
+  );
+}
+
+export function ListHeaderRow(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx(
+        listRowClassName,
+        "items-center p-4 text-sm font-semibold",
+        props.className,
+      )}
     />
   );
 }
