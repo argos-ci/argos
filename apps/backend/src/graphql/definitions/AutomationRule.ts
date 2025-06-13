@@ -459,7 +459,7 @@ export const resolvers: IResolvers = {
           slackChannelInputs,
           slackInstallation.id,
         );
-        slackChannels.concat(newSlackChannels);
+        slackChannels.push(...newSlackChannels);
       }
 
       const automationRule = await AutomationRule.query().insertAndFetch({
