@@ -15,6 +15,7 @@ import { useAuthTokenPayload } from "./Auth";
 declare module "@bucketco/react-sdk" {
   interface Features {
     "test-details": boolean;
+    automations: boolean;
   }
 }
 

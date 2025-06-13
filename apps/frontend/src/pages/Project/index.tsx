@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
+import { useFeature } from "@bucketco/react-sdk";
 import { Outlet } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -33,12 +34,15 @@ type Account = NonNullable<
 
 function ProjectTabLinkList(props: { permissions: ProjectPermission[] }) {
   const { permissions } = props;
+  const automationFeature = useFeature("automations");
+
   return (
     <TabLinkList aria-label="Project navigation">
       <TabLink href="">Builds</TabLink>
-      {permissions.includes(ProjectPermission.ViewSettings) && (
-        <TabLink href="automations">Automations</TabLink>
-      )}
+      {permissions.includes(ProjectPermission.ViewSettings) &&
+        automationFeature.isEnabled && (
+          <TabLink href="automations">Automations</TabLink>
+        )}
       {permissions.includes(ProjectPermission.ViewSettings) && (
         <TabLink href="settings">Project Settings</TabLink>
       )}
