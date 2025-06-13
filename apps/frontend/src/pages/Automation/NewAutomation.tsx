@@ -7,12 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { SettingsLayout } from "@/containers/Layout";
 import { graphql } from "@/gql";
-import {
-  AutomationActionType,
-  AutomationConditionType,
-  AutomationEvent,
-  ProjectPermission,
-} from "@/gql/graphql";
+import { AutomationActionType, ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
 import { Form } from "@/ui/Form";
@@ -30,6 +25,7 @@ import { AutomationNameField, FormErrors } from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
+import type { AutomationInputs } from "./types";
 
 const ProjectQuery = graphql(`
   query ProjectNewAutomation_project(
@@ -73,18 +69,11 @@ const CreateAutomationMutation = graphql(`
   }
 `);
 
-export type NewAutomationInputs = {
-  name: string;
-  events: AutomationEvent[];
-  conditions: Record<AutomationConditionType, string>;
-  actions: { type: AutomationActionType; payload: any }[];
-};
-
 function PageContent(props: { accountSlug: string; projectName: string }) {
   const client = useApolloClient();
   const navigate = useNavigate();
 
-  const form = useForm<NewAutomationInputs>({
+  const form = useForm<AutomationInputs>({
     defaultValues: {
       name: "",
       events: [],
@@ -109,7 +98,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     return <NotFound />;
   }
 
-  const onSubmit: SubmitHandler<NewAutomationInputs> = async (data) => {
+  const onSubmit: SubmitHandler<AutomationInputs> = async (data) => {
     await client.mutate({
       mutation: CreateAutomationMutation,
       variables: {
@@ -193,7 +182,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
               <Form onSubmit={onSubmit}>
                 <CardBody>
                   <div className="flex flex-col gap-6">
-                    <AutomationNameField form={form} name="name" />
+                    <AutomationNameField form={form} />
                     <AutomationWhenStep form={form} />
                     <AutomationConditionsStep
                       form={form}

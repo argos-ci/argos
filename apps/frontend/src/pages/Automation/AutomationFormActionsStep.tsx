@@ -1,5 +1,5 @@
+import { assertNever } from "@argos/util/assertNever";
 import { Key } from "react-aria";
-import { Path, PathValue, useFormContext } from "react-hook-form";
 
 import { AutomationActionType } from "@/gql/graphql";
 import { FormTextInput } from "@/ui/FormTextInput";
@@ -7,13 +7,8 @@ import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
-import {
-  ActionBadge,
-  AutomationRuleFormInputs,
-  RemovableTask,
-  StepTitle,
-} from "./AutomationForm";
-import { NewAutomationInputs } from "./NewAutomation";
+import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
+import type { AutomationForm } from "./types";
 
 type Action = { type: AutomationActionType; label: string };
 
@@ -21,8 +16,11 @@ const ACTIONS = [
   { type: AutomationActionType.SendSlackMessage, label: "Send Slack Message" },
 ] satisfies Action[];
 
-const SendSlackMessageAction = ({ actionIndex }: { actionIndex: number }) => {
-  const form = useFormContext<NewAutomationInputs>();
+function SendSlackMessageAction(props: {
+  actionIndex: number;
+  form: AutomationForm;
+}) {
+  const { actionIndex, form } = props;
 
   return (
     <div className="flex items-center gap-2 overflow-auto">
@@ -55,49 +53,42 @@ const SendSlackMessageAction = ({ actionIndex }: { actionIndex: number }) => {
       />
     </div>
   );
-};
+}
 
-const ActionDetail = ({
-  actionType,
-  actionIndex,
-}: {
+function ActionDetail(props: {
   actionType: AutomationActionType;
   actionIndex: number;
-}) => {
+  form: AutomationForm;
+}) {
+  const { actionType, actionIndex, form } = props;
   switch (actionType) {
     case AutomationActionType.SendSlackMessage:
-      return <SendSlackMessageAction actionIndex={actionIndex} />;
-
+      return <SendSlackMessageAction form={form} actionIndex={actionIndex} />;
     default:
-      return (
-        <div className="text-danger-low">Unknown action type: {actionType}</div>
-      );
+      assertNever(actionType, "Unknown action type");
   }
-};
+}
 
-export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
-  form,
-}: {
-  form: ReturnType<typeof useFormContext<T>>;
-}) => {
-  const actionsField = "actions" as Path<T>;
-  const selectedActions: T["actions"] = form.watch(actionsField);
+export function AutomationActionsStep(props: { form: AutomationForm }) {
+  const { form } = props;
+  const name = "actions";
+  const selectedActions = form.watch(name);
 
   function onRemove(index: number) {
     form.setValue(
-      actionsField,
-      selectedActions.filter((_, i) => i !== index) as PathValue<T, Path<T>>,
+      name,
+      selectedActions.filter((_, i) => i !== index),
     );
   }
 
   function onSelectionChange(key: Key) {
-    form.setValue(actionsField, [
+    form.setValue(name, [
       ...selectedActions,
       {
         type: key as AutomationActionType,
         payload: {},
       },
-    ] as PathValue<T, Path<T>>);
+    ]);
   }
 
   return (
@@ -110,6 +101,7 @@ export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
           return (
             <RemovableTask key={index} onRemove={() => onRemove(index)}>
               <ActionDetail
+                form={form}
                 actionType={selectedAction.type}
                 actionIndex={index}
               />
@@ -132,4 +124,4 @@ export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
       </div>
     </div>
   );
-};
+}

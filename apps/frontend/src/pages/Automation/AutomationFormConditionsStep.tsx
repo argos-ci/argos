@@ -1,19 +1,17 @@
 import { assertNever } from "@argos/util/assertNever";
 import { Key } from "react-aria";
-import { Controller, Path, PathValue, useFormContext } from "react-hook-form";
+import { Controller, useController } from "react-hook-form";
 
 import { AutomationConditionType, BuildStatus, BuildType } from "@/gql/graphql";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
+import { MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
+import { buildTypeDescriptors } from "@/util/build";
+import { lowTextColorClassNames } from "@/util/colors";
 
-import {
-  ActionBadge,
-  AutomationRuleFormInputs,
-  RemovableTask,
-  StepTitle,
-} from "./AutomationForm";
-import { NewAutomationInputs } from "./NewAutomation";
+import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
+import type { AutomationForm } from "./types";
 
 type Condition = { type: AutomationConditionType; label: string };
 
@@ -26,61 +24,61 @@ const CONDITIONS = [
   { type: AutomationConditionType.BuildName, label: "Build name is" },
 ] satisfies Condition[];
 
-const BuildConclusionCondition = () => {
-  const form = useFormContext<NewAutomationInputs>();
-  const fieldName = `conditions.${AutomationConditionType.BuildConclusion}`;
+function BuildConclusionCondition(props: { form: AutomationForm }) {
+  const { form } = props;
+  const name = `conditions.${AutomationConditionType.BuildConclusion}`;
 
   const toReadableConclusion = (conclusion: string | null) => {
     return conclusion ? conclusion.toLowerCase().replace(/_/g, " ") : "";
   };
 
+  const controller = useController({
+    control: form.control,
+    name,
+  });
+
   return (
     <div className="flex items-center gap-2">
-      <div>Build label is</div>
+      <div>Build conclusion is</div>
 
-      <Controller
-        name={fieldName}
-        control={form.control}
-        render={({ field }) => (
-          <Select
-            aria-label="Build Conclusion"
-            id={fieldName}
-            name={field.name}
-            selectedKey={field.value}
-            onSelectionChange={field.onChange}
-          >
-            <SelectButton className="text-sm">
-              {toReadableConclusion(field.value) ||
-                "Select build conclusion..."}
-            </SelectButton>
-            <Popover>
-              <ListBox>
-                {[BuildStatus.NoChanges, BuildStatus.ChangesDetected].map(
-                  (conclusion) => (
-                    <ListBoxItem
-                      key={conclusion}
-                      id={conclusion}
-                      className="text-sm"
-                    >
-                      {toReadableConclusion(conclusion)}
-                    </ListBoxItem>
-                  ),
-                )}
-              </ListBox>
-            </Popover>
-          </Select>
-        )}
-      />
+      <Select
+        ref={controller.field.ref}
+        aria-label="Build Conclusion"
+        name={controller.field.name}
+        selectedKey={controller.field.value}
+        onSelectionChange={controller.field.onChange}
+        onBlur={controller.field.onBlur}
+        isDisabled={controller.field.disabled}
+      >
+        <SelectButton className="text-sm">
+          {toReadableConclusion(controller.field.value) ||
+            "Select build conclusion…"}
+        </SelectButton>
+        <Popover>
+          <ListBox>
+            {[BuildStatus.NoChanges, BuildStatus.ChangesDetected].map(
+              (conclusion) => (
+                <ListBoxItem
+                  key={conclusion}
+                  id={conclusion}
+                  className="text-sm"
+                >
+                  {toReadableConclusion(conclusion)}
+                </ListBoxItem>
+              ),
+            )}
+          </ListBox>
+        </Popover>
+      </Select>
     </div>
   );
-};
+}
 
-const BuildNameCondition = ({
-  projectBuildNames,
-}: {
+function BuildNameCondition(props: {
   projectBuildNames: string[];
-}) => {
-  const form = useFormContext<NewAutomationInputs>();
+  form: AutomationForm;
+}) {
+  const { projectBuildNames, form } = props;
   const fieldName = `conditions.${AutomationConditionType.BuildName}`;
 
   return (
@@ -96,7 +94,7 @@ const BuildNameCondition = ({
             onSelectionChange={field.onChange}
           >
             <SelectButton className="text-sm">
-              {field.value || "Select build name..."}
+              {field.value || "Select build name…"}
             </SelectButton>
             <Popover>
               <ListBox>
@@ -112,10 +110,10 @@ const BuildNameCondition = ({
       />
     </div>
   );
-};
+}
 
-const BuildTypeCondition = () => {
-  const form = useFormContext<NewAutomationInputs>();
+function BuildTypeCondition(props: { form: AutomationForm }) {
+  const { form } = props;
   const fieldName = `conditions.${AutomationConditionType.BuildType}`;
 
   return (
@@ -131,15 +129,24 @@ const BuildTypeCondition = () => {
             onSelectionChange={field.onChange}
           >
             <SelectButton className="text-sm">
-              {field.value || "Select build type..."}
+              {field.value || "Select build type…"}
             </SelectButton>
             <Popover>
               <ListBox>
-                {Object.values(BuildType).map((type) => (
-                  <ListBoxItem key={type} id={type} className="text-sm">
-                    {type}
-                  </ListBoxItem>
-                ))}
+                {Object.values(BuildType).map((type) => {
+                  const descriptor = buildTypeDescriptors[type];
+                  const Icon = descriptor.icon;
+                  return (
+                    <ListBoxItem key={type} id={type} className="text-sm">
+                      <MenuItemIcon>
+                        <Icon
+                          className={lowTextColorClassNames[descriptor.color]}
+                        />
+                      </MenuItemIcon>
+                      {descriptor.label}
+                    </ListBoxItem>
+                  );
+                })}
               </ListBox>
             </Popover>
           </Select>
@@ -147,39 +154,38 @@ const BuildTypeCondition = () => {
       />
     </div>
   );
-};
+}
 
-const ConditionDetail = ({
-  conditionType,
-  projectBuildNames,
-}: {
+function ConditionDetail(props: {
   conditionType: AutomationConditionType;
   projectBuildNames: string[];
-}) => {
+  form: AutomationForm;
+}) {
+  const { conditionType, projectBuildNames, form } = props;
   switch (conditionType) {
     case AutomationConditionType.BuildConclusion:
-      return <BuildConclusionCondition />;
+      return <BuildConclusionCondition form={form} />;
 
     case AutomationConditionType.BuildName:
-      return <BuildNameCondition projectBuildNames={projectBuildNames} />;
+      return (
+        <BuildNameCondition form={form} projectBuildNames={projectBuildNames} />
+      );
 
     case AutomationConditionType.BuildType:
-      return <BuildTypeCondition />;
+      return <BuildTypeCondition form={form} />;
 
     default:
       assertNever(conditionType, `Unknown condition type: ${conditionType}`);
   }
-};
+}
 
-export const AutomationConditionsStep = <T extends AutomationRuleFormInputs>({
-  form,
-  projectBuildNames,
-}: {
-  form: ReturnType<typeof useFormContext<T>>;
+export function AutomationConditionsStep(props: {
+  form: AutomationForm;
   projectBuildNames: string[];
-}) => {
-  const conditionsField = "conditions" as Path<T>;
-  const selectedConditions: T["conditions"] = form.watch(conditionsField);
+}) {
+  const { form, projectBuildNames } = props;
+  const name = "conditions";
+  const selectedConditions = form.watch(name);
   const unselectedConditions = CONDITIONS.filter(
     (c) => !Object.keys(selectedConditions).includes(c.type),
   );
@@ -187,17 +193,14 @@ export const AutomationConditionsStep = <T extends AutomationRuleFormInputs>({
   function onRemoveCondition(conditionType: AutomationConditionType) {
     const newConditions = { ...selectedConditions };
     delete newConditions[conditionType];
-    form.setValue(
-      conditionsField,
-      newConditions as unknown as PathValue<T, Path<T>>,
-    );
+    form.setValue(name, newConditions);
   }
 
   function onSelectionChange(key: Key) {
-    form.setValue(conditionsField, {
+    form.setValue(name, {
       ...selectedConditions,
       [key as AutomationConditionType]: "",
-    } as PathValue<T, Path<T>>);
+    });
   }
 
   return (
@@ -217,6 +220,7 @@ export const AutomationConditionsStep = <T extends AutomationRuleFormInputs>({
             <ConditionDetail
               conditionType={conditionType as AutomationConditionType}
               projectBuildNames={projectBuildNames}
+              form={form}
             />
           </RemovableTask>
         ))}
@@ -227,13 +231,13 @@ export const AutomationConditionsStep = <T extends AutomationRuleFormInputs>({
           isDisabled={unselectedConditions.length === 0}
         >
           <SelectButton className="w-full">
-            Add optional condition...
+            Add optional condition…
           </SelectButton>
           <Popover>
             <ListBox>
               {unselectedConditions.map((c) => (
                 <ListBoxItem key={c.type} id={c.type}>
-                  {c.label}...
+                  {c.label}…
                 </ListBoxItem>
               ))}
             </ListBox>
@@ -242,4 +246,4 @@ export const AutomationConditionsStep = <T extends AutomationRuleFormInputs>({
       </div>
     </div>
   );
-};
+}

@@ -1,13 +1,11 @@
 import { Trash2Icon } from "lucide-react";
-import { Path, useFormContext } from "react-hook-form";
 import { twc } from "react-twc";
 
 import { Badge, type BadgeProps } from "@/ui/Badge";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 
-import { EditAutomationInputs } from "./EditAutomation";
-import { NewAutomationInputs } from "./NewAutomation";
+import type { AutomationForm } from "./types";
 
 export const ActionBadge = twc(
   Badge,
@@ -35,20 +33,11 @@ export const RemovableTask = ({
   );
 };
 
-export type AutomationRuleFormInputs =
-  | NewAutomationInputs
-  | EditAutomationInputs;
-
-export const AutomationNameField = <T extends AutomationRuleFormInputs>({
-  name,
-  form,
-}: {
-  name: Path<T>;
-  form: ReturnType<typeof useFormContext<T>>;
-}) => {
+export function AutomationNameField(props: { form: AutomationForm }) {
+  const { form } = props;
   return (
     <FormTextInput
-      {...form.register(name, {
+      {...form.register("name", {
         required: "Please enter a name",
         minLength: {
           value: 3,
@@ -64,17 +53,12 @@ export const AutomationNameField = <T extends AutomationRuleFormInputs>({
       autoComplete="off"
     />
   );
-};
+}
 
-export const FormErrors = ({
-  form,
-}: {
-  form: ReturnType<typeof useFormContext<AutomationRuleFormInputs>>;
-}) => {
-  const rootError = form.formState.errors.root;
-
+export function FormErrors(props: { form: AutomationForm }) {
+  const rootError = props.form.formState.errors.root;
   return (
-    <div className="text-danger-low">
+    <div className="text-danger-low empty:hidden">
       {rootError &&
         Object.entries(rootError).map(([field, error]) => (
           <div key={field}>
@@ -83,4 +67,4 @@ export const FormErrors = ({
         ))}
     </div>
   );
-};
+}

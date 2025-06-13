@@ -10,13 +10,16 @@ import {
 
 import { Label } from "./Label";
 
-interface CheckboxGroupProps extends AriaCheckboxGroupProps {
+interface CheckboxGroupProps
+  extends AriaCheckboxGroupProps,
+    React.RefAttributes<HTMLDivElement> {
   label?: string;
   description?: string;
   errorMessage?: string | ((validation: AriaValidationResult) => string);
 }
 
 export function CheckboxGroup({
+  ref,
   label,
   description,
   errorMessage,
@@ -26,6 +29,7 @@ export function CheckboxGroup({
 }: CheckboxGroupProps) {
   return (
     <AriaCheckboxGroup
+      ref={ref}
       className={composeRenderProps(className, (className) =>
         clsx("group flex flex-col gap-2", className),
       )}
