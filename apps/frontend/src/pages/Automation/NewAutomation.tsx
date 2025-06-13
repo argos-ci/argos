@@ -65,6 +65,10 @@ const CreateAutomationMutation = graphql(`
       }
     ) {
       id
+      createdAt
+      name
+      on
+      lastAutomationRunDate
     }
   }
 `);
@@ -122,8 +126,8 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
               return {
                 type: type,
                 payload: {
-                  name: payload.slackChannelName,
-                  slackId: payload.slackChannelId,
+                  name: payload.name,
+                  slackId: payload.slackId,
                 },
               };
 
@@ -131,6 +135,36 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
               assertNever(type, `Unknown action type: ${type}`);
           }
         }),
+      },
+      update(cache, { data }) {
+        const newAutomation = data?.createAutomationRule;
+        if (!newAutomation) return;
+
+        const projectIdInCache = cache.identify({
+          __typename: "Project",
+          id: project.id,
+        });
+        if (!projectIdInCache) return;
+
+        cache.modify({
+          id: projectIdInCache,
+          fields: {
+            automationRules(existingAutomationRules = {}) {
+              return {
+                ...existingAutomationRules,
+                edges: [
+                  ...(existingAutomationRules.edges ?? []),
+                  newAutomation,
+                ],
+                pageInfo: {
+                  ...existingAutomationRules.pageInfo,
+                  totalCount:
+                    (existingAutomationRules.pageInfo?.totalCount ?? 0) + 1,
+                },
+              };
+            },
+          },
+        });
       },
     });
     navigate(`/${props.accountSlug}/${props.projectName}/automations`, {
