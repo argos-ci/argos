@@ -1,11 +1,9 @@
-import { useCallback, useRef } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation, useSuspenseQuery } from "@apollo/client";
 import { BoxesIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
@@ -19,7 +17,6 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { PageLoader } from "@/ui/PageLoader";
 
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
@@ -34,6 +31,10 @@ const ProjectAutomationsQuery = graphql(`
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
+      account {
+        __typename
+        id
+      }
       automationRules(first: $first, after: $after) {
         pageInfo {
           totalCount
@@ -80,7 +81,9 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
 }
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
-  const automationsResult = useSafeQuery(ProjectAutomationsQuery, {
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectAutomationsQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
@@ -88,9 +91,6 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       first: 50,
     },
   });
-
-  const automationResultRef = useRef(automationsResult);
-  automationResultRef.current = automationsResult;
 
   const [deactivateAutomationRule] = useMutation(
     DeactivateAutomationRuleMutation,
@@ -101,9 +101,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
         // Find the project id in the cache
         const projectId = cache.identify({
           __typename: "Project",
-          id:
-            automationsResult.data?.project?.id ||
-            automationsResult.previousData?.project?.id,
+          id: project?.id,
         });
         if (!projectId) return;
         cache.modify({
@@ -131,25 +129,11 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     },
   );
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      deactivateAutomationRule({ variables: { id } });
-    },
-    [deactivateAutomationRule],
-  );
+  const automationRuleConnection = project?.automationRules;
+  const account = project?.account;
+  const isTeam = account?.__typename === "Team";
 
-  if (!(automationsResult.data || automationsResult.previousData)) {
-    return <PageLoader />;
-  }
-
-  const project =
-    automationsResult.data?.project || automationsResult.previousData?.project;
-
-  const automationRuleConnection =
-    automationsResult.data?.project?.automationRules ||
-    automationsResult.previousData?.project?.automationRules;
-
-  if (!project || !automationRuleConnection) {
+  if (!project || !automationRuleConnection || !isTeam) {
     return <NotFound />;
   }
 
@@ -188,7 +172,9 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       <div className="relative flex-1">
         <AutomationRulesList
           automationRules={automationRuleConnection.edges}
-          onDelete={handleDelete}
+          onDelete={(id: string) => {
+            deactivateAutomationRule({ variables: { id } });
+          }}
         />
       </div>
     </PageContainer>

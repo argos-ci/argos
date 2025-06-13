@@ -1,11 +1,10 @@
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { graphql } from "@/gql";
 import {
@@ -23,7 +22,6 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { PageLoader } from "@/ui/PageLoader";
 import { entries } from "@/util/entries";
 
 import { NotFound } from "../NotFound";
@@ -41,6 +39,10 @@ const ProjectQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       buildNames
+      account {
+        __typename
+        id
+      }
     }
   }
 `);
@@ -87,20 +89,19 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     },
   });
 
-  const projectResult = useSafeQuery(ProjectQuery, {
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
     },
   });
 
-  if (!projectResult.data) {
-    return <PageLoader />;
-  }
+  const account = project?.account;
+  const isTeam = account?.__typename === "Team";
 
-  const project = projectResult.data?.project;
-
-  if (!project) {
+  if (!project || !isTeam) {
     return <NotFound />;
   }
 

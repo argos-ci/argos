@@ -1,11 +1,10 @@
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { SettingsLayout } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
 import {
@@ -22,7 +21,6 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { PageLoader } from "@/ui/PageLoader";
 import { entries } from "@/util/entries";
 
 import { Form } from "../../ui/Form";
@@ -34,20 +32,21 @@ import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
 
-const ProjectQuery = graphql(`
-  query ProjectEditAutomation_project(
+const AutomationRuleQuery = graphql(`
+  query ProjectEditAutomation_automationRule(
     $accountSlug: String!
     $projectName: String!
+    $id: String!
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       buildNames
+      account {
+        id
+        __typename
+      }
     }
-  }
-`);
 
-const AutomationRuleQuery = graphql(`
-  query ProjectEditAutomation_automationRule($id: String!) {
     automationRule(id: $id) {
       id
       name
@@ -112,7 +111,7 @@ const UpdateAutomationMutation = graphql(`
   }
 `);
 
-type ProjectRuleDocument = DocumentType<typeof ProjectQuery>;
+type ProjectRuleDocument = DocumentType<typeof AutomationRuleQuery>;
 type Project = NonNullable<ProjectRuleDocument["project"]>;
 type AutomationRuleDocument = DocumentType<typeof AutomationRuleQuery>;
 type AutomationRule = NonNullable<AutomationRuleDocument["automationRule"]>;
@@ -129,13 +128,13 @@ function EditAutomationForm({
   project,
   accountSlug,
   projectName,
-  editPermission,
+  hasEditPermission,
 }: {
   automationRule: AutomationRule;
   project: Project;
   accountSlug: string;
   projectName: string;
-  editPermission: boolean;
+  hasEditPermission: boolean;
 }) {
   const client = useApolloClient();
   const navigate = useNavigate();
@@ -161,7 +160,7 @@ function EditAutomationForm({
   });
 
   const onSubmit: SubmitHandler<EditAutomationInputs> = async (data) => {
-    if (!editPermission) {
+    if (!hasEditPermission) {
       throw new Error("You do not have permission to edit this automation.");
     }
     await client.mutate({
@@ -229,12 +228,12 @@ function EditAutomationForm({
                 <CardFooter>
                   <div className="flex justify-end gap-2">
                     <LinkButton href={`../automations`} variant="secondary">
-                      {editPermission ? "Cancel" : "Back"}
+                      {hasEditPermission ? "Cancel" : "Back"}
                     </LinkButton>
 
                     <Tooltip
                       content={
-                        editPermission
+                        hasEditPermission
                           ? ""
                           : "You don't have permission to edit this automation."
                       }
@@ -243,7 +242,7 @@ function EditAutomationForm({
                         <Button
                           type="submit"
                           isDisabled={
-                            !editPermission || form.formState.isSubmitting
+                            !hasEditPermission || form.formState.isSubmitting
                           }
                         >
                           Save Changes
@@ -265,29 +264,22 @@ function PageContent(props: {
   accountSlug: string;
   projectName: string;
   automationId: string;
-  editPermission: boolean;
+  hasEditPermission: boolean;
 }) {
-  const projectResult = useSafeQuery(ProjectQuery, {
+  const {
+    data: { project, automationRule },
+  } = useSuspenseQuery(AutomationRuleQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
+      id: props.automationId,
     },
   });
 
-  const project = projectResult.data?.project;
+  const account = project?.account;
+  const isTeam = account?.__typename === "Team";
 
-  const automationRuleResult = useSafeQuery(AutomationRuleQuery, {
-    variables: { id: props.automationId },
-    skip: !project,
-  });
-
-  const automationRule = automationRuleResult.data?.automationRule;
-
-  if (!projectResult.data || !automationRuleResult.data) {
-    return <PageLoader />;
-  }
-
-  if (!project || !automationRule) {
+  if (!project || !automationRule || !isTeam) {
     return <NotFound />;
   }
 
@@ -297,7 +289,7 @@ function PageContent(props: {
       project={project}
       accountSlug={props.accountSlug}
       projectName={props.projectName}
-      editPermission={props.editPermission}
+      hasEditPermission={props.hasEditPermission}
     />
   );
 }
@@ -327,7 +319,7 @@ export function Component() {
         accountSlug={accountSlug}
         projectName={projectName}
         automationId={automationId}
-        editPermission={hasEditPermission}
+        hasEditPermission={hasEditPermission}
       />
     </Page>
   );
