@@ -17,16 +17,11 @@ import { Menu, MenuItem, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 
+import { ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
-
-type AutomationRule = {
-  id: string;
-  name: string;
-  createdAt: string;
-  on: string[];
-  lastAutomationRunDate?: string | null;
-};
+import { useProjectOutletContext } from "../Project/ProjectOutletContext";
+import { AutomationRule } from "./index";
 
 function formatEventLabel(str: string): string {
   return str
@@ -75,6 +70,8 @@ function AutomationRow({
 }) {
   const { accountSlug, projectName } = useParams();
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const { permissions } = useProjectOutletContext();
+  const hasEditPermission = permissions.includes(ProjectPermission.Admin);
 
   return (
     <ListRowLink
@@ -115,7 +112,7 @@ function AutomationRow({
               <MenuItem
                 href={`/${accountSlug}/${projectName}/automations/${automationRule.id}`}
               >
-                Edit
+                {hasEditPermission ? "Edit" : "View"}
               </MenuItem>
               <MenuItem variant="danger" onAction={() => setDialogOpen(true)}>
                 Delete

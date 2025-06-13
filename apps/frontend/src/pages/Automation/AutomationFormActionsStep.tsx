@@ -15,14 +15,11 @@ import {
 } from "./AutomationForm";
 import { NewAutomationInputs } from "./NewAutomation";
 
-type Action = {
-  type: AutomationActionType;
-  label: string;
-};
+type Action = { type: AutomationActionType; label: string };
 
-const ACTIONS: Action[] = [
+const ACTIONS = [
   { type: AutomationActionType.SendSlackMessage, label: "Send Slack Message" },
-];
+] satisfies Action[];
 
 const SendSlackMessageAction = ({ actionIndex }: { actionIndex: number }) => {
   const form = useFormContext<NewAutomationInputs>();

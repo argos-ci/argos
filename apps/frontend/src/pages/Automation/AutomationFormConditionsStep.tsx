@@ -17,14 +17,14 @@ import { NewAutomationInputs } from "./NewAutomation";
 
 type Condition = { type: AutomationConditionType; label: string };
 
-const CONDITIONS: Condition[] = [
+const CONDITIONS = [
   {
     type: AutomationConditionType.BuildConclusion,
     label: "Build conclusion is",
   },
   { type: AutomationConditionType.BuildType, label: "Build type is" },
   { type: AutomationConditionType.BuildName, label: "Build name is" },
-];
+] satisfies Condition[];
 
 const BuildConclusionCondition = () => {
   const form = useFormContext<NewAutomationInputs>();

@@ -26,6 +26,7 @@ import { PageLoader } from "@/ui/PageLoader";
 import { entries } from "@/util/entries";
 
 import { Form } from "../../ui/Form";
+import { Tooltip } from "../../ui/Tooltip";
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { AutomationNameField, FormErrors } from "./AutomationForm";
@@ -128,11 +129,13 @@ function EditAutomationForm({
   project,
   accountSlug,
   projectName,
+  editPermission,
 }: {
   automationRule: AutomationRule;
   project: Project;
   accountSlug: string;
   projectName: string;
+  editPermission: boolean;
 }) {
   const client = useApolloClient();
   const navigate = useNavigate();
@@ -158,33 +161,37 @@ function EditAutomationForm({
   });
 
   const onSubmit: SubmitHandler<EditAutomationInputs> = async (data) => {
-    const variables = {
-      id: automationRule.id,
-      name: data.name,
-      events: data.events,
-      conditions: entries(data.conditions).map(([type, value]) => ({
-        type,
-        value,
-      })),
-      actions: data.actions.map(({ type, payload }) => {
-        switch (type) {
-          case AutomationActionType.SendSlackMessage:
-            return {
-              type: type,
-              payload: {
-                channelId: payload.channelId,
-                name: payload.name,
-                slackId: payload.slackId,
-              },
-            };
+    if (!editPermission) {
+      throw new Error("You do not have permission to edit this automation.");
+    }
+    await client.mutate({
+      mutation: UpdateAutomationMutation,
+      variables: {
+        id: automationRule.id,
+        name: data.name,
+        events: data.events,
+        conditions: entries(data.conditions).map(([type, value]) => ({
+          type,
+          value,
+        })),
+        actions: data.actions.map(({ type, payload }) => {
+          switch (type) {
+            case AutomationActionType.SendSlackMessage:
+              return {
+                type: type,
+                payload: {
+                  channelId: payload.channelId,
+                  name: payload.name,
+                  slackId: payload.slackId,
+                },
+              };
 
-          default:
-            assertNever(type, `Unknown action type: ${type}`);
-        }
-      }),
-    };
-
-    await client.mutate({ mutation: UpdateAutomationMutation, variables });
+            default:
+              assertNever(type, `Unknown action type: ${type}`);
+          }
+        }),
+      },
+    });
     navigate(`/${accountSlug}/${projectName}/automations`, {
       replace: true,
     });
@@ -222,14 +229,27 @@ function EditAutomationForm({
                 <CardFooter>
                   <div className="flex justify-end gap-2">
                     <LinkButton href={`../automations`} variant="secondary">
-                      Cancel
+                      {editPermission ? "Cancel" : "Back"}
                     </LinkButton>
-                    <Button
-                      type="submit"
-                      isDisabled={form.formState.isSubmitting}
+
+                    <Tooltip
+                      content={
+                        editPermission
+                          ? ""
+                          : "You don't have permission to edit this automation."
+                      }
                     >
-                      Save Changes
-                    </Button>
+                      <div className="flex">
+                        <Button
+                          type="submit"
+                          isDisabled={
+                            !editPermission || form.formState.isSubmitting
+                          }
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
+                    </Tooltip>
                   </div>
                 </CardFooter>
               </Form>
@@ -245,6 +265,7 @@ function PageContent(props: {
   accountSlug: string;
   projectName: string;
   automationId: string;
+  editPermission: boolean;
 }) {
   const projectResult = useSafeQuery(ProjectQuery, {
     variables: {
@@ -276,6 +297,7 @@ function PageContent(props: {
       project={project}
       accountSlug={props.accountSlug}
       projectName={props.projectName}
+      editPermission={props.editPermission}
     />
   );
 }
@@ -284,9 +306,12 @@ function PageContent(props: {
 export function Component() {
   const { accountSlug, projectName, automationId } = useParams();
   const { permissions } = useProjectOutletContext();
-  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
+  const hasEditPermission = permissions.includes(ProjectPermission.Admin);
+  const hasReadPermission = permissions.includes(
+    ProjectPermission.ViewSettings,
+  );
 
-  if (!accountSlug || !projectName || !automationId || !hasAdminPermission) {
+  if (!accountSlug || !projectName || !automationId || !hasReadPermission) {
     return <NotFound />;
   }
 
@@ -294,13 +319,15 @@ export function Component() {
     <Page>
       <Helmet>
         <title>
-          {accountSlug}/{projectName} • Edit Automation
+          {accountSlug}/{projectName} • {hasEditPermission ? "Edit" : "View"}{" "}
+          Automation
         </title>
       </Helmet>
       <PageContent
         accountSlug={accountSlug}
         projectName={projectName}
         automationId={automationId}
+        editPermission={hasEditPermission}
       />
     </Page>
   );

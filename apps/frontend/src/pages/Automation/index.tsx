@@ -6,7 +6,7 @@ import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import { useSafeQuery } from "@/containers/Apollo";
-import { graphql } from "@/gql";
+import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import {
@@ -44,11 +44,17 @@ const ProjectAutomationsQuery = graphql(`
           createdAt
           name
           on
+          lastAutomationRunDate
         }
       }
     }
   }
 `);
+
+type ProjectDocument = DocumentType<typeof ProjectAutomationsQuery>;
+export type AutomationRule = NonNullable<
+  NonNullable<ProjectDocument["project"]>["automationRules"]
+>["edges"][number];
 
 const DeactivateAutomationRuleMutation = graphql(`
   mutation Automations_deactivateAutomationRule($id: String!) {
