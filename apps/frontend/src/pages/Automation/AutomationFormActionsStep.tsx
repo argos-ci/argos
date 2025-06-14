@@ -1,5 +1,6 @@
-import { Key } from "react-aria";
-import { Path, PathValue, useFormContext } from "react-hook-form";
+import { assertNever } from "@argos/util/assertNever";
+import { FieldError } from "react-aria-components";
+import { useController, useFieldArray } from "react-hook-form";
 
 import { AutomationActionType } from "@/gql/graphql";
 import { FormTextInput } from "@/ui/FormTextInput";
@@ -7,47 +8,31 @@ import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 
-import {
-  ActionBadge,
-  AutomationRuleFormInputs,
-  RemovableTask,
-  StepTitle,
-} from "./AutomationForm";
-import { NewAutomationInputs } from "./NewAutomation";
+import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
+import type { AutomationForm } from "./types";
 
-type Action = { type: AutomationActionType; label: string };
-
-const ACTIONS = [
-  { type: AutomationActionType.SendSlackMessage, label: "Send Slack Message" },
-] satisfies Action[];
-
-const SendSlackMessageAction = ({ actionIndex }: { actionIndex: number }) => {
-  const form = useFormContext<NewAutomationInputs>();
+function SendSlackMessageAction(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const { name, form } = props;
+  // When we add a second action, types will break here, we will need to handle it
+  // not sure how to do that yet
 
   return (
     <div className="flex items-center gap-2 overflow-auto">
       <div>Send message to Slack channel</div>
       <FormTextInput
-        {...form.register(`actions.${actionIndex}.payload.slackId`, {
-          maxLength: {
-            value: 11,
-            message: "Name must be 100 characters or less",
-          },
-          required: "Slack channel ID is required",
-        })}
+        {...form.register(`${name}.payload.slackId`)}
+        orientation="horizontal"
         label="Slack Channel"
         hiddenLabel
         placeholder="Channel ID, eg. C07VDNT3CTX"
         className="w-64"
       />
       <FormTextInput
-        {...form.register(`actions.${actionIndex}.payload.name`, {
-          maxLength: {
-            value: 100,
-            message: "Name must be 100 characters or less",
-          },
-          required: "Slack channel name is required",
-        })}
+        {...form.register(`${name}.payload.name`)}
+        orientation="horizontal"
         label="Slack Channel Name"
         hiddenLabel
         placeholder="name, eg. #general"
@@ -55,50 +40,39 @@ const SendSlackMessageAction = ({ actionIndex }: { actionIndex: number }) => {
       />
     </div>
   );
-};
+}
 
-const ActionDetail = ({
-  actionType,
-  actionIndex,
-}: {
-  actionType: AutomationActionType;
-  actionIndex: number;
-}) => {
-  switch (actionType) {
+function ActionDetail(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const { name, form } = props;
+  const field = form.watch(name);
+  switch (field.type) {
     case AutomationActionType.SendSlackMessage:
-      return <SendSlackMessageAction actionIndex={actionIndex} />;
-
+      return <SendSlackMessageAction form={form} name={name} />;
     default:
-      return (
-        <div className="text-danger-low">Unknown action type: {actionType}</div>
-      );
+      assertNever(field.type, "Unknown action type");
   }
-};
+}
 
-export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
-  form,
-}: {
-  form: ReturnType<typeof useFormContext<T>>;
-}) => {
-  const actionsField = "actions" as Path<T>;
-  const selectedActions: T["actions"] = form.watch(actionsField);
-
-  function onRemove(index: number) {
-    form.setValue(
-      actionsField,
-      selectedActions.filter((_, i) => i !== index) as PathValue<T, Path<T>>,
-    );
-  }
-
-  function onSelectionChange(key: Key) {
-    form.setValue(actionsField, [
-      ...selectedActions,
-      {
-        type: key as AutomationActionType,
-        payload: {},
-      },
-    ] as PathValue<T, Path<T>>);
-  }
+export function AutomationActionsStep(props: { form: AutomationForm }) {
+  const { form } = props;
+  const name = "actions" as const;
+  const actions = [
+    {
+      type: AutomationActionType.SendSlackMessage,
+      label: "Send Slack Message",
+    },
+  ];
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name,
+  });
+  const controller = useController({
+    control: form.control,
+    name,
+  });
 
   return (
     <div>
@@ -106,24 +80,51 @@ export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
         <ActionBadge>Then</ActionBadge> perform these actions
       </StepTitle>
       <div className="flex flex-col gap-2">
-        {selectedActions.map((selectedAction, index) => {
+        {fields.map((_field, index) => {
           return (
-            <RemovableTask key={index} onRemove={() => onRemove(index)}>
-              <ActionDetail
-                actionType={selectedAction.type}
-                actionIndex={index}
-              />
+            <RemovableTask key={index} onRemove={() => remove(index)}>
+              <ActionDetail form={form} name={`${name}.${index}`} />
             </RemovableTask>
           );
         })}
-
-        <Select aria-label="Action Types" onSelectionChange={onSelectionChange}>
+        <Select
+          ref={controller.field.ref}
+          aria-label="Action Types"
+          name={controller.field.name}
+          onBlur={controller.field.onBlur}
+          isDisabled={controller.field.disabled}
+          isInvalid={Boolean(controller.fieldState.error?.message)}
+          selectedKey={null}
+          onSelectionChange={(key) => {
+            switch (key) {
+              case AutomationActionType.SendSlackMessage: {
+                append({
+                  type: AutomationActionType.SendSlackMessage,
+                  payload: {
+                    name: "",
+                    slackId: "",
+                  },
+                });
+                return;
+              }
+              default:
+                throw new Error(`Unknown action type: ${key}`);
+            }
+          }}
+        >
           <SelectButton className="w-full">Add action...</SelectButton>
+          <FieldError className="text-danger-low text-sm">
+            {controller.fieldState.error?.message}
+          </FieldError>
           <Popover>
             <ListBox>
-              {ACTIONS.map((c) => (
-                <ListBoxItem key={c.type} id={c.type}>
-                  {c.label}
+              {actions.map((action) => (
+                <ListBoxItem
+                  key={action.type}
+                  id={action.type}
+                  textValue={action.label}
+                >
+                  {action.label}
                 </ListBoxItem>
               ))}
             </ListBox>
@@ -132,4 +133,4 @@ export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
       </div>
     </div>
   );
-};
+}
