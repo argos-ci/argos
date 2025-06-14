@@ -146,6 +146,7 @@
 
   --border-color-danger: var(--tomato-6);
   --border-color-danger-hover: var(--tomato-8);
+  --border-color-danger-active: var(--tomato-9);
 
   --border-color-warning: var(--orange-6);
   --border-color-warning-hover: var(--orange-8);

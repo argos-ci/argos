@@ -1,5 +1,5 @@
 import { useApolloClient, useSuspenseQuery } from "@apollo/client";
-import { assertNever } from "@argos/util/assertNever";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
@@ -7,11 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { SettingsLayout } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
-import {
-  AutomationActionType,
-  AutomationConditionType,
-  ProjectPermission,
-} from "@/gql/graphql";
+import { AutomationConditionType, ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
 import {
@@ -20,17 +16,23 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { entries } from "@/util/entries";
 
 import { Form } from "../../ui/Form";
 import { Tooltip } from "../../ui/Tooltip";
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
-import { AutomationNameField, FormErrors } from "./AutomationForm";
+import {
+  AutomationNameField,
+  formDataToVariables,
+  FormErrors,
+} from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
-import type { AutomationInputs } from "./types";
+import {
+  AutomationFieldValuesSchema,
+  type AutomationTransformedValues,
+} from "./types";
 
 const AutomationRuleQuery = graphql(`
   query ProjectEditAutomation_automationRule(
@@ -132,27 +134,27 @@ function EditAutomationForm({
   const client = useApolloClient();
   const navigate = useNavigate();
 
-  const form = useForm<AutomationInputs>({
-    defaultValues: {
-      name: automationRule?.name || "",
-      events: automationRule?.on || [],
+  const form = useForm({
+    resolver: zodResolver(AutomationFieldValuesSchema),
+    defaultValues: AutomationFieldValuesSchema.parse({
+      name: automationRule?.name ?? "",
+      events: automationRule?.on ?? [],
       conditions:
-        automationRule?.if?.all?.reduce(
-          (acc, c) => {
-            acc[c.type as AutomationConditionType] = c.value;
-            return acc;
-          },
-          {} as Record<AutomationConditionType, string>,
-        ) || {},
+        automationRule?.if?.all?.reduce<
+          Partial<Record<AutomationConditionType, string | null>>
+        >((acc, c) => {
+          acc[c.type] = c.value;
+          return acc;
+        }, {}) ?? {},
       actions:
         automationRule?.then?.map((a) => ({
           type: a.action,
           payload: a.actionPayload,
-        })) || [],
-    },
+        })) ?? [],
+    }),
   });
 
-  const onSubmit: SubmitHandler<AutomationInputs> = async (data) => {
+  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (data) => {
     if (!hasEditPermission) {
       throw new Error("You do not have permission to edit this automation.");
     }
@@ -160,28 +162,7 @@ function EditAutomationForm({
       mutation: UpdateAutomationMutation,
       variables: {
         id: automationRule.id,
-        name: data.name,
-        events: data.events,
-        conditions: entries(data.conditions).map(([type, value]) => ({
-          type,
-          value,
-        })),
-        actions: data.actions.map(({ type, payload }) => {
-          switch (type) {
-            case AutomationActionType.SendSlackMessage:
-              return {
-                type: type,
-                payload: {
-                  channelId: payload.channelId,
-                  name: payload.name,
-                  slackId: payload.slackId,
-                },
-              };
-
-            default:
-              assertNever(type, `Unknown action type: ${type}`);
-          }
-        }),
+        ...formDataToVariables(data),
       },
     });
     navigate(`/${accountSlug}/${projectName}/automations`, {

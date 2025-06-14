@@ -1,13 +1,14 @@
 import { useApolloClient, useSuspenseQuery } from "@apollo/client";
-import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { SettingsLayout } from "@/containers/Layout";
-import { graphql } from "@/gql";
-import { AutomationActionType, ProjectPermission } from "@/gql/graphql";
+import { graphql, type DocumentType } from "@/gql";
+import { ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
 import { Form } from "@/ui/Form";
@@ -17,15 +18,22 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { entries } from "@/util/entries";
 
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
-import { AutomationNameField, FormErrors } from "./AutomationForm";
+import { getProjectURL, useProjectParams } from "../Project/ProjectParams";
+import {
+  AutomationNameField,
+  formDataToVariables,
+  FormErrors,
+} from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
-import type { AutomationInputs } from "./types";
+import {
+  AutomationFieldValuesSchema,
+  type AutomationTransformedValues,
+} from "./types";
 
 const ProjectQuery = graphql(`
   query ProjectNewAutomation_project(
@@ -42,6 +50,10 @@ const ProjectQuery = graphql(`
     }
   }
 `);
+
+type ProjectDocument = NonNullable<
+  DocumentType<typeof ProjectQuery>["project"]
+>;
 
 const CreateAutomationMutation = graphql(`
   mutation NewAutomation_createAutomation(
@@ -69,61 +81,69 @@ const CreateAutomationMutation = graphql(`
   }
 `);
 
-function PageContent(props: { accountSlug: string; projectName: string }) {
-  const client = useApolloClient();
-  const navigate = useNavigate();
-
-  const form = useForm<AutomationInputs>({
-    defaultValues: {
-      name: "",
-      events: [],
-      conditions: {},
-      actions: [],
-    },
-  });
+function NewAutomationPage() {
+  const params = useProjectParams();
+  invariant(params, "Project params are required");
 
   const {
     data: { project },
   } = useSuspenseQuery(ProjectQuery, {
     variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
     },
   });
 
-  const account = project?.account;
-  const isTeam = account?.__typename === "Team";
-
-  if (!project || !isTeam) {
+  if (!project || project.account?.__typename !== "Team") {
     return <NotFound />;
   }
 
-  const onSubmit: SubmitHandler<AutomationInputs> = async (data) => {
+  return (
+    <Page>
+      <Helmet>
+        <title>New Automation</title>
+      </Helmet>
+      <PageContainer>
+        <PageHeader>
+          <PageHeaderContent>
+            <Heading>New Automation Rule</Heading>
+            <Text slot="headline">
+              Create a new automation for this project.
+            </Text>
+          </PageHeaderContent>
+        </PageHeader>
+
+        <SettingsLayout>
+          <NewAutomationForm project={project} />
+        </SettingsLayout>
+      </PageContainer>
+    </Page>
+  );
+}
+
+function NewAutomationForm(props: { project: ProjectDocument }) {
+  const { project } = props;
+  const params = useProjectParams();
+  invariant(params, "Project params are required");
+  const client = useApolloClient();
+  const navigate = useNavigate();
+
+  const form = useForm({
+    resolver: zodResolver(AutomationFieldValuesSchema),
+    defaultValues: {
+      name: "",
+      events: [],
+      conditions: [],
+      actions: [],
+    },
+  });
+
+  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (data) => {
     await client.mutate({
       mutation: CreateAutomationMutation,
       variables: {
         projectId: project.id,
-        name: data.name,
-        events: data.events,
-        conditions: entries(data.conditions).map(([type, value]) => ({
-          type,
-          value,
-        })),
-        actions: data.actions.map(({ type, payload }) => {
-          switch (type) {
-            case AutomationActionType.SendSlackMessage:
-              return {
-                type: type,
-                payload: {
-                  name: payload.name,
-                  slackId: payload.slackId,
-                },
-              };
-
-            default:
-              assertNever(type, `Unknown action type: ${type}`);
-          }
-        }),
+        ...formDataToVariables(data),
       },
       update(cache, { data }) {
         const newAutomation = data?.createAutomationRule;
@@ -156,83 +176,52 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
         });
       },
     });
-    navigate(`/${props.accountSlug}/${props.projectName}/automations`, {
+    navigate(`${getProjectURL(params)}/automations`, {
       replace: true,
     });
   };
 
   return (
-    <Page>
-      <Helmet>
-        <title>New Automation</title>
-      </Helmet>
-      <PageContainer>
-        <PageHeader>
-          <PageHeaderContent>
-            <Heading>New Automation Rule</Heading>
-            <Text slot="headline">
-              Create a new automation for this project.
-            </Text>
-          </PageHeaderContent>
-        </PageHeader>
+    <Card>
+      <FormProvider {...form}>
+        <Form onSubmit={onSubmit}>
+          <CardBody>
+            <div className="flex flex-col gap-6">
+              <AutomationNameField form={form} />
+              <AutomationWhenStep form={form} />
+              <AutomationConditionsStep
+                form={form}
+                projectBuildNames={project.buildNames}
+              />
+              <AutomationActionsStep form={form} />
+              <FormErrors form={form} />
+            </div>
+          </CardBody>
 
-        <SettingsLayout>
-          <Card>
-            <FormProvider {...form}>
-              <Form onSubmit={onSubmit}>
-                <CardBody>
-                  <div className="flex flex-col gap-6">
-                    <AutomationNameField form={form} />
-                    <AutomationWhenStep form={form} />
-                    <AutomationConditionsStep
-                      form={form}
-                      projectBuildNames={project.buildNames}
-                    />
-                    <AutomationActionsStep form={form} />
-                    <FormErrors form={form} />
-                  </div>
-                </CardBody>
-
-                <CardFooter>
-                  <div className="flex justify-end gap-2">
-                    <LinkButton href="../automations" variant="secondary">
-                      Cancel
-                    </LinkButton>
-                    <Button
-                      type="submit"
-                      isDisabled={form.formState.isSubmitting}
-                    >
-                      Create Automation
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Form>
-            </FormProvider>
-          </Card>
-        </SettingsLayout>
-      </PageContainer>
-    </Page>
+          <CardFooter>
+            <div className="flex justify-end gap-2">
+              <LinkButton href="../automations" variant="secondary">
+                Cancel
+              </LinkButton>
+              <Button type="submit" isDisabled={form.formState.isSubmitting}>
+                Create Automation
+              </Button>
+            </div>
+          </CardFooter>
+        </Form>
+      </FormProvider>
+    </Card>
   );
 }
 
 /** @route */
 export function Component() {
-  const { accountSlug, projectName } = useParams();
   const { permissions } = useProjectOutletContext();
   const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
 
-  if (!accountSlug || !projectName || !hasAdminPermission) {
+  if (!hasAdminPermission) {
     return <NotFound />;
   }
 
-  return (
-    <Page>
-      <Helmet>
-        <title>
-          {accountSlug}/{projectName} • Automations
-        </title>
-      </Helmet>
-      <PageContent accountSlug={accountSlug} projectName={projectName} />
-    </Page>
-  );
+  return <NewAutomationPage />;
 }

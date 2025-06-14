@@ -20,6 +20,8 @@ export function Checkbox(props: CheckboxProps) {
           "group/checkbox flex items-center gap-x-2",
           /* Disabled */
           "data-[disabled]:opacity-disabled",
+          /* Invalid */
+          "data-[invalid]:text-danger-low",
           className,
         ),
       )}
@@ -36,10 +38,10 @@ export function Checkbox(props: CheckboxProps) {
               "group-data-[indeterminate]/checkbox:bg-primary-active group-data-[selected]/checkbox:bg-primary-active group-data-[indeterminate]/checkbox:text-primary group-data-[selected]/checkbox:text-primary",
               /* Disabled */
               "group-data-[disabled]/checkbox:opacity-disabled group-data-[disabled]/checkbox:cursor-not-allowed",
+              /* Hover  */
+              "group-data-[hovered]/checkbox:border-primary-hover group-data-[hovered]/checkbox:bg-primary-hover",
               /* Invalid */
-              "group-data-[invalid]/checkbox:border-danger group-data-[invalid]/checkbox:group-data-[selected]/checkbox:bg-danger-subtle group-data-[invalid]/checkbox:group-data-[selected]/checkbox:text-danger-low",
-              /* Hover on parent group */
-              "group-data-[hovered]/checkbox:border-primary-hover! group-data-[hovered]/checkbox:bg-primary-hover",
+              "group-data-[invalid]/checkbox:border-danger group-data-[invalid]/checkbox:group-data-[hovered]/checkbox:border-danger-hover group-data-[invalid]/checkbox:group-data-[hovered]/checkbox:bg-danger-hover group-data-[invalid]/checkbox:group-data-[selected]/checkbox:bg-danger-subtle group-data-[invalid]/checkbox:group-data-[selected]/checkbox:text-danger-low",
               /* Resets */
               "focus:outline-none focus-visible:outline-none",
             )}

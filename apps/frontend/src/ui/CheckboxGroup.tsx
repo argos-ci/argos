@@ -44,7 +44,9 @@ export function CheckboxGroup({
               {description}
             </Text>
           )}
-          <FieldError className="text-danger-low">{errorMessage}</FieldError>
+          <FieldError className="text-danger-low text-sm">
+            {errorMessage}
+          </FieldError>
         </>
       ))}
     </AriaCheckboxGroup>

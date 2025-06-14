@@ -19,6 +19,7 @@
     "@bucketco/react-sdk": "3.1.4",
     "@eslint/js": "^9.26.0",
     "@graphql-typed-document-node/core": "^3.2.0",
+    "@hookform/resolvers": "^5.1.1",
     "@number-flow/react": "^0.5.9",
     "@primer/octicons-react": "^19.15.2",
     "@radix-ui/colors": "^3.0.0",
@@ -63,6 +64,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",
     "use-debounce": "^10.0.4",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "zod": "^3.25.64"
   }
 }

@@ -7,14 +7,11 @@ import { CheckboxGroup } from "@/ui/CheckboxGroup";
 import { ActionBadge, StepTitle } from "./AutomationForm";
 import type { AutomationForm } from "./types";
 
-export const AutomationWhenStep = (props: { form: AutomationForm }) => {
+export function AutomationWhenStep(props: { form: AutomationForm }) {
   const { form } = props;
   const controller = useController({
     control: form.control,
-    name: "actions",
-    rules: {
-      required: "At least one event must be selected",
-    },
+    name: "events",
   });
 
   return (
@@ -24,12 +21,13 @@ export const AutomationWhenStep = (props: { form: AutomationForm }) => {
       </StepTitle>
 
       <CheckboxGroup
+        aria-label="Automation events"
         className="text-sm"
+        validationBehavior="aria"
         onChange={controller.field.onChange}
         onBlur={controller.field.onBlur}
         isDisabled={controller.field.disabled}
         name={controller.field.name}
-        validationBehavior="aria"
         isInvalid={controller.fieldState.invalid}
         errorMessage={controller.fieldState.error?.message}
       >
@@ -45,4 +43,4 @@ export const AutomationWhenStep = (props: { form: AutomationForm }) => {
       </CheckboxGroup>
     </div>
   );
-};
+}

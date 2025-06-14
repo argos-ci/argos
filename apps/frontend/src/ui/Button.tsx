@@ -66,10 +66,10 @@ function getButtonProps(options: ButtonOptions) {
   };
 }
 
-export type ButtonProps = RACButtonProps &
-  ButtonOptions & {
-    ref?: React.Ref<HTMLButtonElement>;
-  };
+export interface ButtonProps
+  extends RACButtonProps,
+    ButtonOptions,
+    React.RefAttributes<HTMLButtonElement> {}
 
 export function Button({ className, variant, size, ...props }: ButtonProps) {
   const buttonProps = getButtonProps({ variant, size });
@@ -82,10 +82,10 @@ export function Button({ className, variant, size, ...props }: ButtonProps) {
   );
 }
 
-export type LinkButtonProps = RACLinkProps &
-  ButtonOptions & {
-    ref?: React.Ref<HTMLAnchorElement>;
-  };
+export interface LinkButtonProps
+  extends RACLinkProps,
+    ButtonOptions,
+    React.RefAttributes<HTMLAnchorElement> {}
 
 export function LinkButton({
   ref,

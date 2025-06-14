@@ -1,5 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
-import { Key } from "react-aria";
+import { FieldError } from "react-aria-components";
+import { useController, useFieldArray } from "react-hook-form";
 
 import { AutomationActionType } from "@/gql/graphql";
 import { FormTextInput } from "@/ui/FormTextInput";
@@ -10,42 +11,28 @@ import { Select, SelectButton } from "@/ui/Select";
 import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
 import type { AutomationForm } from "./types";
 
-type Action = { type: AutomationActionType; label: string };
-
-const ACTIONS = [
-  { type: AutomationActionType.SendSlackMessage, label: "Send Slack Message" },
-] satisfies Action[];
-
 function SendSlackMessageAction(props: {
-  actionIndex: number;
   form: AutomationForm;
+  name: `actions.${number}`;
 }) {
-  const { actionIndex, form } = props;
+  const { name, form } = props;
+  // When we add a second action, types will break here, we will need to handle it
+  // not sure how to do that yet
 
   return (
     <div className="flex items-center gap-2 overflow-auto">
       <div>Send message to Slack channel</div>
       <FormTextInput
-        {...form.register(`actions.${actionIndex}.payload.slackId`, {
-          maxLength: {
-            value: 11,
-            message: "Name must be 100 characters or less",
-          },
-          required: "Slack channel ID is required",
-        })}
+        {...form.register(`${name}.payload.slackId`)}
+        orientation="horizontal"
         label="Slack Channel"
         hiddenLabel
         placeholder="Channel ID, eg. C07VDNT3CTX"
         className="w-64"
       />
       <FormTextInput
-        {...form.register(`actions.${actionIndex}.payload.name`, {
-          maxLength: {
-            value: 100,
-            message: "Name must be 100 characters or less",
-          },
-          required: "Slack channel name is required",
-        })}
+        {...form.register(`${name}.payload.name`)}
+        orientation="horizontal"
         label="Slack Channel Name"
         hiddenLabel
         placeholder="name, eg. #general"
@@ -56,40 +43,36 @@ function SendSlackMessageAction(props: {
 }
 
 function ActionDetail(props: {
-  actionType: AutomationActionType;
-  actionIndex: number;
   form: AutomationForm;
+  name: `actions.${number}`;
 }) {
-  const { actionType, actionIndex, form } = props;
-  switch (actionType) {
+  const { name, form } = props;
+  const field = form.watch(name);
+  switch (field.type) {
     case AutomationActionType.SendSlackMessage:
-      return <SendSlackMessageAction form={form} actionIndex={actionIndex} />;
+      return <SendSlackMessageAction form={form} name={name} />;
     default:
-      assertNever(actionType, "Unknown action type");
+      assertNever(field.type, "Unknown action type");
   }
 }
 
 export function AutomationActionsStep(props: { form: AutomationForm }) {
   const { form } = props;
-  const name = "actions";
-  const selectedActions = form.watch(name);
-
-  function onRemove(index: number) {
-    form.setValue(
-      name,
-      selectedActions.filter((_, i) => i !== index),
-    );
-  }
-
-  function onSelectionChange(key: Key) {
-    form.setValue(name, [
-      ...selectedActions,
-      {
-        type: key as AutomationActionType,
-        payload: {},
-      },
-    ]);
-  }
+  const name = "actions" as const;
+  const actions = [
+    {
+      type: AutomationActionType.SendSlackMessage,
+      label: "Send Slack Message",
+    },
+  ];
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name,
+  });
+  const controller = useController({
+    control: form.control,
+    name,
+  });
 
   return (
     <div>
@@ -97,25 +80,51 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
         <ActionBadge>Then</ActionBadge> perform these actions
       </StepTitle>
       <div className="flex flex-col gap-2">
-        {selectedActions.map((selectedAction, index) => {
+        {fields.map((_field, index) => {
           return (
-            <RemovableTask key={index} onRemove={() => onRemove(index)}>
-              <ActionDetail
-                form={form}
-                actionType={selectedAction.type}
-                actionIndex={index}
-              />
+            <RemovableTask key={index} onRemove={() => remove(index)}>
+              <ActionDetail form={form} name={`${name}.${index}`} />
             </RemovableTask>
           );
         })}
-
-        <Select aria-label="Action Types" onSelectionChange={onSelectionChange}>
+        <Select
+          ref={controller.field.ref}
+          aria-label="Action Types"
+          name={controller.field.name}
+          onBlur={controller.field.onBlur}
+          isDisabled={controller.field.disabled}
+          isInvalid={Boolean(controller.fieldState.error?.message)}
+          selectedKey={null}
+          onSelectionChange={(key) => {
+            switch (key) {
+              case AutomationActionType.SendSlackMessage: {
+                append({
+                  type: AutomationActionType.SendSlackMessage,
+                  payload: {
+                    name: "",
+                    slackId: "",
+                  },
+                });
+                return;
+              }
+              default:
+                throw new Error(`Unknown action type: ${key}`);
+            }
+          }}
+        >
           <SelectButton className="w-full">Add action...</SelectButton>
+          <FieldError className="text-danger-low text-sm">
+            {controller.fieldState.error?.message}
+          </FieldError>
           <Popover>
             <ListBox>
-              {ACTIONS.map((c) => (
-                <ListBoxItem key={c.type} id={c.type}>
-                  {c.label}
+              {actions.map((action) => (
+                <ListBoxItem
+                  key={action.type}
+                  id={action.type}
+                  textValue={action.label}
+                >
+                  {action.label}
                 </ListBoxItem>
               ))}
             </ListBox>
