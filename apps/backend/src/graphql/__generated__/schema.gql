@@ -123,13 +123,13 @@ input AddContributorToProjectInput {
 }
 
 type AutomationAction {
-  action: AutomationActionType!
-  actionPayload: AutomationActionSendSlackMessagePayload!
+  action: String!
+  actionPayload: JSONObject!
 }
 
 input AutomationActionInput {
-  payload: AutomationActionSendSlackMessagePayloadInput!
-  type: AutomationActionType!
+  payload: JSONObject!
+  type: String!
 }
 
 type AutomationActionSendSlackMessagePayload {
@@ -138,39 +138,18 @@ type AutomationActionSendSlackMessagePayload {
   slackId: String!
 }
 
-input AutomationActionSendSlackMessagePayloadInput {
-  channelId: String
-  name: String!
-  slackId: String!
-}
-
-enum AutomationActionType {
-  sendSlackMessage
-}
-
 type AutomationCondition {
-  type: AutomationConditionType!
+  type: String!
   value: String!
 }
 
 input AutomationConditionInput {
-  type: AutomationConditionType!
+  type: String!
   value: String!
-}
-
-enum AutomationConditionType {
-  buildConclusion
-  buildName
-  buildType
 }
 
 type AutomationConditions {
   all: [AutomationCondition!]!
-}
-
-enum AutomationEvent {
-  buildCompleted
-  buildReviewed
 }
 
 type AutomationRule implements Node {
@@ -180,7 +159,7 @@ type AutomationRule implements Node {
   if: AutomationConditions!
   lastAutomationRunDate: DateTime
   name: String!
-  on: [AutomationEvent!]!
+  on: [String!]!
   then: [AutomationAction!]!
   updatedAt: DateTime!
 }
@@ -193,7 +172,7 @@ type AutomationRuleConnection implements Connection {
 type AutomationRun implements Node {
   buildId: String
   createdAt: DateTime!
-  event: AutomationEvent!
+  event: String!
   id: ID!
   updatedAt: DateTime!
 }
@@ -373,7 +352,7 @@ interface Connection {
 input CreateAutomationRuleInput {
   actions: [AutomationActionInput!]!
   conditions: [AutomationConditionInput!]!
-  events: [AutomationEvent!]!
+  events: [String!]!
   name: String!
   projectId: String!
 }
@@ -1192,7 +1171,7 @@ input UpdateAccountInput {
 input UpdateAutomationRuleInput {
   actions: [AutomationActionInput!]!
   conditions: [AutomationConditionInput!]!
-  events: [AutomationEvent!]!
+  events: [String!]!
   id: String!
   name: String!
 }

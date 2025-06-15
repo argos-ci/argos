@@ -1,15 +1,87 @@
 import { assertNever } from "@argos/util/assertNever";
 import { Trash2Icon } from "lucide-react";
+import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
 
-import { AutomationActionType, AutomationConditionType } from "@/gql/graphql";
+import { BuildStatus, BuildType } from "@/gql/graphql";
 import { Badge, type BadgeProps } from "@/ui/Badge";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 
-import type { AutomationForm, AutomationTransformedValues } from "./types";
+export const BuildConclusionConditionSchema = z.object({
+  type: z.literal("build-conclusion"),
+  value: z
+    .enum([BuildStatus.NoChanges, BuildStatus.ChangesDetected])
+    .nullable()
+    .optional()
+    .refine((val) => val !== null, { message: "Required" }),
+});
+
+export const BuildNameConditionSchema = z.object({
+  type: z.literal("build-name"),
+  value: z.string().nonempty({ error: "Required" }),
+});
+
+export const BuildTypeConditionSchema = z.object({
+  type: z.literal("build-type"),
+  value: z
+    .enum(BuildType)
+    .nullable()
+    .optional()
+    .refine((val) => val !== null, { message: "Required" }),
+});
+
+export const BuildConditionSchema = z.discriminatedUnion("type", [
+  BuildConclusionConditionSchema,
+  BuildNameConditionSchema,
+  BuildTypeConditionSchema,
+]);
+
+const AutomationSlackActionSchema = z.object({
+  type: z.literal("sendSlackMessage"),
+  payload: z.object({
+    slackId: z
+      .string()
+      .min(1, { message: "Required" })
+      .max(256, { message: "Must be 256 characters or less" }),
+    name: z.string().min(1, { message: "Required" }).max(21, {
+      message: "Must be 21 characters or less",
+    }),
+  }),
+});
+
+export const AutomationActionSchema = z.discriminatedUnion("type", [
+  AutomationSlackActionSchema,
+]);
+export type AutomationAction = z.infer<typeof AutomationActionSchema>;
+
+export const AutomationFieldValuesSchema = z.object({
+  name: z
+    .string()
+    .min(1, { message: "Please enter a name" })
+    .min(3, { message: "Must be at least 3 characters" })
+    .max(100, { message: "Must be 100 characters or less" }),
+  events: z
+    .array(z.enum(["build.completed", "build.reviewed"]))
+    .min(1, "At least one event is required"),
+  conditions: z.array(BuildConditionSchema),
+  actions: z
+    .array(AutomationActionSchema)
+    .min(1, "At least one action is required"),
+});
+
+export type AutomationFieldValues = z.input<typeof AutomationFieldValuesSchema>;
+export type AutomationTransformedValues = z.output<
+  typeof AutomationFieldValuesSchema
+>;
+
+export type AutomationForm = UseFormReturn<
+  AutomationFieldValues,
+  any,
+  AutomationTransformedValues
+>;
 
 export const ActionBadge = twc(
   Badge,
@@ -47,20 +119,6 @@ export function AutomationNameField(props: { form: AutomationForm }) {
   );
 }
 
-export function FormErrors(props: { form: AutomationForm }) {
-  const rootError = props.form.formState.errors.root;
-  return (
-    <div className="text-danger-low empty:hidden">
-      {rootError &&
-        Object.entries(rootError).map(([field, error]) => (
-          <div key={field}>
-            {(error as { message?: string }).message || "Invalid value"}
-          </div>
-        ))}
-    </div>
-  );
-}
-
 /**
  * Converts the form data from the AutomationForm into a format suitable for GraphQL variables.
  */
@@ -71,14 +129,14 @@ export function formDataToVariables(data: AutomationTransformedValues) {
     conditions: z
       .array(
         z.object({
-          type: z.enum(AutomationConditionType),
+          type: z.string(),
           value: z.string(),
         }),
       )
       .parse(data.conditions),
     actions: data.actions.map(({ type, payload }) => {
       switch (type) {
-        case AutomationActionType.SendSlackMessage:
+        case "sendSlackMessage":
           return {
             type: type,
             payload: {

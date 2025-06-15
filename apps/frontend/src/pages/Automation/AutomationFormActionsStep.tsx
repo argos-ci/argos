@@ -1,15 +1,18 @@
 import { assertNever } from "@argos/util/assertNever";
-import { FieldError } from "react-aria-components";
-import { useController, useFieldArray } from "react-hook-form";
+import { useFieldArray } from "react-hook-form";
 
-import { AutomationActionType } from "@/gql/graphql";
+import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
-import { Select, SelectButton } from "@/ui/Select";
+import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
-import { ActionBadge, RemovableTask, StepTitle } from "./AutomationForm";
-import type { AutomationForm } from "./types";
+import {
+  ActionBadge,
+  RemovableTask,
+  StepTitle,
+  type AutomationForm,
+} from "./AutomationForm";
 
 function SendSlackMessageAction(props: {
   form: AutomationForm;
@@ -49,7 +52,7 @@ function ActionDetail(props: {
   const { name, form } = props;
   const field = form.watch(name);
   switch (field.type) {
-    case AutomationActionType.SendSlackMessage:
+    case "sendSlackMessage":
       return <SendSlackMessageAction form={form} name={name} />;
     default:
       assertNever(field.type, "Unknown action type");
@@ -61,15 +64,11 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
   const name = "actions" as const;
   const actions = [
     {
-      type: AutomationActionType.SendSlackMessage,
+      type: "sendSlackMessage",
       label: "Send Slack Message",
     },
   ];
   const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name,
-  });
-  const controller = useController({
     control: form.control,
     name,
   });
@@ -87,19 +86,16 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
             </RemovableTask>
           );
         })}
-        <Select
-          ref={controller.field.ref}
+        <SelectField
+          control={form.control}
+          name={name}
           aria-label="Action Types"
-          name={controller.field.name}
-          onBlur={controller.field.onBlur}
-          isDisabled={controller.field.disabled}
-          isInvalid={Boolean(controller.fieldState.error?.message)}
           selectedKey={null}
           onSelectionChange={(key) => {
             switch (key) {
-              case AutomationActionType.SendSlackMessage: {
+              case "sendSlackMessage": {
                 append({
-                  type: AutomationActionType.SendSlackMessage,
+                  type: "sendSlackMessage",
                   payload: {
                     name: "",
                     slackId: "",
@@ -111,11 +107,12 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
                 throw new Error(`Unknown action type: ${key}`);
             }
           }}
+          placeholder="Add action…"
         >
-          <SelectButton className="w-full">Add action...</SelectButton>
-          <FieldError className="text-danger-low text-sm">
-            {controller.fieldState.error?.message}
-          </FieldError>
+          <SelectButton className="w-full">
+            <SelectValue />
+          </SelectButton>
+          <FieldError />
           <Popover>
             <ListBox>
               {actions.map((action) => (
@@ -129,7 +126,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
               ))}
             </ListBox>
           </Popover>
-        </Select>
+        </SelectField>
       </div>
     </div>
   );

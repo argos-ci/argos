@@ -4,10 +4,10 @@ import {
   CheckboxGroupProps as AriaCheckboxGroupProps,
   ValidationResult as AriaValidationResult,
   composeRenderProps,
-  FieldError,
   Text,
 } from "react-aria-components";
 
+import { FieldError } from "./FieldError";
 import { Label } from "./Label";
 
 interface CheckboxGroupProps
@@ -44,9 +44,7 @@ export function CheckboxGroup({
               {description}
             </Text>
           )}
-          <FieldError className="text-danger-low text-sm">
-            {errorMessage}
-          </FieldError>
+          <FieldError>{errorMessage}</FieldError>
         </>
       ))}
     </AriaCheckboxGroup>

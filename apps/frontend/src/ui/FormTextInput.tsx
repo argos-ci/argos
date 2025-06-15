@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
 import { useFormContext } from "react-hook-form";
 
-import { FormError } from "./FormError";
+import { ErrorMessage } from "./ErrorMessage";
 import { Label } from "./Label";
 import {
   TextInput,
@@ -77,11 +77,11 @@ export function FormTextInput({
         input
       )}
       {typeof error?.message === "string" && (
-        <FormError
+        <ErrorMessage
           className={{ vertical: "mt-2", horizontal: "ml-2" }[orientation]}
         >
           {error.message}
-        </FormError>
+        </ErrorMessage>
       )}
     </div>
   );

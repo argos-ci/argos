@@ -1,11 +1,9 @@
 import { useController } from "react-hook-form";
 
-import { AutomationEvent } from "@/gql/graphql";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroup } from "@/ui/CheckboxGroup";
 
-import { ActionBadge, StepTitle } from "./AutomationForm";
-import type { AutomationForm } from "./types";
+import { ActionBadge, StepTitle, type AutomationForm } from "./AutomationForm";
 
 export function AutomationWhenStep(props: { form: AutomationForm }) {
   const { form } = props;
@@ -31,15 +29,10 @@ export function AutomationWhenStep(props: { form: AutomationForm }) {
         isInvalid={controller.fieldState.invalid}
         errorMessage={controller.fieldState.error?.message}
       >
-        <Checkbox
-          ref={controller.field.ref}
-          value={AutomationEvent.BuildCompleted}
-        >
+        <Checkbox ref={controller.field.ref} value="build.completed">
           Build Completed
         </Checkbox>
-        <Checkbox value={AutomationEvent.BuildReviewed}>
-          Build Reviewed
-        </Checkbox>
+        <Checkbox value="build.reviewed">Build Reviewed</Checkbox>
       </CheckboxGroup>
     </div>
   );

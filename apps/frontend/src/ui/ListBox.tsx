@@ -54,7 +54,7 @@ export function ListBoxItem(
       )}
       {...restProps}
     >
-      <CheckIcon className="size-4 opacity-0 group-aria-selected/item:opacity-100" />
+      <CheckIcon className="not-in-[[role=listbox]]:hidden size-4 opacity-0 group-aria-selected/item:opacity-100" />
       <div className="flex items-center">{children}</div>
     </RACListBoxItem>
   );

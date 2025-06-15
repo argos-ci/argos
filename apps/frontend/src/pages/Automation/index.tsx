@@ -1,11 +1,11 @@
 import { useMutation, useSuspenseQuery } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
 import { BoxesIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
-import { ProjectPermission } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
 import {
   EmptyState,
@@ -19,10 +19,10 @@ import {
 } from "@/ui/Layout";
 
 import { NotFound } from "../NotFound";
-import { useProjectOutletContext } from "../Project/ProjectOutletContext";
+import { useProjectParams } from "../Project/ProjectParams";
 import { AutomationRulesList } from "./AutomationRulesList";
 
-const ProjectAutomationsQuery = graphql(`
+const ProjectQuery = graphql(`
   query ProjectAutomations_project_Automations(
     $accountSlug: String!
     $projectName: String!
@@ -52,10 +52,12 @@ const ProjectAutomationsQuery = graphql(`
   }
 `);
 
-type ProjectDocument = DocumentType<typeof ProjectAutomationsQuery>;
-export type AutomationRule = NonNullable<
-  NonNullable<ProjectDocument["project"]>["automationRules"]
->["edges"][number];
+type ProjectDocument = NonNullable<
+  DocumentType<typeof ProjectQuery>["project"]
+>;
+
+export type AutomationRule =
+  ProjectDocument["automationRules"]["edges"][number];
 
 const DeactivateAutomationRuleMutation = graphql(`
   mutation Automations_deactivateAutomationRule($id: String!) {
@@ -80,18 +82,8 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
   );
 }
 
-function PageContent(props: { accountSlug: string; projectName: string }) {
-  const {
-    data: { project },
-  } = useSuspenseQuery(ProjectAutomationsQuery, {
-    variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
-      after: 0,
-      first: 50,
-    },
-  });
-
+function PageContent(props: { project: ProjectDocument }) {
+  const { project } = props;
   const [deactivateAutomationRule] = useMutation(
     DeactivateAutomationRuleMutation,
     {
@@ -183,11 +175,20 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
 
 /** @route */
 export function Component() {
-  const { accountSlug, projectName } = useParams();
-  const { permissions } = useProjectOutletContext();
-  const hasAdminPermission = permissions.includes(ProjectPermission.Admin);
+  const params = useProjectParams();
+  invariant(params, "Project params are required");
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectQuery, {
+    variables: {
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
+      after: 0,
+      first: 50,
+    },
+  });
 
-  if (!accountSlug || !projectName || !hasAdminPermission) {
+  if (project?.account?.__typename !== "Team") {
     return <NotFound />;
   }
 
@@ -195,10 +196,10 @@ export function Component() {
     <Page>
       <Helmet>
         <title>
-          {accountSlug}/{projectName} • Automations
+          {params.accountSlug}/{params.projectName} • Automations
         </title>
       </Helmet>
-      <PageContent accountSlug={accountSlug} projectName={projectName} />
+      <PageContent project={project} />
     </Page>
   );
 }

@@ -12,6 +12,7 @@ import { ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
 import { Form } from "@/ui/Form";
+import { FormRootError } from "@/ui/FormRootError";
 import {
   Page,
   PageContainer,
@@ -23,17 +24,14 @@ import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { getProjectURL, useProjectParams } from "../Project/ProjectParams";
 import {
+  AutomationFieldValuesSchema,
   AutomationNameField,
   formDataToVariables,
-  FormErrors,
+  type AutomationTransformedValues,
 } from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
-import {
-  AutomationFieldValuesSchema,
-  type AutomationTransformedValues,
-} from "./types";
 
 const ProjectQuery = graphql(`
   query ProjectNewAutomation_project(
@@ -59,7 +57,7 @@ const CreateAutomationMutation = graphql(`
   mutation NewAutomation_createAutomation(
     $projectId: String!
     $name: String!
-    $events: [AutomationEvent!]!
+    $events: [String!]!
     $conditions: [AutomationConditionInput!]!
     $actions: [AutomationActionInput!]!
   ) {
@@ -194,7 +192,7 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
                 projectBuildNames={project.buildNames}
               />
               <AutomationActionsStep form={form} />
-              <FormErrors form={form} />
+              <FormRootError form={form} />
             </div>
           </CardBody>
 

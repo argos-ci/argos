@@ -4,8 +4,19 @@ import {
   Select as AriaSelect,
   Button,
   ButtonProps,
+  FieldErrorContext,
   type SelectProps as AriaSelectSelectProps,
 } from "react-aria-components";
+import {
+  useController,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form";
+
+import { mergeRefs } from "@/util/merge-refs";
+
+export { SelectValue } from "react-aria-components";
 
 function SelectArrow() {
   return (
@@ -38,6 +49,54 @@ export function Select(props: SelectProps) {
   );
 }
 
+export type SelectFieldProps<TFieldValues extends FieldValues> = {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
+  children: React.ReactNode;
+} & Omit<SelectProps, "children">;
+
+export function SelectField<TFieldValues extends FieldValues>(
+  props: SelectFieldProps<TFieldValues>,
+) {
+  const { ref, control, name, isDisabled, onBlur, ...rest } = props;
+  const { field, fieldState } = useController({ control, name });
+  const mergedRef = mergeRefs(field.ref, ref);
+  return (
+    <Select
+      ref={mergedRef}
+      isDisabled={field.disabled || isDisabled}
+      onBlur={(event) => {
+        field.onBlur();
+        onBlur?.(event);
+      }}
+      name={field.name}
+      selectedKey={field.value}
+      onSelectionChange={(isSelected) => {
+        field.onChange(isSelected);
+      }}
+      isInvalid={fieldState.invalid}
+      {...rest}
+    >
+      <FieldErrorContext.Provider
+        value={
+          fieldState.error?.message
+            ? {
+                validationDetails: fieldState.error
+                  .type as unknown as ValidityState,
+                isInvalid: true,
+                validationErrors: fieldState.error?.message
+                  ? [fieldState.error.message]
+                  : [],
+              }
+            : null
+        }
+      >
+        {rest.children}
+      </FieldErrorContext.Provider>
+    </Select>
+  );
+}
+
 export function SelectButton({
   children,
   size = "md",
@@ -52,7 +111,7 @@ export function SelectButton({
       {...rest}
       className={clsx(
         /* Appearance */
-        "bg-app cursor-default appearance-none rounded-sm border leading-tight",
+        "bg-app cursor-default select-none appearance-none rounded-sm border leading-tight",
         /* Layout */
         "flex items-center justify-between",
         /* Focus */

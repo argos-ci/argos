@@ -94,7 +94,7 @@ export const TeamNewForm = (props: {
           .
         </p>
         <div className="mt-8 flex items-center justify-end gap-4">
-          <FormRootError />
+          <FormRootError form={form} />
           <FormSubmit>Continue</FormSubmit>
         </div>
       </Form>

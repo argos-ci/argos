@@ -23,6 +23,7 @@ const config: CodegenConfig = {
         mappers: {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
+          AutomationRule: "../../database/models/index.js#AutomationRule",
           Build: "../../database/models/index.js#Build",
           BuildReview: "../../database/models/index.js#BuildReview",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",

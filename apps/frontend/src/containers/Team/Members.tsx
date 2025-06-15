@@ -26,8 +26,8 @@ import {
   DialogTrigger,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { getGraphQLErrorMessage } from "@/ui/Form";
-import { FormError } from "@/ui/FormError";
 import { List, ListRow, ListTitle } from "@/ui/List";
 import {
   ListBox,
@@ -180,7 +180,9 @@ const LeaveTeamDialog = memo(
           <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>
         <DialogFooter>
-          {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
+          {error && (
+            <ErrorMessage>{getGraphQLErrorMessage(error)}</ErrorMessage>
+          )}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
             isDisabled={loading}
@@ -262,7 +264,7 @@ const RemoveFromTeamDialog = memo(
         </DialogBody>
         <DialogFooter>
           {error && (
-            <FormError>Something went wrong. Please try again.</FormError>
+            <ErrorMessage>Something went wrong. Please try again.</ErrorMessage>
           )}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
