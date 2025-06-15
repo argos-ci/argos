@@ -122,14 +122,7 @@ function EditAutomationForm(props: {
     defaultValues: AutomationFieldValuesSchema.parse({
       name: automationRule?.name ?? "",
       events: automationRule?.on ?? [],
-      conditions:
-        automationRule?.if?.all?.reduce<Partial<Record<string, string | null>>>(
-          (acc, c) => {
-            acc[c.type] = c.value;
-            return acc;
-          },
-          {},
-        ) ?? {},
+      conditions: automationRule?.if?.all ?? [],
       actions:
         automationRule?.then?.map((a) => ({
           type: a.action,

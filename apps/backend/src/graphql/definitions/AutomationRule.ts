@@ -1,19 +1,15 @@
 import { invariant } from "@argos/util/invariant";
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import gqlTag from "graphql-tag";
-import { isNil } from "lodash-es";
 
 import {
   AutomationRule,
   AutomationRuleSchema,
   AutomationRun,
   Project,
-  SlackChannel,
-  SlackInstallation,
 } from "@/database/models";
 
 import {
-  IAutomationActionSendSlackMessagePayloadInput,
   IResolvers,
   type ICreateAutomationRuleInput,
   type IUpdateAutomationRuleInput,
@@ -109,224 +105,67 @@ export const typeDefs = gql`
   }
 `;
 
-// const automationEventMap: Record<IAutomationEvent, AutomationEvent> = {
-//   [IAutomationEvent.BuildCompleted]: AutomationEvents.BuildCompleted,
-//   [IAutomationEvent.BuildReviewed]: AutomationEvents.BuildReviewed,
-// };
+// async function createSlackChannels(
+//   slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
+//   installationId: string,
+// ): Promise<SlackChannel[]> {
+//   if (slackChannelInputs.length === 0) {
+//     return [];
+//   }
 
-// function parseAutomationInputs(events: IAutomationEvent[]): AutomationEvent[] {
-//   return events.map((event) => {
-//     const mapped = automationEventMap[event];
-//     if (!mapped) {
-//       throw new Error(`Unknown automation event: ${event}`);
-//     }
-//     return mapped;
-//   });
+//   return SlackChannel.query().insertAndFetch(
+//     slackChannelInputs.map((input) => ({
+//       name: input.name,
+//       slackId: input.slackId,
+//       slackInstallationId: installationId,
+//     })),
+//   );
 // }
 
-// function parseConditionInputs(
-//   conditions: IAutomationConditionInput[],
-// ): AutomationCondition[] {
-//   return conditions.map((condition) => {
-//     return AutomationConditionSchema.parse({
-//       type: condition.type,
-//       value: condition.value,
-//     });
-//   });
-// }
-
-// function parseActionInputs(
-//   actions: IAutomationActionInput[],
-//   slackChannels: SlackChannel[],
+// async function updateSlackChannels(
+//   slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
+//   installationId: string,
 // ) {
-//   return actions.map((action) => {
-//     const { type, payload } = action;
-//     const actionDefinition = getAutomationAction(type as AutomationActionsName);
-//     if (actionDefinition.name === "sendSlackMessage") {
-//       const slackChannel = slackChannels.find(
-//         (channel) => channel.slackId === payload.slackId,
-//       );
-//       if (!slackChannel) {
-//         throw new Error(
-//           `Slack channel id "${payload.slackId}" not found for action ${type}.`,
-//         );
-//       }
+//   const channelIds = slackChannelInputs
+//     .map((input) => input.channelId)
+//     .filter((input) => !isNil(input));
+//   if (channelIds.length === 0) {
+//     return [];
+//   }
 
-//       const actionPayload = { channelId: slackChannel.id };
-//       const result = actionDefinition.payloadSchema.safeParse(actionPayload);
-//       if (!result.success) {
-//         throw new Error(`Invalid payload for action ${type}: ${result.error}`);
-//       }
+//   const slackChannels = await SlackChannel.query()
+//     .where("slackInstallationId", installationId)
+//     .whereIn("id", channelIds);
 
-//       return { action: actionDefinition.name, actionPayload };
-//     }
-
-//     assertNever(
-//       actionDefinition.name,
-//       `Unknown action type: ${actionDefinition.name}`,
+//   const slackChannelToUpdate = slackChannelInputs.filter((input) => {
+//     const slackChannel = slackChannels.find(
+//       (channel) => input.channelId && channel.id === input.channelId,
+//     );
+//     return (
+//       slackChannel &&
+//       (slackChannel.name !== input.name ||
+//         slackChannel.slackId !== input.slackId)
 //     );
 //   });
-// }
 
-// const graphQLAutomationEventMap: Record<AutomationEvent, IAutomationEvent> = {
-//   [AutomationEvents.BuildCompleted]: IAutomationEvent.BuildCompleted,
-//   [AutomationEvents.BuildReviewed]: IAutomationEvent.BuildReviewed,
-// };
-
-// function toGraphQLAutomationEvent(event: AutomationEvent): IAutomationEvent {
-//   const mapped = graphQLAutomationEventMap[event];
-//   if (!mapped) {
-//     throw new Error(`Unknown automation event: ${event}`);
-//   }
-//   return mapped;
-// }
-
-// function toGraphQLConditionType(
-//   type: AutomationCondition["type"],
-// ): IAutomationConditionType {
-//   switch (type) {
-//     case "build-type":
-//       return IAutomationConditionType.BuildType;
-//     case "build-conclusion":
-//       return IAutomationConditionType.BuildConclusion;
-//     case "build-name":
-//       return IAutomationConditionType.BuildName;
-//     default:
-//       assertNever(type, `Unknown condition type: ${type}`);
-//   }
-// }
-
-// function toGraphQLAutomationConditions(conditions: {
-//   all: AutomationCondition[];
-// }): IAutomationConditions {
-//   return {
-//     all: conditions.all.map((condition) => {
-//       const type = toGraphQLConditionType(condition.type);
-//       return { type, value: condition.value };
-//     }),
-//   };
-// }
-
-// async function toGraphQLAutomationActions(
-//   then: AutomationRule["then"],
-// ): Promise<IAutomationAction[]> {
-//   const slackChannelIds = [
-//     ...new Set(
-//       then
-//         .filter(({ action }) => action === "sendSlackMessage")
-//         .map(({ actionPayload }) => actionPayload.channelId),
-//     ),
-//   ];
-//   const slackChannels =
-//     slackChannelIds.length > 0
-//       ? await SlackChannel.query().findByIds(slackChannelIds)
+//   const updatedSlackChannels =
+//     slackChannelToUpdate.length > 0
+//       ? await Promise.all(
+//           slackChannelToUpdate.map((input) =>
+//             SlackChannel.query().patchAndFetchById(input.channelId!, {
+//               name: input.name,
+//               slackId: input.slackId,
+//             }),
+//           ),
+//         )
 //       : [];
 
-//   return then.map(({ action: actionName, actionPayload }) => {
-//     switch (actionName) {
-//       case "sendSlackMessage": {
-//         const slackChannel = slackChannels.find(
-//           (channel) => channel.id === actionPayload.channelId,
-//         );
-//         if (!slackChannel) {
-//           throw new Error(
-//             `Slack channel with ID ${actionPayload.channelId} not found.`,
-//           );
-//         }
-
-//         return {
-//           action: IAutomationActionType.SendSlackMessage,
-//           actionPayload: {
-//             channelId: actionPayload.channelId,
-//             slackId: slackChannel.slackId,
-//             name: slackChannel.name,
-//           },
-//         };
-//       }
-
-//       default:
-//         throw new Error(`Unknown action type: ${actionName}`);
-//     }
+//   return slackChannels.map((channel) => {
+//     const updatedChannel = updatedSlackChannels.find(
+//       (c) => c.id === channel.id,
+//     );
+//     return updatedChannel || channel;
 //   });
-// }
-
-async function createSlackChannels(
-  slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
-  installationId: string,
-): Promise<SlackChannel[]> {
-  if (slackChannelInputs.length === 0) {
-    return [];
-  }
-
-  return SlackChannel.query().insertAndFetch(
-    slackChannelInputs.map((input) => ({
-      name: input.name,
-      slackId: input.slackId,
-      slackInstallationId: installationId,
-    })),
-  );
-}
-
-async function updateSlackChannels(
-  slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
-  installationId: string,
-) {
-  const channelIds = slackChannelInputs
-    .map((input) => input.channelId)
-    .filter((input) => !isNil(input));
-  if (channelIds.length === 0) {
-    return [];
-  }
-
-  const slackChannels = await SlackChannel.query()
-    .where("slackInstallationId", installationId)
-    .whereIn("id", channelIds);
-
-  const slackChannelToUpdate = slackChannelInputs.filter((input) => {
-    const slackChannel = slackChannels.find(
-      (channel) => input.channelId && channel.id === input.channelId,
-    );
-    return (
-      slackChannel &&
-      (slackChannel.name !== input.name ||
-        slackChannel.slackId !== input.slackId)
-    );
-  });
-
-  const updatedSlackChannels =
-    slackChannelToUpdate.length > 0
-      ? await Promise.all(
-          slackChannelToUpdate.map((input) =>
-            SlackChannel.query().patchAndFetchById(input.channelId!, {
-              name: input.name,
-              slackId: input.slackId,
-            }),
-          ),
-        )
-      : [];
-
-  return slackChannels.map((channel) => {
-    const updatedChannel = updatedSlackChannels.find(
-      (c) => c.id === channel.id,
-    );
-    return updatedChannel || channel;
-  });
-}
-
-// export async function toGraphQLAutomationRule(
-//   automationRule: AutomationRule,
-// ): Promise<IAutomationRule> {
-//   const then = await toGraphQLAutomationActions(automationRule.then);
-//   return {
-//     ...automationRule,
-//     createdAt: new Date(automationRule.createdAt),
-//     updatedAt: new Date(automationRule.updatedAt),
-//     on: automationRule.on.map(toGraphQLAutomationEvent),
-//     if: toGraphQLAutomationConditions(
-//       automationRule.if as unknown as { all: AutomationCondition[] },
-//     ),
-//     then,
-//   };
 // }
 
 function validateAutomationRuleInput(
@@ -383,7 +222,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { projectId, name, events, conditions, actions } = args.input;
+      const { projectId, name, events, conditions } = args.input;
 
       const project = await Project.query()
         .findById(projectId)
@@ -434,7 +273,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { id, name, events, conditions, actions } = args.input;
+      const { id, name, events, conditions } = args.input;
 
       const automationRule = await AutomationRule.query()
         .findById(id)
@@ -453,28 +292,28 @@ export const resolvers: IResolvers = {
 
       validateAutomationRuleInput(args.input);
 
-      const slackChannelInputs = actions
-        .filter((a) => a.type === "sendSlackMessage")
-        .map((action) => action.payload);
+      // const slackChannelInputs = actions
+      //   .filter((a) => a.type === "sendSlackMessage")
+      //   .map((action) => action.payload);
 
-      const slackChannels: SlackChannel[] = [];
+      // const slackChannels: SlackChannel[] = [];
 
-      if (slackChannelInputs.length > 0) {
-        const slackInstallation = await SlackInstallation.query()
-          .joinRelated("account")
-          .findOne({ "account.id": automationRule.project.accountId })
-          .throwIfNotFound();
+      // if (slackChannelInputs.length > 0) {
+      //   const slackInstallation = await SlackInstallation.query()
+      //     .joinRelated("account")
+      //     .findOne({ "account.id": automationRule.project.accountId })
+      //     .throwIfNotFound();
 
-        const updatedSlackChannels = await updateSlackChannels(
-          slackChannelInputs.filter((input) => input.channelId),
-          slackInstallation.id,
-        );
-        const newSlackChannels = await createSlackChannels(
-          slackChannelInputs.filter((input) => !input.channelId),
-          slackInstallation.id,
-        );
-        slackChannels.push(...updatedSlackChannels, ...newSlackChannels);
-      }
+      //   const updatedSlackChannels = await updateSlackChannels(
+      //     slackChannelInputs.filter((input) => input.channelId),
+      //     slackInstallation.id,
+      //   );
+      //   const newSlackChannels = await createSlackChannels(
+      //     slackChannelInputs.filter((input) => !input.channelId),
+      //     slackInstallation.id,
+      //   );
+      //   slackChannels.push(...updatedSlackChannels, ...newSlackChannels);
+      // }
 
       const data = AutomationRuleSchema.partial().parse({
         name,

@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
-import { AutomationConditionType, BuildStatus, BuildType } from "@/gql/graphql";
+import { BuildStatus, BuildType } from "@/gql/graphql";
 import { FieldError } from "@/ui/FieldError";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { MenuItemIcon } from "@/ui/Menu";
@@ -171,10 +171,10 @@ function ConditionDetail(props: {
   const { projectBuildNames, form, name } = props;
   const condition = form.watch(name);
   switch (condition.type) {
-    case AutomationConditionType.BuildConclusion:
+    case "build-conclusion":
       return <BuildConclusionCondition form={form} name={`${name}.value`} />;
 
-    case AutomationConditionType.BuildName:
+    case "build-name":
       return (
         <BuildNameCondition
           projectBuildNames={projectBuildNames}
@@ -183,7 +183,7 @@ function ConditionDetail(props: {
         />
       );
 
-    case AutomationConditionType.BuildType:
+    case "build-type":
       return <BuildTypeCondition form={form} name={`${name}.value`} />;
 
     default:
@@ -204,12 +204,12 @@ export function AutomationConditionsStep(props: {
   const selectedConditionTypes = new Set(fields.map((c) => c.type));
   const conditions = [
     {
-      type: AutomationConditionType.BuildConclusion,
+      type: "build-conclusion" as const,
       label: "Build conclusion is…",
     },
-    { type: AutomationConditionType.BuildType, label: "Build type is…" },
+    { type: "build-type" as const, label: "Build type is…" },
     projectBuildNames.length > 0
-      ? { type: AutomationConditionType.BuildName, label: "Build name is…" }
+      ? { type: "build-name" as const, label: "Build name is…" }
       : null,
   ]
     .filter((condition) => condition !== null)
@@ -238,19 +238,18 @@ export function AutomationConditionsStep(props: {
           aria-label="Condition Types"
           selectedKey={null}
           onSelectionChange={(key) => {
-            const type = key as AutomationConditionType;
-            switch (type) {
-              case AutomationConditionType.BuildConclusion:
-              case AutomationConditionType.BuildType: {
-                append({ type, value: null });
+            switch (key) {
+              case "build-conclusion":
+              case "build-type": {
+                append({ type: key, value: null });
                 return;
               }
-              case AutomationConditionType.BuildName: {
-                append({ type, value: "" });
+              case "build-name": {
+                append({ type: key, value: "" });
                 return;
               }
               default:
-                assertNever(type, `Unknown condition type: ${type}`);
+                throw new Error(`Unknown condition type: ${key}`);
             }
           }}
           isDisabled={conditions.length === 0}

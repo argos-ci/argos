@@ -25,12 +25,6 @@ import { useProjectParams } from "../Project/ProjectParams";
 import { getAutomationURL } from "./AutomationParams";
 import { AutomationRule } from "./index";
 
-function formatEventLabel(str: string): string {
-  return str
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase());
-}
-
 function DeleteAutomationDialog({
   isOpen,
   onOpenChange,
@@ -82,7 +76,7 @@ function AutomationRow(props: {
       </div>
       <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap text-sm">
         {automationRule.on.map((event) => (
-          <div key={event}>{formatEventLabel(event)}</div>
+          <div key={event}>{event}</div>
         ))}
       </div>
       <div

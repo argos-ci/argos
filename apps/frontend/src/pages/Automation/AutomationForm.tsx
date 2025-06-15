@@ -67,9 +67,9 @@ export const AutomationFieldValuesSchema = z.object({
     .array(z.enum(["build.completed", "build.reviewed"]))
     .min(1, "At least one event is required"),
   conditions: z.array(BuildConditionSchema),
-  actions: z
-    .array(AutomationActionSchema)
-    .min(1, "At least one action is required"),
+  actions: z.array(AutomationActionSchema),
+  // @TODO enable it back before pushing
+  // .min(1, "At least one action is required"),
 });
 
 export type AutomationFieldValues = z.input<typeof AutomationFieldValuesSchema>;
