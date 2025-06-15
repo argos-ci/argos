@@ -165,7 +165,10 @@ function EditAutomationForm(props: {
 
         <CardFooter>
           <div className="flex justify-end gap-2">
-            <LinkButton href={`../automations`} variant="secondary">
+            <LinkButton
+              href={`${getProjectURL(params)}/automations`}
+              variant="secondary"
+            >
               {hasEditPermission ? "Cancel" : "Back"}
             </LinkButton>
 

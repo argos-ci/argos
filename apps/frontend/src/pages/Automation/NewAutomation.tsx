@@ -198,7 +198,10 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
 
           <CardFooter>
             <div className="flex justify-end gap-2">
-              <LinkButton href="../automations" variant="secondary">
+              <LinkButton
+                href={`${getProjectURL(params)}/automations`}
+                variant="secondary"
+              >
                 Cancel
               </LinkButton>
               <Button type="submit" isDisabled={form.formState.isSubmitting}>

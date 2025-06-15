@@ -202,7 +202,7 @@ export const resolvers: IResolvers = {
         .withGraphFetched("project")
         .throwIfNotFound();
 
-      invariant(automationRule.project);
+      invariant(automationRule.project, "Project relation not found");
 
       const permissions = await automationRule.project.$getPermissions(
         auth.user,
@@ -280,7 +280,7 @@ export const resolvers: IResolvers = {
         .withGraphFetched("project")
         .throwIfNotFound();
 
-      invariant(automationRule.project);
+      invariant(automationRule.project, "Project relation not found");
 
       const permissions = await automationRule.project.$getPermissions(
         auth.user,
@@ -330,10 +330,12 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const automationRule = (await AutomationRule.query()
+      const automationRule = await AutomationRule.query()
         .findById(id)
         .withGraphFetched("project")
-        .throwIfNotFound()) as AutomationRule & { project: Project };
+        .throwIfNotFound();
+
+      invariant(automationRule.project, "Project relation not found");
 
       const permissions = await automationRule.project.$getPermissions(
         auth.user,
