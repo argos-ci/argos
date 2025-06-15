@@ -35,9 +35,9 @@ export function TeamSlack(props: {
   const { permissions } = useAccountContext();
   const hasAdminPermission = permissions.includes(AccountPermission.Admin);
   return (
-    <Card>
+    <Card id="slack">
       <CardBody>
-        <CardTitle id="slack">Slack</CardTitle>
+        <CardTitle>Slack</CardTitle>
         <CardParagraph>
           Set up Slack to access detailed link previews when sharing build URL.
         </CardParagraph>

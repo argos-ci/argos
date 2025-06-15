@@ -1,10 +1,9 @@
 import { memo, useId, useState } from "react";
-import { Reference, useMutation } from "@apollo/client";
+import { Reference, useMutation, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -413,7 +412,7 @@ function TeamMembersList(props: {
   hasFineGrainedAccessControl: boolean;
 }) {
   const authPayload = useAssertAuthTokenPayload();
-  const { data, fetchMore } = useSafeQuery(TeamMembersQuery, {
+  const { data, fetchMore } = useSuspenseQuery(TeamMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,
@@ -567,7 +566,7 @@ interface TeamGithubMembersFetchListProps extends TeamGithubMembersListProps {
 
 function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
   const authPayload = useAssertAuthTokenPayload();
-  const { data, fetchMore } = useSafeQuery(TeamGithubMembersQuery, {
+  const { data, fetchMore } = useSuspenseQuery(TeamGithubMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,

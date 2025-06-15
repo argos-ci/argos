@@ -1,4 +1,3 @@
-import { Children, cloneElement } from "react";
 import { clsx } from "clsx";
 import { CheckIcon } from "lucide-react";
 import {
@@ -26,18 +25,7 @@ export function ListBoxSeparator() {
   return <Separator className="-mx-1 my-1 border-t" />;
 }
 
-export function ListBoxItemIcon(props: {
-  children: React.ReactElement<{
-    className?: string;
-    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
-  }>;
-  className?: string;
-}) {
-  return cloneElement(Children.only(props.children), {
-    "aria-hidden": true,
-    className: clsx("size-[1em]", props.className),
-  });
-}
+export { MenuItemIcon as ListBoxItemIcon } from "./Menu";
 
 export function ListBoxItem(
   props: ListBoxItemProps & {

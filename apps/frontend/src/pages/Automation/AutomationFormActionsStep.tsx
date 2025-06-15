@@ -1,12 +1,21 @@
+import { Suspense, useEffect } from "react";
+import { useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
+import { useRefetchWhenActive } from "@/containers/Apollo";
+import { SlackColoredLogo } from "@/containers/Slack";
+import { graphql } from "@/gql";
+import { ButtonIcon, LinkButton } from "@/ui/Button";
 import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { ListBox, ListBoxItem } from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxItemIcon } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
+import { useAccountParams } from "../Account/AccountParams";
 import {
   ActionBadge,
   RemovableTask,
@@ -14,17 +23,60 @@ import {
   type AutomationForm,
 } from "./AutomationForm";
 
+const SlackInstallationQuery = graphql(`
+  query AutomationFormActionsStep_team($accountSlug: String!) {
+    account(slug: $accountSlug) {
+      id
+      slackInstallation {
+        id
+      }
+    }
+  }
+`);
+
 function SendSlackMessageAction(props: {
   form: AutomationForm;
   name: `actions.${number}`;
 }) {
   const { name, form } = props;
+  const params = useAccountParams();
+  invariant(params, "Account params are required for Slack installation query");
+  const { data, refetch } = useSuspenseQuery(SlackInstallationQuery, {
+    variables: {
+      accountSlug: params.accountSlug,
+    },
+  });
+
+  const hasSlackInstallation = Boolean(data.account?.slackInstallation);
+
+  // Refetch the Slack installation when the window becomes active again.
+  useRefetchWhenActive({ refetch, skip: hasSlackInstallation });
+
+  if (!data.account?.slackInstallation) {
+    return (
+      <div className="flex flex-col items-start gap-2 p-2">
+        To post to a Slack channel, you need to connect your Slack workspace
+        first.
+        <LinkButton
+          href={`/${params.accountSlug}/settings#slack`}
+          target="_blank"
+          variant="secondary"
+        >
+          <ButtonIcon>
+            <SlackColoredLogo />
+          </ButtonIcon>
+          Connect Slack
+        </LinkButton>
+      </div>
+    );
+  }
+
   // When we add a second action, types will break here, we will need to handle it
   // not sure how to do that yet
 
   return (
     <div className="flex items-center gap-2 overflow-auto">
-      <div>Send message to Slack channel</div>
+      <div>Post to Slack channel</div>
       <FormTextInput
         {...form.register(`${name}.payload.slackId`)}
         orientation="horizontal"
@@ -65,7 +117,8 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
   const actions = [
     {
       type: "sendSlackMessage",
-      label: "Send Slack Message",
+      label: "Post in Slack channel",
+      icon: SlackColoredLogo,
     },
   ];
   const { fields, append, remove } = useFieldArray({
@@ -82,7 +135,9 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
         {fields.map((_field, index) => {
           return (
             <RemovableTask key={index} onRemove={() => remove(index)}>
-              <ActionDetail form={form} name={`${name}.${index}`} />
+              <Suspense fallback={<div>Loading...</div>}>
+                <ActionDetail form={form} name={`${name}.${index}`} />
+              </Suspense>
             </RemovableTask>
           );
         })}
@@ -121,7 +176,10 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
                   id={action.type}
                   textValue={action.label}
                 >
-                  {action.label}
+                  <ListBoxItemIcon>
+                    <action.icon />
+                  </ListBoxItemIcon>
+                  <Text slot="label">{action.label}</Text>
                 </ListBoxItem>
               ))}
             </ListBox>
