@@ -99,7 +99,9 @@ function NewAutomationPage() {
   return (
     <Page>
       <Helmet>
-        <title>New Automation</title>
+        <title>
+          New Automation • {params.accountSlug}/{params.projectName}
+        </title>
       </Helmet>
       <PageContainer>
         <PageHeader>

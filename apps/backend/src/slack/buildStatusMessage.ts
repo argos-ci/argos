@@ -1,6 +1,7 @@
-import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 
 import { AutomationEvent, AutomationEvents } from "@/automation/types/events";
+import { UnretryableError } from "@/job-core";
 
 import { SlackMessageBlock } from ".";
 import { getBuildLabel } from "../build/label";
@@ -13,30 +14,45 @@ import {
   ScreenshotBucket,
 } from "../database/models";
 
+const EventDescriptions: Record<AutomationEvent, string> = {
+  [AutomationEvents.BuildCompleted]: "Build complete",
+  [AutomationEvents.BuildReviewed]: "Build reviewed",
+};
+
 export function getEventDescription(event: AutomationEvent): string {
-  switch (event) {
-    case AutomationEvents.BuildCompleted:
-      return "Build complete";
-    case AutomationEvents.BuildReviewed:
-      return "Build reviewed";
-    default:
-      assertNever(event);
-  }
+  return EventDescriptions[event];
 }
-function getRepositoryUrl(project: Project): string | undefined {
-  const isGitHubProject = Boolean(project.githubRepositoryId);
 
-  if (isGitHubProject) {
-    return project.githubRepository && project.githubRepository.githubAccount
-      ? `https://github.com/${
-          project.githubRepository.githubAccount.login
-        }/${project.githubRepository.name}`
-      : undefined;
+function getRepositoryUrl(project: Project): string | null {
+  if (project.githubRepositoryId) {
+    invariant(
+      project.githubRepository,
+      "githubRepository relation is expected to be loaded",
+      UnretryableError,
+    );
+
+    invariant(
+      project.githubRepository.githubAccount,
+      "githubAccount relation not found",
+      UnretryableError,
+    );
+
+    return `https://github.com/${
+      project.githubRepository.githubAccount.login
+    }/${project.githubRepository.name}`;
   }
 
-  return project.gitlabProject
-    ? `https://gitlab.com/${project.gitlabProject.pathWithNamespace}/-`
-    : undefined;
+  if (project.gitlabProjectId) {
+    invariant(
+      project.gitlabProject,
+      "gitlabProject relation is expected to be loaded",
+      UnretryableError,
+    );
+
+    return `https://gitlab.com/${project.gitlabProject.pathWithNamespace}`;
+  }
+
+  return null;
 }
 
 // Slack blocks can be tests in the playground: https://app.slack.com/block-kit-builder/
@@ -50,8 +66,8 @@ export function getBuildStatusMessage({
 }: {
   build: Build;
   buildUrl: string;
-  pullRequest: GithubPullRequest | null | undefined;
-  compareScreenshotBucket: ScreenshotBucket | undefined;
+  pullRequest: GithubPullRequest | null;
+  compareScreenshotBucket: ScreenshotBucket | null;
   project: Project;
   status: BuildAggregatedStatus;
 }): SlackMessageBlock[] {

@@ -196,7 +196,7 @@ export function Component() {
     <Page>
       <Helmet>
         <title>
-          {params.accountSlug}/{params.projectName} • Automations
+          Automations • {params.accountSlug}/{params.projectName}
         </title>
       </Helmet>
       <PageContent project={project} />

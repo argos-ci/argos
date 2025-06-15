@@ -220,7 +220,8 @@ export function AutomationConditionsStep(props: {
   return (
     <div>
       <StepTitle>
-        <ActionBadge>If</ActionBadge> the following conditions are all met
+        <ActionBadge>If</ActionBadge> the following conditions are{" "}
+        <strong>all</strong> met
       </StepTitle>
 
       <div className="flex flex-col gap-2">

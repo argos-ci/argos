@@ -1,5 +1,6 @@
 import { Children, cloneElement } from "react";
 import { clsx } from "clsx";
+import { LoaderIcon } from "lucide-react";
 import {
   Button as RACButton,
   ButtonProps as RACButtonProps,
@@ -25,7 +26,7 @@ const variantClassNames: Record<ButtonVariant, string> = {
   primary:
     "data-[focus-visible]:ring-primary text-white border-transparent bg-primary-solid data-[hovered]:bg-primary-solid-hover data-[pressed]:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
   secondary:
-    "data-[focus-visible]:ring-default text-default border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover",
+    "data-[focus-visible]:ring-default text-default border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover data-[pressed]:bg-active",
   destructive:
     "data-[focus-visible]:ring-danger text-white border-transparent bg-danger-solid data-[hovered]:bg-danger-solid-hover data-[pressed]:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
   github:
@@ -71,14 +72,36 @@ export interface ButtonProps
     ButtonOptions,
     React.RefAttributes<HTMLButtonElement> {}
 
-export function Button({ className, variant, size, ...props }: ButtonProps) {
+export function Button({
+  className,
+  variant,
+  size,
+  children,
+  ...props
+}: ButtonProps) {
   const buttonProps = getButtonProps({ variant, size });
   return (
     <RACButton
       {...buttonProps}
       className={clsx(buttonProps.className, "cursor-default", className)}
       {...props}
-    />
+    >
+      {(renderProps) => {
+        const childrenRes =
+          typeof children === "function" ? children(renderProps) : children;
+        if (renderProps.isPending) {
+          return (
+            <>
+              <ButtonIcon>
+                <LoaderIcon className="animate-spin duration-[2s]" />
+              </ButtonIcon>
+              {childrenRes}
+            </>
+          );
+        }
+        return childrenRes;
+      }}
+    </RACButton>
   );
 }
 
@@ -120,6 +143,7 @@ export function ButtonIcon({
   return cloneElement(Children.only(children), {
     "aria-hidden": true,
     className: clsx(
+      children.props.className,
       "size-[1em]",
       "group-data-[size=small]/button:my-0.5",
       "group-data-[size=medium]/button:my-[0.1875rem]",

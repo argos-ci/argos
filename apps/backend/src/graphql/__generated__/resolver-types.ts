@@ -654,6 +654,8 @@ export type IMutation = {
   setTeamMemberLevel: ITeamMember;
   /** Change the validationStatus on a build */
   setValidationStatus: IBuild;
+  /** Test automation rule by sending a test event */
+  testAutomation: Scalars['Boolean']['output'];
   /** Transfer Project to another account */
   transferProject: IProject;
   /** Uninstall Slack */
@@ -786,6 +788,11 @@ export type IMutationSetTeamMemberLevelArgs = {
 export type IMutationSetValidationStatusArgs = {
   buildId: Scalars['ID']['input'];
   validationStatus: IValidationStatus;
+};
+
+
+export type IMutationTestAutomationArgs = {
+  input: ITestAutomationRuleInput;
 };
 
 
@@ -1357,6 +1364,12 @@ export type ITestMetricsArgs = {
   period?: InputMaybe<IMetricsPeriod>;
 };
 
+export type ITestAutomationRuleInput = {
+  actions: Array<IAutomationActionInput>;
+  event: Scalars['String']['input'];
+  projectId: Scalars['String']['input'];
+};
+
 export type ITestChange = INode & {
   __typename?: 'TestChange';
   id: Scalars['ID']['output'];
@@ -1755,6 +1768,7 @@ export type IResolversTypes = ResolversObject<{
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
+  TestAutomationRuleInput: ITestAutomationRuleInput;
   TestChange: ResolverTypeWrapper<TestChange>;
   TestChangeStats: ResolverTypeWrapper<Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversTypes['ScreenshotDiff'], lastSeenDiff: IResolversTypes['ScreenshotDiff'] }>;
   TestChangesConnection: ResolverTypeWrapper<Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversTypes['TestChange']> }>;
@@ -1883,6 +1897,7 @@ export type IResolversParentTypes = ResolversObject<{
   TeamMember: TeamUser;
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
+  TestAutomationRuleInput: ITestAutomationRuleInput;
   TestChange: TestChange;
   TestChangeStats: Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversParentTypes['ScreenshotDiff'], lastSeenDiff: IResolversParentTypes['ScreenshotDiff'] };
   TestChangesConnection: Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversParentTypes['TestChange']> };
@@ -2280,6 +2295,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
+  testAutomation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationTestAutomationArgs, 'input'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   uninstallSlack?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUninstallSlackArgs, 'input'>>;
   unlinkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGithubRepositoryArgs, 'input'>>;

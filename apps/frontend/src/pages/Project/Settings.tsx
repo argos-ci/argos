@@ -77,7 +77,7 @@ export function Component() {
     <Page>
       <Helmet>
         <title>
-          {accountSlug}/{projectName} • Settings
+          Settings • {accountSlug}/{projectName}
         </title>
       </Helmet>
       <PageContainer>

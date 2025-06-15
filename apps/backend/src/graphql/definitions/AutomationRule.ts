@@ -1,13 +1,16 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import gqlTag from "graphql-tag";
 import { z } from "zod";
 
+import { testAutomation } from "@/automation";
 import type { AutomationActionType } from "@/automation/actions";
+import { AutomationEventSchema } from "@/automation/types/events";
 import {
   AutomationRule,
   AutomationRuleSchema,
   AutomationRun,
+  BuildReview,
   Project,
   SlackChannel,
   type SlackInstallation,
@@ -20,6 +23,7 @@ import {
 
 import {
   IResolvers,
+  type IAutomationActionInput,
   type ICreateAutomationRuleInput,
   type IUpdateAutomationRuleInput,
 } from "../__generated__/resolver-types";
@@ -99,6 +103,12 @@ export const typeDefs = gql`
     actions: [AutomationActionInput!]!
   }
 
+  input TestAutomationRuleInput {
+    projectId: String!
+    event: String!
+    actions: [AutomationActionInput!]!
+  }
+
   extend type Query {
     "Get automation rule by ID"
     automationRule(id: String!): AutomationRule
@@ -111,20 +121,20 @@ export const typeDefs = gql`
     updateAutomationRule(input: UpdateAutomationRuleInput!): AutomationRule!
     "Deactivate automation"
     deactivateAutomationRule(id: String!): AutomationRule!
+    "Test automation rule by sending a test event"
+    testAutomation(input: TestAutomationRuleInput!): Boolean!
   }
 `;
 
 /**
- * Get automation rule data from input variables.
+ * Extract actions from input variables.
  */
-async function getAutomationRuleDataFromVariables(args: {
+async function getActionsFromInput(args: {
   project: Project;
-  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput;
+  input: Array<IAutomationActionInput>;
 }) {
   const { project } = args;
-  validateAutomationRuleInput(args.input);
-
-  const slackChannelActionPayloads = args.input.actions
+  const slackChannelActionPayloads = args.input
     .filter((a) => a.type === "sendSlackMessage")
     .map((action) =>
       z
@@ -139,7 +149,7 @@ async function getAutomationRuleDataFromVariables(args: {
         .parse(action.payload),
     );
 
-  const then: AutomationActionType[] = [];
+  const actions: AutomationActionType[] = [];
 
   if (slackChannelActionPayloads.length > 0) {
     await project.$fetchGraph("account.slackInstallation");
@@ -170,7 +180,7 @@ async function getAutomationRuleDataFromVariables(args: {
         );
       }
 
-      then.push({
+      actions.push({
         action: "sendSlackMessage",
         actionPayload: {
           channelId: slackChannel.id,
@@ -178,6 +188,25 @@ async function getAutomationRuleDataFromVariables(args: {
       });
     }
   }
+
+  return actions;
+}
+
+/**
+ * Get automation rule data from input variables.
+ */
+async function getAutomationRuleDataFromInput(args: {
+  project: Project;
+  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput;
+}) {
+  const { project } = args;
+
+  validateAutomationRuleInput(args.input);
+
+  const then = await getActionsFromInput({
+    project,
+    input: args.input.actions,
+  });
 
   return AutomationRuleSchema.parse({
     active: true,
@@ -340,9 +369,11 @@ export const resolvers: IResolvers = {
 
       const { projectId } = args.input;
 
-      const project = await Project.query()
-        .findById(projectId)
-        .throwIfNotFound();
+      const project = await Project.query().findById(projectId);
+
+      if (!project) {
+        throw notFound("Project not found.");
+      }
 
       const permissions = await project.$getPermissions(auth.user);
 
@@ -350,7 +381,7 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
 
-      const data = await getAutomationRuleDataFromVariables({
+      const data = await getAutomationRuleDataFromInput({
         project,
         input: args.input,
       });
@@ -381,12 +412,12 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
 
-      const data = await getAutomationRuleDataFromVariables({
+      const data = await getAutomationRuleDataFromInput({
         project: automationRule.project,
         input: args.input,
       });
 
-      return automationRule.$query().patchAndFetch(omitUndefinedValues(data));
+      return automationRule.$query().patchAndFetch(data);
     },
     deactivateAutomationRule: async (_root, { id }, ctx) => {
       const { auth } = ctx;
@@ -396,8 +427,11 @@ export const resolvers: IResolvers = {
 
       const automationRule = await AutomationRule.query()
         .findById(id)
-        .withGraphFetched("project")
-        .throwIfNotFound();
+        .withGraphFetched("project");
+
+      if (!automationRule) {
+        throw notFound("Automation rule not found.");
+      }
 
       invariant(automationRule.project, "Project relation not found");
 
@@ -410,6 +444,84 @@ export const resolvers: IResolvers = {
       }
 
       return automationRule.$query().patchAndFetch({ active: false });
+    },
+    testAutomation: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { projectId } = args.input;
+
+      const project = await Project.query().findById(projectId);
+
+      if (!project) {
+        throw notFound("Project not found.");
+      }
+
+      const permissions = await project.$getPermissions(auth.user);
+
+      if (!permissions.includes("admin")) {
+        throw forbidden();
+      }
+
+      const automationEvent = AutomationEventSchema.parse(args.input.event);
+      const actions = await getActionsFromInput({
+        project,
+        input: args.input.actions,
+      });
+
+      switch (automationEvent) {
+        case "build.completed": {
+          const lastBuild = await project
+            .$relatedQuery("builds")
+            .orderBy("id", "desc")
+            .first();
+
+          if (!lastBuild) {
+            throw notFound(
+              "The project must have at least one build to test this automation.",
+            );
+          }
+
+          await testAutomation({
+            event: automationEvent,
+            actions,
+            payload: {
+              build: lastBuild,
+            },
+          });
+          return true;
+        }
+        case "build.reviewed": {
+          const lastBuildReview = await BuildReview.query()
+            .joinRelated("build")
+            .withGraphFetched("build")
+            .where("build.projectId", project.id)
+            .orderBy("build_reviews.createdAt", "desc")
+            .first();
+
+          if (!lastBuildReview) {
+            throw notFound(
+              "The project must have at least one build review to test this automation.",
+            );
+          }
+
+          invariant(lastBuildReview.build, "build relation not found");
+
+          await testAutomation({
+            event: automationEvent,
+            actions,
+            payload: {
+              build: lastBuildReview.build,
+              buildReview: lastBuildReview,
+            },
+          });
+          return true;
+        }
+        default:
+          assertNever(automationEvent, `Unknown event: ${automationEvent}`);
+      }
     },
   },
 };

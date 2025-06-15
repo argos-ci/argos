@@ -634,6 +634,9 @@ type Mutation {
   """Change the validationStatus on a build"""
   setValidationStatus(buildId: ID!, validationStatus: ValidationStatus!): Build!
 
+  """Test automation rule by sending a test event"""
+  testAutomation(input: TestAutomationRuleInput!): Boolean!
+
   """Transfer Project to another account"""
   transferProject(input: TransferProjectInput!): Project!
 
@@ -1070,6 +1073,12 @@ type Test implements Node {
   metrics(period: MetricsPeriod): TestMetrics!
   name: String!
   status: TestStatus!
+}
+
+input TestAutomationRuleInput {
+  actions: [AutomationActionInput!]!
+  event: String!
+  projectId: String!
 }
 
 type TestChange implements Node {

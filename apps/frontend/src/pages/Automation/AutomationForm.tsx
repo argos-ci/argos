@@ -1,11 +1,9 @@
-import { assertNever } from "@argos/util/assertNever";
 import { Trash2Icon } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
 
 import { BuildType } from "@/gql/graphql";
-import { Badge, type BadgeProps } from "@/ui/Badge";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
@@ -80,11 +78,9 @@ export type AutomationForm = UseFormReturn<
   AutomationTransformedValues
 >;
 
-export const ActionBadge = twc(
-  Badge,
-)<BadgeProps>`bg-primary-active text-primary w-13 inline-flex justify-center uppercase`;
+export const ActionBadge = twc.div`bg-primary-active text-primary w-16 inline-flex justify-center uppercase mr-0.5 py-0.5 font-medium text-sm rounded`;
 
-export const StepTitle = twc.div`flex items-center gap-2 mb-2`;
+export const StepTitle = twc.div`mb-3`;
 
 export function RemovableTask(props: {
   children: React.ReactNode;
@@ -131,20 +127,6 @@ export function formDataToVariables(data: AutomationTransformedValues) {
         }),
       )
       .parse(data.conditions),
-    actions: data.actions.map(({ type, payload }) => {
-      switch (type) {
-        case "sendSlackMessage":
-          return {
-            type: type,
-            payload: {
-              name: payload.name,
-              slackId: payload.slackId,
-            },
-          };
-
-        default:
-          assertNever(type, `Unknown action type: ${type}`);
-      }
-    }),
+    actions: data.actions,
   };
 }

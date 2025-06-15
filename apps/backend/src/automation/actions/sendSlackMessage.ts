@@ -3,7 +3,15 @@ import { JSONSchema } from "objection";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
-import { Build, SlackChannel } from "@/database/models/index.js";
+import {
+  Build,
+  SlackChannel,
+  type GithubPullRequest,
+  type Project,
+  type ScreenshotBucket,
+  type SlackInstallation,
+} from "@/database/models/index.js";
+import { UnretryableError } from "@/job-core";
 import { postMessageToSlackChannel } from "@/slack";
 import {
   getBuildStatusMessage,
@@ -15,24 +23,20 @@ import {
   AutomationActionContext,
   defineAutomationAction,
 } from "../defineAutomationAction";
+import type { AutomationEvent } from "../types/events";
 
 const payloadSchema = z.object({
   channelId: z.string().min(1, "Channel ID is required"),
 });
-type payload = z.infer<typeof payloadSchema>;
+type Payload = z.infer<typeof payloadSchema>;
 
 const payloadJsonSchema = zodToJsonSchema(payloadSchema, {
   removeAdditionalStrategy: "strict",
 }) as JSONSchema;
 
-export async function sendSlackMessage(
-  props: payload & { ctx: AutomationActionContext },
-): Promise<void> {
-  const { channelId, ctx } = props;
-  const { automationActionRun } = ctx;
-
-  const [richActionRun, slackChannel] = await Promise.all([
-    automationActionRun.$query().withGraphFetched(`
+async function expandContext(context: AutomationActionContext) {
+  const { automationActionRun } = context;
+  const richActionRun = await automationActionRun.$clone().$fetchGraph(`
     [
       automationRun.[
         build.[
@@ -52,58 +56,81 @@ export async function sendSlackMessage(
         automationRule
       ],
     ]
-  `),
-    SlackChannel.query()
-      .findById(channelId)
-      .withGraphFetched("slackInstallation"),
-  ]);
+  `);
 
-  if (!richActionRun) {
-    throw new AutomationActionFailureError(
-      `AutomationActionRun not found with id: '${automationActionRun.id}'`,
-    );
-  }
-  if (!richActionRun) {
-    throw new AutomationActionFailureError(
-      `AutomationRun related to automationActionRun ${automationActionRun.id} not found`,
-    );
-  }
-  if (!richActionRun.automationRun) {
-    throw new AutomationActionFailureError(
-      `AutomationRule related to automationActionRun ${automationActionRun.id} not found`,
-    );
-  }
-  if (!richActionRun.automationRun.build) {
-    throw new AutomationActionFailureError(
-      `Build related to automationActionRun ${automationActionRun.id} not found`,
-    );
-  }
-  if (!richActionRun.automationRun.build.project) {
-    throw new AutomationActionFailureError(
-      `Project related to automationActionRun ${automationActionRun.id} not found`,
-    );
-  }
-  if (!richActionRun.automationRun.event) {
-    throw new AutomationActionFailureError(
-      `AutomationEvent related to automationActionRun ${automationActionRun.id} not found`,
-    );
-  }
-  if (!slackChannel) {
-    throw new AutomationActionFailureError(
-      `Slack channel removed ${channelId}`,
-    );
-  }
-  if (!slackChannel.slackInstallation) {
-    throw new AutomationActionFailureError(
-      `Slack installation not found for slack channel id ${slackChannel.id}`,
-    );
-  }
+  invariant(
+    richActionRun.automationRun,
+    "automationRun relation not found",
+    UnretryableError,
+  );
+
+  invariant(
+    richActionRun.automationRun.build,
+    "build relation not found",
+    UnretryableError,
+  );
+
+  invariant(
+    richActionRun.automationRun.build.project,
+    "project relation not found",
+    UnretryableError,
+  );
 
   const {
     build,
     event,
     build: { project, compareScreenshotBucket, pullRequest },
   } = richActionRun.automationRun;
+
+  return {
+    build,
+    event,
+    project,
+    compareScreenshotBucket: compareScreenshotBucket ?? null,
+    pullRequest: pullRequest ?? null,
+  };
+}
+
+async function expandPayload(payload: Payload) {
+  const { channelId } = payload;
+
+  const slackChannel = await SlackChannel.query()
+    .findById(channelId)
+    .withGraphFetched("slackInstallation");
+
+  if (!slackChannel) {
+    throw new AutomationActionFailureError(
+      `Slack channel removed ${channelId}`,
+    );
+  }
+
+  invariant(
+    slackChannel.slackInstallation,
+    "slackInstallation relation not found",
+    UnretryableError,
+  );
+
+  return { slackChannel, slackInstallation: slackChannel.slackInstallation };
+}
+
+async function sendSlackMessage(args: {
+  build: Build;
+  project: Project;
+  compareScreenshotBucket: ScreenshotBucket | null;
+  pullRequest: GithubPullRequest | null;
+  slackChannel: SlackChannel;
+  slackInstallation: SlackInstallation;
+  event: AutomationEvent;
+}): Promise<void> {
+  const {
+    build,
+    project,
+    compareScreenshotBucket,
+    pullRequest,
+    slackChannel,
+    slackInstallation,
+    event,
+  } = args;
 
   const [buildUrl, [status]] = await Promise.all([
     build.getUrl(),
@@ -122,7 +149,7 @@ export async function sendSlackMessage(
   });
 
   await postMessageToSlackChannel({
-    installation: slackChannel.slackInstallation,
+    installation: slackInstallation,
     channel: slackChannel.slackId,
     text: getEventDescription(event),
     blocks,
@@ -133,5 +160,49 @@ export const automationAction = defineAutomationAction({
   name: "sendSlackMessage",
   payloadSchema,
   payloadJsonSchema,
-  process: sendSlackMessage,
+  process: async ({ payload, ctx }) => {
+    const [expandedContext, expandedPayload] = await Promise.all([
+      expandContext(ctx),
+      expandPayload(payload),
+    ]);
+
+    await sendSlackMessage({
+      ...expandedContext,
+      ...expandedPayload,
+    });
+  },
+  test: async ({ payload, event, eventPayload }) => {
+    const expandedPayload = await expandPayload(payload);
+
+    const build = "build" in eventPayload ? eventPayload.build : null;
+    invariant(build, "Build is required for sendSlackMessage action");
+
+    const richBuild = await build.$fetchGraph(`
+      [
+        compareScreenshotBucket,
+        project.[
+          githubRepository.[
+            githubAccount
+          ]
+          gitlabProject
+        ],
+        pullRequest.[
+          githubRepository.[
+            githubAccount
+          ]
+        ]
+    ]
+    `);
+
+    invariant(richBuild.project, "Project relation not found");
+
+    await sendSlackMessage({
+      ...expandedPayload,
+      build,
+      event,
+      project: richBuild.project,
+      compareScreenshotBucket: richBuild.compareScreenshotBucket ?? null,
+      pullRequest: richBuild.pullRequest ?? null,
+    });
+  },
 });

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { factory, setupDatabase } from "@/database/testing";
 import { postMessageToSlackChannel } from "@/slack";
 
-import { sendSlackMessage } from "./sendSlackMessage";
+import { automationAction } from "./sendSlackMessage";
 
 vi.mock("@/slack", () => ({
   __esModule: true,
@@ -33,8 +33,8 @@ describe("sendSlackMessage", () => {
       automationRunId: automationRun.id,
       actionPayload: { channelId: slackChannel.id },
     });
-    await sendSlackMessage({
-      channelId: slackChannel.id,
+    await automationAction.process({
+      payload: { channelId: slackChannel.id },
       ctx: { automationActionRun },
     });
     expect(mockPostMessageToSlackChannel).toHaveBeenCalledWith(
@@ -59,8 +59,8 @@ describe("sendSlackMessage", () => {
     });
 
     await expect(
-      sendSlackMessage({
-        channelId: "1245",
+      automationAction.process({
+        payload: { channelId: "1245" },
         ctx: { automationActionRun },
       }),
     ).rejects.toThrow("Slack channel removed");

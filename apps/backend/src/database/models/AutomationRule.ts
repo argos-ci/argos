@@ -13,7 +13,7 @@ import {
 } from "@/automation/types/conditions.js";
 import {
   AutomationEvent,
-  AutomationEvents,
+  AutomationEventSchema,
 } from "@/automation/types/events.js";
 
 import { Model } from "../util/model.js";
@@ -31,7 +31,7 @@ export const AutomationRuleSchema = z.object({
   active: z.boolean(),
   name: z.string().min(3).max(100),
   projectId: z.string(),
-  on: z.array(z.nativeEnum(AutomationEvents)),
+  on: z.array(AutomationEventSchema),
   if: z.object({
     all: z.array(AutomationConditionSchema),
   }),
