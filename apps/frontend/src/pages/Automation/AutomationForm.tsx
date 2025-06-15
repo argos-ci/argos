@@ -4,7 +4,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
 
-import { BuildStatus, BuildType } from "@/gql/graphql";
+import { BuildType } from "@/gql/graphql";
 import { Badge, type BadgeProps } from "@/ui/Badge";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
@@ -13,7 +13,7 @@ import { Tooltip } from "@/ui/Tooltip";
 export const BuildConclusionConditionSchema = z.object({
   type: z.literal("build-conclusion"),
   value: z
-    .enum([BuildStatus.NoChanges, BuildStatus.ChangesDetected])
+    .enum(["no-changes", "changes-detected"])
     .nullable()
     .optional()
     .refine((val) => val !== null, { message: "Required" }),
@@ -64,9 +64,9 @@ export const AutomationFieldValuesSchema = z.object({
     .array(z.enum(["build.completed", "build.reviewed"]))
     .min(1, "At least one event is required"),
   conditions: z.array(BuildConditionSchema),
-  actions: z.array(AutomationActionSchema),
-  // @TODO enable it back before pushing
-  // .min(1, "At least one action is required"),
+  actions: z
+    .array(AutomationActionSchema)
+    .min(1, "At least one action is required"),
 });
 
 export type AutomationFieldValues = z.input<typeof AutomationFieldValuesSchema>;

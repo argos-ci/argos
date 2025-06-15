@@ -166,7 +166,7 @@ async function getAutomationRuleDataFromVariables(args: {
 
       if (!slackChannel) {
         throw badUserInput(
-          `Slack channel "${payload.name}" not found in the installation.`,
+          `Slack channel "${payload.name}" not found in ${slackInstallation.teamName} workspace.`,
         );
       }
 

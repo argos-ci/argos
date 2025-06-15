@@ -25,6 +25,10 @@ function BuildConclusionCondition(props: {
 }) {
   const { form, name } = props;
   const id = useId();
+  const conclusions = [
+    { status: BuildStatus.NoChanges, value: "no-changes" },
+    { status: BuildStatus.ChangesDetected, value: "changes-detected" },
+  ];
 
   return (
     <div className="flex items-center gap-2">
@@ -43,15 +47,13 @@ function BuildConclusionCondition(props: {
         <FieldError />
         <Popover>
           <ListBox>
-            {(
-              [BuildStatus.NoChanges, BuildStatus.ChangesDetected] as const
-            ).map((status) => {
+            {conclusions.map(({ status, value }) => {
               const descriptor = buildStatusDescriptors[status];
               const Icon = descriptor.icon;
               return (
                 <ListBoxItem
-                  key={status}
-                  id={status}
+                  key={value}
+                  id={value}
                   textValue={descriptor.label}
                   className="text-sm"
                 >
