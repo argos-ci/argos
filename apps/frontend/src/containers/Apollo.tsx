@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   ApolloClient,
   ApolloLink,
@@ -91,4 +91,37 @@ export function useSafeQuery<
     throw error;
   }
   return { loading, data, ...others };
+}
+
+/**
+ * A hook that refetches data when the document becomes visible or the window gains focus.
+ */
+export function useRefetchWhenActive(props: {
+  refetch: () => void;
+  skip?: boolean;
+}) {
+  const { refetch, skip = false } = props;
+  useEffect(() => {
+    if (skip) {
+      return;
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refetch();
+      }
+    }
+
+    function handleFocus() {
+      refetch();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [refetch, skip]);
 }

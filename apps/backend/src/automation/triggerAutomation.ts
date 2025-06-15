@@ -1,7 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import type { Transaction } from "objection";
 
+import { transaction } from "@/database";
 import {
   AutomationActionRun,
   AutomationRule,
@@ -40,7 +40,8 @@ function getBuildFromPayload(
     }
 
     default:
-      throw new Error(
+      assertNever(
+        event,
         `[AutomationEngine] Unsupported event type for build extraction: ${event}`,
       );
   }
@@ -132,78 +133,74 @@ export type TriggerAutomationProps<Event extends AutomationEvent> = {
   projectId: string;
   event: Event;
   payload: AutomationEventPayloadMap[Event];
-  trx?: Transaction;
 };
 
 /**
  * Triggers automation rules for a given project and event.
  */
-export async function triggerAutomation<Event extends AutomationEvent>({
-  projectId,
-  event,
-  payload,
-  trx,
-}: TriggerAutomationProps<Event>): Promise<AutomationActionRun[]> {
-  const automationRules = await AutomationRule.query(trx)
+export async function triggerAutomation<Event extends AutomationEvent>(
+  args: TriggerAutomationProps<Event>,
+): Promise<AutomationActionRun[]> {
+  const { projectId, event, payload } = args;
+  const automationRules = await AutomationRule.query()
     .where("projectId", projectId)
     .where("active", true)
     .whereRaw(`"on" @> ?::jsonb`, [JSON.stringify([event])]);
 
-  const automationActionRuns = await Promise.all(
-    automationRules.map(async (automationRule) => {
-      const conditionsMet = evaluateAllCondition(
-        automationRule.if,
-        event,
-        payload,
-      );
-      if (!conditionsMet) {
-        return [];
-      }
+  return transaction(async (trx) => {
+    const automationActionRuns = await Promise.all(
+      automationRules.map(async (automationRule) => {
+        const conditionsMet = evaluateAllCondition(
+          automationRule.if,
+          event,
+          payload,
+        );
+        if (!conditionsMet) {
+          return [];
+        }
 
-      const build = getBuildFromPayload(event, payload);
-      invariant(
-        build,
-        `[AutomationEngine] Build not found in payload for event: ${event}`,
-      );
+        const automationRun = await AutomationRun.query(trx).insertAndFetch({
+          automationRuleId: automationRule.id,
+          event: event,
+          buildId: "build" in payload ? payload.build.id : null,
+          buildReviewId:
+            "buildReview" in payload ? payload.buildReview.id : null,
+          jobStatus: "pending",
+        });
 
-      const automationRun = await AutomationRun.query(trx).insertAndFetch({
-        automationRuleId: automationRule.id,
-        event: event,
-        buildId: build.id,
-        buildReviewId: "buildReview" in payload ? payload.buildReview.id : null,
-        jobStatus: "pending",
-      });
+        const actionRuns = await AutomationActionRun.query(trx).insertAndFetch(
+          automationRule.then.map((ruleAction) => {
+            const { action: actionName, actionPayload: payload } = ruleAction;
+            const actionDefinition = getAutomationAction(actionName);
 
-      return Promise.all(
-        automationRule.then.map((ruleAction) => {
-          const { action: actionName, actionPayload: payload } = ruleAction;
-          const actionDefinition = getAutomationAction(actionName);
+            const {
+              success: parsingSuccess,
+              error: parsingError,
+              data: validatedPayload,
+            } = actionDefinition.payloadSchema.safeParse(payload);
 
-          const {
-            success: parsingSuccess,
-            error: parsingError,
-            data: validatedPayload,
-          } = actionDefinition.payloadSchema.safeParse(payload);
+            invariant(
+              parsingSuccess,
+              `Invalid payload for action ${actionName}: ${parsingError}`,
+            );
 
-          invariant(
-            parsingSuccess,
-            `Invalid payload for action ${actionName}: ${parsingError}`,
-          );
+            return {
+              conclusion: null,
+              failureReason: null,
+              automationRunId: automationRun.id,
+              action: actionName,
+              actionPayload: validatedPayload,
+              processedAt: null,
+              completedAt: null,
+              jobStatus: "pending" as const,
+            };
+          }),
+        );
 
-          return AutomationActionRun.query(trx).insertAndFetch({
-            conclusion: null,
-            failureReason: null,
-            automationRunId: automationRun.id,
-            action: actionName,
-            actionPayload: validatedPayload,
-            processedAt: null,
-            completedAt: null,
-            jobStatus: "pending",
-          });
-        }),
-      );
-    }),
-  );
+        return actionRuns;
+      }),
+    );
 
-  return automationActionRuns.flat();
+    return automationActionRuns.flat();
+  });
 }

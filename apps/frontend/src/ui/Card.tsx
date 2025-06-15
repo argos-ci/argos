@@ -11,11 +11,11 @@ export function Card(
     <div
       {...rest}
       className={clsx(
-        rest.className,
         "bg-app border-(--card-border) w-full overflow-hidden rounded-sm border",
         intent === "danger"
           ? "[--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
           : "[--card-border:var(--border-color-default)]",
+        rest.className,
       )}
     />
   );

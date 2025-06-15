@@ -1,15 +1,19 @@
+import type { JSONSchema } from "objection";
+import { z } from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
+
 import {
-  AUTOMATION_ACTIONS,
+  AutomationActionSchema,
   AutomationActionsName,
   GetActionPayload,
 } from "@/automation/actions/index.js";
 import {
   AllCondition,
-  AutomationConditionJsonSchema,
+  AutomationConditionSchema,
 } from "@/automation/types/conditions.js";
 import {
   AutomationEvent,
-  AutomationEvents,
+  AutomationEventSchema,
 } from "@/automation/types/events.js";
 
 import { Model } from "../util/model.js";
@@ -23,6 +27,17 @@ type AutomationThen = {
   };
 }[AutomationActionsName];
 
+export const AutomationRuleSchema = z.object({
+  active: z.boolean(),
+  name: z.string().min(3).max(100),
+  projectId: z.string(),
+  on: z.array(AutomationEventSchema),
+  if: z.object({
+    all: z.array(AutomationConditionSchema),
+  }),
+  then: z.array(AutomationActionSchema),
+});
+
 export class AutomationRule extends Model {
   static override tableName = "automation_rules";
 
@@ -33,46 +48,9 @@ export class AutomationRule extends Model {
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
-      {
-        type: "object",
-        required: ["active", "name", "projectId", "on", "if", "then"],
-        properties: {
-          active: { type: "boolean" },
-          name: { type: "string" },
-          projectId: { type: "string" },
-          on: {
-            type: "array",
-            items: {
-              type: "string",
-              enum: Object.values(AutomationEvents),
-            },
-          },
-          if: {
-            type: "object",
-            required: ["all"],
-            properties: {
-              all: {
-                type: "array",
-                items: AutomationConditionJsonSchema,
-              },
-            },
-          },
-          then: {
-            type: "array",
-            items: {
-              type: "object",
-              oneOf: AUTOMATION_ACTIONS.map((action) => ({
-                type: "object",
-                required: ["action", "actionPayload"],
-                properties: {
-                  action: { const: action.name },
-                  actionPayload: action.payloadJsonSchema,
-                },
-              })),
-            },
-          },
-        },
-      },
+      zodToJsonSchema(AutomationRuleSchema, {
+        removeAdditionalStrategy: "strict",
+      }) as JSONSchema,
     ],
   };
 

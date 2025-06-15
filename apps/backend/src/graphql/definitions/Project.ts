@@ -33,7 +33,6 @@ import {
 import { deleteProject, getAdminProject } from "../services/project.js";
 import { parseTestId } from "../services/test.js";
 import { badUserInput, forbidden, unauthenticated } from "../util.js";
-import { toGraphQLAutomationRule } from "./AutomationRule.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -642,22 +641,18 @@ export const resolvers: IResolvers = {
     },
     automationRules: async (project, args, ctx) => {
       const { first, after } = args;
+
       if (!ctx.auth) {
         throw unauthenticated();
       }
 
-      const range = await AutomationRule.query()
+      const result = await AutomationRule.query()
         .where({ projectId: project.id, active: true })
         .orderBy("createdAt", "desc")
         .range(after, after + first - 1);
 
-      const automationRules = await Promise.all(
-        range.results.map(async (automationRule) =>
-          toGraphQLAutomationRule(automationRule),
-        ),
-      );
       return paginateResult({
-        result: { ...range, results: automationRules },
+        result,
         first,
         after,
       });

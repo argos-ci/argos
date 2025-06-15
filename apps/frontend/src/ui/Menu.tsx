@@ -90,7 +90,10 @@ export function MenuItem(
 }
 
 export function MenuItemIcon(props: {
-  children: React.ReactElement<{ className?: string }>;
+  children: React.ReactElement<{
+    className?: string;
+    "aria-hidden"?: React.AriaAttributes["aria-hidden"];
+  }>;
   className?: string;
   position?: "left" | "right";
 }) {
@@ -107,6 +110,7 @@ export function MenuItemIcon(props: {
       )}
     >
       {cloneElement(child, {
+        "aria-hidden": true,
         className: clsx("size-[1em] mx-auto", child.props.className),
       })}
     </div>

@@ -119,7 +119,7 @@ export function Component() {
   return (
     <Page>
       <Helmet>
-        <title>{accountSlug} • Analytics</title>
+        <title>Analytics • {accountSlug}</title>
       </Helmet>
       <PageContainer>
         <PageHeader>

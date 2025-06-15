@@ -29,6 +29,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
+import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useAccountContext } from ".";
 
@@ -109,6 +110,7 @@ function PageContent(props: { accountSlug: string }) {
   } = useSuspenseQuery(AccountQuery, {
     variables: { slug: props.accountSlug },
   });
+  useScrollToHash();
 
   if (!account) {
     return <NotFound />;

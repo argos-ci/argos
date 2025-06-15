@@ -1,9 +1,10 @@
+import { invariant } from "@argos/util/invariant";
+
 import { AutomationActionRun } from "@/database/models/index.js";
-import { createModelJob } from "@/job-core/index.js";
+import { createModelJob, UnretryableError } from "@/job-core/index.js";
 
 import { getAutomationAction } from "./actions";
 import { AutomationActionFailureError } from "./automationActionError";
-import { AutomationActionContext } from "./defineAutomationAction";
 
 export async function processAutomationActionRun(
   automationActionRun: AutomationActionRun,
@@ -20,16 +21,18 @@ export async function processAutomationActionRun(
     automationActionRun.actionPayload,
   );
 
-  if (!parsingSuccess) {
-    throw new AutomationActionFailureError(
-      `Invalid payload for action ${automationActionRun.action}: ${parsingError}`,
-    );
-  }
+  invariant(
+    parsingSuccess,
+    `Invalid payload for action ${automationActionRun.action}: ${parsingError}`,
+    UnretryableError,
+  );
 
   // Process the action and update the conclusion status
-  const jobContext: AutomationActionContext = { automationActionRun };
   try {
-    await actionDefinition.process({ ...validatedPayload, ctx: jobContext });
+    await actionDefinition.process({
+      payload: validatedPayload,
+      ctx: { automationActionRun },
+    });
     await AutomationActionRun.query().findById(automationActionRun.id).patch({
       jobStatus: "complete",
       completedAt: new Date().toISOString(),

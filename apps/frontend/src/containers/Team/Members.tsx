@@ -1,10 +1,9 @@
 import { memo, useId, useState } from "react";
-import { Reference, useMutation } from "@apollo/client";
+import { Reference, useMutation, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -26,8 +25,8 @@ import {
   DialogTrigger,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { getGraphQLErrorMessage } from "@/ui/Form";
-import { FormError } from "@/ui/FormError";
 import { List, ListRow, ListTitle } from "@/ui/List";
 import {
   ListBox,
@@ -180,7 +179,9 @@ const LeaveTeamDialog = memo(
           <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>
         <DialogFooter>
-          {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
+          {error && (
+            <ErrorMessage>{getGraphQLErrorMessage(error)}</ErrorMessage>
+          )}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
             isDisabled={loading}
@@ -262,7 +263,7 @@ const RemoveFromTeamDialog = memo(
         </DialogBody>
         <DialogFooter>
           {error && (
-            <FormError>Something went wrong. Please try again.</FormError>
+            <ErrorMessage>Something went wrong. Please try again.</ErrorMessage>
           )}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
@@ -411,7 +412,7 @@ function TeamMembersList(props: {
   hasFineGrainedAccessControl: boolean;
 }) {
   const authPayload = useAssertAuthTokenPayload();
-  const { data, fetchMore } = useSafeQuery(TeamMembersQuery, {
+  const { data, fetchMore } = useSuspenseQuery(TeamMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,
@@ -565,7 +566,7 @@ interface TeamGithubMembersFetchListProps extends TeamGithubMembersListProps {
 
 function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
   const authPayload = useAssertAuthTokenPayload();
-  const { data, fetchMore } = useSafeQuery(TeamGithubMembersQuery, {
+  const { data, fetchMore } = useSuspenseQuery(TeamGithubMembersQuery, {
     variables: {
       id: props.teamId,
       after: 0,

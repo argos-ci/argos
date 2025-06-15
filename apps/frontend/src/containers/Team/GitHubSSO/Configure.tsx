@@ -23,8 +23,8 @@ import {
   DialogTrigger,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
-import { FormError } from "@/ui/FormError";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { Modal } from "@/ui/Modal";
@@ -118,9 +118,9 @@ function GitHubInstallationsSelectControl(props: { teamAccountId: string }) {
         accountId={props.teamAccountId}
       />
       {controller.fieldState.error?.message && (
-        <FormError className="mt-2">
+        <ErrorMessage className="mt-2">
           {controller.fieldState.error.message}
-        </FormError>
+        </ErrorMessage>
       )}
     </div>
   );
@@ -209,7 +209,7 @@ function ActiveConfigureSSOForm(props: {
           )}
         </DialogBody>
         <DialogFooter>
-          <FormRootError />
+          <FormRootError form={form} />
           <DialogDismiss>Cancel</DialogDismiss>
           <FormSubmit>{props.priced ? "Enable and Pay" : "Enable"}</FormSubmit>
         </DialogFooter>

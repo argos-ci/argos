@@ -1,36 +1,41 @@
-import { useApolloClient, useSuspenseQuery } from "@apollo/client";
-import { assertNever } from "@argos/util/assertNever";
+import { useEffect, useRef, useState } from "react";
+import { useApolloClient, useMutation, useSuspenseQuery } from "@apollo/client";
+import { invariant } from "@argos/util/invariant";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CheckIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { SettingsLayout } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
-import {
-  AutomationActionType,
-  AutomationConditionType,
-  AutomationEvent,
-  ProjectPermission,
-} from "@/gql/graphql";
-import { Button, LinkButton } from "@/ui/Button";
+import { ProjectPermission } from "@/gql/graphql";
+import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
+import { Form } from "@/ui/Form";
+import { FormRootError } from "@/ui/FormRootError";
 import {
   Page,
   PageContainer,
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { entries } from "@/util/entries";
+import { Tooltip } from "@/ui/Tooltip";
 
-import { Form } from "../../ui/Form";
-import { Tooltip } from "../../ui/Tooltip";
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
-import { AutomationNameField, FormErrors } from "./AutomationForm";
+import { getProjectURL, useProjectParams } from "../Project/ProjectParams";
+import {
+  AutomationFieldValuesSchema,
+  AutomationNameField,
+  formDataToVariables,
+  type AutomationTransformedValues,
+} from "./AutomationForm";
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
+import { useAutomationParams } from "./AutomationParams";
 
 const AutomationRuleQuery = graphql(`
   query ProjectEditAutomation_automationRule(
@@ -59,13 +64,7 @@ const AutomationRuleQuery = graphql(`
       }
       then {
         action
-        actionPayload {
-          ... on AutomationActionSendSlackMessagePayload {
-            channelId
-            slackId
-            name
-          }
-        }
+        actionPayload
       }
     }
   }
@@ -75,7 +74,7 @@ const UpdateAutomationMutation = graphql(`
   mutation EditAutomation_updateAutomation(
     $id: String!
     $name: String!
-    $events: [AutomationEvent!]!
+    $events: [String!]!
     $conditions: [AutomationConditionInput!]!
     $actions: [AutomationActionInput!]!
   ) {
@@ -99,211 +98,201 @@ const UpdateAutomationMutation = graphql(`
       }
       then {
         action
-        actionPayload {
-          ... on AutomationActionSendSlackMessagePayload {
-            channelId
-            slackId
-            name
-          }
-        }
+        actionPayload
       }
     }
   }
 `);
 
-type ProjectRuleDocument = DocumentType<typeof AutomationRuleQuery>;
-type Project = NonNullable<ProjectRuleDocument["project"]>;
-type AutomationRuleDocument = DocumentType<typeof AutomationRuleQuery>;
-type AutomationRule = NonNullable<AutomationRuleDocument["automationRule"]>;
+const TestAutomationMutation = graphql(`
+  mutation EditAutomation_testAutomation(
+    $event: String!
+    $projectId: String!
+    $actions: [AutomationActionInput!]!
+  ) {
+    testAutomation(
+      input: { event: $event, projectId: $projectId, actions: $actions }
+    )
+  }
+`);
 
-export type EditAutomationInputs = {
-  name: string;
-  events: AutomationEvent[];
-  conditions: Record<AutomationConditionType, string>;
-  actions: { type: AutomationActionType; payload: any }[];
-};
+type AllDocument = DocumentType<typeof AutomationRuleQuery>;
+type Project = NonNullable<AllDocument["project"]>;
+type AutomationRule = NonNullable<AllDocument["automationRule"]>;
 
-function EditAutomationForm({
-  automationRule,
-  project,
-  accountSlug,
-  projectName,
-  hasEditPermission,
-}: {
+function EditAutomationForm(props: {
   automationRule: AutomationRule;
   project: Project;
-  accountSlug: string;
-  projectName: string;
   hasEditPermission: boolean;
 }) {
+  const { automationRule, project, hasEditPermission } = props;
+  const params = useProjectParams();
+  invariant(params, "Project params are required");
   const client = useApolloClient();
   const navigate = useNavigate();
 
-  const form = useForm<EditAutomationInputs>({
-    defaultValues: {
-      name: automationRule?.name || "",
-      events: automationRule?.on || [],
-      conditions:
-        automationRule?.if?.all?.reduce(
-          (acc, c) => {
-            acc[c.type as AutomationConditionType] = c.value;
-            return acc;
-          },
-          {} as Record<AutomationConditionType, string>,
-        ) || {},
-      actions:
-        automationRule?.then?.map((a) => ({
-          type: a.action,
-          payload: a.actionPayload,
-        })) || [],
-    },
+  const form = useForm({
+    resolver: zodResolver(AutomationFieldValuesSchema),
+    defaultValues: AutomationFieldValuesSchema.parse({
+      name: automationRule.name,
+      events: automationRule.on,
+      conditions: automationRule.if.all,
+      actions: automationRule.then.map((action) => ({
+        type: action.action,
+        payload: action.actionPayload,
+      })),
+    }),
   });
 
-  const onSubmit: SubmitHandler<EditAutomationInputs> = async (data) => {
+  const [sent, setSent] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [test, testResult] = useMutation(TestAutomationMutation, {
+    onCompleted: (data) => {
+      if (data) {
+        setSent(true);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setSent(false), 2000);
+      }
+    },
+  });
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (
+    data,
+    event,
+  ) => {
     if (!hasEditPermission) {
       throw new Error("You do not have permission to edit this automation.");
     }
+
+    if (
+      event?.nativeEvent &&
+      "submitter" in event.nativeEvent &&
+      event.nativeEvent.submitter &&
+      typeof event.nativeEvent.submitter === "object" &&
+      "name" in event.nativeEvent.submitter &&
+      event.nativeEvent.submitter.name === "send-test"
+    ) {
+      const eventType = data.events[0];
+      invariant(eventType, "At least one event is required");
+      await test({
+        variables: {
+          event: eventType,
+          projectId: project.id,
+          actions: data.actions,
+        },
+      });
+      return;
+    }
+
     await client.mutate({
       mutation: UpdateAutomationMutation,
       variables: {
         id: automationRule.id,
-        name: data.name,
-        events: data.events,
-        conditions: entries(data.conditions).map(([type, value]) => ({
-          type,
-          value,
-        })),
-        actions: data.actions.map(({ type, payload }) => {
-          switch (type) {
-            case AutomationActionType.SendSlackMessage:
-              return {
-                type: type,
-                payload: {
-                  channelId: payload.channelId,
-                  name: payload.name,
-                  slackId: payload.slackId,
-                },
-              };
-
-            default:
-              assertNever(type, `Unknown action type: ${type}`);
-          }
-        }),
+        ...formDataToVariables(data),
       },
     });
-    navigate(`/${accountSlug}/${projectName}/automations`, {
+    navigate(`${getProjectURL(params)}/automations`, {
       replace: true,
     });
   };
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   return (
-    <Page>
-      <Helmet>
-        <title>Edit Automation</title>
-      </Helmet>
-      <PageContainer>
-        <PageHeader>
-          <PageHeaderContent>
-            <Heading>Edit Automation Rule</Heading>
-            <Text slot="headline">Edit this automation for the project.</Text>
-          </PageHeaderContent>
-        </PageHeader>
-        <SettingsLayout>
-          <Card>
-            <FormProvider {...form}>
-              <Form onSubmit={onSubmit}>
-                <CardBody>
-                  <div className="flex flex-col gap-6">
-                    <AutomationNameField form={form} name="name" />
-                    <AutomationWhenStep form={form} />
-                    <AutomationConditionsStep
-                      form={form}
-                      projectBuildNames={project.buildNames}
-                    />
-                    <AutomationActionsStep form={form} />
-                    <FormErrors form={form} />
-                  </div>
-                </CardBody>
+    <FormProvider {...form}>
+      <Form ref={formRef} onSubmit={onSubmit}>
+        <CardBody>
+          <div className="flex flex-col gap-6">
+            <AutomationNameField form={form} />
+            <AutomationWhenStep form={form} />
+            <AutomationConditionsStep
+              form={form}
+              projectBuildNames={project.buildNames}
+            />
+            <AutomationActionsStep form={form} />
+            <FormRootError form={form} />
+          </div>
+        </CardBody>
 
-                <CardFooter>
-                  <div className="flex justify-end gap-2">
-                    <LinkButton href={`../automations`} variant="secondary">
-                      {hasEditPermission ? "Cancel" : "Back"}
-                    </LinkButton>
+        <CardFooter>
+          <div className="flex justify-end gap-2">
+            <LinkButton
+              href={`${getProjectURL(params)}/automations`}
+              variant="secondary"
+            >
+              {hasEditPermission ? "Cancel" : "Back"}
+            </LinkButton>
 
-                    <Tooltip
-                      content={
-                        hasEditPermission
-                          ? ""
-                          : "You don't have permission to edit this automation."
-                      }
-                    >
-                      <div className="flex">
-                        <Button
-                          type="submit"
-                          isDisabled={
-                            !hasEditPermission || form.formState.isSubmitting
-                          }
-                        >
-                          Save Changes
-                        </Button>
-                      </div>
-                    </Tooltip>
-                  </div>
-                </CardFooter>
-              </Form>
-            </FormProvider>
-          </Card>
-        </SettingsLayout>
-      </PageContainer>
-    </Page>
+            <Tooltip
+              content={
+                hasEditPermission
+                  ? ""
+                  : "You don't have permission to edit this automation."
+              }
+            >
+              <div className="order-3 flex">
+                <Button
+                  type="submit"
+                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </Tooltip>
+
+            <Button
+              className="order-2"
+              type="submit"
+              variant="secondary"
+              isDisabled={!hasEditPermission || form.formState.isSubmitting}
+              name="send-test"
+              isPending={testResult.loading}
+            >
+              {sent ? (
+                <>
+                  <ButtonIcon>
+                    <CheckIcon className="text-success-low" />
+                  </ButtonIcon>
+                  Send test notification
+                </>
+              ) : (
+                <>Send test notification</>
+              )}
+            </Button>
+          </div>
+        </CardFooter>
+      </Form>
+    </FormProvider>
   );
 }
 
-function PageContent(props: {
-  accountSlug: string;
-  projectName: string;
-  automationId: string;
-  hasEditPermission: boolean;
-}) {
+function AutomationPage() {
+  const params = useAutomationParams();
+  invariant(params, "Automation params are required");
+
+  const { permissions } = useProjectOutletContext();
+  const hasEditPermission = permissions.includes(ProjectPermission.Admin);
+
   const {
     data: { project, automationRule },
   } = useSuspenseQuery(AutomationRuleQuery, {
     variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
-      id: props.automationId,
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
+      id: params.automationId,
     },
   });
 
-  const account = project?.account;
-  const isTeam = account?.__typename === "Team";
-
-  if (!project || !automationRule || !isTeam) {
-    return <NotFound />;
-  }
-
-  return (
-    <EditAutomationForm
-      automationRule={automationRule}
-      project={project}
-      accountSlug={props.accountSlug}
-      projectName={props.projectName}
-      hasEditPermission={props.hasEditPermission}
-    />
-  );
-}
-
-/** @route */
-export function Component() {
-  const { accountSlug, projectName, automationId } = useParams();
-  const { permissions } = useProjectOutletContext();
-  const hasEditPermission = permissions.includes(ProjectPermission.Admin);
-  const hasReadPermission = permissions.includes(
-    ProjectPermission.ViewSettings,
-  );
-
-  if (!accountSlug || !projectName || !automationId || !hasReadPermission) {
+  if (!automationRule || project?.account?.__typename !== "Team") {
     return <NotFound />;
   }
 
@@ -311,16 +300,42 @@ export function Component() {
     <Page>
       <Helmet>
         <title>
-          {accountSlug}/{projectName} • {hasEditPermission ? "Edit" : "View"}{" "}
-          Automation
+          {automationRule.name} • {params.accountSlug}/{params.projectName}
         </title>
       </Helmet>
-      <PageContent
-        accountSlug={accountSlug}
-        projectName={projectName}
-        automationId={automationId}
-        hasEditPermission={hasEditPermission}
-      />
+      <PageContainer>
+        <PageHeader>
+          <PageHeaderContent>
+            <Heading>{automationRule.name}</Heading>
+            <Text slot="headline">Edit this automation for the project.</Text>
+          </PageHeaderContent>
+        </PageHeader>
+        <SettingsLayout>
+          <Card>
+            <EditAutomationForm
+              automationRule={automationRule}
+              project={project}
+              hasEditPermission={hasEditPermission}
+            />
+          </Card>
+        </SettingsLayout>
+      </PageContainer>
     </Page>
   );
+}
+
+/** @route */
+export function Component() {
+  const params = useAutomationParams();
+  invariant(params, "Automation params are required");
+  const { permissions } = useProjectOutletContext();
+  const hasReadPermission = permissions.includes(
+    ProjectPermission.ViewSettings,
+  );
+
+  if (!hasReadPermission) {
+    return <NotFound />;
+  }
+
+  return <AutomationPage />;
 }

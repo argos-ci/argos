@@ -26,8 +26,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/ui/Dialog";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { getGraphQLErrorMessage } from "@/ui/Form";
-import { FormError } from "@/ui/FormError";
 import { Modal } from "@/ui/Modal";
 
 import { ConfigureGitHubSSO } from "./Configure";
@@ -85,7 +85,9 @@ const DisableButton = memo(function DisableButton(props: {
             <DialogText>Are you sure you want to continue?</DialogText>
           </DialogBody>
           <DialogFooter>
-            {error && <FormError>{getGraphQLErrorMessage(error)}</FormError>}
+            {error && (
+              <ErrorMessage>{getGraphQLErrorMessage(error)}</ErrorMessage>
+            )}
             <DialogDismiss>Cancel</DialogDismiss>
             <Button
               isDisabled={loading}

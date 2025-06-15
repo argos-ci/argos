@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
+import { invariant } from "@argos/util/invariant";
 import { MoreVerticalIcon } from "lucide-react";
-import { useParams } from "react-router-dom";
 
 import { Button } from "@/ui/Button";
 import {
@@ -21,13 +21,9 @@ import { ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
+import { useProjectParams } from "../Project/ProjectParams";
+import { getAutomationURL } from "./AutomationParams";
 import { AutomationRule } from "./index";
-
-function formatEventLabel(str: string): string {
-  return str
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase());
-}
 
 function DeleteAutomationDialog({
   isOpen,
@@ -61,29 +57,26 @@ function DeleteAutomationDialog({
   );
 }
 
-function AutomationRow({
-  automationRule,
-  onDelete,
-}: {
+function AutomationRow(props: {
   automationRule: AutomationRule;
   onDelete: (id: string) => void;
 }) {
-  const { accountSlug, projectName } = useParams();
+  const { automationRule, onDelete } = props;
+  const params = useProjectParams();
+  invariant(params, "Project params must be defined");
   const [isDialogOpen, setDialogOpen] = useState(false);
   const { permissions } = useProjectOutletContext();
   const hasEditPermission = permissions.includes(ProjectPermission.Admin);
+  const url = getAutomationURL({ ...params, automationId: automationRule.id });
 
   return (
-    <ListRowLink
-      href={`/${accountSlug}/${projectName}/automations/${automationRule.id}`}
-      className="items-center p-4 text-sm"
-    >
+    <ListRowLink href={url} className="items-center p-4 text-sm">
       <div className="w-44 shrink-0 md:w-auto md:grow">
         <div className="truncate">{automationRule.name}</div>
       </div>
       <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap text-sm">
         {automationRule.on.map((event) => (
-          <div key={event}>{formatEventLabel(event)}</div>
+          <div key={event}>{event}</div>
         ))}
       </div>
       <div
@@ -109,9 +102,7 @@ function AutomationRow({
           </IconButton>
           <Popover>
             <Menu>
-              <MenuItem
-                href={`/${accountSlug}/${projectName}/automations/${automationRule.id}`}
-              >
+              <MenuItem href={url}>
                 {hasEditPermission ? "Edit" : "View"}
               </MenuItem>
               <MenuItem variant="danger" onAction={() => setDialogOpen(true)}>
@@ -133,13 +124,11 @@ function AutomationRow({
   );
 }
 
-export function AutomationRulesList({
-  automationRules,
-  onDelete,
-}: {
+export function AutomationRulesList(props: {
   automationRules: AutomationRule[];
   onDelete: (id: string) => void;
 }) {
+  const { automationRules, onDelete } = props;
   const parentRef = useRef<HTMLDivElement>(null);
 
   return (

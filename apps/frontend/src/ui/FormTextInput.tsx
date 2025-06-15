@@ -1,8 +1,9 @@
 import { useId } from "react";
+import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
 import { useFormContext } from "react-hook-form";
 
-import { FormError } from "./FormError";
+import { ErrorMessage } from "./ErrorMessage";
 import { Label } from "./Label";
 import {
   TextInput,
@@ -12,13 +13,15 @@ import {
 } from "./TextInput";
 import { Tooltip } from "./Tooltip";
 
-type FormTextInputProps = {
+interface FormTextInputProps extends TextInputProps {
   name: string;
   label: React.ReactNode;
   hiddenLabel?: boolean;
   addon?: React.ReactNode;
   description?: React.ReactNode;
-} & TextInputProps;
+  orientation?: "horizontal" | "vertical";
+  inline?: boolean;
+}
 
 export function FormTextInput({
   label,
@@ -29,6 +32,8 @@ export function FormTextInput({
   className,
   addon,
   description,
+  orientation = "vertical",
+  inline = false,
   ...props
 }: FormTextInputProps) {
   const form = useFormContext();
@@ -48,7 +53,13 @@ export function FormTextInput({
     />
   );
   return (
-    <div className={className}>
+    <div
+      className={clsx(
+        inline ? "inline-flex" : "flex",
+        { vertical: "flex-col", horizontal: "items-center" }[orientation],
+        className,
+      )}
+    >
       {!hiddenLabel && (
         <Label htmlFor={id} invalid={invalid}>
           {label}
@@ -68,7 +79,11 @@ export function FormTextInput({
         input
       )}
       {typeof error?.message === "string" && (
-        <FormError className="mt-2">{error.message}</FormError>
+        <ErrorMessage
+          className={{ vertical: "mt-2", horizontal: "ml-2" }[orientation]}
+        >
+          {error.message}
+        </ErrorMessage>
       )}
     </div>
   );
