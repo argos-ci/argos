@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -29,6 +29,7 @@ const SlackInstallationQuery = graphql(`
       id
       slackInstallation {
         id
+        teamName
       }
     }
   }
@@ -47,12 +48,17 @@ function SendSlackMessageAction(props: {
     },
   });
 
+  // When we add a second action, types will break here, we will need to handle it
+  // not sure how to do that yet
+
   const hasSlackInstallation = Boolean(data.account?.slackInstallation);
 
   // Refetch the Slack installation when the window becomes active again.
   useRefetchWhenActive({ refetch, skip: hasSlackInstallation });
 
-  if (!data.account?.slackInstallation) {
+  const slackInstallation = data.account?.slackInstallation;
+
+  if (!slackInstallation) {
     return (
       <div className="flex flex-col items-start gap-2 p-2">
         To post to a Slack channel, you need to connect your Slack workspace
@@ -71,28 +77,29 @@ function SendSlackMessageAction(props: {
     );
   }
 
-  // When we add a second action, types will break here, we will need to handle it
-  // not sure how to do that yet
-
   return (
-    <div className="flex items-center gap-2 overflow-auto">
-      <div>Post to Slack channel</div>
-      <FormTextInput
-        {...form.register(`${name}.payload.slackId`)}
-        orientation="horizontal"
-        label="Slack Channel"
-        hiddenLabel
-        placeholder="Channel ID, eg. C07VDNT3CTX"
-        className="w-64"
-      />
+    <div>
+      Send notification to the {slackInstallation.teamName} workspace to{" "}
       <FormTextInput
         {...form.register(`${name}.payload.name`)}
         orientation="horizontal"
         label="Slack Channel Name"
         hiddenLabel
-        placeholder="name, eg. #general"
-        className="w-64"
+        placeholder="eg. #general, James Brown"
+        className="w-52"
+        inline
+      />{" "}
+      (optionnaly an ID:{" "}
+      <FormTextInput
+        {...form.register(`${name}.payload.slackId`)}
+        orientation="horizontal"
+        label="Slack Channel"
+        hiddenLabel
+        placeholder="eg. C07VDNT3CTX"
+        className="w-36"
+        inline
       />
+      )
     </div>
   );
 }

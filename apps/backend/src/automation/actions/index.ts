@@ -1,9 +1,20 @@
+import { z } from "zod";
+
 import { AutomationAction } from "../defineAutomationAction";
 import * as sendSlackMessage from "./sendSlackMessage";
 
 export const AUTOMATION_ACTIONS = [
   sendSlackMessage.automationAction,
 ] satisfies AutomationAction<string, any>[];
+
+export const AutomationActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal(sendSlackMessage.automationAction.name),
+    actionPayload: sendSlackMessage.automationAction.payloadSchema,
+  }),
+]);
+
+export type AutomationActionType = z.infer<typeof AutomationActionSchema>;
 
 type AutomationActionsType = (typeof AUTOMATION_ACTIONS)[number];
 

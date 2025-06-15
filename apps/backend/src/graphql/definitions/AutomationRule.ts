@@ -1,20 +1,29 @@
 import { invariant } from "@argos/util/invariant";
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import gqlTag from "graphql-tag";
+import { z } from "zod";
 
+import type { AutomationActionType } from "@/automation/actions";
 import {
   AutomationRule,
   AutomationRuleSchema,
   AutomationRun,
   Project,
+  SlackChannel,
+  type SlackInstallation,
 } from "@/database/models";
+import {
+  getSlackChannelById,
+  getSlackChannelByName,
+  normalizeChannelName,
+} from "@/slack";
 
 import {
   IResolvers,
   type ICreateAutomationRuleInput,
   type IUpdateAutomationRuleInput,
 } from "../__generated__/resolver-types";
-import { forbidden, unauthenticated } from "../util";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 
@@ -105,68 +114,151 @@ export const typeDefs = gql`
   }
 `;
 
-// async function createSlackChannels(
-//   slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
-//   installationId: string,
-// ): Promise<SlackChannel[]> {
-//   if (slackChannelInputs.length === 0) {
-//     return [];
-//   }
+/**
+ * Get automation rule data from input variables.
+ */
+async function getAutomationRuleDataFromVariables(args: {
+  project: Project;
+  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput;
+}) {
+  const { project } = args;
+  validateAutomationRuleInput(args.input);
 
-//   return SlackChannel.query().insertAndFetch(
-//     slackChannelInputs.map((input) => ({
-//       name: input.name,
-//       slackId: input.slackId,
-//       slackInstallationId: installationId,
-//     })),
-//   );
-// }
+  const slackChannelActionPayloads = args.input.actions
+    .filter((a) => a.type === "sendSlackMessage")
+    .map((action) =>
+      z
+        .object({
+          slackId: z
+            .string()
+            .max(256, { message: "Must be 256 characters or less" }),
+          name: z.string().min(1, { message: "Required" }).max(21, {
+            message: "Must be 21 characters or less",
+          }),
+        })
+        .parse(action.payload),
+    );
 
-// async function updateSlackChannels(
-//   slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
-//   installationId: string,
-// ) {
-//   const channelIds = slackChannelInputs
-//     .map((input) => input.channelId)
-//     .filter((input) => !isNil(input));
-//   if (channelIds.length === 0) {
-//     return [];
-//   }
+  const then: AutomationActionType[] = [];
 
-//   const slackChannels = await SlackChannel.query()
-//     .where("slackInstallationId", installationId)
-//     .whereIn("id", channelIds);
+  if (slackChannelActionPayloads.length > 0) {
+    await project.$fetchGraph("account.slackInstallation");
 
-//   const slackChannelToUpdate = slackChannelInputs.filter((input) => {
-//     const slackChannel = slackChannels.find(
-//       (channel) => input.channelId && channel.id === input.channelId,
-//     );
-//     return (
-//       slackChannel &&
-//       (slackChannel.name !== input.name ||
-//         slackChannel.slackId !== input.slackId)
-//     );
-//   });
+    const slackInstallation = project.account?.slackInstallation;
 
-//   const updatedSlackChannels =
-//     slackChannelToUpdate.length > 0
-//       ? await Promise.all(
-//           slackChannelToUpdate.map((input) =>
-//             SlackChannel.query().patchAndFetchById(input.channelId!, {
-//               name: input.name,
-//               slackId: input.slackId,
-//             }),
-//           ),
-//         )
-//       : [];
+    if (!slackInstallation) {
+      throw badUserInput(
+        "Slack installation not found for the project account.",
+      );
+    }
 
-//   return slackChannels.map((channel) => {
-//     const updatedChannel = updatedSlackChannels.find(
-//       (c) => c.id === channel.id,
-//     );
-//     return updatedChannel || channel;
-//   });
-// }
+    for (const payload of slackChannelActionPayloads) {
+      // Get or create the Slack channel by name or ID (prefer ID if available)
+      const slackChannel = payload.slackId
+        ? await getOrCreateSlackChannelBySlackId({
+            slackInstallation,
+            slackId: payload.slackId,
+          })
+        : await getOrCreateSlackChannelByName({
+            slackInstallation,
+            name: payload.name,
+          });
+
+      if (!slackChannel) {
+        throw badUserInput(
+          `Slack channel "${payload.name}" not found in the installation.`,
+        );
+      }
+
+      then.push({
+        action: "sendSlackMessage",
+        actionPayload: {
+          channelId: slackChannel.id,
+        },
+      });
+    }
+  }
+
+  return AutomationRuleSchema.parse({
+    active: true,
+    name: args.input.name,
+    projectId: project.id,
+    on: args.input.events,
+    if: { all: args.input.conditions },
+    then,
+  });
+}
+
+/**
+ * Get or create a Slack channel by name.
+ */
+async function getOrCreateSlackChannelByName(input: {
+  slackInstallation: SlackInstallation;
+  name: string;
+}) {
+  const { slackInstallation } = input;
+  const name = normalizeChannelName(input.name);
+  const existingSlackChannel = await SlackChannel.query().findOne({
+    name,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  if (existingSlackChannel) {
+    return existingSlackChannel;
+  }
+
+  const channel = await getSlackChannelByName({
+    installation: slackInstallation,
+    name,
+  });
+
+  if (!channel) {
+    return null;
+  }
+
+  const slackChannel = await SlackChannel.query().insertAndFetch({
+    name: channel.name,
+    slackId: channel.id,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  return slackChannel;
+}
+
+/**
+ * Get or create a Slack channel by id.
+ */
+async function getOrCreateSlackChannelBySlackId(input: {
+  slackInstallation: SlackInstallation;
+  slackId: string;
+}) {
+  const { slackInstallation, slackId } = input;
+  const existingSlackChannel = await SlackChannel.query().findOne({
+    slackId,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  if (existingSlackChannel) {
+    return existingSlackChannel;
+  }
+
+  const channel = await getSlackChannelById({
+    installation: slackInstallation,
+    id: slackId,
+  });
+
+  if (!channel) {
+    return null;
+  }
+
+  const slackChannel = await SlackChannel.query().insertAndFetch({
+    name: channel.name,
+    slackId: channel.id,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  return slackChannel;
+}
 
 function validateAutomationRuleInput(
   input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput,
@@ -187,6 +279,30 @@ export const resolvers: IResolvers = {
         .findOne({ automationRuleId: automationRule.id })
         .orderBy("createdAt", "desc");
       return lastRun ? new Date(lastRun.createdAt) : null;
+    },
+  },
+  AutomationAction: {
+    actionPayload: async (action) => {
+      switch (action.action) {
+        case "sendSlackMessage": {
+          const slackChannel = await SlackChannel.query().findById(
+            action.actionPayload.channelId,
+          );
+          if (!slackChannel) {
+            return {
+              slackId: "",
+              name: "deleted",
+            };
+          }
+          return {
+            slackId: slackChannel.slackId,
+            name: slackChannel.name,
+          };
+        }
+        default: {
+          throw new Error(`Unknown action: ${action.action}`);
+        }
+      }
     },
   },
   Query: {
@@ -222,7 +338,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { projectId, name, events, conditions } = args.input;
+      const { projectId } = args.input;
 
       const project = await Project.query()
         .findById(projectId)
@@ -234,38 +350,12 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
 
-      validateAutomationRuleInput(args.input);
+      const data = await getAutomationRuleDataFromVariables({
+        project,
+        input: args.input,
+      });
 
-      // const slackChannelInputs = actions
-      //   .filter((a) => a.type === IAutomationActionType.SendSlackMessage)
-      //   .map((action) => action.payload);
-
-      // const slackChannels: SlackChannel[] = [];
-
-      // if (slackChannelInputs.length > 0) {
-      //   const slackInstallation = await SlackInstallation.query()
-      //     .joinRelated("account")
-      //     .findOne({ "account.id": project.accountId })
-      //     .throwIfNotFound();
-
-      //   const newSlackChannels = await createSlackChannels(
-      //     slackChannelInputs,
-      //     slackInstallation.id,
-      //   );
-
-      //   slackChannels.push(...newSlackChannels);
-      // }
-
-      return AutomationRule.query().insertAndFetch(
-        AutomationRuleSchema.parse({
-          active: true,
-          name,
-          projectId: project.id,
-          on: events,
-          if: { all: conditions },
-          then: [], // parseActionInputs(actions, slackChannels),
-        }),
-      );
+      return AutomationRule.query().insertAndFetch(data);
     },
     updateAutomationRule: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -273,12 +363,13 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { id, name, events, conditions } = args.input;
-
       const automationRule = await AutomationRule.query()
-        .findById(id)
-        .withGraphFetched("project")
-        .throwIfNotFound();
+        .findById(args.input.id)
+        .withGraphFetched("project");
+
+      if (!automationRule) {
+        throw notFound("Automation rule not found.");
+      }
 
       invariant(automationRule.project, "Project relation not found");
 
@@ -290,36 +381,9 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
 
-      validateAutomationRuleInput(args.input);
-
-      // const slackChannelInputs = actions
-      //   .filter((a) => a.type === "sendSlackMessage")
-      //   .map((action) => action.payload);
-
-      // const slackChannels: SlackChannel[] = [];
-
-      // if (slackChannelInputs.length > 0) {
-      //   const slackInstallation = await SlackInstallation.query()
-      //     .joinRelated("account")
-      //     .findOne({ "account.id": automationRule.project.accountId })
-      //     .throwIfNotFound();
-
-      //   const updatedSlackChannels = await updateSlackChannels(
-      //     slackChannelInputs.filter((input) => input.channelId),
-      //     slackInstallation.id,
-      //   );
-      //   const newSlackChannels = await createSlackChannels(
-      //     slackChannelInputs.filter((input) => !input.channelId),
-      //     slackInstallation.id,
-      //   );
-      //   slackChannels.push(...updatedSlackChannels, ...newSlackChannels);
-      // }
-
-      const data = AutomationRuleSchema.partial().parse({
-        name,
-        on: events,
-        if: { all: conditions },
-        then: [], // parseActionInputs(actions, slackChannels),
+      const data = await getAutomationRuleDataFromVariables({
+        project: automationRule.project,
+        input: args.input,
       });
 
       return automationRule.$query().patchAndFetch(omitUndefinedValues(data));

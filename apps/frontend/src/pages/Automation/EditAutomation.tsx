@@ -120,14 +120,13 @@ function EditAutomationForm(props: {
   const form = useForm({
     resolver: zodResolver(AutomationFieldValuesSchema),
     defaultValues: AutomationFieldValuesSchema.parse({
-      name: automationRule?.name ?? "",
-      events: automationRule?.on ?? [],
-      conditions: automationRule?.if?.all ?? [],
-      actions:
-        automationRule?.then?.map((a) => ({
-          type: a.action,
-          payload: a.actionPayload,
-        })) ?? [],
+      name: automationRule.name,
+      events: automationRule.on,
+      conditions: automationRule.if.all,
+      actions: automationRule.then.map((action) => ({
+        type: action.action,
+        payload: action.actionPayload,
+      })),
     }),
   });
 

@@ -42,10 +42,7 @@ export const BuildConditionSchema = z.discriminatedUnion("type", [
 const AutomationSlackActionSchema = z.object({
   type: z.literal("sendSlackMessage"),
   payload: z.object({
-    slackId: z
-      .string()
-      .min(1, { message: "Required" })
-      .max(256, { message: "Must be 256 characters or less" }),
+    slackId: z.string().max(256, { message: "Must be 256 characters or less" }),
     name: z.string().min(1, { message: "Required" }).max(21, {
       message: "Must be 21 characters or less",
     }),

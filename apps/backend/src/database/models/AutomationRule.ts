@@ -3,7 +3,7 @@ import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
 import {
-  AUTOMATION_ACTIONS,
+  AutomationActionSchema,
   AutomationActionsName,
   GetActionPayload,
 } from "@/automation/actions/index.js";
@@ -35,16 +35,7 @@ export const AutomationRuleSchema = z.object({
   if: z.object({
     all: z.array(AutomationConditionSchema),
   }),
-  then: z.array(
-    z.union(
-      AUTOMATION_ACTIONS.map((action) =>
-        z.object({
-          action: z.literal(action.name),
-          actionPayload: action.payloadSchema,
-        }),
-      ) as any,
-    ),
-  ),
+  then: z.array(AutomationActionSchema),
 });
 
 export class AutomationRule extends Model {

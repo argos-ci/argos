@@ -20,6 +20,7 @@ interface FormTextInputProps extends TextInputProps {
   addon?: React.ReactNode;
   description?: React.ReactNode;
   orientation?: "horizontal" | "vertical";
+  inline?: boolean;
 }
 
 export function FormTextInput({
@@ -32,6 +33,7 @@ export function FormTextInput({
   addon,
   description,
   orientation = "vertical",
+  inline = false,
   ...props
 }: FormTextInputProps) {
   const form = useFormContext();
@@ -53,7 +55,7 @@ export function FormTextInput({
   return (
     <div
       className={clsx(
-        "flex",
+        inline ? "inline-flex" : "flex",
         { vertical: "flex-col", horizontal: "items-center" }[orientation],
         className,
       )}

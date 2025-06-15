@@ -6,6 +6,7 @@ import Cookies from "cookies";
 import { Router } from "express";
 import { PartialModelObject, TransactionOrKnex } from "objection";
 import { match } from "path-to-regexp";
+import { z } from "zod";
 
 import { getBuildLabel } from "@/build/label.js";
 import { getStatsMessage } from "@/build/stats.js";
@@ -178,6 +179,7 @@ const receiver = new Bolt.ExpressReceiver({
     "links:read",
     "links:write",
     "team:read",
+    "channels:read",
     "chat:write",
     "chat:write.public",
   ],
@@ -418,6 +420,77 @@ export async function postMessageToSlackChannel({
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
   await boltApp.client.chat.postMessage({ token, channel, text, blocks });
+}
+
+const SlackChannelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+type SlackChannel = z.infer<typeof SlackChannelSchema>;
+
+/**
+ * Get a Slack channel by its name.
+ */
+export async function getSlackChannelByName(input: {
+  installation: SlackInstallation;
+  name: string;
+}): Promise<SlackChannel | null> {
+  const { installation, name } = input;
+  const token = installation.installation.bot?.token;
+  invariant(token, "Expected bot token to be defined");
+  return findChannelByName({ token, name });
+}
+
+/**
+ * Get a Slack channel by its ID.
+ */
+export async function getSlackChannelById(input: {
+  installation: SlackInstallation;
+  id: string;
+}): Promise<SlackChannel | null> {
+  const { installation, id } = input;
+  const token = installation.installation.bot?.token;
+  invariant(token, "Expected bot token to be defined");
+  const res = await boltApp.client.conversations.info({
+    token,
+    channel: id,
+  });
+  if (!res) {
+    return null;
+  }
+  return SlackChannelSchema.parse(res.channel);
+}
+
+/**
+ * Find a Slack channel by its name recursively in all pages of the channel list.
+ */
+async function findChannelByName(input: {
+  token: string;
+  name: string;
+}): Promise<SlackChannel | null> {
+  const { token, name } = input;
+  let cursor;
+  do {
+    const res = await boltApp.client.conversations.list(
+      cursor ? { token, cursor } : { token },
+    );
+    const match = res.channels?.find(
+      (c) => c.name === normalizeChannelName(name),
+    );
+    if (match) {
+      return SlackChannelSchema.parse(match);
+    }
+    cursor = res.response_metadata?.next_cursor;
+  } while (cursor);
+  return null;
+}
+
+/**
+ * Normalize a Slack channel name by removing the leading `#` and converting to lowercase.
+ */
+export function normalizeChannelName(channelName: string): string {
+  return channelName.replace(/^#/, "").toLowerCase();
 }
 
 export const slackMiddleware: Router = receiver.router;
