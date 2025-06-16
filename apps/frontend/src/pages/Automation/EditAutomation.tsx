@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { useApolloClient, useMutation, useSuspenseQuery } from "@apollo/client";
+import { useApolloClient, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
@@ -11,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { SettingsLayout } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import { Button, ButtonIcon, LinkButton } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import { Card, CardBody, CardFooter } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
@@ -36,6 +34,10 @@ import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
 import { useAutomationParams } from "./AutomationParams";
+import {
+  TestAutomationButton,
+  useTestAutomation,
+} from "./AutomationTestNotification";
 
 const AutomationRuleQuery = graphql(`
   query ProjectEditAutomation_automationRule(
@@ -104,18 +106,6 @@ const UpdateAutomationMutation = graphql(`
   }
 `);
 
-const TestAutomationMutation = graphql(`
-  mutation EditAutomation_testAutomation(
-    $event: String!
-    $projectId: String!
-    $actions: [AutomationActionInput!]!
-  ) {
-    testAutomation(
-      input: { event: $event, projectId: $projectId, actions: $actions }
-    )
-  }
-`);
-
 type AllDocument = DocumentType<typeof AutomationRuleQuery>;
 type Project = NonNullable<AllDocument["project"]>;
 type AutomationRule = NonNullable<AllDocument["automationRule"]>;
@@ -144,26 +134,7 @@ function EditAutomationForm(props: {
     }),
   });
 
-  const [sent, setSent] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [test, testResult] = useMutation(TestAutomationMutation, {
-    onCompleted: (data) => {
-      if (data) {
-        setSent(true);
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-        timeoutRef.current = setTimeout(() => setSent(false), 2000);
-      }
-    },
-  });
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+  const testAutomation = useTestAutomation({ projectId: project.id });
 
   const onSubmit: SubmitHandler<AutomationTransformedValues> = async (
     data,
@@ -173,23 +144,7 @@ function EditAutomationForm(props: {
       throw new Error("You do not have permission to edit this automation.");
     }
 
-    if (
-      event?.nativeEvent &&
-      "submitter" in event.nativeEvent &&
-      event.nativeEvent.submitter &&
-      typeof event.nativeEvent.submitter === "object" &&
-      "name" in event.nativeEvent.submitter &&
-      event.nativeEvent.submitter.name === "send-test"
-    ) {
-      const eventType = data.events[0];
-      invariant(eventType, "At least one event is required");
-      await test({
-        variables: {
-          event: eventType,
-          projectId: project.id,
-          actions: data.actions,
-        },
-      });
+    if (await testAutomation.onSubmit(data, event)) {
       return;
     }
 
@@ -205,11 +160,9 @@ function EditAutomationForm(props: {
     });
   };
 
-  const formRef = useRef<HTMLFormElement>(null);
-
   return (
     <FormProvider {...form}>
-      <Form ref={formRef} onSubmit={onSubmit}>
+      <Form onSubmit={onSubmit}>
         <CardBody>
           <div className="flex flex-col gap-6">
             <AutomationNameField form={form} />
@@ -249,25 +202,10 @@ function EditAutomationForm(props: {
               </div>
             </Tooltip>
 
-            <Button
-              className="order-2"
-              type="submit"
-              variant="secondary"
+            <TestAutomationButton
+              {...testAutomation.buttonProps}
               isDisabled={!hasEditPermission || form.formState.isSubmitting}
-              name="send-test"
-              isPending={testResult.loading}
-            >
-              {sent ? (
-                <>
-                  <ButtonIcon>
-                    <CheckIcon className="text-success-low" />
-                  </ButtonIcon>
-                  Send test notification
-                </>
-              ) : (
-                <>Send test notification</>
-              )}
-            </Button>
+            />
           </div>
         </CardFooter>
       </Form>
@@ -307,7 +245,9 @@ function AutomationPage() {
         <PageHeader>
           <PageHeaderContent>
             <Heading>{automationRule.name}</Heading>
-            <Text slot="headline">Edit this automation for the project.</Text>
+            <Text slot="headline">
+              Edit the events, conditions and actions for this automation rule.
+            </Text>
           </PageHeaderContent>
         </PageHeader>
         <SettingsLayout>

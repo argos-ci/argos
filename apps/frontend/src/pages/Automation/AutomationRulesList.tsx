@@ -80,13 +80,13 @@ function AutomationRow(props: {
         ))}
       </div>
       <div
-        className="text-low w-28 shrink-0 overflow-hidden truncate whitespace-nowrap"
+        className="text-low w-36 shrink-0 overflow-hidden truncate whitespace-nowrap"
         data-visual-test="transparent"
       >
         {automationRule.lastAutomationRunDate ? (
           <Time date={automationRule.lastAutomationRunDate} />
         ) : (
-          "Never run yet"
+          "Not triggered yet"
         )}
       </div>
       <div
@@ -139,11 +139,9 @@ export function AutomationRulesList(props: {
     >
       <div className="relative">
         <ListHeaderRow>
-          <div className="w-44 shrink-0 md:w-auto md:grow">
-            Automation rule name
-          </div>
-          <div className="w-32 shrink-0">Trigger Events</div>
-          <div className="w-28 shrink-0">Last run</div>
+          <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>
+          <div className="w-32 shrink-0">Triggers</div>
+          <div className="w-36 shrink-0">Last triggered</div>
           <div className="w-28 shrink-0">Created</div>
           <div className="w-8 shrink-0" />
         </ListHeaderRow>

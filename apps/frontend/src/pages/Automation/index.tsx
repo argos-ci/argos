@@ -77,7 +77,7 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
       <ButtonIcon>
         <PlusCircleIcon />
       </ButtonIcon>
-      Add Automation
+      New Automation
     </LinkButton>
   );
 }
@@ -152,9 +152,10 @@ function PageContent(props: { project: ProjectDocument }) {
     <PageContainer>
       <PageHeader>
         <PageHeaderContent>
-          <Heading>Automations</Heading>
+          <Heading>Automations Rules</Heading>
           <Text slot="headline">
-            View all the automations associated with this project.
+            Set up rules to trigger actions or notifications when specific
+            events happen in your project.
           </Text>
         </PageHeaderContent>
         <PageHeaderActions>

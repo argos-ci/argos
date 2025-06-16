@@ -32,6 +32,10 @@ import {
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
+import {
+  TestAutomationButton,
+  useTestAutomation,
+} from "./AutomationTestNotification";
 
 const ProjectQuery = graphql(`
   query ProjectNewAutomation_project(
@@ -100,7 +104,7 @@ function NewAutomationPage() {
     <Page>
       <Helmet>
         <title>
-          New Automation • {params.accountSlug}/{params.projectName}
+          New Automation Rule • {params.accountSlug}/{params.projectName}
         </title>
       </Helmet>
       <PageContainer>
@@ -108,7 +112,7 @@ function NewAutomationPage() {
           <PageHeaderContent>
             <Heading>New Automation Rule</Heading>
             <Text slot="headline">
-              Create a new automation for this project.
+              Trigger actions when specific events occur in your project.
             </Text>
           </PageHeaderContent>
         </PageHeader>
@@ -138,7 +142,16 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
     },
   });
 
-  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (data) => {
+  const testAutomation = useTestAutomation({ projectId: project.id });
+
+  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (
+    data,
+    event,
+  ) => {
+    if (await testAutomation.onSubmit(data, event)) {
+      return;
+    }
+
     await client.mutate({
       mutation: CreateAutomationMutation,
       variables: {
@@ -206,9 +219,17 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
               >
                 Cancel
               </LinkButton>
-              <Button type="submit" isDisabled={form.formState.isSubmitting}>
-                Create Automation
+              <Button
+                className="order-3"
+                type="submit"
+                isDisabled={form.formState.isSubmitting}
+              >
+                Create Rule
               </Button>
+              <TestAutomationButton
+                {...testAutomation.buttonProps}
+                isDisabled={form.formState.isSubmitting}
+              />
             </div>
           </CardFooter>
         </Form>

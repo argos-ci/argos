@@ -141,8 +141,8 @@ async function getActionsFromInput(args: {
           slackId: z
             .string()
             .max(256, { message: "Must be 256 characters or less" }),
-          name: z.string().min(1, { message: "Required" }).max(21, {
-            message: "Must be 21 characters or less",
+          name: z.string().min(1, { message: "Required" }).max(256, {
+            message: "Must be 256 characters or less",
           }),
         })
         .parse(action.payload),

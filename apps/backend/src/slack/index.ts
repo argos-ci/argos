@@ -406,17 +406,13 @@ export async function uninstallSlackInstallation(
 /**
  * Post a message to a Slack channel.
  */
-export async function postMessageToSlackChannel({
-  installation,
-  channel,
-  text,
-  blocks,
-}: {
+export async function postMessageToSlackChannel(args: {
   installation: SlackInstallation;
   channel: string;
   text: string;
   blocks?: SlackMessageBlock[];
 }) {
+  const { installation, channel, text, blocks } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
   await boltApp.client.chat.postMessage({ token, channel, text, blocks });
@@ -432,11 +428,11 @@ type SlackChannel = z.infer<typeof SlackChannelSchema>;
 /**
  * Get a Slack channel by its name.
  */
-export async function getSlackChannelByName(input: {
+export async function getSlackChannelByName(args: {
   installation: SlackInstallation;
   name: string;
 }): Promise<SlackChannel | null> {
-  const { installation, name } = input;
+  const { installation, name } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
   return findChannelByName({ token, name });
@@ -445,11 +441,11 @@ export async function getSlackChannelByName(input: {
 /**
  * Get a Slack channel by its ID.
  */
-export async function getSlackChannelById(input: {
+export async function getSlackChannelById(args: {
   installation: SlackInstallation;
   id: string;
 }): Promise<SlackChannel | null> {
-  const { installation, id } = input;
+  const { installation, id } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
   const res = await boltApp.client.conversations.info({
@@ -465,11 +461,12 @@ export async function getSlackChannelById(input: {
 /**
  * Find a Slack channel by its name recursively in all pages of the channel list.
  */
-async function findChannelByName(input: {
+async function findChannelByName(args: {
   token: string;
   name: string;
 }): Promise<SlackChannel | null> {
-  const { token, name } = input;
+  const { token } = args;
+  const name = normalizeChannelName(args.name);
   let cursor;
   do {
     const res = await boltApp.client.conversations.list(

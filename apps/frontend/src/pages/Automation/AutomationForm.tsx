@@ -41,8 +41,8 @@ const AutomationSlackActionSchema = z.object({
   type: z.literal("sendSlackMessage"),
   payload: z.object({
     slackId: z.string().max(256, { message: "Must be 256 characters or less" }),
-    name: z.string().min(1, { message: "Required" }).max(21, {
-      message: "Must be 21 characters or less",
+    name: z.string().min(1, { message: "Required" }).max(256, {
+      message: "Must be 256 characters or less",
     }),
   }),
 });
@@ -104,7 +104,7 @@ export function AutomationNameField(props: { form: AutomationForm }) {
     <FormTextInput
       {...form.register("name")}
       label="Automation rule name"
-      placeholder="eg. Notify Slack on build completion"
+      placeholder="eg. Notify team in Slack when a build completes"
       autoComplete="off"
       autoFocus
     />
