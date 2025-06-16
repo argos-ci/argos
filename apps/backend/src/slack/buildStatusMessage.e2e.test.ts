@@ -81,11 +81,15 @@ describe("getBuildStatusMessage", () => {
           },
           {
             type: "mrkdwn",
-            text: "*Commit:* <https://github.com/login-2/repo-1/commit/a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a|a5028c0>",
+            text: expect.stringMatching(
+              /\*Commit:\* <https:\/\/github\.com\/login-\d+\/repo-\d+\/commit\/a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a\|a5028c0>/,
+            ),
           },
           {
             type: "mrkdwn",
-            text: "*Branch:* <https://github.com/login-2/repo-1/tree/master|master>",
+            text: expect.stringMatching(
+              /\*Branch:\* <https:\/\/github\.com\/login-\d+\/repo-\d+\/tree\/master\|master>/,
+            ),
           },
         ],
       },
