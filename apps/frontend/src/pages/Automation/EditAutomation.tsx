@@ -1,6 +1,7 @@
 import { useApolloClient, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
@@ -8,9 +9,15 @@ import { useNavigate } from "react-router-dom";
 
 import { SettingsLayout } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
-import { ProjectPermission } from "@/gql/graphql";
+import { AutomationActionRunStatus, ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
-import { Card, CardBody, CardFooter } from "@/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardParagraph,
+  CardTitle,
+} from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import {
@@ -21,6 +28,7 @@ import {
 } from "@/ui/Layout";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { Time } from "../../ui/Time";
 import { NotFound } from "../NotFound";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { getProjectURL, useProjectParams } from "../Project/ProjectParams";
@@ -30,7 +38,7 @@ import {
   formDataToVariables,
   type AutomationTransformedValues,
 } from "./AutomationForm";
-import { AutomationActionsStep } from "./AutomationFormActionsStep";
+import { ACTIONS, AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
 import { useAutomationParams } from "./AutomationParams";
@@ -67,6 +75,14 @@ const AutomationRuleQuery = graphql(`
       then {
         action
         actionPayload
+      }
+      automationActionRuns(limit: 40) {
+        id
+        createdAt
+        actionName
+        status
+        completedAt
+        failureReason
       }
     }
   }
@@ -161,55 +177,161 @@ function EditAutomationForm(props: {
   };
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={onSubmit}>
-        <CardBody>
-          <div className="flex flex-col gap-6">
-            <AutomationNameField form={form} />
-            <AutomationWhenStep form={form} />
-            <AutomationConditionsStep
-              form={form}
-              projectBuildNames={project.buildNames}
-            />
-            <AutomationActionsStep form={form} />
-            <FormRootError form={form} />
-          </div>
-        </CardBody>
-
-        <CardFooter>
-          <div className="grid grid-cols-[1fr_auto_auto] justify-end gap-2">
-            <LinkButton
-              href={`${getProjectURL(params)}/automations`}
-              variant="secondary"
-              className="order-2"
-            >
-              {hasEditPermission ? "Cancel" : "Back"}
-            </LinkButton>
-            <Tooltip
-              content={
-                hasEditPermission
-                  ? ""
-                  : "You don't have permission to edit this automation."
-              }
-            >
-              <Button
-                type="submit"
-                isDisabled={!hasEditPermission || form.formState.isSubmitting}
-                className="order-3"
-              >
-                Save Changes
-              </Button>
-            </Tooltip>
-            <div className="order-1">
-              <TestAutomationButton
-                {...testAutomation.buttonProps}
-                isDisabled={!hasEditPermission || form.formState.isSubmitting}
+    <Card>
+      <FormProvider {...form}>
+        <Form onSubmit={onSubmit}>
+          <CardBody>
+            <CardTitle>Edit Automation Rule</CardTitle>
+            <div className="flex flex-col gap-6">
+              <AutomationNameField form={form} />
+              <AutomationWhenStep form={form} />
+              <AutomationConditionsStep
+                form={form}
+                projectBuildNames={project.buildNames}
               />
+              <AutomationActionsStep form={form} />
+              <FormRootError form={form} />
             </div>
-          </div>
-        </CardFooter>
-      </Form>
-    </FormProvider>
+          </CardBody>
+
+          <CardFooter>
+            <div className="grid grid-cols-[1fr_auto_auto] justify-end gap-2">
+              <LinkButton
+                href={`${getProjectURL(params)}/automations`}
+                variant="secondary"
+                className="order-2"
+              >
+                {hasEditPermission ? "Cancel" : "Back"}
+              </LinkButton>
+              <Tooltip
+                content={
+                  hasEditPermission
+                    ? ""
+                    : "You don't have permission to edit this automation."
+                }
+              >
+                <Button
+                  type="submit"
+                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                  className="order-3"
+                >
+                  Save Changes
+                </Button>
+              </Tooltip>
+              <div className="order-1">
+                <TestAutomationButton
+                  {...testAutomation.buttonProps}
+                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                />
+              </div>
+            </div>
+          </CardFooter>
+        </Form>
+      </FormProvider>
+    </Card>
+  );
+}
+
+export const AutomationActionRunStatusIcon = ({
+  status,
+}: {
+  status: string;
+}) => {
+  const iconClassName = "shrink-0 size-3";
+
+  switch (status) {
+    case AutomationActionRunStatus.Aborted:
+    case AutomationActionRunStatus.Failed:
+    case AutomationActionRunStatus.Error:
+      return (
+        <>
+          <XCircleIcon className={iconClassName} />
+          <span className="text-danger-low capitalize">{status}</span>
+        </>
+      );
+
+    case AutomationActionRunStatus.Success:
+      return (
+        <>
+          <CheckCircle2Icon className={iconClassName} />
+          <span className="text-success-low capitalize">{status}</span>
+        </>
+      );
+
+    case AutomationActionRunStatus.Pending:
+    case AutomationActionRunStatus.Progress:
+      return (
+        <>
+          <CircleDotIcon className={iconClassName} />
+          <span className="text-warning-low capitalize">{status}</span>
+        </>
+      );
+
+    default:
+      throw new Error(`Unexpected status for AutomationActionRunId ${status}`);
+  }
+};
+
+function ActionRunHistory(props: { automationRule: AutomationRule }) {
+  const { automationRule } = props;
+
+  if (!automationRule.automationActionRuns.length) {
+    return <Text slot="description">No actions have been run yet.</Text>;
+  }
+
+  return (
+    <Card>
+      <CardBody>
+        <CardTitle>Action Run History</CardTitle>
+        <CardParagraph>
+          History of actions triggered by this automation rule.
+        </CardParagraph>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2 text-left">Action</th>
+                <th className="py-2 text-left">Status</th>
+                <th className="py-2 text-left">Completed At</th>
+                <th className="py-2 text-left">Failure Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {automationRule.automationActionRuns.map((run) => {
+                const action = ACTIONS.find((a) => a.type === run.actionName);
+
+                return (
+                  <tr key={run.id} className="border-b align-top last:border-0">
+                    <td className="py-2 font-medium">{action?.label}</td>
+                    <td className="py-2">
+                      <span className="flex items-center gap-2">
+                        <AutomationActionRunStatusIcon status={run.status} />
+                      </span>
+                    </td>
+                    <td className="py-2">
+                      {run.completedAt ? (
+                        <Time date={run.completedAt} />
+                      ) : (
+                        <span className="text-low">—</span>
+                      )}
+                    </td>
+                    <td className="max-w-xs whitespace-pre-line py-2">
+                      {run.failureReason ? (
+                        <span className="text-danger-low">
+                          {run.failureReason}
+                        </span>
+                      ) : (
+                        <span className="text-low">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -246,18 +368,19 @@ function AutomationPage() {
           <PageHeaderContent>
             <Heading>{automationRule.name}</Heading>
             <Text slot="headline">
-              Edit the events, conditions and actions for this automation rule.
+              Edit this automation rule and view the history of recent action
+              runs.
             </Text>
           </PageHeaderContent>
         </PageHeader>
         <SettingsLayout>
-          <Card>
-            <EditAutomationForm
-              automationRule={automationRule}
-              project={project}
-              hasEditPermission={hasEditPermission}
-            />
-          </Card>
+          <EditAutomationForm
+            automationRule={automationRule}
+            project={project}
+            hasEditPermission={hasEditPermission}
+          />
+
+          <ActionRunHistory automationRule={automationRule} />
         </SettingsLayout>
       </PageContainer>
     </Page>

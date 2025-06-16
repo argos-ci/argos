@@ -1,4 +1,3 @@
-import { create } from "domain";
 import { invariant } from "@argos/util/invariant";
 import DataLoader from "dataloader";
 import type { ModelClass } from "objection";
@@ -7,7 +6,6 @@ import { knex } from "@/database";
 import {
   Account,
   AutomationActionRun,
-  AutomationRule,
   AutomationRun,
   Build,
   BuildAggregatedStatus,
@@ -62,10 +60,13 @@ function createLatestAutomationRunLoader() {
         .distinctOn("automationRuleId")
         .orderBy("automationRuleId")
         .orderBy("createdAt", "desc");
-      const latestRunsMap: Record<string, AutomationRun> = {};
-      for (const run of latestRuns) {
-        latestRunsMap[run.automationRuleId] = run;
-      }
+      const latestRunsMap = latestRuns.reduce<Record<string, AutomationRun>>(
+        (map, run) => ({
+          ...map,
+          [run.automationRuleId]: run,
+        }),
+        {},
+      );
       return automationRuleIds.map((id) => latestRunsMap[id] ?? null);
     },
   );
@@ -132,13 +133,13 @@ function AutomationActionRuns() {
       "automationRunId",
       ids as string[],
     );
-    const runsMap: Record<string, AutomationActionRun[]> = {};
-    for (const run of runs) {
-      if (!runsMap[run.automationRunId]) {
-        runsMap[run.automationRunId] = [];
-      }
-      runsMap[run.automationRunId]!.push(run);
-    }
+    const runsMap = runs.reduce<Record<string, AutomationActionRun[]>>(
+      (map, run) => ({
+        ...map,
+        [run.automationRunId]: [...(map[run.automationRunId] || []), run],
+      }),
+      {},
+    );
     return ids.map((id) => runsMap[id] ?? []);
   });
 }

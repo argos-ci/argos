@@ -182,6 +182,7 @@ export type IAutomationActionRun = INode & {
   actionName: Scalars['String']['output'];
   completedAt?: Maybe<Scalars['DateTime']['output']>;
   createdAt: Scalars['DateTime']['output'];
+  failureReason?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   status: Scalars['String']['output'];
   updatedAt: Scalars['DateTime']['output'];
@@ -222,6 +223,7 @@ export type IAutomationConditions = {
 export type IAutomationRule = INode & {
   __typename?: 'AutomationRule';
   active: Scalars['Boolean']['output'];
+  automationActionRuns: Array<IAutomationActionRun>;
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   if: IAutomationConditions;
@@ -230,6 +232,11 @@ export type IAutomationRule = INode & {
   on: Array<Scalars['String']['output']>;
   then: Array<IAutomationAction>;
   updatedAt: Scalars['DateTime']['output'];
+};
+
+
+export type IAutomationRuleAutomationActionRunsArgs = {
+  limit: Scalars['Int']['input'];
 };
 
 export type IAutomationRuleConnection = IConnection & {
@@ -2043,6 +2050,7 @@ export type IAutomationActionRunResolvers<ContextType = Context, ParentType exte
   actionName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   completedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  failureReason?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
@@ -2069,6 +2077,7 @@ export type IAutomationConditionsResolvers<ContextType = Context, ParentType ext
 
 export type IAutomationRuleResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationRule'] = IResolversParentTypes['AutomationRule']> = ResolversObject<{
   active?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  automationActionRuns?: Resolver<Array<IResolversTypes['AutomationActionRun']>, ParentType, ContextType, RequireFields<IAutomationRuleAutomationActionRunsArgs, 'limit'>>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   if?: Resolver<IResolversTypes['AutomationConditions'], ParentType, ContextType>;

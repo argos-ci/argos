@@ -70,6 +70,7 @@ export const typeDefs = gql`
     actionName: String!
     status: String!
     completedAt: DateTime
+    failureReason: String
   }
 
   enum AutomationRunStatus {
@@ -98,6 +99,7 @@ export const typeDefs = gql`
     if: AutomationConditions!
     then: [AutomationAction!]!
     lastAutomationRun: AutomationRun
+    automationActionRuns(limit: Int!): [AutomationActionRun!]!
   }
 
   type AutomationRuleConnection implements Connection {
@@ -424,6 +426,14 @@ export const resolvers: IResolvers = {
         status: getAutomationRunStatus(actionRuns),
         actionRuns: actionRuns.map(toGraphQLAutomationActionRun),
       };
+    },
+    automationActionRuns: async (automationRule, _args) => {
+      const { limit = 40 } = _args;
+      const automationActionRuns = await AutomationActionRun.query()
+        .joinRelated("automationRun.automationRule")
+        .where("automationRun.automationRuleId", automationRule.id)
+        .limit(limit);
+      return automationActionRuns.map(toGraphQLAutomationActionRun);
     },
   },
   AutomationAction: {

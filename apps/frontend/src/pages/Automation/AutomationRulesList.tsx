@@ -24,17 +24,14 @@ import { Menu, MenuItem, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 
-import {
-  AutomationActionRunStatus,
-  AutomationRunStatus,
-  ProjectPermission,
-} from "../../gql/graphql";
+import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { useProjectParams } from "../Project/ProjectParams";
 import { ACTIONS } from "./AutomationFormActionsStep";
 import { getAutomationURL } from "./AutomationParams";
+import { AutomationActionRunStatusIcon } from "./EditAutomation";
 import { AutomationRule } from "./index";
 
 function DeleteAutomationDialog({
@@ -90,42 +87,6 @@ const AutomationRunStatusIcon = ({
 
     default:
       assertNever(status, `Unexpected status for AutomationRunId ${status}`);
-  }
-};
-
-const AutomationActionRunStatusIcon = ({ status }: { status: string }) => {
-  const iconClassName = "shrink-0 size-3";
-
-  switch (status) {
-    case AutomationActionRunStatus.Aborted:
-    case AutomationActionRunStatus.Failed:
-    case AutomationActionRunStatus.Error:
-      return (
-        <>
-          <XCircleIcon className={iconClassName} />
-          <span className="text-danger-low capitalize">{status}</span>
-        </>
-      );
-
-    case AutomationActionRunStatus.Success:
-      return (
-        <>
-          <CheckCircle2Icon className={iconClassName} />
-          <span className="text-success-low capitalize">{status}</span>
-        </>
-      );
-
-    case AutomationActionRunStatus.Pending:
-    case AutomationActionRunStatus.Progress:
-      return (
-        <>
-          <CircleDotIcon className={iconClassName} />
-          <span className="text-warning-low capitalize">{status}</span>
-        </>
-      );
-
-    default:
-      throw new Error(`Unexpected status for AutomationActionRunId ${status}`);
   }
 };
 

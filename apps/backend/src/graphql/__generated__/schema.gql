@@ -136,6 +136,7 @@ type AutomationActionRun implements Node {
   actionName: String!
   completedAt: DateTime
   createdAt: DateTime!
+  failureReason: String
   id: ID!
   status: String!
   updatedAt: DateTime!
@@ -172,6 +173,7 @@ type AutomationConditions {
 
 type AutomationRule implements Node {
   active: Boolean!
+  automationActionRuns(limit: Int!): [AutomationActionRun!]!
   createdAt: DateTime!
   id: ID!
   if: AutomationConditions!
