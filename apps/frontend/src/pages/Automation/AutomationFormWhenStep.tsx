@@ -1,46 +1,28 @@
-import { Controller, useFormContext } from "react-hook-form";
-import type { Path } from "react-hook-form";
-
-import { AutomationEvent } from "@/gql/graphql";
 import { Checkbox } from "@/ui/Checkbox";
-import { CheckboxGroup } from "@/ui/CheckboxGroup";
+import { CheckboxGroupField } from "@/ui/CheckboxGroup";
+import { FieldError } from "@/ui/FieldError";
 
-import {
-  ActionBadge,
-  AutomationRuleFormInputs,
-  StepTitle,
-} from "./AutomationForm";
+import { ActionBadge, StepTitle, type AutomationForm } from "./AutomationForm";
 
-export const AutomationWhenStep = <T extends AutomationRuleFormInputs>({
-  form,
-}: {
-  form: ReturnType<typeof useFormContext<T>>;
-}) => {
+export function AutomationWhenStep(props: { form: AutomationForm }) {
+  const { form } = props;
+
   return (
     <div>
       <StepTitle>
         <ActionBadge>When</ActionBadge> any of the following event happens
       </StepTitle>
 
-      <Controller
+      <CheckboxGroupField
         control={form.control}
-        name={"events" as Path<T>}
-        render={({ field }) => (
-          <CheckboxGroup
-            className="text-sm"
-            value={field.value}
-            onChange={field.onChange}
-            isRequired
-          >
-            <Checkbox value={AutomationEvent.BuildCompleted}>
-              Build Completed
-            </Checkbox>
-            <Checkbox value={AutomationEvent.BuildReviewed}>
-              Build Reviewed
-            </Checkbox>
-          </CheckboxGroup>
-        )}
-      />
+        name="events"
+        aria-label="Automation events"
+        className="text-sm"
+      >
+        <Checkbox value="build.completed">Build Completed</Checkbox>
+        <Checkbox value="build.reviewed">Build Reviewed</Checkbox>
+        <FieldError />
+      </CheckboxGroupField>
     </div>
   );
-};
+}

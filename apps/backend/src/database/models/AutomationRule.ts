@@ -1,27 +1,14 @@
-import {
-  AUTOMATION_ACTIONS,
-  AutomationActionsName,
-  GetActionPayload,
-} from "@/automation/actions/index.js";
-import {
-  AllCondition,
-  AutomationConditionJsonSchema,
-} from "@/automation/types/conditions.js";
-import {
-  AutomationEvent,
-  AutomationEvents,
-} from "@/automation/types/events.js";
+import type { JSONSchema } from "objection";
+import { z } from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
+
+import { AutomationActionSchema } from "@/automation/actions/index.js";
+import { AutomationConditionSchema } from "@/automation/types/conditions.js";
+import { AutomationEventSchema } from "@/automation/types/events.js";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
 import { Project } from "./Project";
-
-type AutomationThen = {
-  [K in AutomationActionsName]: {
-    action: K;
-    actionPayload: GetActionPayload<K>;
-  };
-}[AutomationActionsName];
 
 export class AutomationRule extends Model {
   static override tableName = "automation_rules";
@@ -30,58 +17,36 @@ export class AutomationRule extends Model {
     return ["on", "if", "then"];
   }
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      {
-        type: "object",
-        required: ["active", "name", "projectId", "on", "if", "then"],
-        properties: {
-          active: { type: "boolean" },
-          name: { type: "string" },
-          projectId: { type: "string" },
-          on: {
-            type: "array",
-            items: {
-              type: "string",
-              enum: Object.values(AutomationEvents),
-            },
-          },
-          if: {
-            type: "object",
-            required: ["all"],
-            properties: {
-              all: {
-                type: "array",
-                items: AutomationConditionJsonSchema,
-              },
-            },
-          },
-          then: {
-            type: "array",
-            items: {
-              type: "object",
-              oneOf: AUTOMATION_ACTIONS.map((action) => ({
-                type: "object",
-                required: ["action", "actionPayload"],
-                properties: {
-                  action: { const: action.name },
-                  actionPayload: action.payloadJsonSchema,
-                },
-              })),
-            },
-          },
-        },
-      },
-    ],
-  };
+  static get schema() {
+    return z.object({
+      active: z.boolean(),
+      name: z.string().min(3).max(100),
+      projectId: z.string(),
+      on: z.array(AutomationEventSchema),
+      if: z.object({
+        all: z.array(AutomationConditionSchema),
+      }),
+      then: z.array(AutomationActionSchema),
+    });
+  }
 
-  active!: boolean;
-  name!: string;
-  projectId!: string;
-  on!: AutomationEvent[];
-  if!: AllCondition;
-  then!: AutomationThen[];
+  static override get jsonSchema() {
+    return {
+      allOf: [
+        timestampsSchema,
+        zodToJsonSchema(AutomationRule.schema, {
+          removeAdditionalStrategy: "strict",
+        }) as JSONSchema,
+      ],
+    };
+  }
+
+  active!: z.infer<typeof AutomationRule.schema>["active"];
+  name!: z.infer<typeof AutomationRule.schema>["name"];
+  projectId!: z.infer<typeof AutomationRule.schema>["projectId"];
+  on!: z.infer<typeof AutomationRule.schema>["on"];
+  if!: z.infer<typeof AutomationRule.schema>["if"];
+  then!: z.infer<typeof AutomationRule.schema>["then"];
 
   static override relationMappings = {
     project: {

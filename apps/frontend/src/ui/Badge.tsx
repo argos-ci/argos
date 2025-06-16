@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-export interface BadgeProps {
+interface BadgeProps {
   ref?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
   className?: string;

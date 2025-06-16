@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { Build, BuildReview } from "../../database/models"; // Added BuildReview
 
 export const AutomationEvents = {
@@ -5,8 +7,9 @@ export const AutomationEvents = {
   BuildReviewed: "build.reviewed",
 } as const;
 
-export type AutomationEvent =
-  (typeof AutomationEvents)[keyof typeof AutomationEvents];
+export const AutomationEventSchema = z.nativeEnum(AutomationEvents);
+
+export type AutomationEvent = z.infer<typeof AutomationEventSchema>;
 
 export type AutomationEventPayloadMap = {
   [AutomationEvents.BuildCompleted]: { build: Build };

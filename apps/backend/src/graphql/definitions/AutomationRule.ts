@@ -1,63 +1,43 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
-import { isNil } from "lodash-es";
+import { z } from "zod";
 
-import {
-  AutomationActionsName,
-  getAutomationAction,
-} from "@/automation/actions";
-import {
-  AutomationCondition,
-  AutomationConditionSchema,
-} from "@/automation/types/conditions";
-import { AutomationEvent, AutomationEvents } from "@/automation/types/events";
+import { testAutomation } from "@/automation";
+import type { AutomationActionType } from "@/automation/actions";
+import { AutomationEventSchema } from "@/automation/types/events";
 import {
   AutomationRule,
   AutomationRun,
+  BuildReview,
   Project,
   SlackChannel,
-  SlackInstallation,
+  type SlackInstallation,
 } from "@/database/models";
+import {
+  getSlackChannelById,
+  getSlackChannelByName,
+  normalizeChannelName,
+} from "@/slack";
 
 import {
-  IAutomationAction,
-  IAutomationActionInput,
-  IAutomationActionSendSlackMessagePayloadInput,
-  IAutomationActionType,
-  IAutomationConditionInput,
-  IAutomationConditions,
-  IAutomationConditionType,
-  IAutomationEvent,
-  IAutomationRule,
   IResolvers,
+  type IAutomationActionInput,
+  type ICreateAutomationRuleInput,
+  type IUpdateAutomationRuleInput,
 } from "../__generated__/resolver-types";
-import { forbidden, unauthenticated } from "../util";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  enum AutomationEvent {
-    buildCompleted
-    buildReviewed
-  }
-
-  enum AutomationConditionType {
-    buildType
-    buildConclusion
-    buildName
-  }
-
   type AutomationCondition {
-    type: AutomationConditionType!
+    type: String!
     value: String!
   }
 
   type AutomationConditions {
     all: [AutomationCondition!]!
-  }
-
-  enum AutomationActionType {
-    sendSlackMessage
   }
 
   type AutomationActionSendSlackMessagePayload {
@@ -67,8 +47,8 @@ export const typeDefs = gql`
   }
 
   type AutomationAction {
-    action: AutomationActionType!
-    actionPayload: AutomationActionSendSlackMessagePayload!
+    action: String!
+    actionPayload: JSONObject!
   }
 
   type AutomationRun implements Node {
@@ -76,7 +56,7 @@ export const typeDefs = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     buildId: String
-    event: AutomationEvent!
+    event: String!
   }
 
   type AutomationRule implements Node {
@@ -85,7 +65,7 @@ export const typeDefs = gql`
     updatedAt: DateTime!
     name: String!
     active: Boolean!
-    on: [AutomationEvent!]!
+    on: [String!]!
     if: AutomationConditions!
     then: [AutomationAction!]!
     lastAutomationRunDate: DateTime
@@ -97,25 +77,19 @@ export const typeDefs = gql`
   }
 
   input AutomationConditionInput {
-    type: AutomationConditionType!
+    type: String!
     value: String!
   }
 
-  input AutomationActionSendSlackMessagePayloadInput {
-    channelId: String
-    name: String!
-    slackId: String!
-  }
-
   input AutomationActionInput {
-    type: AutomationActionType!
-    payload: AutomationActionSendSlackMessagePayloadInput!
+    type: String!
+    payload: JSONObject!
   }
 
   input CreateAutomationRuleInput {
     projectId: String!
     name: String!
-    events: [AutomationEvent!]!
+    events: [String!]!
     conditions: [AutomationConditionInput!]!
     actions: [AutomationActionInput!]!
   }
@@ -123,8 +97,14 @@ export const typeDefs = gql`
   input UpdateAutomationRuleInput {
     id: String!
     name: String!
-    events: [AutomationEvent!]!
+    events: [String!]!
     conditions: [AutomationConditionInput!]!
+    actions: [AutomationActionInput!]!
+  }
+
+  input TestAutomationRuleInput {
+    projectId: String!
+    event: String!
     actions: [AutomationActionInput!]!
   }
 
@@ -140,247 +120,184 @@ export const typeDefs = gql`
     updateAutomationRule(input: UpdateAutomationRuleInput!): AutomationRule!
     "Deactivate automation"
     deactivateAutomationRule(id: String!): AutomationRule!
+    "Test automation rule by sending a test event"
+    testAutomation(input: TestAutomationRuleInput!): Boolean!
   }
 `;
 
-const automationEventMap: Record<IAutomationEvent, AutomationEvent> = {
-  [IAutomationEvent.BuildCompleted]: AutomationEvents.BuildCompleted,
-  [IAutomationEvent.BuildReviewed]: AutomationEvents.BuildReviewed,
-};
+/**
+ * Extract actions from input variables.
+ */
+async function getActionsFromInput(args: {
+  project: Project;
+  input: Array<IAutomationActionInput>;
+}) {
+  const { project } = args;
+  const slackChannelActionPayloads = args.input
+    .filter((a) => a.type === "sendSlackMessage")
+    .map((action) =>
+      z
+        .object({
+          slackId: z
+            .string()
+            .max(256, { message: "Must be 256 characters or less" }),
+          name: z.string().min(1, { message: "Required" }).max(256, {
+            message: "Must be 256 characters or less",
+          }),
+        })
+        .parse(action.payload),
+    );
 
-function parseAutomationInputs(events: IAutomationEvent[]): AutomationEvent[] {
-  return events.map((event) => {
-    const mapped = automationEventMap[event];
-    if (!mapped) {
-      throw new Error(`Unknown automation event: ${event}`);
-    }
-    return mapped;
-  });
-}
+  const actions: AutomationActionType[] = [];
 
-function parseConditionType(
-  type: IAutomationConditionInput["type"],
-): AutomationCondition["type"] {
-  switch (type) {
-    case "buildType":
-      return "build-type";
-    case "buildConclusion":
-      return "build-conclusion";
-    case "buildName":
-      return "build-name";
-    default:
-      throw new Error("Unknown automation condition type: " + type);
-  }
-}
+  if (slackChannelActionPayloads.length > 0) {
+    await project.$fetchGraph("account.slackInstallation");
 
-function parseConditionInputs(
-  conditions: IAutomationConditionInput[],
-): AutomationCondition[] {
-  return conditions.map((condition) => {
-    const type = parseConditionType(condition.type);
-    return AutomationConditionSchema.parse({
-      type,
-      value: condition.value,
-    });
-  });
-}
+    const slackInstallation = project.account?.slackInstallation;
 
-function parseActionInputs(
-  actions: IAutomationActionInput[],
-  slackChannels: SlackChannel[],
-) {
-  return actions.map((action) => {
-    const { type, payload } = action;
-    const actionDefinition = getAutomationAction(type as AutomationActionsName);
-    if (actionDefinition.name === "sendSlackMessage") {
-      const slackChannel = slackChannels.find(
-        (channel) => channel.slackId === payload.slackId,
+    if (!slackInstallation) {
+      throw badUserInput(
+        "Slack installation not found for the project account.",
       );
+    }
+
+    for (const payload of slackChannelActionPayloads) {
+      // Get or create the Slack channel by name or ID (prefer ID if available)
+      const slackChannel = payload.slackId
+        ? await getOrCreateSlackChannelBySlackId({
+            slackInstallation,
+            slackId: payload.slackId,
+          })
+        : await getOrCreateSlackChannelByName({
+            slackInstallation,
+            name: payload.name,
+          });
+
       if (!slackChannel) {
-        throw new Error(
-          `Slack channel id "${payload.slackId}" not found for action ${type}.`,
+        throw badUserInput(
+          `Slack channel "${payload.name}" not found in ${slackInstallation.teamName} workspace.`,
         );
       }
 
-      const actionPayload = { channelId: slackChannel.id };
-      const result = actionDefinition.payloadSchema.safeParse(actionPayload);
-      if (!result.success) {
-        throw new Error(`Invalid payload for action ${type}: ${result.error}`);
-      }
-
-      return { action: actionDefinition.name, actionPayload };
+      actions.push({
+        action: "sendSlackMessage",
+        actionPayload: {
+          channelId: slackChannel.id,
+        },
+      });
     }
-
-    assertNever(
-      actionDefinition.name,
-      `Unknown action type: ${actionDefinition.name}`,
-    );
-  });
-}
-
-const graphQLAutomationEventMap: Record<AutomationEvent, IAutomationEvent> = {
-  [AutomationEvents.BuildCompleted]: IAutomationEvent.BuildCompleted,
-  [AutomationEvents.BuildReviewed]: IAutomationEvent.BuildReviewed,
-};
-
-function toGraphQLAutomationEvent(event: AutomationEvent): IAutomationEvent {
-  const mapped = graphQLAutomationEventMap[event];
-  if (!mapped) {
-    throw new Error(`Unknown automation event: ${event}`);
-  }
-  return mapped;
-}
-
-function toGraphQLConditionType(
-  type: AutomationCondition["type"],
-): IAutomationConditionType {
-  switch (type) {
-    case "build-type":
-      return IAutomationConditionType.BuildType;
-    case "build-conclusion":
-      return IAutomationConditionType.BuildConclusion;
-    case "build-name":
-      return IAutomationConditionType.BuildName;
-    default:
-      assertNever(type, `Unknown condition type: ${type}`);
-  }
-}
-
-function toGraphQLAutomationConditions(conditions: {
-  all: AutomationCondition[];
-}): IAutomationConditions {
-  return {
-    all: conditions.all.map((condition) => {
-      const type = toGraphQLConditionType(condition.type);
-      return { type, value: condition.value };
-    }),
-  };
-}
-
-async function toGraphQLAutomationActions(
-  then: AutomationRule["then"],
-): Promise<IAutomationAction[]> {
-  const slackChannelIds = [
-    ...new Set(
-      then
-        .filter(({ action }) => action === "sendSlackMessage")
-        .map(({ actionPayload }) => actionPayload.channelId),
-    ),
-  ];
-  const slackChannels =
-    slackChannelIds.length > 0
-      ? await SlackChannel.query().findByIds(slackChannelIds)
-      : [];
-
-  return then.map(({ action: actionName, actionPayload }) => {
-    switch (actionName) {
-      case "sendSlackMessage": {
-        const slackChannel = slackChannels.find(
-          (channel) => channel.id === actionPayload.channelId,
-        );
-        if (!slackChannel) {
-          throw new Error(
-            `Slack channel with ID ${actionPayload.channelId} not found.`,
-          );
-        }
-
-        return {
-          action: IAutomationActionType.SendSlackMessage,
-          actionPayload: {
-            channelId: actionPayload.channelId,
-            slackId: slackChannel.slackId,
-            name: slackChannel.name,
-          },
-        };
-      }
-
-      default:
-        throw new Error(`Unknown action type: ${actionName}`);
-    }
-  });
-}
-
-async function createSlackChannels(
-  slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
-  installationId: string,
-): Promise<SlackChannel[]> {
-  if (slackChannelInputs.length === 0) {
-    return [];
   }
 
-  return SlackChannel.query().insertAndFetch(
-    slackChannelInputs.map((input) => ({
-      name: input.name,
-      slackId: input.slackId,
-      slackInstallationId: installationId,
-    })),
-  );
+  return actions;
 }
 
-async function updateSlackChannels(
-  slackChannelInputs: IAutomationActionSendSlackMessagePayloadInput[],
-  installationId: string,
-) {
-  const channelIds = slackChannelInputs
-    .map((input) => input.channelId)
-    .filter((input) => !isNil(input));
-  if (channelIds.length === 0) {
-    return [];
-  }
+/**
+ * Get automation rule data from input variables.
+ */
+async function getAutomationRuleDataFromInput(args: {
+  project: Project;
+  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput;
+}) {
+  const { project } = args;
 
-  const slackChannels = await SlackChannel.query()
-    .where("slackInstallationId", installationId)
-    .whereIn("id", channelIds);
+  validateAutomationRuleInput(args.input);
 
-  const slackChannelToUpdate = slackChannelInputs.filter((input) => {
-    const slackChannel = slackChannels.find(
-      (channel) => input.channelId && channel.id === input.channelId,
-    );
-    return (
-      slackChannel &&
-      (slackChannel.name !== input.name ||
-        slackChannel.slackId !== input.slackId)
-    );
+  const then = await getActionsFromInput({
+    project,
+    input: args.input.actions,
   });
 
-  const updatedSlackChannels =
-    slackChannelToUpdate.length > 0
-      ? await Promise.all(
-          slackChannelToUpdate.map((input) =>
-            SlackChannel.query().patchAndFetchById(input.channelId!, {
-              name: input.name,
-              slackId: input.slackId,
-            }),
-          ),
-        )
-      : [];
-
-  return slackChannels.map((channel) => {
-    const updatedChannel = updatedSlackChannels.find(
-      (c) => c.id === channel.id,
-    );
-    return updatedChannel || channel;
-  });
-}
-
-export async function toGraphQLAutomationRule(
-  automationRule: AutomationRule,
-): Promise<IAutomationRule> {
-  const then = await toGraphQLAutomationActions(automationRule.then);
-  return {
-    ...automationRule,
-    createdAt: new Date(automationRule.createdAt),
-    updatedAt: new Date(automationRule.updatedAt),
-    on: automationRule.on.map(toGraphQLAutomationEvent),
-    if: toGraphQLAutomationConditions(
-      automationRule.if as unknown as { all: AutomationCondition[] },
-    ),
+  return AutomationRule.schema.parse({
+    active: true,
+    name: args.input.name,
+    projectId: project.id,
+    on: args.input.events,
+    if: { all: args.input.conditions },
     then,
-  };
+  });
 }
 
-function validAutomationRuleName(name: string): boolean {
-  return name.length >= 3 && name.length <= 100;
+/**
+ * Get or create a Slack channel by name.
+ */
+async function getOrCreateSlackChannelByName(input: {
+  slackInstallation: SlackInstallation;
+  name: string;
+}) {
+  const { slackInstallation } = input;
+  const name = normalizeChannelName(input.name);
+  const existingSlackChannel = await SlackChannel.query().findOne({
+    name,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  if (existingSlackChannel) {
+    return existingSlackChannel;
+  }
+
+  const channel = await getSlackChannelByName({
+    installation: slackInstallation,
+    name,
+  });
+
+  if (!channel) {
+    return null;
+  }
+
+  const slackChannel = await SlackChannel.query().insertAndFetch({
+    name: channel.name,
+    slackId: channel.id,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  return slackChannel;
+}
+
+/**
+ * Get or create a Slack channel by id.
+ */
+async function getOrCreateSlackChannelBySlackId(input: {
+  slackInstallation: SlackInstallation;
+  slackId: string;
+}) {
+  const { slackInstallation, slackId } = input;
+  const existingSlackChannel = await SlackChannel.query().findOne({
+    slackId,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  if (existingSlackChannel) {
+    return existingSlackChannel;
+  }
+
+  const channel = await getSlackChannelById({
+    installation: slackInstallation,
+    id: slackId,
+  });
+
+  if (!channel) {
+    return null;
+  }
+
+  const slackChannel = await SlackChannel.query().insertAndFetch({
+    name: channel.name,
+    slackId: channel.id,
+    slackInstallationId: slackInstallation.id,
+  });
+
+  return slackChannel;
+}
+
+function validateAutomationRuleInput(
+  input: ICreateAutomationRuleInput | IUpdateAutomationRuleInput,
+): void {
+  if (input.events.length === 0) {
+    throw new Error("At least one event must be selected.");
+  }
+
+  if (input.actions.length === 0) {
+    throw new Error("At least one action must be specified.");
+  }
 }
 
 export const resolvers: IResolvers = {
@@ -392,26 +309,54 @@ export const resolvers: IResolvers = {
       return lastRun ? new Date(lastRun.createdAt) : null;
     },
   },
+  AutomationAction: {
+    actionPayload: async (action) => {
+      switch (action.action) {
+        case "sendSlackMessage": {
+          const slackChannel = await SlackChannel.query().findById(
+            action.actionPayload.channelId,
+          );
+          if (!slackChannel) {
+            return {
+              slackId: "",
+              name: "deleted",
+            };
+          }
+          return {
+            slackId: slackChannel.slackId,
+            name: slackChannel.name,
+          };
+        }
+        default: {
+          throw new Error(`Unknown action: ${action.action}`);
+        }
+      }
+    },
+  },
   Query: {
     automationRule: async (_root, args, ctx) => {
       const { auth } = ctx;
+
       if (!auth) {
         throw unauthenticated();
       }
 
-      const automationRule = (await AutomationRule.query()
+      const automationRule = await AutomationRule.query()
         .findById(args.id)
         .withGraphFetched("project")
-        .throwIfNotFound()) as AutomationRule & { project: Project };
+        .throwIfNotFound();
+
+      invariant(automationRule.project, "Project relation not found");
 
       const permissions = await automationRule.project.$getPermissions(
         auth.user,
       );
+
       if (!permissions.includes("admin")) {
         throw forbidden();
       }
 
-      return toGraphQLAutomationRule(automationRule);
+      return automationRule;
     },
   },
   Mutation: {
@@ -421,56 +366,26 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { projectId, name, events, conditions, actions } = args.input;
+      const { projectId } = args.input;
 
-      const project = await Project.query()
-        .findById(projectId)
-        .throwIfNotFound();
+      const project = await Project.query().findById(projectId);
+
+      if (!project) {
+        throw notFound("Project not found.");
+      }
 
       const permissions = await project.$getPermissions(auth.user);
+
       if (!permissions.includes("admin")) {
         throw forbidden();
       }
 
-      if (!validAutomationRuleName(name)) {
-        throw new Error("Name must be between 3 and 100 characters long.");
-      }
-
-      if (events.length === 0) {
-        throw new Error("At least one event must be selected.");
-      }
-
-      if (actions.length === 0) {
-        throw new Error("At least one action must be specified.");
-      }
-
-      const slackChannelInputs = actions
-        .filter((a) => a.type === IAutomationActionType.SendSlackMessage)
-        .map((action) => action.payload);
-
-      const slackChannels: SlackChannel[] = [];
-
-      if (slackChannelInputs.length > 0) {
-        const slackInstallation = await SlackInstallation.query()
-          .joinRelated("account")
-          .findOne({ "account.id": project.accountId })
-          .throwIfNotFound();
-        const newSlackChannels = await createSlackChannels(
-          slackChannelInputs,
-          slackInstallation.id,
-        );
-        slackChannels.push(...newSlackChannels);
-      }
-
-      const automationRule = await AutomationRule.query().insertAndFetch({
-        active: true,
-        name,
-        projectId: project.id,
-        on: parseAutomationInputs(events),
-        if: { all: parseConditionInputs(conditions) },
-        then: parseActionInputs(actions, slackChannels),
+      const data = await getAutomationRuleDataFromInput({
+        project,
+        input: args.input,
       });
-      return toGraphQLAutomationRule(automationRule);
+
+      return AutomationRule.query().insertAndFetch(data);
     },
     updateAutomationRule: async (_root, args, ctx) => {
       const { auth } = ctx;
@@ -478,64 +393,30 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { id, name, events, conditions, actions } = args.input;
+      const automationRule = await AutomationRule.query()
+        .findById(args.input.id)
+        .withGraphFetched("project");
 
-      const automationRule = (await AutomationRule.query()
-        .findById(id)
-        .withGraphFetched("project")
-        .throwIfNotFound()) as AutomationRule & { project: Project };
+      if (!automationRule) {
+        throw notFound("Automation rule not found.");
+      }
+
+      invariant(automationRule.project, "Project relation not found");
 
       const permissions = await automationRule.project.$getPermissions(
         auth.user,
       );
+
       if (!permissions.includes("admin")) {
         throw forbidden();
       }
 
-      if (!validAutomationRuleName(name)) {
-        throw new Error("Name must be between 3 and 100 characters long.");
-      }
+      const data = await getAutomationRuleDataFromInput({
+        project: automationRule.project,
+        input: args.input,
+      });
 
-      if (events.length === 0) {
-        throw new Error("At least one event must be selected.");
-      }
-
-      if (actions.length === 0) {
-        throw new Error("At least one action must be specified.");
-      }
-
-      const slackChannelInputs = actions
-        .filter((a) => a.type === IAutomationActionType.SendSlackMessage)
-        .map((action) => action.payload);
-
-      const slackChannels: SlackChannel[] = [];
-
-      if (slackChannelInputs.length > 0) {
-        const slackInstallation = await SlackInstallation.query()
-          .joinRelated("account")
-          .findOne({ "account.id": automationRule.project.accountId })
-          .throwIfNotFound();
-
-        const updatedSlackChannels = await updateSlackChannels(
-          slackChannelInputs.filter((input) => input.channelId),
-          slackInstallation.id,
-        );
-        const newSlackChannels = await createSlackChannels(
-          slackChannelInputs.filter((input) => !input.channelId),
-          slackInstallation.id,
-        );
-        slackChannels.push(...updatedSlackChannels, ...newSlackChannels);
-      }
-
-      const updatedAutomationRule = await automationRule
-        .$query()
-        .patchAndFetch({
-          name,
-          on: parseAutomationInputs(events),
-          if: { all: parseConditionInputs(conditions) },
-          then: parseActionInputs(actions, slackChannels),
-        });
-      return toGraphQLAutomationRule(updatedAutomationRule);
+      return automationRule.$query().patchAndFetch(data);
     },
     deactivateAutomationRule: async (_root, { id }, ctx) => {
       const { auth } = ctx;
@@ -543,20 +424,103 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const automationRule = (await AutomationRule.query()
+      const automationRule = await AutomationRule.query()
         .findById(id)
-        .withGraphFetched("project")
-        .throwIfNotFound()) as AutomationRule & { project: Project };
+        .withGraphFetched("project");
+
+      if (!automationRule) {
+        throw notFound("Automation rule not found.");
+      }
+
+      invariant(automationRule.project, "Project relation not found");
 
       const permissions = await automationRule.project.$getPermissions(
         auth.user,
       );
+
       if (!permissions.includes("admin")) {
         throw forbidden();
       }
 
-      await automationRule.$query().patch({ active: false });
-      return toGraphQLAutomationRule(automationRule);
+      return automationRule.$query().patchAndFetch({ active: false });
+    },
+    testAutomation: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { projectId } = args.input;
+
+      const project = await Project.query().findById(projectId);
+
+      if (!project) {
+        throw notFound("Project not found.");
+      }
+
+      const permissions = await project.$getPermissions(auth.user);
+
+      if (!permissions.includes("admin")) {
+        throw forbidden();
+      }
+
+      const automationEvent = AutomationEventSchema.parse(args.input.event);
+      const actions = await getActionsFromInput({
+        project,
+        input: args.input.actions,
+      });
+
+      switch (automationEvent) {
+        case "build.completed": {
+          const lastBuild = await project
+            .$relatedQuery("builds")
+            .orderBy("id", "desc")
+            .first();
+
+          if (!lastBuild) {
+            throw notFound(
+              "The project must have at least one build to test this automation.",
+            );
+          }
+
+          await testAutomation({
+            event: automationEvent,
+            actions,
+            payload: {
+              build: lastBuild,
+            },
+          });
+          return true;
+        }
+        case "build.reviewed": {
+          const lastBuildReview = await BuildReview.query()
+            .joinRelated("build")
+            .withGraphFetched("build")
+            .where("build.projectId", project.id)
+            .orderBy("build_reviews.createdAt", "desc")
+            .first();
+
+          if (!lastBuildReview) {
+            throw notFound(
+              "The project must have at least one build review to test this automation.",
+            );
+          }
+
+          invariant(lastBuildReview.build, "build relation not found");
+
+          await testAutomation({
+            event: automationEvent,
+            actions,
+            payload: {
+              build: lastBuildReview.build,
+              buildReview: lastBuildReview,
+            },
+          });
+          return true;
+        }
+        default:
+          assertNever(automationEvent, `Unknown event: ${automationEvent}`);
+      }
     },
   },
 };

@@ -1,104 +1,137 @@
-import { Key } from "react-aria";
-import { Path, PathValue, useFormContext } from "react-hook-form";
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@apollo/client";
+import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
+import { Text } from "react-aria-components";
+import { useFieldArray } from "react-hook-form";
 
-import { AutomationActionType } from "@/gql/graphql";
+import { useRefetchWhenActive } from "@/containers/Apollo";
+import { SlackColoredLogo } from "@/containers/Slack";
+import { graphql } from "@/gql";
+import { ButtonIcon, LinkButton } from "@/ui/Button";
+import { FieldError } from "@/ui/FieldError";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { ListBox, ListBoxItem } from "@/ui/ListBox";
+import { ListBox, ListBoxItem, ListBoxItemIcon } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
-import { Select, SelectButton } from "@/ui/Select";
+import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 
+import { useAccountParams } from "../Account/AccountParams";
 import {
   ActionBadge,
-  AutomationRuleFormInputs,
   RemovableTask,
   StepTitle,
+  type AutomationForm,
 } from "./AutomationForm";
-import { NewAutomationInputs } from "./NewAutomation";
 
-type Action = { type: AutomationActionType; label: string };
-
-const ACTIONS = [
-  { type: AutomationActionType.SendSlackMessage, label: "Send Slack Message" },
-] satisfies Action[];
-
-const SendSlackMessageAction = ({ actionIndex }: { actionIndex: number }) => {
-  const form = useFormContext<NewAutomationInputs>();
-
-  return (
-    <div className="flex items-center gap-2 overflow-auto">
-      <div>Send message to Slack channel</div>
-      <FormTextInput
-        {...form.register(`actions.${actionIndex}.payload.slackId`, {
-          maxLength: {
-            value: 11,
-            message: "Name must be 100 characters or less",
-          },
-          required: "Slack channel ID is required",
-        })}
-        label="Slack Channel"
-        hiddenLabel
-        placeholder="Channel ID, eg. C07VDNT3CTX"
-        className="w-64"
-      />
-      <FormTextInput
-        {...form.register(`actions.${actionIndex}.payload.name`, {
-          maxLength: {
-            value: 100,
-            message: "Name must be 100 characters or less",
-          },
-          required: "Slack channel name is required",
-        })}
-        label="Slack Channel Name"
-        hiddenLabel
-        placeholder="name, eg. #general"
-        className="w-64"
-      />
-    </div>
-  );
-};
-
-const ActionDetail = ({
-  actionType,
-  actionIndex,
-}: {
-  actionType: AutomationActionType;
-  actionIndex: number;
-}) => {
-  switch (actionType) {
-    case AutomationActionType.SendSlackMessage:
-      return <SendSlackMessageAction actionIndex={actionIndex} />;
-
-    default:
-      return (
-        <div className="text-danger-low">Unknown action type: {actionType}</div>
-      );
+const SlackInstallationQuery = graphql(`
+  query AutomationFormActionsStep_team($accountSlug: String!) {
+    account(slug: $accountSlug) {
+      id
+      slackInstallation {
+        id
+        teamName
+      }
+    }
   }
-};
+`);
 
-export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
-  form,
-}: {
-  form: ReturnType<typeof useFormContext<T>>;
-}) => {
-  const actionsField = "actions" as Path<T>;
-  const selectedActions: T["actions"] = form.watch(actionsField);
+function SendSlackMessageAction(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const { name, form } = props;
+  const params = useAccountParams();
+  invariant(params, "Account params are required for Slack installation query");
+  const { data, refetch } = useSuspenseQuery(SlackInstallationQuery, {
+    variables: {
+      accountSlug: params.accountSlug,
+    },
+  });
 
-  function onRemove(index: number) {
-    form.setValue(
-      actionsField,
-      selectedActions.filter((_, i) => i !== index) as PathValue<T, Path<T>>,
+  // When we add a second action, types will break here, we will need to handle it
+  // not sure how to do that yet
+
+  const hasSlackInstallation = Boolean(data.account?.slackInstallation);
+
+  // Refetch the Slack installation when the window becomes active again.
+  useRefetchWhenActive({ refetch, skip: hasSlackInstallation });
+
+  const slackInstallation = data.account?.slackInstallation;
+
+  if (!slackInstallation) {
+    return (
+      <div className="flex flex-col items-start gap-2 p-2">
+        To post to a Slack channel, you need to connect your Slack workspace
+        first.
+        <LinkButton
+          href={`/${params.accountSlug}/settings#slack`}
+          target="_blank"
+          variant="secondary"
+        >
+          <ButtonIcon>
+            <SlackColoredLogo />
+          </ButtonIcon>
+          Connect Slack
+        </LinkButton>
+      </div>
     );
   }
 
-  function onSelectionChange(key: Key) {
-    form.setValue(actionsField, [
-      ...selectedActions,
-      {
-        type: key as AutomationActionType,
-        payload: {},
-      },
-    ] as PathValue<T, Path<T>>);
+  return (
+    <div>
+      Send notification to the {slackInstallation.teamName} workspace to{" "}
+      <FormTextInput
+        {...form.register(`${name}.payload.name`)}
+        orientation="horizontal"
+        label="Slack Channel Name"
+        hiddenLabel
+        placeholder="eg. #general, James Brown"
+        className="w-52"
+        inline
+      />{" "}
+      (optionnaly an ID:{" "}
+      <FormTextInput
+        {...form.register(`${name}.payload.slackId`)}
+        orientation="horizontal"
+        label="Slack Channel"
+        hiddenLabel
+        placeholder="eg. C07VDNT3CTX"
+        className="w-36"
+        inline
+      />
+      )
+    </div>
+  );
+}
+
+function ActionDetail(props: {
+  form: AutomationForm;
+  name: `actions.${number}`;
+}) {
+  const { name, form } = props;
+  const field = form.watch(name);
+  switch (field.type) {
+    case "sendSlackMessage":
+      return <SendSlackMessageAction form={form} name={name} />;
+    default:
+      assertNever(field.type, "Unknown action type");
   }
+}
+
+export function AutomationActionsStep(props: { form: AutomationForm }) {
+  const { form } = props;
+  const name = "actions" as const;
+  const actions = [
+    {
+      type: "sendSlackMessage",
+      label: "Post in Slack channel",
+      icon: SlackColoredLogo,
+    },
+  ];
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name,
+  });
 
   return (
     <div>
@@ -106,30 +139,60 @@ export const AutomationActionsStep = <T extends AutomationRuleFormInputs>({
         <ActionBadge>Then</ActionBadge> perform these actions
       </StepTitle>
       <div className="flex flex-col gap-2">
-        {selectedActions.map((selectedAction, index) => {
+        {fields.map((_field, index) => {
           return (
-            <RemovableTask key={index} onRemove={() => onRemove(index)}>
-              <ActionDetail
-                actionType={selectedAction.type}
-                actionIndex={index}
-              />
+            <RemovableTask key={index} onRemove={() => remove(index)}>
+              <Suspense fallback={<div>Loading...</div>}>
+                <ActionDetail form={form} name={`${name}.${index}`} />
+              </Suspense>
             </RemovableTask>
           );
         })}
-
-        <Select aria-label="Action Types" onSelectionChange={onSelectionChange}>
-          <SelectButton className="w-full">Add action...</SelectButton>
+        <SelectField
+          control={form.control}
+          name={name}
+          aria-label="Action Types"
+          selectedKey={null}
+          onSelectionChange={(key) => {
+            switch (key) {
+              case "sendSlackMessage": {
+                append({
+                  type: "sendSlackMessage",
+                  payload: {
+                    name: "",
+                    slackId: "",
+                  },
+                });
+                return;
+              }
+              default:
+                throw new Error(`Unknown action type: ${key}`);
+            }
+          }}
+          placeholder="Add action…"
+        >
+          <SelectButton className="w-full">
+            <SelectValue />
+          </SelectButton>
+          <FieldError />
           <Popover>
             <ListBox>
-              {ACTIONS.map((c) => (
-                <ListBoxItem key={c.type} id={c.type}>
-                  {c.label}
+              {actions.map((action) => (
+                <ListBoxItem
+                  key={action.type}
+                  id={action.type}
+                  textValue={action.label}
+                >
+                  <ListBoxItemIcon>
+                    <action.icon />
+                  </ListBoxItemIcon>
+                  <Text slot="label">{action.label}</Text>
                 </ListBoxItem>
               ))}
             </ListBox>
           </Popover>
-        </Select>
+        </SelectField>
       </div>
     </div>
   );
-};
+}

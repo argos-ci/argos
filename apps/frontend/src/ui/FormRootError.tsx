@@ -1,11 +1,18 @@
-import { useFormContext } from "react-hook-form";
+import { invariant } from "@argos/util/invariant";
+import { useFormContext, type UseFormReturn } from "react-hook-form";
 
-import { FormError } from "./FormError";
+import { ErrorMessage } from "./ErrorMessage";
 
-export const FormRootError = () => {
-  const { formState } = useFormContext();
-  if (!formState.errors.root?.serverError) {
+export function FormRootError(props: { form?: UseFormReturn<any, any, any> }) {
+  const contextForm = useFormContext();
+  const form = props.form || contextForm;
+  invariant(form, "A form must be provided to FormRootError");
+  if (!form.formState.errors.root?.serverError) {
     return null;
   }
-  return <FormError>{formState.errors.root.serverError.message}</FormError>;
-};
+  return (
+    <ErrorMessage>
+      {form.formState.errors.root.serverError.message}
+    </ErrorMessage>
+  );
+}

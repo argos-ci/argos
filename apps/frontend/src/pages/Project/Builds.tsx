@@ -472,7 +472,7 @@ export function Component() {
     <Page>
       <Helmet>
         <title>
-          {accountSlug}/{projectName} • Builds
+          Builds • {accountSlug}/{projectName}
         </title>
       </Helmet>
       <PageContent accountSlug={accountSlug} projectName={projectName} />

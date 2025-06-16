@@ -1,86 +1,131 @@
 import { Trash2Icon } from "lucide-react";
-import { Path, useFormContext } from "react-hook-form";
+import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
+import { z } from "zod/v4";
 
-import { Badge, type BadgeProps } from "@/ui/Badge";
+import { BuildType } from "@/gql/graphql";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
+import { Tooltip } from "@/ui/Tooltip";
 
-import { EditAutomationInputs } from "./EditAutomation";
-import { NewAutomationInputs } from "./NewAutomation";
+const BuildConclusionConditionSchema = z.object({
+  type: z.literal("build-conclusion"),
+  value: z
+    .enum(["no-changes", "changes-detected"])
+    .nullable()
+    .optional()
+    .refine((val) => val !== null, { message: "Required" }),
+});
 
-export const ActionBadge = twc(
-  Badge,
-)<BadgeProps>`bg-primary-active text-primary w-13 inline-flex justify-center uppercase`;
+const BuildNameConditionSchema = z.object({
+  type: z.literal("build-name"),
+  value: z.string().nonempty({ error: "Required" }),
+});
 
-export const StepTitle = twc.div`flex items-center gap-2 mb-2`;
+const BuildTypeConditionSchema = z.object({
+  type: z.literal("build-type"),
+  value: z
+    .enum(BuildType)
+    .nullable()
+    .optional()
+    .refine((val) => val !== null, { message: "Required" }),
+});
 
-export const RemovableTask = ({
-  children,
-  onRemove,
-}: {
+const BuildConditionSchema = z.discriminatedUnion("type", [
+  BuildConclusionConditionSchema,
+  BuildNameConditionSchema,
+  BuildTypeConditionSchema,
+]);
+
+const AutomationSlackActionSchema = z.object({
+  type: z.literal("sendSlackMessage"),
+  payload: z.object({
+    slackId: z.string().max(256, { message: "Must be 256 characters or less" }),
+    name: z.string().min(1, { message: "Required" }).max(256, {
+      message: "Must be 256 characters or less",
+    }),
+  }),
+});
+
+const AutomationActionSchema = z.discriminatedUnion("type", [
+  AutomationSlackActionSchema,
+]);
+
+export const AutomationFieldValuesSchema = z.object({
+  name: z
+    .string()
+    .min(1, { message: "Please enter a name" })
+    .min(3, { message: "Must be at least 3 characters" })
+    .max(100, { message: "Must be 100 characters or less" }),
+  events: z
+    .array(z.enum(["build.completed", "build.reviewed"]))
+    .min(1, "At least one event is required"),
+  conditions: z.array(BuildConditionSchema),
+  actions: z
+    .array(AutomationActionSchema)
+    .min(1, "At least one action is required"),
+});
+
+type AutomationFieldValues = z.input<typeof AutomationFieldValuesSchema>;
+export type AutomationTransformedValues = z.output<
+  typeof AutomationFieldValuesSchema
+>;
+
+export type AutomationForm = UseFormReturn<
+  AutomationFieldValues,
+  any,
+  AutomationTransformedValues
+>;
+
+export const ActionBadge = twc.div`bg-primary-active text-primary w-16 inline-flex justify-center uppercase mr-0.5 py-0.5 font-medium text-sm rounded`;
+
+export const StepTitle = twc.div`mb-3`;
+
+export function RemovableTask(props: {
   children: React.ReactNode;
   onRemove: () => void;
-}) => {
+}) {
+  const { children, onRemove } = props;
   return (
-    <div
-      role="listitem"
-      className="bg-ui grid grid-cols-[1fr_auto] items-center gap-4 rounded border px-3 py-1.5 text-sm"
-    >
+    <div className="bg-subtle grid grid-cols-[1fr_auto] items-center gap-4 rounded border px-3 py-1.5 text-sm">
       {children}
-      <IconButton onClick={onRemove} aria-label="Remove">
-        <Trash2Icon />
-      </IconButton>
+      <Tooltip content="Remove">
+        <IconButton onClick={onRemove} aria-label="Remove">
+          <Trash2Icon />
+        </IconButton>
+      </Tooltip>
     </div>
   );
-};
+}
 
-export type AutomationRuleFormInputs =
-  | NewAutomationInputs
-  | EditAutomationInputs;
-
-export const AutomationNameField = <T extends AutomationRuleFormInputs>({
-  name,
-  form,
-}: {
-  name: Path<T>;
-  form: ReturnType<typeof useFormContext<T>>;
-}) => {
+export function AutomationNameField(props: { form: AutomationForm }) {
+  const { form } = props;
   return (
     <FormTextInput
-      {...form.register(name, {
-        required: "Please enter a name",
-        minLength: {
-          value: 3,
-          message: "Name must be at least 3 characters",
-        },
-        maxLength: {
-          value: 100,
-          message: "Name must be 100 characters or less",
-        },
-      })}
+      {...form.register("name")}
       label="Automation rule name"
-      placeholder="eg. Notify Slack on build completion"
+      placeholder="eg. Notify team in Slack when a build completes"
       autoComplete="off"
+      autoFocus
     />
   );
-};
+}
 
-export const FormErrors = ({
-  form,
-}: {
-  form: ReturnType<typeof useFormContext<AutomationRuleFormInputs>>;
-}) => {
-  const rootError = form.formState.errors.root;
-
-  return (
-    <div className="text-danger-low">
-      {rootError &&
-        Object.entries(rootError).map(([field, error]) => (
-          <div key={field}>
-            {(error as { message?: string }).message || "Invalid value"}
-          </div>
-        ))}
-    </div>
-  );
-};
+/**
+ * Converts the form data from the AutomationForm into a format suitable for GraphQL variables.
+ */
+export function formDataToVariables(data: AutomationTransformedValues) {
+  return {
+    name: data.name,
+    events: data.events,
+    conditions: z
+      .array(
+        z.object({
+          type: z.string(),
+          value: z.string(),
+        }),
+      )
+      .parse(data.conditions),
+    actions: data.actions,
+  };
+}
