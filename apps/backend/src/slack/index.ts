@@ -415,7 +415,14 @@ export async function postMessageToSlackChannel(args: {
   const { installation, channel, text, blocks } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
-  await boltApp.client.chat.postMessage({ token, channel, text, blocks });
+  await boltApp.client.chat.postMessage({
+    token,
+    channel,
+    text,
+    blocks,
+    unfurl_links: false,
+    unfurl_media: false,
+  });
 }
 
 const SlackChannelSchema = z.object({
