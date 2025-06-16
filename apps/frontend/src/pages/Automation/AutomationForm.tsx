@@ -8,7 +8,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 
-export const BuildConclusionConditionSchema = z.object({
+const BuildConclusionConditionSchema = z.object({
   type: z.literal("build-conclusion"),
   value: z
     .enum(["no-changes", "changes-detected"])
@@ -17,12 +17,12 @@ export const BuildConclusionConditionSchema = z.object({
     .refine((val) => val !== null, { message: "Required" }),
 });
 
-export const BuildNameConditionSchema = z.object({
+const BuildNameConditionSchema = z.object({
   type: z.literal("build-name"),
   value: z.string().nonempty({ error: "Required" }),
 });
 
-export const BuildTypeConditionSchema = z.object({
+const BuildTypeConditionSchema = z.object({
   type: z.literal("build-type"),
   value: z
     .enum(BuildType)
@@ -31,7 +31,7 @@ export const BuildTypeConditionSchema = z.object({
     .refine((val) => val !== null, { message: "Required" }),
 });
 
-export const BuildConditionSchema = z.discriminatedUnion("type", [
+const BuildConditionSchema = z.discriminatedUnion("type", [
   BuildConclusionConditionSchema,
   BuildNameConditionSchema,
   BuildTypeConditionSchema,
@@ -47,10 +47,9 @@ const AutomationSlackActionSchema = z.object({
   }),
 });
 
-export const AutomationActionSchema = z.discriminatedUnion("type", [
+const AutomationActionSchema = z.discriminatedUnion("type", [
   AutomationSlackActionSchema,
 ]);
-export type AutomationAction = z.infer<typeof AutomationActionSchema>;
 
 export const AutomationFieldValuesSchema = z.object({
   name: z
@@ -67,7 +66,7 @@ export const AutomationFieldValuesSchema = z.object({
     .min(1, "At least one action is required"),
 });
 
-export type AutomationFieldValues = z.input<typeof AutomationFieldValuesSchema>;
+type AutomationFieldValues = z.input<typeof AutomationFieldValuesSchema>;
 export type AutomationTransformedValues = z.output<
   typeof AutomationFieldValuesSchema
 >;

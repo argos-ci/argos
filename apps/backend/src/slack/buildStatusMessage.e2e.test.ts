@@ -26,7 +26,9 @@ describe("getBuildStatusMessage", () => {
     const [build, pullRequest] = await Promise.all([
       factory.Build.create({ projectId: project.id, type: "check" }),
       factory.PullRequest.create(),
+      project.$fetchGraph(`[githubRepository.githubAccount,gitlabProject]`),
     ]);
+
     const [buildUrl, [status]] = await Promise.all([
       build.getUrl(),
       Build.getAggregatedBuildStatuses([build]),
@@ -79,11 +81,11 @@ describe("getBuildStatusMessage", () => {
           },
           {
             type: "mrkdwn",
-            text: "*Commit:* a5028c0",
+            text: "*Commit:* <https://github.com/login-2/repo-1/commit/a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a|a5028c0>",
           },
           {
             type: "mrkdwn",
-            text: "*Branch:* master",
+            text: "*Branch:* <https://github.com/login-2/repo-1/tree/master|master>",
           },
         ],
       },

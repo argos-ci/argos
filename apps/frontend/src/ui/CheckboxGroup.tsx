@@ -21,11 +21,7 @@ interface CheckboxGroupProps
   description?: string;
 }
 
-export function CheckboxGroup({
-  ref,
-  className,
-  ...props
-}: CheckboxGroupProps) {
+function CheckboxGroup({ ref, className, ...props }: CheckboxGroupProps) {
   return (
     <AriaCheckboxGroup
       ref={ref}
@@ -37,7 +33,7 @@ export function CheckboxGroup({
   );
 }
 
-export type CheckboxGroupFieldProps<TFieldValues extends FieldValues> = {
+type CheckboxGroupFieldProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   name: Path<TFieldValues>;
   children: React.ReactNode;

@@ -7,7 +7,7 @@ import {
   type ProjectParams,
 } from "../Project/ProjectParams";
 
-export interface AutomationParams extends ProjectParams {
+interface AutomationParams extends ProjectParams {
   automationId: string;
 }
 

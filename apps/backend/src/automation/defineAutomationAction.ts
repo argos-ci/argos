@@ -1,7 +1,7 @@
 import type { JSONSchema } from "objection";
 import type { z } from "zod";
 
-import { AutomationActionRun } from "@/database/models";
+import type { AutomationActionRun } from "@/database/models/AutomationActionRun";
 
 import type {
   AutomationEvent,

@@ -2,41 +2,13 @@ import type { JSONSchema } from "objection";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
-import {
-  AutomationActionSchema,
-  AutomationActionsName,
-  GetActionPayload,
-} from "@/automation/actions/index.js";
-import {
-  AllCondition,
-  AutomationConditionSchema,
-} from "@/automation/types/conditions.js";
-import {
-  AutomationEvent,
-  AutomationEventSchema,
-} from "@/automation/types/events.js";
+import { AutomationActionSchema } from "@/automation/actions/index.js";
+import { AutomationConditionSchema } from "@/automation/types/conditions.js";
+import { AutomationEventSchema } from "@/automation/types/events.js";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
 import { Project } from "./Project";
-
-type AutomationThen = {
-  [K in AutomationActionsName]: {
-    action: K;
-    actionPayload: GetActionPayload<K>;
-  };
-}[AutomationActionsName];
-
-export const AutomationRuleSchema = z.object({
-  active: z.boolean(),
-  name: z.string().min(3).max(100),
-  projectId: z.string(),
-  on: z.array(AutomationEventSchema),
-  if: z.object({
-    all: z.array(AutomationConditionSchema),
-  }),
-  then: z.array(AutomationActionSchema),
-});
 
 export class AutomationRule extends Model {
   static override tableName = "automation_rules";
@@ -45,21 +17,36 @@ export class AutomationRule extends Model {
     return ["on", "if", "then"];
   }
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      zodToJsonSchema(AutomationRuleSchema, {
-        removeAdditionalStrategy: "strict",
-      }) as JSONSchema,
-    ],
-  };
+  static get schema() {
+    return z.object({
+      active: z.boolean(),
+      name: z.string().min(3).max(100),
+      projectId: z.string(),
+      on: z.array(AutomationEventSchema),
+      if: z.object({
+        all: z.array(AutomationConditionSchema),
+      }),
+      then: z.array(AutomationActionSchema),
+    });
+  }
 
-  active!: boolean;
-  name!: string;
-  projectId!: string;
-  on!: AutomationEvent[];
-  if!: AllCondition;
-  then!: AutomationThen[];
+  static override get jsonSchema() {
+    return {
+      allOf: [
+        timestampsSchema,
+        zodToJsonSchema(AutomationRule.schema, {
+          removeAdditionalStrategy: "strict",
+        }) as JSONSchema,
+      ],
+    };
+  }
+
+  active!: z.infer<typeof AutomationRule.schema>["active"];
+  name!: z.infer<typeof AutomationRule.schema>["name"];
+  projectId!: z.infer<typeof AutomationRule.schema>["projectId"];
+  on!: z.infer<typeof AutomationRule.schema>["on"];
+  if!: z.infer<typeof AutomationRule.schema>["if"];
+  then!: z.infer<typeof AutomationRule.schema>["then"];
 
   static override relationMappings = {
     project: {

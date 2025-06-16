@@ -6,7 +6,7 @@ import {
   type CheckboxProps as AriaCheckboxProps,
 } from "react-aria-components";
 
-export interface CheckboxProps
+interface CheckboxProps
   extends AriaCheckboxProps,
     React.RefAttributes<HTMLLabelElement> {}
 

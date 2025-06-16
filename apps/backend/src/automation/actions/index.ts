@@ -1,9 +1,11 @@
+import type { JSONSchema } from "objection";
 import { z } from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
 
-import { AutomationAction } from "../defineAutomationAction";
+import type { AutomationAction } from "../defineAutomationAction";
 import * as sendSlackMessage from "./sendSlackMessage";
 
-export const AUTOMATION_ACTIONS = [
+const AUTOMATION_ACTIONS = [
   sendSlackMessage.automationAction,
 ] satisfies AutomationAction<string, any>[];
 
@@ -13,6 +15,13 @@ export const AutomationActionSchema = z.discriminatedUnion("action", [
     actionPayload: sendSlackMessage.automationAction.payloadSchema,
   }),
 ]);
+
+export const AutomatedActionJSONSchema = zodToJsonSchema(
+  AutomationActionSchema,
+  {
+    removeAdditionalStrategy: "strict",
+  },
+) as JSONSchema;
 
 export type AutomationActionType = z.infer<typeof AutomationActionSchema>;
 

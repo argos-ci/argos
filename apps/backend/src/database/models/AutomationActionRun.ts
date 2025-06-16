@@ -1,5 +1,5 @@
 import {
-  AUTOMATION_ACTIONS,
+  AutomatedActionJSONSchema,
   AutomationActionsName,
   GetActionPayload,
 } from "@/automation/actions/index.js";
@@ -17,38 +17,31 @@ export class AutomationActionRun<
 > extends Model {
   static override tableName = "automation_action_runs";
 
-  static override jsonSchema = {
-    allOf: [
-      timestampsSchema,
-      jobModelSchema,
-      {
-        type: "object",
-        required: ["automationRunId", "action", "actionPayload"],
-        properties: {
-          conclusion: {
-            oneOf: [
-              { type: "string", enum: ["success", "failed"] },
-              { type: "null" },
-            ],
-          },
-          failureReason: { type: ["string", "null"] },
-          automationRunId: { type: "string" },
-          processedAt: { type: ["string", "null"] },
-          completedAt: { type: ["string", "null"] },
-        },
-      },
-      {
-        oneOf: AUTOMATION_ACTIONS.map((action) => ({
+  static override get jsonSchema() {
+    return {
+      allOf: [
+        timestampsSchema,
+        jobModelSchema,
+        {
           type: "object",
+          required: ["automationRunId", "action", "actionPayload"],
           properties: {
-            action: { const: action.name },
-            actionPayload: action.payloadJsonSchema,
+            conclusion: {
+              oneOf: [
+                { type: "string", enum: ["success", "failed"] },
+                { type: "null" },
+              ],
+            },
+            failureReason: { type: ["string", "null"] },
+            automationRunId: { type: "string" },
+            processedAt: { type: ["string", "null"] },
+            completedAt: { type: ["string", "null"] },
           },
-          required: ["action", "actionPayload"],
-        })),
-      },
-    ],
-  };
+        },
+        AutomatedActionJSONSchema,
+      ],
+    };
+  }
 
   conclusion!: "success" | "failed" | null;
   failureReason!: string | null;

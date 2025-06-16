@@ -8,7 +8,6 @@ import type { AutomationActionType } from "@/automation/actions";
 import { AutomationEventSchema } from "@/automation/types/events";
 import {
   AutomationRule,
-  AutomationRuleSchema,
   AutomationRun,
   BuildReview,
   Project,
@@ -208,7 +207,7 @@ async function getAutomationRuleDataFromInput(args: {
     input: args.input.actions,
   });
 
-  return AutomationRuleSchema.parse({
+  return AutomationRule.schema.parse({
     active: true,
     name: args.input.name,
     projectId: project.id,

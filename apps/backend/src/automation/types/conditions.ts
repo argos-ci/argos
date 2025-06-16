@@ -1,6 +1,4 @@
-import type { JSONSchema } from "objection";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
 
 const BuildTypeConditionSchema = z.object({
   type: z.literal("build-type"),
@@ -28,11 +26,6 @@ export const AutomationConditionSchema = z.discriminatedUnion("type", [
   BuildNameConditionSchema,
 ]);
 export type AutomationCondition = z.infer<typeof AutomationConditionSchema>;
-
-export const AutomationConditionJsonSchema = zodToJsonSchema(
-  AutomationConditionSchema,
-  { removeAdditionalStrategy: "strict" },
-) as JSONSchema;
 
 export type AllCondition = {
   all: AutomationCondition[];
