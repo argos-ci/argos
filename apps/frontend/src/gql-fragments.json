@@ -21,6 +21,7 @@
     ],
     "Node": [
       "AccountSubscription",
+      "AutomationActionRun",
       "AutomationRule",
       "AutomationRun",
       "Build",

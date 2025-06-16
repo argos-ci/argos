@@ -7,8 +7,8 @@ import { testAutomation } from "@/automation";
 import type { AutomationActionType } from "@/automation/actions";
 import { AutomationEventSchema } from "@/automation/types/events";
 import {
+  AutomationActionRun,
   AutomationRule,
-  AutomationRun,
   BuildReview,
   Project,
   SlackChannel,
@@ -21,6 +21,9 @@ import {
 } from "@/slack";
 
 import {
+  IAutomationActionRun,
+  IAutomationRun,
+  IAutomationRunStatus,
   IResolvers,
   type IAutomationActionInput,
   type ICreateAutomationRuleInput,
@@ -51,12 +54,38 @@ export const typeDefs = gql`
     actionPayload: JSONObject!
   }
 
+  enum AutomationActionRunStatus {
+    failed
+    success
+    aborted
+    pending
+    progress
+    error
+  }
+
+  type AutomationActionRun implements Node {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    actionName: String!
+    status: String!
+    completedAt: DateTime
+  }
+
+  enum AutomationRunStatus {
+    running
+    success
+    failed
+  }
+
   type AutomationRun implements Node {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
     buildId: String
     event: String!
+    actionRuns: [AutomationActionRun!]!
+    status: AutomationRunStatus!
   }
 
   type AutomationRule implements Node {
@@ -68,7 +97,7 @@ export const typeDefs = gql`
     on: [String!]!
     if: AutomationConditions!
     then: [AutomationAction!]!
-    lastAutomationRunDate: DateTime
+    lastAutomationRun: AutomationRun
   }
 
   type AutomationRuleConnection implements Connection {
@@ -300,13 +329,101 @@ function validateAutomationRuleInput(
   }
 }
 
+function getAutomationActionRunStatus(
+  AutomationActionRun: AutomationActionRun,
+) {
+  if (AutomationActionRun.jobStatus === "complete") {
+    if (!AutomationActionRun.conclusion) {
+      throw new Error(
+        "AutomationActionRun conclusion is missing, this should not happen.",
+      );
+    }
+
+    return AutomationActionRun.conclusion;
+  }
+
+  return AutomationActionRun.jobStatus;
+}
+
+function getAutomationRunStatus(
+  AutomationActionRuns: AutomationActionRun[],
+): IAutomationRunStatus {
+  const statuses = AutomationActionRuns.map(getAutomationActionRunStatus);
+
+  if (
+    statuses.some((status) => status === "pending" || status === "progress")
+  ) {
+    return IAutomationRunStatus.Running;
+  }
+
+  if (
+    statuses.some(
+      (status) =>
+        status === "aborted" || status === "error" || status === "failed",
+    )
+  ) {
+    return IAutomationRunStatus.Failed;
+  }
+
+  if (statuses.every((status) => status === "success")) {
+    return IAutomationRunStatus.Success;
+  }
+
+  throw new Error("Unknown status for automation run");
+}
+
+function toGraphQLAutomationActionRun(
+  actionRun: AutomationActionRun,
+): IAutomationActionRun {
+  return {
+    ...actionRun,
+    createdAt: new Date(actionRun.createdAt),
+    updatedAt: new Date(actionRun.updatedAt),
+    status: getAutomationActionRunStatus(actionRun),
+    completedAt: actionRun.completedAt ? new Date(actionRun.completedAt) : null,
+    actionName: actionRun.action,
+  };
+}
+
 export const resolvers: IResolvers = {
+  AutomationRun: {
+    actionRuns: async (automationRun, _args, ctx) => {
+      const automationActionRuns = await ctx.loaders.AutomationActionRuns.load(
+        automationRun.id,
+      );
+      return automationActionRuns.map(toGraphQLAutomationActionRun);
+    },
+    status: async (automationRun, _args, ctx) => {
+      const actionRuns = await ctx.loaders.AutomationActionRuns.load(
+        automationRun.id,
+      );
+      return getAutomationRunStatus(actionRuns);
+    },
+  },
   AutomationRule: {
-    lastAutomationRunDate: async (automationRule) => {
-      const lastRun = await AutomationRun.query()
-        .findOne({ automationRuleId: automationRule.id })
-        .orderBy("createdAt", "desc");
-      return lastRun ? new Date(lastRun.createdAt) : null;
+    lastAutomationRun: async (
+      automationRule,
+      _args,
+      ctx,
+    ): Promise<IAutomationRun | null> => {
+      const automationRun = await ctx.loaders.LatestAutomationRun.load(
+        automationRule.id,
+      );
+      if (!automationRun) {
+        return null;
+      }
+
+      const actionRuns = await ctx.loaders.AutomationActionRuns.load(
+        automationRun.id,
+      );
+
+      return {
+        ...automationRun,
+        createdAt: new Date(automationRun.createdAt),
+        updatedAt: new Date(automationRun.updatedAt),
+        status: getAutomationRunStatus(actionRuns),
+        actionRuns: actionRuns.map(toGraphQLAutomationActionRun),
+      };
     },
   },
   AutomationAction: {

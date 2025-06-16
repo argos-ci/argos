@@ -118,16 +118,18 @@ function ActionDetail(props: {
   }
 }
 
+export const ACTIONS = [
+  {
+    type: "sendSlackMessage",
+    label: "Post in Slack channel",
+    icon: SlackColoredLogo,
+  },
+];
+
 export function AutomationActionsStep(props: { form: AutomationForm }) {
   const { form } = props;
   const name = "actions" as const;
-  const actions = [
-    {
-      type: "sendSlackMessage",
-      label: "Post in Slack channel",
-      icon: SlackColoredLogo,
-    },
-  ];
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name,
@@ -177,7 +179,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
           <FieldError />
           <Popover>
             <ListBox>
-              {actions.map((action) => (
+              {ACTIONS.map((action) => (
                 <ListBoxItem
                   key={action.type}
                   id={action.type}

@@ -177,6 +177,25 @@ export type IAutomationActionInput = {
   type: Scalars['String']['input'];
 };
 
+export type IAutomationActionRun = INode & {
+  __typename?: 'AutomationActionRun';
+  actionName: Scalars['String']['output'];
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  status: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export enum IAutomationActionRunStatus {
+  Aborted = 'aborted',
+  Error = 'error',
+  Failed = 'failed',
+  Pending = 'pending',
+  Progress = 'progress',
+  Success = 'success'
+}
+
 export type IAutomationActionSendSlackMessagePayload = {
   __typename?: 'AutomationActionSendSlackMessagePayload';
   channelId: Scalars['String']['output'];
@@ -206,7 +225,7 @@ export type IAutomationRule = INode & {
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   if: IAutomationConditions;
-  lastAutomationRunDate?: Maybe<Scalars['DateTime']['output']>;
+  lastAutomationRun?: Maybe<IAutomationRun>;
   name: Scalars['String']['output'];
   on: Array<Scalars['String']['output']>;
   then: Array<IAutomationAction>;
@@ -221,12 +240,20 @@ export type IAutomationRuleConnection = IConnection & {
 
 export type IAutomationRun = INode & {
   __typename?: 'AutomationRun';
+  actionRuns: Array<IAutomationActionRun>;
   buildId?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   event: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  status: IAutomationRunStatus;
   updatedAt: Scalars['DateTime']['output'];
 };
+
+export enum IAutomationRunStatus {
+  Failed = 'failed',
+  Running = 'running',
+  Success = 'success'
+}
 
 export enum IBaseBranchResolution {
   /** Base branch is resolved from the project settings */
@@ -1641,7 +1668,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } ) | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( AutomationRule ) | ( IAutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChange ) | ( Account );
+  Node: ( Subscription ) | ( IAutomationActionRun ) | ( AutomationRule ) | ( IAutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChange ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1663,6 +1690,8 @@ export type IResolversTypes = ResolversObject<{
   AddContributorToProjectInput: IAddContributorToProjectInput;
   AutomationAction: ResolverTypeWrapper<IAutomationAction>;
   AutomationActionInput: IAutomationActionInput;
+  AutomationActionRun: ResolverTypeWrapper<IAutomationActionRun>;
+  AutomationActionRunStatus: IAutomationActionRunStatus;
   AutomationActionSendSlackMessagePayload: ResolverTypeWrapper<IAutomationActionSendSlackMessagePayload>;
   AutomationCondition: ResolverTypeWrapper<IAutomationCondition>;
   AutomationConditionInput: IAutomationConditionInput;
@@ -1670,6 +1699,7 @@ export type IResolversTypes = ResolversObject<{
   AutomationRule: ResolverTypeWrapper<AutomationRule>;
   AutomationRuleConnection: ResolverTypeWrapper<Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<IResolversTypes['AutomationRule']> }>;
   AutomationRun: ResolverTypeWrapper<IAutomationRun>;
+  AutomationRunStatus: IAutomationRunStatus;
   BaseBranchResolution: IBaseBranchResolution;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   Build: ResolverTypeWrapper<Build>;
@@ -1810,6 +1840,7 @@ export type IResolversParentTypes = ResolversObject<{
   AddContributorToProjectInput: IAddContributorToProjectInput;
   AutomationAction: IAutomationAction;
   AutomationActionInput: IAutomationActionInput;
+  AutomationActionRun: IAutomationActionRun;
   AutomationActionSendSlackMessagePayload: IAutomationActionSendSlackMessagePayload;
   AutomationCondition: IAutomationCondition;
   AutomationConditionInput: IAutomationConditionInput;
@@ -2008,6 +2039,16 @@ export type IAutomationActionResolvers<ContextType = Context, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type IAutomationActionRunResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationActionRun'] = IResolversParentTypes['AutomationActionRun']> = ResolversObject<{
+  actionName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  completedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  status?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type IAutomationActionSendSlackMessagePayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationActionSendSlackMessagePayload'] = IResolversParentTypes['AutomationActionSendSlackMessagePayload']> = ResolversObject<{
   channelId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -2031,7 +2072,7 @@ export type IAutomationRuleResolvers<ContextType = Context, ParentType extends I
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   if?: Resolver<IResolversTypes['AutomationConditions'], ParentType, ContextType>;
-  lastAutomationRunDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
+  lastAutomationRun?: Resolver<Maybe<IResolversTypes['AutomationRun']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   on?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   then?: Resolver<Array<IResolversTypes['AutomationAction']>, ParentType, ContextType>;
@@ -2046,10 +2087,12 @@ export type IAutomationRuleConnectionResolvers<ContextType = Context, ParentType
 }>;
 
 export type IAutomationRunResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationRun'] = IResolversParentTypes['AutomationRun']> = ResolversObject<{
+  actionRuns?: Resolver<Array<IResolversTypes['AutomationActionRun']>, ParentType, ContextType>;
   buildId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   event?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  status?: Resolver<IResolversTypes['AutomationRunStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -2308,7 +2351,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -2726,6 +2769,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountScreenshotMetrics?: IAccountScreenshotMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   AutomationAction?: IAutomationActionResolvers<ContextType>;
+  AutomationActionRun?: IAutomationActionRunResolvers<ContextType>;
   AutomationActionSendSlackMessagePayload?: IAutomationActionSendSlackMessagePayloadResolvers<ContextType>;
   AutomationCondition?: IAutomationConditionResolvers<ContextType>;
   AutomationConditions?: IAutomationConditionsResolvers<ContextType>;
