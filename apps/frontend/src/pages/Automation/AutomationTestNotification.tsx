@@ -87,7 +87,6 @@ export function TestAutomationButton(props: {
 }) {
   return (
     <Button
-      className="order-2"
       type="submit"
       variant="secondary"
       name="send-test"

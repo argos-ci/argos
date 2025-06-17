@@ -212,24 +212,27 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
           </CardBody>
 
           <CardFooter>
-            <div className="flex justify-end gap-2">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2">
               <LinkButton
                 href={`${getProjectURL(params)}/automations`}
                 variant="secondary"
+                className="order-2"
               >
                 Cancel
               </LinkButton>
               <Button
-                className="order-3"
                 type="submit"
                 isDisabled={form.formState.isSubmitting}
+                className="order-3"
               >
                 Create Rule
               </Button>
-              <TestAutomationButton
-                {...testAutomation.buttonProps}
-                isDisabled={form.formState.isSubmitting}
-              />
+              <div className="order-1">
+                <TestAutomationButton
+                  {...testAutomation.buttonProps}
+                  isDisabled={form.formState.isSubmitting}
+                />
+              </div>
             </div>
           </CardFooter>
         </Form>

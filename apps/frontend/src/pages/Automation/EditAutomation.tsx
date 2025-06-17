@@ -177,14 +177,14 @@ function EditAutomationForm(props: {
         </CardBody>
 
         <CardFooter>
-          <div className="flex justify-end gap-2">
+          <div className="grid grid-cols-[1fr_auto_auto] justify-end gap-2">
             <LinkButton
               href={`${getProjectURL(params)}/automations`}
               variant="secondary"
+              className="order-2"
             >
               {hasEditPermission ? "Cancel" : "Back"}
             </LinkButton>
-
             <Tooltip
               content={
                 hasEditPermission
@@ -192,20 +192,20 @@ function EditAutomationForm(props: {
                   : "You don't have permission to edit this automation."
               }
             >
-              <div className="order-3 flex">
-                <Button
-                  type="submit"
-                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
-                >
-                  Save Changes
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                className="order-3"
+              >
+                Save Changes
+              </Button>
             </Tooltip>
-
-            <TestAutomationButton
-              {...testAutomation.buttonProps}
-              isDisabled={!hasEditPermission || form.formState.isSubmitting}
-            />
+            <div className="order-1">
+              <TestAutomationButton
+                {...testAutomation.buttonProps}
+                isDisabled={!hasEditPermission || form.formState.isSubmitting}
+              />
+            </div>
           </div>
         </CardFooter>
       </Form>
