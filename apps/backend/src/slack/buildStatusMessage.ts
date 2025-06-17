@@ -90,7 +90,7 @@ export function getBuildStatusMessage({
     elements: [
       {
         type: "plain_text",
-        text: "This notification is a test message.",
+        text: "This notification is a test message. It uses the latest build of your project and ignores any configured conditions. This is for preview purposes only.",
       },
     ],
   };
