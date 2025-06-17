@@ -172,8 +172,8 @@ type AutomationConditions {
 }
 
 type AutomationRule implements Node {
+  actionRuns: [AutomationActionRun!]!
   active: Boolean!
-  automationActionRuns(limit: Int!): [AutomationActionRun!]!
   createdAt: DateTime!
   id: ID!
   if: AutomationConditions!

@@ -76,7 +76,7 @@ const AutomationRuleQuery = graphql(`
         action
         actionPayload
       }
-      automationActionRuns(limit: 40) {
+      actionRuns {
         id
         createdAt
         actionName
@@ -275,7 +275,7 @@ export const AutomationActionRunStatusIcon = ({
 function ActionRunHistory(props: { automationRule: AutomationRule }) {
   const { automationRule } = props;
 
-  if (!automationRule.automationActionRuns.length) {
+  if (!automationRule.actionRuns.length) {
     return <Text slot="description">No actions have been run yet.</Text>;
   }
 
@@ -297,7 +297,7 @@ function ActionRunHistory(props: { automationRule: AutomationRule }) {
               </tr>
             </thead>
             <tbody>
-              {automationRule.automationActionRuns.map((run) => {
+              {automationRule.actionRuns.map((run) => {
                 const action = ACTIONS.find((a) => a.type === run.actionName);
 
                 return (

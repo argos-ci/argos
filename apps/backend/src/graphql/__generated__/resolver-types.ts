@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, AutomationRule, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { TestMetrics, TestChange } from '../../graphql/definitions/Test.js';
@@ -222,8 +222,8 @@ export type IAutomationConditions = {
 
 export type IAutomationRule = INode & {
   __typename?: 'AutomationRule';
+  actionRuns: Array<IAutomationActionRun>;
   active: Scalars['Boolean']['output'];
-  automationActionRuns: Array<IAutomationActionRun>;
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   if: IAutomationConditions;
@@ -232,11 +232,6 @@ export type IAutomationRule = INode & {
   on: Array<Scalars['String']['output']>;
   then: Array<IAutomationAction>;
   updatedAt: Scalars['DateTime']['output'];
-};
-
-
-export type IAutomationRuleAutomationActionRunsArgs = {
-  limit: Scalars['Int']['input'];
 };
 
 export type IAutomationRuleConnection = IConnection & {
@@ -1675,7 +1670,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } ) | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( IAutomationActionRun ) | ( AutomationRule ) | ( IAutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChange ) | ( Account );
+  Node: ( Subscription ) | ( AutomationActionRun ) | ( AutomationRule ) | ( AutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChange ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1697,7 +1692,7 @@ export type IResolversTypes = ResolversObject<{
   AddContributorToProjectInput: IAddContributorToProjectInput;
   AutomationAction: ResolverTypeWrapper<IAutomationAction>;
   AutomationActionInput: IAutomationActionInput;
-  AutomationActionRun: ResolverTypeWrapper<IAutomationActionRun>;
+  AutomationActionRun: ResolverTypeWrapper<AutomationActionRun>;
   AutomationActionRunStatus: IAutomationActionRunStatus;
   AutomationActionSendSlackMessagePayload: ResolverTypeWrapper<IAutomationActionSendSlackMessagePayload>;
   AutomationCondition: ResolverTypeWrapper<IAutomationCondition>;
@@ -1705,7 +1700,7 @@ export type IResolversTypes = ResolversObject<{
   AutomationConditions: ResolverTypeWrapper<IAutomationConditions>;
   AutomationRule: ResolverTypeWrapper<AutomationRule>;
   AutomationRuleConnection: ResolverTypeWrapper<Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<IResolversTypes['AutomationRule']> }>;
-  AutomationRun: ResolverTypeWrapper<IAutomationRun>;
+  AutomationRun: ResolverTypeWrapper<AutomationRun>;
   AutomationRunStatus: IAutomationRunStatus;
   BaseBranchResolution: IBaseBranchResolution;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -1847,14 +1842,14 @@ export type IResolversParentTypes = ResolversObject<{
   AddContributorToProjectInput: IAddContributorToProjectInput;
   AutomationAction: IAutomationAction;
   AutomationActionInput: IAutomationActionInput;
-  AutomationActionRun: IAutomationActionRun;
+  AutomationActionRun: AutomationActionRun;
   AutomationActionSendSlackMessagePayload: IAutomationActionSendSlackMessagePayload;
   AutomationCondition: IAutomationCondition;
   AutomationConditionInput: IAutomationConditionInput;
   AutomationConditions: IAutomationConditions;
   AutomationRule: AutomationRule;
   AutomationRuleConnection: Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<IResolversParentTypes['AutomationRule']> };
-  AutomationRun: IAutomationRun;
+  AutomationRun: AutomationRun;
   Boolean: Scalars['Boolean']['output'];
   Build: Build;
   BuildConnection: Omit<IBuildConnection, 'edges'> & { edges: Array<IResolversParentTypes['Build']> };
@@ -2076,8 +2071,8 @@ export type IAutomationConditionsResolvers<ContextType = Context, ParentType ext
 }>;
 
 export type IAutomationRuleResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationRule'] = IResolversParentTypes['AutomationRule']> = ResolversObject<{
+  actionRuns?: Resolver<Array<IResolversTypes['AutomationActionRun']>, ParentType, ContextType>;
   active?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  automationActionRuns?: Resolver<Array<IResolversTypes['AutomationActionRun']>, ParentType, ContextType, RequireFields<IAutomationRuleAutomationActionRunsArgs, 'limit'>>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   if?: Resolver<IResolversTypes['AutomationConditions'], ParentType, ContextType>;

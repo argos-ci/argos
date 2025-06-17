@@ -21,8 +21,6 @@ import {
 } from "@/slack";
 
 import {
-  IAutomationActionRun,
-  IAutomationRun,
   IAutomationRunStatus,
   IResolvers,
   type IAutomationActionInput,
@@ -99,7 +97,7 @@ export const typeDefs = gql`
     if: AutomationConditions!
     then: [AutomationAction!]!
     lastAutomationRun: AutomationRun
-    automationActionRuns(limit: Int!): [AutomationActionRun!]!
+    actionRuns: [AutomationActionRun!]!
   }
 
   type AutomationRuleConnection implements Connection {
@@ -374,26 +372,18 @@ function getAutomationRunStatus(
   throw new Error("Unknown status for automation run");
 }
 
-function toGraphQLAutomationActionRun(
-  actionRun: AutomationActionRun,
-): IAutomationActionRun {
-  return {
-    ...actionRun,
-    createdAt: new Date(actionRun.createdAt),
-    updatedAt: new Date(actionRun.updatedAt),
-    status: getAutomationActionRunStatus(actionRun),
-    completedAt: actionRun.completedAt ? new Date(actionRun.completedAt) : null,
-    actionName: actionRun.action,
-  };
-}
-
 export const resolvers: IResolvers = {
+  AutomationActionRun: {
+    actionName: (automationActionRun) => {
+      return automationActionRun.action;
+    },
+    status: (automationActionRun) => {
+      return getAutomationActionRunStatus(automationActionRun);
+    },
+  },
   AutomationRun: {
     actionRuns: async (automationRun, _args, ctx) => {
-      const automationActionRuns = await ctx.loaders.AutomationActionRuns.load(
-        automationRun.id,
-      );
-      return automationActionRuns.map(toGraphQLAutomationActionRun);
+      return ctx.loaders.AutomationActionRuns.load(automationRun.id);
     },
     status: async (automationRun, _args, ctx) => {
       const actionRuns = await ctx.loaders.AutomationActionRuns.load(
@@ -403,37 +393,14 @@ export const resolvers: IResolvers = {
     },
   },
   AutomationRule: {
-    lastAutomationRun: async (
-      automationRule,
-      _args,
-      ctx,
-    ): Promise<IAutomationRun | null> => {
-      const automationRun = await ctx.loaders.LatestAutomationRun.load(
-        automationRule.id,
-      );
-      if (!automationRun) {
-        return null;
-      }
-
-      const actionRuns = await ctx.loaders.AutomationActionRuns.load(
-        automationRun.id,
-      );
-
-      return {
-        ...automationRun,
-        createdAt: new Date(automationRun.createdAt),
-        updatedAt: new Date(automationRun.updatedAt),
-        status: getAutomationRunStatus(actionRuns),
-        actionRuns: actionRuns.map(toGraphQLAutomationActionRun),
-      };
+    lastAutomationRun: async (automationRule, _args, ctx) => {
+      return ctx.loaders.LatestAutomationRun.load(automationRule.id);
     },
-    automationActionRuns: async (automationRule, _args) => {
-      const { limit = 40 } = _args;
-      const automationActionRuns = await AutomationActionRun.query()
+    actionRuns: async (automationRule) => {
+      return AutomationActionRun.query()
         .joinRelated("automationRun.automationRule")
         .where("automationRun.automationRuleId", automationRule.id)
-        .limit(limit);
-      return automationActionRuns.map(toGraphQLAutomationActionRun);
+        .limit(40);
     },
   },
   AutomationAction: {
