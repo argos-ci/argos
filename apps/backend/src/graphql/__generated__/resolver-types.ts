@@ -1227,8 +1227,9 @@ export type ISetTeamMemberLevelInput = {
 
 export type ISlackInstallation = INode & {
   __typename?: 'SlackInstallation';
-  createdAt: Scalars['DateTime']['output'];
+  connectedAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
+  isUpToDate: Scalars['Boolean']['output'];
   teamDomain: Scalars['String']['output'];
   teamName: Scalars['String']['output'];
 };
@@ -2524,8 +2525,9 @@ export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentTy
 }>;
 
 export type ISlackInstallationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['SlackInstallation'] = IResolversParentTypes['SlackInstallation']> = ResolversObject<{
-  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  connectedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  isUpToDate?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   teamDomain?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   teamName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

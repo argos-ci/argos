@@ -17,12 +17,19 @@ export class SlackInstallation extends Model {
       timestampsSchema,
       {
         type: "object",
-        required: ["installation", "teamId", "teamDomain", "teamName"],
+        required: [
+          "installation",
+          "teamId",
+          "teamDomain",
+          "teamName",
+          "connectedAt",
+        ],
         properties: {
           teamId: { type: "string" },
           teamDomain: { type: "string" },
           teamName: { type: "string" },
           installation: { type: "object" },
+          connectedAt: { type: "string" },
         },
       },
     ],
@@ -32,6 +39,7 @@ export class SlackInstallation extends Model {
   teamDomain!: string;
   teamName!: string;
   installation!: Bolt.Installation;
+  connectedAt!: string;
 
   static override get relationMappings(): RelationMappings {
     return {

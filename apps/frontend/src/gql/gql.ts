@@ -102,7 +102,7 @@ type Documents = {
     "\n  fragment TeamGithubMembersList_GithubAccount on GithubAccount {\n    id\n    ...GithubAccountLink_GithubAccount\n  }\n": typeof types.TeamGithubMembersList_GithubAccountFragmentDoc,
     "\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      redirectUrl\n    }\n  }\n": typeof types.NewTeam_CreateTeamDocument,
     "\n  query TeamNewForm_me {\n    me {\n      id\n      stripeCustomerId\n      hasSubscribedToTrial\n    }\n  }\n": typeof types.TeamNewForm_MeDocument,
-    "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      createdAt\n      teamName\n      teamDomain\n    }\n  }\n": typeof types.TeamSlack_AccountFragmentDoc,
+    "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      connectedAt\n      teamName\n      teamDomain\n      isUpToDate\n    }\n  }\n": typeof types.TeamSlack_AccountFragmentDoc,
     "\n  mutation AccountSlack_UninstallSlack($accountId: ID!) {\n    uninstallSlack(input: { accountId: $accountId }) {\n      id\n      ...TeamSlack_Account\n    }\n  }\n": typeof types.AccountSlack_UninstallSlackDocument,
     "\n  fragment TeamSpendManagement_Account on Account {\n    id\n    name\n    slug\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n": typeof types.TeamSpendManagement_AccountFragmentDoc,
     "\n  mutation TeamSpendManagement_updateAccount(\n    $id: ID!\n    $meteredSpendLimitByPeriod: Int\n    $blockWhenSpendLimitIsReached: Boolean\n  ) {\n    updateAccount(\n      input: {\n        id: $id\n        meteredSpendLimitByPeriod: $meteredSpendLimitByPeriod\n        blockWhenSpendLimitIsReached: $blockWhenSpendLimitIsReached\n      }\n    ) {\n      ...TeamSpendManagement_Account\n    }\n  }\n": typeof types.TeamSpendManagement_UpdateAccountDocument,
@@ -246,7 +246,7 @@ const documents: Documents = {
     "\n  fragment TeamGithubMembersList_GithubAccount on GithubAccount {\n    id\n    ...GithubAccountLink_GithubAccount\n  }\n": types.TeamGithubMembersList_GithubAccountFragmentDoc,
     "\n  mutation NewTeam_createTeam($name: String!) {\n    createTeam(input: { name: $name }) {\n      redirectUrl\n    }\n  }\n": types.NewTeam_CreateTeamDocument,
     "\n  query TeamNewForm_me {\n    me {\n      id\n      stripeCustomerId\n      hasSubscribedToTrial\n    }\n  }\n": types.TeamNewForm_MeDocument,
-    "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      createdAt\n      teamName\n      teamDomain\n    }\n  }\n": types.TeamSlack_AccountFragmentDoc,
+    "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      connectedAt\n      teamName\n      teamDomain\n      isUpToDate\n    }\n  }\n": types.TeamSlack_AccountFragmentDoc,
     "\n  mutation AccountSlack_UninstallSlack($accountId: ID!) {\n    uninstallSlack(input: { accountId: $accountId }) {\n      id\n      ...TeamSlack_Account\n    }\n  }\n": types.AccountSlack_UninstallSlackDocument,
     "\n  fragment TeamSpendManagement_Account on Account {\n    id\n    name\n    slug\n    meteredSpendLimitByPeriod\n    blockWhenSpendLimitIsReached\n    additionalScreenshotsCost\n    subscription {\n      id\n      currency\n    }\n  }\n": types.TeamSpendManagement_AccountFragmentDoc,
     "\n  mutation TeamSpendManagement_updateAccount(\n    $id: ID!\n    $meteredSpendLimitByPeriod: Int\n    $blockWhenSpendLimitIsReached: Boolean\n  ) {\n    updateAccount(\n      input: {\n        id: $id\n        meteredSpendLimitByPeriod: $meteredSpendLimitByPeriod\n        blockWhenSpendLimitIsReached: $blockWhenSpendLimitIsReached\n      }\n    ) {\n      ...TeamSpendManagement_Account\n    }\n  }\n": types.TeamSpendManagement_UpdateAccountDocument,
@@ -671,7 +671,7 @@ export function graphql(source: "\n  query TeamNewForm_me {\n    me {\n      id\
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      createdAt\n      teamName\n      teamDomain\n    }\n  }\n"): (typeof documents)["\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      createdAt\n      teamName\n      teamDomain\n    }\n  }\n"];
+export function graphql(source: "\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      connectedAt\n      teamName\n      teamDomain\n      isUpToDate\n    }\n  }\n"): (typeof documents)["\n  fragment TeamSlack_Account on Account {\n    id\n    slackInstallation {\n      id\n      connectedAt\n      teamName\n      teamDomain\n      isUpToDate\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

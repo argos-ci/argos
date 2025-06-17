@@ -146,14 +146,32 @@ const installationStore: Bolt.InstallationStore = {
       throw new Error("Failed saving installation data to installationStore");
     })();
 
+    const boltInstallQuery: Bolt.InstallationQuery<boolean> = {
+      isEnterpriseInstall: Boolean(installation.isEnterpriseInstall),
+      enterpriseId: installation.enterprise?.id,
+      teamId: installation.team?.id,
+    };
+
     await transaction(async (trx) => {
-      await deleteInstallation({
-        isEnterpriseInstall: Boolean(installation.isEnterpriseInstall),
-        enterpriseId: installation.enterprise?.id,
-        teamId: installation.team?.id,
-      });
+      const existingSlackInstallation = await slackInstallationQuery(
+        boltInstallQuery,
+        trx,
+      );
+
+      const modelData = {
+        ...data,
+        connectedAt: new Date().toISOString(),
+      };
+
+      if (existingSlackInstallation) {
+        // If the installation already exists, we update it
+        await existingSlackInstallation.$query(trx).patch(modelData);
+        return;
+      }
+
+      // Else we create a new installation
       const slackInstallation = await SlackInstallation.query(trx)
-        .insert(data)
+        .insert(modelData)
         .returning("id");
       await Account.query(trx)
         .findById(accountId)
@@ -170,19 +188,21 @@ const installationStore: Bolt.InstallationStore = {
   },
 };
 
+export const SLACK_BOT_SCOPES = [
+  "links:read",
+  "links:write",
+  "team:read",
+  "channels:read",
+  "chat:write",
+  "chat:write.public",
+];
+
 const receiver = new Bolt.ExpressReceiver({
   signingSecret: config.get("slack.signingSecret"),
   clientId: config.get("slack.clientId"),
   clientSecret: config.get("slack.clientSecret"),
   stateSecret: config.get("slack.stateSecret"),
-  scopes: [
-    "links:read",
-    "links:write",
-    "team:read",
-    "channels:read",
-    "chat:write",
-    "chat:write.public",
-  ],
+  scopes: SLACK_BOT_SCOPES,
   installationStore,
   redirectUri: config.get("server.url") + "/auth/slack/oauth_redirect",
   installerOptions: {
