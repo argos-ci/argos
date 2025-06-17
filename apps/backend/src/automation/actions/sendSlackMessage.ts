@@ -121,6 +121,7 @@ async function sendSlackMessage(args: {
   slackChannel: SlackChannel;
   slackInstallation: SlackInstallation;
   event: AutomationEvent;
+  isTestMessage?: boolean;
 }): Promise<void> {
   const {
     build,
@@ -130,6 +131,7 @@ async function sendSlackMessage(args: {
     slackChannel,
     slackInstallation,
     event,
+    isTestMessage,
   } = args;
 
   const [buildUrl, [status]] = await Promise.all([
@@ -146,6 +148,7 @@ async function sendSlackMessage(args: {
     project,
     pullRequest,
     status,
+    isTestMessage,
   });
 
   await postMessageToSlackChannel({
@@ -203,6 +206,7 @@ export const automationAction = defineAutomationAction({
       project: richBuild.project,
       compareScreenshotBucket: richBuild.compareScreenshotBucket ?? null,
       pullRequest: richBuild.pullRequest ?? null,
+      isTestMessage: true,
     });
   },
 });
