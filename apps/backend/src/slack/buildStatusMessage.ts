@@ -63,6 +63,7 @@ export function getBuildStatusMessage({
   compareScreenshotBucket,
   project,
   status,
+  isTestMessage,
 }: {
   build: Build;
   buildUrl: string;
@@ -70,6 +71,7 @@ export function getBuildStatusMessage({
   compareScreenshotBucket: ScreenshotBucket | null;
   project: Project;
   status: BuildAggregatedStatus;
+  isTestMessage?: boolean | undefined;
 }): SlackMessageBlock[] {
   const commit = compareScreenshotBucket?.commit;
   const commitShort = commit ? String(commit).substring(0, 7) : null;
@@ -82,6 +84,16 @@ export function getBuildStatusMessage({
     branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : undefined;
   const commitUrl =
     commit && repositoryURL ? `${repositoryURL}/commit/${commit}` : undefined;
+
+  const testDisclaimer: SlackMessageBlock = {
+    type: "context",
+    elements: [
+      {
+        type: "plain_text",
+        text: "This notification is a test message. It uses the latest build of your project and ignores any configured conditions. This is for preview purposes only.",
+      },
+    ],
+  };
 
   const contextBlock: SlackMessageBlock = {
     type: "section",
@@ -137,10 +149,11 @@ export function getBuildStatusMessage({
   };
 
   return [
+    isTestMessage ? testDisclaimer : null,
     contextBlock,
     projectBlock,
     labelBlock,
     { type: "divider" },
     detailsBlock,
-  ];
+  ].filter((e) => e !== null);
 }
