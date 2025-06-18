@@ -32,6 +32,7 @@ describe("build", () => {
         compareScreenshotBucketId: compareBucket.id,
         projectId: project.id,
         jobStatus: "progress",
+        conclusion: null,
       });
       const file = await factory.File.create({
         type: "screenshot",
