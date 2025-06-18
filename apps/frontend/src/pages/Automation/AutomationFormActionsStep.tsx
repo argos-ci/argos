@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { TriangleAlertIcon } from "lucide-react";
 import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
@@ -14,6 +15,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { ListBox, ListBoxItem, ListBoxItemIcon } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
+import { getSlackAuthURL } from "@/util/slack";
 
 import { useAccountParams } from "../Account/AccountParams";
 import {
@@ -30,6 +32,7 @@ const SlackInstallationQuery = graphql(`
       slackInstallation {
         id
         teamName
+        isUpToDate
       }
     }
   }
@@ -48,30 +51,54 @@ function SendSlackMessageAction(props: {
     },
   });
 
+  // ---
   // When we add a second action, types will break here, we will need to handle it
   // not sure how to do that yet
+  // ---
 
-  const hasSlackInstallation = Boolean(data.account?.slackInstallation);
+  invariant(data.account, "Account data is required for Slack installation");
+
+  const slackInstallation = data.account.slackInstallation;
 
   // Refetch the Slack installation when the window becomes active again.
-  useRefetchWhenActive({ refetch, skip: hasSlackInstallation });
-
-  const slackInstallation = data.account?.slackInstallation;
+  useRefetchWhenActive({
+    refetch,
+    skip: Boolean(slackInstallation?.isUpToDate),
+  });
 
   if (!slackInstallation) {
     return (
-      <div className="flex flex-col items-start gap-2 p-2">
-        To post to a Slack channel, you need to connect your Slack workspace
-        first.
+      <div className="flex flex-col items-start gap-3 p-2">
+        <p>
+          To post to a Slack channel, you need to connect your Slack workspace
+          first.
+        </p>
         <LinkButton
           href={`/${params.accountSlug}/settings#slack`}
           target="_blank"
-          variant="secondary"
+        >
+          Connect Slack
+        </LinkButton>
+      </div>
+    );
+  }
+
+  if (!slackInstallation.isUpToDate) {
+    return (
+      <div className="text-warning-low flex flex-col items-start gap-3 p-2">
+        <p>
+          <TriangleAlertIcon className="inline size-4" /> Slack permissions need
+          an update, please reconnect to be able to post messages in channels.
+        </p>
+        <LinkButton
+          href={getSlackAuthURL({ accountId: data.account.id })}
+          target="_blank"
+          variant="google"
         >
           <ButtonIcon>
             <SlackColoredLogo />
           </ButtonIcon>
-          Connect Slack
+          Reconnect Slack
         </LinkButton>
       </div>
     );
