@@ -22,6 +22,7 @@ import { Link } from "@/ui/Link";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
+import { getSlackAuthURL } from "@/util/slack";
 
 import { SlackColoredLogo } from "../Slack";
 
@@ -53,7 +54,7 @@ export function TeamSlack(props: {
       } as TeamSlack_AccountFragment,
     },
   });
-  const authURL = `/auth/slack/login?accountId=${account.id}`;
+  const authURL = getSlackAuthURL({ accountId: props.account.id });
   return (
     <Card id="slack">
       <CardBody>
@@ -119,7 +120,10 @@ export function TeamSlack(props: {
                 Slack permissions need an update, please reconnect.
               </p>
             </div>
-            <LinkButton href={authURL} variant="primary">
+            <LinkButton href={authURL} variant="google">
+              <ButtonIcon>
+                <SlackColoredLogo />
+              </ButtonIcon>
               Reconnect
             </LinkButton>
           </Card>
