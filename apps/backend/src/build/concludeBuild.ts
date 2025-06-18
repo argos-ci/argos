@@ -6,6 +6,7 @@ import { AutomationEvents } from "@/automation/types/events";
 import { job as buildNotificationJob } from "@/build-notification/job.js";
 import { transaction } from "@/database/index.js";
 import { Build, BuildConclusion, BuildNotification } from "@/database/models";
+import { getRedisLock } from "@/util/redis";
 
 /**
  * Concludes the build by updating the conclusion and the stats.
@@ -13,47 +14,58 @@ import { Build, BuildConclusion, BuildNotification } from "@/database/models";
  */
 export async function concludeBuild(input: { build: Build; notify?: boolean }) {
   const { build, notify = true } = input;
+  const lock = await getRedisLock();
   const buildId = build.id;
-  const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
-  const [[conclusion], [stats]] = await Promise.all([
-    Build.computeConclusions([buildId], statuses),
-    Build.computeStats([buildId]),
-  ]);
-  invariant(stats !== undefined, "No stats found");
-  invariant(conclusion !== undefined, "No conclusion found");
-  // If the build is not yet concluded, we don't want to update it.
-  if (conclusion === null) {
-    return;
-  }
-  if (notify) {
-    const [, buildNotification] = await transaction(async (trx) => {
-      return Promise.all([
-        Build.query(trx).findById(buildId).patch({
-          conclusion,
-          stats,
-        }),
-        BuildNotification.query(trx).insert({
-          buildId,
-          type: getNotificationType(conclusion),
-          jobStatus: "pending",
+  return lock.acquire(["conclude-build", buildId], async () => {
+    const existingBuild = await Build.query()
+      .select("conclusion")
+      .findById(buildId)
+      .throwIfNotFound();
+    if (existingBuild.conclusion !== null) {
+      // If the build is already concluded, we don't want to update it.
+      return;
+    }
+    const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
+    const [[conclusion], [stats]] = await Promise.all([
+      Build.computeConclusions([buildId], statuses),
+      Build.computeStats([buildId]),
+    ]);
+    invariant(stats !== undefined, "No stats found");
+    invariant(conclusion !== undefined, "No conclusion found");
+    // If the build is not yet concluded, we don't want to update it.
+    if (conclusion === null) {
+      return;
+    }
+    if (notify) {
+      const [, buildNotification] = await transaction(async (trx) => {
+        return Promise.all([
+          Build.query(trx).findById(buildId).patch({
+            conclusion,
+            stats,
+          }),
+          BuildNotification.query(trx).insert({
+            buildId,
+            type: getNotificationType(conclusion),
+            jobStatus: "pending",
+          }),
+        ]);
+      });
+
+      await Promise.all([
+        buildNotificationJob.push(buildNotification.id),
+        triggerAndRunAutomation({
+          projectId: build.projectId,
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
         }),
       ]);
-    });
-
-    await Promise.all([
-      buildNotificationJob.push(buildNotification.id),
-      triggerAndRunAutomation({
-        projectId: build.projectId,
-        event: AutomationEvents.BuildCompleted,
-        payload: { build },
-      }),
-    ]);
-  } else {
-    await Build.query().findById(buildId).patch({
-      conclusion,
-      stats,
-    });
-  }
+    } else {
+      await Build.query().findById(buildId).patch({
+        conclusion,
+        stats,
+      });
+    }
+  });
 }
 
 function getNotificationType(conclusion: BuildConclusion) {
