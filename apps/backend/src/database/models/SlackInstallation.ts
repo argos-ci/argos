@@ -4,6 +4,7 @@ import { RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
 import { Account } from "./Account.js";
+import { SlackChannel } from "./SlackChannel.js";
 
 export class SlackInstallation extends Model {
   static override tableName = "slack_installations";
@@ -49,6 +50,14 @@ export class SlackInstallation extends Model {
         join: {
           from: "accounts.slackInstallationId",
           to: "slack_installations.id",
+        },
+      },
+      channels: {
+        relation: Model.HasManyRelation,
+        modelClass: SlackChannel,
+        join: {
+          from: "slack_installations.id",
+          to: "slack_channels.slackInstallationId",
         },
       },
     };

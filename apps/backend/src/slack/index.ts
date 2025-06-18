@@ -101,11 +101,18 @@ async function deleteInstallation(
     return;
   }
   await transaction(trx, async (trx) => {
-    if (slackInstallation.account) {
-      await Account.query(trx)
-        .findById(slackInstallation.account.id)
-        .patch({ slackInstallationId: null });
-    }
+    await Promise.all([
+      // Unlink account
+      (async () => {
+        if (slackInstallation.account) {
+          await Account.query(trx)
+            .findById(slackInstallation.account.id)
+            .patch({ slackInstallationId: null });
+        }
+      })(),
+      // Delete channels related to the installation
+      slackInstallation.$relatedQuery("channels", trx).delete(),
+    ]);
     await slackInstallation.$query(trx).delete();
   });
 }
@@ -445,12 +452,12 @@ export async function postMessageToSlackChannel(args: {
   });
 }
 
-const SlackChannelSchema = z.object({
+const SlackAPIChannel = z.object({
   id: z.string(),
   name: z.string(),
 });
 
-type SlackChannel = z.infer<typeof SlackChannelSchema>;
+type SlackAPIChannel = z.infer<typeof SlackAPIChannel>;
 
 /**
  * Get a Slack channel by its name.
@@ -458,7 +465,7 @@ type SlackChannel = z.infer<typeof SlackChannelSchema>;
 export async function getSlackChannelByName(args: {
   installation: SlackInstallation;
   name: string;
-}): Promise<SlackChannel | null> {
+}): Promise<SlackAPIChannel | null> {
   const { installation, name } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
@@ -471,7 +478,7 @@ export async function getSlackChannelByName(args: {
 export async function getSlackChannelById(args: {
   installation: SlackInstallation;
   id: string;
-}): Promise<SlackChannel | null> {
+}): Promise<SlackAPIChannel | null> {
   const { installation, id } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
@@ -482,7 +489,7 @@ export async function getSlackChannelById(args: {
   if (!res) {
     return null;
   }
-  return SlackChannelSchema.parse(res.channel);
+  return SlackAPIChannel.parse(res.channel);
 }
 
 /**
@@ -491,7 +498,7 @@ export async function getSlackChannelById(args: {
 async function findChannelByName(args: {
   token: string;
   name: string;
-}): Promise<SlackChannel | null> {
+}): Promise<SlackAPIChannel | null> {
   const { token } = args;
   const name = normalizeChannelName(args.name);
   let cursor;
@@ -503,7 +510,7 @@ async function findChannelByName(args: {
       (c) => c.name === normalizeChannelName(name),
     );
     if (match) {
-      return SlackChannelSchema.parse(match);
+      return SlackAPIChannel.parse(match);
     }
     cursor = res.response_metadata?.next_cursor;
   } while (cursor);

@@ -60,7 +60,8 @@ export function TeamSlack(props: {
       <CardBody>
         <CardTitle>Slack</CardTitle>
         <CardParagraph>
-          Set up Slack to access detailed link previews when sharing build URL.
+          Connect Slack to receive build notifications and access detailed link
+          previews when sharing build URLs.
         </CardParagraph>
         {account.slackInstallation && (
           <Card className="flex justify-between p-4">
@@ -129,7 +130,16 @@ export function TeamSlack(props: {
           </Card>
         ) : null}
       </CardBody>
-      <CardFooter className="flex items-center justify-end">
+      <CardFooter className="flex items-center justify-between gap-4">
+        <p>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/slack-notifications"
+            target="_blank"
+          >
+            Slack notifications
+          </Link>
+        </p>
         {hasAdminPermission ? (
           account.slackInstallation ? (
             <Button
