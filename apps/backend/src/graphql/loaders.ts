@@ -5,6 +5,8 @@ import type { ModelClass } from "objection";
 import { knex } from "@/database";
 import {
   Account,
+  AutomationActionRun,
+  AutomationRun,
   Build,
   BuildAggregatedStatus,
   BuildReview,
@@ -46,6 +48,27 @@ function createBuildAggregatedStatusLoader() {
   return new DataLoader<Build, BuildAggregatedStatus, string>(
     async (builds) => Build.getAggregatedBuildStatuses(builds as Build[]),
     { cacheKeyFn: (input) => input.id },
+  );
+}
+
+function createLatestAutomationRunLoader() {
+  return new DataLoader<string, AutomationRun | null>(
+    async (automationRuleIds) => {
+      const latestRuns = await AutomationRun.query()
+        .select("*")
+        .whereIn("automationRuleId", automationRuleIds as string[])
+        .distinctOn("automationRuleId")
+        .orderBy("automationRuleId")
+        .orderBy("createdAt", "desc");
+      const latestRunsMap = latestRuns.reduce<Record<string, AutomationRun>>(
+        (map, run) => ({
+          ...map,
+          [run.automationRuleId]: run,
+        }),
+        {},
+      );
+      return automationRuleIds.map((id) => latestRunsMap[id] ?? null);
+    },
   );
 }
 
@@ -102,6 +125,23 @@ function createAccountFromRelationLoader() {
     },
     { cacheKeyFn: (input) => `${input.userId}-${input.teamId}` },
   );
+}
+
+function AutomationActionRuns() {
+  return new DataLoader<string, AutomationActionRun[]>(async (ids) => {
+    const runs = await AutomationActionRun.query().whereIn(
+      "automationRunId",
+      ids as string[],
+    );
+    const runsMap = runs.reduce<Record<string, AutomationActionRun[]>>(
+      (map, run) => ({
+        ...map,
+        [run.automationRunId]: [...(map[run.automationRunId] || []), run],
+      }),
+      {},
+    );
+    return ids.map((id) => runsMap[id] ?? []);
+  });
 }
 
 function createTeamUserFromGithubAccountMemberLoader() {
@@ -355,6 +395,7 @@ function createTestAllMetricsLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
+  AutomationActionRuns: AutomationActionRuns(),
   Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
@@ -368,6 +409,7 @@ export const createLoaders = () => ({
   GithubPullRequest: createModelLoader(GithubPullRequest),
   GithubRepository: createModelLoader(GithubRepository),
   GitlabProject: createModelLoader(GitlabProject),
+  LatestAutomationRun: createLatestAutomationRunLoader(),
   LatestProjectBuild: createLatestProjectBuildLoader(),
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),

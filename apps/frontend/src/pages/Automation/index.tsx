@@ -45,7 +45,18 @@ const ProjectQuery = graphql(`
           createdAt
           name
           on
-          lastAutomationRunDate
+          lastAutomationRun {
+            id
+            createdAt
+            status
+            actionRuns {
+              id
+              createdAt
+              actionName
+              status
+              completedAt
+            }
+          }
         }
       }
     }

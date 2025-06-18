@@ -132,6 +132,25 @@ input AutomationActionInput {
   type: String!
 }
 
+type AutomationActionRun implements Node {
+  actionName: String!
+  completedAt: DateTime
+  createdAt: DateTime!
+  failureReason: String
+  id: ID!
+  status: String!
+  updatedAt: DateTime!
+}
+
+enum AutomationActionRunStatus {
+  aborted
+  error
+  failed
+  pending
+  progress
+  success
+}
+
 type AutomationActionSendSlackMessagePayload {
   channelId: String!
   name: String!
@@ -153,11 +172,12 @@ type AutomationConditions {
 }
 
 type AutomationRule implements Node {
+  actionRuns: [AutomationActionRun!]!
   active: Boolean!
   createdAt: DateTime!
   id: ID!
   if: AutomationConditions!
-  lastAutomationRunDate: DateTime
+  lastAutomationRun: AutomationRun
   name: String!
   on: [String!]!
   then: [AutomationAction!]!
@@ -170,11 +190,19 @@ type AutomationRuleConnection implements Connection {
 }
 
 type AutomationRun implements Node {
+  actionRuns: [AutomationActionRun!]!
   buildId: String
   createdAt: DateTime!
   event: String!
   id: ID!
+  status: AutomationRunStatus!
   updatedAt: DateTime!
+}
+
+enum AutomationRunStatus {
+  failed
+  running
+  success
 }
 
 enum BaseBranchResolution {

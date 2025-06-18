@@ -24,6 +24,9 @@ const config: CodegenConfig = {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
           AutomationRule: "../../database/models/index.js#AutomationRule",
+          AutomationRun: "../../database/models/index.js#AutomationRun",
+          AutomationActionRun:
+            "../../database/models/index.js#AutomationActionRun",
           Build: "../../database/models/index.js#Build",
           BuildReview: "../../database/models/index.js#BuildReview",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",

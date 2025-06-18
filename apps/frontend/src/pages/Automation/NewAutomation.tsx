@@ -78,7 +78,6 @@ const CreateAutomationMutation = graphql(`
       createdAt
       name
       on
-      lastAutomationRunDate
     }
   }
 `);

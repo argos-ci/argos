@@ -1,6 +1,13 @@
 import { useRef, useState } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { MoreVerticalIcon } from "lucide-react";
+import clsx from "clsx";
+import {
+  CheckCircle2Icon,
+  CircleDotIcon,
+  MoreVerticalIcon,
+  XCircleIcon,
+} from "lucide-react";
 
 import { Button } from "@/ui/Button";
 import {
@@ -17,12 +24,14 @@ import { Menu, MenuItem, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 
-import { ProjectPermission } from "../../gql/graphql";
+import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
 import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { useProjectParams } from "../Project/ProjectParams";
+import { ACTIONS } from "./AutomationFormActionsStep";
 import { getAutomationURL } from "./AutomationParams";
+import { AutomationActionRunStatusIcon } from "./EditAutomation";
 import { AutomationRule } from "./index";
 
 function DeleteAutomationDialog({
@@ -57,6 +66,72 @@ function DeleteAutomationDialog({
   );
 }
 
+const AutomationRunStatusIcon = ({
+  status,
+}: {
+  status: AutomationRunStatus;
+}) => {
+  const className = "shrink-0 size-4";
+
+  switch (status) {
+    case AutomationRunStatus.Running:
+      return <CircleDotIcon className={clsx("text-warning-low", className)} />;
+
+    case AutomationRunStatus.Success:
+      return (
+        <CheckCircle2Icon className={clsx("text-success-low", className)} />
+      );
+
+    case AutomationRunStatus.Failed:
+      return <XCircleIcon className={clsx("text-danger-low", className)} />;
+
+    default:
+      assertNever(status, `Unexpected status for AutomationRunId ${status}`);
+  }
+};
+
+function LastTriggerStatusIcon({
+  automationRun,
+}: {
+  automationRun: AutomationRule["lastAutomationRun"];
+}) {
+  if (!automationRun) {
+    return null;
+  }
+
+  return (
+    <DialogTrigger>
+      <IconButton
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        <AutomationRunStatusIcon status={automationRun.status} />
+      </IconButton>
+      <Popover className="bg-app">
+        <div className="flex flex-col gap-2 p-2">
+          <div className="text-xs font-semibold">Actions</div>
+          {automationRun.actionRuns.map((actionRun) => {
+            const action = ACTIONS.find((a) => a.type === actionRun.actionName);
+            return (
+              <div
+                key={actionRun.id}
+                className="flex items-center gap-6 whitespace-nowrap border-t pt-2 text-sm"
+              >
+                <div>{action?.label}</div>
+                <div className="flex items-center gap-1 text-xs">
+                  <AutomationActionRunStatusIcon status={actionRun.status} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Popover>
+    </DialogTrigger>
+  );
+}
+
 function AutomationRow(props: {
   automationRule: AutomationRule;
   onDelete: (id: string) => void;
@@ -70,32 +145,37 @@ function AutomationRow(props: {
   const url = getAutomationURL({ ...params, automationId: automationRule.id });
 
   return (
-    <ListRowLink href={url} className="items-center p-4 text-sm">
-      <div className="w-44 shrink-0 md:w-auto md:grow">
+    <ListRowLink href={url} className="items-center px-4 py-2 text-sm">
+      <div className="w-44 shrink-0 py-2 md:w-auto md:grow">
         <div className="truncate">{automationRule.name}</div>
       </div>
-      <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap text-sm">
+      <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap py-2 text-sm">
         {automationRule.on.map((event) => (
           <div key={event}>{event}</div>
         ))}
       </div>
       <div
-        className="text-low w-36 shrink-0 overflow-hidden truncate whitespace-nowrap"
+        className="text-low w-36 shrink-0 overflow-hidden truncate whitespace-nowrap py-2"
         data-visual-test="transparent"
       >
-        {automationRule.lastAutomationRunDate ? (
-          <Time date={automationRule.lastAutomationRunDate} />
+        {automationRule.lastAutomationRun ? (
+          <div className="flex items-center gap-2">
+            <Time date={automationRule.lastAutomationRun.createdAt} />
+            <LastTriggerStatusIcon
+              automationRun={automationRule.lastAutomationRun}
+            />
+          </div>
         ) : (
           "Not triggered yet"
         )}
       </div>
       <div
-        className="w-28 shrink-0 overflow-hidden truncate whitespace-nowrap"
+        className="w-28 shrink-0 overflow-hidden truncate whitespace-nowrap py-2"
         data-visual-test="transparent"
       >
         <Time date={automationRule.createdAt} className="text-low" />
       </div>
-      <div className="w-8 shrink-0">
+      <div className="w-8 shrink-0 py-2">
         <MenuTrigger>
           <IconButton>
             <MoreVerticalIcon />
