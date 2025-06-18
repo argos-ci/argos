@@ -232,30 +232,36 @@ export const computeScreenshotDiff = async (
     compareImage.unlink(),
   ]);
 
-  // Group similar diffs
-  if (diffData.s3Id) {
-    const lock = await getRedisLock();
-    await lock.acquire(["diff-group", diffData.s3Id], async () => {
-      await ScreenshotDiff.query().findById(screenshotDiff.id).patch(diffData);
-      await groupSimilarDiffs({ diffFileKey: diffData.s3Id, buildId });
-    });
-  }
-
-  // Insert stats
-  if (screenshotDiff.testId && build.type === "reference") {
-    await upsertTestStats({
-      testId: screenshotDiff.testId,
-      date: new Date(screenshotDiff.createdAt),
-      fileId: diffData.fileId ?? null,
-    });
-  }
-
+  // It is problematic to have to do that to conclude the build
+  // we should never have to patch jobStatus to complete while the job is not complete
+  // we should probably use another key to check if the diff has been computed.
   await ScreenshotDiff.query()
     .findById(screenshotDiff.id)
     .patch({ ...diffData, jobStatus: "complete" });
 
-  // Conclude the build if it's the last diff
-  await concludeBuild({ build });
+  await Promise.all([
+    // Conclude the build
+    concludeBuild({ build }),
+    // Group similar diffs
+    (async () => {
+      if (diffData.s3Id) {
+        const lock = await getRedisLock();
+        await lock.acquire(["diff-group", diffData.s3Id], async () => {
+          await groupSimilarDiffs({ diffFileKey: diffData.s3Id, buildId });
+        });
+      }
+    })(),
+    // Insert stats
+    (async () => {
+      if (screenshotDiff.testId && build.type === "reference") {
+        await upsertTestStats({
+          testId: screenshotDiff.testId,
+          date: new Date(screenshotDiff.createdAt),
+          fileId: diffData.fileId ?? null,
+        });
+      }
+    })(),
+  ]);
 };
 
 /**
@@ -266,18 +272,15 @@ async function groupSimilarDiffs(input: {
   buildId: string;
 }) {
   const { diffFileKey, buildId } = input;
-  const similarDiffCount = await ScreenshotDiff.query()
-    .where({ buildId, s3Id: diffFileKey })
-    .resultSize();
+  const similarDiffs = await ScreenshotDiff.query().where({
+    buildId,
+    s3Id: diffFileKey,
+    group: null,
+  });
 
   // Patch group on screenshot diffs
-  if (similarDiffCount > 1) {
-    // Collect diffs to update
-    const diffs = await ScreenshotDiff.query()
-      .select("id")
-      .where({ buildId, s3Id: diffFileKey, group: null });
-
-    const diffIds = diffs.map(({ id }) => id);
+  if (similarDiffs.length > 0) {
+    const diffIds = similarDiffs.map(({ id }) => id);
 
     const diffIdsChunks = chunk(diffIds, 50);
 

@@ -48,7 +48,18 @@ export interface Job<TValue> {
 }
 
 export interface JobParams {
+  /**
+   * The number of messages to prefetch.
+   * Basically the number of messages that will be processed in parallel.
+   * @default 1
+   */
   prefetch?: number;
+
+  /**
+   * The timeout for the job in milliseconds.
+   * @default 20000 (20 seconds)
+   */
+  timeout?: number;
 }
 
 export const createJob = <TValue extends string | number>(
@@ -58,7 +69,7 @@ export const createJob = <TValue extends string | number>(
     complete: (value: TValue) => void | Promise<void>;
     error: (value: TValue, error: unknown) => void | Promise<void>;
   },
-  { prefetch = 1 }: JobParams = {},
+  { prefetch = 1, timeout = 20_000 }: JobParams = {},
 ): Job<TValue> => {
   const getChannel = memoize(async () => {
     const amqp = await connect();
@@ -100,10 +111,14 @@ export const createJob = <TValue extends string | number>(
     },
     async run(id: TValue) {
       const lock = await getRedisLock();
-      await lock.acquire([queue, id], async () => {
-        await consumer.perform(id);
-        await consumer.complete(id);
-      });
+      await lock.acquire(
+        [queue, id],
+        async () => {
+          await consumer.perform(id);
+          await consumer.complete(id);
+        },
+        { timeout },
+      );
     },
     process() {
       return new Promise((resolve, reject) => {

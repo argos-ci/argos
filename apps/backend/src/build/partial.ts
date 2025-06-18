@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
 import pTimeout from "p-timeout";
+import { TimeoutError } from "redis";
 
 import {
   Build,
@@ -10,6 +11,7 @@ import {
   Screenshot,
 } from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
+import logger from "@/logger/index.js";
 
 import { finalizeBuild } from "./finalizeBuild.js";
 import { job as buildJob } from "./job.js";
@@ -82,6 +84,14 @@ export async function checkIsPartialBuild(input: {
         { milliseconds: 5000 },
       );
     } catch (error) {
+      if (error instanceof TimeoutError) {
+        logger.error("Timeout while fetching jobs for run attempt", {
+          runId,
+          runAttempt: attempt,
+          error: error.message,
+        });
+        return null;
+      }
       if (checkErrorStatus(404, error)) {
         return null;
       }

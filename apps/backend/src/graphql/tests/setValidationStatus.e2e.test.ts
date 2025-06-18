@@ -41,6 +41,7 @@ describe("GraphQL", () => {
       });
       build = await factory.Build.create({
         projectId: project.id,
+        conclusion: null,
       });
       const screenshot1 = await factory.Screenshot.create({
         name: "email_deleted",
