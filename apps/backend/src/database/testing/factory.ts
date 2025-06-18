@@ -196,6 +196,7 @@ export const Plan = defineFactory(models.Plan, () => ({
 export const SlackInstallation = defineFactory(
   models.SlackInstallation,
   () => ({
+    connectedAt: new Date().toISOString(),
     teamId: FactoryGirl.sequence(
       "slackInstallation.teamId",
       (n) => `team-${n}`,

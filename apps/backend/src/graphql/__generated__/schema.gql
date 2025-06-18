@@ -983,8 +983,9 @@ input SetTeamMemberLevelInput {
 }
 
 type SlackInstallation implements Node {
-  createdAt: DateTime!
+  connectedAt: DateTime!
   id: ID!
+  isUpToDate: Boolean!
   teamDomain: String!
   teamName: String!
 }
