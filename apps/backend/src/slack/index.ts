@@ -482,10 +482,24 @@ export async function getSlackChannelById(args: {
   const { installation, id } = args;
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
-  const res = await boltApp.client.conversations.info({
-    token,
-    channel: id,
-  });
+  const res = await boltApp.client.conversations
+    .info({
+      token,
+      channel: id,
+    })
+    .catch((error) => {
+      if (
+        "data" in error &&
+        error.data &&
+        typeof error.data === "object" &&
+        "error" in error.data &&
+        typeof error.data.error === "string" &&
+        error.data.error === "channel_not_found"
+      ) {
+        return null;
+      }
+      throw error;
+    });
   if (!res) {
     return null;
   }
