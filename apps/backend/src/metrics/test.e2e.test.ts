@@ -95,7 +95,7 @@ describe("upsertTestStats", () => {
       });
     });
 
-    it("suppports if already present in database", async () => {
+    it("supports if already present in database", async () => {
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
