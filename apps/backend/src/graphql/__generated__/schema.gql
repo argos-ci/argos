@@ -910,10 +910,10 @@ type ScreenshotDiff implements Node {
   group: String
   height: Int
   id: ID!
-  last7daysOccurences: Int!
 
   """Name of the diff (either base or compare screenshot name)"""
   name: String!
+  occurrences(period: MetricsPeriod!): Int!
   status: ScreenshotDiffStatus!
   test: Test
   threshold: Float

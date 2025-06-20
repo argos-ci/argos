@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import DataLoader from "dataloader";
+import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
 import { knex } from "@/database";
@@ -283,44 +284,51 @@ function createBuildUniqueReviewsLoader() {
   });
 }
 
-function createChangeOccurencesLoader() {
-  return new DataLoader<{ testId: string; fileId: string }, number, string>(
-    async (pairs) => {
-      // Extract all testIds and fileIds for the WHERE clause
-      const testIds = [...new Set(pairs.map((p) => p.testId))];
-      const fileIds = [...new Set(pairs.map((p) => p.fileId))];
+function createChangeOccurencesLoader(): (
+  from: string,
+) => DataLoader<{ testId: string; fileId: string }, number, string> {
+  return memoize(
+    (
+      from: string,
+    ): DataLoader<{ testId: string; fileId: string }, number, string> =>
+      new DataLoader<{ testId: string; fileId: string }, number, string>(
+        async (pairs) => {
+          // Extract all testIds and fileIds for the WHERE clause
+          const testIds = [...new Set(pairs.map((p) => p.testId))];
+          const fileIds = [...new Set(pairs.map((p) => p.fileId))];
 
-      const rows = await knex.raw<{
-        rows: { testId: string; fileId: string; count: number }[];
-      }>(
-        `
-        SELECT
-          sd."testId" AS "testId",
-          sd."fileId" AS "fileId",
-          COUNT(*) AS count
-        FROM screenshot_diffs sd
-        JOIN builds b ON sd."buildId" = b.id
-        WHERE sd."fileId" = ANY(:fileIds)
-          AND sd."testId" = ANY(:testIds)
-          AND sd."createdAt" > now() - interval '7 days'
-          AND b.type = 'reference'
-        GROUP BY sd."testId", sd."fileId"
-      `,
-        { fileIds, testIds },
-      );
+          const rows = await knex.raw<{
+            rows: { testId: string; fileId: string; count: number }[];
+          }>(
+            `
+            select
+              tsc."testId",
+              tsc."fileId",
+              sum(tsc.value) as count
+            from test_stats_changes tsc
+            where tsc."testId" = any(:testIds)
+              and tsc."fileId" = any(:fileIds)
+              and tsc."date" >= :from::timestamp
+            group by tsc."testId", tsc."fileId"
+          `,
+            { fileIds, testIds, from },
+          );
 
-      // Index results for O(1) lookup
-      const map = new Map(
-        rows.rows.map((row) => [
-          `${row.testId}-${row.fileId}`,
-          Number(row.count),
-        ]),
-      );
+          // Index results for O(1) lookup
+          const map = new Map(
+            rows.rows.map((row) => [
+              `${row.testId}-${row.fileId}`,
+              Number(row.count),
+            ]),
+          );
 
-      // Return counts in the order of input keys
-      return pairs.map((pair) => map.get(`${pair.testId}-${pair.fileId}`) ?? 0);
-    },
-    { cacheKeyFn: (input) => `${input.testId}-${input.fileId}` },
+          // Return counts in the order of input keys
+          return pairs.map(
+            (pair) => map.get(`${pair.testId}-${pair.fileId}`) ?? 0,
+          );
+        },
+        { cacheKeyFn: (input) => `${input.testId}-${input.fileId}` },
+      ),
   );
 }
 
@@ -401,7 +409,7 @@ export const createLoaders = () => ({
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
-  ChangeOccurencesLoader: createChangeOccurencesLoader(),
+  getChangesOccurencesLoader: createChangeOccurencesLoader(),
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),
   GithubAccount: createModelLoader(GithubAccount),

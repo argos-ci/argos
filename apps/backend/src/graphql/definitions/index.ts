@@ -19,6 +19,7 @@ import * as GlApiNamespace from "./GlApiNamespace.js";
 import * as GlApiProject from "./GlApiProject.js";
 import * as GoogleUser from "./GoogleUser.js";
 import * as JobStatus from "./JobStatus.js";
+import * as MetricsPeriod from "./MetricsPeriod.js";
 import * as Node from "./Node.js";
 import * as PageInfo from "./PageInfo.js";
 import * as Plan from "./Plan.js";
@@ -56,6 +57,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GlApiProject,
   GoogleUser,
   JobStatus,
+  MetricsPeriod,
   Node,
   PageInfo,
   Plan,
