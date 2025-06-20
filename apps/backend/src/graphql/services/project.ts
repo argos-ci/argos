@@ -2,6 +2,9 @@ import { invariant } from "@argos/util/invariant";
 import { TransactionOrKnex } from "objection";
 
 import {
+  AutomationActionRun,
+  AutomationRule,
+  AutomationRun,
   Build,
   BuildNotification,
   BuildReview,
@@ -68,6 +71,18 @@ export async function unsafe_deleteProject(args: {
       .joinRelated("build")
       .where("build.projectId", args.projectId)
       .delete();
+    const AutomationRuns = await AutomationRun.query(trx)
+      .select("automation_runs.id")
+      .joinRelated("automationRule")
+      .where("automationRule.projectId", args.projectId);
+    if (AutomationRuns.length > 0) {
+      const AutomationRunIds = AutomationRuns.map((run) => run.id);
+      await AutomationActionRun.query(trx)
+        .whereIn("automationRunId", AutomationRunIds)
+        .delete();
+      await AutomationRun.query(trx).whereIn("id", AutomationRunIds).delete();
+    }
+    await AutomationRule.query(trx).where("projectId", args.projectId).delete();
     await BuildReview.query(trx)
       .joinRelated("build")
       .where("build.projectId", args.projectId)
@@ -79,6 +94,14 @@ export async function unsafe_deleteProject(args: {
     await Build.query(trx).where("projectId", args.projectId).delete();
     await ScreenshotBucket.query(trx)
       .where("projectId", args.projectId)
+      .delete();
+    await trx("test_stats_builds")
+      .join("tests", "test_stats_builds.testId", "tests.id")
+      .where("tests.projectId", args.projectId)
+      .delete();
+    await trx("test_stats_changes")
+      .join("tests", "test_stats_changes.testId", "tests.id")
+      .where("tests.projectId", args.projectId)
       .delete();
     await Test.query(trx).where("projectId", args.projectId).delete();
     await Project.query(trx).findById(args.projectId).delete();
