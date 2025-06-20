@@ -1,10 +1,9 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import { raw } from "objection";
 
 import { Build, ScreenshotDiff } from "@/database/models";
-import { getTestSeriesMetrics } from "@/metrics/test";
+import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 
 import {
   IMetricsPeriod,
@@ -58,14 +57,6 @@ export const typeDefs = gql`
   enum TestStatus {
     ONGOING
     REMOVED
-  }
-
-  enum MetricsPeriod {
-    LAST_24_HOURS
-    LAST_3_DAYS
-    LAST_7_DAYS
-    LAST_30_DAYS
-    LAST_90_DAYS
   }
 
   type Test implements Node {
@@ -265,23 +256,3 @@ export type TestMetrics = {
   series: () => Promise<ITestMetrics["series"]>;
   all: () => Promise<ITestMetrics["all"]>;
 };
-
-function getStartDateFromPeriod(period: IMetricsPeriod | null): Date {
-  const now = new Date();
-  switch (period) {
-    case IMetricsPeriod.Last_24Hours:
-      return new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    case IMetricsPeriod.Last_3Days:
-      return new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-    case IMetricsPeriod.Last_7Days:
-      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case IMetricsPeriod.Last_30Days:
-      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case IMetricsPeriod.Last_90Days:
-      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case null:
-      return new Date(0); // Default to epoch if no period is specified
-    default:
-      assertNever(period, `Unknown period: ${period}`);
-  }
-}

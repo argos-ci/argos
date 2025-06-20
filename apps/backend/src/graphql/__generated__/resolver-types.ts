@@ -1150,9 +1150,9 @@ export type IScreenshotDiff = INode & {
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
-  last7daysOccurences: Scalars['Int']['output'];
   /** Name of the diff (either base or compare screenshot name) */
   name: Scalars['String']['output'];
+  occurrences: Scalars['Int']['output'];
   status: IScreenshotDiffStatus;
   test?: Maybe<ITest>;
   threshold?: Maybe<Scalars['Float']['output']>;
@@ -1160,6 +1160,11 @@ export type IScreenshotDiff = INode & {
   /** Unique key to identify screenshot variant (browser, resolution, retries) */
   variantKey: Scalars['String']['output'];
   width?: Maybe<Scalars['Int']['output']>;
+};
+
+
+export type IScreenshotDiffOccurrencesArgs = {
+  period: IMetricsPeriod;
 };
 
 export type IScreenshotDiffConnection = IConnection & {
@@ -2499,8 +2504,8 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  last7daysOccurences?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  occurrences?: Resolver<IResolversTypes['Int'], ParentType, ContextType, RequireFields<IScreenshotDiffOccurrencesArgs, 'period'>>;
   status?: Resolver<IResolversTypes['ScreenshotDiffStatus'], ParentType, ContextType>;
   test?: Resolver<Maybe<IResolversTypes['Test']>, ParentType, ContextType>;
   threshold?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;

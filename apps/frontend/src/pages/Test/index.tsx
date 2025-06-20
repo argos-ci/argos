@@ -128,21 +128,22 @@ const PERIODS = {
     label: "Last 24 hours",
   },
   [MetricsPeriod.Last_3Days]: {
-    from: moment(now).subtract(3, "days").toDate(),
+    from: moment(now).subtract(3, "days").startOf("day").toDate(),
     label: "Last 3 days",
   },
   [MetricsPeriod.Last_7Days]: {
-    from: moment(now).subtract(7, "days").toDate(),
+    from: moment(now).subtract(7, "days").startOf("day").toDate(),
     label: "Last 7 days",
   },
-  [MetricsPeriod.Last_30Days]: {
-    from: moment(now).subtract(30, "days").toDate(),
-    label: "Last 30 days",
-  },
-  [MetricsPeriod.Last_90Days]: {
-    from: moment(now).subtract(90, "days").toDate(),
-    label: "Last 90 days",
-  },
+  // Deactivate for now, as we don't have enough data to show
+  // [MetricsPeriod.Last_30Days]: {
+  //   from: moment(now).subtract(30, "days").startOf("day").toDate(),
+  //   label: "Last 30 days",
+  // },
+  // [MetricsPeriod.Last_90Days]: {
+  //   from: moment(now).subtract(90, "days").startOf("day").toDate(),
+  //   label: "Last 90 days",
+  // },
 } satisfies PeriodsDefinition;
 
 type TestPeriodState = PeriodState<typeof PERIODS>;
@@ -240,9 +241,9 @@ export const Component = featureGuardHoc("test-details")(function Component() {
           </div>
         </PageHeader>
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col items-start gap-2">
             <PeriodSelect state={periodState} />
-            <div className="bg-app @container flex flex-col gap-2 rounded-md border p-2 pr-6">
+            <div className="bg-app @container flex flex-col gap-2 self-stretch rounded-md border p-2 pr-6">
               <div className="flex items-center gap-6">
                 <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
                   <Counter>

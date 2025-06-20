@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import { getStartDateFromPeriod } from "@/metrics/test.js";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage/index.js";
 
 import {
@@ -43,7 +44,7 @@ export const typeDefs = gql`
     group: String
     threshold: Float
     test: Test
-    last7daysOccurences: Int!
+    occurrences(period: MetricsPeriod!): Int!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -166,14 +167,17 @@ export const resolvers: IResolvers = {
       invariant(test, "Test not found");
       return test;
     },
-    last7daysOccurences: async (screenshotDiff, _args, ctx) => {
+    occurrences: async (screenshotDiff, args, ctx) => {
       if (!screenshotDiff.fileId || !screenshotDiff.testId) {
         return 0;
       }
-      const count = await ctx.loaders.ChangeOccurencesLoader.load({
-        fileId: screenshotDiff.fileId,
-        testId: screenshotDiff.testId,
-      });
+      const from = getStartDateFromPeriod(args.period);
+      const count = await ctx.loaders
+        .getChangesOccurencesLoader(from.toISOString())
+        .load({
+          fileId: screenshotDiff.fileId,
+          testId: screenshotDiff.testId,
+        });
       return count;
     },
   },
