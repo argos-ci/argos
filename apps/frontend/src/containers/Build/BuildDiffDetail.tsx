@@ -90,7 +90,9 @@ const _DiffFragment = graphql(`
     group
     threshold
     last7daysOccurences: occurrences(period: LAST_7_DAYS)
-    changeId
+    change {
+      id
+    }
     test {
       id
       last7daysMetrics: metrics(period: LAST_7_DAYS) {

@@ -904,7 +904,7 @@ type ScreenshotDiff implements Node {
   build: Build!
 
   """Change ID of the screenshot diff. Used to be indefied in a test."""
-  changeId: String
+  change: TestChange
   compareScreenshot: Screenshot
   createdAt: DateTime!
   group: String

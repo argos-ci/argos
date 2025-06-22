@@ -22,6 +22,7 @@ export function BuildFlakyIndicator(props: {
   const { diff, accountSlug, projectName } = props;
   const compactFormatter = useNumberFormatter({ notation: "compact" });
   invariant(diff.test, "BuildFlakyIndicator requires a diff with a test");
+  invariant(diff.change, "BuildFlakyIndicator requires a diff with a change");
 
   const testURL = getTestURL(
     {
@@ -29,7 +30,7 @@ export function BuildFlakyIndicator(props: {
       projectName,
       testId: diff.test.id,
     },
-    { change: diff.changeId },
+    { change: diff.change.id },
   );
 
   const testLink = (
