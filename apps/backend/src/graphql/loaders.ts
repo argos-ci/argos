@@ -400,6 +400,103 @@ function createTestAllMetricsLoader() {
   );
 }
 
+function createTestChangeStatsLoader(): (
+  from: string,
+  testId: string,
+) => DataLoader<
+  { fileId: string },
+  {
+    totalOccurences: number;
+    lastSeenDiff: ScreenshotDiff;
+    firstSeenDiff: ScreenshotDiff;
+  },
+  string
+> {
+  return memoize((from: string, testId: string) => {
+    return new DataLoader<
+      {
+        fileId: string;
+      },
+      {
+        totalOccurences: number;
+        lastSeenDiff: ScreenshotDiff;
+        firstSeenDiff: ScreenshotDiff;
+      },
+      string
+    >(
+      async (pairs) => {
+        const fileIds = [...new Set(pairs.map((p) => p.fileId))];
+
+        const totalOccurencesQuery = knex.raw<{
+          rows: { fileId: string; total: number }[];
+        }>(
+          `
+            SELECT tsc."fileId", sum(tsc.value) as total FROM test_stats_changes tsc
+                WHERE tsc."testId" = :testId
+                AND tsc."fileId" = any(:fileIds)
+                AND tsc."date" >= :from
+                GROUP BY tsc."fileId"
+          `,
+          { testId, fileIds, from },
+        );
+
+        const diffQuery = ScreenshotDiff.query()
+          .select("screenshot_diffs.*")
+          .distinctOn("screenshot_diffs.fileId")
+          .joinRelated("build")
+          .where("screenshot_diffs.testId", testId)
+          .whereIn("screenshot_diffs.fileId", fileIds)
+          .where("screenshot_diffs.score", ">", 0)
+          .where("build.type", "reference")
+          .where("build.createdAt", ">=", from)
+          .whereNotNull("screenshot_diffs.fileId")
+          .orderBy("screenshot_diffs.fileId");
+
+        const lastSeenQuery = diffQuery
+          .clone()
+          .orderBy("screenshot_diffs.createdAt", "desc");
+
+        const firstSeenQuery = diffQuery
+          .clone()
+          .orderBy("screenshot_diffs.createdAt", "asc");
+
+        const [lastSeenRows, firstSeenRows, totalOccurencesRows] =
+          await Promise.all([
+            lastSeenQuery,
+            firstSeenQuery,
+            totalOccurencesQuery,
+          ]);
+
+        const totalOccurencesMap = new Map(
+          totalOccurencesRows.rows.map((row) => [
+            row.fileId,
+            Number(row.total),
+          ]),
+        );
+        const lastSeenMap = new Map(
+          lastSeenRows.map((diff) => [diff.fileId, diff]),
+        );
+        const firstSeenMap = new Map(
+          firstSeenRows.map((diff) => [diff.fileId, diff]),
+        );
+        return pairs.map((pair) => {
+          const totalOccurences = totalOccurencesMap.get(pair.fileId) ?? 0;
+          const lastSeenDiff = lastSeenMap.get(pair.fileId) ?? null;
+          const firstSeenDiff = firstSeenMap.get(pair.fileId) ?? null;
+          invariant(lastSeenDiff, "Last seen diff should not be null");
+          invariant(firstSeenDiff, "First seen diff should not be null");
+          return {
+            totalOccurences,
+            lastSeenDiff,
+            firstSeenDiff,
+          };
+        });
+      },
+      { cacheKeyFn: (input) => JSON.stringify(input) },
+    );
+  });
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -428,6 +525,7 @@ export const createLoaders = () => ({
   Team: createModelLoader(Team),
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),
+  getChangeStatsLoader: createTestChangeStatsLoader(),
   TestAllMetrics: createTestAllMetricsLoader(),
   User: createModelLoader(User),
 });

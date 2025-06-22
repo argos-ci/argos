@@ -1,12 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
-import { raw } from "objection";
 
-import { Build, ScreenshotDiff } from "@/database/models";
+import { Build, ScreenshotDiff, type Project } from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 
 import {
-  IMetricsPeriod,
   ITestStatus,
   type IResolvers,
   type ITestMetrics,
@@ -123,13 +121,11 @@ export const resolvers: IResolvers = {
       const from = getStartDateFromPeriod(period);
 
       const totalOccurencesQuery = `
-      SELECT COUNT(*) FROM screenshot_diffs sd
-        JOIN builds b on b.id = sd."buildId"
-        WHERE sd."fileId" = screenshot_diffs."fileId"
-        AND sd."testId" = screenshot_diffs."testId"
-        AND sd."createdAt" > :from
-        AND b.type = 'reference'
-        `;
+        SELECT sum(tsc.value) FROM test_stats_changes tsc
+          WHERE tsc."testId" = screenshot_diffs."testId"
+          AND tsc."fileId" = screenshot_diffs."fileId"
+          AND tsc."date" >= :from
+      `;
 
       const diffQuery = ScreenshotDiff.query()
         .select("screenshot_diffs.id")
@@ -142,71 +138,27 @@ export const resolvers: IResolvers = {
         .whereNotNull("screenshot_diffs.fileId")
         .orderBy("screenshot_diffs.fileId");
 
-      const lastSeenQuery = ScreenshotDiff.query()
-        .select(
-          "screenshot_diffs.*",
-          raw(`(${totalOccurencesQuery}) AS "totalOccurences"`, { from }),
-        )
-        .whereIn(
-          "id",
-          diffQuery.clone().orderBy("screenshot_diffs.createdAt", "desc"),
-        )
+      const query = ScreenshotDiff.query()
+        .select("screenshot_diffs.fileId")
+        .whereIn("id", diffQuery.clone())
         .orderByRaw(`(${totalOccurencesQuery}) DESC`, { from })
         .range(after, after + first - 1);
 
-      const firstSeenQuery = ScreenshotDiff.query()
-        .select("screenshot_diffs.*")
-        .whereIn(
-          "id",
-          diffQuery.clone().orderBy("screenshot_diffs.createdAt", "asc"),
-        )
-        .range(after, after + first - 1);
-
-      const [project, lastSeen, firstSeen] = await Promise.all([
+      const [project, result] = await Promise.all([
         ctx.loaders.Project.load(test.projectId),
-        lastSeenQuery,
-        firstSeenQuery,
+        query,
       ]);
 
       invariant(project);
 
       return paginateResult({
         result: {
-          total: lastSeen.total,
-          results: lastSeen.results.map((lastSeenDiff) => {
-            invariant(
-              "totalOccurences" in lastSeenDiff &&
-                typeof lastSeenDiff.totalOccurences === "string",
-              "totalOccurences should be a string",
-            );
-            const totalOccurences = Number(lastSeenDiff.totalOccurences);
-            invariant(
-              !isNaN(totalOccurences),
-              "totalOccurences should be a number",
-            );
-
-            const firstSeenDiff = firstSeen.results.find(
-              (firstSeenDiff) => firstSeenDiff.fileId === lastSeenDiff.fileId,
-            );
-            invariant(
-              firstSeenDiff,
-              "First seen diff should exist for last seen diff",
-            );
-            invariant(
-              lastSeenDiff.fileId,
-              "Last seen diff should have a fileId",
-            );
+          total: result.total,
+          results: result.results.map((screenshotDiff) => {
             return {
-              id: formatTestChangeId({
-                projectName: project.name,
-                fileId: lastSeenDiff.fileId,
-              }),
-              stats: {
-                period,
-                totalOccurences,
-                lastSeenDiff,
-                firstSeenDiff,
-              },
+              project,
+              testId: test.id,
+              fileId: screenshotDiff.fileId,
             };
           }),
         },
@@ -232,24 +184,29 @@ export const resolvers: IResolvers = {
     },
   },
   TestChange: {
-    stats: (testChange, params) => {
-      const { period, ...stats } = testChange.stats;
-      if (period !== params.period) {
-        throw new Error("period must match the one used in the connection");
-      }
-      return stats;
+    id: (testChange) =>
+      formatTestChangeId({
+        projectName: testChange.project.name,
+        fileId: testChange.fileId,
+      }),
+    stats: async (testChange, args, ctx) => {
+      const { period } = args;
+      const from = getStartDateFromPeriod(period);
+      const ChangeStatsLoader = ctx.loaders.getChangeStatsLoader(
+        from.toISOString(),
+        testChange.testId,
+      );
+      return ChangeStatsLoader.load({
+        fileId: testChange.fileId,
+      });
     },
   },
 };
 
-export type TestChange = {
-  id: string;
-  stats: {
-    period: IMetricsPeriod;
-    totalOccurences: number;
-    firstSeenDiff: ScreenshotDiff;
-    lastSeenDiff: ScreenshotDiff;
-  };
+export type TestChangeObject = {
+  project: Project;
+  testId: string;
+  fileId: string;
 };
 
 export type TestMetrics = {
