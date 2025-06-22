@@ -1,7 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import { JSONSchema } from "objection";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
 
 import {
   Build,
@@ -17,6 +15,7 @@ import {
   getBuildStatusMessage,
   getEventDescription,
 } from "@/slack/buildStatusMessage";
+import { zodToJsonSchema } from "@/util/zod";
 
 import { AutomationActionFailureError } from "../automationActionError";
 import {
@@ -32,7 +31,7 @@ type Payload = z.infer<typeof payloadSchema>;
 
 const payloadJsonSchema = zodToJsonSchema(payloadSchema, {
   removeAdditionalStrategy: "strict",
-}) as JSONSchema;
+});
 
 async function expandContext(context: AutomationActionContext) {
   const { automationActionRun } = context;

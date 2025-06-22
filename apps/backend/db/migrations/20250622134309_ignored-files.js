@@ -46,7 +46,8 @@ export const up = async (knex) => {
 
     table
       .string("action")
-      .comment("Action performed, e.g., 'file.ignored', 'file.unignored'");
+      .comment("Action performed, e.g., 'file.ignored', 'file.unignored'")
+      .notNullable();
   });
 };
 

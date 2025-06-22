@@ -1,6 +1,6 @@
-import type { JSONSchema } from "objection";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
+
+import { zodToJsonSchema } from "@/util/zod";
 
 export const timestampsSchema = zodToJsonSchema(
   z.object({
@@ -9,7 +9,7 @@ export const timestampsSchema = zodToJsonSchema(
     updatedAt: z.string().optional(),
   }),
   { removeAdditionalStrategy: "strict" },
-) as JSONSchema;
+);
 
 const JobStatusSchema = z.enum([
   "pending",
@@ -26,4 +26,4 @@ export const jobModelSchema = zodToJsonSchema(
     jobStatus: JobStatusSchema,
   }),
   { removeAdditionalStrategy: "strict" },
-) as JSONSchema;
+);
