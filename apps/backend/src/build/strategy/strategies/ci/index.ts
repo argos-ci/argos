@@ -20,11 +20,12 @@ async function getBucketFromCommits(args: { shas: string[]; build: Build }) {
   const bucket = await queryBaseBucket(args.build)
     .whereIn("commit", args.shas)
     .joinRaw(
-      `join (values ${args.shas.map(
-        (sha, index) => `('${sha}',${index})`,
-      )}) as ordering(sha, rank) on commit = ordering.sha`,
+      `join (values ${args.shas
+        .map((sha, index) => `('${sha}',${index})`)
+        .join(",")}) as ordering(sha, rank) on commit = ordering.sha`,
     )
     .orderBy("ordering.rank")
+    .orderBy("id", "desc")
     .first();
   return bucket ?? null;
 }
