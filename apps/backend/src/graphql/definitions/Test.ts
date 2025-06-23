@@ -1,7 +1,15 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { Build, ScreenshotDiff, type Project } from "@/database/models";
+import { transaction } from "@/database";
+import {
+  AuditTrail,
+  Build,
+  IgnoredFile,
+  Project,
+  ScreenshotDiff,
+  type User,
+} from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 
 import {
@@ -9,7 +17,13 @@ import {
   type IResolvers,
   type ITestMetrics,
 } from "../__generated__/resolver-types";
-import { formatTestChangeId, formatTestId } from "../services/test";
+import {
+  formatTestChangeId,
+  formatTestId,
+  safeParseTestChangeId,
+  type TestChangeIdPayload,
+} from "../services/test";
+import { forbidden, notFound } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -39,6 +53,7 @@ export const typeDefs = gql`
   type TestChange implements Node {
     id: ID!
     stats(period: MetricsPeriod!): TestChangeStats!
+    ignored: Boolean!
   }
 
   type TestChangeStats {
@@ -69,6 +84,21 @@ export const typeDefs = gql`
       first: Int!
     ): TestChangesConnection!
     metrics(period: MetricsPeriod): TestMetrics!
+  }
+
+  input IgnoreChangeInput {
+    accountSlug: String!
+    changeId: ID!
+  }
+
+  input UnignoreChangeInput {
+    accountSlug: String!
+    changeId: ID!
+  }
+
+  extend type Mutation {
+    ignoreChange(input: IgnoreChangeInput!): TestChange!
+    unignoreChange(input: UnignoreChangeInput!): TestChange!
   }
 `;
 
@@ -187,6 +217,7 @@ export const resolvers: IResolvers = {
     id: (testChange) =>
       formatTestChangeId({
         projectName: testChange.project.name,
+        testId: testChange.testId,
         fileId: testChange.fileId,
       }),
     stats: async (testChange, args, ctx) => {
@@ -196,9 +227,90 @@ export const resolvers: IResolvers = {
         from.toISOString(),
         testChange.testId,
       );
-      return ChangeStatsLoader.load({
+      return ChangeStatsLoader.load({ fileId: testChange.fileId });
+    },
+    ignored: async (testChange, _args, ctx) => {
+      return ctx.loaders.IgnoredChangeLoader.load({
+        projectId: testChange.project.id,
+        testId: testChange.testId,
         fileId: testChange.fileId,
       });
+    },
+  },
+  Mutation: {
+    ignoreChange: async (_root, { input }, ctx) => {
+      return runChangeMutaton(
+        {
+          changeId: input.changeId,
+          accountSlug: input.accountSlug,
+          user: ctx.auth?.user ?? null,
+        },
+        async ({ changeIdPayload, project, user }) => {
+          const isIgnored = Boolean(
+            await IgnoredFile.query().findOne({
+              projectId: project.id,
+              fileId: changeIdPayload.fileId,
+              testId: changeIdPayload.testId,
+            }),
+          );
+          if (!isIgnored) {
+            await transaction(async (trx) => {
+              await Promise.all([
+                IgnoredFile.query(trx).insert({
+                  projectId: project.id,
+                  fileId: changeIdPayload.fileId,
+                  testId: changeIdPayload.testId,
+                }),
+                AuditTrail.query(trx).insert({
+                  date: new Date().toISOString(),
+                  projectId: project.id,
+                  testId: changeIdPayload.testId,
+                  userId: user.id,
+                  action: "files.ignored",
+                }),
+              ]);
+            });
+          }
+        },
+      );
+    },
+    unignoreChange: async (_root, { input }, ctx) => {
+      return runChangeMutaton(
+        {
+          changeId: input.changeId,
+          accountSlug: input.accountSlug,
+          user: ctx.auth?.user ?? null,
+        },
+        async ({ changeIdPayload, project, user }) => {
+          const isIgnored = Boolean(
+            await IgnoredFile.query().findOne({
+              projectId: project.id,
+              fileId: changeIdPayload.fileId,
+              testId: changeIdPayload.testId,
+            }),
+          );
+          if (isIgnored) {
+            await transaction(async (trx) => {
+              await Promise.all([
+                IgnoredFile.query(trx)
+                  .where({
+                    projectId: project.id,
+                    fileId: changeIdPayload.fileId,
+                    testId: changeIdPayload.testId,
+                  })
+                  .delete(),
+                AuditTrail.query(trx).insert({
+                  date: new Date().toISOString(),
+                  projectId: project.id,
+                  testId: changeIdPayload.testId,
+                  userId: user.id,
+                  action: "files.unignored",
+                }),
+              ]);
+            });
+          }
+        },
+      );
     },
   },
 };
@@ -213,3 +325,51 @@ export type TestMetrics = {
   series: () => Promise<ITestMetrics["series"]>;
   all: () => Promise<ITestMetrics["all"]>;
 };
+
+async function runChangeMutaton(
+  context: {
+    changeId: string;
+    accountSlug: string;
+    user: User | null;
+  },
+  run: (props: {
+    changeIdPayload: TestChangeIdPayload;
+    project: Project;
+    user: User;
+  }) => Promise<void>,
+): Promise<TestChangeObject> {
+  const { changeId, accountSlug, user } = context;
+  const changeIdPayload = safeParseTestChangeId(changeId);
+
+  if (!changeIdPayload) {
+    throw notFound("Test change not found");
+  }
+
+  const project = await Project.query()
+    .joinRelated("account")
+    .where("account.slug", accountSlug)
+    .whereILike("projects.name", changeIdPayload.projectName)
+    .first();
+
+  if (!project) {
+    throw notFound("Project not found");
+  }
+
+  const permissions = await project.$getPermissions(user);
+
+  if (!permissions.includes("review")) {
+    throw forbidden(
+      "You do not have permission to ignore test changes in this project",
+    );
+  }
+
+  invariant(user, "User should be defined because of permissions check");
+
+  await run({ changeIdPayload, project, user });
+
+  return {
+    project,
+    fileId: changeIdPayload.fileId,
+    testId: changeIdPayload.testId,
+  };
+}

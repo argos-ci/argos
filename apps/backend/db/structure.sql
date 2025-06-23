@@ -124,6 +124,71 @@ ALTER SEQUENCE public.accounts_id_seq OWNED BY public.accounts.id;
 
 
 --
+-- Name: audit_trails; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.audit_trails (
+    id bigint NOT NULL,
+    date timestamp with time zone NOT NULL,
+    "projectId" bigint NOT NULL,
+    "testId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    action character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.audit_trails OWNER TO postgres;
+
+--
+-- Name: COLUMN audit_trails."projectId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.audit_trails."projectId" IS 'Project related to the action';
+
+
+--
+-- Name: COLUMN audit_trails."testId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.audit_trails."testId" IS 'Test related to the action';
+
+
+--
+-- Name: COLUMN audit_trails."userId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.audit_trails."userId" IS 'User who performed the action';
+
+
+--
+-- Name: COLUMN audit_trails.action; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.audit_trails.action IS 'Action performed, e.g., ''file.ignored'', ''file.unignored''';
+
+
+--
+-- Name: audit_trails_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.audit_trails_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.audit_trails_id_seq OWNER TO postgres;
+
+--
+-- Name: audit_trails_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.audit_trails_id_seq OWNED BY public.audit_trails.id;
+
+
+--
 -- Name: automation_action_runs; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -865,6 +930,40 @@ ALTER SEQUENCE public.google_users_id_seq OWNED BY public.google_users.id;
 
 
 --
+-- Name: ignored_files; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ignored_files (
+    "projectId" bigint NOT NULL,
+    "testId" bigint NOT NULL,
+    "fileId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.ignored_files OWNER TO postgres;
+
+--
+-- Name: COLUMN ignored_files."projectId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ignored_files."projectId" IS 'Project to which the file is ignored in. Files are global, so we need to scope by project';
+
+
+--
+-- Name: COLUMN ignored_files."testId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ignored_files."testId" IS 'Test to which the file is ignored in. Files are global, so we need to scope by test';
+
+
+--
+-- Name: COLUMN ignored_files."fileId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ignored_files."fileId" IS 'File that is ignored';
+
+
+--
 -- Name: knex_migrations; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1237,7 +1336,8 @@ CREATE TABLE public.screenshot_diffs (
     "s3Id" character varying(255),
     "fileId" bigint,
     "testId" bigint,
-    "group" character varying(255)
+    "group" character varying(255),
+    ignored boolean DEFAULT false NOT NULL
 );
 
 
@@ -1620,6 +1720,13 @@ ALTER TABLE ONLY public.accounts ALTER COLUMN id SET DEFAULT nextval('public.acc
 
 
 --
+-- Name: audit_trails id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_trails ALTER COLUMN id SET DEFAULT nextval('public.audit_trails_id_seq'::regclass);
+
+
+--
 -- Name: automation_action_runs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1904,6 +2011,14 @@ ALTER TABLE ONLY public.accounts
 
 
 --
+-- Name: audit_trails audit_trails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_trails
+    ADD CONSTRAINT audit_trails_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: automation_action_runs automation_action_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2101,6 +2216,14 @@ ALTER TABLE ONLY public.google_users
 
 ALTER TABLE ONLY public.google_users
     ADD CONSTRAINT google_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ignored_files ignored_files_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_files
+    ADD CONSTRAINT ignored_files_pkey PRIMARY KEY ("projectId", "testId", "fileId");
 
 
 --
@@ -2336,6 +2459,13 @@ CREATE INDEX accounts_teamid_index ON public.accounts USING btree ("teamId");
 --
 
 CREATE INDEX accounts_userid_index ON public.accounts USING btree ("userId");
+
+
+--
+-- Name: audit_trails_projectid_testid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX audit_trails_projectid_testid_index ON public.audit_trails USING btree ("projectId", "testId");
 
 
 --
@@ -2821,6 +2951,30 @@ ALTER TABLE ONLY public.accounts
 
 
 --
+-- Name: audit_trails audit_trails_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_trails
+    ADD CONSTRAINT audit_trails_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: audit_trails audit_trails_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_trails
+    ADD CONSTRAINT audit_trails_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
+-- Name: audit_trails audit_trails_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.audit_trails
+    ADD CONSTRAINT audit_trails_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
 -- Name: automation_action_runs automation_action_runs_automationrunid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2986,6 +3140,30 @@ ALTER TABLE ONLY public.github_repository_installations
 
 ALTER TABLE ONLY public.github_synchronizations
     ADD CONSTRAINT github_synchronizations_githubinstallationid_foreign FOREIGN KEY ("githubInstallationId") REFERENCES public.github_installations(id);
+
+
+--
+-- Name: ignored_files ignored_files_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_files
+    ADD CONSTRAINT ignored_files_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
+
+
+--
+-- Name: ignored_files ignored_files_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_files
+    ADD CONSTRAINT ignored_files_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: ignored_files ignored_files_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_files
+    ADD CONSTRAINT ignored_files_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
 
 
 --
@@ -3404,3 +3582,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250602091017_test-stats.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250607160713_remove-test-activities.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250617171538_slack-connected-at.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250622134309_ignored-files.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250629170855_screenshot-diffs-ignore.js', 1, NOW());

@@ -24,7 +24,7 @@ export class AuditTrail extends Model {
   static override get jsonSchema() {
     return {
       type: "object",
-      required: ["date", "projectId", "testId", "userId"],
+      required: ["date", "projectId", "testId", "userId", "action"],
       properties: {
         id: { type: "string" },
         date: { type: "string" },

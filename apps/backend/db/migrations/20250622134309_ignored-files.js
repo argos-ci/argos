@@ -4,18 +4,26 @@
  */
 export const up = async (knex) => {
   await knex.schema.createTable("ignored_files", (table) => {
-    table.bigInteger("projectId").notNullable();
     table
-      .foreign("projectId")
-      .references("projects.id")
+      .bigInteger("projectId")
+      .notNullable()
       .comment(
         "Project to which the file is ignored in. Files are global, so we need to scope by project",
       );
+    table.foreign("projectId").references("projects.id");
+
+    table
+      .bigInteger("testId")
+      .notNullable()
+      .comment(
+        "Test to which the file is ignored in. Files are global, so we need to scope by test",
+      );
+    table.foreign("testId").references("tests.id");
 
     table.bigInteger("fileId").notNullable().comment("File that is ignored");
     table.foreign("fileId").references("files.id");
 
-    table.primary(["projectId", "fileId"]);
+    table.primary(["projectId", "testId", "fileId"]);
   });
 
   await knex.schema.createTable("audit_trails", (table) => {
@@ -39,15 +47,14 @@ export const up = async (knex) => {
 
     table
       .bigInteger("userId")
-      .references("users.id")
       .notNullable()
       .comment("User who performed the action");
     table.foreign("userId").references("users.id");
 
     table
       .string("action")
-      .comment("Action performed, e.g., 'file.ignored', 'file.unignored'")
-      .notNullable();
+      .notNullable()
+      .comment("Action performed, e.g., 'file.ignored', 'file.unignored'");
   });
 };
 

@@ -57,6 +57,7 @@ export const typeDefs = gql`
     removed: Int!
     unchanged: Int!
     retryFailure: Int!
+    ignored: Int!
   }
 
   enum BuildMode {
@@ -286,6 +287,22 @@ export const resolvers: IResolvers = {
     },
     reviews: async (build, _args, ctx) => {
       return ctx.loaders.BuildUniqueReviews.load(build.id);
+    },
+    stats: async (build) => {
+      const { stats } = build;
+      if (!stats) {
+        return null;
+      }
+      return {
+        total: stats.total ?? 0,
+        failure: stats.failure ?? 0,
+        changed: stats.changed ?? 0,
+        added: stats.added ?? 0,
+        removed: stats.removed ?? 0,
+        unchanged: stats.unchanged ?? 0,
+        retryFailure: stats.retryFailure ?? 0,
+        ignored: stats.ignored ?? 0,
+      };
     },
   },
   Mutation: {

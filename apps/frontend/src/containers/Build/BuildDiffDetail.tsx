@@ -92,6 +92,7 @@ const _DiffFragment = graphql(`
     last7daysOccurences: occurrences(period: LAST_7_DAYS)
     change {
       id
+      ignored
     }
     test {
       id

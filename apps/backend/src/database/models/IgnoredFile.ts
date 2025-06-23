@@ -2,23 +2,26 @@ import { Model } from "objection";
 
 import { File } from "./File";
 import { Project } from "./Project";
+import { Test } from "./Test";
 
 export class IgnoredFile extends Model {
   static override tableName = "ignored_files";
 
-  projectId!: number;
-  fileId!: number;
+  projectId!: string;
+  fileId!: string;
+  testId!: string;
 
   static override get idColumn() {
-    return ["projectId", "fileId"];
+    return ["projectId", "testId", "fileId"];
   }
 
   static override get jsonSchema() {
     return {
       type: "object",
-      required: ["projectId", "fileId"],
+      required: ["projectId", "testId", "fileId"],
       properties: {
         projectId: { type: "string" },
+        testId: { type: "string" },
         fileId: { type: "string" },
       },
     };
@@ -33,6 +36,14 @@ export class IgnoredFile extends Model {
         to: "projects.id",
       },
     },
+    test: {
+      relation: Model.BelongsToOneRelation,
+      modelClass: Test,
+      join: {
+        from: "ignored_files.testId",
+        to: "tests.id",
+      },
+    },
     file: {
       relation: Model.BelongsToOneRelation,
       modelClass: File,
@@ -44,5 +55,6 @@ export class IgnoredFile extends Model {
   };
 
   project?: Project;
+  test?: Test;
   file?: File;
 }

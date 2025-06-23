@@ -61,6 +61,8 @@ const getStatHotkeyName = (group: DiffGroupName): HotkeyName => {
       return "goToFirstUnchanged";
     case ScreenshotDiffStatus.RetryFailure:
       return "goToFirstRetryFailure";
+    case ScreenshotDiffStatus.Ignored:
+      return "goToFirstIgnored";
     default:
       assertNever(group);
   }
@@ -88,12 +90,12 @@ function InteractiveStatCount({
       <RACButton
         className={clsx(
           colorClassName,
-          "data-[disabled]:opacity-disabled rac-focus flex cursor-default items-center gap-1 p-2 transition",
+          "data-[disabled]:opacity-disabled rac-focus flex cursor-default items-center gap-1 py-2 transition",
         )}
         onPress={onActive}
         isDisabled={count === 0}
       >
-        <span className="*:size-4">{icon}</span>
+        <span className="*:size-3">{icon}</span>
         <span className="text-xs">{count}</span>
       </RACButton>
     </HotkeyTooltip>
@@ -136,6 +138,7 @@ const _BuildStatsFragment = graphql(`
     removed
     unchanged
     retryFailure
+    ignored
   }
 `);
 
@@ -151,7 +154,7 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
   tooltip?: boolean;
 }) {
   return (
-    <div className={clsx(className, "flex items-center")}>
+    <div className={clsx(className, "flex flex-wrap items-center gap-3")}>
       {DIFF_GROUPS.map((group) => {
         const count = stats[group];
         if (!onClickGroup) {

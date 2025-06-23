@@ -165,16 +165,13 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             diff={diff}
             disabled={!canBeReviewed}
             render={({ children }) => (
-              <>
-                <Separator orientation="vertical" className="mx-1 !h-6" />
-                <div className="flex gap-1.5">{children}</div>
-              </>
+              <div className="flex gap-1.5">{children}</div>
             )}
           />
         </BuildDiffDetailToolbar>
       </div>
       <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
-        {diff.test && testDetailsFeature.isEnabled ? (
+        {diff.test && diff.change && testDetailsFeature.isEnabled ? (
           <BuildFlakyIndicator
             accountSlug={params.accountSlug}
             projectName={params.projectName}

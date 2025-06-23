@@ -109,6 +109,12 @@ const hotkeyGroups = [
         description: "Go to first retried failure screenshot",
         envs: ["build"],
       },
+      goToFirstIgnored: {
+        keys: ["Digit7"],
+        displayKeys: ["7"],
+        description: "Go to first ignored screenshot",
+        envs: ["build"],
+      },
       switchViewport: {
         keys: ["KeyV"],
         displayKeys: ["V"],
@@ -196,6 +202,12 @@ const hotkeyGroups = [
         displayKeys: ["N"],
         description: "Mark individual change as rejected",
         envs: ["build"],
+      },
+      ignoreChange: {
+        keys: ["KeyI"],
+        displayKeys: ["I"],
+        description: "Ignore change",
+        envs: ["test", "build"],
       },
     },
   },

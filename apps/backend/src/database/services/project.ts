@@ -12,7 +12,8 @@ export const checkProjectName = async (args: {
 
   const sameName = await Project.query()
     .select("id")
-    .findOne({ name: args.name, accountId: args.accountId })
+    .whereILike("name", args.name)
+    .where("accountId", args.accountId)
     .first();
 
   if (sameName) {

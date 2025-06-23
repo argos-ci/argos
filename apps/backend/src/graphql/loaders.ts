@@ -17,6 +17,7 @@ import {
   GithubPullRequest,
   GithubRepository,
   GitlabProject,
+  IgnoredFile,
   Model,
   Plan,
   Project,
@@ -497,6 +498,38 @@ function createTestChangeStatsLoader(): (
   });
 }
 
+function createIgnoredChangeLoader() {
+  return new DataLoader<
+    {
+      projectId: string;
+      testId: string;
+      fileId: string;
+    },
+    boolean,
+    string
+  >(
+    async (pairs) => {
+      const rows = await IgnoredFile.query().whereIn(
+        ["projectId", "testId", "fileId"],
+        pairs.map(({ projectId, testId, fileId }) => [
+          projectId,
+          testId,
+          fileId,
+        ]),
+      );
+
+      const rowSet = new Set(
+        rows.map((r) => `${r.projectId}|${r.testId}|${r.fileId}`),
+      );
+
+      return pairs.map(({ projectId, testId, fileId }) =>
+        rowSet.has(`${projectId}|${testId}|${fileId}`),
+      );
+    },
+    { cacheKeyFn: (input) => JSON.stringify(input) },
+  );
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -514,6 +547,7 @@ export const createLoaders = () => ({
   GithubPullRequest: createModelLoader(GithubPullRequest),
   GithubRepository: createModelLoader(GithubRepository),
   GitlabProject: createModelLoader(GitlabProject),
+  IgnoredChangeLoader: createIgnoredChangeLoader(),
   LatestAutomationRun: createLatestAutomationRunLoader(),
   LatestProjectBuild: createLatestProjectBuildLoader(),
   Plan: createModelLoader(Plan),

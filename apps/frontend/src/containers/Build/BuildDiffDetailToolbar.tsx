@@ -8,6 +8,7 @@ import { Separator } from "@/ui/Separator";
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 import { FitToggle } from "./toolbar/FitToggle";
 import { HighlightButton } from "./toolbar/HighlightButton";
+import { IgnoreButton } from "./toolbar/IgnoreButton";
 import {
   GoToNextChangesButton,
   GoToPreviousChangesButton,
@@ -45,6 +46,8 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
           <SettingsButton />
         </>
       )}
+      <Separator orientation="vertical" className="mx-1 !h-6" />
+      {diff.change ? <IgnoreButton diff={diff} /> : null}
       {children}
     </div>
   );
