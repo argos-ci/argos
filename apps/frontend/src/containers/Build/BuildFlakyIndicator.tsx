@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 
 import type { Diff } from "@/pages/Build/BuildDiffState";
 import { getTestURL } from "@/pages/Test/TestParams";
-import { Chip } from "@/ui/Chip";
+import { ChipLink } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 import { lowTextColorClassNames } from "@/util/colors";
 
@@ -23,18 +23,17 @@ export function BuildFlakyIndicator(props: {
   const compactFormatter = useNumberFormatter({ notation: "compact" });
   invariant(diff.test, "BuildFlakyIndicator requires a diff with a test");
 
+  const testURL = getTestURL(
+    {
+      accountSlug,
+      projectName,
+      testId: diff.test.id,
+    },
+    { change: diff.changeId },
+  );
+
   const testLink = (
-    <Link
-      to={getTestURL(
-        {
-          accountSlug,
-          projectName,
-          testId: diff.test.id,
-        },
-        { change: diff.changeId },
-      )}
-      className="underline decoration-1 underline-offset-2"
-    >
+    <Link to={testURL} className="underline decoration-1 underline-offset-2">
       View complete test details
     </Link>
   );
@@ -62,9 +61,15 @@ export function BuildFlakyIndicator(props: {
           </TooltipContainer>
         }
       >
-        <Chip icon={WavesIcon} color="danger" scale="xs" {...props}>
+        <ChipLink
+          href={testURL}
+          icon={WavesIcon}
+          color="danger"
+          scale="xs"
+          {...props}
+        >
           {diff.last7daysOccurences} / {diff.test.last7daysMetrics.all.total}
-        </Chip>
+        </ChipLink>
       </Tooltip>
     );
   }
@@ -107,12 +112,18 @@ export function BuildFlakyIndicator(props: {
           </TooltipContainer>
         }
       >
-        <Chip icon={WavesIcon} color={color} scale="xs" {...props}>
+        <ChipLink
+          href={testURL}
+          icon={WavesIcon}
+          color={color}
+          scale="xs"
+          {...props}
+        >
           {compactFormatter.format(
             diff.test.last7daysMetrics.all.flakiness * 100,
           )}
           <small>%</small>
-        </Chip>
+        </ChipLink>
       </Tooltip>
     );
   }
@@ -127,9 +138,15 @@ export function BuildFlakyIndicator(props: {
         </TooltipContainer>
       }
     >
-      <Chip icon={CircleCheckIcon} color="success" scale="xs" {...props}>
+      <ChipLink
+        href={testURL}
+        icon={CircleCheckIcon}
+        color="success"
+        scale="xs"
+        {...props}
+      >
         Stable
-      </Chip>
+      </ChipLink>
     </Tooltip>
   );
 }
