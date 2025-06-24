@@ -250,6 +250,7 @@ function useGetPreviousDiff() {
 
     const previousDiffIndex = activeDiffIndex - 1;
     const previousDiff = diffs[previousDiffIndex];
+
     if (!previousDiff) {
       return null;
     }
@@ -261,14 +262,16 @@ function useGetPreviousDiff() {
       return previousDiff;
     }
 
-    const newDiffIndex = diffs
+    const firstOfTheGroupIndex = diffs
       .slice(0, previousDiffIndex)
       .findIndex((diff) => diff.group === previousDiff.group);
-    if (newDiffIndex !== -1) {
-      return diffs[newDiffIndex] ?? null;
+
+    if (firstOfTheGroupIndex !== -1) {
+      return diffs[firstOfTheGroupIndex] ?? null;
     }
 
-    return null;
+    // Fallback to the previous diff if there is no first of the group (means we have a group of one single diff).
+    return previousDiff;
   });
 }
 

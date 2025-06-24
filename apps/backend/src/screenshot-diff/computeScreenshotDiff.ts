@@ -279,7 +279,7 @@ async function groupSimilarDiffs(input: {
   });
 
   // Patch group on screenshot diffs
-  if (similarDiffs.length > 0) {
+  if (similarDiffs.length > 1) {
     const diffIds = similarDiffs.map(({ id }) => id);
 
     const diffIdsChunks = chunk(diffIds, 50);

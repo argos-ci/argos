@@ -191,8 +191,10 @@ function getRows(
           const previousGroupItem = acc.findLast(
             (row) => row.type === "group-item",
           ) as ListGroupItemRow | undefined;
+
           const isSameGroup =
             previousGroupItem && diff.group === previousGroupItem.diff?.group;
+
           const expanded = expandedGroups.includes(diff.group);
 
           // If the diff is part the last group
@@ -435,7 +437,7 @@ function ListItem(props: {
   });
   const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
   const groupStatus = getDiffGroupStatus(item.diff?.group ?? null);
-  const isGroupItem = item.type === "group-item";
+  const isGroupItem = item.type === "group-item" && item.group.length > 1;
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
   const { hoverProps } = useDelayedHover({
     onHoverChange,
