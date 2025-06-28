@@ -1,6 +1,6 @@
-import { JSONSchema } from "objection";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
+
+import { zodToJsonSchema } from "@/util/zod";
 
 const ViewportSchema = z
   .object({
@@ -111,6 +111,6 @@ export const ScreenshotMetadataSchema = z
 export const ScreenshotMetadataJsonSchema = zodToJsonSchema(
   ScreenshotMetadataSchema,
   { removeAdditionalStrategy: "strict" },
-) as JSONSchema;
+);
 
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;

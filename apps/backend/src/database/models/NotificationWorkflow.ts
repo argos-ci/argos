@@ -1,11 +1,11 @@
-import type { JSONSchema, RelationMappings } from "objection";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import type { RelationMappings } from "objection";
 
 import {
   notificationHandlers,
   type NotificationWorkflowData,
   type NotificationWorkflowType,
 } from "@/notification/handlers/index.js";
+import { zodToJsonSchema } from "@/util/zod.js";
 
 import { Model } from "../util/model.js";
 import {
@@ -34,7 +34,7 @@ export class NotificationWorkflow<
           type: "object",
           properties: {
             type: { const: h.type },
-            data: zodToJsonSchema(h.schema) as JSONSchema,
+            data: zodToJsonSchema(h.schema),
           },
           required: ["type", "data"],
         })),
