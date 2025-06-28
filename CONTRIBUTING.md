@@ -103,6 +103,8 @@ Two files with the extension ".pem" should be generated at the root of the proje
 **5. Set up the database**
 
 ```sh
+brew install postgresql@17
+brew link postgresql@17 --force
 docker-compose up -d
 pnpm run setup
 pnpm run --filter @argos/backend db:seed
