@@ -2,12 +2,13 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.11
--- Dumped by pg_dump version 14.18 (Homebrew)
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -113,7 +114,7 @@ CREATE SEQUENCE public.accounts_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.accounts_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.accounts_id_seq OWNER TO postgres;
 
 --
 -- Name: accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -156,7 +157,7 @@ CREATE SEQUENCE public.automation_action_runs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.automation_action_runs_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.automation_action_runs_id_seq OWNER TO postgres;
 
 --
 -- Name: automation_action_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -196,7 +197,7 @@ CREATE SEQUENCE public.automation_rules_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.automation_rules_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.automation_rules_id_seq OWNER TO postgres;
 
 --
 -- Name: automation_rules_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -235,7 +236,7 @@ CREATE SEQUENCE public.automation_runs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.automation_runs_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.automation_runs_id_seq OWNER TO postgres;
 
 --
 -- Name: automation_runs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -272,7 +273,7 @@ CREATE SEQUENCE public.build_notifications_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.build_notifications_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.build_notifications_id_seq OWNER TO postgres;
 
 --
 -- Name: build_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -310,7 +311,7 @@ CREATE SEQUENCE public.build_reviews_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.build_reviews_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.build_reviews_id_seq OWNER TO postgres;
 
 --
 -- Name: build_reviews_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -347,7 +348,7 @@ CREATE SEQUENCE public.build_shards_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.build_shards_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.build_shards_id_seq OWNER TO postgres;
 
 --
 -- Name: build_shards_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -411,7 +412,7 @@ CREATE SEQUENCE public.builds_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.builds_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.builds_id_seq OWNER TO postgres;
 
 --
 -- Name: builds_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -450,7 +451,7 @@ CREATE SEQUENCE public.files_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.files_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.files_id_seq OWNER TO postgres;
 
 --
 -- Name: files_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -486,7 +487,7 @@ CREATE SEQUENCE public.github_account_members_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_account_members_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_account_members_id_seq OWNER TO postgres;
 
 --
 -- Name: github_account_members_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -529,7 +530,7 @@ CREATE SEQUENCE public.github_accounts_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_accounts_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_accounts_id_seq OWNER TO postgres;
 
 --
 -- Name: github_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -570,7 +571,7 @@ CREATE SEQUENCE public.github_installations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_installations_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_installations_id_seq OWNER TO postgres;
 
 --
 -- Name: github_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -621,7 +622,7 @@ CREATE SEQUENCE public.github_pull_requests_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_pull_requests_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_pull_requests_id_seq OWNER TO postgres;
 
 --
 -- Name: github_pull_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -660,7 +661,7 @@ CREATE SEQUENCE public.github_repositories_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_repositories_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_repositories_id_seq OWNER TO postgres;
 
 --
 -- Name: github_repositories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -696,7 +697,7 @@ CREATE SEQUENCE public.github_repository_installations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_repository_installations_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_repository_installations_id_seq OWNER TO postgres;
 
 --
 -- Name: github_repository_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -732,7 +733,7 @@ CREATE SEQUENCE public.github_synchronizations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.github_synchronizations_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.github_synchronizations_id_seq OWNER TO postgres;
 
 --
 -- Name: github_synchronizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -773,7 +774,7 @@ CREATE SEQUENCE public.gitlab_projects_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.gitlab_projects_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.gitlab_projects_id_seq OWNER TO postgres;
 
 --
 -- Name: gitlab_projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -815,7 +816,7 @@ CREATE SEQUENCE public.gitlab_users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.gitlab_users_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.gitlab_users_id_seq OWNER TO postgres;
 
 --
 -- Name: gitlab_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -854,7 +855,7 @@ CREATE SEQUENCE public.google_users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.google_users_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.google_users_id_seq OWNER TO postgres;
 
 --
 -- Name: google_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -890,7 +891,7 @@ CREATE SEQUENCE public.knex_migrations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.knex_migrations_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.knex_migrations_id_seq OWNER TO postgres;
 
 --
 -- Name: knex_migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -924,7 +925,7 @@ CREATE SEQUENCE public.knex_migrations_lock_index_seq
     CACHE 1;
 
 
-ALTER TABLE public.knex_migrations_lock_index_seq OWNER TO postgres;
+ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNER TO postgres;
 
 --
 -- Name: knex_migrations_lock_index_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -966,7 +967,7 @@ CREATE SEQUENCE public.notification_messages_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.notification_messages_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.notification_messages_id_seq OWNER TO postgres;
 
 --
 -- Name: notification_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1002,7 +1003,7 @@ CREATE SEQUENCE public.notification_workflow_recipients_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.notification_workflow_recipients_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.notification_workflow_recipients_id_seq OWNER TO postgres;
 
 --
 -- Name: notification_workflow_recipients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1039,7 +1040,7 @@ CREATE SEQUENCE public.notification_workflows_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.notification_workflows_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.notification_workflows_id_seq OWNER TO postgres;
 
 --
 -- Name: notification_workflows_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1082,7 +1083,7 @@ CREATE SEQUENCE public.plans_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.plans_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.plans_id_seq OWNER TO postgres;
 
 --
 -- Name: plans_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1120,7 +1121,7 @@ CREATE SEQUENCE public.project_users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.project_users_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.project_users_id_seq OWNER TO postgres;
 
 --
 -- Name: project_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1167,7 +1168,7 @@ CREATE SEQUENCE public.projects_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.projects_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.projects_id_seq OWNER TO postgres;
 
 --
 -- Name: projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1211,7 +1212,7 @@ CREATE SEQUENCE public.screenshot_buckets_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.screenshot_buckets_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.screenshot_buckets_id_seq OWNER TO postgres;
 
 --
 -- Name: screenshot_buckets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1254,7 +1255,7 @@ CREATE SEQUENCE public.screenshot_diffs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.screenshot_diffs_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.screenshot_diffs_id_seq OWNER TO postgres;
 
 --
 -- Name: screenshot_diffs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1298,7 +1299,7 @@ CREATE SEQUENCE public.screenshots_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.screenshots_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.screenshots_id_seq OWNER TO postgres;
 
 --
 -- Name: screenshots_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1335,7 +1336,7 @@ CREATE SEQUENCE public.slack_channels_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.slack_channels_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.slack_channels_id_seq OWNER TO postgres;
 
 --
 -- Name: slack_channels_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1374,7 +1375,7 @@ CREATE SEQUENCE public.slack_installations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.slack_installations_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.slack_installations_id_seq OWNER TO postgres;
 
 --
 -- Name: slack_installations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1424,7 +1425,7 @@ CREATE SEQUENCE public.subscriptions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.subscriptions_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.subscriptions_id_seq OWNER TO postgres;
 
 --
 -- Name: subscriptions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1462,7 +1463,7 @@ CREATE SEQUENCE public.team_users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.team_users_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.team_users_id_seq OWNER TO postgres;
 
 --
 -- Name: team_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1500,7 +1501,7 @@ CREATE SEQUENCE public.teams_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.teams_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.teams_id_seq OWNER TO postgres;
 
 --
 -- Name: teams_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1564,7 +1565,7 @@ CREATE SEQUENCE public.tests_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tests_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.tests_id_seq OWNER TO postgres;
 
 --
 -- Name: tests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1602,7 +1603,7 @@ CREATE SEQUENCE public.users_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.users_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
 
 --
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres

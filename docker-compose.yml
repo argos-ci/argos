@@ -1,7 +1,7 @@
 services:
   postgres:
     # Last time I have checked, production is running 14.10
-    image: postgres:14-alpine
+    image: postgres:17-alpine
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
