@@ -6,7 +6,17 @@ export const up = async (knex) => {
     table.boolean("ignored").defaultTo(false);
   });
 
-  await knex.raw(`UPDATE screenshot_diffs SET ignored = false`);
+  // Update existing recors in batch to avoid long transaction times
+  // and to prevent locking the table for too long.
+  while (true) {
+    const updated = await knex("screenshot_diffs")
+      .whereNull("ignored")
+      .limit(100_000)
+      .update({ ignored: false });
+    if (updated === 0) {
+      break;
+    }
+  }
 
   await knex.raw(`
     ALTER TABLE screenshot_diffs ADD CONSTRAINT screenshot_diffs_ignored_not_null_constraint CHECK (ignored IS NOT NULL) NOT VALID;

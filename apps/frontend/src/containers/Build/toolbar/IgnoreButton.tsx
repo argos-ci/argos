@@ -6,7 +6,7 @@ import { DialogTrigger } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { graphql } from "@/gql";
-import { useAccountParams } from "@/pages/Account/AccountParams";
+import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/ui/Dialog";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
+import { IconButton, type IconButtonProps } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 
 import type { BuildDiffDetailDocument } from "../BuildDiffDetail";
@@ -40,13 +40,19 @@ const UnignoreChangeMutation = graphql(`
   }
 `);
 
-export const IgnoreButton = memo(function IgnoreButton(props: {
-  diff: BuildDiffDetailDocument;
-}) {
+function BaseIgnoreButton(props: Omit<IconButtonProps, "children">) {
+  return (
+    <IconButton {...props}>
+      <FlagOffIcon />
+    </IconButton>
+  );
+}
+
+function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
   const { diff } = props;
-  invariant(diff.change, "IgnoreButton requires a change diff");
-  const params = useAccountParams();
-  invariant(params, "IgnoreButton requires account params");
+  const params = useProjectParams();
+  invariant(params, "IgnoreButton requires project params");
+  invariant(diff.change, "IgnoreButton requires a change in the diff");
   const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
   const openDialog = () => {
@@ -87,13 +93,11 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
         description={isIgnored ? "Unignore change" : hotkey.description}
         keys={hotkey.displayKeys}
       >
-        <IconButton
+        <BaseIgnoreButton
           aria-pressed={isIgnored}
           onPress={openDialog}
           color={isIgnored ? "danger" : undefined}
-        >
-          <FlagOffIcon />
-        </IconButton>
+        />
       </HotkeyTooltip>
       <DialogTrigger
         isOpen={dialog === "ignore"}
@@ -108,10 +112,15 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
             <DialogBody>
               <DialogTitle>Ignore Change</DialogTitle>
               <DialogText>
-                Ignoring this change will prevent it from being considered as a
-                "change" in future builds. All changes that{" "}
-                <strong>match exactly this diff overlay</strong> will be
-                ignored.
+                When you ignore this diff Argos will skip it in future builds.
+                <br />
+                Only ignore changes that are actually{" "}
+                <strong>flaky and have recurred several times</strong>.<br />
+                Argos will ignore{" "}
+                <strong>
+                  any future diff that exactly matches this overlay
+                </strong>
+                .
               </DialogText>
             </DialogBody>
             <DialogFooter>
@@ -123,7 +132,7 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
                   setDialog(null);
                 }}
               >
-                Ignore
+                Ignore Change
               </Button>
             </DialogFooter>
           </Dialog>
@@ -142,10 +151,14 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
             <DialogBody>
               <DialogTitle>Unignore Change</DialogTitle>
               <DialogText>
-                This change is currently ignored. Unignoring it will allow it to
-                be considered as a "change" in future builds. All changes that{" "}
-                <strong>match exactly this diff overlay</strong> will be
-                unignored.
+                Re-enable this diff so Argos will treat it as a change in future
+                builds.
+                <br />
+                <strong>
+                  Only unignore if you’re sure the flake is resolved.
+                </strong>
+                <br />
+                Argos will now track any exact match of this overlay again.
               </DialogText>
             </DialogBody>
             <DialogFooter>
@@ -157,7 +170,7 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
                   setDialog(null);
                 }}
               >
-                Unignore
+                Unignore Change
               </Button>
             </DialogFooter>
           </Dialog>
@@ -165,4 +178,16 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
       </DialogTrigger>
     </>
   );
+}
+
+export const IgnoreButton = memo(function IgnoreButton(props: {
+  diff: BuildDiffDetailDocument;
+}) {
+  const { diff } = props;
+
+  if (diff.change) {
+    return <EnabledIgnoreButton diff={diff} />;
+  }
+
+  return <BaseIgnoreButton isDisabled />;
 });

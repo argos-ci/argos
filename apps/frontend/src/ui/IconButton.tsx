@@ -53,7 +53,7 @@ function getIconButtonClassName(options: IconButtonOptions) {
   );
 }
 
-type IconButtonProps = RACButtonProps &
+export type IconButtonProps = RACButtonProps &
   IconButtonOptions & {
     ref?: React.Ref<HTMLButtonElement>;
   };

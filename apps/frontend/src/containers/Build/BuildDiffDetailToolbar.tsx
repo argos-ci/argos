@@ -50,9 +50,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
         </>
       )}
       <Separator orientation="vertical" className="mx-1 !h-6" />
-      {diff.change && ignoreChangeFeature.isEnabled ? (
-        <IgnoreButton diff={diff} />
-      ) : null}
+      {ignoreChangeFeature.isEnabled ? <IgnoreButton diff={diff} /> : null}
       {children}
     </div>
   );

@@ -106,7 +106,7 @@ export class ScreenshotDiff extends Model {
       WHEN "baseScreenshotId" IS NULL
         THEN
           CASE
-            WHEN ""name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
+            WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
               THEN
                 CASE
                   WHEN  (

@@ -1,5 +1,6 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
+import { useFeature } from "@bucketco/react-sdk";
 import { clsx } from "clsx";
 import { Button as RACButton } from "react-aria-components";
 
@@ -153,9 +154,21 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
   className?: string;
   tooltip?: boolean;
 }) {
+  const ignoreChangesFeature = useFeature("changes-ignore");
+  const groups = useMemo(() => {
+    return DIFF_GROUPS.filter((group) => {
+      if (
+        group === ScreenshotDiffStatus.Ignored &&
+        !ignoreChangesFeature.isEnabled
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [ignoreChangesFeature.isEnabled]);
   return (
     <div className={clsx(className, "flex flex-wrap items-center gap-3")}>
-      {DIFF_GROUPS.map((group) => {
+      {groups.map((group) => {
         const count = stats[group];
         if (!onClickGroup) {
           if (count === 0) {
