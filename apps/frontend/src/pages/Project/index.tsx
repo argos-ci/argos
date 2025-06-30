@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
-import { useFeature } from "@bucketco/react-sdk";
 import { Outlet } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -37,11 +36,8 @@ function ProjectTabLinkList(props: {
   isTeam: boolean;
 }) {
   const { permissions, isTeam } = props;
-  const automationFeature = useFeature("automations");
   const showAutomationsTab =
-    isTeam &&
-    permissions.includes(ProjectPermission.ViewSettings) &&
-    automationFeature.isEnabled;
+    isTeam && permissions.includes(ProjectPermission.ViewSettings);
 
   return (
     <TabLinkList aria-label="Project navigation">
