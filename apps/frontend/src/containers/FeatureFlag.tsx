@@ -14,8 +14,7 @@ import { useAuthTokenPayload } from "./Auth";
 
 declare module "@bucketco/react-sdk" {
   interface Features {
-    "test-details": boolean;
-    automations: boolean;
+    "changes-ignore": boolean;
   }
 }
 
@@ -108,6 +107,7 @@ function FeatureGuard(props: {
   return props.children;
 }
 
+/** @utility */
 export function featureGuardHoc(featureKey: keyof Features) {
   return (Component: React.ComponentType) => (props: any) => (
     <FeatureGuard featureKey={featureKey}>

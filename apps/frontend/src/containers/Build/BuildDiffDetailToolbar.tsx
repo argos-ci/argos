@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { useFeature } from "@bucketco/react-sdk";
 
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
@@ -29,6 +30,8 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
+  const ignoreChangeFeature = useFeature("changes-ignore");
+
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       <ViewToggle />
@@ -47,7 +50,9 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
         </>
       )}
       <Separator orientation="vertical" className="mx-1 !h-6" />
-      {diff.change ? <IgnoreButton diff={diff} /> : null}
+      {diff.change && ignoreChangeFeature.isEnabled ? (
+        <IgnoreButton diff={diff} />
+      ) : null}
       {children}
     </div>
   );

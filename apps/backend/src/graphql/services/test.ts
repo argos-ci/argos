@@ -47,7 +47,7 @@ export function formatTestChangeId(input: TestChangeIdPayload): string {
 /**
  * Parses a test change ID string into an object containing the project name and test ID.
  */
-export function parseTestChangeId(input: string): TestChangeIdPayload {
+function parseTestChangeId(input: string): TestChangeIdPayload {
   const parts = input.split("-");
   const fileId = parts.pop();
   const testId = parts.join("-");

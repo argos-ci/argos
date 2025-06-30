@@ -387,6 +387,7 @@ function AutomationPage() {
   );
 }
 
+/** @route */
 export function Component() {
   const params = useAutomationParams();
   invariant(params, "Automation params are required");

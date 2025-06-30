@@ -28,7 +28,6 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
-import { featureGuardHoc } from "@/containers/FeatureFlag";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { graphql, type DocumentType } from "@/gql";
@@ -149,7 +148,7 @@ const PERIODS = {
 type TestPeriodState = PeriodState<typeof PERIODS>;
 
 /** @route */
-export const Component = featureGuardHoc("test-details")(function Component() {
+export function Component() {
   const compactFormatter = useNumberFormatter({
     notation: "compact",
   });
@@ -396,7 +395,7 @@ export const Component = featureGuardHoc("test-details")(function Component() {
       </PageContainer>
     </Page>
   );
-});
+}
 
 function Seen(props: {
   title: string;
