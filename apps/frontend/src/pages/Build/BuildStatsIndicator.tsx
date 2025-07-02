@@ -156,15 +156,11 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
 }) {
   const ignoreChangesFeature = useFeature("changes-ignore");
   const groups = useMemo(() => {
-    return DIFF_GROUPS.filter((group) => {
-      if (
-        group === ScreenshotDiffStatus.Ignored &&
-        !ignoreChangesFeature.isEnabled
-      ) {
-        return false;
-      }
-      return true;
-    });
+    return DIFF_GROUPS.filter(
+      (group) =>
+        group !== ScreenshotDiffStatus.Ignored ||
+        ignoreChangesFeature.isEnabled,
+    );
   }, [ignoreChangesFeature.isEnabled]);
   return (
     <div className={clsx(className, "flex flex-wrap items-center gap-3")}>
