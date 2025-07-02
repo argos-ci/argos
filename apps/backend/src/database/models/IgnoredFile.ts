@@ -7,10 +7,6 @@ import { Test } from "./Test";
 export class IgnoredFile extends Model {
   static override tableName = "ignored_files";
 
-  projectId!: string;
-  fileId!: string;
-  testId!: string;
-
   static override get idColumn() {
     return ["projectId", "testId", "fileId"];
   }
@@ -26,6 +22,10 @@ export class IgnoredFile extends Model {
       },
     };
   }
+
+  projectId!: string;
+  fileId!: string;
+  testId!: string;
 
   static override relationMappings = {
     project: {
