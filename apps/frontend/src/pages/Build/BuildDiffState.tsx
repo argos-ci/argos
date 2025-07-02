@@ -31,7 +31,6 @@ const ScreenshotDiffFragment = graphql(`
     url
     name
     variantKey
-    changeId
     width
     height
     group

@@ -29,6 +29,7 @@ export class ScreenshotDiff extends Model {
           score: { type: ["number", "null"], minimum: 0, maximum: 1 },
           testId: { type: ["string", "null"] },
           group: { type: ["string", "null"] },
+          ignored: { type: "boolean" },
         },
       },
     ],
@@ -43,6 +44,7 @@ export class ScreenshotDiff extends Model {
   jobStatus!: JobStatus;
   testId!: string | null;
   group!: string | null;
+  ignored!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -97,51 +99,71 @@ export class ScreenshotDiff extends Model {
 
   static screenshotFailureRegexp = / \(failed\)\./;
 
-  static selectDiffStatus = `CASE
-    WHEN "compareScreenshotId" IS NULL
-      THEN 'removed'
-    WHEN "baseScreenshotId" IS NULL
-      THEN (CASE
-        WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
-          THEN (CASE
-            WHEN  (
-              -- Checks for absence of 'retry' and 'retries' or their values being null
-              (metadata->'test'->>'retry' IS NULL OR metadata->'test'->>'retries' IS NULL)
-              OR
-              -- Checks for 'retry' being equal to 'retries'
-              metadata->'test'->>'retry' = metadata->'test'->>'retries'
-            )
-              THEN 'failure'
-            ELSE 'retryFailure'
-          END)
-        ELSE 'added'
-      END)
-    WHEN "score" IS NOT NULL AND "score" > 0
-      THEN 'changed'
-    ELSE 'unchanged'
-    END`;
+  static selectDiffStatus = `
+    CASE
+      WHEN "compareScreenshotId" IS NULL
+        THEN 'removed'
+      WHEN "baseScreenshotId" IS NULL
+        THEN
+          CASE
+            WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
+              THEN
+                CASE
+                  WHEN  (
+                    -- Checks for absence of 'retry' and 'retries' or their values being null
+                    (metadata->'test'->>'retry' IS NULL OR metadata->'test'->>'retries' IS NULL)
+                    OR
+                    -- Checks for 'retry' being equal to 'retries'
+                    metadata->'test'->>'retry' = metadata->'test'->>'retries'
+                  )
+                  THEN 'failure'
+                  ELSE 'retryFailure'
+                END
+            ELSE 'added'
+          END
+      WHEN "score" IS NOT NULL AND "score" > 0
+        THEN
+          CASE
+            WHEN "ignored" IS true
+              THEN 'ignored'
+            ELSE 'changed'
+          END
+      ELSE 'unchanged'
+    END
+  `;
 
-  static sortDiffByStatus = `CASE
-    WHEN "compareScreenshotId" IS NULL THEN 3 -- removed
-    WHEN "baseScreenshotId" IS NULL
-      THEN (CASE
-        WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
-          THEN (CASE
-            WHEN  (
-              -- Checks for absence of 'retry' and 'retries' or their values being null
-              ("compareScreenshot".metadata->'test'->>'retry' IS NULL OR "compareScreenshot".metadata->'test'->>'retries' IS NULL)
-              OR
-              -- Checks for 'retry' being equal to 'retries'
-              "compareScreenshot".metadata->'test'->>'retry' = "compareScreenshot".metadata->'test'->>'retries'
-            )
-              THEN 0
-            ELSE 5
-          END)
-        ELSE 2 -- added
-      END)
-    WHEN "score" IS NOT NULL AND "score" > 0 THEN 1 -- changed
-    ELSE 4 -- unchanged
-    END ASC`;
+  static sortDiffByStatus = `
+    CASE
+      WHEN "compareScreenshotId" IS NULL
+        THEN 3 -- removed
+      WHEN "baseScreenshotId" IS NULL
+        THEN
+          CASE
+            WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
+              THEN
+                CASE
+                  WHEN  (
+                    -- Checks for absence of 'retry' and 'retries' or their values being null
+                    ("compareScreenshot".metadata->'test'->>'retry' IS NULL OR "compareScreenshot".metadata->'test'->>'retries' IS NULL)
+                    OR
+                    -- Checks for 'retry' being equal to 'retries'
+                    "compareScreenshot".metadata->'test'->>'retry' = "compareScreenshot".metadata->'test'->>'retries'
+                  )
+                  THEN 0 -- failure
+                  ELSE 5 -- retryFailure
+                END
+            ELSE 2 -- added
+          END
+      WHEN "score" IS NOT NULL AND "score" > 0
+        THEN
+          CASE
+            WHEN "ignored" IS true
+              THEN 6 -- ignored
+            ELSE 1 -- changed
+          END
+      ELSE 4 -- unchanged
+    END ASC
+  `;
 
   $getDiffStatus = async (
     loadScreenshot?: (screenshotId: string) => Promise<Screenshot>,
@@ -176,7 +198,13 @@ export class ScreenshotDiff extends Model {
       return "pending";
     }
 
-    return this.score > 0 ? "changed" : "unchanged";
+    if (this.score > 0) {
+      if (this.ignored) {
+        return "ignored";
+      }
+      return "changed";
+    }
+    return "unchanged";
   };
 
   override $parseDatabaseJson(json: Pojo) {

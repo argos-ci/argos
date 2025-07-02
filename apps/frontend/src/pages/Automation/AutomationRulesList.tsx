@@ -50,7 +50,7 @@ function DeleteAutomationDialog({
           <DialogBody>
             <DialogTitle>Delete Automation</DialogTitle>
             <DialogText>
-              Are you sure you want to delete this automation rule? This action
+              The automation rule will be permanently deleted. This action
               cannot be undone.
             </DialogText>
           </DialogBody>

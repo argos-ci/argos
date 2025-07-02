@@ -67,6 +67,7 @@ type BuildStats = {
   removed: number;
   total: number;
   retryFailure: number;
+  ignored: number;
 };
 
 export class Build extends Model {
@@ -399,6 +400,7 @@ export class Build extends Model {
           removed: 0,
           total: 0,
           retryFailure: 0,
+          ignored: 0,
         },
       );
     });

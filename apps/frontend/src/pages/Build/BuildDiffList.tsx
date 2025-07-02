@@ -882,7 +882,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="flex shrink-0 items-center overflow-x-auto border-b px-2"
+          className="shrink-0 overflow-x-auto border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

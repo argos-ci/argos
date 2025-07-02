@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
+  FlagOffIcon,
   MinusCircleIcon,
   PlusCircleIcon,
   RotateCcwIcon,
@@ -19,6 +20,7 @@ export const DIFF_GROUPS = [
   ScreenshotDiffStatus.Removed,
   ScreenshotDiffStatus.Unchanged,
   ScreenshotDiffStatus.RetryFailure,
+  ScreenshotDiffStatus.Ignored,
 ] as const;
 
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
@@ -37,6 +39,7 @@ export const getGroupColor = (name: DiffGroupName) => {
     case ScreenshotDiffStatus.Removed:
       return "warning" as const;
     case ScreenshotDiffStatus.RetryFailure:
+    case ScreenshotDiffStatus.Ignored:
       return "neutral" as const;
     case ScreenshotDiffStatus.Unchanged:
       return "success" as const;
@@ -59,6 +62,8 @@ export const getGroupLabel = (name: DiffGroupName) => {
       return "Unchanged";
     case ScreenshotDiffStatus.RetryFailure:
       return "End-to-end retried failures";
+    case ScreenshotDiffStatus.Ignored:
+      return "Ignored";
     default:
       assertNever(name);
   }
@@ -78,6 +83,8 @@ export const getGroupIcon = (name: DiffGroupName) => {
       return <XCircleIcon />;
     case ScreenshotDiffStatus.RetryFailure:
       return <RotateCcwIcon />;
+    case ScreenshotDiffStatus.Ignored:
+      return <FlagOffIcon />;
     default:
       assertNever(name);
   }

@@ -22,7 +22,7 @@
     "heroku-postbuild": "BUILD_MODE=production pnpm run build && pnpm run clean-deps && pnpm install --prod",
     "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
     "watch-codegen": "pnpm run codegen --watch",
-    "knip": "knip --tags=-route",
+    "knip": "knip --tags=-route --tags=-utility",
     "download-env": "op read op://argos-dev/argos/.env.local >> .env"
   },
   "repository": "github:argos-ci/argos",

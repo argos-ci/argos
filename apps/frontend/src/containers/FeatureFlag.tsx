@@ -14,8 +14,7 @@ import { useAuthTokenPayload } from "./Auth";
 
 declare module "@bucketco/react-sdk" {
   interface Features {
-    "test-details": boolean;
-    automations: boolean;
+    "changes-ignore": boolean;
   }
 }
 
@@ -36,6 +35,11 @@ export function FeatureFlagProvider(props: { children: React.ReactNode }) {
 type UserProviderProps = Omit<BucketProps, "publishableKey" | "user">;
 
 /**
+ * Slug of users where the Bucket toolbar is enabled.
+ */
+const BUCKET_TOOLBAR_ENABLED_FOR = ["gregberge", "jsfez"];
+
+/**
  * Provides the user data to the BucketProvider.
  */
 function UserProvider(props: UserProviderProps) {
@@ -48,6 +52,12 @@ function UserProvider(props: UserProviderProps) {
         payload
           ? { id: payload.account.id, name: payload.account.name ?? undefined }
           : undefined
+      }
+      toolbar={
+        process.env["NODE_ENV"] === "development" ||
+        (payload?.account.slug
+          ? BUCKET_TOOLBAR_ENABLED_FOR.includes(payload?.account.slug)
+          : false)
       }
     />
   );
@@ -108,6 +118,7 @@ function FeatureGuard(props: {
   return props.children;
 }
 
+/** @utility */
 export function featureGuardHoc(featureKey: keyof Features) {
   return (Component: React.ComponentType) => (props: any) => (
     <FeatureGuard featureKey={featureKey}>

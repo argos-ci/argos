@@ -320,6 +320,7 @@ type BuildStats {
   added: Int!
   changed: Int!
   failure: Int!
+  ignored: Int!
   removed: Int!
   retryFailure: Int!
   total: Int!
@@ -547,6 +548,11 @@ type GoogleUser implements Node {
   primaryEmail: String
 }
 
+input IgnoreChangeInput {
+  accountSlug: String!
+  changeId: ID!
+}
+
 input ImportGithubProjectInput {
   accountSlug: String!
   installationId: String!
@@ -629,6 +635,7 @@ type Mutation {
 
   """Enable GitHub SSO"""
   enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
+  ignoreChange(input: IgnoreChangeInput!): TestChange!
 
   """Import a project from GitHub"""
   importGithubProject(input: ImportGithubProjectInput!): Project!
@@ -667,6 +674,7 @@ type Mutation {
 
   """Transfer Project to another account"""
   transferProject(input: TransferProjectInput!): Project!
+  unignoreChange(input: UnignoreChangeInput!): TestChange!
 
   """Uninstall Slack"""
   uninstallSlack(input: UninstallSlackInput!): Account!
@@ -904,7 +912,7 @@ type ScreenshotDiff implements Node {
   build: Build!
 
   """Change ID of the screenshot diff. Used to be indefied in a test."""
-  changeId: String
+  change: TestChange
   compareScreenshot: Screenshot
   createdAt: DateTime!
   group: String
@@ -935,6 +943,7 @@ enum ScreenshotDiffStatus {
   added
   changed
   failure
+  ignored
   pending
   removed
   retryFailure
@@ -1112,6 +1121,7 @@ input TestAutomationRuleInput {
 
 type TestChange implements Node {
   id: ID!
+  ignored: Boolean!
   stats(period: MetricsPeriod!): TestChangeStats!
 }
 
@@ -1183,6 +1193,11 @@ input TransferProjectInput {
   id: ID!
   name: String!
   targetAccountId: ID!
+}
+
+input UnignoreChangeInput {
+  accountSlug: String!
+  changeId: ID!
 }
 
 input UninstallSlackInput {

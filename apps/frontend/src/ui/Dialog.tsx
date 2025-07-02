@@ -26,7 +26,7 @@ export function DialogFooter(props: ComponentPropsWithRef<"div">) {
 }
 
 export function DialogText(props: ComponentPropsWithRef<"p">) {
-  return <p {...props} className={clsx("my-4", props.className)} />;
+  return <p {...props} className={clsx("my-4 text-base", props.className)} />;
 }
 
 export function DialogBody(

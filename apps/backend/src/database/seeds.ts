@@ -437,6 +437,7 @@ export async function seed() {
         baseScreenshotId: mediumDummyScreenshot!.id,
         compareScreenshotId: smallDummyScreenshot!.id,
         fileId: dummiesDiffFiles[0]!.id,
+        testId: smallDummyScreenshot!.testId,
       },
       {
         ...updatedScreenshotDiff,
@@ -444,6 +445,7 @@ export async function seed() {
         baseScreenshotId: mediumDummyScreenshot!.id,
         compareScreenshotId: largeDummyScreenshot!.id,
         fileId: dummiesDiffFiles[1]!.id,
+        testId: largeDummyScreenshot!.testId,
       },
       ...duplicate(
         { ...updatedScreenshotDiff, group: updatedScreenshotDiff.s3Id },

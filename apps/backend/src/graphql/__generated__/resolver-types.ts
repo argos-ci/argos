@@ -2,7 +2,7 @@ import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } f
 import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
-import type { TestMetrics, TestChange } from '../../graphql/definitions/Test.js';
+import type { TestMetrics, TestChangeObject } from '../../graphql/definitions/Test.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -361,6 +361,7 @@ export type IBuildStats = {
   added: Scalars['Int']['output'];
   changed: Scalars['Int']['output'];
   failure: Scalars['Int']['output'];
+  ignored: Scalars['Int']['output'];
   removed: Scalars['Int']['output'];
   retryFailure: Scalars['Int']['output'];
   total: Scalars['Int']['output'];
@@ -591,6 +592,11 @@ export type IGoogleUser = INode & {
   primaryEmail?: Maybe<Scalars['String']['output']>;
 };
 
+export type IIgnoreChangeInput = {
+  accountSlug: Scalars['String']['input'];
+  changeId: Scalars['ID']['input'];
+};
+
 export type IImportGithubProjectInput = {
   accountSlug: Scalars['String']['input'];
   installationId: Scalars['String']['input'];
@@ -661,6 +667,7 @@ export type IMutation = {
   disconnectGoogleAuth: IAccount;
   /** Enable GitHub SSO */
   enableGitHubSSOOnTeam: ITeam;
+  ignoreChange: ITestChange;
   /** Import a project from GitHub */
   importGithubProject: IProject;
   /** Import a project from GitLab */
@@ -687,6 +694,7 @@ export type IMutation = {
   testAutomation: Scalars['Boolean']['output'];
   /** Transfer Project to another account */
   transferProject: IProject;
+  unignoreChange: ITestChange;
   /** Uninstall Slack */
   uninstallSlack: IAccount;
   /** Unlink GitHub Repository */
@@ -764,6 +772,11 @@ export type IMutationEnableGitHubSsoOnTeamArgs = {
 };
 
 
+export type IMutationIgnoreChangeArgs = {
+  input: IIgnoreChangeInput;
+};
+
+
 export type IMutationImportGithubProjectArgs = {
   input: IImportGithubProjectInput;
 };
@@ -827,6 +840,11 @@ export type IMutationTestAutomationArgs = {
 
 export type IMutationTransferProjectArgs = {
   input: ITransferProjectInput;
+};
+
+
+export type IMutationUnignoreChangeArgs = {
+  input: IUnignoreChangeInput;
 };
 
 
@@ -1144,7 +1162,7 @@ export type IScreenshotDiff = INode & {
   baseScreenshot?: Maybe<IScreenshot>;
   build: IBuild;
   /** Change ID of the screenshot diff. Used to be indefied in a test. */
-  changeId?: Maybe<Scalars['String']['output']>;
+  change?: Maybe<ITestChange>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];
   group?: Maybe<Scalars['String']['output']>;
@@ -1177,6 +1195,7 @@ export enum IScreenshotDiffStatus {
   Added = 'added',
   Changed = 'changed',
   Failure = 'failure',
+  Ignored = 'ignored',
   Pending = 'pending',
   Removed = 'removed',
   RetryFailure = 'retryFailure',
@@ -1408,6 +1427,7 @@ export type ITestAutomationRuleInput = {
 export type ITestChange = INode & {
   __typename?: 'TestChange';
   id: Scalars['ID']['output'];
+  ignored: Scalars['Boolean']['output'];
   stats: ITestChangeStats;
 };
 
@@ -1487,6 +1507,11 @@ export type ITransferProjectInput = {
   id: Scalars['ID']['input'];
   name: Scalars['String']['input'];
   targetAccountId: Scalars['ID']['input'];
+};
+
+export type IUnignoreChangeInput = {
+  accountSlug: Scalars['String']['input'];
+  changeId: Scalars['ID']['input'];
 };
 
 export type IUninstallSlackInput = {
@@ -1675,7 +1700,7 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
   Connection: ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } ) | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( AutomationActionRun ) | ( AutomationRule ) | ( AutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChange ) | ( Account );
+  Node: ( Subscription ) | ( AutomationActionRun ) | ( AutomationRule ) | ( AutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChangeObject ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
@@ -1752,6 +1777,7 @@ export type IResolversTypes = ResolversObject<{
   GlApiProjectConnection: ResolverTypeWrapper<Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<IResolversTypes['GlApiProject']> }>;
   GoogleUser: ResolverTypeWrapper<GoogleUser>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
+  IgnoreChangeInput: IIgnoreChangeInput;
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -1807,7 +1833,7 @@ export type IResolversTypes = ResolversObject<{
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
   TestAutomationRuleInput: ITestAutomationRuleInput;
-  TestChange: ResolverTypeWrapper<TestChange>;
+  TestChange: ResolverTypeWrapper<TestChangeObject>;
   TestChangeStats: ResolverTypeWrapper<Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversTypes['ScreenshotDiff'], lastSeenDiff: IResolversTypes['ScreenshotDiff'] }>;
   TestChangesConnection: ResolverTypeWrapper<Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversTypes['TestChange']> }>;
   TestMetricData: ResolverTypeWrapper<ITestMetricData>;
@@ -1821,6 +1847,7 @@ export type IResolversTypes = ResolversObject<{
   TimeSeriesGroupBy: ITimeSeriesGroupBy;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
   TransferProjectInput: ITransferProjectInput;
+  UnignoreChangeInput: IUnignoreChangeInput;
   UninstallSlackInput: IUninstallSlackInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
@@ -1893,6 +1920,7 @@ export type IResolversParentTypes = ResolversObject<{
   GlApiProjectConnection: Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<IResolversParentTypes['GlApiProject']> };
   GoogleUser: GoogleUser;
   ID: Scalars['ID']['output'];
+  IgnoreChangeInput: IIgnoreChangeInput;
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: Scalars['Int']['output'];
@@ -1937,7 +1965,7 @@ export type IResolversParentTypes = ResolversObject<{
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
   TestAutomationRuleInput: ITestAutomationRuleInput;
-  TestChange: TestChange;
+  TestChange: TestChangeObject;
   TestChangeStats: Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversParentTypes['ScreenshotDiff'], lastSeenDiff: IResolversParentTypes['ScreenshotDiff'] };
   TestChangesConnection: Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversParentTypes['TestChange']> };
   TestMetricData: ITestMetricData;
@@ -1948,6 +1976,7 @@ export type IResolversParentTypes = ResolversObject<{
   Time: Scalars['Time']['output'];
   Timestamp: Scalars['Timestamp']['output'];
   TransferProjectInput: ITransferProjectInput;
+  UnignoreChangeInput: IUnignoreChangeInput;
   UninstallSlackInput: IUninstallSlackInput;
   UnlinkGithubRepositoryInput: IUnlinkGithubRepositoryInput;
   UnlinkGitlabProjectInput: IUnlinkGitlabProjectInput;
@@ -2162,6 +2191,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
   added?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   changed?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   failure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  ignored?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   removed?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   retryFailure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
@@ -2336,6 +2366,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   disconnectGitLabAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitLabAuthArgs, 'input'>>;
   disconnectGoogleAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGoogleAuthArgs, 'input'>>;
   enableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationEnableGitHubSsoOnTeamArgs, 'input'>>;
+  ignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationIgnoreChangeArgs, 'input'>>;
   importGithubProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGithubProjectArgs, 'input'>>;
   importGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGitlabProjectArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
@@ -2350,6 +2381,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   testAutomation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationTestAutomationArgs, 'input'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
+  unignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationUnignoreChangeArgs, 'input'>>;
   uninstallSlack?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationUninstallSlackArgs, 'input'>>;
   unlinkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGithubRepositoryArgs, 'input'>>;
   unlinkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUnlinkGitlabProjectArgs, 'input'>>;
@@ -2498,7 +2530,7 @@ export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends
 export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiff'] = IResolversParentTypes['ScreenshotDiff']> = ResolversObject<{
   baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   build?: Resolver<IResolversTypes['Build'], ParentType, ContextType>;
-  changeId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  change?: Resolver<Maybe<IResolversTypes['TestChange']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2662,6 +2694,7 @@ export type ITestResolvers<ContextType = Context, ParentType extends IResolversP
 
 export type ITestChangeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestChange'] = IResolversParentTypes['TestChange']> = ResolversObject<{
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  ignored?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   stats?: Resolver<IResolversTypes['TestChangeStats'], ParentType, ContextType, RequireFields<ITestChangeStatsArgs, 'period'>>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

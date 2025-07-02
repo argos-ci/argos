@@ -1,6 +1,6 @@
-import type { JSONSchema } from "objection";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
+
+import { zodToJsonSchema } from "@/util/zod";
 
 export const BuildMetadataSchema = z
   .object({
@@ -24,4 +24,4 @@ export type BuildMetadata = z.infer<typeof BuildMetadataSchema>;
 
 export const BuildMetadataJsonSchema = zodToJsonSchema(BuildMetadataSchema, {
   removeAdditionalStrategy: "strict",
-}) as JSONSchema;
+});

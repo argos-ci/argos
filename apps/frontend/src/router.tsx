@@ -13,7 +13,7 @@ import {
 
 import { Layout } from "@/containers/Layout";
 
-import { FeatureFlagProvider, featureGuardHoc } from "./containers/FeatureFlag";
+import { FeatureFlagProvider } from "./containers/FeatureFlag";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
 
@@ -198,36 +198,17 @@ export const router: ReturnType<typeof createBrowserRouter> =
                     {
                       index: true,
                       HydrateFallback,
-                      lazy: () =>
-                        import("./pages/Automation").then((module) => ({
-                          Component: featureGuardHoc("automations")(
-                            module.Component,
-                          ),
-                        })),
+                      lazy: () => import("./pages/Automation"),
                     },
                     {
                       path: "new",
                       HydrateFallback,
-                      lazy: () =>
-                        import("./pages/Automation/NewAutomation").then(
-                          (module) => ({
-                            Component: featureGuardHoc("automations")(
-                              module.Component,
-                            ),
-                          }),
-                        ),
+                      lazy: () => import("./pages/Automation/NewAutomation"),
                     },
                     {
                       path: ":automationId",
                       HydrateFallback,
-                      lazy: () =>
-                        import("./pages/Automation/EditAutomation").then(
-                          (module) => ({
-                            Component: featureGuardHoc("automations")(
-                              module.Component,
-                            ),
-                          }),
-                        ),
+                      lazy: () => import("./pages/Automation/EditAutomation"),
                     },
                   ],
                 },

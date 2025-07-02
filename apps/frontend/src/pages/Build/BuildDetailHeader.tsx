@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { useFeature } from "@bucketco/react-sdk";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -12,7 +11,6 @@ import {
 } from "@/containers/Build/toolbar/NavButtons";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
-import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import { canParseURL } from "@/util/url";
 
@@ -127,20 +125,18 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
-  const testDetailsFeature = useFeature("test-details");
-
   return (
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <BuildNavButtons />
         <div className="min-w-0 flex-1">
-          {diff.test && testDetailsFeature.isEnabled ? (
+          {diff.test && diff.change ? (
             <div className="flex items-center gap-2">
               <Tooltip content="View test details">
                 <Link
                   to={getTestURL(
                     { ...params, testId: diff.test.id },
-                    { change: diff.changeId },
+                    { change: diff.change.id },
                   )}
                   className="hover:underline"
                 >
@@ -165,16 +161,13 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             diff={diff}
             disabled={!canBeReviewed}
             render={({ children }) => (
-              <>
-                <Separator orientation="vertical" className="mx-1 !h-6" />
-                <div className="flex gap-1.5">{children}</div>
-              </>
+              <div className="flex gap-1.5">{children}</div>
             )}
           />
         </BuildDiffDetailToolbar>
       </div>
       <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">
-        {diff.test && testDetailsFeature.isEnabled ? (
+        {diff.test && diff.change ? (
           <BuildFlakyIndicator
             accountSlug={params.accountSlug}
             projectName={params.projectName}

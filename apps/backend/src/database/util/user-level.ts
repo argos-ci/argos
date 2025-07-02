@@ -1,11 +1,9 @@
-import type { JSONSchema } from "objection";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
+
+import { zodToJsonSchema } from "@/util/zod";
 
 const UserLevelSchema = z.enum(["admin", "reviewer", "viewer"]);
 
 export type UserLevel = z.infer<typeof UserLevelSchema>;
 
-export const UserLevelJsonSchema = zodToJsonSchema(
-  UserLevelSchema,
-) as JSONSchema;
+export const UserLevelJsonSchema = zodToJsonSchema(UserLevelSchema);

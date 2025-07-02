@@ -1,17 +1,29 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
-import { raw } from "objection";
 
-import { Build, ScreenshotDiff } from "@/database/models";
+import { transaction } from "@/database";
+import {
+  AuditTrail,
+  Build,
+  IgnoredFile,
+  Project,
+  ScreenshotDiff,
+  type User,
+} from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 
 import {
-  IMetricsPeriod,
   ITestStatus,
   type IResolvers,
   type ITestMetrics,
 } from "../__generated__/resolver-types";
-import { formatTestChangeId, formatTestId } from "../services/test";
+import {
+  formatTestChangeId,
+  formatTestId,
+  safeParseTestChangeId,
+  type TestChangeIdPayload,
+} from "../services/test";
+import { forbidden, notFound } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -41,6 +53,7 @@ export const typeDefs = gql`
   type TestChange implements Node {
     id: ID!
     stats(period: MetricsPeriod!): TestChangeStats!
+    ignored: Boolean!
   }
 
   type TestChangeStats {
@@ -71,6 +84,21 @@ export const typeDefs = gql`
       first: Int!
     ): TestChangesConnection!
     metrics(period: MetricsPeriod): TestMetrics!
+  }
+
+  input IgnoreChangeInput {
+    accountSlug: String!
+    changeId: ID!
+  }
+
+  input UnignoreChangeInput {
+    accountSlug: String!
+    changeId: ID!
+  }
+
+  extend type Mutation {
+    ignoreChange(input: IgnoreChangeInput!): TestChange!
+    unignoreChange(input: UnignoreChangeInput!): TestChange!
   }
 `;
 
@@ -123,13 +151,11 @@ export const resolvers: IResolvers = {
       const from = getStartDateFromPeriod(period);
 
       const totalOccurencesQuery = `
-      SELECT COUNT(*) FROM screenshot_diffs sd
-        JOIN builds b on b.id = sd."buildId"
-        WHERE sd."fileId" = screenshot_diffs."fileId"
-        AND sd."testId" = screenshot_diffs."testId"
-        AND sd."createdAt" > :from
-        AND b.type = 'reference'
-        `;
+        SELECT sum(tsc.value) FROM test_stats_changes tsc
+          WHERE tsc."testId" = screenshot_diffs."testId"
+          AND tsc."fileId" = screenshot_diffs."fileId"
+          AND tsc."date" >= :from
+      `;
 
       const diffQuery = ScreenshotDiff.query()
         .select("screenshot_diffs.id")
@@ -142,71 +168,27 @@ export const resolvers: IResolvers = {
         .whereNotNull("screenshot_diffs.fileId")
         .orderBy("screenshot_diffs.fileId");
 
-      const lastSeenQuery = ScreenshotDiff.query()
-        .select(
-          "screenshot_diffs.*",
-          raw(`(${totalOccurencesQuery}) AS "totalOccurences"`, { from }),
-        )
-        .whereIn(
-          "id",
-          diffQuery.clone().orderBy("screenshot_diffs.createdAt", "desc"),
-        )
+      const query = ScreenshotDiff.query()
+        .select("screenshot_diffs.fileId")
+        .whereIn("id", diffQuery.clone())
         .orderByRaw(`(${totalOccurencesQuery}) DESC`, { from })
         .range(after, after + first - 1);
 
-      const firstSeenQuery = ScreenshotDiff.query()
-        .select("screenshot_diffs.*")
-        .whereIn(
-          "id",
-          diffQuery.clone().orderBy("screenshot_diffs.createdAt", "asc"),
-        )
-        .range(after, after + first - 1);
-
-      const [project, lastSeen, firstSeen] = await Promise.all([
+      const [project, result] = await Promise.all([
         ctx.loaders.Project.load(test.projectId),
-        lastSeenQuery,
-        firstSeenQuery,
+        query,
       ]);
 
       invariant(project);
 
       return paginateResult({
         result: {
-          total: lastSeen.total,
-          results: lastSeen.results.map((lastSeenDiff) => {
-            invariant(
-              "totalOccurences" in lastSeenDiff &&
-                typeof lastSeenDiff.totalOccurences === "string",
-              "totalOccurences should be a string",
-            );
-            const totalOccurences = Number(lastSeenDiff.totalOccurences);
-            invariant(
-              !isNaN(totalOccurences),
-              "totalOccurences should be a number",
-            );
-
-            const firstSeenDiff = firstSeen.results.find(
-              (firstSeenDiff) => firstSeenDiff.fileId === lastSeenDiff.fileId,
-            );
-            invariant(
-              firstSeenDiff,
-              "First seen diff should exist for last seen diff",
-            );
-            invariant(
-              lastSeenDiff.fileId,
-              "Last seen diff should have a fileId",
-            );
+          total: result.total,
+          results: result.results.map((screenshotDiff) => {
             return {
-              id: formatTestChangeId({
-                projectName: project.name,
-                fileId: lastSeenDiff.fileId,
-              }),
-              stats: {
-                period,
-                totalOccurences,
-                lastSeenDiff,
-                firstSeenDiff,
-              },
+              project,
+              testId: test.id,
+              fileId: screenshotDiff.fileId,
             };
           }),
         },
@@ -232,27 +214,162 @@ export const resolvers: IResolvers = {
     },
   },
   TestChange: {
-    stats: (testChange, params) => {
-      const { period, ...stats } = testChange.stats;
-      if (period !== params.period) {
-        throw new Error("period must match the one used in the connection");
-      }
-      return stats;
+    id: (testChange) =>
+      formatTestChangeId({
+        projectName: testChange.project.name,
+        testId: testChange.testId,
+        fileId: testChange.fileId,
+      }),
+    stats: async (testChange, args, ctx) => {
+      const { period } = args;
+      const from = getStartDateFromPeriod(period);
+      const ChangeStatsLoader = ctx.loaders.getChangeStatsLoader(
+        from.toISOString(),
+        testChange.testId,
+      );
+      return ChangeStatsLoader.load({ fileId: testChange.fileId });
+    },
+    ignored: async (testChange, _args, ctx) => {
+      return ctx.loaders.IgnoredChangeLoader.load({
+        projectId: testChange.project.id,
+        testId: testChange.testId,
+        fileId: testChange.fileId,
+      });
+    },
+  },
+  Mutation: {
+    ignoreChange: async (_root, { input }, ctx) => {
+      return runChangeMutaton(
+        {
+          changeId: input.changeId,
+          accountSlug: input.accountSlug,
+          user: ctx.auth?.user ?? null,
+        },
+        async ({ changeIdPayload, project, user }) => {
+          const isIgnored = Boolean(
+            await IgnoredFile.query().findOne({
+              projectId: project.id,
+              fileId: changeIdPayload.fileId,
+              testId: changeIdPayload.testId,
+            }),
+          );
+          if (!isIgnored) {
+            await transaction(async (trx) => {
+              await Promise.all([
+                IgnoredFile.query(trx).insert({
+                  projectId: project.id,
+                  fileId: changeIdPayload.fileId,
+                  testId: changeIdPayload.testId,
+                }),
+                AuditTrail.query(trx).insert({
+                  date: new Date().toISOString(),
+                  projectId: project.id,
+                  testId: changeIdPayload.testId,
+                  userId: user.id,
+                  action: "files.ignored",
+                }),
+              ]);
+            });
+          }
+        },
+      );
+    },
+    unignoreChange: async (_root, { input }, ctx) => {
+      return runChangeMutaton(
+        {
+          changeId: input.changeId,
+          accountSlug: input.accountSlug,
+          user: ctx.auth?.user ?? null,
+        },
+        async ({ changeIdPayload, project, user }) => {
+          const isIgnored = Boolean(
+            await IgnoredFile.query().findOne({
+              projectId: project.id,
+              fileId: changeIdPayload.fileId,
+              testId: changeIdPayload.testId,
+            }),
+          );
+          if (isIgnored) {
+            await transaction(async (trx) => {
+              await Promise.all([
+                IgnoredFile.query(trx)
+                  .where({
+                    projectId: project.id,
+                    fileId: changeIdPayload.fileId,
+                    testId: changeIdPayload.testId,
+                  })
+                  .delete(),
+                AuditTrail.query(trx).insert({
+                  date: new Date().toISOString(),
+                  projectId: project.id,
+                  testId: changeIdPayload.testId,
+                  userId: user.id,
+                  action: "files.unignored",
+                }),
+              ]);
+            });
+          }
+        },
+      );
     },
   },
 };
 
-export type TestChange = {
-  id: string;
-  stats: {
-    period: IMetricsPeriod;
-    totalOccurences: number;
-    firstSeenDiff: ScreenshotDiff;
-    lastSeenDiff: ScreenshotDiff;
-  };
+export type TestChangeObject = {
+  project: Project;
+  testId: string;
+  fileId: string;
 };
 
 export type TestMetrics = {
   series: () => Promise<ITestMetrics["series"]>;
   all: () => Promise<ITestMetrics["all"]>;
 };
+
+async function runChangeMutaton(
+  context: {
+    changeId: string;
+    accountSlug: string;
+    user: User | null;
+  },
+  run: (props: {
+    changeIdPayload: TestChangeIdPayload;
+    project: Project;
+    user: User;
+  }) => Promise<void>,
+): Promise<TestChangeObject> {
+  const { changeId, accountSlug, user } = context;
+  const changeIdPayload = safeParseTestChangeId(changeId);
+
+  if (!changeIdPayload) {
+    throw notFound("Test change not found");
+  }
+
+  const project = await Project.query()
+    .joinRelated("account")
+    .where("account.slug", accountSlug)
+    .whereILike("projects.name", changeIdPayload.projectName)
+    .first();
+
+  if (!project) {
+    throw notFound("Project not found");
+  }
+
+  const permissions = await project.$getPermissions(user);
+
+  if (!permissions.includes("review")) {
+    throw forbidden(
+      "You do not have permission to ignore test changes in this project",
+    );
+  }
+
+  invariant(user, "User should be defined because of permissions check");
+
+  await run({ changeIdPayload, project, user });
+
+  return {
+    project,
+    fileId: changeIdPayload.fileId,
+    testId: changeIdPayload.testId,
+  };
+}
