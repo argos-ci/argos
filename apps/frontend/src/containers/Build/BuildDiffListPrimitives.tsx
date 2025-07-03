@@ -9,6 +9,7 @@ import {
 } from "react-aria";
 
 import { useBuildDiffColorStyle } from "@/containers/Build/BuildDiffColorState";
+import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
 
@@ -24,10 +25,10 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
   const dimensions = getDiffDimensions(diff, config);
 
   switch (diff.status) {
-    case "added":
-    case "unchanged":
-    case "failure":
-    case "retryFailure": {
+    case ScreenshotDiffStatus.Added:
+    case ScreenshotDiffStatus.Unchanged:
+    case ScreenshotDiffStatus.Failure:
+    case ScreenshotDiffStatus.RetryFailure: {
       const { key, ...attrs } = getImgAttributes(
         diff.compareScreenshot!.url,
         dimensions,
@@ -40,7 +41,7 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
         />
       );
     }
-    case "removed": {
+    case ScreenshotDiffStatus.Removed: {
       const { key, ...attrs } = getImgAttributes(
         diff.baseScreenshot!.url,
         dimensions,
@@ -53,7 +54,8 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
         />
       );
     }
-    case "changed": {
+    case ScreenshotDiffStatus.Ignored:
+    case ScreenshotDiffStatus.Changed: {
       const dimensions = getDiffDimensions(diff, config);
       const { key: compareKey, ...compareAttrs } = getImgAttributes(
         diff.compareScreenshot!.url,
@@ -82,8 +84,10 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
         </div>
       );
     }
-    default:
+    case ScreenshotDiffStatus.Pending:
       return null;
+    default:
+      assertNever(diff.status);
   }
 });
 
