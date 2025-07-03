@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
@@ -518,6 +519,7 @@ function BaseScreenshot({
         </ZoomPane>
       );
     }
+    case ScreenshotDiffStatus.Ignored:
     case ScreenshotDiffStatus.Changed: {
       const dimensions = extractDimensions(diff);
       invariant(diff.url, "Expected diff.url to be defined");
@@ -544,8 +546,11 @@ function BaseScreenshot({
         </ZoomPane>
       );
     }
-    default:
+    case ScreenshotDiffStatus.Pending: {
       return null;
+    }
+    default:
+      assertNever(diff.status, `Unexpected diff status: ${diff.status}`);
   }
 }
 
@@ -667,6 +672,7 @@ function CompareScreenshot(props: {
         />
       );
     }
+    case ScreenshotDiffStatus.Ignored:
     case ScreenshotDiffStatus.Changed: {
       return (
         <CompareScreenshotChanged
@@ -677,8 +683,10 @@ function CompareScreenshot(props: {
         />
       );
     }
-    default:
+    case ScreenshotDiffStatus.Pending:
       return null;
+    default:
+      assertNever(diff.status, `Unexpected diff status: ${diff.status}`);
   }
 }
 
