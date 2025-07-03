@@ -6,7 +6,12 @@ import type { TransactionOrKnex } from "objection";
 
 import { concludeBuild } from "@/build/concludeBuild.js";
 import { transaction } from "@/database/index.js";
-import { File, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
+import {
+  File,
+  IgnoredFile,
+  Screenshot,
+  ScreenshotDiff,
+} from "@/database/models/index.js";
 import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
@@ -219,10 +224,19 @@ export const computeScreenshotDiff = async (
       bucket,
       key: diffFileKey,
     });
+    invariant(screenshotDiff.testId, "no testId on screenshotDiff");
+    const isIgnored = Boolean(
+      await IgnoredFile.query().select("fileId").findOne({
+        fileId: diffFile.id,
+        projectId: build.projectId,
+        testId: screenshotDiff.testId,
+      }),
+    );
     return {
       s3Id: diffFileKey,
       score: result.score,
       fileId: diffFile.id,
+      ignored: isIgnored,
     };
   })();
 
