@@ -49,6 +49,7 @@ export function FormTextInput({
       aria-invalid={invalid ? "true" : undefined}
       aria-label={hiddenLabel && typeof label === "string" ? label : undefined}
       disabled={disabled || isSubmitting}
+      autoComplete="off"
       {...props}
     />
   );

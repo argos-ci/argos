@@ -10,6 +10,7 @@ import {
 import { checkErrorStatus, getTokenOctokit } from "@/github/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
+import { deleteAccount } from "../services/account.js";
 import { unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -68,12 +69,27 @@ export const typeDefs = gql`
     "Get the authenticated user"
     me: User
   }
+
+  input DeleteUserInput {
+    accountId: ID!
+  }
+
+  extend type Mutation {
+    "Delete user and all its projects"
+    deleteUser(input: DeleteUserInput!): Boolean!
+  }
 `;
 
 export const resolvers: IResolvers = {
   Query: {
     me: async (_root, _args, ctx) => {
       return ctx.auth?.account || null;
+    },
+  },
+  Mutation: {
+    deleteUser: async (_root, args, ctx) => {
+      await deleteAccount({ id: args.input.accountId, user: ctx.auth?.user });
+      return true;
     },
   },
   User: {

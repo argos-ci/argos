@@ -19,6 +19,7 @@ import { TeamMembers } from "@/containers/Team/Members";
 import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";
+import { UserDelete } from "@/containers/User/Delete";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -57,6 +58,7 @@ const AccountQuery = graphql(`
       ...TeamGitHubLight_Team
       ...UserAuth_Account
       ...TeamSpendManagement_Account
+      ...UserDelete_User
     }
   }
 `);
@@ -176,6 +178,7 @@ function PageContent(props: { accountSlug: string }) {
       {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
       {hasAdminPermission && <AccountGitLab account={account} />}
       {isTeam && hasAdminPermission && <TeamDelete team={account} />}
+      {isUser && hasAdminPermission && <UserDelete user={account} />}
     </SettingsLayout>
   );
 }

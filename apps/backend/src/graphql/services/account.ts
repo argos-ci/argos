@@ -4,6 +4,7 @@ import { RelationExpression } from "objection";
 
 import {
   Account,
+  BuildReview,
   Subscription,
   Team,
   TeamUser,
@@ -13,7 +14,7 @@ import { transaction } from "@/database/transaction.js";
 import { uninstallSlackInstallation } from "@/slack/index.js";
 import { cancelStripeSubscription } from "@/stripe/index.js";
 
-import { forbidden } from "../util.js";
+import { badUserInput, forbidden } from "../util.js";
 import { unsafe_deleteProject } from "./project.js";
 
 /**
@@ -77,27 +78,61 @@ export async function deleteAccount(args: {
     // Delete the account's associated user or team
     switch (account.type) {
       case "team": {
+        const { teamId } = account;
+        invariant(teamId, "account.teamId is undefined");
+
         // Delete all team user relationships
-        await TeamUser.query(trx).where("teamId", account.teamId).delete();
+        await TeamUser.query(trx).where("teamId", teamId).delete();
 
         // Delete the team
-        await Team.query(trx).where("id", account.teamId).delete();
+        await Team.query(trx).where("id", teamId).delete();
 
         break;
       }
       case "user": {
+        const { userId } = account;
+        invariant(userId, "account.userId is undefined");
+
+        const teams = await Team.query(trx)
+          .whereIn(
+            "id",
+            TeamUser.query(trx).select("teamId").where("userId", userId),
+          )
+          .withGraphFetched("[owners,account]");
+
+        for (const team of teams) {
+          invariant(team.owners, "team.owners is undefined");
+          invariant(team.account, "team.account is undefined");
+          const singleOwner = team.owners.length === 1 ? team.owners[0] : null;
+          if (singleOwner && singleOwner.id === userId) {
+            throw badUserInput(
+              `Cannot delete your account because you are the only owner of team ${team.account.name}. Please transfer ownership to another user or remove your team first.`,
+            );
+          }
+        }
+
         await Promise.all([
           // Remove user from all of its teams
-          TeamUser.query(trx).where("userId", account.userId).delete(),
+          TeamUser.query(trx).where("userId", userId).delete(),
 
           // Remove user from all its subscriptions
           Subscription.query(trx)
-            .where("subscriberId", account.userId)
+            .where("subscriberId", userId)
             .patch({ subscriberId: null }),
+
+          // Remove user from all its build reviews
+          BuildReview.query(trx)
+            .where("userId", userId)
+            .patch({ userId: null }),
         ]);
 
-        // Delete the user
-        await User.query(trx).where("id", account.userId).delete();
+        // Erase the user informations
+        await User.query(trx).patch({
+          deletedAt: new Date().toISOString(),
+          gitlabUserId: null,
+          googleUserId: null,
+          email: null,
+        });
 
         break;
       }
