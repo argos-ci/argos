@@ -2,7 +2,6 @@ import { useApolloClient } from "@apollo/client";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
-import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
   Card,
@@ -25,10 +24,11 @@ import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Modal } from "@/ui/Modal";
-import { Tooltip } from "@/ui/Tooltip";
 
-const _TeamFragment = graphql(`
-  fragment TeamDelete_Team on Team {
+import { logout } from "../Auth";
+
+const _UserFragment = graphql(`
+  fragment UserDelete_User on User {
     id
     slug
     subscription {
@@ -44,9 +44,9 @@ type ConfirmDeleteInputs = {
   verify: string;
 };
 
-const DeleteTeamMutation = graphql(`
-  mutation DeleteTeamMutation($teamAccountId: ID!) {
-    deleteTeam(input: { accountId: $teamAccountId })
+const DeleteUserMutation = graphql(`
+  mutation DeleteUserMutation($userAccountId: ID!) {
+    deleteUser(input: { accountId: $userAccountId })
   }
 `);
 
@@ -58,23 +58,23 @@ function DeleteButton(props: Omit<ButtonProps, "variant" | "children">) {
   );
 }
 
-type DeleteTeamButtonProps = {
-  teamAccountId: string;
-  teamSlug: string;
+type DeleteUserButtonProps = {
+  userAccountId: string;
+  userSlug: string;
 };
 
-function DeleteTeamButton(props: DeleteTeamButtonProps) {
+function DeleteUserButton(props: DeleteUserButtonProps) {
   return (
     <DialogTrigger>
       <DeleteButton />
       <Modal>
-        <TeamDeleteDialog {...props} />
+        <UserDeleteDialog {...props} />
       </Modal>
     </DialogTrigger>
   );
 }
 
-function TeamDeleteDialog(props: DeleteTeamButtonProps) {
+function UserDeleteDialog(props: DeleteUserButtonProps) {
   const client = useApolloClient();
   const form = useForm<ConfirmDeleteInputs>({
     defaultValues: {
@@ -84,30 +84,27 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
   });
   const onSubmit: SubmitHandler<ConfirmDeleteInputs> = async () => {
     await client.mutate({
-      mutation: DeleteTeamMutation,
+      mutation: DeleteUserMutation,
       variables: {
-        teamAccountId: props.teamAccountId,
+        userAccountId: props.userAccountId,
       },
     });
-    window.location.replace("/");
+    logout();
   };
   return (
     <Dialog size="medium">
       <FormProvider {...form}>
         <Form onSubmit={onSubmit}>
           <DialogBody>
-            <DialogTitle>Delete Team</DialogTitle>
+            <DialogTitle>Delete Account</DialogTitle>
             <DialogText>
-              Argos will <strong>delete all of your Team's projects</strong>,
+              Argos will <strong>delete all of your Account's projects</strong>,
               along with all of its Builds, Screenshots, Screenshot Diffs,
-              Settings and other resources belonging to your Team.
+              Settings and other resources belonging to your Account.
             </DialogText>
             <DialogText>
-              Your existing subscription will be cancelled, and you will no
-            </DialogText>
-            <DialogText>
-              Argos recommends that you transfer projects you want to keep to
-              another Team before deleting this Team.
+              Argos recommends that you transfer projects you want to keep to a
+              Team before deleting this Account.
             </DialogText>
             <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
               <strong>Warning:</strong> This action is not reversible. Please be
@@ -116,8 +113,8 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
             <FormTextInput
               {...form.register("slugConfirm", {
                 validate: (value) => {
-                  if (value !== props.teamSlug) {
-                    return "Team name does not match";
+                  if (value !== props.userSlug) {
+                    return "Account name does not match";
                   }
                   return true;
                 },
@@ -126,7 +123,7 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
               autoFocus
               label={
                 <>
-                  Enter the team name <strong>{props.teamSlug}</strong> to
+                  Enter the user name <strong>{props.userSlug}</strong> to
                   continue:
                 </>
               }
@@ -134,15 +131,15 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
             <FormTextInput
               {...form.register("verify", {
                 validate: (value) => {
-                  if (value !== "delete my team") {
-                    return "Please type 'delete my team' to confirm";
+                  if (value !== "delete my account") {
+                    return "Please type 'delete my account' to confirm";
                   }
                   return true;
                 },
               })}
               label={
                 <>
-                  To verify, type <strong>delete my team</strong> below:
+                  To verify, type <strong>delete my account</strong> below:
                 </>
               }
             />
@@ -158,40 +155,23 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
   );
 }
 
-export function TeamDelete(props: {
-  team: DocumentType<typeof _TeamFragment>;
+export function UserDelete(props: {
+  user: DocumentType<typeof _UserFragment>;
 }) {
-  const { team } = props;
-  const hasActiveNonCanceledSubscription =
-    team.subscription?.status === AccountSubscriptionStatus.Active &&
-    !team.subscription.endDate;
+  const { user } = props;
   return (
     <Card intent="danger">
       <CardBody>
-        <CardTitle>Delete Team</CardTitle>
+        <CardTitle>Delete Account</CardTitle>
         <CardParagraph>
-          Permanently remove your Team and all of its contents from the Argos
+          Permanently remove your account and all of its contents from the Argos
           platform. This action is not reversible — please continue with
           caution.
         </CardParagraph>
       </CardBody>
-      {hasActiveNonCanceledSubscription ? (
-        <CardFooter className="flex items-center justify-between gap-4">
-          <div>
-            A subscription is active on the team. Please cancel your
-            subscription before deleting the team.
-          </div>
-          <Tooltip content="Cancel your subscription before deleting the team.">
-            <div className="flex">
-              <DeleteButton isDisabled />
-            </div>
-          </Tooltip>
-        </CardFooter>
-      ) : (
-        <CardFooter className="flex items-center justify-end">
-          <DeleteTeamButton teamAccountId={team.id} teamSlug={team.slug} />
-        </CardFooter>
-      )}
+      <CardFooter className="flex items-center justify-end">
+        <DeleteUserButton userAccountId={user.id} userSlug={user.slug} />
+      </CardFooter>
     </Card>
   );
 }

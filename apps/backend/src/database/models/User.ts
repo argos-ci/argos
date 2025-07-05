@@ -26,6 +26,7 @@ export class User extends Model {
           gitlabUserId: { type: ["string", "null"] },
           googleUserId: { type: ["string", "null"] },
           staff: { type: "boolean" },
+          deletedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -35,6 +36,7 @@ export class User extends Model {
   gitlabUserId!: string | null;
   googleUserId!: string | null;
   staff!: boolean;
+  deletedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

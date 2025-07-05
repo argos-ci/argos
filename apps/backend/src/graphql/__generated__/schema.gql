@@ -408,6 +408,10 @@ input DeleteTeamInput {
   accountId: ID!
 }
 
+input DeleteUserInput {
+  accountId: ID!
+}
+
 input DisableGitHubSSOOnTeamInput {
   teamAccountId: ID!
 }
@@ -620,6 +624,9 @@ type Mutation {
 
   """Delete team and all its projects"""
   deleteTeam(input: DeleteTeamInput!): Boolean!
+
+  """Delete user and all its projects"""
+  deleteUser(input: DeleteUserInput!): Boolean!
 
   """Disable GitHub SSO"""
   disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!

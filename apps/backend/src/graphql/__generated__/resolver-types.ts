@@ -436,6 +436,10 @@ export type IDeleteTeamInput = {
   accountId: Scalars['ID']['input'];
 };
 
+export type IDeleteUserInput = {
+  accountId: Scalars['ID']['input'];
+};
+
 export type IDisableGitHubSsoOnTeamInput = {
   teamAccountId: Scalars['ID']['input'];
 };
@@ -657,6 +661,8 @@ export type IMutation = {
   deleteProject: Scalars['Boolean']['output'];
   /** Delete team and all its projects */
   deleteTeam: Scalars['Boolean']['output'];
+  /** Delete user and all its projects */
+  deleteUser: Scalars['Boolean']['output'];
   /** Disable GitHub SSO */
   disableGitHubSSOOnTeam: ITeam;
   /** Disconnect GitHub Account */
@@ -744,6 +750,11 @@ export type IMutationDeleteProjectArgs = {
 
 export type IMutationDeleteTeamArgs = {
   input: IDeleteTeamInput;
+};
+
+
+export type IMutationDeleteUserArgs = {
+  input: IDeleteUserInput;
 };
 
 
@@ -1753,6 +1764,7 @@ export type IResolversTypes = ResolversObject<{
   Date: ResolverTypeWrapper<Scalars['Date']['output']>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   DeleteTeamInput: IDeleteTeamInput;
+  DeleteUserInput: IDeleteUserInput;
   DisableGitHubSSOOnTeamInput: IDisableGitHubSsoOnTeamInput;
   DisconnectGitHubAuthInput: IDisconnectGitHubAuthInput;
   DisconnectGitLabAuthInput: IDisconnectGitLabAuthInput;
@@ -1897,6 +1909,7 @@ export type IResolversParentTypes = ResolversObject<{
   Date: Scalars['Date']['output'];
   DateTime: Scalars['DateTime']['output'];
   DeleteTeamInput: IDeleteTeamInput;
+  DeleteUserInput: IDeleteUserInput;
   DisableGitHubSSOOnTeamInput: IDisableGitHubSsoOnTeamInput;
   DisconnectGitHubAuthInput: IDisconnectGitHubAuthInput;
   DisconnectGitLabAuthInput: IDisconnectGitLabAuthInput;
@@ -2361,6 +2374,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   deactivateAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationDeactivateAutomationRuleArgs, 'id'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
+  deleteUser?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteUserArgs, 'input'>>;
   disableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationDisableGitHubSsoOnTeamArgs, 'input'>>;
   disconnectGitHubAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitHubAuthArgs, 'input'>>;
   disconnectGitLabAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitLabAuthArgs, 'input'>>;

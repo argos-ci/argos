@@ -1685,7 +1685,8 @@ CREATE TABLE public.users (
     "updatedAt" timestamp with time zone NOT NULL,
     "gitlabUserId" bigint,
     staff boolean DEFAULT false,
-    "googleUserId" bigint
+    "googleUserId" bigint,
+    "deletedAt" timestamp with time zone
 );
 
 
@@ -3584,3 +3585,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025060
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250617171538_slack-connected-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250622134309_ignored-files.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250629170855_screenshot-diffs-ignore.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250705083915_deleted-users.js', 1, NOW());
