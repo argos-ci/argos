@@ -55,22 +55,21 @@ async function getBase(
 
   const strategy = strategies.find((s) => s.detect(project));
 
-  // If we have a base commit, we always use it.
-  if (richBuild.baseCommit) {
-    const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
-      build,
-      richBuild.baseCommit,
-    );
-    return {
-      baseScreenshotBucket,
-      baseBranch: null,
-      baseBranchResolvedFrom: null,
-    };
-  }
-
   // If we don't have a strategy then we could only count on baseCommit
-  // specified by the user in the build, else it's always orphan.
+  // specified by the user in the build.
   if (!strategy) {
+    if (richBuild.baseCommit) {
+      const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
+        build,
+        richBuild.baseCommit,
+      );
+      return {
+        baseScreenshotBucket,
+        baseBranch: null,
+        baseBranchResolvedFrom: null,
+      };
+    }
+
     return {
       baseScreenshotBucket: null,
       baseBranch: null,
