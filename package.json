@@ -76,7 +76,8 @@
       "express": "$express",
       "@types/express": "$@types/express",
       "@types/express-serve-static-core": "$@types/express-serve-static-core",
-      "undici": "$undici"
+      "undici": "$undici",
+      "brace-expansion": "^4.0.1"
     }
   }
 }
