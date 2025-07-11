@@ -15,7 +15,7 @@ import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { checkCanBeReviewed, useBuildDiffState } from "../BuildDiffState";
+import { checkDiffCanBeReviewed, useBuildDiffState } from "../BuildDiffState";
 import {
   BuildReviewButton,
   DisabledBuildReviewButton,
@@ -84,9 +84,9 @@ const ProjectLink = memo(
 function useBuildReviewProgression() {
   const diffState = useBuildDiffState();
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
-  if (diffState.ready) {
+  if (diffState.ready && getDiffEvaluationStatus) {
     const toReview = diffState.diffs.filter((diff) =>
-      checkCanBeReviewed(diff.status),
+      checkDiffCanBeReviewed(diff.status),
     );
     const reviewed = toReview.filter(
       (diff) => getDiffEvaluationStatus(diff.id) !== EvaluationStatus.Pending,
@@ -107,14 +107,14 @@ function LoggedReviewButton(props: {
   build: DocumentType<typeof _BuildFragment>;
 }) {
   const progression = useBuildReviewProgression();
+  if (props.build.type === BuildType.Reference) {
+    return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
+  }
   if (!progression) {
     return <DisabledBuildReviewButton tooltip="Loading..." />;
   }
   if (progression.toReview.length === 0) {
     return <DisabledBuildReviewButton tooltip="No changes to review" />;
-  }
-  if (props.build.type === BuildType.Reference) {
-    return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
   }
   const reviewComplete =
     progression.reviewed.length === progression.toReview.length;

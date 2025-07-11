@@ -1,4 +1,4 @@
-import { memo, startTransition, useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -7,7 +7,6 @@ import { ProjectPermission } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
-import { usePrevious } from "@/ui/usePrevious";
 import { useNonNullable } from "@/util/useNonNullable";
 
 import { Diff } from "./BuildDiffState";
@@ -28,26 +27,19 @@ function useEvaluationToggle(props: {
     diffId,
     diffGroup,
   });
-  const toggledRef = useRef(false);
-  const previous = usePrevious({ diffId, status });
+  const expectedStatus = useRef<EvaluationStatus | null>(null);
   useEffect(() => {
-    if (!toggledRef.current) {
-      return;
-    }
-    if (!previous || previous.status === status || previous.diffId !== diffId) {
-      return;
-    }
-    if (status === target) {
+    if (status === expectedStatus.current) {
+      expectedStatus.current = null;
       acknowledgeMarkedDiff();
+      return;
     }
-  }, [status, acknowledgeMarkedDiff, target, previous, diffId]);
+  }, [status, acknowledgeMarkedDiff]);
   const toggle = useEventCallback(() => {
-    toggledRef.current = true;
-    startTransition(() => {
-      setStatus(
-        status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending,
-      );
-    });
+    const nextStatus =
+      status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending;
+    setStatus(nextStatus);
+    expectedStatus.current = nextStatus;
   });
   const isActive = status === target;
   return [isActive, toggle] as const;
@@ -122,26 +114,23 @@ function RejectButton(props: {
 export const TrackButtons = memo(function TrackButtons(props: {
   diff: Diff;
   disabled: boolean;
-  render: (renderProps: { children: React.ReactNode }) => React.ReactNode;
 }) {
   const permissions = useNonNullable(ProjectPermissionsContext);
   if (!permissions.includes(ProjectPermission.Review)) {
     return null;
   }
-  return props.render({
-    children: (
-      <>
-        <RejectButton
-          screenshotDiffId={props.diff.id}
-          diffGroup={props.diff.group ?? null}
-          disabled={props.disabled}
-        />
-        <AcceptButton
-          screenshotDiffId={props.diff.id}
-          diffGroup={props.diff.group ?? null}
-          disabled={props.disabled}
-        />
-      </>
-    ),
-  });
+  return (
+    <div className="flex gap-1.5">
+      <RejectButton
+        screenshotDiffId={props.diff.id}
+        diffGroup={props.diff.group ?? null}
+        disabled={props.disabled}
+      />
+      <AcceptButton
+        screenshotDiffId={props.diff.id}
+        diffGroup={props.diff.group ?? null}
+        disabled={props.disabled}
+      />
+    </div>
+  );
 });

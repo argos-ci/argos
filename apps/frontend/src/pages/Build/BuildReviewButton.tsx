@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { ChevronDownIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
@@ -44,6 +45,7 @@ function BaseReviewButton(props: {
   children?: React.ReactNode;
 }) {
   const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
+  invariant(markAllDiffsAsAccepted, "markAllDiffsAsAccepted must be defined");
   const [setValidationStatus, { loading }] = useSetValidationStatusMutation(
     props.build,
     {

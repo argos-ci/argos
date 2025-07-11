@@ -6,8 +6,14 @@ import { DialogTrigger } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { graphql } from "@/gql";
+import {
+  EvaluationStatus,
+  useAcknowledgeMarkedDiff,
+  useBuildDiffStatusState,
+} from "@/pages/Build/BuildReviewState";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
+import { Checkbox } from "@/ui/Checkbox";
 import {
   Dialog,
   DialogBody,
@@ -19,6 +25,7 @@ import {
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton, type IconButtonProps } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
+import * as sessionStorage from "@/util/session-storage";
 
 import type { BuildDiffDetailDocument } from "../BuildDiffDetail";
 
@@ -48,6 +55,8 @@ function BaseIgnoreButton(props: Omit<IconButtonProps, "children">) {
   );
 }
 
+const dontShowAgainKey = "ignoreChangeDontShowAgain";
+
 function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
   const { diff } = props;
   const params = useProjectParams();
@@ -55,13 +64,7 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
   invariant(diff.change, "IgnoreButton requires a change in the diff");
   const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
-  const openDialog = () => {
-    setDialog(isIgnored ? "unignore" : "ignore");
-  };
-  const hotkey = useBuildHotkey("ignoreChange", openDialog, {
-    preventDefault: true,
-  });
-  const [ignoreChange] = useMutation(IgnoreChangeMutation, {
+  const [mutateIgnoreChange] = useMutation(IgnoreChangeMutation, {
     variables: {
       accountSlug: params.accountSlug,
       changeId: diff.change.id,
@@ -74,7 +77,17 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
       },
     },
   });
-  const [unignoreChange] = useMutation(UnignoreChangeMutation, {
+  const ignoreChange = () => {
+    mutateIgnoreChange().catch(() => {
+      // Optimistic response will handle this
+    });
+    if (status === EvaluationStatus.Pending) {
+      setStatus(EvaluationStatus.Accepted);
+      acknowledgeMarkedDiff();
+    }
+    setDialog(null);
+  };
+  const [mutateUnignoreChange] = useMutation(UnignoreChangeMutation, {
     variables: {
       accountSlug: params.accountSlug,
       changeId: diff.change.id,
@@ -87,6 +100,26 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
       },
     },
   });
+  const unignoreChange = () => {
+    mutateUnignoreChange();
+    setDialog(null);
+  };
+  const toggle = () => {
+    if (!isIgnored && sessionStorage.getItem(dontShowAgainKey) === "true") {
+      ignoreChange();
+    } else {
+      setDialog(isIgnored ? "unignore" : "ignore");
+    }
+  };
+  const hotkey = useBuildHotkey("ignoreChange", toggle, {
+    preventDefault: true,
+  });
+  const [status, setStatus] = useBuildDiffStatusState({
+    diffId: diff.id,
+    diffGroup: diff.group ?? null,
+  });
+  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
+
   return (
     <>
       <HotkeyTooltip
@@ -95,7 +128,7 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
       >
         <BaseIgnoreButton
           aria-pressed={isIgnored}
-          onPress={openDialog}
+          onPress={toggle}
           color={isIgnored ? "danger" : undefined}
         />
       </HotkeyTooltip>
@@ -112,26 +145,31 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
             <DialogBody>
               <DialogTitle>Ignore Change</DialogTitle>
               <DialogText>
-                When you ignore this diff Argos will skip it in future builds.
+                If you ignore this diff, Argos will skip it in future builds.
                 <br />
-                Only ignore changes that are actually{" "}
-                <strong>flaky and have recurred several times</strong>.<br />
+                Only ignore it if it’s{" "}
+                <strong>flaky and you’ve seen it happen multiple times</strong>.
+                <br />
                 Argos will ignore{" "}
-                <strong>
-                  any future diff that exactly matches this overlay
-                </strong>
-                .
+                <strong>future diffs that exactly match this one</strong>.
               </DialogText>
             </DialogBody>
             <DialogFooter>
+              <div className="flex flex-1">
+                <Checkbox
+                  onChange={(value) => {
+                    if (value) {
+                      sessionStorage.setItem(dontShowAgainKey, "true");
+                    } else {
+                      sessionStorage.removeItem(dontShowAgainKey);
+                    }
+                  }}
+                >
+                  Don’t show this again for this session
+                </Checkbox>
+              </div>
               <DialogDismiss>Cancel</DialogDismiss>
-              <Button
-                variant="destructive"
-                onPress={() => {
-                  ignoreChange();
-                  setDialog(null);
-                }}
-              >
+              <Button variant="destructive" onPress={ignoreChange}>
                 Ignore Change
               </Button>
             </DialogFooter>
@@ -163,13 +201,7 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
             </DialogBody>
             <DialogFooter>
               <DialogDismiss>Cancel</DialogDismiss>
-              <Button
-                variant="destructive"
-                onPress={() => {
-                  unignoreChange();
-                  setDialog(null);
-                }}
-              >
+              <Button variant="destructive" onPress={unignoreChange}>
                 Unignore Change
               </Button>
             </DialogFooter>
