@@ -160,11 +160,14 @@ type BuildDiffContextValue = {
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
 
-export function checkCanBeReviewed(screenshotDiffStatus: ScreenshotDiffStatus) {
+/**
+ * Check if the diff can be reviewed.
+ */
+export function checkDiffCanBeReviewed(diffStatus: ScreenshotDiffStatus) {
   return (
-    screenshotDiffStatus === ScreenshotDiffStatus.Added ||
-    screenshotDiffStatus === ScreenshotDiffStatus.Removed ||
-    screenshotDiffStatus === ScreenshotDiffStatus.Changed
+    diffStatus === ScreenshotDiffStatus.Added ||
+    diffStatus === ScreenshotDiffStatus.Removed ||
+    diffStatus === ScreenshotDiffStatus.Changed
   );
 }
 

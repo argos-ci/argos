@@ -52,62 +52,69 @@ export function useReviewDialog() {
   );
 }
 
-const BuildReviewDialog = memo(function BuildReviewDialog(props: {
+const BuildReviewModal = memo(function BuildReviewModal(props: {
   isOpen: NonNullable<ModalProps["isOpen"]>;
   onOpenChange: NonNullable<ModalProps["onOpenChange"]>;
   project: DocumentType<typeof _ProjectFragment>;
 }) {
-  const { project } = props;
-  const summary = useBuildReviewSummary();
+  const { project, isOpen, onOpenChange } = props;
   if (!project.build) {
     return null;
   }
   return (
-    <Modal
-      isOpen={props.isOpen}
-      onOpenChange={props.onOpenChange}
-      isDismissable
-    >
-      {(() => {
-        if (summary.pending.length === 0 && summary.rejected.length === 0) {
-          return <FinishReviewAcceptedDialog build={project.build} />;
-        }
-        return (
-          <Dialog size="medium">
-            <DialogBody>
-              <DialogTitle>Finish your review</DialogTitle>
-              <DialogText>
-                During your review,{" "}
-                {summary.rejected.length > 1 ? (
-                  <strong>
-                    {summary.rejected.length} changes have been marked as
-                    rejected
-                  </strong>
-                ) : (
-                  <strong>
-                    {summary.rejected.length} change has been marked as rejected
-                  </strong>
-                )}
-                .<br />
-                Approve or reject the changes to submit your review.
-              </DialogText>
-            </DialogBody>
-            <DialogFooter>
-              <DialogDismiss>Cancel</DialogDismiss>
-              <BuildReviewButton
-                project={props.project}
-                autoFocus
-                onCompleted={() => props.onOpenChange(false)}
-              >
-                Submit review
-              </BuildReviewButton>
-            </DialogFooter>
-          </Dialog>
-        );
-      })()}
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable>
+      <BuildReviewDialog
+        project={project}
+        build={project.build}
+        onClose={() => onOpenChange(false)}
+      />
     </Modal>
   );
 });
+
+function BuildReviewDialog(props: {
+  project: DocumentType<typeof _ProjectFragment>;
+  build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
+  onClose: () => void;
+}) {
+  const { project, build, onClose } = props;
+  const summary = useBuildReviewSummary();
+  invariant(summary, "BuildReviewDialog requires a summary");
+  if (summary.pending.length === 0 && summary.rejected.length === 0) {
+    return <FinishReviewAcceptedDialog build={build} />;
+  }
+  return (
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>Finish your review</DialogTitle>
+        <DialogText>
+          During your review,{" "}
+          {summary.rejected.length > 1 ? (
+            <strong>
+              {summary.rejected.length} changes have been marked as rejected
+            </strong>
+          ) : (
+            <strong>
+              {summary.rejected.length} change has been marked as rejected
+            </strong>
+          )}
+          .<br />
+          Approve or reject the changes to submit your review.
+        </DialogText>
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss>Cancel</DialogDismiss>
+        <BuildReviewButton
+          project={project}
+          autoFocus
+          onCompleted={() => onClose()}
+        >
+          Submit review
+        </BuildReviewButton>
+      </DialogFooter>
+    </Dialog>
+  );
+}
 
 function FinishReviewAcceptedDialog(props: {
   build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
@@ -154,20 +161,20 @@ export function BuildReviewDialogProvider(props: {
   children: React.ReactNode;
   project: DocumentType<typeof _ProjectFragment> | null;
 }) {
-  const { project } = props;
+  const { project, children } = props;
   const [isOpen, setIsOpen] = useState(false);
   const value = useMemo(() => ({ setIsOpen }), []);
   return (
     <>
-      {project && (
-        <BuildReviewDialog
+      {project ? (
+        <BuildReviewModal
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           project={project}
         />
-      )}
+      ) : null}
       <BuildReviewDialogContext value={value}>
-        {props.children}
+        {children}
       </BuildReviewDialogContext>
     </>
   );

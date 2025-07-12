@@ -17,7 +17,7 @@ import { canParseURL } from "@/util/url";
 import { useProjectParams } from "../Project/ProjectParams";
 import { getTestURL } from "../Test/TestParams";
 import {
-  checkCanBeReviewed,
+  checkDiffCanBeReviewed,
   Diff,
   useGoToNextDiff,
   useGoToPreviousDiff,
@@ -80,7 +80,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       : compareBranch;
   const pwTraceUrl = diff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
-    buildType !== BuildType.Reference && checkCanBeReviewed(diff.status);
+    buildType !== BuildType.Reference && checkDiffCanBeReviewed(diff.status);
   // Determine a sibling trace to show if the current trace is missing.
   const siblingTrace = (() => {
     if (pwTraceUrl) {
@@ -157,13 +157,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           )}
         </div>
         <BuildDiffDetailToolbar diff={diff}>
-          <TrackButtons
-            diff={diff}
-            disabled={!canBeReviewed}
-            render={({ children }) => (
-              <div className="flex gap-1.5">{children}</div>
-            )}
-          />
+          <TrackButtons diff={diff} disabled={!canBeReviewed} />
         </BuildDiffDetailToolbar>
       </div>
       <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">

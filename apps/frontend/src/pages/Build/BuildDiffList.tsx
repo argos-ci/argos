@@ -328,7 +328,7 @@ function ShowSubItemToggle(
   );
 }
 
-function EvaluationStatusIndicator(props: { status: EvaluationStatus }) {
+function EvaluationStatusIndicator(props: { status: EvaluationStatus | null }) {
   const value = (() => {
     switch (props.status) {
       case EvaluationStatus.Accepted:
@@ -336,6 +336,7 @@ function EvaluationStatusIndicator(props: { status: EvaluationStatus }) {
       case EvaluationStatus.Rejected:
         return { color: "text-danger", icon: ThumbsDownIcon };
       case EvaluationStatus.Pending:
+      case null:
         return null;
       default:
         assertNever(props.status);
@@ -436,7 +437,7 @@ function ListItem(props: {
     diffGroup: null,
   });
   const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
-  const groupStatus = getDiffGroupStatus(item.diff?.group ?? null);
+  const groupStatus = getDiffGroupStatus?.(item.diff?.group ?? null) ?? null;
   const isGroupItem = item.type === "group-item" && item.group.length > 1;
   const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
   const { hoverProps } = useDelayedHover({
@@ -572,7 +573,7 @@ function DiffTooltip(props: {
 
 function StatusDiffCard(
   props: Omit<DiffCardProps, "variant"> & {
-    status: EvaluationStatus;
+    status: EvaluationStatus | null;
   },
 ) {
   const variant = (() => {
@@ -582,6 +583,7 @@ function StatusDiffCard(
       case EvaluationStatus.Rejected:
         return "danger" as const;
       case EvaluationStatus.Pending:
+      case null:
         return "primary" as const;
       default:
         assertNever(props.status);
@@ -665,12 +667,12 @@ function useEstimateListItemHeight() {
               row.diff?.group,
               "Expected group item to have a diff and a group",
             );
-            return getDiffGroupStatus(row.diff.group);
+            return getDiffGroupStatus?.(row.diff.group) ?? null;
           case "item":
             if (!row.diff) {
               return null;
             }
-            return getDiffStatus(row.diff.id);
+            return getDiffStatus?.(row.diff.id) ?? null;
           default:
             assertNever(row);
         }
@@ -825,6 +827,9 @@ const InternalBuildDiffList = memo(() => {
 
   const watchItemReview = useWatchItemReview();
   useEffect(() => {
+    if (!watchItemReview) {
+      return;
+    }
     return watchItemReview((value) => {
       const rows = rowsRef.current;
       rows.forEach((row, index) => {

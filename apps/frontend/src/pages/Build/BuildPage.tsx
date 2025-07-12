@@ -83,6 +83,7 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
           <BuildReviewStateProvider
             params={params}
             buildStatus={data?.project?.build?.status ?? null}
+            buildType={data?.project?.build?.type ?? null}
           >
             <BuildReviewDialogProvider project={data?.project ?? null}>
               <div className="flex h-screen min-h-0 flex-col">
