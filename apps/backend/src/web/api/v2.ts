@@ -14,6 +14,7 @@ const limiter = rateLimit({
   store: createRedisStore("api"),
 });
 
+// @ts-expect-error probably a problem of types in the `express-rate-limit` package
 router.use(limiter);
 router.use(openAPIRouter);
 

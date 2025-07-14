@@ -1,3 +1,5 @@
+import type { JSONSchema } from "objection";
+
 import {
   AutomatedActionJSONSchema,
   AutomationActionsName,
@@ -38,7 +40,7 @@ export class AutomationActionRun<
             completedAt: { type: ["string", "null"] },
           },
         },
-        AutomatedActionJSONSchema,
+        AutomatedActionJSONSchema as JSONSchema,
       ],
     };
   }

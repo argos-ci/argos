@@ -1,4 +1,4 @@
-import type { RelationMappings } from "objection";
+import type { JSONSchema, RelationMappings } from "objection";
 
 import {
   BuildMetadata,
@@ -26,7 +26,7 @@ export class BuildShard extends Model {
           buildId: { type: "string" },
           index: { type: ["integer", "null"] },
           metadata: {
-            anyOf: [BuildMetadataJsonSchema, { type: "null" }],
+            anyOf: [BuildMetadataJsonSchema as JSONSchema, { type: "null" }],
           },
         },
       },

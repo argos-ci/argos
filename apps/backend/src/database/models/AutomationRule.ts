@@ -1,9 +1,9 @@
+import type { JSONSchema } from "objection";
 import { z } from "zod";
 
 import { AutomationActionSchema } from "@/automation/actions/index.js";
 import { AutomationConditionSchema } from "@/automation/types/conditions.js";
 import { AutomationEventSchema } from "@/automation/types/events.js";
-import { zodToJsonSchema } from "@/util/zod.js";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
@@ -33,9 +33,7 @@ export class AutomationRule extends Model {
     return {
       allOf: [
         timestampsSchema,
-        zodToJsonSchema(AutomationRule.schema, {
-          removeAdditionalStrategy: "strict",
-        }),
+        z.toJSONSchema(AutomationRule.schema) as JSONSchema,
       ],
     };
   }

@@ -23,7 +23,9 @@ router.use(
 // Expose the OpenAPI schema as YAML
 router.get("/openapi.yaml", (_req, res) => {
   res.set("Content-Type", "text/yaml");
-  const yamlSchema = stringify(schema);
+  const yamlSchema = stringify(schema, {
+    aliasDuplicateObjects: false,
+  });
   res.send(yamlSchema);
 });
 

@@ -10,7 +10,7 @@ import { getAuthProjectBuildsOperation } from "./handlers/getAuthProjectBuilds";
 import { updateBuildOperation } from "./handlers/updateBuild";
 
 export const zodSchema = {
-  openapi: "3.0.3",
+  openapi: "3.1.1",
   info: {
     title: "Argos API",
     version: "2.0.0",

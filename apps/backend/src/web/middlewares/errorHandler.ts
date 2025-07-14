@@ -6,7 +6,7 @@ import type { ErrorRequestHandler } from "express";
 export function jsonErrorHandler(): ErrorRequestHandler {
   return (error: unknown, req, res, next) => {
     if (error instanceof Error && process.env["NODE_ENV"] !== "test") {
-      console.log(error, error.stack);
+      // console.log(error, error.stack);
     }
 
     if (req.accepts("json") === "json") {

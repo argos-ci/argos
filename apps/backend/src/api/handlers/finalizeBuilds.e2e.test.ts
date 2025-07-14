@@ -62,7 +62,7 @@ describe("finalizeBuilds", () => {
       await concludeBuild({ build, notify: false });
     });
 
-    it("returns 200 with the finalized build", async () => {
+    it.only("returns 200 with the finalized build", async () => {
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")

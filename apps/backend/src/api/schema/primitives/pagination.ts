@@ -1,42 +1,44 @@
-import { z } from "../util/zod.js";
+import { z } from "zod";
 
 export const PageParamsSchema = z
   .object({
     perPage: z
       .string()
       .optional()
-      .pipe(z.coerce.number().min(1).max(100).default(30))
-      .openapi({
+      .transform((value) =>
+        z.coerce.number().min(1).max(100).default(30).parse(value),
+      )
+      .meta({
         description: "Number of items per page (max 100)",
       }),
     page: z
       .string()
       .optional()
-      .pipe(z.coerce.number().min(1).default(1))
-      .openapi({
+      .transform((value) => z.coerce.number().min(1).default(1).parse(value))
+      .meta({
         description: "Page number",
       }),
   })
-  .openapi({
+  .meta({
     description: "Page parameters",
-    ref: "PageParams",
+    id: "PageParams",
   });
 
 const PageInfoSchema = z
   .object({
-    total: z.number().openapi({
+    total: z.number().meta({
       description: "Total number of items",
     }),
-    page: z.number().openapi({
+    page: z.number().meta({
       description: "Current page number",
     }),
-    perPage: z.number().openapi({
+    perPage: z.number().meta({
       description: "Number of items per page",
     }),
   })
-  .openapi({
+  .meta({
     description: "Page information",
-    ref: "PageInfo",
+    id: "PageInfo",
   });
 
 export function paginated<T>(schema: z.ZodType<T>) {

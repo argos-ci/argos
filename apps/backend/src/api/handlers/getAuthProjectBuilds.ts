@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { Build } from "@/database/models/Build.js";
@@ -15,7 +16,6 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error.js";
-import { z } from "../schema/util/zod.js";
 import { CreateAPIHandler } from "../util.js";
 
 const GetAuthProjectBuildsParams = PageParamsSchema.extend({
@@ -32,11 +32,11 @@ const GetAuthProjectBuildsParams = PageParamsSchema.extend({
       }
       return null;
     })
-    .openapi({
+    .meta({
       description:
         "Only return the latest builds created, unique by name and commit.",
     }),
-}).strict();
+});
 
 export const getAuthProjectBuildsOperation = {
   operationId: "getAuthProjectBuilds",

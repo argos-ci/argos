@@ -1,4 +1,4 @@
-import type { RelationMappings } from "objection";
+import type { JSONSchema, RelationMappings } from "objection";
 
 import {
   ScreenshotMetadata,
@@ -31,7 +31,12 @@ export class Screenshot extends Model {
           screenshotBucketId: { type: "string" },
           fileId: { type: ["string", "null"] },
           testId: { type: ["string", "null"] },
-          metadata: { anyOf: [ScreenshotMetadataJsonSchema, { type: "null" }] },
+          metadata: {
+            anyOf: [
+              ScreenshotMetadataJsonSchema as JSONSchema,
+              { type: "null" },
+            ],
+          },
           playwrightTraceFileId: { type: ["string", "null"] },
           buildShardId: { type: ["string", "null"] },
           threshold: { type: ["number", "null"], minimum: 0, maximum: 1 },

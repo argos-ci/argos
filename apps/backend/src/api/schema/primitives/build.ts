@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { z } from "zod";
 
 import {
   getNotificationPayload,
@@ -11,31 +12,29 @@ import {
   BuildNotification,
 } from "@/database/models/index.js";
 
-import { z } from "../util/zod.js";
-
 export const BuildSchema = z
   .object({
-    id: z.string().openapi({
+    id: z.string().meta({
       description: "A unique identifier for the build",
       example: "12345",
-      ref: "BuildId",
+      id: "BuildId",
     }),
-    number: z.number().min(1).openapi({
+    number: z.number().min(1).meta({
       description: "The build number",
     }),
-    status: BuildAggregatedStatusSchema.openapi({
+    status: BuildAggregatedStatusSchema.meta({
       description: "The status of the build",
     }),
-    url: z.string().url().openapi({
+    url: z.url().meta({
       description: "The URL of the build",
     }),
-    notification: NotificationPayloadSchema.nullable().openapi({
+    notification: NotificationPayloadSchema.nullable().meta({
       description: "The notification payload for the build",
     }),
   })
-  .openapi({
+  .meta({
     description: "Build",
-    ref: "Build",
+    id: "Build",
   });
 
 function getBuildNotificationTypeFromBuildStatus(

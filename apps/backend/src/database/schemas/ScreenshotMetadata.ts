@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { zodToJsonSchema } from "@/util/zod";
-
 const ViewportSchema = z
   .object({
     width: z.number().int().min(0).describe("The width of the viewport"),
@@ -53,7 +51,6 @@ const TestSchema = z
       "The location of the test in the source code",
     ),
   })
-  .strict()
   .describe("The test that generated the screenshot");
 
 const BrowserSchema = z
@@ -105,12 +102,10 @@ export const ScreenshotMetadataSchema = z
     automationLibrary: AutomationLibrarySchema,
     sdk: SdkSchema,
   })
-  .strict()
   .describe("Metadata about a screenshot");
 
-export const ScreenshotMetadataJsonSchema = zodToJsonSchema(
+export const ScreenshotMetadataJsonSchema = z.toJSONSchema(
   ScreenshotMetadataSchema,
-  { removeAdditionalStrategy: "strict" },
 );
 
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;
