@@ -61,7 +61,7 @@ export default defineConfig(({ mode: argMode }) => {
                 return "recharts";
               }
             }
-            return undefined;
+            return null;
           },
         },
       },

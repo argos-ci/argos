@@ -73,9 +73,10 @@
       "sharp"
     ],
     "overrides": {
-      "express": "$express",
       "@types/express": "$@types/express",
       "@types/express-serve-static-core": "$@types/express-serve-static-core",
+      "express": "$express",
+      "rollup": "4.44.0",
       "undici": "$undici"
     }
   }
