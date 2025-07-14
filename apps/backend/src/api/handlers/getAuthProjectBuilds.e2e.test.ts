@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import z from "zod";
 
 import type { Build, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
@@ -13,6 +14,10 @@ const app = createTestHandlerApp(getAuthProjectBuilds);
 describe("getAuthProjectBuilds", () => {
   let project: Project;
   let builds: Build[];
+
+  beforeAll(() => {
+    z.globalRegistry.clear();
+  });
 
   beforeEach(async () => {
     await setupDatabase();

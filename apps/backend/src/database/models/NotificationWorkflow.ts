@@ -34,7 +34,7 @@ export class NotificationWorkflow<
           type: "object",
           properties: {
             type: { const: h.type },
-            data: z.toJSONSchema(h.schema) as JSONSchema,
+            data: z.toJSONSchema(h.schema, { io: "input" }) as JSONSchema,
           },
           required: ["type", "data"],
         })),

@@ -11,6 +11,7 @@ const rootDotEnvPath = join(__dirname, "../../../../.env");
 
 dotenv.config({
   path: rootDotEnvPath,
+  quiet: true,
 });
 
 const workers = 5;

@@ -107,13 +107,9 @@ export const ScreenshotMetadataSchema = z
       .optional()
       .nullable()
       .meta({ description: "The URL of the page that was screenshotted" }),
-    previewUrl: z
-      .string()
-      .optional()
-      .nullable()
-      .meta({
-        description: "An URL to an accessible preview of the screenshot",
-      }),
+    previewUrl: z.string().optional().nullable().meta({
+      description: "An URL to an accessible preview of the screenshot",
+    }),
     viewport: ViewportSchema.optional().nullable(),
     colorScheme: z
       .enum(["light", "dark"])

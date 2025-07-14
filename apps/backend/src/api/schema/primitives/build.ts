@@ -12,13 +12,15 @@ import {
   BuildNotification,
 } from "@/database/models/index.js";
 
+export const BuildIdSchema = z.string().meta({
+  description: "A unique identifier for the build",
+  example: "12345",
+  id: "BuildId",
+});
+
 export const BuildSchema = z
   .object({
-    id: z.string().meta({
-      description: "A unique identifier for the build",
-      example: "12345",
-      id: "BuildId",
-    }),
+    id: BuildIdSchema,
     number: z.number().min(1).meta({
       description: "The build number",
     }),

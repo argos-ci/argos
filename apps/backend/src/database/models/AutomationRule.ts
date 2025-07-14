@@ -33,7 +33,7 @@ export class AutomationRule extends Model {
     return {
       allOf: [
         timestampsSchema,
-        z.toJSONSchema(AutomationRule.schema) as JSONSchema,
+        z.toJSONSchema(AutomationRule.schema, { io: "input" }) as JSONSchema,
       ],
     };
   }

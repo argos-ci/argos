@@ -15,7 +15,11 @@ import { getRedisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
-import { BuildSchema, serializeBuilds } from "../schema/primitives/build.js";
+import {
+  BuildIdSchema,
+  BuildSchema,
+  serializeBuilds,
+} from "../schema/primitives/build.js";
 import { ScreenshotInputSchema } from "../schema/primitives/screenshot.js";
 import {
   conflict,
@@ -44,11 +48,7 @@ export const updateBuildOperation = {
   operationId: "updateBuild",
   requestParams: {
     path: z.object({
-      buildId: z.string().meta({
-        description: "A unique identifier for the build",
-        example: "12345",
-        id: "buildId",
-      }),
+      buildId: BuildIdSchema,
     }),
   },
   requestBody: {
