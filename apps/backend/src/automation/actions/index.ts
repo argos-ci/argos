@@ -14,7 +14,10 @@ export const AutomationActionSchema = z.discriminatedUnion("action", [
   }),
 ]);
 
-export const AutomatedActionJSONSchema = z.toJSONSchema(AutomationActionSchema);
+export const AutomatedActionJSONSchema = z.toJSONSchema(
+  AutomationActionSchema,
+  { io: "input" },
+);
 
 export type AutomationActionType = z.infer<typeof AutomationActionSchema>;
 

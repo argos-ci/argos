@@ -26,7 +26,6 @@ export const installAppRouter = async (app: express.Application) => {
     store: createRedisStore("app"),
   });
 
-  // @ts-expect-error probably a problem of types in the `express-rate-limit` package
   router.use(limiter);
 
   const clientConfig: ClientConfig = {
