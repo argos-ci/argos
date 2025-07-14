@@ -558,9 +558,9 @@ importers:
 
   packages/tsconfig:
     dependencies:
-      '@tsconfig/node20':
-        specifier: ^20.1.6
-        version: 20.1.6
+      '@tsconfig/node24':
+        specifier: ^24.0.1
+        version: 24.0.1
       '@tsconfig/strictest':
         specifier: ^2.0.5
         version: 2.0.5
@@ -3921,8 +3921,8 @@ packages:
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
 
-  '@tsconfig/node20@20.1.6':
-    resolution: {integrity: sha512-sz+Hqx9zwZDpZIV871WSbUzSqNIsXzghZydypnfgzPKLltVJfkINfUeTct31n/tTSa9ZE1ZOfKdRre1uHHquYQ==}
+  '@tsconfig/node24@24.0.1':
+    resolution: {integrity: sha512-3+IXshza3bIrT0tbHBr9CixQDVf4iBf0HTR0hCYowhpLqkzJjswu3UY8aZWjRXZep31kYB+o2SQeD8KwIoUHYw==}
 
   '@tsconfig/strictest@2.0.5':
     resolution: {integrity: sha512-ec4tjL2Rr0pkZ5hww65c+EEPYwxOi4Ryv+0MtjeaSQRJyq322Q27eOQiFbuNgw2hpL4hB1/W/HBGk3VKS43osg==}
@@ -12473,7 +12473,7 @@ snapshots:
 
   '@tokenizer/token@0.3.0': {}
 
-  '@tsconfig/node20@20.1.6': {}
+  '@tsconfig/node24@24.0.1': {}
 
   '@tsconfig/strictest@2.0.5': {}
 
