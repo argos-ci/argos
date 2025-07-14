@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { raw, ValidationError } from "objection";
 import type {
+  JSONSchema,
   Pojo,
   QueryContext,
   RelationMappings,
@@ -131,7 +132,7 @@ export class Build extends Model {
           runAttempt: { type: ["integer", "null"] },
           partial: { type: ["boolean", "null"] },
           metadata: {
-            anyOf: [BuildMetadataJsonSchema, { type: "null" }],
+            anyOf: [BuildMetadataJsonSchema as JSONSchema, { type: "null" }],
           },
           conclusion: {
             anyOf: [

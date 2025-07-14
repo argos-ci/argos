@@ -36,29 +36,24 @@ It achieves this by hosting its core application on Heroku, uploading screenshot
 Argos follows a loosely coupled, service-oriented approach to streamline continuous visual testing.
 
 1. **Node.js Backend (API & Background Jobs)**
-
    - **Core Server**: Serves GraphQL endpoints and handles user authentication, project/build logic, and screenshot-diff coordination.
    - **Job System**: Several background workers handle time-consuming tasks like image processing, diffs, and notification dispatch.
    - **Data Layer**: Uses PostgreSQL for persistence, with `knex` migrations to manage schema changes.
 
 2. **React Frontend (SPA)**
-
    - **UI**: A React application presents dashboards for project/build statuses and screenshot comparisons.
    - **Integration**: Communicates with the backend via GraphQL to fetch diffs, results, and user data.
    - **Security & Auth**: Relies on tokens or session-based strategies (handled by the backend) for secure data exchanges.
 
 3. **Notifications System**
-
    - **Notifications**: Integration with Git system for build statuses, regressions detection.
 
 4. **Screenshot Management**
-
    - **AWS S3**: Stores versioned screenshots.
    - **Comparison Workflow**: The backend fetches these images when running diffs and updates build status accordingly.
    - **Diff Generation**: Dedicated modules (`screenshot-diff/`) handle image processing, typically in a queue-driven manner.
 
 5. **CLI (Separate Repo)**
-
    - **CI Integration**: The CLI publishes screenshots from any CI environment.
    - **Authentication**: Users or CI systems provide an ARGOS_TOKEN to associate the screenshots with the correct Argos project.
 
@@ -84,26 +79,22 @@ Argos follows a loosely coupled, service-oriented approach to streamline continu
 Argos relies on a modern, TypeScript-heavy toolchain and documentation scattered across multiple files and folders:
 
 1. **Core Configuration & Scripts**
-
    - **`package.json`**: Defines top-level scripts (e.g., `dev`, `build`, `test`), pinned Node version, and the main dev dependencies.
    - **`turbo.json`**: Coordinates concurrent build/test steps in a monorepo environment.
    - **`.env.example`**: Shows typical environment variables for local or Heroku setups.
 
 2. **Backend Code**
-
    - Written in TypeScript.
    - Uses **knex** for database migrations and queries.
    - Interacts with AWS S3 for screenshot storage.
    - GraphQL-related modules leverage **graphql-codegen** for generating typed schema/resolvers.
 
 3. **Frontend Code**
-
    - A React-based SPA that uses routes, components, and various hooks.
    - Configured to handle screenshot diff results and present build statuses.
    - Tailwind CSS for quick UI styling.
 
 4. **Testing Infrastructure**
-
    - **Vitest** for unit and integration tests.
    - **Playwright** for end-to-end testing.
 

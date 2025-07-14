@@ -1,21 +1,39 @@
 import { z } from "zod";
 
-import { zodToJsonSchema } from "@/util/zod";
-
 const ViewportSchema = z
   .object({
-    width: z.number().int().min(0).describe("The width of the viewport"),
-    height: z.number().int().min(0).describe("The height of the viewport"),
+    width: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: "The width of the viewport" }),
+    height: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: "The height of the viewport" }),
   })
-  .describe("The viewport dimensions when the screenshot was taken");
+  .meta({
+    description: "The viewport dimensions when the screenshot was taken",
+  });
 
 const LocationSchema = z
   .object({
-    file: z.string().describe("The file where the test is located"),
-    line: z.number().int().min(0).describe("The line number in the file"),
-    column: z.number().int().min(0).describe("The column number in the file"),
+    file: z
+      .string()
+      .meta({ description: "The file where the test is located" }),
+    line: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: "The line number in the file" }),
+    column: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: "The column number in the file" }),
   })
-  .describe("The location of the test in the source code");
+  .meta({ description: "The location of the test in the source code" });
 
 const TestSchema = z
   .object({
@@ -23,59 +41,64 @@ const TestSchema = z
       .string()
       .optional()
       .nullable()
-      .describe("The unique identifier of the test"),
-    title: z.string().describe("The title of the test"),
+      .meta({ description: "The unique identifier of the test" }),
+    title: z.string().meta({ description: "The title of the test" }),
     titlePath: z
       .array(z.string())
-      .describe("The path of titles leading to the test"),
+      .meta({ description: "The path of titles leading to the test" }),
     retries: z
       .number()
       .int()
       .min(0)
       .optional()
       .nullable()
-      .describe("The number of retries for the test"),
+      .meta({ description: "The number of retries for the test" }),
     retry: z
       .number()
       .int()
       .min(0)
       .optional()
       .nullable()
-      .describe("The current retry count"),
+      .meta({ description: "The current retry count" }),
     repeat: z
       .number()
       .int()
       .min(0)
       .optional()
       .nullable()
-      .describe("The repeat count for the test"),
-    location: LocationSchema.optional().describe(
-      "The location of the test in the source code",
-    ),
+      .meta({ description: "The repeat count for the test" }),
+    location: LocationSchema.optional().meta({
+      description: "The location of the test in the source code",
+    }),
   })
-  .strict()
-  .describe("The test that generated the screenshot");
+  .meta({ description: "The test that generated the screenshot" });
 
 const BrowserSchema = z
   .object({
-    name: z.string().describe("The name of the browser"),
-    version: z.string().describe("The version of the browser"),
+    name: z.string().meta({ description: "The name of the browser" }),
+    version: z.string().meta({ description: "The version of the browser" }),
   })
-  .describe("The browser that generated the screenshot");
+  .meta({ description: "The browser that generated the screenshot" });
 
 const AutomationLibrarySchema = z
   .object({
-    name: z.string().describe("The name of the automation library"),
-    version: z.string().describe("The version of the automation library"),
+    name: z
+      .string()
+      .meta({ description: "The name of the automation library" }),
+    version: z
+      .string()
+      .meta({ description: "The version of the automation library" }),
   })
-  .describe("The automation library that generated the screenshot");
+  .meta({
+    description: "The automation library that generated the screenshot",
+  });
 
 const SdkSchema = z
   .object({
-    name: z.string().describe("The name of the Argos SDK"),
-    version: z.string().describe("The version of the Argos SDK"),
+    name: z.string().meta({ description: "The name of the Argos SDK" }),
+    version: z.string().meta({ description: "The version of the Argos SDK" }),
   })
-  .describe("The Argos SDK that generated the screenshot");
+  .meta({ description: "The Argos SDK that generated the screenshot" });
 
 export const ScreenshotMetadataSchema = z
   .object({
@@ -83,34 +106,30 @@ export const ScreenshotMetadataSchema = z
       .string()
       .optional()
       .nullable()
-      .describe("The URL of the page that was screenshotted"),
-    previewUrl: z
-      .string()
-      .optional()
-      .nullable()
-      .describe("An URL to an accessible preview of the screenshot"),
+      .meta({ description: "The URL of the page that was screenshotted" }),
+    previewUrl: z.string().optional().nullable().meta({
+      description: "An URL to an accessible preview of the screenshot",
+    }),
     viewport: ViewportSchema.optional().nullable(),
     colorScheme: z
       .enum(["light", "dark"])
       .optional()
       .nullable()
-      .describe("The color scheme when the screenshot was taken"),
+      .meta({ description: "The color scheme when the screenshot was taken" }),
     mediaType: z
       .enum(["screen", "print"])
       .optional()
       .nullable()
-      .describe("The media type when the screenshot was taken"),
+      .meta({ description: "The media type when the screenshot was taken" }),
     test: TestSchema.nullable().optional().nullable(),
     browser: BrowserSchema.optional().nullable(),
     automationLibrary: AutomationLibrarySchema,
     sdk: SdkSchema,
   })
-  .strict()
-  .describe("Metadata about a screenshot");
+  .meta({ description: "Metadata about a screenshot" });
 
-export const ScreenshotMetadataJsonSchema = zodToJsonSchema(
+export const ScreenshotMetadataJsonSchema = z.toJSONSchema(
   ScreenshotMetadataSchema,
-  { removeAdditionalStrategy: "strict" },
 );
 
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;

@@ -1,7 +1,7 @@
+import { z } from "zod";
+
 import { ScreenshotMetadataSchema } from "@/database/schemas/index.js";
 import { SHA256_REGEX } from "@/web/constants.js";
-
-import { z } from "../util/zod.js";
 
 export const ScreenshotInputSchema = z
   .object({
@@ -12,8 +12,7 @@ export const ScreenshotInputSchema = z
     pwTraceKey: z.string().regex(SHA256_REGEX).nullable().optional(),
     threshold: z.number().min(0).max(1).nullable().optional(),
   })
-  .strict()
-  .openapi({
+  .meta({
     description: "Screenshot input",
-    ref: "ScreenshotInput",
+    id: "ScreenshotInput",
   });

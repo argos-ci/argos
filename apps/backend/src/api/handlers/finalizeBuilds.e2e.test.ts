@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
 import type {
@@ -19,6 +20,10 @@ describe("finalizeBuilds", () => {
   let project: Project;
   let compareScreenshotBucket: ScreenshotBucket;
   let build: Build;
+
+  beforeAll(() => {
+    z.globalRegistry.clear();
+  });
 
   beforeEach(async () => {
     await setupDatabase();

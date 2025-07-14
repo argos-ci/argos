@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import {
@@ -14,7 +15,11 @@ import { getRedisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
-import { BuildSchema, serializeBuilds } from "../schema/primitives/build.js";
+import {
+  BuildIdSchema,
+  BuildSchema,
+  serializeBuilds,
+} from "../schema/primitives/build.js";
 import { ScreenshotInputSchema } from "../schema/primitives/screenshot.js";
 import {
   conflict,
@@ -24,21 +29,18 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error.js";
-import { z } from "../schema/util/zod.js";
 import { CreateAPIHandler } from "../util.js";
 
-const RequestBodySchema = z
-  .object({
-    screenshots: z.array(ScreenshotInputSchema),
-    parallel: z.boolean().nullable().optional(),
-    parallelTotal: z.number().int().min(-1).nullable().optional(),
-    parallelIndex: z.number().int().min(1).nullable().optional(),
-    metadata: BuildMetadataSchema.optional().openapi({
-      description: "Build metadata",
-      ref: "BuildMetadata",
-    }),
-  })
-  .strict();
+const RequestBodySchema = z.object({
+  screenshots: z.array(ScreenshotInputSchema),
+  parallel: z.boolean().nullable().optional(),
+  parallelTotal: z.number().int().min(-1).nullable().optional(),
+  parallelIndex: z.number().int().min(1).nullable().optional(),
+  metadata: BuildMetadataSchema.optional().meta({
+    description: "Build metadata",
+    id: "BuildMetadata",
+  }),
+});
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
@@ -46,11 +48,7 @@ export const updateBuildOperation = {
   operationId: "updateBuild",
   requestParams: {
     path: z.object({
-      buildId: z.string().openapi({
-        description: "A unique identifier for the build",
-        example: "12345",
-        ref: "buildId",
-      }),
+      buildId: BuildIdSchema,
     }),
   },
   requestBody: {
@@ -65,7 +63,7 @@ export const updateBuildOperation = {
       description: "Result of build update",
       content: {
         "application/json": {
-          schema: z.object({ build: BuildSchema }).strict(),
+          schema: z.object({ build: BuildSchema }),
         },
       },
     },

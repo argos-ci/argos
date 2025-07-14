@@ -1,6 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type {
+  JSONSchema,
   Pojo,
   QueryContext,
   RelationMappings,
@@ -55,7 +56,9 @@ export class Project extends Model {
           gitlabProjectId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
           summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
-          defaultUserLevel: { anyOf: [{ type: "null" }, UserLevelJsonSchema] },
+          defaultUserLevel: {
+            anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
+          },
         },
       },
     ],

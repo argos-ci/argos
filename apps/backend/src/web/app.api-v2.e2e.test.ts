@@ -5,6 +5,7 @@ import axios from "axios";
 import type { Express } from "express";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import z from "zod";
 
 import { Build, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
@@ -20,6 +21,7 @@ describe("api v2", () => {
   let app: Express;
 
   beforeAll(async () => {
+    z.globalRegistry.clear();
     app = await createApp();
   });
 

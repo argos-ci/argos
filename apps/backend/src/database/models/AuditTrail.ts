@@ -1,7 +1,5 @@
-import { Model } from "objection";
+import { Model, type JSONSchema } from "objection";
 import { z } from "zod";
-
-import { zodToJsonSchema } from "@/util/zod";
 
 import { Project } from "./Project";
 import { Test } from "./Test";
@@ -31,7 +29,7 @@ export class AuditTrail extends Model {
         projectId: { type: "string" },
         testId: { type: "string" },
         userId: { type: "string" },
-        action: zodToJsonSchema(ActionSchema),
+        action: z.toJSONSchema(ActionSchema) as JSONSchema,
       },
     };
   }

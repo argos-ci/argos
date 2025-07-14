@@ -1,13 +1,13 @@
-import { z } from "./zod.js";
+import { z } from "zod";
 
 const ErrorSchema = z
   .object({
     error: z.string(),
     details: z.array(z.object({ message: z.string() })).optional(),
   })
-  .openapi({
+  .meta({
     description: "Error response",
-    ref: "Error",
+    id: "Error",
   });
 
 function createErrorResponse(description: string) {

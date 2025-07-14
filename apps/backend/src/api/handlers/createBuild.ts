@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { createBuild as createBuildService } from "@/build/createBuild.js";
@@ -23,51 +24,44 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error.js";
-import { z } from "../schema/util/zod.js";
 import { CreateAPIHandler } from "../util.js";
 
-const RequestBodySchema = z
-  .object({
-    commit: Sha1HashSchema,
-    branch: z.string(),
-    screenshotKeys: UniqueSha256HashArraySchema,
-    pwTraceKeys: UniqueSha256HashArraySchema.optional(),
-    name: z.string().nullable().optional(),
-    parallel: z.boolean().nullable().optional(),
-    parallelNonce: z.string().nullable().optional(),
-    prNumber: z.number().int().min(1).nullable().optional(),
-    prHeadCommit: z.string().nullable().optional(),
-    // To avoid breaking change, we keep referenceCommit instead of baseCommit
-    referenceCommit: z.string().nullable().optional(),
-    // To avoid breaking change, we keep referenceBranch instead of baseBranch
-    referenceBranch: z.string().nullable().optional(),
-    parentCommits: z.array(Sha1HashSchema).nullable().optional(),
-    mode: z.enum(["ci", "monitoring"]).nullable().optional(),
-    ciProvider: z.string().nullable().optional(),
-    argosSdk: z.string().nullable().optional(),
-    runId: z.string().nullable().optional(),
-    runAttempt: z.number().int().min(1).nullable().optional(),
-  })
-  .strict();
+const RequestBodySchema = z.object({
+  commit: Sha1HashSchema,
+  branch: z.string(),
+  screenshotKeys: UniqueSha256HashArraySchema,
+  pwTraceKeys: UniqueSha256HashArraySchema.optional(),
+  name: z.string().nullable().optional(),
+  parallel: z.boolean().nullable().optional(),
+  parallelNonce: z.string().nullable().optional(),
+  prNumber: z.number().int().min(1).nullable().optional(),
+  prHeadCommit: z.string().nullable().optional(),
+  // To avoid breaking change, we keep referenceCommit instead of baseCommit
+  referenceCommit: z.string().nullable().optional(),
+  // To avoid breaking change, we keep referenceBranch instead of baseBranch
+  referenceBranch: z.string().nullable().optional(),
+  parentCommits: z.array(Sha1HashSchema).nullable().optional(),
+  mode: z.enum(["ci", "monitoring"]).nullable().optional(),
+  ciProvider: z.string().nullable().optional(),
+  argosSdk: z.string().nullable().optional(),
+  runId: z.string().nullable().optional(),
+  runAttempt: z.number().int().min(1).nullable().optional(),
+});
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
-const UploadSchema = z
-  .object({
-    key: z.string(),
-    putUrl: z.string().url(),
-  })
-  .strict();
+const UploadSchema = z.object({
+  key: z.string(),
+  putUrl: z.url(),
+});
 
 type Upload = z.infer<typeof UploadSchema>;
 
-const ResponseSchema = z
-  .object({
-    build: BuildSchema,
-    screenshots: z.array(UploadSchema),
-    pwTraces: z.array(UploadSchema),
-  })
-  .strict();
+const ResponseSchema = z.object({
+  build: BuildSchema,
+  screenshots: z.array(UploadSchema),
+  pwTraces: z.array(UploadSchema),
+});
 
 export const createBuildOperation = {
   operationId: "createBuild",

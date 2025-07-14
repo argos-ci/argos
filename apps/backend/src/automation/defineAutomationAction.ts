@@ -1,5 +1,5 @@
-import type { JSONSchema } from "objection";
 import type { z } from "zod";
+import type { JSONSchema } from "zod/v4/core";
 
 import type { AutomationActionRun } from "@/database/models/AutomationActionRun";
 
@@ -15,7 +15,7 @@ export type AutomationActionContext = {
 export type AutomationAction<TName extends string, TData> = {
   name: TName;
   payloadSchema: z.ZodType<TData>;
-  payloadJsonSchema: JSONSchema;
+  payloadJsonSchema: JSONSchema.JSONSchema;
   process: (args: {
     payload: TData;
     ctx: AutomationActionContext;

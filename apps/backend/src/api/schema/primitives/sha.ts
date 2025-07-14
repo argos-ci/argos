@@ -1,15 +1,15 @@
+import { z } from "zod";
+
 import { SHA1_REGEX, SHA256_REGEX } from "@/web/constants";
 
-import { z } from "../util/zod.js";
-
-export const Sha1HashSchema = z.string().regex(SHA1_REGEX).openapi({
+export const Sha1HashSchema = z.string().regex(SHA1_REGEX).meta({
   description: "SHA1 hash",
-  ref: "Sha1Hash",
+  id: "Sha1Hash",
 });
 
-const Sha256HashSchema = z.string().regex(SHA256_REGEX).openapi({
+const Sha256HashSchema = z.string().regex(SHA256_REGEX).meta({
   description: "SHA256 hash",
-  ref: "Sha256Hash",
+  id: "Sha256Hash",
 });
 
 export const UniqueSha256HashArraySchema = z

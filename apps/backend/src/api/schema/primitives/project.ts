@@ -1,4 +1,4 @@
-import { z } from "../util/zod.js";
+import { z } from "zod";
 
 export const ProjectSchema = z
   .object({
@@ -6,7 +6,7 @@ export const ProjectSchema = z
     defaultBaseBranch: z.string(),
     hasRemoteContentAccess: z.boolean(),
   })
-  .openapi({
+  .meta({
     description: "Project",
-    ref: "Project",
+    id: "Project",
   });

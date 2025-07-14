@@ -15,7 +15,6 @@ import {
   getBuildStatusMessage,
   getEventDescription,
 } from "@/slack/buildStatusMessage";
-import { zodToJsonSchema } from "@/util/zod";
 
 import { AutomationActionFailureError } from "../automationActionError";
 import {
@@ -29,9 +28,7 @@ const payloadSchema = z.object({
 });
 type Payload = z.infer<typeof payloadSchema>;
 
-const payloadJsonSchema = zodToJsonSchema(payloadSchema, {
-  removeAdditionalStrategy: "strict",
-});
+const payloadJsonSchema = z.toJSONSchema(payloadSchema);
 
 async function expandContext(context: AutomationActionContext) {
   const { automationActionRun } = context;

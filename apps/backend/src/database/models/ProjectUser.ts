@@ -1,4 +1,4 @@
-import { RelationMappings } from "objection";
+import { RelationMappings, type JSONSchema } from "objection";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
@@ -18,7 +18,7 @@ export class ProjectUser extends Model {
         properties: {
           userId: { type: "string" },
           projectId: { type: "string" },
-          userLevel: UserLevelJsonSchema,
+          userLevel: UserLevelJsonSchema as JSONSchema,
         },
       },
     ],

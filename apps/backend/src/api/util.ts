@@ -165,19 +165,26 @@ function handler<TMethod extends "get" | "post" | "put">(
         (req as Request & { ctx: RequestCtx<ZodOpenApiOperationObject> }).ctx =
           ctx;
         try {
-          if (operation.requestParams?.path) {
+          if (
+            operation.requestParams?.path &&
+            operation.requestParams.path instanceof ZodType
+          ) {
             ctx.params = operation.requestParams.path.parse(
               req.params,
             ) as RequestCtx<ZodOpenApiOperationObject>["params"];
           }
-          if (operation.requestParams?.query) {
+          if (
+            operation.requestParams?.query &&
+            operation.requestParams?.query instanceof ZodType
+          ) {
             ctx.query = operation.requestParams.query.parse(
               req.query,
             ) as RequestCtx<ZodOpenApiOperationObject>["query"];
           }
           if (
             operation.requestBody?.content?.["application/json"]?.schema &&
-            "parse" in operation.requestBody.content["application/json"].schema
+            operation.requestBody.content["application/json"].schema instanceof
+              ZodType
           ) {
             operation.requestBody.content["application/json"].schema.parse(
               req.body,
@@ -185,7 +192,7 @@ function handler<TMethod extends "get" | "post" | "put">(
           }
         } catch (error) {
           if (error instanceof ZodError) {
-            const errorMessages = error.errors.map((issue: any) => ({
+            const errorMessages = error.issues.map((issue) => ({
               message: `${issue.path.join(".")} is ${issue.message}`,
             }));
             throw boom(400, "Invalid request", {

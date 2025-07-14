@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild.js";
@@ -17,14 +18,11 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error.js";
-import { z } from "../schema/util/zod.js";
 import { CreateAPIHandler } from "../util.js";
 
-const RequestBodySchema = z
-  .object({ parallelNonce: z.string().min(1) })
-  .strict();
+const RequestBodySchema = z.object({ parallelNonce: z.string().min(1) });
 
-const ResponseSchema = z.object({ builds: z.array(BuildSchema) }).strict();
+const ResponseSchema = z.object({ builds: z.array(BuildSchema) });
 
 export const finalizeBuildsOperation = {
   operationId: "finalizeBuilds",
