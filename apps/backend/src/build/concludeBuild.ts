@@ -37,26 +37,25 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
       return;
     }
     if (notify) {
-      const [, buildNotification] = await transaction(async (trx) => {
-        return Promise.all([
-          Build.query(trx).findById(buildId).patch({
-            conclusion,
-            stats,
-          }),
-          BuildNotification.query(trx).insert({
-            buildId,
-            type: getNotificationType(conclusion),
-            jobStatus: "pending",
-          }),
-        ]);
-      });
+      const [updatedBuild, buildNotification] = await transaction(
+        async (trx) => {
+          return Promise.all([
+            Build.query(trx).patchAndFetchById(buildId, { conclusion, stats }),
+            BuildNotification.query(trx).insert({
+              buildId,
+              type: getNotificationType(conclusion),
+              jobStatus: "pending",
+            }),
+          ]);
+        },
+      );
 
       await Promise.all([
         buildNotificationJob.push(buildNotification.id),
         triggerAndRunAutomation({
           projectId: build.projectId,
           event: AutomationEvents.BuildCompleted,
-          payload: { build },
+          payload: { build: updatedBuild },
         }),
       ]);
     } else {
