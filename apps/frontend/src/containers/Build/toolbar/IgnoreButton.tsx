@@ -6,11 +6,6 @@ import { DialogTrigger } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { graphql } from "@/gql";
-import {
-  EvaluationStatus,
-  useAcknowledgeMarkedDiff,
-  useBuildDiffStatusState,
-} from "@/pages/Build/BuildReviewState";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
@@ -57,8 +52,11 @@ function BaseIgnoreButton(props: Omit<IconButtonProps, "children">) {
 
 const dontShowAgainKey = "ignoreChangeDontShowAgain";
 
-function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
-  const { diff } = props;
+function EnabledIgnoreButton(props: {
+  diff: BuildDiffDetailDocument;
+  onIgnoreChange?: () => void;
+}) {
+  const { diff, onIgnoreChange } = props;
   const params = useProjectParams();
   invariant(params, "IgnoreButton requires project params");
   invariant(diff.change, "IgnoreButton requires a change in the diff");
@@ -77,16 +75,15 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
       },
     },
   });
+
   const ignoreChange = () => {
     mutateIgnoreChange().catch(() => {
       // Optimistic response will handle this
     });
-    if (status === EvaluationStatus.Pending) {
-      setStatus(EvaluationStatus.Accepted);
-      acknowledgeMarkedDiff();
-    }
+    onIgnoreChange?.();
     setDialog(null);
   };
+
   const [mutateUnignoreChange] = useMutation(UnignoreChangeMutation, {
     variables: {
       accountSlug: params.accountSlug,
@@ -114,11 +111,6 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
   const hotkey = useBuildHotkey("ignoreChange", toggle, {
     preventDefault: true,
   });
-  const [status, setStatus] = useBuildDiffStatusState({
-    diffId: diff.id,
-    diffGroup: diff.group ?? null,
-  });
-  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
 
   return (
     <>
@@ -214,11 +206,12 @@ function EnabledIgnoreButton(props: { diff: BuildDiffDetailDocument }) {
 
 export const IgnoreButton = memo(function IgnoreButton(props: {
   diff: BuildDiffDetailDocument;
+  onIgnoreChange?: () => void;
 }) {
-  const { diff } = props;
+  const { diff, onIgnoreChange } = props;
 
   if (diff.change) {
-    return <EnabledIgnoreButton diff={diff} />;
+    return <EnabledIgnoreButton diff={diff} onIgnoreChange={onIgnoreChange} />;
   }
 
   return <BaseIgnoreButton isDisabled />;

@@ -1,10 +1,12 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
+import { useFeature } from "@bucketco/react-sdk";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
 import { BuildFlakyIndicator } from "@/containers/Build/BuildFlakyIndicator";
+import { IgnoreButton } from "@/containers/Build/toolbar/IgnoreButton";
 import {
   NextButton,
   PreviousButton,
@@ -12,6 +14,7 @@ import {
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Tooltip } from "@/ui/Tooltip";
+import { useEventCallback } from "@/ui/useEventCallback";
 import { canParseURL } from "@/util/url";
 
 import { useProjectParams } from "../Project/ProjectParams";
@@ -24,6 +27,11 @@ import {
   useHasNextDiff,
   useHasPreviousDiff,
 } from "./BuildDiffState";
+import {
+  EvaluationStatus,
+  useAcknowledgeMarkedDiff,
+  useBuildDiffStatusState,
+} from "./BuildReviewState";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
 import {
   BrowserIndicator,
@@ -125,6 +133,8 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
+  const ignoreChangeFeature = useFeature("changes-ignore");
+
   return (
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -157,6 +167,9 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           )}
         </div>
         <BuildDiffDetailToolbar diff={diff}>
+          {ignoreChangeFeature.isEnabled ? (
+            <BuildDetailIgnoreButton diff={diff} />
+          ) : null}
           <TrackButtons diff={diff} disabled={!canBeReviewed} />
         </BuildDiffDetailToolbar>
       </div>
@@ -286,6 +299,33 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
     </div>
   );
 });
+
+function BuildDetailIgnoreButton(props: { diff: Diff }) {
+  const { diff } = props;
+
+  const [status, setStatus] = useBuildDiffStatusState({
+    diffId: diff.id,
+    diffGroup: diff.group ?? null,
+  });
+  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
+  const expectedStatus = useRef<EvaluationStatus | null>(null);
+  useEffect(() => {
+    if (status === expectedStatus.current) {
+      expectedStatus.current = null;
+      acknowledgeMarkedDiff();
+      return;
+    }
+  }, [status, acknowledgeMarkedDiff]);
+
+  const handleIgnoreChange = useEventCallback(() => {
+    if (status === EvaluationStatus.Pending) {
+      setStatus(EvaluationStatus.Accepted);
+      expectedStatus.current = EvaluationStatus.Accepted;
+    }
+  });
+
+  return <IgnoreButton diff={diff} onIgnoreChange={handleIgnoreChange} />;
+}
 
 const BuildNavButtons = memo(function BuildNavButtons() {
   const goToNextDiff = useGoToNextDiff();
