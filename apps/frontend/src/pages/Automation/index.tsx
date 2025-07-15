@@ -1,4 +1,4 @@
-import { useMutation, useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { BoxesIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
@@ -70,14 +70,6 @@ type ProjectDocument = NonNullable<
 export type AutomationRule =
   ProjectDocument["automationRules"]["edges"][number];
 
-const DeactivateAutomationRuleMutation = graphql(`
-  mutation Automations_deactivateAutomationRule($id: String!) {
-    deactivateAutomationRule(id: $id) {
-      id
-    }
-  }
-`);
-
 function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
   const { accountSlug, projectName } = useParams();
   return (
@@ -95,42 +87,6 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
 
 function PageContent(props: { project: ProjectDocument }) {
   const { project } = props;
-  const [deactivateAutomationRule] = useMutation(
-    DeactivateAutomationRuleMutation,
-    {
-      update(cache, { data }) {
-        if (!data?.deactivateAutomationRule?.id) return;
-        const id = data.deactivateAutomationRule.id;
-        // Find the project id in the cache
-        const projectId = cache.identify({
-          __typename: "Project",
-          id: project?.id,
-        });
-        if (!projectId) return;
-        cache.modify({
-          id: projectId,
-          fields: {
-            automationRules(existingAutomationRules = {}, { readField }) {
-              if (!existingAutomationRules.edges) {
-                return existingAutomationRules;
-              }
-
-              return {
-                ...existingAutomationRules,
-                edges: existingAutomationRules.edges.filter(
-                  (ruleRef: any) => readField("id", ruleRef) !== id,
-                ),
-                pageInfo: {
-                  ...existingAutomationRules.pageInfo,
-                  totalCount: existingAutomationRules.pageInfo.totalCount - 1,
-                },
-              };
-            },
-          },
-        });
-      },
-    },
-  );
 
   const automationRuleConnection = project?.automationRules;
   const account = project?.account;
@@ -176,9 +132,7 @@ function PageContent(props: { project: ProjectDocument }) {
       <div className="relative flex-1">
         <AutomationRulesList
           automationRules={automationRuleConnection.edges}
-          onDelete={(id: string) => {
-            deactivateAutomationRule({ variables: { id } });
-          }}
+          projectId={project.id}
         />
       </div>
     </PageContainer>

@@ -3,53 +3,14 @@ import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
 
-import { BuildType } from "@/gql/graphql";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
-
-const BuildConclusionConditionSchema = z.object({
-  type: z.literal("build-conclusion"),
-  value: z
-    .enum(["no-changes", "changes-detected"])
-    .nullable()
-    .optional()
-    .refine((val) => val !== null, { message: "Required" }),
-});
-
-const BuildNameConditionSchema = z.object({
-  type: z.literal("build-name"),
-  value: z.string().nonempty({ error: "Required" }),
-});
-
-const BuildTypeConditionSchema = z.object({
-  type: z.literal("build-type"),
-  value: z
-    .enum(BuildType)
-    .nullable()
-    .optional()
-    .refine((val) => val !== null, { message: "Required" }),
-});
-
-const BuildConditionSchema = z.discriminatedUnion("type", [
-  BuildConclusionConditionSchema,
-  BuildNameConditionSchema,
-  BuildTypeConditionSchema,
-]);
-
-const AutomationSlackActionSchema = z.object({
-  type: z.literal("sendSlackMessage"),
-  payload: z.object({
-    slackId: z.string().max(256, { message: "Must be 256 characters or less" }),
-    name: z.string().min(1, { message: "Required" }).max(256, {
-      message: "Must be 256 characters or less",
-    }),
-  }),
-});
-
-const AutomationActionSchema = z.discriminatedUnion("type", [
-  AutomationSlackActionSchema,
-]);
+import {
+  AutomationActionSchema,
+  AutomationEventSchema,
+  BuildConditionSchema,
+} from "@/util/automation";
 
 export const AutomationFieldValuesSchema = z.object({
   name: z
@@ -58,7 +19,7 @@ export const AutomationFieldValuesSchema = z.object({
     .min(3, { message: "Must be at least 3 characters" })
     .max(100, { message: "Must be 100 characters or less" }),
   events: z
-    .array(z.enum(["build.completed", "build.reviewed"]))
+    .array(AutomationEventSchema)
     .min(1, "At least one event is required"),
   conditions: z.array(BuildConditionSchema),
   actions: z

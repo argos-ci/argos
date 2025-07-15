@@ -32,10 +32,7 @@ import {
 import { AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
-import {
-  TestAutomationButton,
-  useTestAutomation,
-} from "./AutomationTestNotification";
+import { TestAutomationButton } from "./AutomationTestNotification";
 
 const ProjectQuery = graphql(`
   query ProjectNewAutomation_project(
@@ -141,16 +138,7 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
     },
   });
 
-  const testAutomation = useTestAutomation({ projectId: project.id });
-
-  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (
-    data,
-    event,
-  ) => {
-    if (await testAutomation.onSubmit(data, event)) {
-      return;
-    }
-
+  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (data) => {
     await client.mutate({
       mutation: CreateAutomationMutation,
       variables: {
@@ -206,12 +194,19 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
                 projectBuildNames={project.buildNames}
               />
               <AutomationActionsStep form={form} />
+              <div>
+                <TestAutomationButton
+                  form={form}
+                  projectId={project.id}
+                  isDisabled={form.formState.isSubmitting}
+                />
+              </div>
               <FormRootError form={form} />
             </div>
           </CardBody>
 
           <CardFooter>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-2">
+            <div className="flex items-center justify-end gap-2">
               <LinkButton
                 href={`${getProjectURL(params)}/automations`}
                 variant="secondary"
@@ -226,12 +221,6 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
               >
                 Create Rule
               </Button>
-              <div className="order-1">
-                <TestAutomationButton
-                  {...testAutomation.buttonProps}
-                  isDisabled={form.formState.isSubmitting}
-                />
-              </div>
             </div>
           </CardFooter>
         </Form>

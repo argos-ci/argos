@@ -6,23 +6,22 @@ import {
   CheckCircle2Icon,
   CircleDotIcon,
   MoreVerticalIcon,
+  PencilIcon,
+  TrashIcon,
   XCircleIcon,
 } from "lucide-react";
 
-import { Button } from "@/ui/Button";
-import {
-  Dialog,
-  DialogBody,
-  DialogDismiss,
-  DialogFooter,
-  DialogText,
-  DialogTitle,
-  DialogTrigger,
-} from "@/ui/Dialog";
+import { DialogTrigger } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
-import { Menu, MenuItem, MenuTrigger } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
+import { useLatestTruethyValue } from "@/ui/useLatestTruethyValue";
+import {
+  AutomationEventSchema,
+  getAutomationEventLabel,
+} from "@/util/automation";
 
 import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
@@ -31,40 +30,9 @@ import { useProjectOutletContext } from "../Project/ProjectOutletContext";
 import { useProjectParams } from "../Project/ProjectParams";
 import { ACTIONS } from "./AutomationFormActionsStep";
 import { getAutomationURL } from "./AutomationParams";
+import { DeleteAutomationDialog } from "./DeleteAutomation";
 import { AutomationActionRunStatusIcon } from "./EditAutomation";
 import { AutomationRule } from "./index";
-
-function DeleteAutomationDialog({
-  isOpen,
-  onOpenChange,
-  onConfirm,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <DialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Modal>
-        <Dialog size="medium">
-          <DialogBody>
-            <DialogTitle>Delete Automation</DialogTitle>
-            <DialogText>
-              The automation rule will be permanently deleted. This action
-              cannot be undone.
-            </DialogText>
-          </DialogBody>
-          <DialogFooter>
-            <DialogDismiss>Cancel</DialogDismiss>
-            <Button variant="destructive" onClick={onConfirm}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </Dialog>
-      </Modal>
-    </DialogTrigger>
-  );
-}
 
 const AutomationRunStatusIcon = ({
   status,
@@ -101,17 +69,19 @@ function LastTriggerStatusIcon({
 
   return (
     <DialogTrigger>
-      <IconButton
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      >
-        <AutomationRunStatusIcon status={automationRun.status} />
-      </IconButton>
+      <Tooltip content="View latest automation runs">
+        <IconButton
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <AutomationRunStatusIcon status={automationRun.status} />
+        </IconButton>
+      </Tooltip>
       <Popover className="bg-app">
         <div className="flex flex-col gap-2 p-2">
-          <div className="text-xs font-semibold">Actions</div>
+          <div className="text-xs font-semibold">Runs</div>
           {automationRun.actionRuns.map((actionRun) => {
             const action = ACTIONS.find((a) => a.type === actionRun.actionName);
             return (
@@ -139,7 +109,6 @@ function AutomationRow(props: {
   const { automationRule, onDelete } = props;
   const params = useProjectParams();
   invariant(params, "Project params must be defined");
-  const [isDialogOpen, setDialogOpen] = useState(false);
   const { permissions } = useProjectOutletContext();
   const hasEditPermission = permissions.includes(ProjectPermission.Admin);
   const url = getAutomationURL({ ...params, automationId: automationRule.id });
@@ -150,9 +119,10 @@ function AutomationRow(props: {
         <div className="truncate">{automationRule.name}</div>
       </div>
       <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap py-2 text-sm">
-        {automationRule.on.map((event) => (
-          <div key={event}>{event}</div>
-        ))}
+        {automationRule.on.map((rawEvent) => {
+          const event = AutomationEventSchema.parse(rawEvent);
+          return <div key={event}>{getAutomationEventLabel(event)}</div>;
+        })}
       </div>
       <div
         className="text-low w-36 shrink-0 overflow-hidden truncate whitespace-nowrap py-2"
@@ -183,22 +153,23 @@ function AutomationRow(props: {
           <Popover>
             <Menu>
               <MenuItem href={url}>
+                <MenuItemIcon>
+                  <PencilIcon />
+                </MenuItemIcon>
                 {hasEditPermission ? "Edit" : "View"}
               </MenuItem>
-              <MenuItem variant="danger" onAction={() => setDialogOpen(true)}>
+              <MenuItem
+                variant="danger"
+                onAction={() => onDelete(automationRule.id)}
+              >
+                <MenuItemIcon>
+                  <TrashIcon />
+                </MenuItemIcon>
                 Delete
               </MenuItem>
             </Menu>
           </Popover>
         </MenuTrigger>
-        <DeleteAutomationDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setDialogOpen}
-          onConfirm={() => {
-            setDialogOpen(false);
-            onDelete(automationRule.id);
-          }}
-        />
       </div>
     </ListRowLink>
   );
@@ -206,34 +177,55 @@ function AutomationRow(props: {
 
 export function AutomationRulesList(props: {
   automationRules: AutomationRule[];
-  onDelete: (id: string) => void;
+  projectId: string;
 }) {
-  const { automationRules, onDelete } = props;
+  const { automationRules, projectId } = props;
   const parentRef = useRef<HTMLDivElement>(null);
+  const [deletedId, setDeletedId] = useState<string | null>(null);
+  const latestDeletedId = useLatestTruethyValue(deletedId);
 
   return (
-    <List
-      ref={parentRef}
-      className="absolute max-h-full w-full"
-      style={{ display: "block" }}
-    >
-      <div className="relative">
-        <ListHeaderRow>
-          <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>
-          <div className="w-32 shrink-0">Triggers</div>
-          <div className="w-36 shrink-0">Last triggered</div>
-          <div className="w-28 shrink-0">Created</div>
-          <div className="w-8 shrink-0" />
-        </ListHeaderRow>
+    <>
+      <List
+        ref={parentRef}
+        className="absolute max-h-full w-full"
+        style={{ display: "block" }}
+      >
+        <div className="relative">
+          <ListHeaderRow>
+            <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>
+            <div className="w-32 shrink-0">Triggers</div>
+            <div className="w-36 shrink-0">Last triggered</div>
+            <div className="w-28 shrink-0">Created</div>
+            <div className="w-8 shrink-0" />
+          </ListHeaderRow>
 
-        {automationRules.map((automationRule) => (
-          <AutomationRow
-            key={`automation-${automationRule.id}`}
-            automationRule={automationRule}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
-    </List>
+          {automationRules.map((automationRule) => (
+            <AutomationRow
+              key={`automation-${automationRule.id}`}
+              automationRule={automationRule}
+              onDelete={setDeletedId}
+            />
+          ))}
+        </div>
+      </List>
+      {latestDeletedId ? (
+        <DialogTrigger
+          isOpen={Boolean(deletedId)}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setDeletedId(null);
+            }
+          }}
+        >
+          <Modal>
+            <DeleteAutomationDialog
+              projectId={projectId}
+              automationRuleId={latestDeletedId}
+            />
+          </Modal>
+        </DialogTrigger>
+      ) : null}
+    </>
   );
 }
