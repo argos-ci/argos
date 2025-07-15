@@ -1,6 +1,7 @@
 import { useApolloClient, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
+import clsx from "clsx";
 import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
@@ -181,7 +182,6 @@ function EditAutomationForm(props: {
       <FormProvider {...form}>
         <Form onSubmit={onSubmit}>
           <CardBody>
-            <CardTitle>Edit Automation Rule</CardTitle>
             <div className="flex flex-col gap-6">
               <AutomationNameField form={form} />
               <AutomationWhenStep form={form} />
@@ -245,16 +245,18 @@ export const AutomationActionRunStatusIcon = ({
     case AutomationActionRunStatus.Error:
       return (
         <>
-          <XCircleIcon className={iconClassName} />
-          <span className="text-danger-low capitalize">{status}</span>
+          <XCircleIcon className={clsx(iconClassName, "text-danger-low")} />
+          <span className="capitalize">{status}</span>
         </>
       );
 
     case AutomationActionRunStatus.Success:
       return (
         <>
-          <CheckCircle2Icon className={iconClassName} />
-          <span className="text-success-low capitalize">{status}</span>
+          <CheckCircle2Icon
+            className={clsx(iconClassName, "text-success-low")}
+          />
+          <span className="capitalize">{status}</span>
         </>
       );
 
@@ -262,8 +264,8 @@ export const AutomationActionRunStatusIcon = ({
     case AutomationActionRunStatus.Progress:
       return (
         <>
-          <CircleDotIcon className={iconClassName} />
-          <span className="text-warning-low capitalize">{status}</span>
+          <CircleDotIcon className={clsx(iconClassName, "text-warning-low")} />
+          <span className="capitalize">{status}</span>
         </>
       );
 

@@ -6,6 +6,8 @@ import {
   CheckCircle2Icon,
   CircleDotIcon,
   MoreVerticalIcon,
+  PencilIcon,
+  TrashIcon,
   XCircleIcon,
 } from "lucide-react";
 
@@ -20,9 +22,14 @@ import {
   DialogTrigger,
 } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRowLink } from "@/ui/List";
-import { Menu, MenuItem, MenuTrigger } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
+import {
+  AutomationEventSchema,
+  getAutomationEventLabel,
+} from "@/util/automation";
 
 import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
@@ -101,17 +108,19 @@ function LastTriggerStatusIcon({
 
   return (
     <DialogTrigger>
-      <IconButton
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-      >
-        <AutomationRunStatusIcon status={automationRun.status} />
-      </IconButton>
+      <Tooltip content="View latest automation runs">
+        <IconButton
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <AutomationRunStatusIcon status={automationRun.status} />
+        </IconButton>
+      </Tooltip>
       <Popover className="bg-app">
         <div className="flex flex-col gap-2 p-2">
-          <div className="text-xs font-semibold">Actions</div>
+          <div className="text-xs font-semibold">Runs</div>
           {automationRun.actionRuns.map((actionRun) => {
             const action = ACTIONS.find((a) => a.type === actionRun.actionName);
             return (
@@ -150,9 +159,10 @@ function AutomationRow(props: {
         <div className="truncate">{automationRule.name}</div>
       </div>
       <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap py-2 text-sm">
-        {automationRule.on.map((event) => (
-          <div key={event}>{event}</div>
-        ))}
+        {automationRule.on.map((rawEvent) => {
+          const event = AutomationEventSchema.parse(rawEvent);
+          return <div key={event}>{getAutomationEventLabel(event)}</div>;
+        })}
       </div>
       <div
         className="text-low w-36 shrink-0 overflow-hidden truncate whitespace-nowrap py-2"
@@ -183,9 +193,15 @@ function AutomationRow(props: {
           <Popover>
             <Menu>
               <MenuItem href={url}>
+                <MenuItemIcon>
+                  <PencilIcon />
+                </MenuItemIcon>
                 {hasEditPermission ? "Edit" : "View"}
               </MenuItem>
               <MenuItem variant="danger" onAction={() => setDialogOpen(true)}>
+                <MenuItemIcon>
+                  <TrashIcon />
+                </MenuItemIcon>
                 Delete
               </MenuItem>
             </Menu>
