@@ -1,5 +1,9 @@
 import { ApolloError } from "@apollo/client";
-import { SubmitHandler, useFormContext } from "react-hook-form";
+import {
+  SubmitHandler,
+  useFormContext,
+  type UseFormReturn,
+} from "react-hook-form";
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
@@ -35,26 +39,36 @@ export function Form({
 }: Omit<React.ComponentPropsWithRef<"form">, "onSubmit"> & {
   onSubmit: SubmitHandler<any>;
 }) {
-  const { handleSubmit, clearErrors, setError } = useFormContext();
+  const form = useFormContext();
   return (
     <form
       ref={ref}
-      onSubmit={handleSubmit(async (data, event) => {
+      onSubmit={form.handleSubmit(async (data, event) => {
         try {
-          clearErrors();
+          form.clearErrors();
           await onSubmit(data, event);
         } catch (error) {
-          const errors = unwrapErrors(error);
-          errors.forEach((error) => {
-            setError(error.field, {
-              type: "manual",
-              message: error.message,
-            });
-          });
+          handleFormError(form, error);
         }
       })}
       autoComplete={autoComplete}
       {...props}
     />
   );
+}
+
+/**
+ * Handle form errors by unwrapping them and setting them in the form state.
+ */
+export function handleFormError(
+  form: UseFormReturn<any, any, any>,
+  error: unknown,
+) {
+  const errors = unwrapErrors(error);
+  errors.forEach((error) => {
+    form.setError(error.field, {
+      type: "manual",
+      message: error.message,
+    });
+  });
 }

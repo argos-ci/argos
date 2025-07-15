@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
 import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
-import { Heading, Text } from "react-aria-components";
+import { DialogTrigger, Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +27,7 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Modal } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { Time } from "../../ui/Time";
@@ -43,10 +44,8 @@ import { ACTIONS, AutomationActionsStep } from "./AutomationFormActionsStep";
 import { AutomationConditionsStep } from "./AutomationFormConditionsStep";
 import { AutomationWhenStep } from "./AutomationFormWhenStep";
 import { useAutomationParams } from "./AutomationParams";
-import {
-  TestAutomationButton,
-  useTestAutomation,
-} from "./AutomationTestNotification";
+import { TestAutomationButton } from "./AutomationTestNotification";
+import { DeleteAutomationDialog } from "./DeleteAutomation";
 
 const AutomationRuleQuery = graphql(`
   query ProjectEditAutomation_automationRule(
@@ -151,18 +150,9 @@ function EditAutomationForm(props: {
     }),
   });
 
-  const testAutomation = useTestAutomation({ projectId: project.id });
-
-  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (
-    data,
-    event,
-  ) => {
+  const onSubmit: SubmitHandler<AutomationTransformedValues> = async (data) => {
     if (!hasEditPermission) {
       throw new Error("You do not have permission to edit this automation.");
-    }
-
-    if (await testAutomation.onSubmit(data, event)) {
-      return;
     }
 
     await client.mutate({
@@ -190,12 +180,35 @@ function EditAutomationForm(props: {
                 projectBuildNames={project.buildNames}
               />
               <AutomationActionsStep form={form} />
+              <div>
+                <TestAutomationButton
+                  form={form}
+                  projectId={project.id}
+                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                />
+              </div>
               <FormRootError form={form} />
             </div>
           </CardBody>
 
           <CardFooter>
-            <div className="grid grid-cols-[1fr_auto_auto] justify-end gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1">
+                <DialogTrigger>
+                  <Button variant="destructive">Delete</Button>
+                  <Modal>
+                    <DeleteAutomationDialog
+                      automationRuleId={automationRule.id}
+                      projectId={project.id}
+                      onCompleted={() => {
+                        navigate(`${getProjectURL(params)}/automations`, {
+                          replace: true,
+                        });
+                      }}
+                    />
+                  </Modal>
+                </DialogTrigger>
+              </div>
               <LinkButton
                 href={`${getProjectURL(params)}/automations`}
                 variant="secondary"
@@ -218,12 +231,6 @@ function EditAutomationForm(props: {
                   Save Changes
                 </Button>
               </Tooltip>
-              <div className="order-1">
-                <TestAutomationButton
-                  {...testAutomation.buttonProps}
-                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
-                />
-              </div>
             </div>
           </CardFooter>
         </Form>
