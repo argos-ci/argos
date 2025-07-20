@@ -51,7 +51,7 @@ export const getGroupColor = (name: DiffGroupName) => {
 export const getGroupLabel = (name: DiffGroupName) => {
   switch (name) {
     case ScreenshotDiffStatus.Failure:
-      return "End-to-end test failures";
+      return "Framework test failures";
     case ScreenshotDiffStatus.Changed:
       return "Changed";
     case ScreenshotDiffStatus.Added:
@@ -61,7 +61,7 @@ export const getGroupLabel = (name: DiffGroupName) => {
     case ScreenshotDiffStatus.Unchanged:
       return "Unchanged";
     case ScreenshotDiffStatus.RetryFailure:
-      return "End-to-end retried failures";
+      return "Framework retried failures";
     case ScreenshotDiffStatus.Ignored:
       return "Ignored";
     default:

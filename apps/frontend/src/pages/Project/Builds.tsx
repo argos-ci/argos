@@ -152,10 +152,7 @@ const BuildRow = memo(function BuildRow({
       <div className="flex grow">
         <div className="hidden lg:flex">
           {build.stats ? (
-            <BuildStatsIndicator
-              stats={build.stats}
-              className="flex-wrap gap-3"
-            />
+            <BuildStatsIndicator stats={build.stats} className="flex-wrap" />
           ) : null}
         </div>
       </div>

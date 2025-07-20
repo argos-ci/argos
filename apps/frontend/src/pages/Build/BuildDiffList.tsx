@@ -1,4 +1,5 @@
 import {
+  cloneElement,
   memo,
   useCallback,
   useEffect,
@@ -31,6 +32,7 @@ import {
 } from "react-aria-components";
 
 import {
+  getGroupIcon,
   getGroupLabel,
   type DiffGroup,
 } from "@/containers/Build/BuildDiffGroup";
@@ -245,6 +247,9 @@ function ListHeader(props: {
           !item.expanded && "-rotate-90",
         )}
       />
+      {cloneElement(getGroupIcon(item.name), {
+        className: "size-3 mr-1.5 text-low",
+      })}
       <div className="text-default flex-1 text-sm font-medium">
         {getGroupLabel(item.name)}
       </div>
@@ -887,7 +892,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="shrink-0 overflow-x-auto border-b px-2"
+          className="shrink-0 border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
         />

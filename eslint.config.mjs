@@ -25,6 +25,11 @@ const config = tseslint.config(
         },
       ],
     },
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
   },
   {
     name: "argos/vitest",

@@ -163,32 +163,36 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
     );
   }, [ignoreChangesFeature.isEnabled]);
   return (
-    <div className={clsx(className, "flex flex-wrap items-center gap-3")}>
+    <div className={clsx(className, "flex items-center gap-1.5")}>
       {groups.map((group) => {
         const count = stats[group];
-        if (!onClickGroup) {
-          if (count === 0) {
-            return null;
-          }
-          return (
-            <StatCount
-              key={group}
-              icon={getGroupIcon(group)}
-              count={count}
-              color={getGroupColor(group)}
-              tooltip={tooltip ? getGroupLabel(group) : null}
-            />
-          );
+        if (count === 0) {
+          return null;
         }
         return (
-          <InteractiveStatCount
-            key={group}
-            icon={getGroupIcon(group)}
-            count={count}
-            color={getGroupColor(group)}
-            onActive={() => onClickGroup(group)}
-            hotkeyName={getStatHotkeyName(group)}
-          />
+          <>
+            {onClickGroup ? (
+              <InteractiveStatCount
+                key={group}
+                icon={getGroupIcon(group)}
+                count={count}
+                color={getGroupColor(group)}
+                onActive={() => onClickGroup(group)}
+                hotkeyName={getStatHotkeyName(group)}
+              />
+            ) : (
+              <StatCount
+                key={group}
+                icon={getGroupIcon(group)}
+                count={count}
+                color={getGroupColor(group)}
+                tooltip={tooltip ? getGroupLabel(group) : null}
+              />
+            )}
+            <span className="text-(--mauve-7) select-none text-xs last:hidden">
+              •
+            </span>
+          </>
         );
       })}
     </div>
