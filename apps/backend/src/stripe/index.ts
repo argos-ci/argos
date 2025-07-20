@@ -412,11 +412,24 @@ export async function updateStripeUsage(input: {
     const timestamp = Math.ceil(Date.now() / 1000);
     const item = getPlanItemFromStripeSubscription(stripeSubscription);
 
-    await stripe.subscriptionItems.createUsageRecord(item.id, {
-      action: "set",
-      quantity: totalScreenshots,
-      timestamp,
-    });
+    const stripeCustomerId = stripeSubscription.customer;
+    invariant(typeof stripeCustomerId === "string");
+
+    await Promise.all([
+      stripe.billing.meterEvents.create({
+        event_name: "screenshots",
+        timestamp,
+        payload: {
+          stripe_customer_id: stripeCustomerId,
+          value: String(totalScreenshots),
+        },
+      }),
+      await stripe.subscriptionItems.createUsageRecord(item.id, {
+        action: "set",
+        quantity: totalScreenshots,
+        timestamp,
+      }),
+    ]);
 
     await subscription.$query().patch({
       usageUpdatedAt: new Date(timestamp * 1000).toISOString(),
