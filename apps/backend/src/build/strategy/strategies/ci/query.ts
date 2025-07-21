@@ -61,8 +61,11 @@ export function queryBaseBucket(
         .where("jobStatus", "complete")
         .whereNot("id", build.id)
         .where((qb) => {
-          // Reference build or check build with approved review
-          qb.where("type", "reference").orWhere((qb) => {
+          // We consider as approved:
+          // - reference buckets
+          // - orphan buckets
+          // - check buckets that have an approved review
+          qb.whereIn("type", ["reference", "orphan"]).orWhere((qb) => {
             qb.where("type", "check").whereExists(
               Build.submittedReviewQuery().where("state", "approved"),
             );
