@@ -14,7 +14,7 @@ import {
   ZodOpenApiPathItemObject,
 } from "zod-openapi";
 
-import { asyncHandler, boom } from "@/web/util.js";
+import { asyncHandler, boom, HTTPError } from "@/web/util.js";
 
 import { zodSchema } from "./schema.js";
 
@@ -206,7 +206,16 @@ function handler<TMethod extends "get" | "post" | "put">(
         next();
       }),
       ...wrappedHandlers,
-      Sentry.expressErrorHandler(),
+      Sentry.expressErrorHandler({
+        shouldHandleError: (error) => {
+          // Capture 400 (to see validation errors) and 500+ errors
+          if (error instanceof HTTPError) {
+            return error.statusCode === 400 || error.statusCode > 500;
+          }
+          // Capture all other errors
+          return true;
+        },
+      }),
       errorHandler,
     );
   };
