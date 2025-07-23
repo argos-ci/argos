@@ -198,7 +198,14 @@ export const CIStrategy: BuildStrategy<CIStrategyContext> = {
     invariant(build.project, "no project found", UnretryableError);
     const branchGlob = await build.project.$getAutoApprovedBranchGlob();
     return {
-      checkIsAutoApproved: (branch: string) => minimatch(branch, branchGlob),
+      checkIsAutoApproved: (branch: string) => {
+        // If there is a pull request, we never auto-approve the build.
+        if (build.githubPullRequestId) {
+          return false;
+        }
+
+        return minimatch(branch, branchGlob);
+      },
     };
   },
   getBuildType: (input, ctx) => {
