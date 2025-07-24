@@ -27,15 +27,16 @@
     "watch-server": "sleep 2 && concurrently \"npm:watch-server-*\""
   },
   "dependencies": {
-    "@apollo/server": "^4.12.2",
+    "@apollo/server": "^5.0.0",
     "@argos/knex-scripts": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@argos/util": "workspace:*",
-    "@aws-sdk/client-s3": "^3.848.0",
-    "@aws-sdk/lib-storage": "^3.848.0",
-    "@aws-sdk/s3-request-presigner": "^3.848.0",
-    "@gitbeaker/rest": "^43.0.0",
-    "@graphql-tools/schema": "^10.0.24",
+    "@as-integrations/express5": "^1.1.2",
+    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/lib-storage": "^3.850.0",
+    "@aws-sdk/s3-request-presigner": "^3.850.0",
+    "@gitbeaker/rest": "^43.3.0",
+    "@graphql-tools/schema": "^10.0.25",
     "@octokit/auth-app": "^8.0.2",
     "@octokit/core": "^7.0.3",
     "@octokit/openapi-types": "^25.1.0",
@@ -43,15 +44,15 @@
     "@octokit/rest": "^22.0.0",
     "@octokit/webhooks": "^14.1.1",
     "@octokit/webhooks-types": "^7.6.1",
-    "@react-email/components": "^0.3.1",
+    "@react-email/components": "^0.3.2",
     "@react-email/render": "^1.1.3",
-    "@sentry/node": "^9.40.0",
+    "@sentry/node": "^9.41.0",
     "@sindresorhus/slugify": "^2.2.1",
     "@slack/bolt": "^4.4.0",
     "ajv": "^8.17.1",
     "amqplib": "^0.10.8",
     "auth-header": "^1.0.0",
-    "axios": "^1.10.0",
+    "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "convict": "^6.2.4",
     "cookies": "^0.9.1",
@@ -82,7 +83,7 @@
     "pg": "^8.16.3",
     "rate-limit-redis": "^4.2.1",
     "react": "19.1.0",
-    "redis": "^5.6.0",
+    "redis": "^5.6.1",
     "resend": "^4.7.0",
     "sharp": "^0.34.3",
     "sqids": "^0.3.0",
@@ -90,7 +91,7 @@
     "tmp": "^0.2.3",
     "undici": "^7.12.0",
     "yaml": "^2.8.0",
-    "zod": "^4.0.5",
+    "zod": "^4.0.8",
     "zod-openapi": "^5.2.0"
   },
   "devDependencies": {
@@ -115,6 +116,6 @@
     "moment": "^2.30.1",
     "openapi3-ts": "^4.5.0",
     "rimraf": "^6.0.1",
-    "supertest": "^7.1.3"
+    "supertest": "^7.1.4"
   }
 }
