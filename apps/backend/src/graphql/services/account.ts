@@ -127,12 +127,14 @@ export async function deleteAccount(args: {
         ]);
 
         // Erase the user informations
-        await User.query(trx).patch({
-          deletedAt: new Date().toISOString(),
-          gitlabUserId: null,
-          googleUserId: null,
-          email: null,
-        });
+        await User.query(trx)
+          .patch({
+            deletedAt: new Date().toISOString(),
+            gitlabUserId: null,
+            googleUserId: null,
+            email: null,
+          })
+          .where("id", userId);
 
         break;
       }
