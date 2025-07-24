@@ -41,7 +41,20 @@ const ApolloProvider = (props: {
       headers: authorization ? { authorization } : {},
     });
 
-    const retryLink = new RetryLink();
+    const retryLink = new RetryLink({
+      attempts: {
+        retryIf: (error: unknown) => {
+          if (
+            error instanceof Error &&
+            "statusCode" in error &&
+            error.statusCode === 401
+          ) {
+            return false;
+          }
+          return true;
+        },
+      },
+    });
 
     return new ApolloClient({
       dataMasking: false,
