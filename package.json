@@ -68,6 +68,7 @@
       "@parcel/watcher",
       "@sentry/cli",
       "@swc/core",
+      "@tailwindcss/oxide",
       "esbuild",
       "odiff-bin",
       "sharp"
@@ -75,6 +76,7 @@
     "overrides": {
       "@types/express": "$@types/express",
       "@types/express-serve-static-core": "$@types/express-serve-static-core",
+      "form-data": "^4.0.4",
       "express": "$express",
       "rollup": "4.44.0",
       "undici": "$undici"
