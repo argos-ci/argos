@@ -343,7 +343,7 @@ async function getOrCreateUserAccountFromThirdParty<
     .where(thirdPartyKey, model.id)
     .orWhereIn("email", potentialEmails)
     .orWhere((qb) => {
-      qb.where("account.name", getName(model)).whereNotNull("deletedAt");
+      qb.where("account.slug", getSlug(model)).whereNotNull("deletedAt");
     });
 
   // If we match multiple accounts, it means that another
