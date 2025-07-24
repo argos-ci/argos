@@ -2,8 +2,10 @@ import jwt from "jsonwebtoken";
 
 import config from "@/config/index.js";
 
+export const JWT_VERSION = 2;
+
 type JWTData = {
-  version: 1;
+  version: typeof JWT_VERSION;
   account: {
     id: string;
     slug: string;
@@ -21,7 +23,7 @@ export const createJWT = (data: JWTData) => {
 export const verifyJWT = (token: string) => {
   try {
     const payload = jwt.verify(token, config.get("server.sessionSecret"));
-    if (typeof payload !== "object" || payload["version"] !== 1) {
+    if (typeof payload !== "object" || payload["version"] !== JWT_VERSION) {
       return null;
     }
     return payload as JWTData;

@@ -11,6 +11,8 @@ import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 
+const JWT_VERSION = 2;
+
 type AuthToken = null | string;
 
 interface AuthContextValue {
@@ -90,7 +92,7 @@ export type JWTData = {
 export const decodeAuthToken = (t: string) => {
   try {
     const value = jwtDecode<JWTData>(t);
-    if (value?.version !== 1) {
+    if (value?.version !== JWT_VERSION) {
       return null;
     }
     return value as JWTData;

@@ -3,7 +3,7 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { createJWT } from "@/auth/jwt.js";
+import { createJWT, JWT_VERSION } from "@/auth/jwt.js";
 import { AuthPayload } from "@/auth/request.js";
 import config from "@/config/index.js";
 import type { Account } from "@/database/models/index.js";
@@ -40,7 +40,7 @@ export default router;
 
 function createJWTFromAccount(account: Account) {
   return createJWT({
-    version: 1,
+    version: JWT_VERSION,
     account: {
       id: account.id,
       name: account.name,
