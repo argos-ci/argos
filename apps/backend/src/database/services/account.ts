@@ -339,8 +339,12 @@ async function getOrCreateUserAccountFromThirdParty<
   const potentialEmails = getPotentialEmails(model);
   const existingUsers = await User.query()
     .withGraphFetched("account")
+    .withGraphJoined("account")
     .where(thirdPartyKey, model.id)
-    .orWhereIn("email", potentialEmails);
+    .orWhereIn("email", potentialEmails)
+    .orWhere((qb) => {
+      qb.where("account.name", getName(model)).whereNotNull("deletedAt");
+    });
 
   // If we match multiple accounts, it means that another
   // user has the same email or id
@@ -372,6 +376,7 @@ async function getOrCreateUserAccountFromThirdParty<
     const data = getPartialModelUpdate(existingUser, {
       [thirdPartyKey]: model.id,
       email,
+      deletedAt: null,
     });
 
     if (data) {
