@@ -284,7 +284,9 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           <UrlIndicator
             url={url}
             previewUrl={previewUrl}
-            isStorybook={automationLibrary?.name === "@storybook/test-runner"}
+            isStorybook={
+              automationLibrary?.name.startsWith("@storybook/") ?? false
+            }
           />
         ) : null}
         {test && (
