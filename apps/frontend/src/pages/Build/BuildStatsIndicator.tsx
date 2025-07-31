@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { Fragment, memo, useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { useFeature } from "@bucketco/react-sdk";
 import { clsx } from "clsx";
@@ -170,10 +170,9 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
           return null;
         }
         return (
-          <>
+          <Fragment key={group}>
             {onClickGroup ? (
               <InteractiveStatCount
-                key={group}
                 icon={getGroupIcon(group)}
                 count={count}
                 color={getGroupColor(group)}
@@ -182,7 +181,6 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
               />
             ) : (
               <StatCount
-                key={group}
                 icon={getGroupIcon(group)}
                 count={count}
                 color={getGroupColor(group)}
@@ -192,7 +190,7 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
             <span className="text-(--mauve-7) select-none text-xs last:hidden">
               •
             </span>
-          </>
+          </Fragment>
         );
       })}
     </div>

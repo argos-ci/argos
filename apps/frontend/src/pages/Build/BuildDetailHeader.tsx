@@ -11,7 +11,11 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
-import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
+import {
+  BuildType,
+  ScreenshotDiffStatus,
+  ScreenshotMetadataColorScheme,
+} from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -37,7 +41,10 @@ import {
   BrowserIndicator,
   BrowserIndicatorLink,
 } from "./metadata/browser/BrowserIndicator";
-import { ColorSchemeIndicator } from "./metadata/ColorSchemeIndicator";
+import {
+  ColorSchemeIndicator,
+  ColorSchemeIndicatorLink,
+} from "./metadata/ColorSchemeIndicator";
 import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
@@ -75,7 +82,6 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const sdk = metadata?.sdk ?? null;
   const url = metadata?.url ?? null;
   const previewUrl = metadata?.previewUrl ?? null;
-  const colorScheme = metadata?.colorScheme ?? null;
   const mediaType = metadata?.mediaType ?? null;
   const test = metadata?.test ?? null;
   const retry = test?.retry ?? null;
@@ -129,6 +135,9 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const activeViewportIndex = viewports.findIndex(
     (v) => hashViewport(v) === activeViewportKey,
   );
+
+  const colorSchemes = getUniqueColorSchemes(siblingMetadataList);
+  const activeColorScheme = resolveColorScheme(metadata);
 
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
@@ -274,8 +283,38 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             isPlaywright={automationLibrary?.name === "@playwright/test"}
           />
         )}
-        {colorScheme && (
-          <ColorSchemeIndicator colorScheme={colorScheme} className="size-4" />
+        {colorSchemes.length === 2 && (
+          <ButtonGroup>
+            {colorSchemes.map((colorScheme) => {
+              if (colorSchemes.length === 1) {
+                return (
+                  <ColorSchemeIndicator
+                    key={colorScheme}
+                    colorScheme={colorScheme}
+                  />
+                );
+              }
+
+              const isActive = activeColorScheme === colorScheme;
+              const resolvedDiff = isActive
+                ? diff
+                : siblingDiffs.find((diff) => {
+                    const metadata = resolveDiffMetadata(diff);
+                    return resolveColorScheme(metadata) === colorScheme;
+                  });
+
+              invariant(resolvedDiff, "diff cannot be null");
+
+              return (
+                <ColorSchemeIndicatorLink
+                  key={colorScheme}
+                  colorScheme={colorScheme}
+                  aria-current={isActive ? "page" : undefined}
+                  href={getDiffPath(resolvedDiff.id) ?? ""}
+                />
+              );
+            })}
+          </ButtonGroup>
         )}
         {mediaType && (
           <MediaTypeIndicator mediaType={mediaType} className="size-4" />
@@ -412,6 +451,22 @@ function getUniqueBrowsers(metadataList: Metadata[]): MetadataBrowser[] {
     browsers.push(metadata.browser);
     return browsers;
   }, []);
+}
+
+/**
+ * Get a list of unique color schemes from a list of metadata.
+ */
+function getUniqueColorSchemes(
+  metadataList: Metadata[],
+): ScreenshotMetadataColorScheme[] {
+  return Array.from(new Set(metadataList.map(resolveColorScheme)));
+}
+
+/**
+ * Resolve the color scheme from metadata.
+ */
+function resolveColorScheme(metadata: Metadata | null) {
+  return metadata?.colorScheme ?? ScreenshotMetadataColorScheme.Light;
 }
 
 /**
