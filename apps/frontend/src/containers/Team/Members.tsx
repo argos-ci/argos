@@ -1,4 +1,4 @@
-import { memo, useId, useState } from "react";
+import { memo, startTransition, useId, useState, useTransition } from "react";
 import { Reference, useMutation, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -45,7 +45,8 @@ import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
 import { GithubAccountLink } from "../GithubAccountLink";
 import { RemoveMenu, TeamMemberLabel, UserListRow } from "../UserList";
 
-const NB_MEMBERS_PER_PAGE = 10;
+const INITIAL_NB_MEMBERS = 10;
+const NB_MEMBERS_PER_PAGE = 100;
 
 const TeamMembersQuery = graphql(`
   query TeamMembers_teamMembers($id: ID!, $first: Int!, $after: Int!) {
@@ -416,9 +417,10 @@ function TeamMembersList(props: {
     variables: {
       id: props.teamId,
       after: 0,
-      first: NB_MEMBERS_PER_PAGE,
+      first: INITIAL_NB_MEMBERS,
     },
   });
+  const [isPending, startTransition] = useTransition();
   if (!data) {
     return null;
   }
@@ -478,35 +480,39 @@ function TeamMembersList(props: {
           <Button
             variant="secondary"
             className="w-full justify-center"
+            isPending={isPending}
             onPress={() => {
-              fetchMore({
-                variables: {
-                  after: members.length,
-                },
-                updateQuery: (prev, { fetchMoreResult }) => {
-                  if (!fetchMoreResult) {
-                    return prev;
-                  }
-                  if (!fetchMoreResult.team) {
-                    return prev;
-                  }
-                  if (!prev.team) {
-                    return prev;
-                  }
-                  return {
-                    team: {
-                      ...prev.team,
-                      members: {
-                        ...prev.team.members,
-                        edges: [
-                          ...prev.team.members.edges,
-                          ...fetchMoreResult.team.members.edges,
-                        ],
-                        pageInfo: fetchMoreResult.team.members.pageInfo,
+              startTransition(() => {
+                fetchMore({
+                  variables: {
+                    after: members.length,
+                    first: NB_MEMBERS_PER_PAGE,
+                  },
+                  updateQuery: (prev, { fetchMoreResult }) => {
+                    if (!fetchMoreResult) {
+                      return prev;
+                    }
+                    if (!fetchMoreResult.team) {
+                      return prev;
+                    }
+                    if (!prev.team) {
+                      return prev;
+                    }
+                    return {
+                      team: {
+                        ...prev.team,
+                        members: {
+                          ...prev.team.members,
+                          edges: [
+                            ...prev.team.members.edges,
+                            ...fetchMoreResult.team.members.edges,
+                          ],
+                          pageInfo: fetchMoreResult.team.members.pageInfo,
+                        },
                       },
-                    },
-                  };
-                },
+                    };
+                  },
+                });
               });
             }}
           >
@@ -570,10 +576,11 @@ function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
     variables: {
       id: props.teamId,
       after: 0,
-      first: NB_MEMBERS_PER_PAGE,
+      first: INITIAL_NB_MEMBERS,
       isTeamMember: !props.showPendingMembers,
     },
   });
+  const [isPending, startTransition] = useTransition();
   if (!data) {
     return null;
   }
@@ -639,41 +646,45 @@ function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
           <Button
             variant="secondary"
             className="w-full justify-center"
+            isPending={isPending}
             onPress={() => {
-              fetchMore({
-                variables: {
-                  after: members.length,
-                },
-                updateQuery: (prev, { fetchMoreResult }) => {
-                  if (!fetchMoreResult) {
-                    return prev;
-                  }
-                  if (!fetchMoreResult.team) {
-                    return prev;
-                  }
-                  if (!prev.team) {
-                    return prev;
-                  }
-                  if (!prev.team.githubMembers) {
-                    return prev;
-                  }
-                  if (!fetchMoreResult.team.githubMembers) {
-                    return prev;
-                  }
-                  return {
-                    team: {
-                      ...prev.team,
-                      githubMembers: {
-                        ...prev.team.githubMembers,
-                        edges: [
-                          ...prev.team.githubMembers.edges,
-                          ...fetchMoreResult.team.githubMembers.edges,
-                        ],
-                        pageInfo: fetchMoreResult.team.githubMembers.pageInfo,
+              startTransition(() => {
+                fetchMore({
+                  variables: {
+                    after: members.length,
+                    first: NB_MEMBERS_PER_PAGE,
+                  },
+                  updateQuery: (prev, { fetchMoreResult }) => {
+                    if (!fetchMoreResult) {
+                      return prev;
+                    }
+                    if (!fetchMoreResult.team) {
+                      return prev;
+                    }
+                    if (!prev.team) {
+                      return prev;
+                    }
+                    if (!prev.team.githubMembers) {
+                      return prev;
+                    }
+                    if (!fetchMoreResult.team.githubMembers) {
+                      return prev;
+                    }
+                    return {
+                      team: {
+                        ...prev.team,
+                        githubMembers: {
+                          ...prev.team.githubMembers,
+                          edges: [
+                            ...prev.team.githubMembers.edges,
+                            ...fetchMoreResult.team.githubMembers.edges,
+                          ],
+                          pageInfo: fetchMoreResult.team.githubMembers.pageInfo,
+                        },
                       },
-                    },
-                  };
-                },
+                    };
+                  },
+                });
               });
             }}
           >
