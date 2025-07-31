@@ -108,7 +108,7 @@ const strategy = {
 
     const isRunInProgress =
       githubRun.data.status === "in_progress" ||
-      // For some reasons GitHub sometimes consider the job "queued"
+      // For some reason GitHub sometimes considers the job "queued"
       // It is not "unsafe" to allow this.
       githubRun.data.status === "queued";
 
