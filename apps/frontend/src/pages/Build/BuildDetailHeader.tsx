@@ -283,7 +283,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             isPlaywright={automationLibrary?.name === "@playwright/test"}
           />
         )}
-        {colorSchemes.length === 2 && (
+        {colorSchemes.includes(ScreenshotMetadataColorScheme.Dark) && (
           <ButtonGroup>
             {colorSchemes.map((colorScheme) => {
               if (colorSchemes.length === 1) {
