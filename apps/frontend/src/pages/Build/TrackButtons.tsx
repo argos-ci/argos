@@ -46,6 +46,8 @@ function useEvaluationToggle(props: {
     }
   }, [status, diffId, acknowledgeMarkedDiff]);
   const toggle = useEventCallback(() => {
+    // Prevent multiple rapid clicks by ensuring that the function does not execute
+    // if a state transition is already in progress. This acts as a debouncing mechanism.
     if (expectedRef.current) {
       return;
     }
