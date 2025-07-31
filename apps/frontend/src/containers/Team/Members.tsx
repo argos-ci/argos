@@ -1,4 +1,4 @@
-import { memo, startTransition, useId, useState, useTransition } from "react";
+import { memo, useId, useState, useTransition } from "react";
 import { Reference, useMutation, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
