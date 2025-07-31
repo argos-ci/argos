@@ -1,5 +1,6 @@
 import { Suspense, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client";
+import clsx from "clsx";
 import {
   ActivitySquareIcon,
   CommandIcon,
@@ -134,13 +135,22 @@ function UserMenu() {
   return (
     <MenuTrigger>
       <RACButton
-        className="rac-focus bg-ui size-6 shrink-0 cursor-default rounded-full transition hover:brightness-125 focus:brightness-125 aria-expanded:brightness-125"
+        className={clsx(
+          "rac-focus bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
+          "data-[hovered]:border-primary-hover data-[pressed]:border-primary-active aria-expanded:border-primary-active",
+        )}
         aria-label="User settings"
       >
         <Suspense
-          fallback={<InitialAvatar initial="" color="var(--mauve-3)" />}
+          fallback={
+            <InitialAvatar
+              initial=""
+              color="var(--mauve-3)"
+              className="size-7"
+            />
+          }
         >
-          <Avatar slug={authPayload.account.slug} className="size-6" />
+          <Avatar slug={authPayload.account.slug} className="size-7" />
         </Suspense>
       </RACButton>
       <Popover placement="bottom end">

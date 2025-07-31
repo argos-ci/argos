@@ -8,7 +8,7 @@ export function InitialAvatar(props: {
   initial: string;
   alt?: string;
 }) {
-  const size = props.size ?? 32;
+  const size = props.size;
   return (
     <div
       ref={props.ref}

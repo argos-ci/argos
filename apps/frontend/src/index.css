@@ -143,6 +143,7 @@
 
   --border-color-primary: var(--violet-6);
   --border-color-primary-hover: var(--violet-8);
+  --border-color-primary-active: var(--violet-9);
 
   --border-color-danger: var(--tomato-6);
   --border-color-danger-hover: var(--tomato-8);
