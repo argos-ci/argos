@@ -23,9 +23,10 @@ const modalStyles = (props: ModalRenderProps) =>
 export type ModalProps = ModalOverlayProps;
 
 export function Modal(props: ModalProps) {
+  const { children, ...rest } = props;
   return (
-    <ModalOverlay {...props} className={overlayStyles}>
-      <RACModal {...props} className={modalStyles} />
+    <ModalOverlay {...rest} className={overlayStyles}>
+      <RACModal className={modalStyles}>{children}</RACModal>
     </ModalOverlay>
   );
 }

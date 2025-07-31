@@ -56,4 +56,12 @@ describe("#getVariantKey", () => {
       "role/edit/space-ui",
     );
   });
+
+  it("handles variant keys with modes", async () => {
+    expect(getVariantKey("role/edit/space-ui mode-[big test].png")).toBe(
+      "role/edit/space-ui",
+    );
+    expect(getVariantKey("space-ui mode-[another_test].png")).toBe("space-ui");
+    expect(getVariantKey("another/path mode-[wtf].png")).toBe("another/path");
+  });
 });

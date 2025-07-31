@@ -87,7 +87,7 @@ export function BrowserIndicatorLink(
   const chipLink = (
     <ChipLink
       {...chipProps}
-      className="shrink-0"
+      className="shrink-0 cursor-default"
       scale="xs"
       icon={<BrowserIcon browser={props.browser} {...iconProps} />}
     />

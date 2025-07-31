@@ -12,6 +12,7 @@ const Icons: Record<string, string> = {
   cypress: cypressIcon,
   puppeteer: puppeteerIcon,
   "@storybook/test-runner": storybookIcon,
+  "@storybook/addon-vitest": storybookIcon,
 };
 
 export function AutomationLibraryIndicator({

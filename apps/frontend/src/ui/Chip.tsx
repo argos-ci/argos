@@ -133,7 +133,7 @@ function useChip<
       children: (
         <>
           {(() => {
-            const iconClassName = "size-[1em] shrink-0";
+            const iconClassName = "size-[1em] my-[calc((1lh-1em)/2)] shrink-0";
             if (isValidElement(icon)) {
               return cloneElement(icon, { className: iconClassName });
             }
@@ -143,7 +143,7 @@ function useChip<
             }
             return null;
           })()}
-          <span className="flex-1 truncate">{children}</span>
+          <span className="flex-1 truncate empty:hidden">{children}</span>
         </>
       ),
       ...rest,
