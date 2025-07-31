@@ -27,19 +27,34 @@ function useEvaluationToggle(props: {
     diffId,
     diffGroup,
   });
-  const expectedStatus = useRef<EvaluationStatus | null>(null);
+  const expectedRef = useRef<{
+    status: EvaluationStatus;
+    diffId: string;
+  } | null>(null);
   useEffect(() => {
-    if (status === expectedStatus.current) {
-      expectedStatus.current = null;
+    if (expectedRef.current && expectedRef.current.diffId !== diffId) {
+      expectedRef.current = null;
+    }
+  }, [diffId]);
+  useEffect(() => {
+    if (
+      expectedRef.current &&
+      expectedRef.current.diffId === diffId &&
+      expectedRef.current.status === status
+    ) {
       acknowledgeMarkedDiff();
+    }
+  }, [status, diffId, acknowledgeMarkedDiff]);
+  const toggle = useEventCallback(() => {
+    // Prevent multiple rapid clicks by ensuring that the function does not execute
+    // if a state transition is already in progress. This acts as a debouncing mechanism.
+    if (expectedRef.current) {
       return;
     }
-  }, [status, acknowledgeMarkedDiff]);
-  const toggle = useEventCallback(() => {
     const nextStatus =
       status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending;
     setStatus(nextStatus);
-    expectedStatus.current = nextStatus;
+    expectedRef.current = { status: nextStatus, diffId };
   });
   const isActive = status === target;
   return [isActive, toggle] as const;

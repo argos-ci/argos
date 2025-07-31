@@ -80,7 +80,7 @@ function BuildReviewDialog(props: {
   const { project, build, onClose } = props;
   const summary = useBuildReviewSummary();
   invariant(summary, "BuildReviewDialog requires a summary");
-  if (summary.pending.length === 0 && summary.rejected.length === 0) {
+  if (summary.rejected.length === 0 && summary.pending.length === 0) {
     return <FinishReviewAcceptedDialog build={build} />;
   }
   return (

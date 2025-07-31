@@ -184,6 +184,9 @@
 
   --animate-bounce-down: bounce-down 1s infinite;
 
+  --z-index-hover-card: 800;
+  --z-index-dialog: 900;
+
   @keyframes bounce-down {
     0%,
     100% {

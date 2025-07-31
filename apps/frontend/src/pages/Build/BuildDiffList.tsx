@@ -565,9 +565,11 @@ function DiffTooltip(props: {
       placement="right top"
       offset={8}
       className={(props) =>
-        clsx("pointer-events-none w-60", getTooltipAnimationClassName(props))
+        clsx(
+          "z-hover-card pointer-events-none w-60",
+          getTooltipAnimationClassName(props),
+        )
       }
-      style={{ zIndex: 900 }}
     >
       <StatusDiffCard isActive={false} status={props.status}>
         <DiffImage diff={diff} config={DIFF_IMAGE_CONFIG} />
