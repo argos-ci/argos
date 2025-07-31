@@ -106,7 +106,11 @@ const strategy = {
       throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
     }
 
-    const isRunInProgress = githubRun.data.status === "in_progress";
+    const isRunInProgress =
+      githubRun.data.status === "in_progress" ||
+      // For some reasons GitHub sometimes consider the job "queued"
+      // It is not "unsafe" to allow this.
+      githubRun.data.status === "queued";
 
     if (!isRunInProgress) {
       throw boom(
