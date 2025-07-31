@@ -32,7 +32,7 @@ function useColorSchemeIndicator<
     chipProps: {
       icon: details.icon,
       scale: "xs",
-      className: clsx("font-mono", className),
+      className: clsx("font-mono cursor-default", className),
       children: null,
       ...rest,
     },

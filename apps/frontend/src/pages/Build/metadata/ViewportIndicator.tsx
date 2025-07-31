@@ -36,7 +36,7 @@ function useViewportIndicator<
     chipProps: {
       icon: getViewportIcon(viewport),
       scale: "xs",
-      className: clsx("font-mono", className),
+      className: clsx("font-mono cursor-default", className),
       children: viewport.width,
       ...rest,
     },
