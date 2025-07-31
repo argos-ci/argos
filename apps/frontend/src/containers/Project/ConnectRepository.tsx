@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { invariant } from "@apollo/client/utilities/globals";
 import { assertNever } from "@argos/util/assertNever";
 import { MarkGithubIcon } from "@primer/octicons-react";
+import { ErrorBoundary } from "@sentry/react";
 import { useDebounce } from "use-debounce";
 
 import { config } from "@/config";
@@ -10,6 +11,7 @@ import { GithubRepositoryList } from "@/containers/GithubRepositoryList";
 import { GitlabNamespacesSelect } from "@/containers/GitlabNamespacesSelect";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, GitHubAppType } from "@/gql/graphql";
+import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import {
   Button,
   ButtonIcon,
@@ -118,16 +120,28 @@ function GithubInstallations(props: GithubInstallationsProps) {
         app={props.app}
         accountId={props.accountId}
       />
-      <GithubRepositoryList
-        installationId={installationId}
-        disabled={props.disabled}
-        onSelectRepository={(repo) =>
-          props.onSelectRepository({ repo, installationId })
+      <ErrorBoundary
+        fallback={
+          <Alert>
+            <AlertTitle>Error while loading list</AlertTitle>
+            <AlertText>
+              An error occurred while loading the list of the repositories, if
+              the issue persists, please try again.
+            </AlertText>
+          </Alert>
         }
-        connectButtonLabel={props.connectButtonLabel}
-        app={props.app}
-        accountId={props.accountId}
-      />
+      >
+        <GithubRepositoryList
+          installationId={installationId}
+          disabled={props.disabled}
+          onSelectRepository={(repo) =>
+            props.onSelectRepository({ repo, installationId })
+          }
+          connectButtonLabel={props.connectButtonLabel}
+          app={props.app}
+          accountId={props.accountId}
+        />
+      </ErrorBoundary>
     </div>
   );
 }
