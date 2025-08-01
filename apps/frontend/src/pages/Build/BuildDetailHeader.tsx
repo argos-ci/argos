@@ -1,7 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { useFeature } from "@bucketco/react-sdk";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -142,8 +141,6 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
-  const ignoreChangeFeature = useFeature("changes-ignore");
-
   return (
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -176,9 +173,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           )}
         </div>
         <BuildDiffDetailToolbar diff={diff}>
-          {ignoreChangeFeature.isEnabled ? (
-            <BuildDetailIgnoreButton diff={diff} />
-          ) : null}
+          <BuildDetailIgnoreButton diff={diff} />
           <TrackButtons diff={diff} disabled={!canBeReviewed} />
         </BuildDiffDetailToolbar>
       </div>

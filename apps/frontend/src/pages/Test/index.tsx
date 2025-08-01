@@ -2,7 +2,6 @@ import type { ComponentProps } from "react";
 import { useSuspenseQuery } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { useFeature } from "@bucketco/react-sdk";
 import clsx from "clsx";
 import {
   CircleCheckIcon,
@@ -613,8 +612,6 @@ function BuildHeader(props: {
     }
   };
 
-  const ignoreChangeFeature = useFeature("changes-ignore");
-
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 has-[[data-meta]:empty]:items-center">
       <div className="flex shrink-0 gap-1">
@@ -677,9 +674,7 @@ function BuildHeader(props: {
         </div>
       </div>
       <BuildDiffDetailToolbar diff={change.stats.lastSeenDiff}>
-        {ignoreChangeFeature.isEnabled ? (
-          <IgnoreButton diff={change.stats.lastSeenDiff} />
-        ) : null}
+        <IgnoreButton diff={change.stats.lastSeenDiff} />
       </BuildDiffDetailToolbar>
     </div>
   );
