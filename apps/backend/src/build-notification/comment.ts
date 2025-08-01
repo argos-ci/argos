@@ -68,7 +68,10 @@ export async function getCommentBody(props: {
       const stats = build.stats ? getStatsMessage(build.stats) : null;
 
       const label = getBuildLabel(build.type, status);
-      const review = status === "changes-detected" ? ` ([Review](${url}))` : "";
+      const review =
+        status === "changes-detected" && build.type !== "reference"
+          ? ` ([Review](${url}))`
+          : "";
       const name = getBuildName({
         build,
         project: hasMultipleProjects ? build.project : null,
