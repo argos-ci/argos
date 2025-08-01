@@ -46,6 +46,10 @@ const RequestBodySchema = z.object({
   argosSdk: z.string().nullable().optional(),
   runId: z.string().nullable().optional(),
   runAttempt: z.number().int().min(1).nullable().optional(),
+  repository: z.string().nullable().optional().meta({
+    description: "The repository name that is at the origin of the build.",
+    example: "argos-ci/argos",
+  }),
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
@@ -261,5 +265,6 @@ async function createBuildFromRequest(ctx: BuildContext) {
     runAttempt: body.runAttempt ?? null,
     ciProvider: body.ciProvider ?? null,
     argosSdk: body.argosSdk ?? null,
+    repository: body.repository ?? null,
   });
 }

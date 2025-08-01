@@ -65,6 +65,7 @@ export async function createBuild(params: {
   argosSdk: string | null;
   runId: string | null;
   runAttempt: number | null;
+  repository: string | null;
 }) {
   const account = await params.project.$relatedQuery("account");
   invariant(account, "Account should be fetched");
@@ -189,6 +190,7 @@ export async function createBuild(params: {
           runId: params.runId,
           runAttempt: params.runAttempt,
           partial: isPartial,
+          repository: params.repository ?? null,
         });
 
         return build;

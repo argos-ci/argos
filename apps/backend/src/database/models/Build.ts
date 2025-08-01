@@ -100,6 +100,7 @@ export class Build extends Model {
               { type: "string", enum: ["reference", "check", "orphan"] },
             ],
           },
+          repository: { type: ["string", "null"] },
           prNumber: { type: ["integer", "null"] },
           prHeadCommit: { type: ["string", "null"] },
           githubPullRequestId: { type: ["string", "null"] },
@@ -181,6 +182,11 @@ export class Build extends Model {
   batchCount!: number | null;
   totalBatch!: number | null;
   type!: BuildType | null;
+  /**
+   * The repository name that is at the origin of the build.
+   * @example "argos-ci/argos"
+   */
+  repository!: string | null;
   prNumber!: number | null;
   prHeadCommit!: string | null;
   githubPullRequestId!: string | null;

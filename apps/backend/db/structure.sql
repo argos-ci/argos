@@ -456,6 +456,7 @@ CREATE TABLE public.builds (
     "parentCommits" jsonb,
     conclusion text,
     stats jsonb,
+    repository character varying(255),
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
@@ -3586,3 +3587,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250622134309_ignored-files.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250629170855_screenshot-diffs-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250705083915_deleted-users.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250801200028_build-repository.js', 1, NOW());
