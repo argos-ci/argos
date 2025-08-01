@@ -16,6 +16,7 @@ import { Layout } from "@/containers/Layout";
 import { FeatureFlagProvider } from "./containers/FeatureFlag";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
+import { Loader } from "./ui/Loader";
 
 declare module "react-aria-components" {
   interface RouterConfig {
@@ -97,7 +98,11 @@ function RootErrorBoundary() {
 }
 
 function HydrateFallback() {
-  return null;
+  return (
+    <div className="text-primary flex h-full flex-1 items-center justify-center">
+      <Loader />
+    </div>
+  );
 }
 
 export const router: ReturnType<typeof createBrowserRouter> =
