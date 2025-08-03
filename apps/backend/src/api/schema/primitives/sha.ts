@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { SHA1_REGEX, SHA256_REGEX } from "@/web/constants";
+import { SHA1_REGEX, SHA256_REGEX } from "@/util/validation";
 
 export const Sha1HashSchema = z.string().regex(SHA1_REGEX).meta({
   description: "SHA1 hash",

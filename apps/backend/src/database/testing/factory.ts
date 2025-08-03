@@ -109,6 +109,7 @@ export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
   branch: "master",
   projectId: Project.associate("id"),
   screenshotCount: 0,
+  storybookScreenshotCount: 0,
   complete: true,
   valid: true,
 }));

@@ -1,6 +1,6 @@
 import type { RelationMappings } from "objection";
 
-import { SHA1_REGEX } from "@/web/constants.js";
+import { SHA1_REGEX } from "@/util/validation";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
@@ -22,7 +22,12 @@ export class ScreenshotBucket extends Model {
           commit: { type: "string", pattern: SHA1_REGEX.source },
           branch: { type: "string" },
           projectId: { type: "string" },
-          screenshotCount: { type: "integer" },
+          screenshotCount: {
+            anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+          },
+          storybookScreenshotCount: {
+            anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+          },
           mode: { type: "string", enum: ["ci", "monitoring"] },
           complete: { type: "boolean" },
           valid: { type: "boolean" },
@@ -52,9 +57,14 @@ export class ScreenshotBucket extends Model {
   projectId!: string;
 
   /**
-   * The number of screenshots in the bucket.
+   * The number of screenshots in the bucket (including Storybook screenshots).
    */
   screenshotCount!: number;
+
+  /**
+   * The number of Storybook screenshots in the bucket.
+   */
+  storybookScreenshotCount!: number;
 
   /**
    * The mode of the build.

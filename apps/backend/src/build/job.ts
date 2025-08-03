@@ -51,12 +51,14 @@ async function updateUsage(project: Project) {
   }
 
   return lock.acquire(["updateUsage", account.id], async () => {
-    const [totalScreenshots, spendLimitThreshold] = await Promise.all([
-      manager.getCurrentPeriodScreenshots(),
-      getSpendLimitThreshold({ account, comparePreviousUsage: true }),
-    ]);
+    const [screenshots, includedScreenshots, spendLimitThreshold] =
+      await Promise.all([
+        manager.getCurrentPeriodScreenshots(),
+        manager.getIncludedScreenshots(),
+        getSpendLimitThreshold({ account, comparePreviousUsage: true }),
+      ]);
 
-    await updateStripeUsage({ account, totalScreenshots });
+    await updateStripeUsage({ account, screenshots, includedScreenshots });
 
     if (spendLimitThreshold !== null) {
       const ownerIds = await account.$getOwnerIds();

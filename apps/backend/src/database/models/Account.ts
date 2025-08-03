@@ -35,7 +35,10 @@ type AccountSubscriptionManager = {
   getCurrentPeriodScreenshots(options?: {
     to?: "previousUsage";
     projectId?: string;
-  }): Promise<number>;
+  }): Promise<{
+    all: number;
+    storybook: number;
+  }>;
   getAdditionalScreenshotCost(options?: {
     to?: "previousUsage";
   }): Promise<number>;
@@ -333,7 +336,7 @@ export class Account extends Model {
     });
 
     const getCurrentPeriodConsumptionRatio = memoize(async () => {
-      const [screenshotsCount, includedScreenshots] = await Promise.all([
+      const [screenshots, includedScreenshots] = await Promise.all([
         getCurrentPeriodScreenshots(),
         getIncludedScreenshots(),
       ]);
@@ -342,7 +345,7 @@ export class Account extends Model {
         return 1;
       }
 
-      return screenshotsCount / includedScreenshots;
+      return screenshots.all / includedScreenshots;
     });
 
     const getSubscriptionStatus = memoize(async () => {
@@ -452,7 +455,7 @@ export class Account extends Model {
 
         const overage = Math.max(
           0,
-          periodScreenshots - subscription.includedScreenshots,
+          periodScreenshots.all - subscription.includedScreenshots,
         );
         return overage * subscription.additionalScreenshotPrice;
       });
@@ -480,9 +483,13 @@ export class Account extends Model {
     options?: {
       projectId?: string | undefined;
     },
-  ): Promise<number> {
+  ): Promise<{
+    all: number;
+    storybook: number;
+  }> {
     const query = ScreenshotBucket.query()
-      .sum("screenshot_buckets.screenshotCount as total")
+      .sum("screenshot_buckets.screenshotCount as all")
+      .sum("screenshot_buckets.storybookScreenshotCount as storybook")
       .leftJoinRelated("project")
       .where("screenshot_buckets.createdAt", ">=", from.toISOString())
       .where("project.accountId", this.id)
@@ -496,8 +503,14 @@ export class Account extends Model {
       query.where("project.id", options.projectId);
     }
 
-    const result = (await query) as unknown as { total: string | null };
-    return result.total ? Number(result.total) : 0;
+    const result = (await query) as unknown as {
+      all: string | null;
+      storybook: string | null;
+    };
+    return {
+      all: result.all ? Number(result.all) : 0,
+      storybook: result.storybook ? Number(result.storybook) : 0,
+    };
   }
 
   static async getPermissions(

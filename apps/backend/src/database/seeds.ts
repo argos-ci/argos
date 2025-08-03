@@ -207,6 +207,7 @@ export async function seed() {
     complete: true,
     valid: true,
     screenshotCount: 0,
+    storybookScreenshotCount: 0,
   };
 
   const screenshotBuckets = await ScreenshotBucket.query().insertAndFetch([

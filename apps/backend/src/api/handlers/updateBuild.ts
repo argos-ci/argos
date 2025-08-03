@@ -198,7 +198,7 @@ async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
   await transaction(async (trx) => {
     const metadata = ctx.body.metadata ?? null;
-    const [screenshotCount] = await Promise.all([
+    const [screenshots] = await Promise.all([
       insertFilesAndScreenshots({
         screenshots: body.screenshots,
         build,
@@ -210,7 +210,8 @@ async function handleUpdateSingle(ctx: Context) {
     await build.compareScreenshotBucket!.$query(trx).patchAndFetch({
       complete: true,
       valid: checkIsBucketValidFromMetadata(metadata),
-      screenshotCount,
+      screenshotCount: screenshots.all,
+      storybookScreenshotCount: screenshots.storybook,
     });
   });
   await buildJob.push(build.id);
