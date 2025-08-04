@@ -56,3 +56,5 @@ export const down = async (knex) => {
     table.dropColumn("storybookScreenshotCount");
   });
 };
+
+export const config = { transaction: false };
