@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { ScreenshotMetadataSchema } from "@/database/schemas/index.js";
-import { SHA256_REGEX } from "@/web/constants.js";
+import { SHA256_REGEX } from "@/util/validation";
 
 export const ScreenshotInputSchema = z
   .object({

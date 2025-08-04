@@ -600,7 +600,10 @@ export const resolvers: IResolvers = {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
       const manager = account.$getSubscriptionManager();
-      return manager.getCurrentPeriodScreenshots({ projectId: project.id });
+      const screenshots = await manager.getCurrentPeriodScreenshots({
+        projectId: project.id,
+      });
+      return screenshots.all;
     },
     totalScreenshots: async (project) => {
       return Screenshot.query()

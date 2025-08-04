@@ -117,45 +117,53 @@ describe("Account", () => {
   });
 
   describe("#getCurrentPeriodScreenshots", () => {
-    it("count screenshots used this month", async () => {
+    it("counts screenshots used this month", async () => {
       await bucket1.$query().patch({
         complete: true,
         screenshotCount: 10,
+        storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
       const consumption = await manager.getCurrentPeriodScreenshots();
-      expect(consumption).toBe(10);
+      expect(consumption.all).toBe(10);
+      expect(consumption.storybook).toBe(4);
     });
 
-    it("count screenshots used on other account's repository", async () => {
+    it("counts screenshots used on other account's repository", async () => {
       await bucket2.$query().patch({
         complete: true,
         screenshotCount: 10,
+        storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
       const consumption = await manager.getCurrentPeriodScreenshots();
-      expect(consumption).toBe(10);
+      expect(consumption.all).toBe(10);
+      expect(consumption.storybook).toBe(4);
     });
 
-    it("ignore old screenshots", async () => {
+    it("ignores old screenshots", async () => {
       await bucket2.$query().patch({
         createdAt: new Date(2012, 1, 1).toISOString(),
         complete: true,
         screenshotCount: 10,
+        storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
       const consumption = await manager.getCurrentPeriodScreenshots();
-      expect(consumption).toBe(0);
+      expect(consumption.all).toBe(0);
+      expect(consumption.storybook).toBe(0);
     });
 
-    it("ignore screenshots of other account", async () => {
+    it("ignores screenshots of other account", async () => {
       await bucketOtherOrga.$query().patch({
         complete: true,
         screenshotCount: 10,
+        storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
       const consumption = await manager.getCurrentPeriodScreenshots();
-      expect(consumption).toBe(0);
+      expect(consumption.all).toBe(0);
+      expect(consumption.storybook).toBe(0);
     });
   });
 

@@ -371,9 +371,10 @@ function checkIsUsageBasedSubscriptionIncomplete(
 
 export async function updateStripeUsage(input: {
   account: Account;
-  totalScreenshots: number;
+  screenshots: { all: number; storybook: number };
+  includedScreenshots: number;
 }): Promise<void> {
-  const { account, totalScreenshots } = input;
+  const { account, screenshots, includedScreenshots } = input;
   const manager = account.$getSubscriptionManager();
   const subscription = await manager.getActiveSubscription();
 
@@ -415,18 +416,43 @@ export async function updateStripeUsage(input: {
     const stripeCustomerId = stripeSubscription.customer;
     invariant(typeof stripeCustomerId === "string");
 
+    const nonStorybookScreenshots = screenshots.all - screenshots.storybook;
+    const metered = {
+      screenshots: nonStorybookScreenshots,
+      storybook: screenshots.storybook,
+    };
+
+    // If we don't match the number of included screenshots with
+    // non-storybook screenshots, we fill the remaining with storybook screenshots.
+    if (metered.screenshots < includedScreenshots) {
+      const includedStorybookScreenshots = Math.min(
+        screenshots.storybook,
+        includedScreenshots - metered.screenshots,
+      );
+      metered.screenshots += includedStorybookScreenshots;
+      metered.storybook -= includedStorybookScreenshots;
+    }
+
     await Promise.all([
       stripe.billing.meterEvents.create({
         event_name: "screenshots",
         timestamp,
         payload: {
           stripe_customer_id: stripeCustomerId,
-          value: String(totalScreenshots),
+          value: String(metered.screenshots),
+        },
+      }),
+      stripe.billing.meterEvents.create({
+        event_name: "storybook_screenshots",
+        timestamp,
+        payload: {
+          stripe_customer_id: stripeCustomerId,
+          value: String(metered.storybook),
         },
       }),
       await stripe.subscriptionItems.createUsageRecord(item.id, {
         action: "set",
-        quantity: totalScreenshots,
+        quantity: screenshots.all,
         timestamp,
       }),
     ]);

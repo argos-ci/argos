@@ -1292,7 +1292,9 @@ CREATE TABLE public.screenshot_buckets (
     "screenshotCount" integer,
     mode text DEFAULT 'ci'::text NOT NULL,
     valid boolean NOT NULL,
+    "storybookScreenshotCount" integer,
     CONSTRAINT chk_complete_true_screenshotcount_not_null CHECK (((complete = false) OR ("screenshotCount" IS NOT NULL))),
+    CONSTRAINT chk_complete_true_storybookscreenshotcount_not_null CHECK (((complete = false) OR ("storybookScreenshotCount" IS NOT NULL))),
     CONSTRAINT screenshot_buckets_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text])))
 );
 
@@ -3586,3 +3588,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250622134309_ignored-files.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250629170855_screenshot-diffs-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250705083915_deleted-users.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250803194148_storybook-count.js', 1, NOW());

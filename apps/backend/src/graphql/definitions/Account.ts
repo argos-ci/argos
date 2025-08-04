@@ -307,7 +307,8 @@ export const resolvers: IResolvers = {
     },
     currentPeriodScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
-      return manager.getCurrentPeriodScreenshots();
+      const screenshots = await manager.getCurrentPeriodScreenshots();
+      return screenshots.all;
     },
     additionalScreenshotsCost: async (account) => {
       const manager = account.$getSubscriptionManager();

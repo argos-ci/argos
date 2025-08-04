@@ -1,7 +1,8 @@
-import { TransactionOrKnex } from "objection";
+import { ref, TransactionOrKnex } from "objection";
 
 import { Build, BuildShard, Screenshot } from "@/database/models/index.js";
 import { BuildMetadata } from "@/database/schemas";
+import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
 /**
  * Check if the bucket is valid from the metadata.
@@ -75,15 +76,22 @@ function aggregateMetadata(allMetatada: (BuildMetadata | null)[]) {
 export async function finalizeBuild(input: {
   trx?: TransactionOrKnex;
   build: Build;
-  screenshotCount?: number;
 }) {
   const { trx, build } = input;
-  const [screenshotCount, shards] = await Promise.all([
-    Screenshot.query(trx)
-      .where("screenshotBucketId", build.compareScreenshotBucketId)
-      .resultSize(),
-    BuildShard.query(trx).select("metadata").where("buildId", build.id),
-  ]);
+  const countQuery = Screenshot.query(trx).where(
+    "screenshotBucketId",
+    build.compareScreenshotBucketId,
+  );
+  const [screenshotCount, storybookScreenshotCount, shards] = await Promise.all(
+    [
+      countQuery.resultSize(),
+      countQuery
+        .clone()
+        .where(ref("metadata:sdk.name").castText(), ARGOS_STORYBOOK_SDK_NAME)
+        .resultSize(),
+      BuildShard.query(trx).select("metadata").where("buildId", build.id),
+    ],
+  );
 
   const valid =
     shards.length > 0
@@ -99,8 +107,11 @@ export async function finalizeBuild(input: {
     metadata !== build.metadata
       ? build.$clone().$query(trx).patch({ metadata })
       : null,
-    build
-      .$relatedQuery("compareScreenshotBucket", trx)
-      .patch({ complete: true, screenshotCount, valid }),
+    build.$relatedQuery("compareScreenshotBucket", trx).patch({
+      complete: true,
+      screenshotCount,
+      storybookScreenshotCount,
+      valid,
+    }),
   ]);
 }

@@ -11,7 +11,7 @@ import type {
 import { z } from "zod";
 
 import config from "@/config/index.js";
-import { SHA1_REGEX } from "@/web/constants.js";
+import { SHA1_REGEX } from "@/util/validation";
 
 import {
   BuildMetadata,

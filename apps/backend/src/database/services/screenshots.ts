@@ -10,6 +10,7 @@ import {
   Screenshot,
   Test,
 } from "@/database/models/index.js";
+import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk.js";
 
 import { ScreenshotMetadata } from "../schemas/ScreenshotMetadata.js";
 import { getUnknownFileKeys } from "./file.js";
@@ -65,11 +66,14 @@ type InsertFilesAndScreenshotsParams = {
  */
 export async function insertFilesAndScreenshots(
   params: InsertFilesAndScreenshotsParams,
-): Promise<number> {
+): Promise<{
+  all: number;
+  storybook: number;
+}> {
   const screenshots = params.screenshots;
 
   if (screenshots.length === 0) {
-    return 0;
+    return { all: 0, storybook: 0 };
   }
 
   const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
@@ -84,7 +88,7 @@ export async function insertFilesAndScreenshots(
 
   return await transaction(params.trx, async (trx) => {
     if (params.screenshots.length === 0) {
-      return 0;
+      return { all: 0, storybook: 0 };
     }
 
     if (unknownKeys.length > 0) {
@@ -176,6 +180,12 @@ export async function insertFilesAndScreenshots(
       }),
     );
 
-    return params.screenshots.length;
+    return {
+      all: params.screenshots.length,
+      storybook: params.screenshots.filter(
+        (screenshot) =>
+          screenshot.metadata?.sdk.name === ARGOS_STORYBOOK_SDK_NAME,
+      ).length,
+    };
   });
 }
