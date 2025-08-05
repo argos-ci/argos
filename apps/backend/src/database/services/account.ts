@@ -339,12 +339,8 @@ async function getOrCreateUserAccountFromThirdParty<
   const potentialEmails = getPotentialEmails(model);
   const existingUsers = await User.query()
     .withGraphFetched("account")
-    .withGraphJoined("account")
     .where(thirdPartyKey, model.id)
-    .orWhereIn("email", potentialEmails)
-    .orWhere((qb) => {
-      qb.where("account.slug", getSlug(model)).whereNotNull("deletedAt");
-    });
+    .orWhereIn("email", potentialEmails);
 
   // If we match multiple accounts, it means that another
   // user has the same email or id
