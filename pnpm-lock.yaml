@@ -293,8 +293,8 @@ importers:
         specifier: ^17.7.0
         version: 17.7.0
       tmp:
-        specifier: ^0.2.3
-        version: 0.2.3
+        specifier: ^0.2.4
+        version: 0.2.4
       undici:
         specifier: ^7.12.0
         version: 7.12.0
@@ -7608,8 +7608,8 @@ packages:
     resolution: {integrity: sha512-jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==}
     engines: {node: '>=0.6.0'}
 
-  tmp@0.2.3:
-    resolution: {integrity: sha512-nZD7m9iCPC5g0pYmcaxogYKggSfLsdxl8of3Q/oIbqCqLLIO9IAF0GWjX1z9NZRHPiXv8Wex4yDCaZsgEw0Y8w==}
+  tmp@0.2.4:
+    resolution: {integrity: sha512-UdiSoX6ypifLmrfQ/XfiawN6hkjSBpCjhKxxZcWlUUmoXLaCKQU0bx4HF/tdDK2uzRuchf1txGvrWBzYREssoQ==}
     engines: {node: '>=14.14'}
 
   to-buffer@1.2.1:
@@ -8270,7 +8270,7 @@ snapshots:
       debug: 4.4.1
       fast-glob: 3.3.3
       sharp: 0.33.5
-      tmp: 0.2.3
+      tmp: 0.2.4
     transitivePeerDependencies:
       - supports-color
 
@@ -16646,7 +16646,7 @@ snapshots:
     dependencies:
       os-tmpdir: 1.0.2
 
-  tmp@0.2.3: {}
+  tmp@0.2.4: {}
 
   to-buffer@1.2.1:
     dependencies:
