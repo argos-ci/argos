@@ -81,5 +81,8 @@
       "rollup": "4.44.0",
       "undici": "$undici"
     }
+  },
+  "volta": {
+    "node": "24.5.0"
   }
 }
