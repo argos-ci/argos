@@ -977,6 +977,11 @@ export type IProjectBuildArgs = {
 };
 
 
+export type IProjectBuildNamesArgs = {
+  recentOnly?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
 export type IProjectBuildsArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   filters?: InputMaybe<IBuildsFilterInput>;
@@ -2430,7 +2435,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   autoApprovedBranchGlob?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   automationRules?: Resolver<IResolversTypes['AutomationRuleConnection'], ParentType, ContextType, RequireFields<IProjectAutomationRulesArgs, 'after' | 'first'>>;
   build?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType, RequireFields<IProjectBuildArgs, 'number'>>;
-  buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
+  buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType, RequireFields<IProjectBuildNamesArgs, 'recentOnly'>>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
   contributors?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IProjectContributorsArgs, 'after' | 'first'>>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;

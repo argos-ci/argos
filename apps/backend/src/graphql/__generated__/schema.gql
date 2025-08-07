@@ -736,7 +736,7 @@ type Project implements Node {
   build(number: Int!): Build
 
   """Build names"""
-  buildNames: [String!]!
+  buildNames(recentOnly: Boolean = false): [String!]!
 
   """Builds associated to the project"""
   builds(after: Int = 0, filters: BuildsFilterInput, first: Int = 30): BuildConnection!

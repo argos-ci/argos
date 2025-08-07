@@ -49,7 +49,7 @@ const ProjectQuery = graphql(`
         id
         url
       }
-      buildNames
+      buildNames(recentOnly: true)
       ...GettingStarted_Project
     }
   }

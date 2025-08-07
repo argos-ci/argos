@@ -133,7 +133,7 @@ export const typeDefs = gql`
     "Summary check"
     summaryCheck: SummaryCheck!
     "Build names"
-    buildNames: [String!]!
+    buildNames(recentOnly: Boolean = false): [String!]!
     "Contributors"
     contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
     "Automation rules"
@@ -616,11 +616,23 @@ export const resolvers: IResolvers = {
       invariant(account, "Account not found");
       return `${account.slug}/${project.name}`;
     },
-    buildNames: async (project) => {
-      const builds = await Build.query()
+    buildNames: async (project, args) => {
+      const { recentOnly } = args;
+      const query = Build.query()
         .where("projectId", project.id)
         .select("name")
         .distinct("name");
+      if (recentOnly) {
+        // Get builds from the last month
+        const now = new Date();
+        const lastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          now.getDate(),
+        );
+        query.where("createdAt", ">=", lastMonth);
+      }
+      const builds = await query;
       return builds.map((build) => build.name);
     },
     contributors: async (project, args, ctx) => {
