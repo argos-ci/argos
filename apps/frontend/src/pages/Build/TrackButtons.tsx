@@ -78,7 +78,6 @@ function AcceptButton(props: {
     <HotkeyTooltip
       description={isActive ? "Remove mark" : hotkey.description}
       keys={hotkey.displayKeys}
-      keysEnabled={!isActive}
       disabled={props.disabled}
     >
       <IconButton
@@ -111,7 +110,6 @@ function RejectButton(props: {
     <HotkeyTooltip
       description={isActive ? "Remove mark" : hotkey.description}
       keys={hotkey.displayKeys}
-      keysEnabled={!isActive}
       disabled={props.disabled}
     >
       <IconButton

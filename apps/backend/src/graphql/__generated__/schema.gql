@@ -306,14 +306,8 @@ type BuildParallel {
 type BuildReview implements Node {
   date: DateTime!
   id: ID!
-  state: BuildReviewState!
+  state: ReviewState!
   user: User
-}
-
-enum BuildReviewState {
-  APPROVED
-  PENDING
-  REJECTED
 }
 
 type BuildStats {
@@ -666,6 +660,7 @@ type Mutation {
 
   """Remove a user from a team"""
   removeUserFromTeam(input: RemoveUserFromTeamInput!): RemoveUserFromTeamPayload!
+  reviewBuild(input: ReviewBuildInput!): Build!
 
   """Set team default user level"""
   setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
@@ -897,6 +892,17 @@ interface Repository implements Node {
   url: String!
 }
 
+input ReviewBuildInput {
+  buildId: ID!
+  screenshotDiffReviews: [ScreenshotDiffReviewInput!]!
+  state: ReviewState!
+}
+
+enum ReviewState {
+  APPROVED
+  REJECTED
+}
+
 type Screenshot implements Node {
   height: Int
   id: ID!
@@ -944,6 +950,11 @@ type ScreenshotDiff implements Node {
 type ScreenshotDiffConnection implements Connection {
   edges: [ScreenshotDiff!]!
   pageInfo: PageInfo!
+}
+
+input ScreenshotDiffReviewInput {
+  screenshotDiffId: ID!
+  state: ReviewState!
 }
 
 enum ScreenshotDiffStatus {
