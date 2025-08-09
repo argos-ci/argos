@@ -358,7 +358,7 @@ CREATE TABLE public.build_reviews (
     "userId" bigint,
     "buildId" bigint NOT NULL,
     state text NOT NULL,
-    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))
+    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text])))
 );
 
 
@@ -1320,6 +1320,41 @@ ALTER SEQUENCE public.screenshot_buckets_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.screenshot_buckets_id_seq OWNED BY public.screenshot_buckets.id;
+
+
+--
+-- Name: screenshot_diff_reviews; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.screenshot_diff_reviews (
+    "buildReviewId" bigint NOT NULL,
+    "screenshotDiffId" bigint NOT NULL,
+    state text NOT NULL,
+    CONSTRAINT screenshot_diff_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text])))
+);
+
+
+ALTER TABLE public.screenshot_diff_reviews OWNER TO postgres;
+
+--
+-- Name: COLUMN screenshot_diff_reviews."buildReviewId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.screenshot_diff_reviews."buildReviewId" IS 'Build review to which the screenshot diff review is related';
+
+
+--
+-- Name: COLUMN screenshot_diff_reviews."screenshotDiffId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.screenshot_diff_reviews."screenshotDiffId" IS 'Screenshot diff to which the review is related';
+
+
+--
+-- Name: COLUMN screenshot_diff_reviews.state; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.screenshot_diff_reviews.state IS 'State of the screenshot diff review';
 
 
 --
@@ -2310,6 +2345,14 @@ ALTER TABLE ONLY public.screenshot_buckets
 
 
 --
+-- Name: screenshot_diff_reviews screenshot_diff_reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshot_diff_reviews
+    ADD CONSTRAINT screenshot_diff_reviews_pkey PRIMARY KEY ("buildReviewId", "screenshotDiffId");
+
+
+--
 -- Name: screenshot_diffs screenshot_diffs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3250,6 +3293,22 @@ ALTER TABLE ONLY public.screenshot_buckets
 
 
 --
+-- Name: screenshot_diff_reviews screenshot_diff_reviews_buildreviewid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshot_diff_reviews
+    ADD CONSTRAINT screenshot_diff_reviews_buildreviewid_foreign FOREIGN KEY ("buildReviewId") REFERENCES public.build_reviews(id);
+
+
+--
+-- Name: screenshot_diff_reviews screenshot_diff_reviews_screenshotdiffid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.screenshot_diff_reviews
+    ADD CONSTRAINT screenshot_diff_reviews_screenshotdiffid_foreign FOREIGN KEY ("screenshotDiffId") REFERENCES public.screenshot_diffs(id);
+
+
+--
 -- Name: screenshot_diffs screenshot_diffs_basescreenshotid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3589,3 +3648,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025062
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250629170855_screenshot-diffs-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250705083915_deleted-users.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250803194148_storybook-count.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250808202617_screenshot-diff-review.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250808204525_build-review-state.js', 1, NOW());

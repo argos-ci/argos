@@ -2,7 +2,7 @@ import { createContext, memo, use, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { DocumentType, graphql } from "@/gql";
-import { ValidationStatus } from "@/gql/graphql";
+import { ReviewState } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { getGraphQLErrorMessage } from "@/ui/Form";
 import { Modal, ModalProps } from "@/ui/Modal";
 
-import { useSetValidationStatusMutation } from "./BuildReviewAction";
+import { useReviewBuildMutation } from "./BuildReviewAction";
 import { BuildReviewButton } from "./BuildReviewButton";
 import { useBuildReviewSummary } from "./BuildReviewState";
 
@@ -120,8 +120,7 @@ function FinishReviewAcceptedDialog(props: {
   build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
 }) {
   const { build } = props;
-  const [setValidationStatus, { loading, error }] =
-    useSetValidationStatusMutation(build);
+  const [reviewBuild, { loading, error }] = useReviewBuildMutation(build);
   const state = useOverlayTriggerState();
   return (
     <Dialog size="medium">
@@ -141,12 +140,7 @@ function FinishReviewAcceptedDialog(props: {
           variant="primary"
           autoFocus
           onPress={() => {
-            setValidationStatus({
-              variables: {
-                buildId: build.id,
-                validationStatus: ValidationStatus.Accepted,
-              },
-            }).catch(() => {});
+            reviewBuild(ReviewState.Approved).catch(() => {});
             state.close();
           }}
         >
