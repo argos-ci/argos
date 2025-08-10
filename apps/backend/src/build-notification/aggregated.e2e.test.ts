@@ -34,15 +34,6 @@ describe("#getAggregatedNotification", () => {
       expect(notification).toBeNull();
     });
 
-    it("returns null", async () => {
-      const notification = await getAggregatedNotification(
-        "58ca89145e1f072e45e112a6158d17a23f54602d",
-        false,
-        "auto",
-      );
-      expect(notification).toBeNull();
-    });
-
     it("returns a notification if config is `always`", async () => {
       const notification = await getAggregatedNotification(
         "58ca89145e1f072e45e112a6158d17a23f54602d",
@@ -113,7 +104,7 @@ describe("#getAggregatedNotification", () => {
     });
   });
 
-  describe("with multiple builds", () => {
+  describe("with multiple builds (2)", () => {
     beforeEach(async () => {
       const buckets = await factory.ScreenshotBucket.createMany(2, {
         commit: "58ca89145e1f072e45e112a6158d17a23f54602d",

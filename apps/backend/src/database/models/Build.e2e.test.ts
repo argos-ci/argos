@@ -215,9 +215,7 @@ describe("models/Build", () => {
         expect(await getBuildStatus(build)).toBe("error");
       });
     });
-  });
 
-  describe("#getStatuses", () => {
     it("should return ordered build statuses", async () => {
       const builds = await factory.Build.createMany(5, [
         { jobStatus: "pending" },

@@ -41,6 +41,7 @@ describe("bearerAuth", () => {
       .expect(400);
   });
 
+  // eslint-disable-next-line vitest/expect-expect
   it("puts bearerToken in req if everything good", async () => {
     await request(app)
       .get("/")

@@ -4,6 +4,7 @@ import { Screenshot } from "./Screenshot.js";
 
 describe("Screenshot", () => {
   describe("metadata validation", () => {
+    // eslint-disable-next-line vitest/expect-expect
     it("validates URL with placeholders `{{}}`", () => {
       Screenshot.fromJson({
         name: "X",
