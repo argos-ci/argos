@@ -685,8 +685,6 @@ export type Mutation = {
   setTeamDefaultUserLevel: Team;
   /** Set member level */
   setTeamMemberLevel: TeamMember;
-  /** Change the validationStatus on a build */
-  setValidationStatus: Build;
   /** Test automation rule by sending a test event */
   testAutomation: Scalars['Boolean']['output'];
   /** Transfer Project to another account */
@@ -831,12 +829,6 @@ export type MutationSetTeamDefaultUserLevelArgs = {
 
 export type MutationSetTeamMemberLevelArgs = {
   input: SetTeamMemberLevelInput;
-};
-
-
-export type MutationSetValidationStatusArgs = {
-  buildId: Scalars['ID']['input'];
-  validationStatus: ValidationStatus;
 };
 
 

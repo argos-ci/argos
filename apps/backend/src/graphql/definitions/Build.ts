@@ -2,9 +2,6 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { triggerAndRunAutomation } from "@/automation/index.js";
-import { AutomationEvents } from "@/automation/types/events.js";
-import { pushBuildNotification } from "@/build-notification/index.js";
 import {
   Build,
   BuildReview,
@@ -18,7 +15,6 @@ import {
   type IResolvers,
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -157,14 +153,6 @@ export const typeDefs = gql`
   type BuildConnection implements Connection {
     pageInfo: PageInfo!
     edges: [Build!]!
-  }
-
-  extend type Mutation {
-    "Change the validationStatus on a build"
-    setValidationStatus(
-      buildId: ID!
-      validationStatus: ValidationStatus!
-    ): Build!
   }
 `;
 
@@ -322,6 +310,7 @@ export const resolvers: IResolvers = {
       const previousApprovals = await ScreenshotDiff.query()
         .select("screenshot_diffs.id")
         .joinRelated("compareScreenshot")
+        .where("screenshot_diffs.buildId", build.id)
         .whereIn(
           "compareScreenshot.fileId",
           ScreenshotDiff.query()
@@ -358,62 +347,9 @@ export const resolvers: IResolvers = {
                     .limit(1),
                 ),
             ),
-        )
-        .where("screenshot_diffs.buildId", build.id);
+        );
 
       return previousApprovals.map((diff) => diff.id);
-    },
-  },
-  Mutation: {
-    setValidationStatus: async (_root, args, ctx) => {
-      const { auth } = ctx;
-      if (!auth) {
-        throw unauthenticated();
-      }
-
-      const { buildId, validationStatus } = args;
-
-      if (validationStatus !== "accepted" && validationStatus !== "rejected") {
-        throw badUserInput("validationStatus must be 'accepted' or 'rejected'");
-      }
-
-      const build = await Build.query()
-        .findById(buildId)
-        .withGraphFetched("project.account");
-
-      if (!build) {
-        throw notFound("Build not found");
-      }
-
-      invariant(build.project?.account);
-
-      const permissions = await build.project.$getPermissions(auth.user);
-
-      if (!permissions.includes("review")) {
-        throw forbidden("You cannot approve or reject this build");
-      }
-
-      const buildReview = await BuildReview.query().insert({
-        buildId,
-        userId: auth.user.id,
-        state: validationStatus === "accepted" ? "approved" : "rejected",
-      });
-
-      // That might be better suited into a $afterUpdate hook.
-      await Promise.all([
-        pushBuildNotification({
-          buildId,
-          type:
-            validationStatus === "accepted" ? "diff-accepted" : "diff-rejected",
-        }),
-        triggerAndRunAutomation({
-          projectId: build.projectId,
-          event: AutomationEvents.BuildReviewed,
-          payload: { build, buildReview },
-        }),
-      ]);
-
-      return build;
     },
   },
 };

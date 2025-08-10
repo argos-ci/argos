@@ -691,8 +691,6 @@ export type IMutation = {
   setTeamDefaultUserLevel: ITeam;
   /** Set member level */
   setTeamMemberLevel: ITeamMember;
-  /** Change the validationStatus on a build */
-  setValidationStatus: IBuild;
   /** Test automation rule by sending a test event */
   testAutomation: Scalars['Boolean']['output'];
   /** Transfer Project to another account */
@@ -837,12 +835,6 @@ export type IMutationSetTeamDefaultUserLevelArgs = {
 
 export type IMutationSetTeamMemberLevelArgs = {
   input: ISetTeamMemberLevelInput;
-};
-
-
-export type IMutationSetValidationStatusArgs = {
-  buildId: Scalars['ID']['input'];
-  validationStatus: IValidationStatus;
 };
 
 
@@ -2416,7 +2408,6 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   reviewBuild?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationReviewBuildArgs, 'input'>>;
   setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
-  setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   testAutomation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationTestAutomationArgs, 'input'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   unignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationUnignoreChangeArgs, 'input'>>;
