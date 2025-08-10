@@ -459,13 +459,11 @@ export class Build extends Model {
     const reviews = diffDetectedBuildIds.length
       ? await BuildReview.query()
           .select("buildId", "state")
-          .whereIn("buildId", diffDetectedBuildIds)
-          .whereIn("state", ["approved", "rejected"]).andWhereRaw(`"id" IN (
+          .whereIn("buildId", diffDetectedBuildIds).whereRaw(`"id" IN (
             SELECT DISTINCT ON ("buildId")
               "id"
             FROM "build_reviews"
             WHERE "buildId" = "build_reviews"."buildId"
-              AND "state" IN ('approved', 'rejected')
             ORDER BY "buildId", "createdAt" DESC
           )`)
       : [];
@@ -486,10 +484,6 @@ export class Build extends Model {
           return "accepted";
         case "rejected":
           return "rejected";
-        case "pending":
-          throw new Error(
-            "Unexpected review state, should be filtered in query",
-          );
         default:
           assertNever(review.state);
       }

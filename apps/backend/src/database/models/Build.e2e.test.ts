@@ -337,26 +337,6 @@ describe("models/Build", () => {
       expect(reviewStatuses).toEqual(["rejected"]);
     });
 
-    it("should should ignore reviews of type pending", async () => {
-      const build = await factory.Build.create({
-        conclusion: "changes-detected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "approved",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "rejected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "pending",
-      });
-      const reviewStatuses = await Build.getReviewStatuses([build]);
-      expect(reviewStatuses).toEqual(["rejected"]);
-    });
-
     it("should return null in other case", async () => {
       const build = await factory.Build.create({
         conclusion: "changes-detected",
