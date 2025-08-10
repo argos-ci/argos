@@ -278,6 +278,8 @@ export type IBuild = INode & {
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Branch */
   branch?: Maybe<Scalars['String']['output']>;
+  /** Previous approved diffs from a build with the same branch */
+  branchApprovedDiffs: Array<Scalars['ID']['output']>;
   /** Commit */
   commit: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
@@ -2174,6 +2176,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   baseBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
   branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  branchApprovedDiffs?: Resolver<Array<IResolversTypes['ID']>, ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;

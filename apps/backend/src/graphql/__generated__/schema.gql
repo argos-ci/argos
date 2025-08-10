@@ -232,6 +232,9 @@ type Build implements Node {
   """Branch"""
   branch: String
 
+  """Previous approved diffs from a build with the same branch"""
+  branchApprovedDiffs: [ID!]!
+
   """Commit"""
   commit: String!
   createdAt: DateTime!

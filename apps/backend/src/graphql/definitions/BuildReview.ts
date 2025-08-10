@@ -97,13 +97,15 @@ export const resolvers: IResolvers = {
           userId: auth.user.id,
           state: parseState(input.state),
         });
-        await ScreenshotDiffReview.query(trx).insert(
-          input.screenshotDiffReviews.map((diffReviewInput) => ({
-            screenshotDiffId: diffReviewInput.screenshotDiffId,
-            buildReviewId: buildReview.id,
-            state: parseState(diffReviewInput.state),
-          })),
-        );
+        if (input.screenshotDiffReviews.length) {
+          await ScreenshotDiffReview.query(trx).insert(
+            input.screenshotDiffReviews.map((diffReviewInput) => ({
+              screenshotDiffId: diffReviewInput.screenshotDiffId,
+              buildReviewId: buildReview.id,
+              state: parseState(diffReviewInput.state),
+            })),
+          );
+        }
 
         return buildReview;
       });

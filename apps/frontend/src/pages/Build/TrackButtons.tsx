@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -22,39 +22,21 @@ function useEvaluationToggle(props: {
   target: EvaluationStatus;
 }) {
   const { diffId, diffGroup, target } = props;
-  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
+  const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff();
   const [status, setStatus] = useBuildDiffStatusState({
     diffId,
     diffGroup,
   });
-  const expectedRef = useRef<{
-    status: EvaluationStatus;
-    diffId: string;
-  } | null>(null);
-  useEffect(() => {
-    if (expectedRef.current && expectedRef.current.diffId !== diffId) {
-      expectedRef.current = null;
-    }
-  }, [diffId]);
-  useEffect(() => {
-    if (
-      expectedRef.current &&
-      expectedRef.current.diffId === diffId &&
-      expectedRef.current.status === status
-    ) {
-      acknowledgeMarkedDiff();
-    }
-  }, [status, diffId, acknowledgeMarkedDiff]);
   const toggle = useEventCallback(() => {
-    // Prevent multiple rapid clicks by ensuring that the function does not execute
-    // if a state transition is already in progress. This acts as a debouncing mechanism.
-    if (expectedRef.current) {
+    if (checkIsPending()) {
       return;
     }
     const nextStatus =
       status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending;
     setStatus(nextStatus);
-    expectedRef.current = { status: nextStatus, diffId };
+    if (nextStatus !== EvaluationStatus.Pending) {
+      acknowledge();
+    }
   });
   const isActive = status === target;
   return [isActive, toggle] as const;

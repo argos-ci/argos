@@ -1,6 +1,7 @@
 import { createContext, use, useEffect, useMemo, useRef } from "react";
+import { invariant } from "@argos/util/invariant";
 
-import { BuildStatus, BuildType } from "@/gql/graphql";
+import { BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { usePrevious } from "@/ui/usePrevious";
@@ -11,6 +12,7 @@ import {
   Diff,
   useBuildDiffState,
   useGetNextDiff,
+  type UseGetNextDiffOptions,
 } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { useReviewDialog } from "./BuildReviewDialog";
@@ -38,6 +40,10 @@ type BuildReviewStateValue = {
 const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
   null,
 );
+
+export function useBuildReviewState() {
+  return use(BuildReviewStateContext);
+}
 
 type BuildReviewAPI = {
   /**
@@ -111,33 +117,29 @@ export function useWatchItemReview():
   }, [listenersRef]);
 }
 
-/**
- * Return a callback to get the current review diff statuses.
- * This is useful to get the current diff statuses without re-rendering the component.
- */
-export function useGetReviewDiffStatuses():
-  | BuildReviewAPI["getDiffStatuses"]
-  | null {
-  const api = use(BuildReviewAPIContext);
-  return api?.getDiffStatuses ?? null;
+export function useBuildReviewAPI(): BuildReviewAPI | null {
+  return use(BuildReviewAPIContext);
 }
 
 /**
  * Acknowledge the current diff and move to the next diff or show the review dialog.
  */
-export function useAcknowledgeMarkedDiff() {
+export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
   const getDiffStatus = useGetDiffEvaluationStatus();
   const getNextDiff = useGetNextDiff((diff) => {
     if (!getDiffStatus) {
       return false;
     }
     return getDiffStatus(diff.id) === EvaluationStatus.Pending;
-  });
+  }, options);
   const reviewStatus = useReviewStatus();
   const { setActiveDiff } = useBuildDiffState();
   const reviewDialog = useReviewDialog();
+  const state = use(BuildReviewStateContext);
+  const diffStatuses = state?.diffStatuses ?? null;
+  const diffStatusesRef = useRef<Record<string, EvaluationStatus> | null>(null);
 
-  return useEventCallback(() => {
+  const acknowledge = useEventCallback(() => {
     const nextDiff = getNextDiff();
     if (reviewStatus === "complete") {
       reviewDialog.show();
@@ -145,6 +147,23 @@ export function useAcknowledgeMarkedDiff() {
       setActiveDiff(nextDiff, true);
     }
   });
+
+  useEffect(() => {
+    if (diffStatusesRef.current && diffStatuses !== diffStatusesRef.current) {
+      diffStatusesRef.current = null;
+      acknowledge();
+    }
+  }, [diffStatuses, acknowledge]);
+
+  const planAck = useEventCallback(() => {
+    diffStatusesRef.current = diffStatuses;
+  });
+
+  const checkIsPending = useEventCallback(() => {
+    return Boolean(diffStatusesRef.current);
+  });
+
+  return [checkIsPending, planAck] as const;
 }
 
 /**
@@ -240,46 +259,44 @@ export function useGetDiffGroupEvaluationStatus():
 }
 
 /**
- * Mark all diffs as accepted.
+ * Get the default diff evaluation status from the review state.
  */
-export function useMarkAllDiffsAsAccepted(): (() => void) | null {
-  const diffState = useBuildDiffState();
-  const diffStateRef = useLiveRef(diffState);
-  const api = use(BuildReviewAPIContext);
-  const setDiffStatuses = api?.setDiffStatuses;
-  const markAllDiffsAsAccepted = useMemo(() => {
-    if (!setDiffStatuses) {
-      return null;
+function getDiffStatusAfterReview(
+  reviewState: ReviewState,
+  diffStatus: EvaluationStatus | undefined,
+): EvaluationStatus {
+  diffStatus = diffStatus ?? EvaluationStatus.Pending;
+
+  if (reviewState === ReviewState.Approved) {
+    if (diffStatus === EvaluationStatus.Pending) {
+      return EvaluationStatus.Accepted;
     }
-    return () => {
-      setDiffStatuses((diffStatuses) => {
-        const diffState = diffStateRef.current;
-        const diffIds = diffState.diffs.reduce<string[]>((ids, diff) => {
-          if (checkDiffCanBeReviewed(diff.status)) {
-            ids.push(diff.id);
-          }
-          return ids;
-        }, []);
+  }
+  return diffStatus;
+}
 
-        if (
-          diffIds.some(
-            (diffId) => diffStatuses[diffId] === EvaluationStatus.Rejected,
-          )
-        ) {
-          return diffStatuses;
+/**
+ * Hook to get the diff statuses after a review.
+ */
+export function useGetReviewedDiffStatuses() {
+  const api = use(BuildReviewAPIContext);
+  const diffState = useBuildDiffState();
+  return useEventCallback((reviewState: ReviewState) => {
+    invariant(api, "API context is not available");
+    const diffStatuses = api.getDiffStatuses();
+    return diffState.diffs.reduce<Record<Diff["id"], EvaluationStatus>>(
+      (ids, diff) => {
+        if (checkDiffCanBeReviewed(diff.status)) {
+          ids[diff.id] = getDiffStatusAfterReview(
+            reviewState,
+            diffStatuses[diff.id],
+          );
         }
-
-        return diffIds.reduce<Record<string, EvaluationStatus>>(
-          (statuses, diffId) => {
-            statuses[diffId] = EvaluationStatus.Accepted;
-            return statuses;
-          },
-          {},
-        );
-      });
-    };
-  }, [setDiffStatuses, diffStateRef]);
-  return markAllDiffsAsAccepted;
+        return ids;
+      },
+      {},
+    );
+  });
 }
 
 /**

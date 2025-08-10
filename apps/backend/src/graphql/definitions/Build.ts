@@ -5,7 +5,12 @@ import gqlTag from "graphql-tag";
 import { triggerAndRunAutomation } from "@/automation/index.js";
 import { AutomationEvents } from "@/automation/types/events.js";
 import { pushBuildNotification } from "@/build-notification/index.js";
-import { Build, BuildReview, ScreenshotDiff } from "@/database/models/index.js";
+import {
+  Build,
+  BuildReview,
+  ScreenshotDiff,
+  ScreenshotDiffReview,
+} from "@/database/models/index.js";
 
 import {
   IBaseBranchResolution,
@@ -118,6 +123,8 @@ export const typeDefs = gql`
     baseBranchResolvedFrom: BaseBranchResolution
     "Effective build reviews"
     reviews: [BuildReview!]!
+    "Previous approved diffs from a build with the same branch"
+    branchApprovedDiffs: [ID!]!
   }
 
   type BuildMetadata {
@@ -304,6 +311,57 @@ export const resolvers: IResolvers = {
         retryFailure: stats.retryFailure ?? 0,
         ignored: stats.ignored ?? 0,
       };
+    },
+    branchApprovedDiffs: async (build, _args, ctx) => {
+      if (!ctx.auth) {
+        return [];
+      }
+
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+
+      const previousApprovals = await ScreenshotDiff.query()
+        .select("screenshot_diffs.id")
+        .joinRelated("compareScreenshot")
+        .whereIn(
+          "compareScreenshot.fileId",
+          ScreenshotDiff.query()
+            .joinRelated("compareScreenshot")
+            .select("compareScreenshot.fileId")
+            .whereIn(
+              "screenshot_diffs.id",
+              ScreenshotDiffReview.query()
+                .select("screenshot_diff_reviews.screenshotDiffId")
+                .where("screenshot_diff_reviews.state", "approved")
+                .whereIn(
+                  "screenshot_diff_reviews.buildReviewId",
+                  BuildReview.query()
+                    .select("build_reviews.id")
+                    .where("build_reviews.userId", ctx.auth.user.id)
+                    .whereIn(
+                      "build_reviews.buildId",
+                      Build.query()
+                        .select("builds.id")
+                        .joinRelated("compareScreenshotBucket")
+                        .where("builds.createdAt", "<", build.createdAt)
+                        .where("builds.mode", build.mode)
+                        .where("builds.conclusion", "changes-detected")
+                        .where(
+                          "compareScreenshotBucket.name",
+                          compareBucket.name,
+                        )
+                        .where(
+                          "compareScreenshotBucket.branch",
+                          compareBucket.branch,
+                        ),
+                    )
+                    .orderBy("build_reviews.createdAt", "desc")
+                    .limit(1),
+                ),
+            ),
+        )
+        .where("screenshot_diffs.buildId", build.id);
+
+      return previousApprovals.map((diff) => diff.id);
     },
   },
   Mutation: {

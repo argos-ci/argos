@@ -8,11 +8,14 @@ import {
   ReviewState,
   type BuildReviewAction_ReviewBuildMutation,
   type BuildReviewAction_ReviewBuildMutationVariables,
-  type ScreenshotDiffReviewInput,
 } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 
-import { EvaluationStatus, useGetReviewDiffStatuses } from "./BuildReviewState";
+import {
+  EvaluationStatus,
+  useBuildReviewAPI,
+  useGetReviewedDiffStatuses,
+} from "./BuildReviewState";
 
 const ReviewBuildMutation = graphql(`
   mutation BuildReviewAction_reviewBuild($input: ReviewBuildInput!) {
@@ -42,7 +45,7 @@ export function useReviewBuildMutation(
     "onCompleted"
   >,
 ) {
-  const getReviewDiffStatuses = useGetReviewDiffStatuses();
+  const api = useBuildReviewAPI();
   const [mutate, data] = useMutation(ReviewBuildMutation, {
     optimisticResponse: (vars) => {
       return {
@@ -58,35 +61,57 @@ export function useReviewBuildMutation(
     ...options,
   });
 
-  const reviewBuild = useEventCallback(async (state: ReviewState) => {
-    invariant(
-      getReviewDiffStatuses,
-      `Reviewing a build requires getReviewDiffStatuses to be defined`,
-    );
-    const screenshotDiffReviews: ScreenshotDiffReviewInput[] = Object.entries(
-      getReviewDiffStatuses(),
-    )
-      .map(([screenshotDiffId, status]) => {
-        const state = evaluationStatusToReviewState(status);
-        if (!state) {
+  const getReviewedDiffStatuses = useGetReviewedDiffStatuses();
+  const reviewBuild = useEventCallback(async (reviewState: ReviewState) => {
+    invariant(api, `Reviewing a build requires api to be defined`);
+    const diffStatuses = getReviewedDiffStatuses(reviewState);
+    const screenshotDiffReviews = Object.entries(diffStatuses)
+      .map(([diffId, status]) => {
+        const diffState = evaluationStatusToReviewState(
+          getDiffEvaluationStatus(reviewState, status),
+        );
+
+        if (!diffState) {
           return null;
         }
-        return { screenshotDiffId, state };
+
+        return {
+          screenshotDiffId: diffId,
+          state: diffState,
+        };
       })
       .filter((x) => x !== null);
     const result = await mutate({
       variables: {
         input: {
           buildId: build.id,
-          state,
+          state: reviewState,
           screenshotDiffReviews,
         },
       },
     });
+    api.setDiffStatuses(diffStatuses);
     return result;
   });
 
   return [reviewBuild, data] as const;
+}
+
+/**
+ * Get the default diff evaluation status from the
+ */
+function getDiffEvaluationStatus(
+  reviewState: ReviewState,
+  diffStatus: EvaluationStatus | undefined,
+): EvaluationStatus {
+  diffStatus = diffStatus ?? EvaluationStatus.Pending;
+
+  if (reviewState === ReviewState.Approved) {
+    if (diffStatus === EvaluationStatus.Pending) {
+      return EvaluationStatus.Accepted;
+    }
+  }
+  return diffStatus;
 }
 
 function evaluationStatusToReviewState(

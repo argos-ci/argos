@@ -15,7 +15,7 @@ import { Tooltip } from "@/ui/Tooltip";
 import { buildStatusDescriptors } from "@/util/build";
 
 import { useReviewBuildMutation } from "./BuildReviewAction";
-import { useMarkAllDiffsAsAccepted } from "./BuildReviewState";
+import { useBuildReviewAPI } from "./BuildReviewState";
 
 const _ProjectFragment = graphql(`
   fragment BuildReviewButton_Project on Project {
@@ -44,13 +44,10 @@ function BaseReviewButton(props: {
   onCompleted?: () => void;
   children?: React.ReactNode;
 }) {
-  const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
-  invariant(markAllDiffsAsAccepted, "markAllDiffsAsAccepted must be defined");
+  const api = useBuildReviewAPI();
+  invariant(api, "api must be defined");
   const [reviewBuild, { loading }] = useReviewBuildMutation(props.build, {
-    onCompleted: (data) => {
-      if (data.reviewBuild.status === BuildStatus.Accepted) {
-        markAllDiffsAsAccepted();
-      }
+    onCompleted: () => {
       props.onCompleted?.();
     },
   });

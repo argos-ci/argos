@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 import { generatePath, Link, useMatch } from "react-router-dom";
@@ -343,20 +343,16 @@ function BuildDetailIgnoreButton(props: { diff: Diff }) {
     diffId: diff.id,
     diffGroup: diff.group ?? null,
   });
-  const acknowledgeMarkedDiff = useAcknowledgeMarkedDiff();
-  const expectedStatus = useRef<EvaluationStatus | null>(null);
-  useEffect(() => {
-    if (status === expectedStatus.current) {
-      expectedStatus.current = null;
-      acknowledgeMarkedDiff();
-      return;
-    }
-  }, [status, acknowledgeMarkedDiff]);
+  const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff();
 
   const handleIgnoreChange = useEventCallback(() => {
+    if (checkIsPending()) {
+      return;
+    }
+
     if (status === EvaluationStatus.Pending) {
       setStatus(EvaluationStatus.Accepted);
-      expectedStatus.current = EvaluationStatus.Accepted;
+      acknowledge();
     }
   });
 

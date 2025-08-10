@@ -191,11 +191,23 @@ export function useHasNextDiff() {
   return activeDiffIndex < diffs.length - 1;
 }
 
-export function useGetNextDiff(predicate?: (diff: Diff) => boolean) {
+export interface UseGetNextDiffOptions {
+  /**
+   * The index to start searching from.
+   * Default to the active diff index.
+   */
+  fromIndex?: number;
+}
+
+export function useGetNextDiff(
+  predicate?: (diff: Diff) => boolean,
+  options?: UseGetNextDiffOptions,
+) {
   const hasNextDiff = useHasNextDiff();
   const { searchMode } = useSearchModeState();
   const { diffs, activeDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
+  const fromIndex = options?.fromIndex ?? activeDiffIndex;
   return useEventCallback(() => {
     if (!hasNextDiff) {
       return null;
@@ -205,10 +217,10 @@ export function useGetNextDiff(predicate?: (diff: Diff) => boolean) {
       !activeDiff?.group || expanded.includes(activeDiff.group);
 
     if ((isGroupExpanded || searchMode) && !predicate) {
-      return diffs[activeDiffIndex + 1] ?? null;
+      return diffs[fromIndex + 1] ?? null;
     }
 
-    const offsetIndex = activeDiffIndex + 1;
+    const offsetIndex = fromIndex + 1;
     const nextDiffIndex = diffs.slice(offsetIndex).findIndex((diff) => {
       if (!isGroupExpanded && !searchMode && diff.group === activeDiff.group) {
         return false;
