@@ -140,7 +140,7 @@ export function getTestReportStatusDescriptor(status: TestReportStatus) {
         color: "success" as const,
         icon: CheckIcon,
         description:
-          "All tests passed successfully. This build is eligible to be used as a baseline.",
+          "All end-to-end tests passed successfully. This build is eligible to be used as a baseline.",
       };
     case TestReportStatus.Failed:
       return {
@@ -148,7 +148,7 @@ export function getTestReportStatusDescriptor(status: TestReportStatus) {
         color: "danger" as const,
         icon: XIcon,
         description:
-          "Some tests failed. This build is not eligible to be used as a baseline.",
+          "Some end-to-end tests failed. This build is not eligible to be used as a baseline.",
       };
     case TestReportStatus.Timedout:
       return {
@@ -156,7 +156,7 @@ export function getTestReportStatusDescriptor(status: TestReportStatus) {
         color: "danger" as const,
         icon: ClockIcon,
         description:
-          "Some tests timed out. This build is not eligible to be used as a baseline.",
+          "Some end-to-end tests timed out. This build is not eligible to be used as a baseline.",
       };
     case TestReportStatus.Interrupted:
       return {
@@ -164,7 +164,7 @@ export function getTestReportStatusDescriptor(status: TestReportStatus) {
         color: "danger" as const,
         icon: PauseIcon,
         description:
-          "Some tests were interrupted. This build is not eligible to be used as a baseline.",
+          "Some end-to-end tests were interrupted. This build is not eligible to be used as a baseline.",
       };
     default:
       assertNever(status);
