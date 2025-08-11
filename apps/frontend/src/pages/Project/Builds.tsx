@@ -142,9 +142,9 @@ const BuildRow = memo(function BuildRow({
           <BuildModeIndicator mode={build.mode} />
           <div className="tabular-nums">{build.number}</div>
         </div>
-        <div className="text-low truncate">
+        <Truncable className="text-low">
           {build.name !== "default" ? build.name : ""}
-        </div>
+        </Truncable>
       </div>
       <div className="flex w-[12.5rem] shrink-0 items-start">
         <BuildStatusChip build={build} />
