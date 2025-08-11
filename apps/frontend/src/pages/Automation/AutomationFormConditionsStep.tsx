@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
@@ -79,7 +79,16 @@ function BuildNameCondition(props: {
   name: `conditions.${number}.value`;
 }) {
   const { projectBuildNames, name, form } = props;
+  const value = form.watch(name);
   const id = useId();
+  // Add the actual build name value to the list, always.
+  const buildNames = useMemo(() => {
+    const buildNames = Array.from(projectBuildNames);
+    if (value && !buildNames.includes(value)) {
+      buildNames.unshift(value);
+    }
+    return buildNames;
+  }, [value, projectBuildNames]);
 
   return (
     <div className="flex items-center gap-2">
@@ -98,7 +107,7 @@ function BuildNameCondition(props: {
         <FieldError />
         <Popover>
           <ListBox>
-            {projectBuildNames.map((name) => (
+            {buildNames.map((name) => (
               <ListBoxItem
                 key={name}
                 id={name}
@@ -193,6 +202,15 @@ function ConditionDetail(props: {
   }
 }
 
+const CONDITIONS = [
+  {
+    type: "build-conclusion" as const,
+    label: "Build conclusion is…",
+  },
+  { type: "build-type" as const, label: "Build type is…" },
+  { type: "build-name" as const, label: "Build name is…" },
+];
+
 export function AutomationConditionsStep(props: {
   form: AutomationForm;
   projectBuildNames: string[];
@@ -204,18 +222,12 @@ export function AutomationConditionsStep(props: {
     name,
   });
   const selectedConditionTypes = new Set(fields.map((c) => c.type));
-  const conditions = [
-    {
-      type: "build-conclusion" as const,
-      label: "Build conclusion is…",
-    },
-    { type: "build-type" as const, label: "Build type is…" },
-    projectBuildNames.length > 0
-      ? { type: "build-name" as const, label: "Build name is…" }
-      : null,
-  ]
-    .filter((condition) => condition !== null)
-    .filter((condition) => !selectedConditionTypes.has(condition.type));
+  const conditions = CONDITIONS.filter((condition) => {
+    if (condition.type === "build-name" && projectBuildNames.length === 0) {
+      return false; // Skip build name condition if no builds are available
+    }
+    return true;
+  }).filter((condition) => !selectedConditionTypes.has(condition.type));
 
   return (
     <div>
