@@ -618,9 +618,10 @@ export const resolvers: IResolvers = {
     },
     buildNames: async (project) => {
       const builds = await Build.query()
-        .where("projectId", project.id)
         .select("name")
-        .distinct("name");
+        .distinct("name")
+        .where("projectId", project.id)
+        .whereRaw(`"createdAt" < now() - interval '1 month'`);
       return builds.map((build) => build.name);
     },
     contributors: async (project, args, ctx) => {
