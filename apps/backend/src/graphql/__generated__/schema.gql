@@ -232,6 +232,9 @@ type Build implements Node {
   """Branch"""
   branch: String
 
+  """Previous approved diffs from a build with the same branch"""
+  branchApprovedDiffs: [ID!]!
+
   """Commit"""
   commit: String!
   createdAt: DateTime!
@@ -306,14 +309,8 @@ type BuildParallel {
 type BuildReview implements Node {
   date: DateTime!
   id: ID!
-  state: BuildReviewState!
+  state: ReviewState!
   user: User
-}
-
-enum BuildReviewState {
-  APPROVED
-  PENDING
-  REJECTED
 }
 
 type BuildStats {
@@ -666,15 +663,13 @@ type Mutation {
 
   """Remove a user from a team"""
   removeUserFromTeam(input: RemoveUserFromTeamInput!): RemoveUserFromTeamPayload!
+  reviewBuild(input: ReviewBuildInput!): Build!
 
   """Set team default user level"""
   setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
 
   """Set member level"""
   setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
-
-  """Change the validationStatus on a build"""
-  setValidationStatus(buildId: ID!, validationStatus: ValidationStatus!): Build!
 
   """Test automation rule by sending a test event"""
   testAutomation(input: TestAutomationRuleInput!): Boolean!
@@ -897,6 +892,17 @@ interface Repository implements Node {
   url: String!
 }
 
+input ReviewBuildInput {
+  buildId: ID!
+  screenshotDiffReviews: [ScreenshotDiffReviewInput!]!
+  state: ReviewState!
+}
+
+enum ReviewState {
+  APPROVED
+  REJECTED
+}
+
 type Screenshot implements Node {
   height: Int
   id: ID!
@@ -944,6 +950,11 @@ type ScreenshotDiff implements Node {
 type ScreenshotDiffConnection implements Connection {
   edges: [ScreenshotDiff!]!
   pageInfo: PageInfo!
+}
+
+input ScreenshotDiffReviewInput {
+  screenshotDiffId: ID!
+  state: ReviewState!
 }
 
 enum ScreenshotDiffStatus {

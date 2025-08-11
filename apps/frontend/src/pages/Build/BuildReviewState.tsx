@@ -1,6 +1,7 @@
 import { createContext, use, useEffect, useMemo, useRef } from "react";
+import { invariant } from "@argos/util/invariant";
 
-import { BuildStatus, BuildType } from "@/gql/graphql";
+import { BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { usePrevious } from "@/ui/usePrevious";
@@ -11,6 +12,7 @@ import {
   Diff,
   useBuildDiffState,
   useGetNextDiff,
+  type UseGetNextDiffOptions,
 } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { useReviewDialog } from "./BuildReviewDialog";
@@ -24,17 +26,46 @@ export enum EvaluationStatus {
 type Listener = (value: { id: Diff["id"]; status: EvaluationStatus }) => void;
 
 type BuildReviewStateValue = {
+  /**
+   * Map of diff IDs to their evaluation status.
+   */
   diffStatuses: Record<Diff["id"], EvaluationStatus>;
-  setDiffStatuses: React.Dispatch<
-    React.SetStateAction<Record<Diff["id"], EvaluationStatus>>
-  >;
+
+  /**
+   * The status of the build.
+   */
   buildStatus: BuildStatus | null;
-  listenersRef: React.RefObject<Listener[]>;
 };
 
 const BuildReviewStateContext = createContext<BuildReviewStateValue | null>(
   null,
 );
+
+export function useBuildReviewState() {
+  return use(BuildReviewStateContext);
+}
+
+type BuildReviewAPI = {
+  /**
+   * Set the evaluation status of the diffs.
+   */
+  setDiffStatuses: React.Dispatch<
+    React.SetStateAction<Record<Diff["id"], EvaluationStatus>>
+  >;
+
+  /**
+   * Get the current evaluation status of all diffs.
+   * Similar to `state.diffStatuses`, but do not re-render the component.
+   */
+  getDiffStatuses: () => Record<Diff["id"], EvaluationStatus>;
+
+  /**
+   * The map of listeners for diff status changes.
+   */
+  listenersRef: React.RefObject<Listener[]>;
+};
+
+const BuildReviewAPIContext = createContext<BuildReviewAPI | null>(null);
 
 /**
  * Get the current review status of all diffs.
@@ -62,11 +93,14 @@ function useReviewStatus(): "initializing" | "pending" | "complete" | null {
   }, [stats, diffStatuses]);
 }
 
+/**
+ * Watch the review status of the diffs.
+ */
 export function useWatchItemReview():
   | ((callback: Listener) => () => void)
   | null {
-  const state = use(BuildReviewStateContext);
-  const listenersRef = state?.listenersRef;
+  const api = use(BuildReviewAPIContext);
+  const listenersRef = api?.listenersRef;
   return useMemo(() => {
     if (!listenersRef) {
       return null;
@@ -83,22 +117,29 @@ export function useWatchItemReview():
   }, [listenersRef]);
 }
 
+export function useBuildReviewAPI(): BuildReviewAPI | null {
+  return use(BuildReviewAPIContext);
+}
+
 /**
  * Acknowledge the current diff and move to the next diff or show the review dialog.
  */
-export function useAcknowledgeMarkedDiff() {
+export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
   const getDiffStatus = useGetDiffEvaluationStatus();
   const getNextDiff = useGetNextDiff((diff) => {
     if (!getDiffStatus) {
       return false;
     }
     return getDiffStatus(diff.id) === EvaluationStatus.Pending;
-  });
+  }, options);
   const reviewStatus = useReviewStatus();
   const { setActiveDiff } = useBuildDiffState();
   const reviewDialog = useReviewDialog();
+  const state = use(BuildReviewStateContext);
+  const diffStatuses = state?.diffStatuses ?? null;
+  const diffStatusesRef = useRef<Record<string, EvaluationStatus> | null>(null);
 
-  return useEventCallback(() => {
+  const acknowledge = useEventCallback(() => {
     const nextDiff = getNextDiff();
     if (reviewStatus === "complete") {
       reviewDialog.show();
@@ -106,6 +147,23 @@ export function useAcknowledgeMarkedDiff() {
       setActiveDiff(nextDiff, true);
     }
   });
+
+  useEffect(() => {
+    if (diffStatusesRef.current && diffStatuses !== diffStatusesRef.current) {
+      diffStatusesRef.current = null;
+      acknowledge();
+    }
+  }, [diffStatuses, acknowledge]);
+
+  const planAck = useEventCallback(() => {
+    diffStatusesRef.current = diffStatuses;
+  });
+
+  const checkIsPending = useEventCallback(() => {
+    return Boolean(diffStatusesRef.current);
+  });
+
+  return [checkIsPending, planAck] as const;
 }
 
 /**
@@ -201,46 +259,44 @@ export function useGetDiffGroupEvaluationStatus():
 }
 
 /**
- * Mark all diffs as accepted.
+ * Get the default diff evaluation status from the review state.
  */
-export function useMarkAllDiffsAsAccepted(): (() => void) | null {
-  const diffState = useBuildDiffState();
-  const diffStateRef = useLiveRef(diffState);
-  const state = use(BuildReviewStateContext);
-  const setDiffStatuses = state?.setDiffStatuses;
-  const markAllDiffsAsAccepted = useMemo(() => {
-    if (!setDiffStatuses) {
-      return null;
+function getDiffStatusAfterReview(
+  reviewState: ReviewState,
+  diffStatus: EvaluationStatus | undefined,
+): EvaluationStatus {
+  diffStatus = diffStatus ?? EvaluationStatus.Pending;
+
+  if (reviewState === ReviewState.Approved) {
+    if (diffStatus === EvaluationStatus.Pending) {
+      return EvaluationStatus.Accepted;
     }
-    return () => {
-      setDiffStatuses((diffStatuses) => {
-        const diffState = diffStateRef.current;
-        const diffIds = diffState.diffs.reduce<string[]>((ids, diff) => {
-          if (checkDiffCanBeReviewed(diff.status)) {
-            ids.push(diff.id);
-          }
-          return ids;
-        }, []);
+  }
+  return diffStatus;
+}
 
-        if (
-          diffIds.some(
-            (diffId) => diffStatuses[diffId] === EvaluationStatus.Rejected,
-          )
-        ) {
-          return diffStatuses;
+/**
+ * Hook to get the diff statuses after a review.
+ */
+export function useGetReviewedDiffStatuses() {
+  const api = use(BuildReviewAPIContext);
+  const diffState = useBuildDiffState();
+  return useEventCallback((reviewState: ReviewState) => {
+    invariant(api, "API context is not available");
+    const diffStatuses = api.getDiffStatuses();
+    return diffState.diffs.reduce<Record<Diff["id"], EvaluationStatus>>(
+      (ids, diff) => {
+        if (checkDiffCanBeReviewed(diff.status)) {
+          ids[diff.id] = getDiffStatusAfterReview(
+            reviewState,
+            diffStatuses[diff.id],
+          );
         }
-
-        return diffIds.reduce<Record<string, EvaluationStatus>>(
-          (statuses, diffId) => {
-            statuses[diffId] = EvaluationStatus.Accepted;
-            return statuses;
-          },
-          {},
-        );
-      });
-    };
-  }, [setDiffStatuses, diffStateRef]);
-  return markAllDiffsAsAccepted;
+        return ids;
+      },
+      {},
+    );
+  });
 }
 
 /**
@@ -252,8 +308,8 @@ export function useBuildDiffStatusState(args: {
 }): [EvaluationStatus | null, (status: EvaluationStatus) => void] {
   const { diffId, diffGroup } = args;
   const diffState = useBuildDiffState();
-  const state = use(BuildReviewStateContext);
-  const setDiffStatuses = state?.setDiffStatuses;
+  const api = use(BuildReviewAPIContext);
+  const setDiffStatuses = api?.setDiffStatuses;
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
   const setGroupStatus = useEventCallback((status: EvaluationStatus) => {
     if (!diffGroup || !setDiffStatuses) {
@@ -338,15 +394,24 @@ export function BuildReviewStateProvider(props: {
       }
     }
   }, [diffStatuses, previousDiffStatuses]);
-  const value = useMemo<BuildReviewStateValue | null>(() => {
+  const getDiffStatuses = useEventCallback(() => diffStatuses);
+  const state = useMemo<BuildReviewStateValue | null>(() => {
     if (buildType === BuildType.Reference) {
       return null;
     }
-    return { diffStatuses, setDiffStatuses, buildStatus, listenersRef };
-  }, [buildType, diffStatuses, setDiffStatuses, buildStatus, listenersRef]);
+    return { diffStatuses, buildStatus };
+  }, [buildType, diffStatuses, buildStatus]);
+  const api = useMemo<BuildReviewAPI | null>(() => {
+    if (buildType === BuildType.Reference) {
+      return null;
+    }
+    return { getDiffStatuses, setDiffStatuses, listenersRef };
+  }, [buildType, getDiffStatuses, setDiffStatuses, listenersRef]);
   return (
-    <BuildReviewStateContext value={value}>
-      {props.children}
+    <BuildReviewStateContext value={state}>
+      <BuildReviewAPIContext value={api}>
+        {props.children}
+      </BuildReviewAPIContext>
     </BuildReviewStateContext>
   );
 }

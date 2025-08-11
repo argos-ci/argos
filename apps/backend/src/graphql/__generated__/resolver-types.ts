@@ -278,6 +278,8 @@ export type IBuild = INode & {
   baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Branch */
   branch?: Maybe<Scalars['String']['output']>;
+  /** Previous approved diffs from a build with the same branch */
+  branchApprovedDiffs: Array<Scalars['ID']['output']>;
   /** Commit */
   commit: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
@@ -346,15 +348,9 @@ export type IBuildReview = INode & {
   __typename?: 'BuildReview';
   date: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
-  state: IBuildReviewState;
+  state: IReviewState;
   user?: Maybe<IUser>;
 };
-
-export enum IBuildReviewState {
-  Approved = 'APPROVED',
-  Pending = 'PENDING',
-  Rejected = 'REJECTED'
-}
 
 export type IBuildStats = {
   __typename?: 'BuildStats';
@@ -690,12 +686,11 @@ export type IMutation = {
   removeContributorFromProject: IRemoveContributorFromProjectPayload;
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
+  reviewBuild: IBuild;
   /** Set team default user level */
   setTeamDefaultUserLevel: ITeam;
   /** Set member level */
   setTeamMemberLevel: ITeamMember;
-  /** Change the validationStatus on a build */
-  setValidationStatus: IBuild;
   /** Test automation rule by sending a test event */
   testAutomation: Scalars['Boolean']['output'];
   /** Transfer Project to another account */
@@ -828,6 +823,11 @@ export type IMutationRemoveUserFromTeamArgs = {
 };
 
 
+export type IMutationReviewBuildArgs = {
+  input: IReviewBuildInput;
+};
+
+
 export type IMutationSetTeamDefaultUserLevelArgs = {
   input: ISetTeamDefaultUserLevelInput;
 };
@@ -835,12 +835,6 @@ export type IMutationSetTeamDefaultUserLevelArgs = {
 
 export type IMutationSetTeamMemberLevelArgs = {
   input: ISetTeamMemberLevelInput;
-};
-
-
-export type IMutationSetValidationStatusArgs = {
-  buildId: Scalars['ID']['input'];
-  validationStatus: IValidationStatus;
 };
 
 
@@ -1149,6 +1143,17 @@ export type IRepository = {
   url: Scalars['String']['output'];
 };
 
+export type IReviewBuildInput = {
+  buildId: Scalars['ID']['input'];
+  screenshotDiffReviews: Array<IScreenshotDiffReviewInput>;
+  state: IReviewState;
+};
+
+export enum IReviewState {
+  Approved = 'APPROVED',
+  Rejected = 'REJECTED'
+}
+
 export type IScreenshot = INode & {
   __typename?: 'Screenshot';
   height?: Maybe<Scalars['Int']['output']>;
@@ -1200,6 +1205,11 @@ export type IScreenshotDiffConnection = IConnection & {
   __typename?: 'ScreenshotDiffConnection';
   edges: Array<IScreenshotDiff>;
   pageInfo: IPageInfo;
+};
+
+export type IScreenshotDiffReviewInput = {
+  screenshotDiffId: Scalars['ID']['input'];
+  state: IReviewState;
 };
 
 export enum IScreenshotDiffStatus {
@@ -1751,7 +1761,6 @@ export type IResolversTypes = ResolversObject<{
   BuildMode: IBuildMode;
   BuildParallel: ResolverTypeWrapper<IBuildParallel>;
   BuildReview: ResolverTypeWrapper<BuildReview>;
-  BuildReviewState: IBuildReviewState;
   BuildStats: ResolverTypeWrapper<IBuildStats>;
   BuildStatus: IBuildStatus;
   BuildType: IBuildType;
@@ -1817,10 +1826,13 @@ export type IResolversTypes = ResolversObject<{
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
   Repository: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Repository']>;
+  ReviewBuildInput: IReviewBuildInput;
+  ReviewState: IReviewState;
   Screenshot: ResolverTypeWrapper<Screenshot>;
   ScreenshotBucket: ResolverTypeWrapper<ScreenshotBucket>;
   ScreenshotDiff: ResolverTypeWrapper<ScreenshotDiff>;
   ScreenshotDiffConnection: ResolverTypeWrapper<Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversTypes['ScreenshotDiff']> }>;
+  ScreenshotDiffReviewInput: IScreenshotDiffReviewInput;
   ScreenshotDiffStatus: IScreenshotDiffStatus;
   ScreenshotMetadata: ResolverTypeWrapper<IScreenshotMetadata>;
   ScreenshotMetadataAutomationLibrary: ResolverTypeWrapper<IScreenshotMetadataAutomationLibrary>;
@@ -1956,10 +1968,12 @@ export type IResolversParentTypes = ResolversObject<{
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: IRemoveUserFromTeamPayload;
   Repository: IResolversInterfaceTypes<IResolversParentTypes>['Repository'];
+  ReviewBuildInput: IReviewBuildInput;
   Screenshot: Screenshot;
   ScreenshotBucket: ScreenshotBucket;
   ScreenshotDiff: ScreenshotDiff;
   ScreenshotDiffConnection: Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversParentTypes['ScreenshotDiff']> };
+  ScreenshotDiffReviewInput: IScreenshotDiffReviewInput;
   ScreenshotMetadata: IScreenshotMetadata;
   ScreenshotMetadataAutomationLibrary: IScreenshotMetadataAutomationLibrary;
   ScreenshotMetadataBrowser: IScreenshotMetadataBrowser;
@@ -2154,6 +2168,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   baseBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
   baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
   branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  branchApprovedDiffs?: Resolver<Array<IResolversTypes['ID']>, ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -2195,7 +2210,7 @@ export type IBuildParallelResolvers<ContextType = Context, ParentType extends IR
 export type IBuildReviewResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildReview'] = IResolversParentTypes['BuildReview']> = ResolversObject<{
   date?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  state?: Resolver<IResolversTypes['BuildReviewState'], ParentType, ContextType>;
+  state?: Resolver<IResolversTypes['ReviewState'], ParentType, ContextType>;
   user?: Resolver<Maybe<IResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -2390,9 +2405,9 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   regenerateProjectToken?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationRegenerateProjectTokenArgs, 'id'>>;
   removeContributorFromProject?: Resolver<IResolversTypes['RemoveContributorFromProjectPayload'], ParentType, ContextType, RequireFields<IMutationRemoveContributorFromProjectArgs, 'input'>>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
+  reviewBuild?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationReviewBuildArgs, 'input'>>;
   setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
-  setValidationStatus?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationSetValidationStatusArgs, 'buildId' | 'validationStatus'>>;
   testAutomation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationTestAutomationArgs, 'input'>>;
   transferProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationTransferProjectArgs, 'input'>>;
   unignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationUnignoreChangeArgs, 'input'>>;

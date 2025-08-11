@@ -33,12 +33,13 @@ const config = tseslint.config(
   },
   {
     name: "argos/vitest",
-    files: ["**/*.test.?(m)js"],
+    files: ["**/*.test.?(m)ts"],
     plugins: {
       vitest,
     },
     rules: {
       ...vitest.configs.recommended.rules,
+      "no-empty-pattern": "off",
     },
   },
 );

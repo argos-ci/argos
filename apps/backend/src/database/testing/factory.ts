@@ -165,6 +165,15 @@ export const BuildReview = defineFactory(models.BuildReview, () => ({
   state: "accepted",
 }));
 
+export const ScreenshotDiffReview = defineFactory(
+  models.ScreenshotDiffReview,
+  () => ({
+    buildReviewId: BuildReview.associate("id"),
+    screenshotDiffId: ScreenshotDiff.associate("id"),
+    state: "accepted",
+  }),
+);
+
 export const Test = defineFactory(models.Test, () => ({
   name: "test",
   projectId: Project.associate("id"),

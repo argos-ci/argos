@@ -215,9 +215,7 @@ describe("models/Build", () => {
         expect(await getBuildStatus(build)).toBe("error");
       });
     });
-  });
 
-  describe("#getStatuses", () => {
     it("should return ordered build statuses", async () => {
       const builds = await factory.Build.createMany(5, [
         { jobStatus: "pending" },
@@ -332,26 +330,6 @@ describe("models/Build", () => {
       await factory.BuildReview.create({
         buildId: build.id,
         state: "rejected",
-      });
-      const reviewStatuses = await Build.getReviewStatuses([build]);
-      expect(reviewStatuses).toEqual(["rejected"]);
-    });
-
-    it("should should ignore reviews of type pending", async () => {
-      const build = await factory.Build.create({
-        conclusion: "changes-detected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "approved",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "rejected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "pending",
       });
       const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["rejected"]);

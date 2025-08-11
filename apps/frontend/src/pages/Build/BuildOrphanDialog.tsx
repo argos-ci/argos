@@ -14,6 +14,7 @@ import {
 } from "@/ui/Dialog";
 import { Link } from "@/ui/Link";
 import { Modal } from "@/ui/Modal";
+import * as sessionStorage from "@/util/session-storage";
 
 import { getProjectURL } from "../Project/ProjectParams";
 import type { BuildParams } from "./BuildParams";
@@ -32,12 +33,23 @@ export function BuildOrphanDialog(props: {
 }) {
   const { build, params } = props;
 
+  if (sessionStorage.getItem("buildOrphanDialogDismissed") === "true") {
+    return null;
+  }
+
   if (build.type !== BuildType.Orphan || !build.baseBranch) {
     return null;
   }
 
   return (
-    <Modal defaultOpen>
+    <Modal
+      defaultOpen
+      onOpenChange={(open) => {
+        if (!open) {
+          sessionStorage.setItem("buildOrphanDialogDismissed", "true");
+        }
+      }}
+    >
       <Dialog size="medium">
         <DialogBody>
           <DialogTitle>Welcome to an orphan build!</DialogTitle>
@@ -94,7 +106,7 @@ export function BuildOrphanDialog(props: {
           })()}
         </DialogBody>
         <DialogFooter>
-          <DialogDismiss>I got It!</DialogDismiss>
+          <DialogDismiss>I got it!</DialogDismiss>
         </DialogFooter>
       </Dialog>
     </Modal>

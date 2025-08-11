@@ -6,7 +6,7 @@ import {
   BuildReviewAction_BuildFragment,
   BuildStatus,
   ProjectPermission,
-  ValidationStatus,
+  ReviewState,
 } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
@@ -14,8 +14,8 @@ import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
 import { buildStatusDescriptors } from "@/util/build";
 
-import { useSetValidationStatusMutation } from "./BuildReviewAction";
-import { useMarkAllDiffsAsAccepted } from "./BuildReviewState";
+import { useReviewBuildMutation } from "./BuildReviewAction";
+import { useBuildReviewAPI } from "./BuildReviewState";
 
 const _ProjectFragment = graphql(`
   fragment BuildReviewButton_Project on Project {
@@ -44,19 +44,13 @@ function BaseReviewButton(props: {
   onCompleted?: () => void;
   children?: React.ReactNode;
 }) {
-  const markAllDiffsAsAccepted = useMarkAllDiffsAsAccepted();
-  invariant(markAllDiffsAsAccepted, "markAllDiffsAsAccepted must be defined");
-  const [setValidationStatus, { loading }] = useSetValidationStatusMutation(
-    props.build,
-    {
-      onCompleted: (data) => {
-        if (data.setValidationStatus.status === BuildStatus.Accepted) {
-          markAllDiffsAsAccepted();
-        }
-        props.onCompleted?.();
-      },
+  const api = useBuildReviewAPI();
+  invariant(api, "api must be defined");
+  const [reviewBuild, { loading }] = useReviewBuildMutation(props.build, {
+    onCompleted: () => {
+      props.onCompleted?.();
     },
-  );
+  });
 
   const { icon: AcceptIcon } = buildStatusDescriptors[BuildStatus.Accepted];
   const { icon: RejectIcon } = buildStatusDescriptors[BuildStatus.Rejected];
@@ -77,12 +71,7 @@ function BaseReviewButton(props: {
         <Menu>
           <MenuItem
             onAction={() => {
-              setValidationStatus({
-                variables: {
-                  buildId: props.build.id,
-                  validationStatus: ValidationStatus.Accepted,
-                },
-              });
+              reviewBuild(ReviewState.Approved).catch(() => {});
             }}
             isDisabled={props.build.status === BuildStatus.Accepted}
           >
@@ -93,12 +82,7 @@ function BaseReviewButton(props: {
           </MenuItem>
           <MenuItem
             onAction={() => {
-              setValidationStatus({
-                variables: {
-                  buildId: props.build.id,
-                  validationStatus: ValidationStatus.Rejected,
-                },
-              });
+              reviewBuild(ReviewState.Rejected).catch(() => {});
             }}
             isDisabled={props.build.status === BuildStatus.Rejected}
           >

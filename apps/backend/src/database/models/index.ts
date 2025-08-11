@@ -28,6 +28,7 @@ export * from "./ProjectUser.js";
 export * from "./Screenshot.js";
 export * from "./ScreenshotBucket.js";
 export * from "./ScreenshotDiff.js";
+export * from "./ScreenshotDiffReview.js";
 export * from "./SlackChannel.js";
 export * from "./SlackInstallation.js";
 export * from "./Subscription.js";

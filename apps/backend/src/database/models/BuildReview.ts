@@ -3,6 +3,7 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
 import { Build } from "./Build.js";
+import { ScreenshotDiffReview } from "./ScreenshotDiffReview.js";
 import { User } from "./User.js";
 
 export class BuildReview extends Model {
@@ -17,7 +18,7 @@ export class BuildReview extends Model {
         properties: {
           buildId: { type: "string" },
           userId: { type: ["string", "null"] },
-          state: { type: "string", enum: ["pending", "approved", "rejected"] },
+          state: { type: "string", enum: ["approved", "rejected"] },
         },
       },
     ],
@@ -25,7 +26,7 @@ export class BuildReview extends Model {
 
   buildId!: string;
   userId!: string | null;
-  state!: "pending" | "approved" | "rejected";
+  state!: "approved" | "rejected";
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -45,9 +46,18 @@ export class BuildReview extends Model {
           to: "users.id",
         },
       },
+      screenshotDiffReviews: {
+        relation: Model.HasManyRelation,
+        modelClass: ScreenshotDiffReview,
+        join: {
+          from: "build_reviews.id",
+          to: "screenshot_diff_reviews.buildReviewId",
+        },
+      },
     };
   }
 
   build?: Build;
   user?: User;
+  screenshotDiffReviews?: ScreenshotDiffReview[];
 }
