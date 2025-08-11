@@ -10,6 +10,7 @@ import { useParams, useResolvedPath, useSearchParams } from "react-router-dom";
 import { useSafeQuery } from "@/containers/Apollo";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { BuildTestStatusChip } from "@/containers/BuildTestStatusChip";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
@@ -89,6 +90,7 @@ const ProjectBuildsQuery = graphql(`
             ...PullRequestButton_PullRequest
           }
           ...BuildStatusChip_Build
+          ...BuildTestStatusChip_Build
         }
       }
     }
@@ -146,8 +148,11 @@ const BuildRow = memo(function BuildRow({
           {build.name !== "default" ? build.name : ""}
         </div>
       </div>
-      <div className="flex w-[12.5rem] shrink-0 items-start">
+      <div className="flex w-[11rem] shrink-0 flex-col items-start gap-1">
         <BuildStatusChip build={build} />
+      </div>
+      <div className="hidden w-[9rem] shrink-0 items-start lg:flex">
+        <BuildTestStatusChip build={build} />
       </div>
       <div className="flex grow">
         <div className="hidden lg:flex">

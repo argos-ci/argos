@@ -30,7 +30,7 @@ async function getBucketFromCommits(args: { shas: string[]; build: Build }) {
   return bucket ?? null;
 }
 
-const strategies: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
+const gitProviders: MergeBaseStrategy<any>[] = [GithubStrategy, GitlabStrategy];
 
 /**
  * Get the base bucket for a build.
@@ -53,11 +53,11 @@ async function getBase(
   );
   invariant(project, "no project found", UnretryableError);
 
-  const strategy = strategies.find((s) => s.detect(project));
+  const gitProvider = gitProviders.find((s) => s.detect(project));
 
   // If we don't have a strategy then we could only count on baseCommit
   // specified by the user in the build.
-  if (!strategy) {
+  if (!gitProvider) {
     if (richBuild.baseCommit) {
       const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
         build,
@@ -100,7 +100,7 @@ async function getBase(
 
   const head = compareScreenshotBucket.commit;
 
-  const ctx = await strategy.getContext(project);
+  const ctx = await gitProvider.getContext(project);
 
   if (!ctx) {
     return {
@@ -110,7 +110,7 @@ async function getBase(
     };
   }
 
-  const mergeBaseCommitSha = await strategy.getMergeBaseCommitSha({
+  const mergeBaseCommitSha = await gitProvider.getMergeBaseCommitSha({
     project,
     ctx,
     base: baseBranch,
@@ -131,7 +131,7 @@ async function getBase(
   // If the merge base is the same as the head, then we have to found an ancestor
   // It happens when we are on a auto-approved branch.
   if (mergeBaseCommitSha === head) {
-    const shas = await strategy.listParentCommitShas({
+    const shas = await gitProvider.listParentCommitShas({
       project,
       build,
       ctx,
@@ -168,7 +168,7 @@ async function getBase(
   }
 
   // If we don't have a bucket for the merge base commit, then we have to found an ancestor
-  const shas = await strategy.listParentCommitShas({
+  const shas = await gitProvider.listParentCommitShas({
     project,
     build,
     ctx,

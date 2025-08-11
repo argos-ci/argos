@@ -3,17 +3,21 @@ import {
   AlertTriangleIcon,
   BadgeCheckIcon,
   CheckCircle2Icon,
+  CheckIcon,
   CircleCheckIcon,
   CircleDotIcon,
   CircleSlashIcon,
+  ClockIcon,
   HourglassIcon,
+  PauseIcon,
   RefreshCcwDotIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
   XCircleIcon,
+  XIcon,
 } from "lucide-react";
 
-import { BuildStatus } from "@/gql/graphql";
+import { BuildStatus, TestReportStatus } from "@/gql/graphql";
 
 type BuildType = "reference" | "check" | "orphan";
 
@@ -122,5 +126,47 @@ export function getBuildDescriptor(
     }
     default:
       assertNever(type);
+  }
+}
+
+/**
+ * Get the descriptor for a test report status.
+ */
+export function getTestReportStatusDescriptor(status: TestReportStatus) {
+  switch (status) {
+    case TestReportStatus.Passed:
+      return {
+        label: "Passed",
+        color: "success" as const,
+        icon: CheckIcon,
+        description:
+          "All end-to-end tests passed successfully. This build is eligible to be used as a baseline.",
+      };
+    case TestReportStatus.Failed:
+      return {
+        label: "Failed",
+        color: "danger" as const,
+        icon: XIcon,
+        description:
+          "Some end-to-end tests failed. This build is not eligible to be used as a baseline.",
+      };
+    case TestReportStatus.Timedout:
+      return {
+        label: "Timed Out",
+        color: "danger" as const,
+        icon: ClockIcon,
+        description:
+          "Some end-to-end tests timed out. This build is not eligible to be used as a baseline.",
+      };
+    case TestReportStatus.Interrupted:
+      return {
+        label: "Interrupted",
+        color: "danger" as const,
+        icon: PauseIcon,
+        description:
+          "Some end-to-end tests were interrupted. This build is not eligible to be used as a baseline.",
+      };
+    default:
+      assertNever(status);
   }
 }
