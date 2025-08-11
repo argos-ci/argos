@@ -4,6 +4,7 @@ import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
+import { BuildTestStatusChip } from "@/containers/BuildTestStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
@@ -36,6 +37,7 @@ const _BuildFragment = graphql(`
       ...PullRequestButton_PullRequest
     }
     ...BuildStatusChip_Build
+    ...BuildTestStatusChip_Build
   }
 `);
 
@@ -213,7 +215,8 @@ export const BuildHeader = memo(
               />
             </div>
           </div>
-          {build && project ? <BuildStatusChip build={build} /> : null}
+          {build ? <BuildStatusChip build={build} /> : null}
+          {build ? <BuildTestStatusChip build={build} /> : null}
         </div>
         <div className="flex min-w-0 items-center gap-4">
           {build?.pullRequest ? (

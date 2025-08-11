@@ -1,5 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
-import { CheckIcon, XIcon } from "lucide-react";
+import clsx from "clsx";
 
 import {
   BuildModeDescription,
@@ -9,6 +9,8 @@ import { DocumentType, graphql } from "@/gql";
 import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
+import { getTestReportStatusDescriptor } from "@/util/build";
+import { lowTextColorClassNames } from "@/util/colors";
 
 import { getProjectURL } from "../Project/ProjectParams";
 import { BuildParams, getBuildURL } from "./BuildParams";
@@ -77,41 +79,22 @@ function BuildLink(props: {
 }
 
 function TestReportStatusLabel(props: { status: TestReportStatus }) {
-  switch (props.status) {
-    case TestReportStatus.Passed:
-      return (
-        <>
-          <div>
-            <CheckIcon
-              className="text-success-low mr-1 inline-block"
-              size="1em"
-            />
-            Passed
-          </div>
-          <Description>
-            All tests passed successfully. This build is eligible to be used as
-            a baseline.
-          </Description>
-        </>
-      );
-    case TestReportStatus.Failed:
-    case TestReportStatus.Timedout:
-    case TestReportStatus.Interrupted:
-      return (
-        <>
-          <div>
-            <XIcon className="text-danger-low mr-1 inline-block" size="1em" />
-            Failed
-          </div>
-          <Description>
-            Some tests failed. This build is not eligible to be used as a
-            baseline.
-          </Description>
-        </>
-      );
-    default:
-      assertNever(props.status);
-  }
+  const descriptor = getTestReportStatusDescriptor(props.status);
+  return (
+    <>
+      <div>
+        <descriptor.icon
+          className={clsx(
+            "mr-1 inline-block",
+            lowTextColorClassNames[descriptor.color],
+          )}
+          size="1em"
+        />
+        {descriptor.label}
+      </div>
+      <Description>{descriptor.description}</Description>
+    </>
+  );
 }
 
 const _BuildFragment = graphql(`
