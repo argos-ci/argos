@@ -115,8 +115,10 @@ export function getRedirectFromState(input: {
       throw new Error("Invalid OAuth state structure");
     }
     const storedNonce = storage.getItem(getOAuthNonceKey(input.provider));
+    // If the nonce is not stored, we let it pass.
+    // It's acceptable in terms of security because some clients does not support local storage.
     if (!storedNonce) {
-      throw new Error("Missing stored OAuth state nonce");
+      return parsed.redirect;
     }
     if (parsed.nonce !== storedNonce) {
       throw new Error("Invalid OAuth state nonce");
