@@ -621,7 +621,7 @@ export const resolvers: IResolvers = {
         .select("name")
         .distinct("name")
         .where("projectId", project.id)
-        .whereRaw(`"createdAt" < now() - interval '1 month'`);
+        .whereRaw(`"createdAt" > now() - interval '1 month'`);
       return builds.map((build) => build.name);
     },
     contributors: async (project, args, ctx) => {
