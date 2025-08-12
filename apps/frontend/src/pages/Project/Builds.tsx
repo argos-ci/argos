@@ -139,12 +139,12 @@ const BuildRow = memo(function BuildRow({
       className="items-center p-4 text-sm"
       style={style}
     >
-      <div className="w-20 shrink-0">
+      <div className="w-28 shrink-0">
         <div className="flex items-center gap-1">
           <BuildModeIndicator mode={build.mode} />
           <div className="tabular-nums">{build.number}</div>
         </div>
-        <Truncable className="text-low">
+        <Truncable className="text-low mt-1 text-xs">
           {build.name !== "default" ? build.name : ""}
         </Truncable>
       </div>
@@ -171,7 +171,7 @@ const BuildRow = memo(function BuildRow({
           />
         )}
       </div>
-      <div className="relative hidden w-32 md:block">
+      <div className="relative hidden w-32 flex-col gap-1 text-xs md:flex">
         {build.branch && (
           <div>
             <FakeLink
@@ -202,7 +202,7 @@ const BuildRow = memo(function BuildRow({
         </div>
       </div>
       <div
-        className="text-low w-24 shrink-0 overflow-hidden truncate whitespace-nowrap text-right"
+        className="text-low w-24 shrink-0 overflow-hidden truncate whitespace-nowrap text-right text-xs"
         data-visual-test="transparent"
       >
         <Time date={build.createdAt} />
