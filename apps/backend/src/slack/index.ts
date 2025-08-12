@@ -19,6 +19,7 @@ import {
   SlackInstallation,
 } from "@/database/models";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
+import { boom } from "@/web/util";
 
 export type SlackMessageBlock = Bolt.types.AnyBlock;
 
@@ -488,15 +489,14 @@ export async function getSlackChannelById(args: {
       channel: id,
     })
     .catch((error) => {
-      if (
-        "data" in error &&
-        error.data &&
-        typeof error.data === "object" &&
-        "error" in error.data &&
-        typeof error.data.error === "string" &&
-        error.data.error === "channel_not_found"
-      ) {
-        return null;
+      const slackErrorCode = getSlackErrorCode(error);
+      if (slackErrorCode) {
+        switch (slackErrorCode) {
+          case "channel_not_found":
+            return null;
+          default:
+            handleSlackError(error);
+        }
       }
       throw error;
     });
@@ -516,21 +516,63 @@ async function findChannelByName(args: {
   const { token } = args;
   const name = normalizeChannelName(args.name);
   let cursor;
-  do {
-    const res = await boltApp.client.conversations.list(
-      cursor ? { token, cursor } : { token },
-    );
-    const match = res.channels?.find(
-      (c) => c.name === normalizeChannelName(name),
-    );
-    if (match) {
-      return SlackAPIChannel.parse(match);
-    }
-    cursor = res.response_metadata?.next_cursor;
-  } while (cursor);
+  try {
+    do {
+      const res = await boltApp.client.conversations.list(
+        cursor ? { token, cursor } : { token },
+      );
+      const match = res.channels?.find(
+        (c) => c.name === normalizeChannelName(name),
+      );
+      if (match) {
+        return SlackAPIChannel.parse(match);
+      }
+      cursor = res.response_metadata?.next_cursor;
+    } while (cursor);
+  } catch (error) {
+    handleSlackError(error);
+  }
   return null;
 }
 
+/**
+ * Handle Slack error for common operations.
+ */
+function handleSlackError(error: unknown) {
+  const slackErrorCode = getSlackErrorCode(error);
+  if (slackErrorCode) {
+    switch (slackErrorCode) {
+      case "missing_scope":
+        throw boom(
+          400,
+          "Missing scope in Slack integration. Please reinstall the Argos Slack app in team settings.",
+          {
+            code: "MISSING_SLACK_SCOPE",
+          },
+        );
+      default:
+        throw error;
+    }
+  }
+  throw error;
+}
+
+/**
+ * Get the Slack error code from an error object.
+ */
+function getSlackErrorCode(error: unknown) {
+  if (
+    error instanceof Error &&
+    "data" in error &&
+    error.data &&
+    typeof error.data === "object" &&
+    "error" in error.data &&
+    typeof error.data.error === "string"
+  ) {
+    return error.data.error;
+  }
+  return null;
+}
 /**
  * Normalize a Slack channel name by removing the leading `#` and converting to lowercase.
  */
