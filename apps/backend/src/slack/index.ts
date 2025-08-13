@@ -201,6 +201,7 @@ export const SLACK_BOT_SCOPES = [
   "links:write",
   "team:read",
   "channels:read",
+  "groups:read",
   "chat:write",
   "chat:write.public",
 ];
