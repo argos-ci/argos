@@ -201,6 +201,7 @@ export const SLACK_BOT_SCOPES = [
   "links:write",
   "team:read",
   "channels:read",
+  "groups:read",
   "chat:write",
   "chat:write.public",
 ];
@@ -484,10 +485,7 @@ export async function getSlackChannelById(args: {
   const token = installation.installation.bot?.token;
   invariant(token, "Expected bot token to be defined");
   const res = await boltApp.client.conversations
-    .info({
-      token,
-      channel: id,
-    })
+    .info({ token, channel: id })
     .catch((error) => {
       const slackErrorCode = getSlackErrorCode(error);
       if (slackErrorCode) {
@@ -547,6 +545,7 @@ function handleSlackError(error: unknown) {
           400,
           "Missing scope in Slack integration. Please reinstall the Argos Slack app in team settings.",
           {
+            cause: error,
             code: "MISSING_SLACK_SCOPE",
           },
         );
