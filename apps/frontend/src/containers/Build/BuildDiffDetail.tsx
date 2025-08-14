@@ -140,10 +140,20 @@ const _DiffFragment = graphql(`
           location {
             file
             line
+            column
           }
           retry
           retries
           repeat
+          annotations {
+            type
+            description
+            location {
+              file
+              line
+              column
+            }
+          }
         }
       }
     }
@@ -181,10 +191,20 @@ const _DiffFragment = graphql(`
           location {
             file
             line
+            column
           }
           retry
           retries
           repeat
+          annotations {
+            type
+            description
+            location {
+              file
+              line
+              column
+            }
+          }
         }
       }
       playwrightTraceUrl

@@ -1012,6 +1012,7 @@ type ScreenshotMetadataSDK {
 }
 
 type ScreenshotMetadataTest {
+  annotations: [ScreenshotMetadataTestAnnotation!]
   id: String
   location: ScreenshotMetadataLocation
   repeat: Int
@@ -1019,6 +1020,12 @@ type ScreenshotMetadataTest {
   retry: Int
   title: String!
   titlePath: [String!]!
+}
+
+type ScreenshotMetadataTestAnnotation {
+  description: String
+  location: ScreenshotMetadataLocation
+  type: String!
 }
 
 type ScreenshotMetadataViewport {

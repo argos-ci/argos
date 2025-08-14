@@ -29,6 +29,12 @@ export const typeDefs = gql`
     column: Int!
   }
 
+  type ScreenshotMetadataTestAnnotation {
+    type: String!
+    description: String
+    location: ScreenshotMetadataLocation
+  }
+
   type ScreenshotMetadataTest {
     id: String
     title: String!
@@ -37,6 +43,7 @@ export const typeDefs = gql`
     retry: Int
     retries: Int
     repeat: Int
+    annotations: [ScreenshotMetadataTestAnnotation!]
   }
 
   type ScreenshotMetadataBrowser {

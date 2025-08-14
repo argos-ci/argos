@@ -1273,6 +1273,7 @@ export type IScreenshotMetadataSdk = {
 
 export type IScreenshotMetadataTest = {
   __typename?: 'ScreenshotMetadataTest';
+  annotations?: Maybe<Array<IScreenshotMetadataTestAnnotation>>;
   id?: Maybe<Scalars['String']['output']>;
   location?: Maybe<IScreenshotMetadataLocation>;
   repeat?: Maybe<Scalars['Int']['output']>;
@@ -1280,6 +1281,13 @@ export type IScreenshotMetadataTest = {
   retry?: Maybe<Scalars['Int']['output']>;
   title: Scalars['String']['output'];
   titlePath: Array<Scalars['String']['output']>;
+};
+
+export type IScreenshotMetadataTestAnnotation = {
+  __typename?: 'ScreenshotMetadataTestAnnotation';
+  description?: Maybe<Scalars['String']['output']>;
+  location?: Maybe<IScreenshotMetadataLocation>;
+  type: Scalars['String']['output'];
 };
 
 export type IScreenshotMetadataViewport = {
@@ -1842,6 +1850,7 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotMetadataMediaType: IScreenshotMetadataMediaType;
   ScreenshotMetadataSDK: ResolverTypeWrapper<IScreenshotMetadataSdk>;
   ScreenshotMetadataTest: ResolverTypeWrapper<IScreenshotMetadataTest>;
+  ScreenshotMetadataTestAnnotation: ResolverTypeWrapper<IScreenshotMetadataTestAnnotation>;
   ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
@@ -1980,6 +1989,7 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotMetadataLocation: IScreenshotMetadataLocation;
   ScreenshotMetadataSDK: IScreenshotMetadataSdk;
   ScreenshotMetadataTest: IScreenshotMetadataTest;
+  ScreenshotMetadataTestAnnotation: IScreenshotMetadataTestAnnotation;
   ScreenshotMetadataViewport: IScreenshotMetadataViewport;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
@@ -2621,6 +2631,7 @@ export type IScreenshotMetadataSdkResolvers<ContextType = Context, ParentType ex
 }>;
 
 export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTest'] = IResolversParentTypes['ScreenshotMetadataTest']> = ResolversObject<{
+  annotations?: Resolver<Maybe<Array<IResolversTypes['ScreenshotMetadataTestAnnotation']>>, ParentType, ContextType>;
   id?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   location?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataLocation']>, ParentType, ContextType>;
   repeat?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
@@ -2628,6 +2639,13 @@ export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType e
   retry?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   titlePath?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IScreenshotMetadataTestAnnotationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTestAnnotation'] = IResolversParentTypes['ScreenshotMetadataTestAnnotation']> = ResolversObject<{
+  description?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  location?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataLocation']>, ParentType, ContextType>;
+  type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2897,6 +2915,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotMetadataLocation?: IScreenshotMetadataLocationResolvers<ContextType>;
   ScreenshotMetadataSDK?: IScreenshotMetadataSdkResolvers<ContextType>;
   ScreenshotMetadataTest?: IScreenshotMetadataTestResolvers<ContextType>;
+  ScreenshotMetadataTestAnnotation?: IScreenshotMetadataTestAnnotationResolvers<ContextType>;
   ScreenshotMetadataViewport?: IScreenshotMetadataViewportResolvers<ContextType>;
   SlackInstallation?: ISlackInstallationResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;

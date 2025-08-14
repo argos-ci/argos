@@ -35,6 +35,7 @@ import {
   useAcknowledgeMarkedDiff,
   useBuildDiffStatusState,
 } from "./BuildReviewState";
+import { AnnotationIndicator } from "./metadata/AnnotationIndicator";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
 import {
   BrowserIndicator,
@@ -326,6 +327,9 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         {test && (
           <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
         )}
+        {test?.annotations?.map((annotation, index) => (
+          <AnnotationIndicator key={index} annotation={annotation} />
+        ))}
         {pwTraceUrl ? (
           <TraceIndicator pwTraceUrl={pwTraceUrl} />
         ) : siblingTrace ? (
