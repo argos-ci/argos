@@ -7,7 +7,7 @@
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0",
-    "watch-build": "vite"
+    "watch-build": "vite --logLevel silent"
   },
   "sideEffects": false,
   "devDependencies": {

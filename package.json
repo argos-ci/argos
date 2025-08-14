@@ -21,8 +21,8 @@
     "clean-deps": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
     "heroku-postbuild": "BUILD_MODE=production pnpm run build && pnpm run clean-deps && pnpm install --prod",
     "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
-    "watch-codegen": "pnpm run codegen --watch",
-    "knip": "knip --tags=-route --tags=-utility",
+    "watch-codegen": "pnpm run codegen --watch --silent",
+    "knip": "knip",
     "download-env": "op read op://argos-dev/argos/.env.local >> .env"
   },
   "repository": "github:argos-ci/argos",
@@ -55,7 +55,6 @@
     "turbo": "^2.5.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.1",
-    "undici": "^7.13.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
   },

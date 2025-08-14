@@ -9,7 +9,7 @@ import { createModelJob, UnretryableError } from "@/job-core/index.js";
 import { sendNotification } from "@/notification/index.js";
 import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
 import { updateStripeUsage } from "@/stripe/index.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 
 import { concludeBuild } from "./concludeBuild.js";
 import { createBuildDiffs } from "./createBuildDiffs.js";
@@ -41,16 +41,13 @@ async function updateUsage(project: Project) {
   const { account } = project;
   invariant(account, "No account found", UnretryableError);
   const manager = account.$getSubscriptionManager();
-  const [usageBased, lock] = await Promise.all([
-    manager.checkIsUsageBasedPlan(),
-    getRedisLock(),
-  ]);
+  const isUsageBased = await manager.checkIsUsageBasedPlan();
 
-  if (!usageBased) {
+  if (!isUsageBased) {
     return;
   }
 
-  return lock.acquire(["updateUsage", account.id], async () => {
+  return redisLock.acquire(["updateUsage", account.id], async () => {
     const [screenshots, includedScreenshots, spendLimitThreshold] =
       await Promise.all([
         manager.getCurrentPeriodScreenshots(),

@@ -46,6 +46,8 @@ const config: CodegenConfig = {
           Screenshot: "../../database/models/index.js#Screenshot",
           ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
           ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",
+          ScreenshotMetadataSDK:
+            "../../database/schemas/ScreenshotMetadata.js#ScreenshotMetadataSDK",
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",

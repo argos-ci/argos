@@ -1,6 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
+import semver from "semver";
 
+import {
+  checkIsTrustedNpmPackage,
+  getLatestPackageVersion,
+} from "@/npm/version.js";
 import { getPublicImageFileUrl, getPublicUrl } from "@/storage/index.js";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
@@ -59,6 +64,8 @@ export const typeDefs = gql`
   type ScreenshotMetadataSDK {
     name: String!
     version: String!
+    "If the SDK version is not the latest one this field will be filled with the latest version of the SDK"
+    latestVersion: String
   }
 
   type ScreenshotMetadata {
@@ -130,6 +137,18 @@ export const resolvers: IResolvers = {
       const searchParams = new URLSearchParams();
       searchParams.set("trace", url);
       return `https://trace.playwright.dev/?${searchParams}`;
+    },
+  },
+  ScreenshotMetadataSDK: {
+    async latestVersion(sdk) {
+      if (!checkIsTrustedNpmPackage(sdk.name)) {
+        return null;
+      }
+      const latestVersion = await getLatestPackageVersion(sdk.name);
+      if (semver.gt(latestVersion, sdk.version)) {
+        return latestVersion;
+      }
+      return null;
     },
   },
 };

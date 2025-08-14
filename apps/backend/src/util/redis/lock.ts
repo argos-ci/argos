@@ -1,6 +1,8 @@
 import type { RedisClientType } from "redis";
 
-const acquireLock = ({
+import { hashCacheKey, type CacheKey } from "./cache-key";
+
+async function acquireLock({
   client,
   name,
   timeout,
@@ -10,7 +12,7 @@ const acquireLock = ({
   name: string;
   timeout: number;
   retryDelay: { min: number; max: number };
-}) => {
+}) {
   return new Promise<string>((resolve, reject) => {
     function tryAcquire() {
       const rdn = Math.random().toString(36);
@@ -34,43 +36,52 @@ const acquireLock = ({
 
     tryAcquire();
   });
-};
+}
 
-export const createRedisLock = (client: RedisClientType) => {
-  async function acquire<T>(
-    key: (string | number)[],
-    task: () => Promise<T>,
-    { timeout = 20000, retryDelay = { min: 100, max: 200 } } = {},
-  ) {
-    const hash = key.join(":");
-    const fullName = `lock.${hash}`;
-    const id = await acquireLock({
-      client,
-      name: fullName,
-      timeout,
-      retryDelay,
-    });
-    let timer: NodeJS.Timeout | null = null;
-    try {
-      const result = (await Promise.race([
-        task(),
-        new Promise((_resolve, reject) => {
-          timer = setTimeout(() => {
-            reject(new Error(`Lock timeout "${hash}" after ${timeout}ms`));
-          }, timeout);
-        }),
-      ])) as T;
-      return result;
-    } finally {
-      if (timer) {
-        clearTimeout(timer);
+/**
+ * Create a Redis lock client.
+ */
+export function createRedisLockClient(options: {
+  getRedisClient: () => Promise<RedisClientType>;
+}) {
+  return {
+    /**
+     * Acquire the lock in Redis.
+     */
+    async acquire<T>(
+      key: CacheKey,
+      task: () => Promise<T>,
+      { timeout = 20000, retryDelay = { min: 100, max: 200 } } = {},
+    ) {
+      const hash = hashCacheKey(key);
+      const fullName = `lock.${hash}`;
+      const client = await options.getRedisClient();
+      const id = await acquireLock({
+        client,
+        name: fullName,
+        timeout,
+        retryDelay,
+      });
+      let timer: NodeJS.Timeout | null = null;
+      try {
+        const result = (await Promise.race([
+          task(),
+          new Promise((_resolve, reject) => {
+            timer = setTimeout(() => {
+              reject(new Error(`Lock timeout "${hash}" after ${timeout}ms`));
+            }, timeout);
+          }),
+        ])) as T;
+        return result;
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+        const value = await client.get(fullName);
+        if (value === id) {
+          await client.del(fullName);
+        }
       }
-      const value = await client.get(fullName);
-      if (value === id) {
-        await client.del(fullName);
-      }
-    }
-  }
-
-  return { acquire };
-};
+    },
+  };
+}

@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/node";
 import { memoize } from "lodash-es";
 
 import logger from "@/logger/index.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 
 import { connect } from "./amqp.js";
 import { checkIsRetryable } from "./error.js";
@@ -110,8 +110,7 @@ export const createJob = <TValue extends string | number>(
       });
     },
     async run(id: TValue) {
-      const lock = await getRedisLock();
-      await lock.acquire(
+      await redisLock.acquire(
         [queue, id],
         async () => {
           await consumer.perform(id);

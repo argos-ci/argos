@@ -14,7 +14,7 @@ import {
 } from "@/github/index.js";
 import { getGitlabClientFromAccount } from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 
 import { getAggregatedNotification } from "./aggregated.js";
 import { getCommentBody } from "./comment.js";
@@ -51,8 +51,7 @@ const createGhCommitStatus = async (
   octokit: Octokit,
   params: RestEndpointMethodTypes["repos"]["createCommitStatus"]["parameters"],
 ) => {
-  const lock = await getRedisLock();
-  await lock.acquire(
+  await redisLock.acquire(
     ["create-github-commit-status", params.owner, params.repo, params.sha],
     async () => {
       try {

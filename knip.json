@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "tags": ["-route", "-utility", "-graphqlType"],
   "workspaces": {
     "apps/backend": {
       "entry": [
@@ -39,11 +40,5 @@
   },
   "exclude": ["classMembers"],
   "ignore": ["playwright.config.mts"],
-  "ignoreDependencies": [
-    "@types/express-serve-static-core",
-    "@types/express",
-    "express",
-    "undici"
-  ],
   "ignoreBinaries": ["stripe", "sleep", "ngrok", "op"]
 }

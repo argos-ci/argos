@@ -11,7 +11,7 @@ import { raw, transaction } from "@/database/index.js";
 import { Build, BuildShard, Project } from "@/database/models/index.js";
 import { BuildMetadataSchema } from "@/database/schemas/BuildMetadata.js";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
-import { getRedisLock } from "@/util/redis";
+import { redisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
@@ -142,8 +142,7 @@ async function handleUpdateParallel(ctx: Context) {
     throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
-  const lock = await getRedisLock();
-  const complete = await lock.acquire(
+  const complete = await redisLock.acquire(
     ["update-build-parallel", build.id],
     async () => {
       return transaction(async (trx) => {

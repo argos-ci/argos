@@ -128,6 +128,7 @@ const _DiffFragment = graphql(`
         sdk {
           name
           version
+          latestVersion
         }
         viewport {
           width
@@ -179,6 +180,7 @@ const _DiffFragment = graphql(`
         sdk {
           name
           version
+          latestVersion
         }
         viewport {
           width

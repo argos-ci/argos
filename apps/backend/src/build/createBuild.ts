@@ -13,7 +13,7 @@ import {
 } from "@/database/models/index.js";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 import { boom } from "@/web/util.js";
 
 async function getOrCreatePullRequest({
@@ -23,8 +23,7 @@ async function getOrCreatePullRequest({
   githubRepositoryId: string;
   number: number;
 }) {
-  const lock = await getRedisLock();
-  return lock.acquire(
+  return redisLock.acquire(
     ["pull-request-creation", githubRepositoryId, number],
     async () => {
       const existingPr = await GithubPullRequest.query().findOne({
@@ -130,7 +129,7 @@ export async function createBuild(params: {
   const buildName = params.buildName || "default";
   const mode = params.mode ?? "ci";
 
-  const [pullRequest, isPartial, lock] = await Promise.all([
+  const [pullRequest, isPartial] = await Promise.all([
     (async () => {
       if (!params.prNumber) {
         return null;
@@ -151,10 +150,9 @@ export async function createBuild(params: {
       runAttempt: params.runAttempt ?? null,
       runId: params.runId ?? null,
     }),
-    getRedisLock(),
   ]);
 
-  const build = await lock.acquire(
+  const build = await redisLock.acquire(
     ["create-build", params.project.id],
     async () => {
       return transaction(async (trx) => {
