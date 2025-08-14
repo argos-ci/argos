@@ -28,37 +28,33 @@ export default defineConfig(({ mode: argMode }) => {
         output: {
           experimentalMinChunkSize: 10_240,
           manualChunks: (id) => {
-            if (id.includes("node_modules")) {
-              if (
-                id.includes("/react@") ||
-                id.includes("/react-dom@") ||
-                id.includes("/scheduler@") ||
-                id.includes("/react-transition-group@")
-              ) {
-                return "react";
-              }
-              if (id.includes("/@sentry+")) {
-                return "sentry";
-              }
-              if (
-                id.includes("/react-router-dom") ||
-                id.includes("/react-helmet") ||
-                id.includes("/graphql@") ||
-                id.includes("/react-hook-form")
-              ) {
-                return "core";
-              }
-              if (id.includes("/lucide-react") || id.includes("/@primer")) {
-                return "icons";
-              }
-              if (id.includes("/d3-")) {
-                return "d3";
-              }
-              if (id.includes("/lodash")) {
-                return "lodash";
-              }
-              if (id.includes("/recharts")) {
-                return "recharts";
+            const chunkMap = {
+              common: [
+                "vite/preload-helper",
+                "vite/modulepreload-polyfill",
+                "vite/dynamic-import-helper",
+                "commonjsHelpers",
+                "commonjs-dynamic-modules",
+                "__vite-browser-external",
+              ],
+              "react-aria": [
+                "node_modules/react-aria",
+                "node_modules/@react-aria",
+                "node_modules/@react-stately",
+              ],
+              sentry: ["node_modules/@sentry"],
+              icons: ["node_modules/lucide-react", "node_modules/@primer"],
+              moment: ["node_modules/moment"],
+              d3: ["node_modules/d3-"],
+              lodash: ["node_modules/lodash"],
+              recharts: ["node_modules/recharts"],
+              react: ["node_modules/react", "node_modules/react-dom"],
+            };
+
+            // https://github.com/vitejs/vite/issues/5189#issuecomment-2175410148
+            for (const [chunkName, patterns] of Object.entries(chunkMap)) {
+              if (patterns.some((pattern) => id.includes(pattern))) {
+                return chunkName;
               }
             }
             return null;
