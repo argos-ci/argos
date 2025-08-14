@@ -57,6 +57,7 @@ export default defineConfig(({ mode: argMode }) => {
                 return chunkName;
               }
             }
+            return null;
           },
         },
       },
