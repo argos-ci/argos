@@ -31,22 +31,26 @@ export default defineConfig(({ mode: argMode }) => {
             if (id.includes("node_modules")) {
               if (
                 id.includes("/react@") ||
+                id.includes("/react-is@") ||
                 id.includes("/react-dom@") ||
                 id.includes("/scheduler@") ||
-                id.includes("/react-transition-group@")
-              ) {
-                return "react";
-              }
-              if (id.includes("/@sentry+")) {
-                return "sentry";
-              }
-              if (
-                id.includes("/react-router-dom") ||
+                id.includes("/react-transition-group@") ||
+                id.includes("/react-router") ||
                 id.includes("/react-helmet") ||
                 id.includes("/graphql@") ||
                 id.includes("/react-hook-form")
               ) {
-                return "core";
+                return "react";
+              }
+              if (
+                id.includes("/react-aria") ||
+                id.includes("/@react-aria") ||
+                id.includes("/@react-stately")
+              ) {
+                return "react-aria";
+              }
+              if (id.includes("/@sentry+")) {
+                return "sentry";
               }
               if (id.includes("/lucide-react") || id.includes("/@primer")) {
                 return "icons";
@@ -54,12 +58,16 @@ export default defineConfig(({ mode: argMode }) => {
               if (id.includes("/d3-")) {
                 return "d3";
               }
-              if (id.includes("/lodash")) {
+              if (id.includes("/moment")) {
+                return "moment";
+              }
+              if (id.includes("lodash")) {
                 return "lodash";
               }
-              if (id.includes("/recharts")) {
+              if (id.includes("recharts")) {
                 return "recharts";
               }
+              return "vendor";
             }
             return null;
           },
