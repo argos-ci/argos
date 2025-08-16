@@ -34,7 +34,7 @@ export function BuildFlakyIndicator(props: {
   );
 
   const testLink = (
-    <Link to={testURL} className="underline decoration-1 underline-offset-2">
+    <Link to={testURL} className="underline-link">
       View complete test details
     </Link>
   );

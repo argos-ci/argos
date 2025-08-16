@@ -260,6 +260,10 @@
   @apply underline decoration-dotted decoration-1 underline-offset-1;
 }
 
+@utility underline-link {
+  @apply underline decoration-1 underline-offset-2;
+}
+
 @layer base {
   :root {
     --chart-1: 12 76% 61%;
