@@ -69,10 +69,20 @@ const ScreenshotDiffFragment = graphql(`
           location {
             file
             line
+            column
           }
           retry
           retries
           repeat
+          annotations {
+            type
+            description
+            location {
+              file
+              line
+              column
+            }
+          }
         }
       }
     }
@@ -110,10 +120,20 @@ const ScreenshotDiffFragment = graphql(`
           location {
             file
             line
+            column
           }
           retry
           retries
           repeat
+          annotations {
+            type
+            description
+            location {
+              file
+              line
+              column
+            }
+          }
         }
       }
       playwrightTraceUrl

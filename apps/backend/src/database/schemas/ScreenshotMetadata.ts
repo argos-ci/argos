@@ -19,9 +19,7 @@ const ViewportSchema = z
 
 const LocationSchema = z
   .object({
-    file: z
-      .string()
-      .meta({ description: "The file where the test is located" }),
+    file: z.string().meta({ description: "The located file" }),
     line: z
       .number()
       .int()
@@ -33,7 +31,20 @@ const LocationSchema = z
       .min(0)
       .meta({ description: "The column number in the file" }),
   })
-  .meta({ description: "The location of the test in the source code" });
+  .meta({ description: "Indicate a location in the source code" });
+
+const TestAnnotationSchema = z
+  .object({
+    type: z.string().meta({ description: "The type of annotation" }),
+    description: z
+      .string()
+      .optional()
+      .meta({ description: "The description of the annotation" }),
+    location: LocationSchema.optional().meta({
+      description: "The location of the annotation in the source code",
+    }),
+  })
+  .meta({ description: "A test annotation" });
 
 const TestSchema = z
   .object({
@@ -69,6 +80,9 @@ const TestSchema = z
       .meta({ description: "The repeat count for the test" }),
     location: LocationSchema.optional().meta({
       description: "The location of the test in the source code",
+    }),
+    annotations: z.array(TestAnnotationSchema).optional().meta({
+      description: "Annotations associated to the test",
     }),
   })
   .meta({ description: "The test that generated the screenshot" });
