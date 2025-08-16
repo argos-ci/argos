@@ -1,15 +1,13 @@
-import type { ComponentPropsWithRef } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import clsx from "clsx";
-import { CircleCheckIcon, WavesIcon, type LucideIcon } from "lucide-react";
+import { CircleCheckIcon, WavesIcon } from "lucide-react";
 import { useNumberFormatter } from "react-aria";
 import { Link } from "react-router-dom";
 
 import type { Diff } from "@/pages/Build/BuildDiffState";
 import { getTestURL } from "@/pages/Test/TestParams";
 import { ChipLink } from "@/ui/Chip";
-import { Tooltip } from "@/ui/Tooltip";
+import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
 import { lowTextColorClassNames } from "@/util/colors";
 
 import { getFlakinessUIColor } from "../Test/Flakiness";
@@ -75,7 +73,7 @@ export function BuildFlakyIndicator(props: {
     );
   }
 
-  if (diff.test.last7daysMetrics.all.flakiness > 0) {
+  if (diff.test.last7daysMetrics.all.flakiness === 0) {
     const color = getFlakinessUIColor(diff.test.last7daysMetrics.all.flakiness);
     return (
       <Tooltip
@@ -149,23 +147,5 @@ export function BuildFlakyIndicator(props: {
         Stable
       </ChipLink>
     </Tooltip>
-  );
-}
-
-function TooltipContainer(props: ComponentPropsWithRef<"div">) {
-  return <div className="flex flex-col items-start gap-0.5" {...props} />;
-}
-
-function TooltipHeader(
-  props: ComponentPropsWithRef<"h3"> & {
-    icon: LucideIcon;
-  },
-) {
-  const { icon: Icon, ...rest } = props;
-  return (
-    <h3 {...rest} className={clsx("mb-0.5 font-semibold", rest.className)}>
-      <Icon className="mr-1 inline size-3 align-middle" />
-      {props.children}
-    </h3>
   );
 }

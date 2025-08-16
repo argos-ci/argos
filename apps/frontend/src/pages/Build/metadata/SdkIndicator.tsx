@@ -5,7 +5,7 @@ import { CloudDownloadIcon } from "lucide-react";
 import type { ScreenshotMetadataSdk } from "@/gql/graphql";
 import { BrandShield } from "@/ui/BrandShield";
 import { Chip } from "@/ui/Chip";
-import { Tooltip } from "@/ui/Tooltip";
+import { Tooltip, TooltipContainer, TooltipHeader } from "@/ui/Tooltip";
 
 export function SdkIndicator({
   sdk,
@@ -20,19 +20,18 @@ export function SdkIndicator({
       <Tooltip
         disableHoverableContent={false}
         content={
-          <div className="flex flex-col items-start">
-            <div className="mb-2 flex items-center gap-1.5 text-sm font-medium">
-              <CloudDownloadIcon className="text-primary-low size-3.5" />
+          <TooltipContainer>
+            <TooltipHeader icon={CloudDownloadIcon}>
               New SDK version available
-            </div>
-            <p className="mb-1">
+            </TooltipHeader>
+            <p>
               You’re using{" "}
               <strong className="font-medium">
                 {sdk.name} v{sdk.version}
               </strong>
               .
             </p>
-            <p className="mb-1">
+            <p>
               Upgrade to{" "}
               <strong className="font-medium">v{sdk.latestVersion}</strong> for
               the latest fixes and features.{" "}
@@ -43,7 +42,7 @@ export function SdkIndicator({
             >
               View changelog
             </a>
-          </div>
+          </TooltipContainer>
         }
       >
         <Chip color="primary" scale="xs" icon={<BrandShieldIcon />}>

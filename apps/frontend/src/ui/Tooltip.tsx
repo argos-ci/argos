@@ -1,5 +1,6 @@
-import { cloneElement, useRef } from "react";
+import { cloneElement, useRef, type ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
+import type { LucideIcon } from "lucide-react";
 import { FocusableOptions, mergeProps, useFocusable } from "react-aria";
 import {
   Tooltip as RACTooltip,
@@ -143,5 +144,28 @@ export function Tooltip(props: TooltipProps) {
         {props.content}
       </TooltipOverlay>
     </TooltipTrigger>
+  );
+}
+
+export function TooltipContainer(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div className="flex flex-col items-start gap-1 px-0.5 py-1" {...props} />
+  );
+}
+
+export function TooltipHeader(
+  props: ComponentPropsWithRef<"h3"> & {
+    icon: LucideIcon;
+  },
+) {
+  const { icon: Icon, ...rest } = props;
+  return (
+    <h3
+      {...rest}
+      className={clsx("mb-0.5 text-sm font-medium", rest.className)}
+    >
+      <Icon className="mr-1.5 inline size-3.5 align-middle opacity-70" />
+      {props.children}
+    </h3>
   );
 }
