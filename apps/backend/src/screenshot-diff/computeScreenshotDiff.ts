@@ -15,7 +15,7 @@ import {
 import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
 import { chunk } from "@/util/chunk.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 
 import { DEFAULT_THRESHOLD, diffImages } from "./util/image-diff/index.js";
 
@@ -81,8 +81,7 @@ async function lockAndUploadDiffFile(args: {
   height: number;
   image: S3ImageFile;
 }) {
-  const lock = await getRedisLock();
-  return lock.acquire(["diff-upload", args.key], async () => {
+  return redisLock.acquire(["diff-upload", args.key], async () => {
     // Check if the diff file has been uploaded by another process
     const existingDiffFile = await File.query().findOne({ key: args.key });
     if (existingDiffFile) {
@@ -259,8 +258,7 @@ export const computeScreenshotDiff = async (
     // Group similar diffs
     (async () => {
       if (diffData.s3Id) {
-        const lock = await getRedisLock();
-        await lock.acquire(["diff-group", diffData.s3Id], async () => {
+        await redisLock.acquire(["diff-group", diffData.s3Id], async () => {
           await groupSimilarDiffs({ diffFileKey: diffData.s3Id, buildId });
         });
       }

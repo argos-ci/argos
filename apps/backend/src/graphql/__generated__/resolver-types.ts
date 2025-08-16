@@ -2,6 +2,7 @@ import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } f
 import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
+import type { ScreenshotMetadataSDK } from '../../database/schemas/ScreenshotMetadata.js';
 import type { TestMetrics, TestChangeObject } from '../../graphql/definitions/Test.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
@@ -1267,6 +1268,8 @@ export enum IScreenshotMetadataMediaType {
 
 export type IScreenshotMetadataSdk = {
   __typename?: 'ScreenshotMetadataSDK';
+  /** If the SDK version is not the latest one this field will be filled with the latest version of the SDK */
+  latestVersion?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   version: Scalars['String']['output'];
 };
@@ -1842,13 +1845,13 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotDiffConnection: ResolverTypeWrapper<Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversTypes['ScreenshotDiff']> }>;
   ScreenshotDiffReviewInput: IScreenshotDiffReviewInput;
   ScreenshotDiffStatus: IScreenshotDiffStatus;
-  ScreenshotMetadata: ResolverTypeWrapper<IScreenshotMetadata>;
+  ScreenshotMetadata: ResolverTypeWrapper<Omit<IScreenshotMetadata, 'sdk'> & { sdk: IResolversTypes['ScreenshotMetadataSDK'] }>;
   ScreenshotMetadataAutomationLibrary: ResolverTypeWrapper<IScreenshotMetadataAutomationLibrary>;
   ScreenshotMetadataBrowser: ResolverTypeWrapper<IScreenshotMetadataBrowser>;
   ScreenshotMetadataColorScheme: IScreenshotMetadataColorScheme;
   ScreenshotMetadataLocation: ResolverTypeWrapper<IScreenshotMetadataLocation>;
   ScreenshotMetadataMediaType: IScreenshotMetadataMediaType;
-  ScreenshotMetadataSDK: ResolverTypeWrapper<IScreenshotMetadataSdk>;
+  ScreenshotMetadataSDK: ResolverTypeWrapper<ScreenshotMetadataSDK>;
   ScreenshotMetadataTest: ResolverTypeWrapper<IScreenshotMetadataTest>;
   ScreenshotMetadataTestAnnotation: ResolverTypeWrapper<IScreenshotMetadataTestAnnotation>;
   ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
@@ -1983,11 +1986,11 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotDiff: ScreenshotDiff;
   ScreenshotDiffConnection: Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversParentTypes['ScreenshotDiff']> };
   ScreenshotDiffReviewInput: IScreenshotDiffReviewInput;
-  ScreenshotMetadata: IScreenshotMetadata;
+  ScreenshotMetadata: Omit<IScreenshotMetadata, 'sdk'> & { sdk: IResolversParentTypes['ScreenshotMetadataSDK'] };
   ScreenshotMetadataAutomationLibrary: IScreenshotMetadataAutomationLibrary;
   ScreenshotMetadataBrowser: IScreenshotMetadataBrowser;
   ScreenshotMetadataLocation: IScreenshotMetadataLocation;
-  ScreenshotMetadataSDK: IScreenshotMetadataSdk;
+  ScreenshotMetadataSDK: ScreenshotMetadataSDK;
   ScreenshotMetadataTest: IScreenshotMetadataTest;
   ScreenshotMetadataTestAnnotation: IScreenshotMetadataTestAnnotation;
   ScreenshotMetadataViewport: IScreenshotMetadataViewport;
@@ -2625,6 +2628,7 @@ export type IScreenshotMetadataLocationResolvers<ContextType = Context, ParentTy
 }>;
 
 export type IScreenshotMetadataSdkResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataSDK'] = IResolversParentTypes['ScreenshotMetadataSDK']> = ResolversObject<{
+  latestVersion?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

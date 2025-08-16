@@ -1007,6 +1007,10 @@ enum ScreenshotMetadataMediaType {
 }
 
 type ScreenshotMetadataSDK {
+  """
+  If the SDK version is not the latest one this field will be filled with the latest version of the SDK
+  """
+  latestVersion: String
   name: String!
   version: String!
 }

@@ -147,3 +147,5 @@ export const ScreenshotMetadataJsonSchema = z.toJSONSchema(
 );
 
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;
+/** @graphqlType */
+export type ScreenshotMetadataSDK = z.infer<typeof SdkSchema>;

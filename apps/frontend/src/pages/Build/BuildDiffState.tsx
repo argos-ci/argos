@@ -57,6 +57,7 @@ const ScreenshotDiffFragment = graphql(`
         sdk {
           name
           version
+          latestVersion
         }
         viewport {
           width
@@ -108,6 +109,7 @@ const ScreenshotDiffFragment = graphql(`
         sdk {
           name
           version
+          latestVersion
         }
         viewport {
           width

@@ -4,16 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import config from "@/config/index.js";
 
-import { createRedisLock } from "./lock.js";
-
-function createResolvablePromise() {
-  let resolve: (value: any) => void;
-  const promise = new Promise((r) => {
-    resolve = r;
-  }) as Promise<any> & { resolve: (value: any) => void };
-  promise.resolve = resolve!;
-  return promise;
-}
+import { createRedisLockClient } from "./lock.js";
+import { createResolvablePromise } from "./test-util.js";
 
 describe("redis-lock", () => {
   let client: RedisClientType;
@@ -29,7 +21,7 @@ describe("redis-lock", () => {
   });
 
   it("takes lock", async () => {
-    const lock = createRedisLock(client);
+    const lock = createRedisLockClient({ getRedisClient: async () => client });
     const p1 = createResolvablePromise();
     const spy1 = vi.fn();
     const spy2 = vi.fn();
@@ -53,7 +45,7 @@ describe("redis-lock", () => {
   });
 
   it("handles errors", async () => {
-    const lock = createRedisLock(client);
+    const lock = createRedisLockClient({ getRedisClient: async () => client });
     const spy1 = vi.fn();
     const spy2 = vi.fn();
     const l1 = lock

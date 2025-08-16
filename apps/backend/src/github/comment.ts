@@ -1,7 +1,7 @@
 import { Octokit } from "@octokit/rest";
 
 import type { GithubPullRequest } from "@/database/models/index.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis";
 
 import { checkErrorStatus } from "./client";
 
@@ -18,8 +18,7 @@ async function getOrCreatePullRequestComment({
   octokit: Octokit;
   pullRequest: GithubPullRequest;
 }) {
-  const lock = await getRedisLock();
-  await lock.acquire(["create-pr-comment", pullRequest.id], async () => {
+  await redisLock.acquire(["create-pr-comment", pullRequest.id], async () => {
     await pullRequest.$query();
     if (pullRequest.commentId) {
       return pullRequest.commentId;

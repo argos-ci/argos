@@ -7,7 +7,7 @@
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "lint": "eslint . --max-warnings 0",
-    "watch-build": "vite"
+    "watch-build": "vite --logLevel silent"
   },
   "sideEffects": false,
   "devDependencies": {
@@ -32,8 +32,8 @@
     "@types/d3-transition": "^3.0.9",
     "@types/d3-zoom": "^3.0.8",
     "@types/js-cookie": "^3.0.6",
-    "@types/react": "19.1.10",
-    "@types/react-dom": "19.1.7",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@types/react-helmet": "^6.1.11",
     "@vitejs/plugin-react-swc": "^4.0.0",
     "clsx": "^2.1.1",

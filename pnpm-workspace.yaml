@@ -3,6 +3,8 @@ packages:
   - "packages/*"
 catalog:
   "@eslint/js": ^9.33.0
+  "@types/react": ^19.1.10
+  "@types/react-dom": ^19.1.7
   "@types/express": ^5.0.3
   "@types/express-serve-static-core": ^5.0.7
   express: ^5.1.0

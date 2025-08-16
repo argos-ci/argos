@@ -11,7 +11,7 @@ import { Build, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 import { quitAmqp } from "@/job-core/index.js";
 import { getS3Client } from "@/storage/index.js";
-import { quitRedis } from "@/util/redis/index.js";
+import { closeRedis } from "@/util/redis/client.js";
 
 import { createApp } from "./app.js";
 
@@ -26,7 +26,7 @@ describe("api v2", () => {
   });
 
   afterAll(async () => {
-    await Promise.all([quitRedis(), getS3Client().destroy(), quitAmqp()]);
+    await Promise.all([closeRedis(), getS3Client().destroy(), quitAmqp()]);
   });
 
   beforeEach(async () => {

@@ -9,7 +9,7 @@ import { Project } from "@/database/models/Project.js";
 import { getUnknownFileKeys } from "@/database/services/file.js";
 import { getS3Client } from "@/storage/s3.js";
 import { getSignedPutObjectUrl } from "@/storage/signed-url.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
 
@@ -202,8 +202,7 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
   const buildName = getBuildName(body.name);
   const { parallelNonce } = body;
 
-  const lock = await getRedisLock();
-  const build = await lock.acquire(
+  const build = await redisLock.acquire(
     [
       "create-build-parallel",
       project.id,

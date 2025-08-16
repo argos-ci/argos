@@ -6,7 +6,7 @@ import { AutomationEvents } from "@/automation/types/events";
 import { job as buildNotificationJob } from "@/build-notification/job.js";
 import { transaction } from "@/database/index.js";
 import { Build, BuildConclusion, BuildNotification } from "@/database/models";
-import { getRedisLock } from "@/util/redis";
+import { redisLock } from "@/util/redis";
 
 /**
  * Concludes the build by updating the conclusion and the stats.
@@ -14,9 +14,8 @@ import { getRedisLock } from "@/util/redis";
  */
 export async function concludeBuild(input: { build: Build; notify?: boolean }) {
   const { build, notify = true } = input;
-  const lock = await getRedisLock();
   const buildId = build.id;
-  return lock.acquire(["conclude-build", buildId], async () => {
+  return redisLock.acquire(["conclude-build", buildId], async () => {
     const existingBuild = await Build.query()
       .select("conclusion")
       .findById(buildId)

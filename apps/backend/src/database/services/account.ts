@@ -5,7 +5,7 @@ import type { PartialModelObject } from "objection";
 
 import type { RestEndpointMethodTypes } from "@/github/index.js";
 import { sendNotification } from "@/notification/index.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 import { slugify } from "@/util/slug.js";
 import { boom } from "@/web/util.js";
 
@@ -37,8 +37,7 @@ export async function getOrCreateGithubAccountMember(input: {
   githubAccountId: string;
   githubMemberId: string;
 }) {
-  const lock = await getRedisLock();
-  return lock.acquire(
+  return redisLock.acquire(
     [
       "getOrCreateGithubAccountMember",
       input.githubMemberId,
@@ -134,8 +133,7 @@ export async function getOrCreateGhAccount(
   props: GetOrCreateGhAccountProps,
 ): Promise<GithubAccount> {
   const { githubId, type, ...rest } = props;
-  const lock = await getRedisLock();
-  return lock.acquire(["get-or-create-gh-account", githubId], async () => {
+  return redisLock.acquire(["get-or-create-gh-account", githubId], async () => {
     const existing = await GithubAccount.query().findOne({ githubId });
     if (existing) {
       const toUpdate = getPartialModelUpdate(existing, rest);

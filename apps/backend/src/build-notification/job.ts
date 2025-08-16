@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { BuildNotification } from "@/database/models/index.js";
 import { createModelJob } from "@/job-core/index.js";
-import { getRedisLock } from "@/util/redis/index.js";
+import { redisLock } from "@/util/redis/index.js";
 
 import { processBuildNotification } from "./notifications.js";
 
@@ -10,8 +10,7 @@ export const job = createModelJob(
   "buildNotification",
   BuildNotification,
   async (buildNotification) => {
-    const lock = await getRedisLock();
-    await lock.acquire(
+    await redisLock.acquire(
       ["build-notification-process", buildNotification.buildId],
       async () => {
         const latestBuildNotification = await BuildNotification.query()
