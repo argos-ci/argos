@@ -108,7 +108,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash-es": "^4.17.12",
     "@types/morgan": "^1.9.10",
-    "@types/react": "^19.1.10",
+    "@types/react": "catalog:",
     "@types/semver": "^7.7.0",
     "@types/supertest": "^6.0.3",
     "@types/tmp": "^0.2.6",

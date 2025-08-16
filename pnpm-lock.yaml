@@ -9,6 +9,12 @@ catalogs:
     '@eslint/js':
       specifier: ^9.33.0
       version: 9.33.0
+    '@types/react':
+      specifier: ^19.1.10
+      version: 19.1.10
+    '@types/react-dom':
+      specifier: ^19.1.7
+      version: 19.1.7
 
 overrides:
   '@types/express': ^5.0.3
@@ -339,7 +345,7 @@ importers:
         specifier: ^1.9.10
         version: 1.9.10
       '@types/react':
-        specifier: ^19.1.10
+        specifier: 'catalog:'
         version: 19.1.10
       '@types/semver':
         specifier: ^7.7.0
@@ -435,10 +441,10 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6
       '@types/react':
-        specifier: 19.1.10
+        specifier: 'catalog:'
         version: 19.1.10
       '@types/react-dom':
-        specifier: 19.1.7
+        specifier: 'catalog:'
         version: 19.1.7(@types/react@19.1.10)
       '@types/react-helmet':
         specifier: ^6.1.11
