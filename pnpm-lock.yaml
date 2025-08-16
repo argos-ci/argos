@@ -476,6 +476,15 @@ importers:
       jwt-decode:
         specifier: ^4.0.0
         version: 4.0.0
+      linkify-plugin-ticket:
+        specifier: ^4.3.2
+        version: 4.3.2(linkifyjs@4.3.2)
+      linkify-react:
+        specifier: ^4.3.2
+        version: 4.3.2(linkifyjs@4.3.2)(react@19.1.1)
+      linkifyjs:
+        specifier: ^4.3.2
+        version: 4.3.2
       lucide-react:
         specifier: ^0.539.0
         version: 0.539.0(react@19.1.1)
@@ -6023,6 +6032,20 @@ packages:
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
+
+  linkify-plugin-ticket@4.3.2:
+    resolution: {integrity: sha512-viimLXCbW/u9/sUVCld2PfE/vNd+oHA3Fxt0qH1kiSMx8a29KJxH8fAVDFnJ243Oh33cXfsQk+4FWohNZ792SA==}
+    peerDependencies:
+      linkifyjs: ^4.0.0
+
+  linkify-react@4.3.2:
+    resolution: {integrity: sha512-mi744h1hf+WDsr+paJgSBBgYNLMWNSHyM9V9LVUo03RidNGdw1VpI7Twnt+K3pEh3nIzB4xiiAgZxpd61ItKpQ==}
+    peerDependencies:
+      linkifyjs: ^4.0.0
+      react: ^19.1.1
+
+  linkifyjs@4.3.2:
+    resolution: {integrity: sha512-NT1CJtq3hHIreOianA8aSXn6Cw0JzYOuDQbOrSPe7gqFnCpKP++MQe3ODgO3oh2GJFORkAAdqredOa60z63GbA==}
 
   listr2@4.0.5:
     resolution: {integrity: sha512-juGHV1doQdpNT3GSTs9IUN43QJb7KHdF9uqg7Vufs/tG9VTzpFphqF4pm/ICdAABGQxsyNn9CiYA3StkI6jpwA==}
@@ -14774,6 +14797,17 @@ snapshots:
       lightningcss-win32-x64-msvc: 1.30.1
 
   lines-and-columns@1.2.4: {}
+
+  linkify-plugin-ticket@4.3.2(linkifyjs@4.3.2):
+    dependencies:
+      linkifyjs: 4.3.2
+
+  linkify-react@4.3.2(linkifyjs@4.3.2)(react@19.1.1):
+    dependencies:
+      linkifyjs: 4.3.2
+      react: 19.1.1
+
+  linkifyjs@4.3.2: {}
 
   listr2@4.0.5:
     dependencies:

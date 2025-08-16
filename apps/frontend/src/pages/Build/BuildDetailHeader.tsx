@@ -328,7 +328,11 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           <TestIndicator test={test} branch={branch} repoUrl={repoUrl} />
         )}
         {test?.annotations?.map((annotation, index) => (
-          <AnnotationIndicator key={index} annotation={annotation} />
+          <AnnotationIndicator
+            key={index}
+            annotation={annotation}
+            repoUrl={repoUrl}
+          />
         ))}
         {pwTraceUrl ? (
           <TraceIndicator pwTraceUrl={pwTraceUrl} />
