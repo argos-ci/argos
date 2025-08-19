@@ -578,10 +578,12 @@ export const resolvers: IResolvers = {
           }
 
           await testAutomation({
-            event: automationEvent,
             actions,
-            payload: {
-              build: lastBuild,
+            message: {
+              event: automationEvent,
+              payload: {
+                build: lastBuild,
+              },
             },
           });
           return true;
@@ -603,11 +605,13 @@ export const resolvers: IResolvers = {
           invariant(lastBuildReview.build, "build relation not found");
 
           await testAutomation({
-            event: automationEvent,
             actions,
-            payload: {
-              build: lastBuildReview.build,
-              buildReview: lastBuildReview,
+            message: {
+              event: automationEvent,
+              payload: {
+                build: lastBuildReview.build,
+                buildReview: lastBuildReview,
+              },
             },
           });
           return true;

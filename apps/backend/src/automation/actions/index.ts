@@ -23,12 +23,7 @@ export type AutomationActionType = z.infer<typeof AutomationActionSchema>;
 
 type AutomationActionsType = (typeof AUTOMATION_ACTIONS)[number];
 
-export type AutomationActionsName = AutomationActionsType["name"];
-
-export type GetActionPayload<T extends AutomationActionsName> = Extract<
-  AutomationActionsType,
-  { name: T }
->["payloadSchema"]["_output"];
+type AutomationActionsName = AutomationActionsType["name"];
 
 export function getAutomationAction<T extends AutomationActionsName>(
   name: T,

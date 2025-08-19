@@ -1,10 +1,6 @@
 import type { JSONSchema } from "objection";
 
-import {
-  AutomatedActionJSONSchema,
-  AutomationActionsName,
-  GetActionPayload,
-} from "@/automation/actions/index.js";
+import { AutomatedActionJSONSchema } from "@/automation/actions/index.js";
 
 import { Model } from "../util/model.js";
 import {
@@ -14,9 +10,7 @@ import {
 } from "../util/schemas.js";
 import { AutomationRun } from "./AutomationRun.js";
 
-export class AutomationActionRun<
-  T extends AutomationActionsName = AutomationActionsName,
-> extends Model {
+export class AutomationActionRun extends Model {
   static override tableName = "automation_action_runs";
 
   static override get jsonSchema() {
@@ -48,8 +42,8 @@ export class AutomationActionRun<
   conclusion!: "success" | "failed" | null;
   failureReason!: string | null;
   automationRunId!: string;
-  action!: T;
-  actionPayload!: GetActionPayload<T>;
+  action!: string;
+  actionPayload!: object;
   processedAt!: string | null;
   completedAt!: string | null;
   jobStatus!: JobStatus;

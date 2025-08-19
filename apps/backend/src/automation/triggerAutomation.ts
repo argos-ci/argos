@@ -18,16 +18,10 @@ import {
   BuildNameCondition,
   BuildTypeCondition,
 } from "./types/conditions";
-import {
-  AutomationEvent,
-  AutomationEventPayloadMap,
-  AutomationEvents,
-} from "./types/events";
+import { AutomationEvents, type AutomationMessage } from "./types/events";
 
-function getBuildFromPayload(
-  event: AutomationEvent,
-  payload: AutomationEventPayloadMap[AutomationEvent],
-): Build {
+function getBuildFromPayload(message: AutomationMessage): Build {
+  const { event, payload } = message;
   switch (event) {
     case AutomationEvents.BuildCompleted:
     case AutomationEvents.BuildReviewed: {
@@ -52,10 +46,9 @@ function getBuildFromPayload(
  */
 function checkBuildTypeCondition(
   condition: BuildTypeCondition,
-  event: AutomationEvent,
-  payload: AutomationEventPayloadMap[AutomationEvent],
+  message: AutomationMessage,
 ): boolean {
-  const build = getBuildFromPayload(event, payload);
+  const build = getBuildFromPayload(message);
   return build.type === condition.value;
 }
 
@@ -64,10 +57,9 @@ function checkBuildTypeCondition(
  */
 function checkBuildConclusionCondition(
   condition: BuildConclusionCondition,
-  event: AutomationEvent,
-  payload: AutomationEventPayloadMap[AutomationEvent],
+  message: AutomationMessage,
 ): boolean {
-  const build = getBuildFromPayload(event, payload);
+  const build = getBuildFromPayload(message);
   return build.conclusion === condition.value;
 }
 
@@ -75,11 +67,10 @@ function checkBuildConclusionCondition(
  * Checks if the build name matches the condition.
  */
 function checkBuildNameCondition(
-  condition: BuildNameCondition, // Type for the specific condition
-  event: AutomationEvent,
-  payload: AutomationEventPayloadMap[AutomationEvent],
+  condition: BuildNameCondition,
+  message: AutomationMessage,
 ): boolean {
-  const build = getBuildFromPayload(event, payload);
+  const build = getBuildFromPayload(message);
   return build.name === condition.value;
 }
 
@@ -88,23 +79,22 @@ function checkBuildNameCondition(
  */
 function evaluateCondition(
   condition: AutomationCondition,
-  event: AutomationEvent,
-  payload: AutomationEventPayloadMap[AutomationEvent],
+  message: AutomationMessage,
 ): boolean {
   AutomationConditionSchema.parse(condition);
   const conditionType = condition.type;
 
   switch (conditionType) {
     case "build-type": {
-      return checkBuildTypeCondition(condition, event, payload);
+      return checkBuildTypeCondition(condition, message);
     }
 
     case "build-conclusion": {
-      return checkBuildConclusionCondition(condition, event, payload);
+      return checkBuildConclusionCondition(condition, message);
     }
 
     case "build-name": {
-      return checkBuildNameCondition(condition, event, payload);
+      return checkBuildNameCondition(condition, message);
     }
 
     default: {
@@ -118,53 +108,49 @@ function evaluateCondition(
  */
 function evaluateAllCondition(
   allCondition: AllCondition,
-  event: AutomationEvent,
-  payload: AutomationEventPayloadMap[AutomationEvent],
+  message: AutomationMessage,
 ): boolean {
   if (!allCondition.all.length) {
     return true;
   }
   return (allCondition.all ?? []).every((condition) =>
-    evaluateCondition(condition, event, payload),
+    evaluateCondition(condition, message),
   );
 }
 
-export type TriggerAutomationProps<Event extends AutomationEvent> = {
+export type TriggerAutomationProps = {
   projectId: string;
-  event: Event;
-  payload: AutomationEventPayloadMap[Event];
+  message: AutomationMessage;
 };
 
 /**
  * Triggers automation rules for a given project and event.
  */
-export async function triggerAutomation<Event extends AutomationEvent>(
-  args: TriggerAutomationProps<Event>,
+export async function triggerAutomation(
+  args: TriggerAutomationProps,
 ): Promise<AutomationActionRun[]> {
-  const { projectId, event, payload } = args;
+  const { projectId, message } = args;
   const automationRules = await AutomationRule.query()
     .where("projectId", projectId)
     .where("active", true)
-    .whereRaw(`"on" @> ?::jsonb`, [JSON.stringify([event])]);
+    .whereRaw(`"on" @> ?::jsonb`, [JSON.stringify([message.event])]);
 
   return transaction(async (trx) => {
     const automationActionRuns = await Promise.all(
       automationRules.map(async (automationRule) => {
-        const conditionsMet = evaluateAllCondition(
-          automationRule.if,
-          event,
-          payload,
-        );
+        const conditionsMet = evaluateAllCondition(automationRule.if, message);
         if (!conditionsMet) {
           return [];
         }
 
         const automationRun = await AutomationRun.query(trx).insertAndFetch({
           automationRuleId: automationRule.id,
-          event: event,
-          buildId: "build" in payload ? payload.build.id : null,
+          event: message.event,
+          buildId: "build" in message.payload ? message.payload.build.id : null,
           buildReviewId:
-            "buildReview" in payload ? payload.buildReview.id : null,
+            "buildReview" in message.payload
+              ? message.payload.buildReview.id
+              : null,
           jobStatus: "pending",
         });
 
