@@ -12,7 +12,10 @@ import {
   commentGithubPr,
   getInstallationOctokit,
 } from "@/github/index.js";
-import { getGitlabClientFromAccount } from "@/gitlab/index.js";
+import {
+  getGitlabClientFromAccount,
+  type GitlabClient,
+} from "@/gitlab/index.js";
 import { UnretryableError } from "@/job-core/index.js";
 import { redisLock } from "@/util/redis/index.js";
 
@@ -37,7 +40,7 @@ export async function pushBuildNotification({
   return buildNotification;
 }
 
-type Context = {
+export type Context = {
   buildNotification: BuildNotification;
   commit: string;
   build: Build;
@@ -157,6 +160,39 @@ async function sendGithubNotification(ctx: Context) {
   }
 }
 
+async function setGitLabCommitStatusSafely(input: {
+  client: GitlabClient;
+  gitlabProjectId: number;
+  sha: string;
+  state: NotificationPayload["gitlab"]["state"];
+  context: string;
+  targetUrl: string;
+  description: string;
+}) {
+  try {
+    await input.client.Commits.editStatus(
+      input.gitlabProjectId,
+      input.sha,
+      input.state,
+      {
+        context: input.context,
+        targetUrl: input.targetUrl,
+        description: input.description,
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith(
+        "Cannot transition status via :run from :running",
+      )
+    ) {
+      // If the status is already running, we can safely ignore this error
+      return;
+    }
+  }
+}
+
 const sendGitlabNotification = async (ctx: Context) => {
   const { build, notification } = ctx;
   invariant(build, "no build found", UnretryableError);
@@ -188,28 +224,26 @@ const sendGitlabNotification = async (ctx: Context) => {
     return;
   }
 
-  await client.Commits.editStatus(
-    gitlabProject.gitlabId,
-    ctx.commit,
-    notification.gitlab.state,
-    {
-      context: notification.context,
-      targetUrl: ctx.buildUrl,
-      description: notification.description,
-    },
-  );
+  await setGitLabCommitStatusSafely({
+    client,
+    gitlabProjectId: gitlabProject.gitlabId,
+    sha: ctx.commit,
+    state: notification.gitlab.state,
+    context: notification.context,
+    targetUrl: ctx.buildUrl,
+    description: notification.description,
+  });
 
   if (ctx.aggregatedNotification) {
-    await client.Commits.editStatus(
-      gitlabProject.gitlabId,
-      ctx.commit,
-      ctx.aggregatedNotification.gitlab.state,
-      {
-        context: ctx.aggregatedNotification.context,
-        targetUrl: ctx.projectUrl,
-        description: ctx.aggregatedNotification.description,
-      },
-    );
+    await setGitLabCommitStatusSafely({
+      client,
+      gitlabProjectId: gitlabProject.gitlabId,
+      sha: ctx.commit,
+      state: ctx.aggregatedNotification.gitlab.state,
+      context: ctx.aggregatedNotification.context,
+      targetUrl: ctx.projectUrl,
+      description: ctx.aggregatedNotification.description,
+    });
   }
 };
 
