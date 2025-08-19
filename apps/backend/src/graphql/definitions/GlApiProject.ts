@@ -1,3 +1,4 @@
+import { GitbeakerRequestError } from "@gitbeaker/rest";
 import gqlTag from "graphql-tag";
 
 import { getGitlabClientFromAccount } from "@/gitlab/index.js";
@@ -82,15 +83,18 @@ export const resolvers: IResolvers = {
           },
         };
       } catch (error) {
-        // Sometimes GitLab API returns 404 when there are no projects
-        if (error instanceof Error && error.message === "Not Found") {
-          return {
-            edges: [],
-            pageInfo: {
-              hasNextPage: false,
-              totalCount: 0,
-            },
-          };
+        if (error instanceof GitbeakerRequestError) {
+          if (error.cause?.response.status === 404) {
+            // Sometimes GitLab API returns 404 when there are no projects
+            // also when the user is not found
+            return {
+              edges: [],
+              pageInfo: {
+                hasNextPage: false,
+                totalCount: 0,
+              },
+            };
+          }
         }
         throw error;
       }

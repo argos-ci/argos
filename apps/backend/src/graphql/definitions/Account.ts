@@ -1,5 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { GitbeakerRequestError } from "@gitbeaker/rest";
 import axios from "axios";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
@@ -521,8 +522,8 @@ export const resolvers: IResolvers = {
               );
             }
           } catch (error: unknown) {
-            if (error instanceof Error) {
-              if (error.message === "Unauthorized") {
+            if (error instanceof GitbeakerRequestError) {
+              if (error.cause?.response.status === 401) {
                 throw badUserInput(
                   "The provided GitLab access token is not valid.",
                   { field: "gitlabAccessToken" },
