@@ -33,7 +33,7 @@ describe("unsafe_deleteProject", () => {
       compareScreenshotBucketId: compareBucket.id,
     });
 
-    const [slackChannel, screenshot, _notification, _review, _diff] =
+    const [slackChannel, screenshot, _notification, review, diff] =
       await Promise.all([
         factory.SlackChannel.create(),
         factory.Screenshot.create({ screenshotBucketId: compareBucket.id }),
@@ -42,11 +42,18 @@ describe("unsafe_deleteProject", () => {
         factory.ScreenshotDiff.create({ buildId: build.id }),
       ]);
 
-    await factory.Test.create({
-      name: screenshot.name,
-      projectId: project.id,
-      buildName: "default",
-    });
+    await Promise.all([
+      factory.ScreenshotDiffReview.create({
+        buildReviewId: review.id,
+        screenshotDiffId: diff.id,
+        state: "approved",
+      }),
+      factory.Test.create({
+        name: screenshot.name,
+        projectId: project.id,
+        buildName: "default",
+      }),
+    ]);
 
     automationRule = await factory.AutomationRule.create({
       projectId: project.id,

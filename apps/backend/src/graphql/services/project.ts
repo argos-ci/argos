@@ -13,6 +13,7 @@ import {
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
+  ScreenshotDiffReview,
   Test,
   User,
 } from "@/database/models/index.js";
@@ -59,6 +60,15 @@ export async function unsafe_deleteProject(args: {
   trx?: TransactionOrKnex;
 }) {
   await transaction(args.trx, async (trx) => {
+    await ScreenshotDiffReview.query(trx)
+      .whereIn(
+        "buildReviewId",
+        BuildReview.query(trx)
+          .select("build_reviews.id")
+          .joinRelated("build")
+          .where("build.projectId", args.projectId),
+      )
+      .delete();
     await ScreenshotDiff.query(trx)
       .joinRelated("build")
       .where("build.projectId", args.projectId)
