@@ -4,16 +4,13 @@ import {
 } from "./actions/index.js";
 import { job } from "./job.js";
 import { triggerAutomation, TriggerAutomationProps } from "./triggerAutomation";
-import {
-  AutomationEvent,
-  type AutomationEventPayloadMap,
-} from "./types/events";
+import { type AutomationMessage } from "./types/events";
 
 /**
  * Triggers an automation action based on the provided event and payload.
  */
-export async function triggerAndRunAutomation<Event extends AutomationEvent>(
-  args: TriggerAutomationProps<Event>,
+export async function triggerAndRunAutomation(
+  args: TriggerAutomationProps,
 ): Promise<void> {
   const actionRuns = await triggerAutomation(args);
   if (actionRuns.length > 0) {
@@ -26,18 +23,15 @@ export async function triggerAndRunAutomation<Event extends AutomationEvent>(
  * This is useful for verifying that the action behaves as expected without
  * actually executing it in a live environment.
  */
-export async function testAutomation<Event extends AutomationEvent>(args: {
-  event: Event;
-  payload: AutomationEventPayloadMap[Event];
+export async function testAutomation(args: {
+  message: AutomationMessage;
   actions: AutomationActionType[];
 }): Promise<void> {
-  const { event, payload } = args;
   for (const action of args.actions) {
     const actionDefinition = getAutomationAction(action.action);
     await actionDefinition.test({
       payload: action.actionPayload,
-      event,
-      eventPayload: payload,
+      message: args.message,
     });
   }
 }

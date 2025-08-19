@@ -59,7 +59,7 @@ export class AutomationRun extends Model {
         to: "builds.id",
       },
     },
-    buildReviewModel: {
+    buildReview: {
       relation: Model.BelongsToOneRelation,
       modelClass: BuildReview,
       join: {

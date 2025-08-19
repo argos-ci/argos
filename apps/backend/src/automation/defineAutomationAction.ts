@@ -3,28 +3,28 @@ import type { JSONSchema } from "zod/v4/core";
 
 import type { AutomationActionRun } from "@/database/models/AutomationActionRun";
 
-import type {
-  AutomationEvent,
-  AutomationEventPayloadMap,
-} from "./types/events";
+import type { AutomationMessage } from "./types/events";
 
-export type AutomationActionContext = {
+type AutomationActionContext = {
   automationActionRun: AutomationActionRun;
 };
 
-export type AutomationAction<TName extends string, TData> = {
+type TestAutomationArgs<Data> = {
+  payload: Data;
+  message: AutomationMessage;
+};
+
+type ProcessAutomationArgs<Data> = {
+  payload: Data;
+  ctx: AutomationActionContext;
+};
+
+export type AutomationAction<TName extends string, Data> = {
   name: TName;
-  payloadSchema: z.ZodType<TData>;
+  payloadSchema: z.ZodType<Data>;
   payloadJsonSchema: JSONSchema.JSONSchema;
-  process: (args: {
-    payload: TData;
-    ctx: AutomationActionContext;
-  }) => Promise<void>;
-  test: <Event extends AutomationEvent>(args: {
-    payload: TData;
-    event: Event;
-    eventPayload: AutomationEventPayloadMap[Event];
-  }) => Promise<void>;
+  process: (args: ProcessAutomationArgs<Data>) => Promise<void>;
+  test: (args: TestAutomationArgs<Data>) => Promise<void>;
 };
 
 export function defineAutomationAction<TName extends string, TData>(

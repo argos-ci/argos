@@ -43,8 +43,10 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        event: AutomationEvents.BuildCompleted,
-        payload: { build },
+        message: {
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
+        },
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -98,8 +100,10 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        event: AutomationEvents.BuildCompleted,
-        payload: { build },
+        message: {
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
+        },
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -139,8 +143,10 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        event: AutomationEvents.BuildCompleted,
-        payload: { build },
+        message: {
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
+        },
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -173,8 +179,10 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        event: AutomationEvents.BuildCompleted,
-        payload: { build },
+        message: {
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
+        },
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -188,8 +196,12 @@ describe("automation/triggerAutomation", () => {
         automationRunId: automationRuns[0].id,
       });
       expect(actionRuns).toHaveLength(2);
-      expect(actionRuns[0]?.actionPayload.channelId).toBe(slackChannel.id);
-      expect(actionRuns[1]?.actionPayload.channelId).toBe(otherSlackChannel.id);
+      expect((actionRuns[0]?.actionPayload as any).channelId).toBe(
+        slackChannel.id,
+      );
+      expect((actionRuns[1]?.actionPayload as any).channelId).toBe(
+        otherSlackChannel.id,
+      );
     });
   });
 });

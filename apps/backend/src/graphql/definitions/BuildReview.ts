@@ -121,8 +121,10 @@ export const resolvers: IResolvers = {
         }),
         triggerAndRunAutomation({
           projectId: build.projectId,
-          event: AutomationEvents.BuildReviewed,
-          payload: { build, buildReview },
+          message: {
+            event: AutomationEvents.BuildReviewed,
+            payload: { build, buildReview },
+          },
         }),
       ]);
 

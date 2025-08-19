@@ -53,8 +53,10 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
         buildNotificationJob.push(buildNotification.id),
         triggerAndRunAutomation({
           projectId: build.projectId,
-          event: AutomationEvents.BuildCompleted,
-          payload: { build: updatedBuild },
+          message: {
+            event: AutomationEvents.BuildCompleted,
+            payload: { build: updatedBuild },
+          },
         }),
       ]);
     } else {
