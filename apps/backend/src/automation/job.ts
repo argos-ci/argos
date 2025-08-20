@@ -16,6 +16,9 @@ export async function processAutomationActionRun(
 
   // Process the action and update the conclusion status
   try {
+    await AutomationActionRun.query().findById(automationActionRun.id).patch({
+      processedAt: new Date().toISOString(),
+    });
     await actionDefinition.process({
       payload: action.actionPayload,
       ctx: { automationActionRun },
