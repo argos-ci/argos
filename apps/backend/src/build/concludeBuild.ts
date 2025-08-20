@@ -39,7 +39,10 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
       const [updatedBuild, buildNotification] = await transaction(
         async (trx) => {
           return Promise.all([
-            Build.query(trx).patchAndFetchById(buildId, { conclusion, stats }),
+            Build.query(trx).patchAndFetchById(
+              buildId,
+              getBuildData({ conclusion, stats }),
+            ),
             BuildNotification.query(trx).insert({
               buildId,
               type: getNotificationType(conclusion),
@@ -60,12 +63,23 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
         }),
       ]);
     } else {
-      await Build.query().findById(buildId).patch({
-        conclusion,
-        stats,
-      });
+      await Build.query()
+        .findById(buildId)
+        .patch(getBuildData({ conclusion, stats }));
     }
   });
+}
+
+function getBuildData(args: {
+  conclusion: BuildConclusion;
+  stats: Build["stats"];
+}) {
+  const { conclusion, stats } = args;
+  return {
+    conclusion,
+    stats,
+    concludedAt: new Date().toISOString(),
+  };
 }
 
 function getNotificationType(conclusion: BuildConclusion) {

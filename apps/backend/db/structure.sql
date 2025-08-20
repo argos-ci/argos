@@ -456,6 +456,8 @@ CREATE TABLE public.builds (
     "parentCommits" jsonb,
     conclusion text,
     stats jsonb,
+    "finalizedAt" timestamp with time zone,
+    "concludedAt" timestamp with time zone,
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
@@ -3650,3 +3652,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025070
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250803194148_storybook-count.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250808202617_screenshot-diff-review.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250808204525_build-review-state.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820130012_build-dates.js', 1, NOW());

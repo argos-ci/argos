@@ -166,6 +166,8 @@ export class Build extends Model {
               },
             ],
           },
+          finalizedAt: { type: ["string", "null"] },
+          concludedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -197,6 +199,8 @@ export class Build extends Model {
   metadata!: BuildMetadata | null;
   conclusion!: BuildConclusion | null;
   stats!: BuildStats | null;
+  finalizedAt!: string | null;
+  concludedAt!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {
