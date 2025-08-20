@@ -128,6 +128,11 @@ const _BuildFragment = graphql(`
     }
     baseBranch
     baseBranchResolvedFrom
+    parallel {
+      total
+      received
+      nonce
+    }
   }
 `);
 
@@ -160,9 +165,6 @@ export function BuildInfos(props: {
           <BuildModeDescription mode={build.mode} />
         </Description>
       </Dd>
-
-      <Dt>Total screenshots count</Dt>
-      <Dd>{build.stats ? build.stats.total : "-"}</Dd>
 
       {build.pullRequest ? (
         <>
@@ -238,6 +240,33 @@ export function BuildInfos(props: {
           </Dd>
         </>
       )}
+
+      <Dt>Total screenshots</Dt>
+      <Dd>{build.stats ? build.stats.total : "-"}</Dd>
+
+      {build.parallel ? (
+        <>
+          {build.parallel.total === -1 ? (
+            <>
+              <Dt>Sharding</Dt>
+              <Dd>Finalized manually</Dd>
+            </>
+          ) : (
+            <>
+              <Dt>Parallel shards</Dt>
+              <Dd>
+                {build.parallel.received} / {build.parallel.total}
+              </Dd>
+              <Dt>Parallel nonce</Dt>
+              <Dd>
+                <span className="font-mono font-medium">
+                  {build.parallel.nonce}
+                </span>
+              </Dd>
+            </>
+          )}
+        </>
+      ) : null}
     </dl>
   );
 }
@@ -280,7 +309,7 @@ function PullRequestLink(props: {
   pullRequest: NonNullable<DocumentType<typeof _BuildFragment>["pullRequest"]>;
 }) {
   return (
-    <Link className="font-mono" href={props.pullRequest.url}>
+    <Link className="font-mono" href={props.pullRequest.url} target="_blank">
       #{props.pullRequest.number}
     </Link>
   );
