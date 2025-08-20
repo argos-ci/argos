@@ -4,11 +4,7 @@ import {
 } from "@/automation/types/events.js";
 
 import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
+import { JobStatus, timestampsSchema } from "../util/schemas.js";
 import { AutomationRule } from "./AutomationRule.js";
 import { Build } from "./Build.js";
 import { BuildReview } from "./BuildReview.js";
@@ -19,7 +15,6 @@ export class AutomationRun extends Model {
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
-      jobModelSchema,
       {
         type: "object",
         required: ["automationRuleId", "event"],
