@@ -42,6 +42,12 @@ async function expandPayload(payload: Payload): Promise<ExpandedPayload> {
     );
   }
 
+  if (slackChannel.archived) {
+    throw new AutomationActionFailureError(
+      `Slack channel archived ${channelId}`,
+    );
+  }
+
   invariant(
     slackChannel.slackInstallation,
     "slackInstallation relation not found",

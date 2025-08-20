@@ -17,6 +17,7 @@ export class SlackChannel extends Model {
           slackId: { type: "string" },
           name: { type: "string" },
           slackInstallationId: { type: "string" },
+          archived: { type: "boolean" },
         },
       },
     ],
@@ -25,6 +26,7 @@ export class SlackChannel extends Model {
   slackId!: string;
   name!: string;
   slackInstallationId!: string;
+  archived!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {

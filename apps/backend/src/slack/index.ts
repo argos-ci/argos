@@ -16,6 +16,7 @@ import {
   Account,
   Build,
   ScreenshotDiff,
+  SlackChannel,
   SlackInstallation,
 } from "@/database/models";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
@@ -340,6 +341,34 @@ boltApp.event("team_rename", async ({ event, context }) => {
   await slackInstallation
     .$query()
     .patch({ teamName: event.name || slackInstallation.teamDomain });
+});
+
+boltApp.event("channel_rename", async ({ event }) => {
+  await SlackChannel.query().findOne({ slackId: event.channel.id }).patch({
+    name: event.channel.name,
+  });
+});
+
+boltApp.event("channel_id_changed", async ({ event }) => {
+  await SlackChannel.query().findOne({ slackId: event.old_channel_id }).patch({
+    slackId: event.new_channel_id,
+  });
+});
+
+boltApp.event("channel_archive", async ({ event }) => {
+  await SlackChannel.query().findOne({ slackId: event.channel }).patch({
+    archived: true,
+  });
+});
+
+boltApp.event("channel_unarchive", async ({ event }) => {
+  await SlackChannel.query().findOne({ slackId: event.channel }).patch({
+    archived: false,
+  });
+});
+
+boltApp.event("channel_deleted", async ({ event }) => {
+  await SlackChannel.query().findOne({ slackId: event.channel }).delete();
 });
 
 boltApp.event("team_domain_change", async ({ event, context }) => {
