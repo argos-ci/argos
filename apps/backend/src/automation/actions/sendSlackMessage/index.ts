@@ -33,7 +33,7 @@ async function expandPayload(payload: Payload): Promise<ExpandedPayload> {
   const { channelId } = payload;
 
   const slackChannel = await SlackChannel.query()
-    .findById(channelId)
+    .findOne({ slackId: channelId })
     .withGraphFetched("slackInstallation");
 
   if (!slackChannel) {

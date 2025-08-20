@@ -37,7 +37,7 @@ describe("automation/job", () => {
       then: [
         {
           action: "sendSlackMessage",
-          actionPayload: { channelId: slackChannel.id },
+          actionPayload: { channelId: slackChannel.slackId },
         },
       ],
     });
@@ -48,7 +48,7 @@ describe("automation/job", () => {
     const actionRun = await factory.AutomationActionRun.create({
       automationRunId: automationRun.id,
       action: "sendSlackMessage",
-      actionPayload: { channelId: slackChannel.id },
+      actionPayload: { channelId: slackChannel.slackId },
       jobStatus: "pending",
     });
     await processAutomationActionRun(actionRun);

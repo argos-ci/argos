@@ -31,10 +31,10 @@ describe("sendSlackMessage", () => {
     });
     const automationActionRun = await factory.AutomationActionRun.create({
       automationRunId: automationRun.id,
-      actionPayload: { channelId: slackChannel.id },
+      actionPayload: { channelId: slackChannel.slackId },
     });
     await automationAction.process({
-      payload: { channelId: slackChannel.id },
+      payload: { channelId: slackChannel.slackId },
       ctx: { automationActionRun },
     });
     expect(mockPostMessageToSlackChannel).toHaveBeenCalledWith(

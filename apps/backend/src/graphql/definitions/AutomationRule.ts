@@ -41,12 +41,6 @@ export const typeDefs = gql`
     all: [AutomationCondition!]!
   }
 
-  type AutomationActionSendSlackMessagePayload {
-    channelId: String!
-    slackId: String!
-    name: String!
-  }
-
   type AutomationAction {
     action: String!
     actionPayload: JSONObject!
@@ -211,7 +205,7 @@ async function getActionsFromInput(args: {
       actions.push({
         action: "sendSlackMessage",
         actionPayload: {
-          channelId: slackChannel.id,
+          channelId: slackChannel.slackId,
         },
       });
     }
@@ -407,9 +401,9 @@ export const resolvers: IResolvers = {
     actionPayload: async (action) => {
       switch (action.action) {
         case "sendSlackMessage": {
-          const slackChannel = await SlackChannel.query().findById(
-            action.actionPayload.channelId,
-          );
+          const slackChannel = await SlackChannel.query().findOne({
+            slackId: action.actionPayload.channelId,
+          });
           if (!slackChannel) {
             return {
               slackId: "",

@@ -3,7 +3,7 @@
  */
 export const up = async (knex) => {
   await knex.raw(
-    `update automation_actions_runs set "processedAt" = "completedAt"`,
+    `update automation_action_runs set "processedAt" = "completedAt"`,
   );
 };
 
