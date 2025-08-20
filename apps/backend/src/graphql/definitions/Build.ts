@@ -79,8 +79,12 @@ export const typeDefs = gql`
 
   type Build implements Node {
     id: ID!
+    "Creation date of the build"
     createdAt: DateTime!
-    updatedAt: DateTime!
+    "Date when the build is finalized (all batches received)"
+    finalizedAt: DateTime
+    "Date when the build is concluded (all diffs processed)"
+    concludedAt: DateTime
     "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
     screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
     "The screenshot bucket that serves as base for comparison"

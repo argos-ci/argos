@@ -1,4 +1,4 @@
-import { ref, TransactionOrKnex } from "objection";
+import { ref, TransactionOrKnex, type PartialModelObject } from "objection";
 
 import { Build, BuildShard, Screenshot } from "@/database/models/index.js";
 import { BuildMetadata } from "@/database/schemas";
@@ -98,15 +98,18 @@ export async function finalizeBuild(input: {
       ? shards.every((shard) => checkIsBucketValidFromMetadata(shard.metadata))
       : checkIsBucketValidFromMetadata(build.metadata);
 
-  const metadata =
-    shards.length > 0
-      ? aggregateMetadata(shards.map((shard) => shard.metadata))
-      : build.metadata;
+  const buildData: PartialModelObject<Build> = {
+    finalizedAt: new Date().toISOString(),
+  };
+
+  if (shards.length > 0) {
+    buildData.metadata = aggregateMetadata(
+      shards.map((shard) => shard.metadata),
+    );
+  }
 
   await Promise.all([
-    metadata !== build.metadata
-      ? build.$clone().$query(trx).patch({ metadata })
-      : null,
+    build.$clone().$query(trx).patch(buildData),
     build.$relatedQuery("compareScreenshotBucket", trx).patch({
       complete: true,
       screenshotCount,

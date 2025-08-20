@@ -283,7 +283,12 @@ export type IBuild = INode & {
   branchApprovedDiffs: Array<Scalars['ID']['output']>;
   /** Commit */
   commit: Scalars['String']['output'];
+  /** Date when the build is concluded (all diffs processed) */
+  concludedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Creation date of the build */
   createdAt: Scalars['DateTime']['output'];
+  /** Date when the build is finalized (all batches received) */
+  finalizedAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   /** Aggregated metadata */
   metadata?: Maybe<IBuildMetadata>;
@@ -311,7 +316,6 @@ export type IBuild = INode & {
   status: IBuildStatus;
   /** Build type */
   type?: Maybe<IBuildType>;
-  updatedAt: Scalars['DateTime']['output'];
 };
 
 
@@ -2183,7 +2187,9 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   branchApprovedDiffs?: Resolver<Array<IResolversTypes['ID']>, ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  concludedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  finalizedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<IResolversTypes['BuildMetadata']>, ParentType, ContextType>;
   mode?: Resolver<IResolversTypes['BuildMode'], ParentType, ContextType>;
@@ -2198,7 +2204,6 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   stats?: Resolver<Maybe<IResolversTypes['BuildStats']>, ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
   type?: Resolver<Maybe<IResolversTypes['BuildType']>, ParentType, ContextType>;
-  updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

@@ -1,5 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
+import moment from "moment";
 
 import {
   BuildModeDescription,
@@ -14,6 +15,47 @@ import { lowTextColorClassNames } from "@/util/colors";
 
 import { getProjectURL } from "../Project/ProjectParams";
 import { BuildParams, getBuildURL } from "./BuildParams";
+
+const _BuildFragment = graphql(`
+  fragment BuildInfos_Build on Build {
+    createdAt
+    finalizedAt
+    concludedAt
+    name
+    commit
+    branch
+    mode
+    stats {
+      total
+    }
+    baseScreenshotBucket {
+      id
+      commit
+      branch
+    }
+    baseBuild {
+      id
+      number
+    }
+    pullRequest {
+      id
+      url
+      number
+    }
+    metadata {
+      testReport {
+        status
+      }
+    }
+    baseBranch
+    baseBranchResolvedFrom
+    parallel {
+      total
+      received
+      nonce
+    }
+  }
+`);
 
 function Dt(props: { children: React.ReactNode }) {
   return (
@@ -97,49 +139,15 @@ function TestReportStatusLabel(props: { status: TestReportStatus }) {
   );
 }
 
-const _BuildFragment = graphql(`
-  fragment BuildInfos_Build on Build {
-    createdAt
-    name
-    commit
-    branch
-    mode
-    stats {
-      total
-    }
-    baseScreenshotBucket {
-      id
-      commit
-      branch
-    }
-    baseBuild {
-      id
-      number
-    }
-    pullRequest {
-      id
-      url
-      number
-    }
-    metadata {
-      testReport {
-        status
-      }
-    }
-    baseBranch
-    baseBranchResolvedFrom
-    parallel {
-      total
-      received
-      nonce
-    }
-  }
-`);
-
 function Description(props: { children: React.ReactNode }) {
   return (
     <p className="text-low mt-0.5 text-xs font-normal">{props.children}</p>
   );
+}
+
+function Duration({ start, end }: { start: string; end: string }) {
+  const duration = moment.duration(moment(end).diff(moment(start)));
+  return duration.humanize();
 }
 
 export function BuildInfos(props: {
@@ -154,6 +162,30 @@ export function BuildInfos(props: {
       <Dd>
         <Time date={build.createdAt} format="LLL" />
       </Dd>
+
+      {build.finalizedAt ? (
+        <>
+          <Dt>Completed</Dt>
+          <Dd>
+            <Time date={build.finalizedAt} format="LLL" />
+            <Description>
+              <Duration start={build.createdAt} end={build.finalizedAt} />
+            </Description>
+          </Dd>
+        </>
+      ) : null}
+
+      {build.concludedAt && build.finalizedAt ? (
+        <>
+          <Dt>Processed</Dt>
+          <Dd>
+            <Time date={build.concludedAt} format="LLL" />
+            <Description>
+              <Duration start={build.finalizedAt} end={build.concludedAt} />
+            </Description>
+          </Dd>
+        </>
+      ) : null}
 
       <Dt>Name</Dt>
       <Dd>{build.name}</Dd>

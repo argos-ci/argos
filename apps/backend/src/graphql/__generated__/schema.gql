@@ -237,7 +237,15 @@ type Build implements Node {
 
   """Commit"""
   commit: String!
+
+  """Date when the build is concluded (all diffs processed)"""
+  concludedAt: DateTime
+
+  """Creation date of the build"""
   createdAt: DateTime!
+
+  """Date when the build is finalized (all batches received)"""
+  finalizedAt: DateTime
   id: ID!
 
   """Aggregated metadata"""
@@ -280,7 +288,6 @@ type Build implements Node {
 
   """Build type"""
   type: BuildType
-  updatedAt: DateTime!
 }
 
 type BuildConnection implements Connection {
