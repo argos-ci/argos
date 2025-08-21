@@ -18,7 +18,7 @@ import {
   getSlackChannelById,
   getSlackChannelByName,
   normalizeChannelName,
-} from "@/slack";
+} from "@/slack/channel";
 
 import {
   IAutomationRunStatus,
@@ -39,12 +39,6 @@ export const typeDefs = gql`
 
   type AutomationConditions {
     all: [AutomationCondition!]!
-  }
-
-  type AutomationActionSendSlackMessagePayload {
-    channelId: String!
-    slackId: String!
-    name: String!
   }
 
   type AutomationAction {
@@ -211,7 +205,7 @@ async function getActionsFromInput(args: {
       actions.push({
         action: "sendSlackMessage",
         actionPayload: {
-          channelId: slackChannel.id,
+          channelId: slackChannel.slackId,
         },
       });
     }
@@ -346,9 +340,9 @@ function getAutomationActionRunStatus(
 }
 
 function getAutomationRunStatus(
-  AutomationActionRuns: AutomationActionRun[],
+  actionRuns: AutomationActionRun[],
 ): IAutomationRunStatus {
-  const statuses = AutomationActionRuns.map(getAutomationActionRunStatus);
+  const statuses = actionRuns.map(getAutomationActionRunStatus);
 
   if (
     statuses.some((status) => status === "pending" || status === "progress")
@@ -383,10 +377,10 @@ export const resolvers: IResolvers = {
   },
   AutomationRun: {
     actionRuns: async (automationRun, _args, ctx) => {
-      return ctx.loaders.AutomationActionRuns.load(automationRun.id);
+      return ctx.loaders.AutomationRunActionRuns.load(automationRun.id);
     },
     status: async (automationRun, _args, ctx) => {
-      const actionRuns = await ctx.loaders.AutomationActionRuns.load(
+      const actionRuns = await ctx.loaders.AutomationRunActionRuns.load(
         automationRun.id,
       );
       return getAutomationRunStatus(actionRuns);
@@ -400,16 +394,17 @@ export const resolvers: IResolvers = {
       return AutomationActionRun.query()
         .joinRelated("automationRun.automationRule")
         .where("automationRun.automationRuleId", automationRule.id)
-        .limit(40);
+        .limit(20)
+        .orderBy("createdAt", "desc");
     },
   },
   AutomationAction: {
     actionPayload: async (action) => {
       switch (action.action) {
         case "sendSlackMessage": {
-          const slackChannel = await SlackChannel.query().findById(
-            action.actionPayload.channelId,
-          );
+          const slackChannel = await SlackChannel.query().findOne({
+            slackId: action.actionPayload.channelId,
+          });
           if (!slackChannel) {
             return {
               slackId: "",

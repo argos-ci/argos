@@ -151,7 +151,6 @@ export async function triggerAutomation(
             "buildReview" in message.payload
               ? message.payload.buildReview.id
               : null,
-          jobStatus: "pending",
         });
 
         const actionRuns = await AutomationActionRun.query(trx).insertAndFetch(

@@ -22,7 +22,8 @@ import {
   getAccountScreenshotMetrics,
 } from "@/metrics/account.js";
 import { sendNotification } from "@/notification/index.js";
-import { uninstallSlackInstallation } from "@/slack/index.js";
+import { boltApp } from "@/slack/app.js";
+import { uninstallSlackInstallation } from "@/slack/helpers";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
 
 import {
@@ -594,7 +595,7 @@ export const resolvers: IResolvers = {
       if (!account.slackInstallation) {
         return account;
       }
-      await uninstallSlackInstallation(account.slackInstallation);
+      await uninstallSlackInstallation(boltApp, account.slackInstallation);
       return account.$query();
     },
     disconnectGitHubAuth: async (_root, args, ctx) => {

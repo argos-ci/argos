@@ -35,7 +35,7 @@ describe("automation/triggerAutomation", () => {
             action: "sendSlackMessage",
             actionPayload: {
               type: "sendSlackMessage",
-              channelId: slackChannel.id,
+              channelId: slackChannel.slackId,
             },
           },
         ],
@@ -66,7 +66,7 @@ describe("automation/triggerAutomation", () => {
         "channelId" in actionRuns[0].actionPayload,
         "ActionPayload should have channelId",
       );
-      expect(actionRuns[0].actionPayload.channelId).toBe(slackChannel.id);
+      expect(actionRuns[0].actionPayload.channelId).toBe(slackChannel.slackId);
       expect(actionRuns[0].jobStatus).toBe("pending");
     });
 
@@ -92,7 +92,7 @@ describe("automation/triggerAutomation", () => {
             action: "sendSlackMessage",
             actionPayload: {
               type: "sendSlackMessage",
-              channelId: slackChannel.id,
+              channelId: slackChannel.slackId,
             },
           },
         ],
@@ -135,7 +135,7 @@ describe("automation/triggerAutomation", () => {
             action: "sendSlackMessage",
             actionPayload: {
               type: "sendSlackMessage",
-              channelId: slackChannel.id,
+              channelId: slackChannel.slackId,
             },
           },
         ],
@@ -156,7 +156,7 @@ describe("automation/triggerAutomation", () => {
       expect(automationRuns).toHaveLength(0);
     });
 
-    it("should create multiple AutomationActionRuns if rule has multiple actions", async () => {
+    it("should create multiple AutomationRunActionRuns if rule has multiple actions", async () => {
       const otherSlackChannel = await factory.SlackChannel.create();
       const automationRule = await factory.AutomationRule.create({
         projectId: project.id,
@@ -165,13 +165,13 @@ describe("automation/triggerAutomation", () => {
           {
             action: "sendSlackMessage",
             actionPayload: {
-              channelId: slackChannel.id,
+              channelId: slackChannel.slackId,
             },
           },
           {
             action: "sendSlackMessage",
             actionPayload: {
-              channelId: otherSlackChannel.id,
+              channelId: otherSlackChannel.slackId,
             },
           },
         ],
@@ -197,10 +197,10 @@ describe("automation/triggerAutomation", () => {
       });
       expect(actionRuns).toHaveLength(2);
       expect((actionRuns[0]?.actionPayload as any).channelId).toBe(
-        slackChannel.id,
+        slackChannel.slackId,
       );
       expect((actionRuns[1]?.actionPayload as any).channelId).toBe(
-        otherSlackChannel.id,
+        otherSlackChannel.slackId,
       );
     });
   });

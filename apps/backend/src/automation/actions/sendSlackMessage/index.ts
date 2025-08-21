@@ -7,7 +7,7 @@ import {
   type SlackInstallation,
 } from "@/database/models/index.js";
 import { UnretryableError } from "@/job-core";
-import { postMessageToSlackChannel } from "@/slack";
+import { postMessageToSlackChannel } from "@/slack/channel";
 
 import { AutomationActionFailureError } from "../../automationActionError";
 import { defineAutomationAction } from "../../defineAutomationAction";
@@ -33,12 +33,18 @@ async function expandPayload(payload: Payload): Promise<ExpandedPayload> {
   const { channelId } = payload;
 
   const slackChannel = await SlackChannel.query()
-    .findById(channelId)
+    .findOne({ slackId: channelId })
     .withGraphFetched("slackInstallation");
 
   if (!slackChannel) {
     throw new AutomationActionFailureError(
       `Slack channel removed ${channelId}`,
+    );
+  }
+
+  if (slackChannel.archived) {
+    throw new AutomationActionFailureError(
+      `Slack channel archived ${channelId}`,
     );
   }
 

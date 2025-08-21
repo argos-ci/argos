@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import { SLACK_BOT_SCOPES } from "@/slack";
+import { SLACK_BOT_SCOPES } from "@/slack/app";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 

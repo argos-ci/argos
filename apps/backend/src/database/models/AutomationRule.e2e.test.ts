@@ -24,7 +24,7 @@ function getBaseData(project: Project, slackChannel: SlackChannel) {
       {
         action: "sendSlackMessage",
         actionPayload: {
-          channelId: slackChannel.id,
+          channelId: slackChannel.slackId,
         },
       },
     ],
@@ -67,7 +67,7 @@ describe("AutomationRule", () => {
             {
               action: "unknownAction",
               actionPayload: {
-                channelId: slackChannel.id,
+                channelId: slackChannel.slackId,
               },
             },
           ],

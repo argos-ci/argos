@@ -291,9 +291,9 @@ function ActionRunHistory(props: { automationRule: AutomationRule }) {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Action Run History</CardTitle>
+        <CardTitle>Recent action runs</CardTitle>
         <CardParagraph>
-          History of actions triggered by this automation rule.
+          Showing the 20 most recent actions triggered by this rule.
         </CardParagraph>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">

@@ -13,7 +13,7 @@ import {
   type ScreenshotBucket,
 } from "@/database/models";
 import { UnretryableError } from "@/job-core";
-import type { SlackMessageBlock } from "@/slack";
+import type { SlackMessageBlock } from "@/slack/channel";
 
 function getRepositoryUrl(project: Project): string | null {
   if (project.githubRepositoryId) {

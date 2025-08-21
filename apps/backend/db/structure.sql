@@ -279,7 +279,6 @@ CREATE TABLE public.automation_runs (
     id bigint NOT NULL,
     "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "jobStatus" character varying(255) NOT NULL,
     "automationRuleId" bigint NOT NULL,
     event character varying(255) NOT NULL,
     "buildId" bigint,
@@ -1457,7 +1456,8 @@ CREATE TABLE public.slack_channels (
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
     "slackId" character varying(255) NOT NULL,
-    "slackInstallationId" bigint NOT NULL
+    "slackInstallationId" bigint NOT NULL,
+    archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -3653,3 +3653,7 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025080
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250808202617_screenshot-diff-review.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250808204525_build-review-state.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820130012_build-dates.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820183342_slack-channel.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820184542_automation-processed-at.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820184634_remove-automation-job-status.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820185036_slack-channel-id.js', 1, NOW());

@@ -270,7 +270,6 @@ export const AutomationRun = defineFactory(models.AutomationRun, () => ({
   automationRuleId: AutomationRule.associate("id"),
   event: "build.completed",
   buildId: Build.associate("id"),
-  jobStatus: "pending",
 }));
 
 export const PullRequest = defineFactory(models.GithubPullRequest, () => ({

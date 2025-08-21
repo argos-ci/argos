@@ -198,13 +198,6 @@ export enum IAutomationActionRunStatus {
   Success = 'success'
 }
 
-export type IAutomationActionSendSlackMessagePayload = {
-  __typename?: 'AutomationActionSendSlackMessagePayload';
-  channelId: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  slackId: Scalars['String']['output'];
-};
-
 export type IAutomationCondition = {
   __typename?: 'AutomationCondition';
   type: Scalars['String']['output'];
@@ -1760,7 +1753,6 @@ export type IResolversTypes = ResolversObject<{
   AutomationActionInput: IAutomationActionInput;
   AutomationActionRun: ResolverTypeWrapper<AutomationActionRun>;
   AutomationActionRunStatus: IAutomationActionRunStatus;
-  AutomationActionSendSlackMessagePayload: ResolverTypeWrapper<IAutomationActionSendSlackMessagePayload>;
   AutomationCondition: ResolverTypeWrapper<IAutomationCondition>;
   AutomationConditionInput: IAutomationConditionInput;
   AutomationConditions: ResolverTypeWrapper<IAutomationConditions>;
@@ -1915,7 +1907,6 @@ export type IResolversParentTypes = ResolversObject<{
   AutomationAction: IAutomationAction;
   AutomationActionInput: IAutomationActionInput;
   AutomationActionRun: AutomationActionRun;
-  AutomationActionSendSlackMessagePayload: IAutomationActionSendSlackMessagePayload;
   AutomationCondition: IAutomationCondition;
   AutomationConditionInput: IAutomationConditionInput;
   AutomationConditions: IAutomationConditions;
@@ -2127,13 +2118,6 @@ export type IAutomationActionRunResolvers<ContextType = Context, ParentType exte
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IAutomationActionSendSlackMessagePayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationActionSendSlackMessagePayload'] = IResolversParentTypes['AutomationActionSendSlackMessagePayload']> = ResolversObject<{
-  channelId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  slackId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2868,7 +2852,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
   AutomationAction?: IAutomationActionResolvers<ContextType>;
   AutomationActionRun?: IAutomationActionRunResolvers<ContextType>;
-  AutomationActionSendSlackMessagePayload?: IAutomationActionSendSlackMessagePayloadResolvers<ContextType>;
   AutomationCondition?: IAutomationConditionResolvers<ContextType>;
   AutomationConditions?: IAutomationConditionsResolvers<ContextType>;
   AutomationRule?: IAutomationRuleResolvers<ContextType>;

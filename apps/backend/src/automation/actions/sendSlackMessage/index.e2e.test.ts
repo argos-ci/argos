@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
-import { postMessageToSlackChannel } from "@/slack";
+import { postMessageToSlackChannel } from "@/slack/channel.js";
 
 import { automationAction } from "./index";
 
-vi.mock("@/slack", () => ({
+vi.mock("@/slack/channel.js", () => ({
   __esModule: true,
   postMessageToSlackChannel: vi.fn(),
 }));
@@ -31,10 +31,10 @@ describe("sendSlackMessage", () => {
     });
     const automationActionRun = await factory.AutomationActionRun.create({
       automationRunId: automationRun.id,
-      actionPayload: { channelId: slackChannel.id },
+      actionPayload: { channelId: slackChannel.slackId },
     });
     await automationAction.process({
-      payload: { channelId: slackChannel.id },
+      payload: { channelId: slackChannel.slackId },
       ctx: { automationActionRun },
     });
     expect(mockPostMessageToSlackChannel).toHaveBeenCalledWith(
