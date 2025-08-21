@@ -1,7 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
-import { getBuildLabel } from "@/build/label";
+import { getApprovalEmoji, getBuildLabel } from "@/build/label";
 import { getStatsMessage } from "@/build/stats";
 import {
   Build,
@@ -110,9 +110,9 @@ export function buildReviewBlock(props: {
       text: (() => {
         switch (buildReview.state) {
           case "approved":
-            return `Approved by ${reviewerAccount?.name ?? "Unknown"}`;
+            return `${getApprovalEmoji("approved")} Approved by ${reviewerAccount?.name ?? "Unknown"}`;
           case "rejected":
-            return `Rejected by ${reviewerAccount?.name ?? "Unknown"}`;
+            return `${getApprovalEmoji("rejected")} Rejected by ${reviewerAccount?.name ?? "Unknown"}`;
           default:
             assertNever(buildReview.state, "Unknown build review state");
         }
@@ -124,7 +124,6 @@ export function buildReviewBlock(props: {
 export function detailsBlock(props: {
   build: Build;
   project: Project;
-  buildStatus: BuildAggregatedStatus;
   compareScreenshotBucket: ScreenshotBucket | null;
   pullRequest: GithubPullRequest | null;
 }): SlackMessageBlock {
