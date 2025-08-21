@@ -129,7 +129,7 @@ function createAccountFromRelationLoader() {
   );
 }
 
-function AutomationActionRuns() {
+function createAutomationRunActionRunsLoader() {
   return new DataLoader<string, AutomationActionRun[]>(async (ids) => {
     const runs = await AutomationActionRun.query().whereIn(
       "automationRunId",
@@ -533,7 +533,7 @@ function createIgnoredChangeLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
-  AutomationActionRuns: AutomationActionRuns(),
+  AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),

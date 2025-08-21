@@ -340,9 +340,9 @@ function getAutomationActionRunStatus(
 }
 
 function getAutomationRunStatus(
-  AutomationActionRuns: AutomationActionRun[],
+  AutomationRunActionRuns: AutomationActionRun[],
 ): IAutomationRunStatus {
-  const statuses = AutomationActionRuns.map(getAutomationActionRunStatus);
+  const statuses = AutomationRunActionRuns.map(getAutomationActionRunStatus);
 
   if (
     statuses.some((status) => status === "pending" || status === "progress")
@@ -377,10 +377,10 @@ export const resolvers: IResolvers = {
   },
   AutomationRun: {
     actionRuns: async (automationRun, _args, ctx) => {
-      return ctx.loaders.AutomationActionRuns.load(automationRun.id);
+      return ctx.loaders.AutomationRunActionRuns.load(automationRun.id);
     },
     status: async (automationRun, _args, ctx) => {
-      const actionRuns = await ctx.loaders.AutomationActionRuns.load(
+      const actionRuns = await ctx.loaders.AutomationRunActionRuns.load(
         automationRun.id,
       );
       return getAutomationRunStatus(actionRuns);
@@ -394,7 +394,8 @@ export const resolvers: IResolvers = {
       return AutomationActionRun.query()
         .joinRelated("automationRun.automationRule")
         .where("automationRun.automationRuleId", automationRule.id)
-        .limit(40);
+        .limit(20)
+        .orderBy("createdAt", "desc");
     },
   },
   AutomationAction: {

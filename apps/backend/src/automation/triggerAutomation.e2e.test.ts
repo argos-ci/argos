@@ -156,7 +156,7 @@ describe("automation/triggerAutomation", () => {
       expect(automationRuns).toHaveLength(0);
     });
 
-    it("should create multiple AutomationActionRuns if rule has multiple actions", async () => {
+    it("should create multiple AutomationRunActionRuns if rule has multiple actions", async () => {
       const otherSlackChannel = await factory.SlackChannel.create();
       const automationRule = await factory.AutomationRule.create({
         projectId: project.id,
