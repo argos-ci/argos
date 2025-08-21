@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { Build } from "@/database/models/index.js";
-import { type SlackMessageBlock } from "@/slack";
+import { type SlackMessageBlock } from "@/slack/channel";
 
 import { type AutomationMessage } from "../../types/events";
 import {

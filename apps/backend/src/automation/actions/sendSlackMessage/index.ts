@@ -7,7 +7,7 @@ import {
   type SlackInstallation,
 } from "@/database/models/index.js";
 import { UnretryableError } from "@/job-core";
-import { postMessageToSlackChannel } from "@/slack";
+import { postMessageToSlackChannel } from "@/slack/channel";
 
 import { AutomationActionFailureError } from "../../automationActionError";
 import { defineAutomationAction } from "../../defineAutomationAction";

@@ -18,7 +18,7 @@ import {
   getSlackChannelById,
   getSlackChannelByName,
   normalizeChannelName,
-} from "@/slack";
+} from "@/slack/channel";
 
 import {
   IAutomationRunStatus,

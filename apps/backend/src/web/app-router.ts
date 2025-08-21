@@ -8,7 +8,7 @@ import { z } from "zod";
 import config from "@/config/index.js";
 import { getGoogleAuthUrl } from "@/google/index.js";
 import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
-import { slackMiddleware } from "@/slack/index.js";
+import { getSlackMiddleware } from "@/slack/index.js";
 import { createRedisStore } from "@/util/rate-limit.js";
 
 import { notificationPreview } from "../notification/express.js";
@@ -157,7 +157,7 @@ export const installAppRouter = async (app: express.Application) => {
     );
   });
 
-  router.use(slackMiddleware);
+  router.use(getSlackMiddleware());
 
   // Static directory
   router.use(

@@ -11,7 +11,8 @@ import {
   User,
 } from "@/database/models/index.js";
 import { transaction } from "@/database/transaction.js";
-import { uninstallSlackInstallation } from "@/slack/index.js";
+import { boltApp } from "@/slack/app.js";
+import { uninstallSlackInstallation } from "@/slack/helpers.js";
 import { cancelStripeSubscription } from "@/stripe/index.js";
 
 import { badUserInput, forbidden } from "../util.js";
@@ -65,7 +66,7 @@ export async function deleteAccount(args: {
 
       // Uninstall slack installation if it exists
       account.slackInstallation
-        ? uninstallSlackInstallation(account.slackInstallation, trx)
+        ? uninstallSlackInstallation(boltApp, account.slackInstallation, trx)
         : null,
 
       // Remove all subscriptions linkedto the account

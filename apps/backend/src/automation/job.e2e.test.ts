@@ -8,9 +8,9 @@ import {
   SlackChannel,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { postMessageToSlackChannel } from "@/slack";
+import { postMessageToSlackChannel } from "@/slack/channel";
 
-vi.mock("@/slack", () => ({
+vi.mock("@/slack/channel", () => ({
   __esModule: true,
   postMessageToSlackChannel: vi.fn(),
 }));
