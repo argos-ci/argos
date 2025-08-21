@@ -4,7 +4,7 @@ import {
 } from "@/automation/types/events.js";
 
 import { Model } from "../util/model.js";
-import { JobStatus, timestampsSchema } from "../util/schemas.js";
+import { timestampsSchema } from "../util/schemas.js";
 import { AutomationRule } from "./AutomationRule.js";
 import { Build } from "./Build.js";
 import { BuildReview } from "./BuildReview.js";
@@ -35,7 +35,6 @@ export class AutomationRun extends Model {
   event!: AutomationEvent;
   buildId?: string | null;
   buildReviewId?: string | null;
-  jobStatus!: JobStatus;
 
   static override relationMappings = {
     automationRule: {
