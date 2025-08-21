@@ -7,7 +7,6 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { invariant } from "@argos/util/invariant";
@@ -616,48 +615,35 @@ export function BuildDiffProvider(props: {
     return hydrateGroups(statsGroups, filteredDiffs);
   }, [statsGroups, filteredDiffs, searchMode]);
 
-  const groupsRef = useRef(groups);
-  groupsRef.current = groups;
-
-  const getDiffGroup = useCallback((diff: Diff | null) => {
+  const getDiffGroup = useEventCallback((diff: Diff | null) => {
     if (!diff) {
       return null;
     }
-    const group = groupsRef.current.find((group) =>
+    const group = groups.find((group) =>
       group.diffs.includes(diff),
     ) as DiffGroup;
     return group;
-  }, []);
+  });
 
-  const setActiveDiff = useCallback(
-    (diff: Diff, scroll?: boolean) => {
-      navigate(
-        getBuildURL({
-          accountSlug: params.accountSlug,
-          buildNumber: params.buildNumber,
-          projectName: params.projectName,
-          diffId: diff.id,
-        }),
-        { replace: true },
-      );
+  const setActiveDiff = useEventCallback((diff: Diff, scroll?: boolean) => {
+    navigate(
+      getBuildURL({
+        accountSlug: params.accountSlug,
+        buildNumber: params.buildNumber,
+        projectName: params.projectName,
+        diffId: diff.id,
+      }),
+      { replace: true },
+    );
 
-      if (scroll) {
-        startTransition(() => {
-          setScrolledDiff(diff);
-          const group = getDiffGroup(diff)!;
-          toggleGroup(group.name, true);
-        });
-      }
-    },
-    [
-      navigate,
-      params.buildNumber,
-      params.accountSlug,
-      params.projectName,
-      getDiffGroup,
-      toggleGroup,
-    ],
-  );
+    if (scroll) {
+      startTransition(() => {
+        setScrolledDiff(diff);
+        const group = getDiffGroup(diff)!;
+        toggleGroup(group.name, true);
+      });
+    }
+  });
 
   const initialDiffGroup = getDiffGroup(initialDiff);
 
@@ -673,18 +659,12 @@ export function BuildDiffProvider(props: {
   }, [complete, initialDiffGroup, toggleGroup, initialDiff]);
 
   const searchValue = useMemo(
-    (): SearchContextValue => ({
-      search,
-      setSearch,
-    }),
+    (): SearchContextValue => ({ search, setSearch }),
     [search, setSearch],
   );
 
   const searchModeValue = useMemo(
-    (): SearchModeContextValue => ({
-      searchMode,
-      setSearchMode,
-    }),
+    (): SearchModeContextValue => ({ searchMode, setSearchMode }),
     [searchMode, setSearchMode],
   );
 
