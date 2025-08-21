@@ -2,10 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import {
-  checkIsBucketValidFromMetadata,
-  finalizeBuild,
-} from "@/build/finalizeBuild.js";
+import { finalizeBuild } from "@/build/finalizeBuild.js";
 import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
 import { Build, BuildShard, Project } from "@/database/models/index.js";
@@ -195,23 +192,14 @@ async function handleUpdateParallel(ctx: Context) {
  */
 async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
+  const metadata = ctx.body.metadata ?? null;
   await transaction(async (trx) => {
-    const metadata = ctx.body.metadata ?? null;
-    const [screenshots] = await Promise.all([
-      insertFilesAndScreenshots({
-        screenshots: body.screenshots,
-        build,
-        trx,
-      }),
-      metadata ? build.$clone().$query(trx).patch({ metadata }) : null,
-    ]);
-
-    await build.compareScreenshotBucket!.$query(trx).patchAndFetch({
-      complete: true,
-      valid: checkIsBucketValidFromMetadata(metadata),
-      screenshotCount: screenshots.all,
-      storybookScreenshotCount: screenshots.storybook,
+    const screenshots = await insertFilesAndScreenshots({
+      screenshots: body.screenshots,
+      build,
+      trx,
     });
+    await finalizeBuild({ trx, build, single: { metadata, screenshots } });
   });
   await buildJob.push(build.id);
 }
