@@ -191,13 +191,6 @@ export enum AutomationActionRunStatus {
   Success = 'success'
 }
 
-export type AutomationActionSendSlackMessagePayload = {
-  __typename?: 'AutomationActionSendSlackMessagePayload';
-  channelId: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  slackId: Scalars['String']['output'];
-};
-
 export type AutomationCondition = {
   __typename?: 'AutomationCondition';
   type: Scalars['String']['output'];

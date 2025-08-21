@@ -151,12 +151,6 @@ enum AutomationActionRunStatus {
   success
 }
 
-type AutomationActionSendSlackMessagePayload {
-  channelId: String!
-  name: String!
-  slackId: String!
-}
-
 type AutomationCondition {
   type: String!
   value: String!

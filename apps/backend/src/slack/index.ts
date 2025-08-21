@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import Bolt from "@slack/bolt";
 import Cookies from "cookies";
 import { Router } from "express";
+import { groupBy } from "lodash-es";
 import { PartialModelObject, TransactionOrKnex } from "objection";
 import { match } from "path-to-regexp";
 import { z } from "zod";
@@ -14,11 +15,13 @@ import config from "@/config/index.js";
 import { transaction } from "@/database";
 import {
   Account,
+  AutomationRule,
   Build,
   ScreenshotDiff,
   SlackChannel,
   SlackInstallation,
 } from "@/database/models";
+import { sendNotification } from "@/notification";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
 import { boom } from "@/web/util";
 
@@ -356,9 +359,14 @@ boltApp.event("channel_id_changed", async ({ event }) => {
 });
 
 boltApp.event("channel_archive", async ({ event }) => {
-  await SlackChannel.query().findOne({ slackId: event.channel }).patch({
-    archived: true,
+  const channel = await SlackChannel.query().findOne({
+    slackId: event.channel,
   });
+
+  if (channel) {
+    await channel.$clone().$query().patch({ archived: true });
+    await notifySlackChannelAction(channel, "archived");
+  }
 });
 
 boltApp.event("channel_unarchive", async ({ event }) => {
@@ -368,7 +376,14 @@ boltApp.event("channel_unarchive", async ({ event }) => {
 });
 
 boltApp.event("channel_deleted", async ({ event }) => {
-  await SlackChannel.query().findOne({ slackId: event.channel }).delete();
+  const channel = await SlackChannel.query().findOne({
+    slackId: event.channel,
+  });
+
+  if (channel) {
+    await channel.$clone().$query().delete();
+    await notifySlackChannelAction(channel, "deleted");
+  }
 });
 
 boltApp.event("team_domain_change", async ({ event, context }) => {
@@ -430,6 +445,56 @@ boltApp.event("link_shared", async ({ event, client, context }) => {
     unfurls,
   });
 });
+
+/**
+ * Notify owners when some rules are impacted by a Slack channel action (archived or deleted).
+ */
+async function notifySlackChannelAction(
+  channel: SlackChannel,
+  action: "archived" | "deleted",
+) {
+  // Find the rules impacted
+  const rules = await AutomationRule.query()
+    .whereRaw(
+      `EXISTS (SELECT 1
+      FROM jsonb_array_elements("then") elem
+      WHERE elem ->> 'action' = 'sendSlackMessage'
+        AND elem -> 'actionPayload' ->> 'channelId' = ?)`,
+      [channel.slackId],
+    )
+    .where("active", true)
+    .withGraphFetched("project.account");
+
+  // If no rules all good
+  if (rules.length === 0) {
+    return;
+  }
+
+  // Group rules by account
+  const accountById: Record<string, Account> = {};
+  const rulesByAccount = groupBy(rules, (rule) => {
+    invariant(rule.project?.account, "project.account relation not loaded");
+    accountById[rule.project.account.id] = rule.project.account;
+    return rule.project.account.id;
+  });
+
+  // Notify owners for each impacted account
+  for (const [accountId, rules] of Object.entries(rulesByAccount)) {
+    const account = accountById[accountId];
+    invariant(account, "Expected account to be defined");
+    const ownerIds = await account.$getOwnerIds();
+    await sendNotification({
+      type: "slack_automation_action_unavailable",
+      data: {
+        action,
+        automationRules: rules,
+        channelId: channel.slackId,
+        channelName: channel.name,
+      },
+      recipients: ownerIds,
+    });
+  }
+}
 
 /**
  * Uninstall the Slack installation.
