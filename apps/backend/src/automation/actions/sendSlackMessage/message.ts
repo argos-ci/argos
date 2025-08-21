@@ -50,16 +50,19 @@ export async function buildSlackMessage(args: {
       ]
     ]
   `),
-    Build.getAggregatedBuildStatuses([build]),
+    message.event === "build.completed"
+      ? Build.getAggregatedBuildStatuses([build])
+      : [null],
   ]);
-  invariant(buildStatus, "build status not found");
   invariant(richBuild.project, "project not found");
 
   blocks.push(contextBlock({ build, buildUrl }));
   blocks.push(projectBlock({ project: richBuild.project }));
-  blocks.push(labelBlock({ build, buildStatus }));
 
-  if (message.event === "build.reviewed") {
+  if (message.event === "build.completed") {
+    invariant(buildStatus, "build status not found");
+    blocks.push(labelBlock({ build, buildStatus }));
+  } else if (message.event === "build.reviewed") {
     const richBuildReview = await message.payload.buildReview
       .$clone()
       .$fetchGraph("user.account");
@@ -75,7 +78,6 @@ export async function buildSlackMessage(args: {
   blocks.push(
     detailsBlock({
       build,
-      buildStatus,
       project: richBuild.project,
       compareScreenshotBucket: richBuild.compareScreenshotBucket ?? null,
       pullRequest: richBuild.pullRequest ?? null,

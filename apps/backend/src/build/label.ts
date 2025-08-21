@@ -2,13 +2,24 @@ import { assertNever } from "@argos/util/assertNever";
 
 import { BuildAggregatedStatus, BuildType } from "@/database/models";
 
+export function getApprovalEmoji(state: "approved" | "rejected") {
+  switch (state) {
+    case "approved":
+      return "👍";
+    case "rejected":
+      return "👎";
+    default:
+      assertNever(state, "Unknown approval state");
+  }
+}
+
 /**
  * Get the label for a build status.
  */
 function getBuildStatusLabel(status: BuildAggregatedStatus): string {
   switch (status) {
     case "accepted":
-      return "👍 Changes approved";
+      return `${getApprovalEmoji("approved")} Changes approved`;
     case "aborted":
       return "🙅 Build aborted";
     case "changes-detected":
@@ -22,7 +33,7 @@ function getBuildStatusLabel(status: BuildAggregatedStatus): string {
     case "progress":
       return "🚜 Diffing screenshots";
     case "rejected":
-      return "👎 Changes rejected";
+      return `${getApprovalEmoji("rejected")} Changes rejected`;
     case "no-changes":
       return "✅ No changes detected";
     default:

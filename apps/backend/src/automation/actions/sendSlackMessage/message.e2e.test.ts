@@ -148,15 +148,8 @@ describe("buildSlackMessage", () => {
           ],
         },
         {
-          type: "section",
           text: {
-            type: "mrkdwn",
-            text: "✅ No changes detected",
-          },
-        },
-        {
-          text: {
-            text: "Approved by Unknown",
+            text: "👍 Approved by Unknown",
             type: "mrkdwn",
           },
           type: "section",
