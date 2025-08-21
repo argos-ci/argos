@@ -19,8 +19,8 @@ export const handler = defineNotificationHandler({
     action: z.enum(["archived", "deleted"]),
     automationRules: z.array(
       z.object({
-        id: z.string(),
         name: z.string(),
+        href: z.url(),
       }),
     ),
   }),
@@ -30,8 +30,8 @@ export const handler = defineNotificationHandler({
     action: "archived",
     automationRules: [
       {
-        id: "1",
         name: "Notify when a build has changes",
+        href: "https://app.argos-ci.com/acme/proj/automations/2",
       },
     ],
   },
@@ -52,10 +52,8 @@ export const handler = defineNotificationHandler({
           </Paragraph>
           <ul>
             {automationRules.map((rule) => (
-              <li key={rule.id}>
-                <Link href={`https://argos.dev/automations/${rule.id}`}>
-                  {rule.name}
-                </Link>
+              <li key={rule.href}>
+                <Link href={rule.href}>{rule.name}</Link>
               </li>
             ))}
           </ul>

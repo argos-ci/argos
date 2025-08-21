@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { groupBy } from "lodash-es";
 
+import config from "@/config";
 import { Account, AutomationRule, SlackChannel } from "@/database/models";
 import { sendNotification } from "@/notification";
 
@@ -45,7 +46,16 @@ export async function notifySlackChannelAction(
       type: "slack_automation_action_unavailable",
       data: {
         action,
-        automationRules: rules,
+        automationRules: rules.map((rule) => {
+          invariant(
+            rule.project?.account,
+            "project.account relation not loaded",
+          );
+          return {
+            name: rule.name,
+            href: `${config.get("server.url")}/${rule.project.account.slug}/${rule.project.name}/automations/${rule.id}`,
+          };
+        }),
         channelId: channel.slackId,
         channelName: channel.name,
       },
