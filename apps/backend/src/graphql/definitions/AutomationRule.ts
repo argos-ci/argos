@@ -340,9 +340,9 @@ function getAutomationActionRunStatus(
 }
 
 function getAutomationRunStatus(
-  AutomationRunActionRuns: AutomationActionRun[],
+  actionRuns: AutomationActionRun[],
 ): IAutomationRunStatus {
-  const statuses = AutomationRunActionRuns.map(getAutomationActionRunStatus);
+  const statuses = actionRuns.map(getAutomationActionRunStatus);
 
   if (
     statuses.some((status) => status === "pending" || status === "progress")
