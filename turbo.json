@@ -51,6 +51,7 @@
       "cache": false
     },
     "watch-server": {
+      "dependsOn": ["build"],
       "persistent": true,
       "cache": false,
       "env": [

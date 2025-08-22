@@ -1,12 +1,11 @@
-import { InfoIcon, MoreVerticalIcon } from "lucide-react";
+import { MoreVerticalIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
 import { IconButton } from "@/ui/IconButton";
 import { ListRow } from "@/ui/List";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Menu, MenuItem, MenuItemTooltip, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { Tooltip } from "@/ui/Tooltip";
 
 import { AccountAvatar } from "./AccountAvatar";
 
@@ -31,13 +30,7 @@ export function RemoveMenu(props: {
             }}
             isDisabled={props.isDisabled}
           >
-            {props.tooltip && (
-              <MenuItemIcon>
-                <Tooltip content={props.tooltip}>
-                  <InfoIcon className="size-[1em]" />
-                </Tooltip>
-              </MenuItemIcon>
-            )}
+            {props.tooltip && <MenuItemTooltip content={props.tooltip} />}
             {props.actionLabel}
           </MenuItem>
         </Menu>
@@ -63,7 +56,7 @@ export function UserListRow(props: {
 }) {
   const { user } = props;
   return (
-    <ListRow className="items-center px-4 py-2">
+    <ListRow className="flex items-center gap-6 px-4 py-2">
       <AccountAvatar avatar={user.avatar} size={36} className="shrink-0" />
       <div className="flex-1">
         <div className="flex items-center gap-2">

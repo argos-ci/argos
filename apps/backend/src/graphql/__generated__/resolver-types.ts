@@ -645,6 +645,8 @@ export type IMutation = {
   acceptInvitation: ITeam;
   /** Add contributor to project */
   addOrUpdateProjectContributor: IProjectContributor;
+  /** Add a user email */
+  addUserEmail: IUser;
   /** Create automation */
   createAutomationRule: IAutomationRule;
   /** Create a team */
@@ -657,6 +659,8 @@ export type IMutation = {
   deleteTeam: Scalars['Boolean']['output'];
   /** Delete user and all its projects */
   deleteUser: Scalars['Boolean']['output'];
+  /** Delete a user email */
+  deleteUserEmail: IUser;
   /** Disable GitHub SSO */
   disableGitHubSSOOnTeam: ITeam;
   /** Disconnect GitHub Account */
@@ -685,6 +689,10 @@ export type IMutation = {
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
   reviewBuild: IBuild;
+  /** Send a verification email for a unverified email */
+  sendUserEmailVerification: IUser;
+  /** Set primary email */
+  setPrimaryEmail: IUser;
   /** Set team default user level */
   setTeamDefaultUserLevel: ITeam;
   /** Set member level */
@@ -708,6 +716,8 @@ export type IMutation = {
   updateProject: IProject;
   /** Set project pull request comment */
   updateProjectPrComment: IProject;
+  /** Verify email, returns true if success, false if failed */
+  verifyEmail: Scalars['Boolean']['output'];
 };
 
 
@@ -718,6 +728,11 @@ export type IMutationAcceptInvitationArgs = {
 
 export type IMutationAddOrUpdateProjectContributorArgs = {
   input: IAddContributorToProjectInput;
+};
+
+
+export type IMutationAddUserEmailArgs = {
+  email: Scalars['String']['input'];
 };
 
 
@@ -748,6 +763,11 @@ export type IMutationDeleteTeamArgs = {
 
 export type IMutationDeleteUserArgs = {
   input: IDeleteUserInput;
+};
+
+
+export type IMutationDeleteUserEmailArgs = {
+  email: Scalars['String']['input'];
 };
 
 
@@ -826,6 +846,16 @@ export type IMutationReviewBuildArgs = {
 };
 
 
+export type IMutationSendUserEmailVerificationArgs = {
+  email: Scalars['String']['input'];
+};
+
+
+export type IMutationSetPrimaryEmailArgs = {
+  email: Scalars['String']['input'];
+};
+
+
 export type IMutationSetTeamDefaultUserLevelArgs = {
   input: ISetTeamDefaultUserLevelInput;
 };
@@ -883,6 +913,12 @@ export type IMutationUpdateProjectArgs = {
 
 export type IMutationUpdateProjectPrCommentArgs = {
   input: IUpdateProjectPrCommentInput;
+};
+
+
+export type IMutationVerifyEmailArgs = {
+  email: Scalars['String']['input'];
+  token: Scalars['String']['input'];
 };
 
 export type INode = {
@@ -1594,7 +1630,10 @@ export type IUser = IAccount & INode & {
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: Scalars['Int']['output'];
+  /** Primary email of the user */
   email?: Maybe<Scalars['String']['output']>;
+  /** List of email addresses associated with the user */
+  emails: Array<IUserEmail>;
   ghInstallations: IGhApiInstallationConnection;
   githubAccount?: Maybe<IGithubAccount>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
@@ -1648,6 +1687,12 @@ export type IUserConnection = IConnection & {
   __typename?: 'UserConnection';
   edges: Array<IUser>;
   pageInfo: IPageInfo;
+};
+
+export type IUserEmail = {
+  __typename?: 'UserEmail';
+  email: Scalars['String']['output'];
+  verified: Scalars['Boolean']['output'];
 };
 
 export enum IValidationStatus {
@@ -1889,6 +1934,7 @@ export type IResolversTypes = ResolversObject<{
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: ResolverTypeWrapper<Account>;
   UserConnection: ResolverTypeWrapper<Omit<IUserConnection, 'edges'> & { edges: Array<IResolversTypes['User']> }>;
+  UserEmail: ResolverTypeWrapper<IUserEmail>;
   ValidationStatus: IValidationStatus;
 }>;
 
@@ -2021,6 +2067,7 @@ export type IResolversParentTypes = ResolversObject<{
   UpdateProjectPrCommentInput: IUpdateProjectPrCommentInput;
   User: Account;
   UserConnection: Omit<IUserConnection, 'edges'> & { edges: Array<IResolversParentTypes['User']> };
+  UserEmail: IUserEmail;
 }>;
 
 export type IAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Account'] = IResolversParentTypes['Account']> = ResolversObject<{
@@ -2386,12 +2433,14 @@ export interface IJsonObjectScalarConfig extends GraphQLScalarTypeConfig<IResolv
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
   addOrUpdateProjectContributor?: Resolver<IResolversTypes['ProjectContributor'], ParentType, ContextType, RequireFields<IMutationAddOrUpdateProjectContributorArgs, 'input'>>;
+  addUserEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationAddUserEmailArgs, 'email'>>;
   createAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationCreateAutomationRuleArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deactivateAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationDeactivateAutomationRuleArgs, 'id'>>;
   deleteProject?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteProjectArgs, 'id'>>;
   deleteTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteTeamArgs, 'input'>>;
   deleteUser?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationDeleteUserArgs, 'input'>>;
+  deleteUserEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationDeleteUserEmailArgs, 'email'>>;
   disableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationDisableGitHubSsoOnTeamArgs, 'input'>>;
   disconnectGitHubAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitHubAuthArgs, 'input'>>;
   disconnectGitLabAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitLabAuthArgs, 'input'>>;
@@ -2408,6 +2457,8 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   removeContributorFromProject?: Resolver<IResolversTypes['RemoveContributorFromProjectPayload'], ParentType, ContextType, RequireFields<IMutationRemoveContributorFromProjectArgs, 'input'>>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
   reviewBuild?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationReviewBuildArgs, 'input'>>;
+  sendUserEmailVerification?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationSendUserEmailVerificationArgs, 'email'>>;
+  setPrimaryEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationSetPrimaryEmailArgs, 'email'>>;
   setTeamDefaultUserLevel?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationSetTeamDefaultUserLevelArgs, 'input'>>;
   setTeamMemberLevel?: Resolver<IResolversTypes['TeamMember'], ParentType, ContextType, RequireFields<IMutationSetTeamMemberLevelArgs, 'input'>>;
   testAutomation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationTestAutomationArgs, 'input'>>;
@@ -2420,6 +2471,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   updateAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationUpdateAutomationRuleArgs, 'input'>>;
   updateProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectArgs, 'input'>>;
   updateProjectPrComment?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationUpdateProjectPrCommentArgs, 'input'>>;
+  verifyEmail?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationVerifyEmailArgs, 'email' | 'token'>>;
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
@@ -2803,6 +2855,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   email?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  emails?: Resolver<Array<IResolversTypes['UserEmail']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
   githubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2838,6 +2891,12 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
 export type IUserConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['UserConnection'] = IResolversParentTypes['UserConnection']> = ResolversObject<{
   edges?: Resolver<Array<IResolversTypes['User']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IUserEmailResolvers<ContextType = Context, ParentType extends IResolversParentTypes['UserEmail'] = IResolversParentTypes['UserEmail']> = ResolversObject<{
+  email?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  verified?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2928,5 +2987,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Timestamp?: GraphQLScalarType;
   User?: IUserResolvers<ContextType>;
   UserConnection?: IUserConnectionResolvers<ContextType>;
+  UserEmail?: IUserEmailResolvers<ContextType>;
 }>;
 

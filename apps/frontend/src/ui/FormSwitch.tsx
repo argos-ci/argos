@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { InfoIcon } from "lucide-react";
-import { FieldValues, useController } from "react-hook-form";
+import { FieldValues, useFormContext } from "react-hook-form";
 
 import { Label } from "./Label";
 import { SwitchField, SwitchFieldProps } from "./Switch";
@@ -19,10 +19,8 @@ export function FormSwitch<TFieldValues extends FieldValues>({
 }) {
   const genId = useId();
   const id = idProp ?? genId;
-  const { field } = useController({
-    control: props.control,
-    name: props.name,
-  });
+  const form = useFormContext();
+  const value = form.watch(props.name);
   return (
     <div className={className}>
       <Label htmlFor={id} className="text-low text-sm font-medium">
@@ -40,7 +38,7 @@ export function FormSwitch<TFieldValues extends FieldValues>({
           htmlFor={id}
           className="peer-data-[disabled]:opacity-disabled inline-block select-none text-sm font-medium"
         >
-          {field.value ? "Enabled" : "Disabled"}
+          {value ? "Enabled" : "Disabled"}
         </label>
       </div>
     </div>

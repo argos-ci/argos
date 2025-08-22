@@ -608,6 +608,9 @@ type Mutation {
   """Add contributor to project"""
   addOrUpdateProjectContributor(input: AddContributorToProjectInput!): ProjectContributor!
 
+  """Add a user email"""
+  addUserEmail(email: String!): User!
+
   """Create automation"""
   createAutomationRule(input: CreateAutomationRuleInput!): AutomationRule!
 
@@ -625,6 +628,9 @@ type Mutation {
 
   """Delete user and all its projects"""
   deleteUser(input: DeleteUserInput!): Boolean!
+
+  """Delete a user email"""
+  deleteUserEmail(email: String!): User!
 
   """Disable GitHub SSO"""
   disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
@@ -666,6 +672,12 @@ type Mutation {
   removeUserFromTeam(input: RemoveUserFromTeamInput!): RemoveUserFromTeamPayload!
   reviewBuild(input: ReviewBuildInput!): Build!
 
+  """Send a verification email for a unverified email"""
+  sendUserEmailVerification(email: String!): User!
+
+  """Set primary email"""
+  setPrimaryEmail(email: String!): User!
+
   """Set team default user level"""
   setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
 
@@ -699,6 +711,9 @@ type Mutation {
 
   """Set project pull request comment"""
   updateProjectPrComment(input: UpdateProjectPrCommentInput!): Project!
+
+  """Verify email, returns true if success, false if failed"""
+  verifyEmail(email: String!, token: String!): Boolean!
 }
 
 interface Node {
@@ -1280,7 +1295,12 @@ type User implements Account & Node {
   blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: Int!
+
+  """Primary email of the user"""
   email: String
+
+  """List of email addresses associated with the user"""
+  emails: [UserEmail!]!
   ghInstallations: GhApiInstallationConnection!
   githubAccount: GithubAccount
   gitlabAccessToken: String
@@ -1315,6 +1335,11 @@ type User implements Account & Node {
 type UserConnection implements Connection {
   edges: [User!]!
   pageInfo: PageInfo!
+}
+
+type UserEmail {
+  email: String!
+  verified: Boolean!
 }
 
 enum ValidationStatus {

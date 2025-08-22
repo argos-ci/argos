@@ -136,7 +136,7 @@ const BuildRow = memo(function BuildRow({
   return (
     <ListRowLink
       href={resolvedBuild.pathname}
-      className="items-center p-4 text-sm"
+      className="flex items-center gap-6 p-4 text-sm"
       style={style}
     >
       <div className="w-28 shrink-0">

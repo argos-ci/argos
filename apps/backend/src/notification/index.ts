@@ -5,7 +5,7 @@ import {
 } from "@/database/models/index.js";
 
 import type {
-  NotificationWorkflowData,
+  NotificationWorkflowProps,
   NotificationWorkflowType,
 } from "./handlers/index.js";
 import { notificationWorkflowJob } from "./workflow-job.js";
@@ -13,22 +13,14 @@ import { notificationWorkflowJob } from "./workflow-job.js";
 /**
  * Send a notification to a list of recipients.
  */
-export async function sendNotification<
-  Type extends NotificationWorkflowType,
->(input: {
-  /**
-   * Type of the notification.
-   */
-  type: Type;
-  /**
-   * Data for the notification.
-   */
-  data: NotificationWorkflowData<Type>;
-  /**
-   * User IDs to send the notification to.
-   */
-  recipients: string[];
-}) {
+export async function sendNotification<Type extends NotificationWorkflowType>(
+  input: NotificationWorkflowProps<Type> & {
+    /**
+     * User IDs to send the notification to.
+     */
+    recipients: string[];
+  },
+) {
   if (input.recipients.length === 0) {
     throw new Error("No recipients provided");
   }

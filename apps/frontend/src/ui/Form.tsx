@@ -1,4 +1,5 @@
 import { ApolloError } from "@apollo/client";
+import type { ErrorCode } from "@argos/error-types";
 import {
   SubmitHandler,
   useFormContext,
@@ -17,16 +18,21 @@ export const getGraphQLErrorMessage = (error: unknown): string => {
 const unwrapErrors = (error: unknown) => {
   if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
     return error.graphQLErrors.map((error) => {
+      const code =
+        typeof error.extensions?.argosErrorCode === "string"
+          ? (error.extensions.argosErrorCode as ErrorCode)
+          : null;
       if (typeof error.extensions?.field === "string") {
-        return { field: error.extensions.field, message: error.message };
+        return { field: error.extensions.field, message: error.message, code };
       }
-      return { field: "root.serverError", message: error.message };
+      return { field: "root.serverError", message: error.message, code };
     });
   }
   return [
     {
       field: "root.serverError",
       message: DEFAULT_ERROR_MESSAGE,
+      code: null,
     },
   ];
 };
@@ -67,7 +73,7 @@ export function handleFormError(
   const errors = unwrapErrors(error);
   errors.forEach((error) => {
     form.setError(error.field, {
-      type: "manual",
+      type: error.code ?? "manual",
       message: error.message,
     });
   });

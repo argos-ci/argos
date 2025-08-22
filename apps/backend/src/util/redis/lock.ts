@@ -18,8 +18,11 @@ async function acquireLock({
       const rdn = Math.random().toString(36);
       client
         .set(name, rdn, {
-          PX: timeout,
-          NX: true,
+          expiration: {
+            type: "PX",
+            value: timeout,
+          },
+          condition: "NX",
         })
         .then((result) => {
           if (result === "OK") {

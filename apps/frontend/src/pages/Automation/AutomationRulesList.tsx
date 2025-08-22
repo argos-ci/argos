@@ -114,7 +114,10 @@ function AutomationRow(props: {
   const url = getAutomationURL({ ...params, automationId: automationRule.id });
 
   return (
-    <ListRowLink href={url} className="items-center px-4 py-2 text-sm">
+    <ListRowLink
+      href={url}
+      className="flex items-center gap-6 px-4 py-2 text-sm"
+    >
       <div className="w-44 shrink-0 py-2 md:w-auto md:grow">
         <div className="truncate">{automationRule.name}</div>
       </div>

@@ -8,6 +8,10 @@ import { GithubAccountMember } from "./GithubAccountMember.js";
 export class GithubAccount extends Model {
   static override tableName = "github_accounts";
 
+  static override get jsonAttributes() {
+    return ["emails"];
+  }
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
@@ -17,6 +21,12 @@ export class GithubAccount extends Model {
         properties: {
           name: { type: ["string", "null"] },
           email: { type: ["string", "null"] },
+          emails: {
+            anyOf: [
+              { type: "array", items: { type: "string" } },
+              { type: "null" },
+            ],
+          },
           login: { type: "string" },
           githubId: { type: "number" },
           type: { type: "string", enum: ["user", "organization", "bot"] },
@@ -30,6 +40,7 @@ export class GithubAccount extends Model {
 
   name!: string | null;
   email!: string | null;
+  emails!: string[] | null;
   login!: string;
   githubId!: number;
   type!: "user" | "organization" | "bot";

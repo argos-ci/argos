@@ -21,7 +21,7 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
   );
 }
 
-const listRowClassName = "bg-app flex min-w-max gap-6 border-b last:border-b-0";
+const listRowClassName = "bg-app min-w-max border-b last:border-b-0";
 
 export function ListRowLink(props: RACLinkProps) {
   return (
@@ -67,7 +67,7 @@ export function ListRowLoader({ children, ...rest }: ListRowProps) {
       {...rest}
       className={clsx(
         rest.className,
-        "text-low items-center justify-center gap-2",
+        "text-low flex items-center justify-center gap-2",
       )}
     >
       <ListLoader>{children}</ListLoader>

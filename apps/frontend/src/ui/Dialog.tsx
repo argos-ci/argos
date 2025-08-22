@@ -1,4 +1,4 @@
-import { ComponentPropsWithRef, use } from "react";
+import { ComponentPropsWithRef, use, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -10,6 +10,7 @@ import {
 import type { OverlayTriggerState } from "react-stately";
 
 import { Button, ButtonProps } from "./Button";
+import { usePersistentValue } from "./usePersistentValue";
 
 export { DialogTrigger } from "react-aria-components";
 
@@ -62,11 +63,30 @@ export function useOverlayTriggerState(): OverlayTriggerState {
   return ctx;
 }
 
+/**
+ * Create a dialog value state that can be used for controlled dialogs.
+ */
+export function useDialogValueState<S>(initialState: S | (() => S)) {
+  const [state, setState] = useState<S | null>(initialState);
+  const persistentState = usePersistentValue(state);
+  return {
+    isOpen: Boolean(state),
+    onOpenChange: (open: boolean) => {
+      if (!open) {
+        setState(null);
+      }
+    },
+    open: (value: S) => setState(value),
+    value: persistentState,
+  };
+}
+
 export function DialogDismiss(props: {
   ref?: React.Ref<HTMLButtonElement>;
   children: React.ReactNode;
   onPress?: ButtonProps["onPress"];
   single?: boolean;
+  isDisabled?: boolean;
 }) {
   const state = useOverlayTriggerState();
   return (
@@ -78,6 +98,7 @@ export function DialogDismiss(props: {
         props.onPress?.(event);
         state.close();
       }}
+      isDisabled={props.isDisabled}
     >
       {props.children}
     </Button>

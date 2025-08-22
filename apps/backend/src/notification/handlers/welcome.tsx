@@ -9,7 +9,7 @@ import {
   Link,
   Paragraph,
   Signature,
-} from "../email-components";
+} from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
 
 export const handler = defineNotificationHandler({

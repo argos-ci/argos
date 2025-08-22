@@ -40,7 +40,7 @@ const variantClassNames: Record<ButtonVariant, string> = {
 const sizeClassNames: Record<ButtonSize, string> = {
   small: "rounded-sm py-1 px-2 text-xs",
   medium: "rounded-lg py-[calc(0.375rem-1px)] px-3 text-sm",
-  large: "rounded-sm py-3 px-8 text-base",
+  large: "rounded-xl py-3 px-8 text-base",
 };
 
 function getButtonClassName(options: {

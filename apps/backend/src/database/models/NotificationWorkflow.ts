@@ -3,7 +3,7 @@ import z from "zod";
 
 import {
   notificationHandlers,
-  type NotificationWorkflowData,
+  type NotificationWorkflowProps,
   type NotificationWorkflowType,
 } from "@/notification/handlers/index.js";
 
@@ -44,7 +44,7 @@ export class NotificationWorkflow<
 
   jobStatus!: JobStatus;
   type!: Type;
-  data!: NotificationWorkflowData<Type>;
+  data!: NotificationWorkflowProps<Type>["data"];
 
   static override get relationMappings(): RelationMappings {
     return {
