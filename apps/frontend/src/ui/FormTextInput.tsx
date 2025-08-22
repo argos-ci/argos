@@ -37,8 +37,8 @@ export function FormTextInput({
   ...props
 }: FormTextInputProps) {
   const form = useFormContext();
-  const { isSubmitting } = form.formState;
   const error = form.getFieldState(name)?.error;
+  const { isSubmitting } = form.formState;
   const genId = useId();
   const id = idProp || genId;
   const invalid = Boolean(error);

@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-export type HandlerContext = {
+type HandlerContext = {
   user: {
     name: string | null;
   };

@@ -11,7 +11,8 @@ import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
 import { getSlackMiddleware } from "@/slack/index.js";
 import { createRedisStore } from "@/util/rate-limit.js";
 
-import { notificationPreview } from "../notification/express.js";
+import { getEmailPreviewMiddleware } from "../email/express.js";
+import { getNotificationPreviewMiddleware } from "../notification/express.js";
 import { auth } from "./middlewares/auth.js";
 import { boom, subdomain } from "./util.js";
 
@@ -71,7 +72,14 @@ export const installAppRouter = async (app: express.Application) => {
   const distDir = join(import.meta.dirname, "../../../frontend/dist");
 
   if (config.get("env") !== "production") {
-    router.use("/notification-preview", notificationPreview);
+    router.use(
+      "/notification-preview",
+      getNotificationPreviewMiddleware({ path: "/notification-preview" }),
+    );
+    router.use(
+      "/email-preview",
+      getEmailPreviewMiddleware({ path: "/email-preview" }),
+    );
   }
 
   await apolloServer.start();

@@ -13,11 +13,11 @@ import {
   Team,
   TeamUser,
 } from "@/database/models/index.js";
+import { joinSSOTeams } from "@/database/services/account.js";
 import {
   getOrCreateGhAccount,
   getOrCreateGithubAccountMember,
-  joinSSOTeams,
-} from "@/database/services/account.js";
+} from "@/database/services/github.js";
 import { parsePullRequestData } from "@/github-pull-request/pull-request.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
@@ -245,8 +245,8 @@ export async function handleGitHubEvents(
               githubId: payload.membership.user.id,
               login: payload.membership.user.login,
               type: "user",
-              email: payload.membership.user.email,
               name: payload.membership.user.name,
+              fallbackEmail: payload.membership.user.email,
             }),
           ]);
 
@@ -284,8 +284,8 @@ export async function handleGitHubEvents(
               githubId: payload.membership.user.id,
               login: payload.membership.user.login,
               type: "user",
-              email: payload.membership.user.email,
               name: payload.membership.user.name,
+              fallbackEmail: payload.membership.user.email,
             }),
           ]);
 

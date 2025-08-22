@@ -5,6 +5,14 @@ import {
   composeRenderProps,
   type CheckboxProps as AriaCheckboxProps,
 } from "react-aria-components";
+import {
+  useController,
+  type FieldValues,
+  type Path,
+  type UseControllerProps,
+} from "react-hook-form";
+
+import { mergeRefs } from "@/util/merge-refs";
 
 interface CheckboxProps
   extends AriaCheckboxProps,
@@ -17,11 +25,13 @@ export function Checkbox(props: CheckboxProps) {
       ref={ref}
       className={composeRenderProps(className, (className) =>
         clsx(
-          "group/checkbox flex items-center gap-x-2",
+          "group/checkbox peer flex items-center gap-x-2",
           /* Disabled */
           "data-[disabled]:opacity-disabled",
           /* Invalid */
           "data-[invalid]:text-danger-low",
+          /* Resets */
+          "focus:outline-none focus-visible:outline-none",
           className,
         ),
       )}
@@ -42,8 +52,6 @@ export function Checkbox(props: CheckboxProps) {
               "group-data-[hovered]/checkbox:border-primary-hover group-data-[hovered]/checkbox:bg-primary-hover",
               /* Invalid */
               "group-data-[invalid]/checkbox:border-danger group-data-[invalid]/checkbox:group-data-[hovered]/checkbox:border-danger-hover group-data-[invalid]/checkbox:group-data-[hovered]/checkbox:bg-danger-hover group-data-[invalid]/checkbox:group-data-[selected]/checkbox:bg-danger-subtle group-data-[invalid]/checkbox:group-data-[selected]/checkbox:text-danger-low",
-              /* Resets */
-              "focus:outline-none focus-visible:outline-none",
             )}
           >
             {renderProps.isIndeterminate ? (
@@ -56,5 +64,44 @@ export function Checkbox(props: CheckboxProps) {
         </>
       ))}
     </AriaCheckbox>
+  );
+}
+
+export type CheckboxFieldProps<
+  TFieldValues extends FieldValues,
+  TName extends Path<TFieldValues>,
+> = Pick<
+  UseControllerProps<TFieldValues, TName>,
+  "control" | "name" | "rules"
+> &
+  CheckboxProps;
+
+export function CheckboxField<
+  TFieldValues extends FieldValues,
+  TName extends Path<TFieldValues>,
+>(props: CheckboxFieldProps<TFieldValues, TName>) {
+  const { ref, control, name, rules, ...rest } = props;
+  const { field } = useController({
+    control,
+    name,
+    rules,
+  });
+  const mergedRef = mergeRefs(field.ref, ref);
+  return (
+    <Checkbox
+      {...rest}
+      ref={mergedRef}
+      isDisabled={field.disabled || props.isDisabled}
+      onBlur={(event) => {
+        field.onBlur();
+        props.onBlur?.(event);
+      }}
+      name={field.name}
+      onChange={(isSelected) => {
+        field.onChange(isSelected);
+        props.onChange?.(isSelected);
+      }}
+      isSelected={field.value}
+    />
   );
 }

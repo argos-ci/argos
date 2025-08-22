@@ -20,6 +20,7 @@ import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";
 import { UserDelete } from "@/containers/User/Delete";
+import { UserEmails } from "@/containers/User/Emails";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -59,6 +60,7 @@ const AccountQuery = graphql(`
       ...UserAuth_Account
       ...TeamSpendManagement_Account
       ...UserDelete_User
+      ...UserEmail_Account
     }
   }
 `);
@@ -167,6 +169,7 @@ function PageContent(props: { accountSlug: string }) {
           }
         })()}
       {isUser && hasAdminPermission && <UserAuth account={account} />}
+      {isUser && hasAdminPermission && <UserEmails account={account} />}
       {hasAdminPermission && <PlanCard account={account} />}
       {isTeam && <TeamSpendManagement account={account} />}
       {isTeam && <TeamMembers team={account} />}

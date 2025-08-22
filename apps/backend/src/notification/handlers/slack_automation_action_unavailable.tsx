@@ -8,7 +8,7 @@ import {
   Link,
   Paragraph,
   Signature,
-} from "../email-components";
+} from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
 
 export const handler = defineNotificationHandler({
@@ -44,7 +44,7 @@ export const handler = defineNotificationHandler({
           preview={`The Slack channel ${channelName} (ID: ${channelId}) used in some automation rules has been ${action}.`}
         >
           <H1>Automation rule update required</H1>
-          <Hi ctx={ctx} />
+          <Hi name={ctx.user.name} />
           <Paragraph>
             The Slack channel <strong>#{channelName}</strong> (ID: {channelId})
             linked to the following automation rules are no longer available
