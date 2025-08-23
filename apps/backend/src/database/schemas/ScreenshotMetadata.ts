@@ -116,6 +116,14 @@ const SdkSchema = z
 
 export const ScreenshotMetadataSchema = z
   .object({
+    $schema: z
+      .string()
+      .optional()
+      .meta({
+        description:
+          "Ignored. Can be set to get completions, validations and documentation in some editors.",
+        examples: ["https://api.argos-ci.com/v2/screenshot-metadata.json"],
+      }),
     url: z
       .string()
       .optional()
@@ -142,7 +150,7 @@ export const ScreenshotMetadataSchema = z
   })
   .meta({ description: "Metadata about a screenshot" });
 
-export const ScreenshotMetadataJsonSchema = z.toJSONSchema(
+export const ScreenshotMetadataJSONSchema = z.toJSONSchema(
   ScreenshotMetadataSchema,
 );
 

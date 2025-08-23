@@ -2,6 +2,8 @@ import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
 
+import { ScreenshotMetadataJSONSchema } from "@/database/schemas/ScreenshotMetadata.js";
+
 import { createBuild } from "./handlers/createBuild.js";
 import { finalizeBuilds } from "./handlers/finalizeBuilds.js";
 import { getAuthProject } from "./handlers/getAuthProject.js";
@@ -19,6 +21,10 @@ router.use(
     origin: ["https://editor.swagger.io", "https://editor-next.swagger.io"],
   }),
 );
+
+router.get("/screenshot-metadata.json", (_req, res) => {
+  res.json(ScreenshotMetadataJSONSchema);
+});
 
 // Expose the OpenAPI schema as YAML
 router.get("/openapi.yaml", (_req, res) => {
