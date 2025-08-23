@@ -167,6 +167,7 @@ describe("api v2", () => {
             name: "second",
             path: join(__dirname, "__fixtures__", "screenshot_test_2.jpg"),
             metadata: {
+              $schema: "https://api.argos-ci.com/v2/screenshot-metadata.json",
               url: "https://localhost:3000/test",
               viewport: { width: 1024, height: 768 },
               colorScheme: "light",
@@ -231,8 +232,9 @@ describe("api v2", () => {
               threshold: screenshot.threshold,
               baseName: screenshot.baseName ?? null,
             })),
-          })
-          .expect(200);
+          });
+
+        expect(updateResult.statusCode).toBe(200);
 
         const build = await Build.query()
           .withGraphFetched("compareScreenshotBucket.screenshots.file")
@@ -248,6 +250,7 @@ describe("api v2", () => {
             (screenshot) => screenshot.name === "second",
           );
         expect(screenshotWithMetadata!.metadata).toEqual({
+          $schema: "https://api.argos-ci.com/v2/screenshot-metadata.json",
           url: "https://localhost:3000/test",
           viewport: { width: 1024, height: 768 },
           colorScheme: "light",

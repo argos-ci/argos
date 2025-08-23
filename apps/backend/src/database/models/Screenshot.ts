@@ -2,7 +2,7 @@ import type { JSONSchema, RelationMappings } from "objection";
 
 import {
   ScreenshotMetadata,
-  ScreenshotMetadataJsonSchema,
+  ScreenshotMetadataJSONSchema,
 } from "../schemas/ScreenshotMetadata.js";
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
@@ -33,7 +33,7 @@ export class Screenshot extends Model {
           testId: { type: ["string", "null"] },
           metadata: {
             anyOf: [
-              ScreenshotMetadataJsonSchema as JSONSchema,
+              ScreenshotMetadataJSONSchema as JSONSchema,
               { type: "null" },
             ],
           },
