@@ -25,7 +25,9 @@ export class GithubPullRequest extends Model {
           commentId: { type: ["string", "null"] },
           githubRepositoryId: { type: "string" },
           number: { type: "integer" },
-          title: { type: ["string", "null"] },
+          title: {
+            oneOf: [{ type: "string", maxLength: 255 }, { type: "null" }],
+          },
           baseRef: { type: ["string", "null"] },
           baseSha: { type: ["string", "null"] },
           state: { type: ["string", "null"], enum: ["open", "closed"] },
