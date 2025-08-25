@@ -20,6 +20,7 @@ import { logout, useAuthTokenPayload, useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { LinkButton } from "@/ui/Button";
+import { ColorMode, useColorMode } from "@/ui/ColorMode";
 import {
   Menu,
   MenuItem,
@@ -32,7 +33,6 @@ import { Popover } from "@/ui/Popover";
 
 import { AccountAvatar } from "./AccountAvatar";
 import { useBuildHotkeysDialogState } from "./Build/BuildHotkeysDialogState";
-import { ColorMode, useColorMode } from "./ColorMode";
 import { InitialAvatar } from "./InitialAvatar";
 
 function getColorModeIcon(colorMode: ColorMode | "system") {

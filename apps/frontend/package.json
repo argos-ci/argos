@@ -63,6 +63,7 @@
     "react-stately": "^3.40.0",
     "react-twc": "^1.5.1",
     "recharts": "^2.15.4",
+    "sonner": "^2.0.7",
     "tailwindcss": "^4.1.12",
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",

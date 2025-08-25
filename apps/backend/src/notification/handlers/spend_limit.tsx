@@ -12,7 +12,7 @@ import {
   Link,
   Paragraph,
   Signature,
-} from "../email-components";
+} from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
 
 const baseUrl = config.get("server.url");
@@ -43,7 +43,7 @@ export const handler = defineNotificationHandler({
           preview={`You’re at ${threshold}% of your spend limit for this cycle. Check your usage now.`}
         >
           <H1>Your team has reached {threshold}% of its spend limit</H1>
-          <Hi ctx={ctx} />
+          <Hi name={ctx.user.name} />
           {(() => {
             switch (threshold) {
               case 50: {

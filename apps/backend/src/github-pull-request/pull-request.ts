@@ -6,7 +6,7 @@ import { GithubRepository } from "@/database/models/index.js";
 import {
   getGhAccountType,
   getOrCreateGhAccount,
-} from "@/database/services/account.js";
+} from "@/database/services/github.js";
 import {
   checkErrorStatus,
   getInstallationOctokit,
@@ -121,6 +121,7 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     githubId: pullRequestData.user.id,
     login: pullRequestData.user.login,
     type: getGhAccountType(pullRequestData.user.type),
+    fallbackEmail: pullRequestData.user.email ?? null,
   });
 
   await pullRequest

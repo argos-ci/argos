@@ -24,7 +24,7 @@
     "watch-server-build-and-synchronize": "node --watch ./dist/processes/proc/build-and-synchronize.js",
     "watch-server-screenshot-diff": "node --watch ./dist/processes/proc/screenshot-diff.js",
     "watch-server-web": "node --watch ./dist/processes/proc/web.js",
-    "watch-server": "sleep 2 && concurrently \"npm:watch-server-*\""
+    "watch-server": "concurrently \"npm:watch-server-*\""
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",

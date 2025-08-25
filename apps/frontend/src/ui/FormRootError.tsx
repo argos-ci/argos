@@ -3,7 +3,10 @@ import { useFormContext, type UseFormReturn } from "react-hook-form";
 
 import { ErrorMessage } from "./ErrorMessage";
 
-export function FormRootError(props: { form?: UseFormReturn<any, any, any> }) {
+export function FormRootError(props: {
+  form?: UseFormReturn<any, any, any>;
+  className?: string;
+}) {
   const contextForm = useFormContext();
   const form = props.form || contextForm;
   invariant(form, "A form must be provided to FormRootError");
@@ -11,7 +14,7 @@ export function FormRootError(props: { form?: UseFormReturn<any, any, any> }) {
     return null;
   }
   return (
-    <ErrorMessage>
+    <ErrorMessage className={props.className}>
       {form.formState.errors.root.serverError.message}
     </ErrorMessage>
   );

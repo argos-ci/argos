@@ -1,22 +1,21 @@
 import type { ErrorCode } from "@argos/error-types";
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import type { PartialModelObject } from "objection";
 
-import type { RestEndpointMethodTypes } from "@/github/index.js";
 import { sendNotification } from "@/notification/index.js";
-import { redisLock } from "@/util/redis/index.js";
+import { sanitizeEmail } from "@/util/email.js";
 import { slugify } from "@/util/slug.js";
 import { boom } from "@/web/util.js";
 
 import { Account } from "../models/Account.js";
 import { GithubAccount } from "../models/GithubAccount.js";
-import { GithubAccountMember } from "../models/GithubAccountMember.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
 import { GoogleUser } from "../models/GoogleUser.js";
 import { Team } from "../models/Team.js";
 import { TeamUser } from "../models/TeamUser.js";
 import { User } from "../models/User.js";
+import { UserEmail } from "../models/UserEmail.js";
 import { transaction } from "../transaction.js";
 import { Model } from "../util/model.js";
 import { getPartialModelUpdate } from "../util/update.js";
@@ -29,29 +28,6 @@ const RESERVED_SLUGS = [
   "invite",
   "teams",
 ];
-
-/**
- * Get or create a GitHub account member.
- */
-export async function getOrCreateGithubAccountMember(input: {
-  githubAccountId: string;
-  githubMemberId: string;
-}) {
-  return redisLock.acquire(
-    [
-      "getOrCreateGithubAccountMember",
-      input.githubMemberId,
-      input.githubAccountId,
-    ],
-    async () => {
-      const existing = await GithubAccountMember.query().findOne(input);
-      if (existing) {
-        return existing;
-      }
-      return GithubAccountMember.query().insertAndFetch(input);
-    },
-  );
-}
 
 /**
  * Join SSO teams if needed.
@@ -86,7 +62,7 @@ export async function joinSSOTeams(input: {
   }
 }
 
-export const checkAccountSlug = async (slug: string) => {
+export async function checkAccountSlug(slug: string) {
   if (RESERVED_SLUGS.includes(slug)) {
     throw new Error("Slug is reserved for internal usage");
   }
@@ -94,7 +70,7 @@ export const checkAccountSlug = async (slug: string) => {
   if (slugExists) {
     throw new Error("Slug is already used by another account");
   }
-};
+}
 
 async function resolveAccountSlug(
   slug: string,
@@ -110,301 +86,33 @@ async function resolveAccountSlug(
   return nextSlug;
 }
 
-export const getGhAccountType = (strType: string) => {
-  const type = strType.toLowerCase();
-  if (type !== "user" && type !== "organization" && type !== "bot") {
-    throw new Error(`Account of "${type}" is not supported`);
-  }
-  return type;
-};
+export async function getOrCreateUserAccountFromGhAccount(input: {
+  ghAccount: GithubAccount;
+  attachToAccount: Account | null;
+}): Promise<Account> {
+  const { ghAccount, attachToAccount } = input;
 
-type GetOrCreateGhAccountProps = {
-  githubId: number;
-  login: string;
-  type: GithubAccount["type"];
-  email?: string | null | undefined;
-  name?: string | null | undefined;
-  accessToken?: GithubAccount["accessToken"] | undefined;
-  scope?: GithubAccount["scope"] | undefined;
-  lastLoggedAt?: GithubAccount["lastLoggedAt"] | undefined;
-};
-
-export async function getOrCreateGhAccount(
-  props: GetOrCreateGhAccountProps,
-): Promise<GithubAccount> {
-  const { githubId, type, ...rest } = props;
-  return redisLock.acquire(["get-or-create-gh-account", githubId], async () => {
-    const existing = await GithubAccount.query().findOne({ githubId });
-    if (existing) {
-      const toUpdate = getPartialModelUpdate(existing, rest);
-      if (toUpdate) {
-        return existing.$query().patchAndFetch(toUpdate);
-      }
-      return existing;
-    }
-
-    return GithubAccount.query().insertAndFetch({
-      githubId,
-      type,
-      ...omitUndefinedValues(rest),
-    });
-  });
-}
-
-export async function getOrCreateGhAccountFromGhProfile(
-  profile: RestEndpointMethodTypes["users"]["getAuthenticated"]["response"]["data"],
-  emails: RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"],
-  options?: { accessToken?: string; lastLoggedAt?: string; scope?: string },
-) {
-  const email =
-    emails.find((e) => e.primary && e.verified)?.email ??
-    emails.find((e) => e.verified)?.email ??
-    emails[0]?.email ??
-    profile.email;
-
-  return getOrCreateGhAccount({
-    githubId: profile.id,
-    login: profile.login,
-    email,
-    name: profile.name,
-    type: getGhAccountType(profile.type),
-    accessToken: options?.accessToken,
-    lastLoggedAt: options?.lastLoggedAt,
-    scope: options?.scope,
-  });
-}
-
-export async function getOrCreateUserAccountFromGhAccount(
-  ghAccount: GithubAccount,
-  options?: { attachToAccount?: Account | null },
-): Promise<Account> {
-  const email = ghAccount.email?.toLowerCase() ?? null;
-  const attachToAccount = options?.attachToAccount;
-
-  const existingAccount = await Account.query()
-    .withGraphFetched("user")
-    .findOne({ githubAccountId: ghAccount.id });
-
-  if (attachToAccount) {
-    if (existingAccount && existingAccount.id !== attachToAccount.id) {
-      throw boom(
-        400,
-        "GitHub account is already attached to another Argos account. Please detach GitHub from your other account first.",
-        { code: "GITHUB_ACCOUNT_ALREADY_ATTACHED" },
-      );
-    }
-
-    if (
-      attachToAccount.githubAccountId &&
-      attachToAccount.githubAccountId !== ghAccount.id
-    ) {
-      throw boom(
-        400,
-        "Argos account is already attached to another GitHub account. Please unlink GitHub from your account first.",
-        { code: "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB" },
-      );
-    }
-
-    if (attachToAccount.githubAccountId !== ghAccount.id) {
-      return attachToAccount
-        .$query()
-        .patchAndFetch({ githubAccountId: ghAccount.id });
-    }
-
-    return attachToAccount;
-  }
-
-  if (existingAccount) {
-    const { user } = existingAccount;
-    invariant(user, "user not fetched");
-
-    const updateData: PartialModelObject<User> = {};
-
-    if (user.email !== email) {
-      const existingEmailUser = await User.query().findOne("email", email);
-      if (!existingEmailUser) {
-        updateData.email = email;
-      }
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      await user.$query().patchAndFetch(updateData);
-    }
-
-    return existingAccount;
-  }
-
-  if (email) {
-    const existingEmailUser = await User.query()
-      .findOne({ email })
-      .withGraphFetched("account");
-
-    if (existingEmailUser) {
-      invariant(existingEmailUser.account, "account not fetched");
-
-      return existingEmailUser.account.$query().patchAndFetch({
-        githubAccountId: ghAccount.id,
-      });
-    }
-  }
-
-  const baseSlug = slugify(ghAccount.login);
-  const slug = await resolveAccountSlug(baseSlug);
-
-  const { account, user } = await transaction(async (trx) => {
-    const user = await User.query(trx).insertAndFetch({ email });
-    const account = await Account.query(trx).insertAndFetch({
-      userId: user.id,
-      githubAccountId: ghAccount.id,
-      name: ghAccount.name,
-      slug,
-    });
-    return { account, user };
-  });
-
-  await sendNotification({
-    type: "welcome",
-    data: {},
-    recipients: [user.id],
-  });
-
-  return account;
-}
-
-async function getOrCreateUserAccountFromThirdParty<
-  TModel extends Model,
->(input: {
-  provider: string;
-  model: TModel;
-  attachToAccount?: Account | null;
-  getEmail: (model: TModel) => string;
-  getSlug: (model: TModel) => string;
-  getName: (model: TModel) => string | null;
-  getPotentialEmails: (model: TModel) => string[];
-  thirdPartyKey: NonNullable<keyof PartialModelObject<User>>;
-  errorCodes: {
-    alreadyAttachedToArgosAccount: ErrorCode;
-    alreadyAttachedToThirdPartyAccount: ErrorCode;
-  };
-}) {
-  const {
-    provider,
-    model,
+  return getOrCreateUserAccountFromThirdParty({
+    provider: "GitHub",
+    model: ghAccount,
     attachToAccount,
-    getEmail,
-    getSlug,
-    getName,
-    getPotentialEmails,
-    thirdPartyKey,
-    errorCodes,
-  } = input;
-  const email = getEmail(model).trim().toLowerCase();
-
-  if (attachToAccount) {
-    const [user, existingUser] = await Promise.all([
-      attachToAccount.$relatedQuery("user"),
-      User.query()
-        .findOne({ [thirdPartyKey]: model.id })
-        .withGraphFetched("account"),
-    ]);
-
-    if (existingUser) {
-      invariant(existingUser.account, "Account not fetched");
-      if (user.id !== existingUser.id) {
-        throw boom(
-          400,
-          `${provider} account is already attached to another Argos account`,
-          { code: errorCodes.alreadyAttachedToArgosAccount },
-        );
-      }
-    }
-
-    if (user[thirdPartyKey] && user[thirdPartyKey] !== model.id) {
-      throw boom(
-        400,
-        `Argos Account is already attached to another ${provider} account`,
-        { code: errorCodes.alreadyAttachedToThirdPartyAccount },
-      );
-    }
-
-    if (user[thirdPartyKey] !== model.id) {
-      await user.$query().patch({ [thirdPartyKey]: model.id });
-    }
-
-    return attachToAccount;
-  }
-
-  const potentialEmails = getPotentialEmails(model);
-  const existingUsers = await User.query()
-    .withGraphFetched("account")
-    .where(thirdPartyKey, model.id)
-    .orWhereIn("email", potentialEmails);
-
-  // If we match multiple accounts, it means that another
-  // user has the same email or id
-  // In this case we don't update anything and choose the one with gitLabUserId
-  if (existingUsers.length > 1) {
-    // If we have a user with the same id, we return the account.
-    const userWithId = existingUsers.find((u) => u[thirdPartyKey] === model.id);
-    if (userWithId) {
-      invariant(userWithId.account, "Account not fetched");
-      return userWithId.account;
-    }
-
-    // Then choose the user by order of potential emails
-    const userWithEmail = potentialEmails.reduce<User | null>((acc, email) => {
-      return acc ?? existingUsers.find((u) => u.email === email) ?? null;
-    }, null);
-
-    invariant(userWithEmail, "A user should be found");
-    invariant(userWithEmail.account, "Account not fetched");
-    return userWithEmail.account;
-  }
-
-  const existingUser = existingUsers[0];
-
-  if (existingUser) {
-    invariant(existingUser.account, "Account not fetched");
-
-    // Either update the id or the email if needed
-    const data = getPartialModelUpdate(existingUser, {
-      [thirdPartyKey]: model.id,
-      email,
-      deletedAt: null,
-    });
-
-    if (data) {
-      await existingUser.$clone().$query().patch(data);
-    }
-
-    return existingUser.account;
-  }
-
-  const baseSlug = getSlug(model).toLowerCase();
-  invariant(baseSlug, `Invalid slug: ${baseSlug}`);
-
-  const slug = await resolveAccountSlug(slugify(baseSlug));
-
-  const { account, user } = await transaction(async (trx) => {
-    const user = await User.query(trx).insertAndFetch({
-      email,
-      [thirdPartyKey]: model.id,
-    });
-    const account = await Account.query(trx).insertAndFetch({
-      userId: user.id,
-      name: getName(model),
-      slug,
-    });
-    return { account, user };
+    getEmail: (model) => {
+      invariant(model.email, "GitHub account email is required");
+      return model.email;
+    },
+    getSlug: (model) => slugify(model.login),
+    getName: (model) => model.name,
+    getPotentialEmails: (model) => {
+      invariant(model.emails, "GitHub account emails is required");
+      return model.emails;
+    },
+    thirdPartyKey: { account: "githubAccountId" },
+    errorCodes: {
+      alreadyAttachedToArgosAccount: "GITHUB_ACCOUNT_ALREADY_ATTACHED",
+      alreadyAttachedToThirdPartyAccount:
+        "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB",
+    },
   });
-
-  await sendNotification({
-    type: "welcome",
-    data: {},
-    recipients: [user.id],
-  });
-
-  return account;
 }
 
 export async function getOrCreateUserAccountFromGitlabUser(input: {
@@ -420,7 +128,7 @@ export async function getOrCreateUserAccountFromGitlabUser(input: {
     getSlug: (model) => model.username,
     getName: (model) => model.name,
     getPotentialEmails: (model) => [model.email],
-    thirdPartyKey: "gitlabUserId",
+    thirdPartyKey: { user: "gitlabUserId" },
     errorCodes: {
       alreadyAttachedToArgosAccount: "GITLAB_ACCOUNT_ALREADY_ATTACHED",
       alreadyAttachedToThirdPartyAccount:
@@ -458,11 +166,249 @@ export async function getOrCreateUserAccountFromGoogleUser(input: {
       invariant(model.emails, "Expected emails to be defined");
       return model.emails;
     },
-    thirdPartyKey: "googleUserId",
+    thirdPartyKey: { user: "googleUserId" },
     errorCodes: {
       alreadyAttachedToArgosAccount: "GOOGLE_ACCOUNT_ALREADY_ATTACHED",
       alreadyAttachedToThirdPartyAccount:
         "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE",
     },
   });
+}
+
+async function getOrCreateUserAccountFromThirdParty<
+  TModel extends Model,
+>(input: {
+  provider: string;
+  model: TModel;
+  attachToAccount?: Account | null;
+  getEmail: (model: TModel) => string;
+  getSlug: (model: TModel) => string;
+  getName: (model: TModel) => string | null;
+  getPotentialEmails: (model: TModel) => string[];
+  thirdPartyKey:
+    | { user: "gitlabUserId" | "googleUserId" }
+    | { account: "githubAccountId" };
+  errorCodes: {
+    alreadyAttachedToArgosAccount: ErrorCode;
+    alreadyAttachedToThirdPartyAccount: ErrorCode;
+  };
+}) {
+  const {
+    provider,
+    model,
+    attachToAccount,
+    getEmail,
+    getSlug,
+    getName,
+    getPotentialEmails,
+    thirdPartyKey,
+    errorCodes,
+  } = input;
+
+  const getThirdPartyValue = (user: User) => {
+    if ("user" in thirdPartyKey) {
+      return user[thirdPartyKey.user];
+    }
+    if ("account" in thirdPartyKey) {
+      invariant(user.account, "Expected user.account to be defined");
+      return user.account[thirdPartyKey.account];
+    }
+    assertNever(thirdPartyKey);
+  };
+
+  const email = sanitizeEmail(getEmail(model));
+
+  if (attachToAccount) {
+    const [user, existingUser] = await Promise.all([
+      attachToAccount.$relatedQuery("user"),
+      (() => {
+        const query = User.query().withGraphFetched("account");
+        if ("user" in thirdPartyKey) {
+          return query.findOne({ [thirdPartyKey.user]: model.id });
+        }
+        if ("account" in thirdPartyKey) {
+          return query
+            .withGraphJoined("account")
+            .findOne(`account.${thirdPartyKey.account}`, model.id);
+        }
+        assertNever(thirdPartyKey);
+      })(),
+    ]);
+
+    if (existingUser) {
+      invariant(existingUser.account, "Account not fetched");
+      if (user.id !== existingUser.id) {
+        throw boom(
+          400,
+          `${provider} account is already attached to another Argos account`,
+          { code: errorCodes.alreadyAttachedToArgosAccount },
+        );
+      }
+    }
+
+    const thirdPartyValue = getThirdPartyValue(user);
+
+    if (thirdPartyValue && thirdPartyValue !== model.id) {
+      throw boom(
+        400,
+        `Argos Account is already attached to another ${provider} account`,
+        { code: errorCodes.alreadyAttachedToThirdPartyAccount },
+      );
+    }
+
+    if (thirdPartyValue !== model.id) {
+      if ("user" in thirdPartyKey) {
+        await user.$query().patch({ [thirdPartyKey.user]: model.id });
+      } else if ("account" in thirdPartyKey) {
+        invariant(user.account, "Expected user.account to be defined");
+        await user.account
+          .$query()
+          .patch({ [thirdPartyKey.account]: model.id });
+      } else {
+        assertNever(thirdPartyKey);
+      }
+    }
+
+    return attachToAccount;
+  }
+
+  const potentialEmails = getPotentialEmails(model).map(sanitizeEmail);
+  const allEmails = Array.from(new Set([email, ...potentialEmails]));
+  const existingUsers = await (() => {
+    const query = User.query()
+      .withGraphFetched("[account,emails]")
+      .withGraphJoined("emails")
+      .whereIn("emails.email", allEmails);
+    if ("user" in thirdPartyKey) {
+      return query
+        .withGraphJoined("emails")
+        .whereIn("emails.email", allEmails)
+        .orWhere(thirdPartyKey.user, model.id);
+    }
+
+    if ("account" in thirdPartyKey) {
+      return query
+        .withGraphJoined("[emails,account]")
+        .whereIn("emails.email", allEmails)
+        .orWhere(`account.${thirdPartyKey.account}`, model.id);
+    }
+
+    assertNever(thirdPartyKey);
+  })();
+
+  // If we match multiple accounts, it means that another
+  // user has the same email or id
+  // In this case we don't update anything and choose the one with gitLabUserId
+  if (existingUsers.length > 1) {
+    // If we have a user with the same id, we return the account.
+    const userWithId = existingUsers.find(
+      (u) => getThirdPartyValue(u) === model.id,
+    );
+    if (userWithId) {
+      invariant(userWithId.account, "Account not fetched");
+      return userWithId.account;
+    }
+
+    // Then choose the user by order of potential emails
+    const userWithEmail = allEmails.reduce<User | null>((acc, email) => {
+      return (
+        acc ??
+        existingUsers.find((user) => {
+          invariant(user.emails, "Expected user.emails to be defined");
+          return user.emails.some((userEmail) => userEmail.email === email);
+        }) ??
+        null
+      );
+    }, null);
+
+    invariant(userWithEmail, "A user should be found");
+    invariant(userWithEmail.account, "Account not fetched");
+    return userWithEmail.account;
+  }
+
+  const existingUser = existingUsers[0];
+
+  if (existingUser) {
+    invariant(existingUser.account, "Account not fetched");
+
+    await transaction(async (trx) => {
+      const existingUserEmails = existingUser.emails;
+      invariant(existingUserEmails, "Expected user.emails to be defined");
+      const existingUserEmailsSet = new Set(
+        existingUserEmails.map((email) => email.email),
+      );
+
+      if (!existingUserEmailsSet.has(email)) {
+        // Add missing emails to the user
+        await UserEmail.query(trx).insert({
+          userId: existingUser.id,
+          email,
+          verified: true,
+        });
+      }
+
+      // Either update the id or the email if needed
+      const userData = getPartialModelUpdate(existingUser, {
+        email: existingUser.email ?? email,
+        deletedAt: null,
+        ...("user" in thirdPartyKey ? { [thirdPartyKey.user]: model.id } : {}),
+      });
+
+      invariant(existingUser.account, "account must be defined");
+
+      const accountData = getPartialModelUpdate(
+        existingUser.account,
+        "account" in thirdPartyKey ? { [thirdPartyKey.account]: model.id } : {},
+      );
+
+      if (accountData) {
+        await existingUser.account
+          .$clone()
+          .$query(trx)
+          .patchAndFetch(accountData);
+      }
+
+      if (userData) {
+        await existingUser.$clone().$query(trx).patch(userData);
+      }
+    });
+
+    return existingUser.account;
+  }
+
+  const baseSlug = getSlug(model).toLowerCase();
+  invariant(baseSlug, `Invalid slug: ${baseSlug}`);
+
+  const slug = await resolveAccountSlug(slugify(baseSlug));
+
+  const { account, user } = await transaction(async (trx) => {
+    const userData: PartialModelObject<User> = { email };
+    if ("user" in thirdPartyKey) {
+      userData[thirdPartyKey.user] = model.id;
+    }
+    const user = await User.query(trx).insertAndFetch(userData);
+    await UserEmail.query(trx).insert({
+      userId: user.id,
+      email,
+      verified: true,
+    });
+    const accountData: PartialModelObject<Account> = {
+      userId: user.id,
+      name: getName(model),
+      slug,
+    };
+    if ("account" in thirdPartyKey) {
+      accountData[thirdPartyKey.account] = model.id;
+    }
+    const account = await Account.query(trx).insertAndFetch(accountData);
+    return { account, user };
+  });
+
+  await sendNotification({
+    type: "welcome",
+    data: {},
+    recipients: [user.id],
+  });
+
+  return account;
 }
