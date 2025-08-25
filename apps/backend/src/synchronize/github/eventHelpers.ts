@@ -8,11 +8,11 @@ import {
   Plan,
   Subscription,
 } from "@/database/models/index.js";
+import { getOrCreateUserAccountFromGhAccount } from "@/database/services/account.js";
 import {
   getGhAccountType,
   getOrCreateGhAccount,
-  getOrCreateUserAccountFromGhAccount,
-} from "@/database/services/account.js";
+} from "@/database/services/github.js";
 import { createTeamAccount } from "@/database/services/team.js";
 
 type PartialMarketplacePurchasePurchasedEventPayload = {
@@ -36,7 +36,8 @@ const getOrCreateGhAccountFromEvent = async (
     githubId: payload.marketplace_purchase.account.id,
     login: payload.marketplace_purchase.account.login,
     type: accountType,
-    email: payload.marketplace_purchase.account.organization_billing_email,
+    fallbackEmail:
+      payload.marketplace_purchase.account.organization_billing_email,
   });
   return ghAccount;
 };
@@ -114,10 +115,13 @@ export const getOrCreateAccountFromEvent = async (
     githubId: payload.sender.id,
     login: payload.sender.login,
     type: getGhAccountType(payload.sender.type),
-    email: payload.sender.email,
+    fallbackEmail: payload.sender.email,
   });
   // Find or create the Argos account linked to the GitHub account of the sender (buyer)
-  const userAccount = await getOrCreateUserAccountFromGhAccount(userGhAccount);
+  const userAccount = await getOrCreateUserAccountFromGhAccount({
+    ghAccount: userGhAccount,
+    attachToAccount: null,
+  });
   return findRelevantUserTeam(userAccount, payload, ghAccount.id);
 };
 
@@ -133,7 +137,8 @@ export const getAccount = async (
     githubId: payload.marketplace_purchase.account.id,
     login: payload.marketplace_purchase.account.login,
     type: getGhAccountType(payload.marketplace_purchase.account.type),
-    email: payload.marketplace_purchase.account.organization_billing_email,
+    fallbackEmail:
+      payload.marketplace_purchase.account.organization_billing_email,
   });
   const account = await githubAccount.$relatedQuery("account").first();
   return account ?? null;

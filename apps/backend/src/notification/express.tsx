@@ -1,57 +1,34 @@
-import { render } from "@react-email/render";
-import { Request as ExpressRequest, Router } from "express";
+import { Router } from "express";
 
+import { emailToText, queryStringToObject } from "@/email/util";
 import { asyncHandler } from "@/web/util.js";
 
 import { notificationHandlers } from "./handlers";
 
-const router: Router = Router();
+export function getNotificationPreviewMiddleware(options: { path: string }) {
+  const router: Router = Router();
 
-notificationHandlers.forEach((handler) => {
-  router.get(
-    `/${handler.type}`,
-    asyncHandler(async (req, res) => {
-      const rendered = handler.email({
-        ctx: { user: { name: "James" } },
-        ...(handler.previewData as any),
-        ...convertQueryString(req.query),
+  notificationHandlers.forEach((handler) => {
+    router.get("/", (_req, res) => {
+      res.set("Content-Type", "text/html");
+      const links = notificationHandlers.map((handler) => {
+        return `<li><a href="${options.path}/${handler.type}">${handler.type}</a></li>`;
       });
-      const html = await render(rendered.body);
-      res.send(
-        html + `<pre style="padding: 16px;">subject: ${rendered.subject}</pre>`,
-      );
-    }),
-  );
-});
+      res.send(`<ul>${links.join("")}</ul>`);
+    });
+    router.get(
+      `/${handler.type}`,
+      asyncHandler(async (req, res) => {
+        const rendered = handler.email({
+          ctx: { user: { name: "James" } },
+          ...(handler.previewData as any),
+          ...queryStringToObject(req.query),
+        });
+        res.set("Content-Type", "text/html");
+        res.send(await emailToText(rendered));
+      }),
+    );
+  });
 
-export { router as notificationPreview };
-
-/**
- * Convert query string by supporting num:x and bool:x.
- */
-function convertQueryString(
-  query: ExpressRequest["query"],
-): Record<string, any> {
-  if (
-    !query ||
-    typeof query !== "object" ||
-    Array.isArray(query) ||
-    query === null
-  ) {
-    return {};
-  }
-  const result: Record<string, any> = {};
-  for (const [key, value] of Object.entries(query)) {
-    if (typeof value !== "string") {
-      continue;
-    }
-    if (value.startsWith("num:")) {
-      result[key] = Number(value.slice(4));
-    } else if (value.startsWith("bool:")) {
-      result[key] = value.slice(5) === "true";
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
+  return router;
 }

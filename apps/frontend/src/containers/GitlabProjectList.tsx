@@ -74,7 +74,10 @@ export function GitlabProjectList(props: GitlabProjectListProps) {
   return (
     <List>
       {glApiProjects.edges.map((project) => (
-        <ListRow key={project.id} className="items-center justify-between p-4">
+        <ListRow
+          key={project.id}
+          className="flex items-center justify-between gap-4 p-4"
+        >
           <div>
             {project.name} •{" "}
             <Time date={project.last_activity_at} className="text-low" />

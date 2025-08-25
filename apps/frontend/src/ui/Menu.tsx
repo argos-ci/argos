@@ -1,6 +1,11 @@
 import { Children, cloneElement } from "react";
 import { clsx } from "clsx";
-import { CheckIcon, ChevronRightIcon, ChevronsUpDownIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  ChevronsUpDownIcon,
+  InfoIcon,
+} from "lucide-react";
 import {
   Button,
   ButtonProps,
@@ -12,6 +17,8 @@ import {
   MenuItem as RACMenuItem,
   Separator,
 } from "react-aria-components";
+
+import { Tooltip } from "./Tooltip";
 
 export function MenuSeparator() {
   return <Separator className="my-1 border-t" />;
@@ -114,6 +121,19 @@ export function MenuItemIcon(props: {
         className: clsx("size-[1em] mx-auto", child.props.className),
       })}
     </div>
+  );
+}
+
+export function MenuItemTooltip(props: { content: React.ReactNode }) {
+  if (!props.content) {
+    return null;
+  }
+  return (
+    <MenuItemIcon>
+      <Tooltip content={props.content}>
+        <InfoIcon className="size-[1em]" />
+      </Tooltip>
+    </MenuItemIcon>
   );
 }
 

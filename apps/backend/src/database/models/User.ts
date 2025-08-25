@@ -10,6 +10,7 @@ import {
 import { GitlabUser } from "./GitlabUser.js";
 import { GoogleUser } from "./GoogleUser.js";
 import { Team } from "./Team.js";
+import { UserEmail } from "./UserEmail.js";
 
 export class User extends Model {
   static override tableName = "users";
@@ -89,6 +90,14 @@ export class User extends Model {
           to: "google_users.id",
         },
       },
+      emails: {
+        relation: Model.HasManyRelation,
+        modelClass: UserEmail,
+        join: {
+          from: "users.id",
+          to: "user_emails.userId",
+        },
+      },
     };
   }
 
@@ -97,6 +106,7 @@ export class User extends Model {
   ownedTeams?: Team[];
   gitlabUser?: GitlabUser;
   googleUser?: GoogleUser;
+  emails?: UserEmail[];
 
   static getPermissions(
     userId: string,

@@ -36,4 +36,5 @@ export * from "./Team.js";
 export * from "./TeamUser.js";
 export * from "./Test.js";
 export * from "./User.js";
+export * from "./UserEmail.js";
 export type { Model } from "../util/model.js";

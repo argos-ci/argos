@@ -11,15 +11,16 @@ export const notificationHandlers = [
 
 type AnyNotificationHandler = (typeof notificationHandlers)[number];
 export type NotificationWorkflowType = AnyNotificationHandler["type"];
-export type NotificationWorkflowData<TType extends NotificationWorkflowType> =
-  Extract<AnyNotificationHandler, { type: TType }>["schema"]["_output"];
+type NotificationWorkflowData<TType extends NotificationWorkflowType> = Extract<
+  AnyNotificationHandler,
+  { type: TType }
+>["schema"]["_output"];
 
-export function getHandler<TType extends NotificationWorkflowType>(
-  type: TType,
-): Extract<AnyNotificationHandler, { type: TType }> {
-  const handler = notificationHandlers.find((h) => h.type === type);
-  if (!handler) {
-    throw new Error(`Handler not found: ${type}`);
-  }
-  return handler as Extract<NotificationWorkflowType, { type: TType }>;
-}
+export type NotificationWorkflowProps<
+  Type extends NotificationWorkflowType = NotificationWorkflowType,
+> = {
+  [E in NotificationWorkflowType]: {
+    type: E;
+    data: NotificationWorkflowData<E>;
+  };
+}[Type];

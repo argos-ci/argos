@@ -578,6 +578,7 @@ CREATE TABLE public.github_accounts (
     "accessToken" character varying(255),
     scope character varying(255),
     "lastLoggedAt" timestamp with time zone,
+    emails jsonb,
     CONSTRAINT github_accounts_type_check CHECK ((type = ANY (ARRAY['user'::text, 'organization'::text, 'bot'::text])))
 );
 
@@ -1714,6 +1715,19 @@ ALTER SEQUENCE public.tests_id_seq OWNED BY public.tests.id;
 
 
 --
+-- Name: user_emails; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_emails (
+    email character varying(255) NOT NULL,
+    verified boolean DEFAULT false NOT NULL,
+    "userId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.user_emails OWNER TO postgres;
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2464,6 +2478,14 @@ ALTER TABLE ONLY public.test_stats_changes
 
 ALTER TABLE ONLY public.tests
     ADD CONSTRAINT tests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_emails user_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_emails
+    ADD CONSTRAINT user_emails_pkey PRIMARY KEY (email);
 
 
 --
@@ -3479,6 +3501,14 @@ ALTER TABLE ONLY public.tests
 
 
 --
+-- Name: user_emails user_emails_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_emails
+    ADD CONSTRAINT user_emails_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: users users_gitlabuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3657,3 +3687,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820184542_automation-processed-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820184634_remove-automation-job-status.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820185036_slack-channel-id.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250821180259_user-emails.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250822020923_github-account-emails.js', 1, NOW());

@@ -170,7 +170,10 @@ export function GithubRepositoryList(props: {
     <>
       <List>
         {ghApiInstallationRepositories.edges.map((repo) => (
-          <ListRow key={repo.id} className="items-center justify-between p-4">
+          <ListRow
+            key={repo.id}
+            className="flex items-center justify-between gap-4 p-4"
+          >
             <div>
               {repo.name} • <Time date={repo.updated_at} className="text-low" />
             </div>
@@ -186,17 +189,15 @@ export function GithubRepositoryList(props: {
         ))}
         {page === pageCount && (
           <ListRow className="p-4 text-sm">
-            <div>
-              Repository not in the list?{" "}
-              <Link
-                href={getGitHubAppInstallURL(props.app, {
-                  accountId: props.accountId,
-                })}
-                target="_blank"
-              >
-                Manage repositories
-              </Link>
-            </div>
+            Repository not in the list?{" "}
+            <Link
+              href={getGitHubAppInstallURL(props.app, {
+                accountId: props.accountId,
+              })}
+              target="_blank"
+            >
+              Manage repositories
+            </Link>
           </ListRow>
         )}
       </List>

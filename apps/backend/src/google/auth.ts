@@ -2,6 +2,8 @@ import { invariant } from "@argos/util/invariant";
 import { OAuth2Client } from "google-auth-library";
 import { z } from "zod";
 
+import { sanitizeEmail } from "@/util/email";
+
 export function getGoogleAuthUrl(input: {
   clientId: string;
   clientSecret: string;
@@ -65,10 +67,8 @@ export type GoogleUserProfile = {
   emails: string[];
 };
 
-const EmailSchema = z.string().email();
-
 function checkIsValidEmail(email: string) {
-  return EmailSchema.safeParse(email).success;
+  return z.email().safeParse(email).success;
 }
 
 export async function getGoogleUserProfile(input: {
@@ -80,7 +80,7 @@ export async function getGoogleUserProfile(input: {
   });
   const profile = RawGoogleProfileSchema.parse(response.data);
   const emails = profile.emailAddresses.reduce<string[]>((emails, entry) => {
-    const value = entry.value.trim().toLowerCase();
+    const value = sanitizeEmail(entry.value);
     if (checkIsValidEmail(value)) {
       emails.push(value);
     }

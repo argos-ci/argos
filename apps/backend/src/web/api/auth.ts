@@ -8,12 +8,12 @@ import { AuthPayload } from "@/auth/request.js";
 import config from "@/config/index.js";
 import type { Account } from "@/database/models/index.js";
 import {
-  getOrCreateGhAccountFromGhProfile,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
   joinSSOTeams,
 } from "@/database/services/account.js";
+import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github.js";
 import { getOrCreateGitlabUser } from "@/database/services/gitlabUser.js";
 import { getOrCreateGoogleUser } from "@/database/services/googleUser.js";
 import {
@@ -112,7 +112,8 @@ router.use(
         scope: result.scope,
       },
     );
-    const account = await getOrCreateUserAccountFromGhAccount(ghAccount, {
+    const account = await getOrCreateUserAccountFromGhAccount({
+      ghAccount,
       attachToAccount: auth?.account ?? null,
     });
     invariant(account.userId, "Expected account to have userId");
