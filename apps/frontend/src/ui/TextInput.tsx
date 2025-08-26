@@ -1,15 +1,28 @@
-import { ComponentPropsWithRef } from "react";
+import { ComponentPropsWithRef, type RefAttributes } from "react";
 import { clsx } from "clsx";
+import { Input, InputProps } from "react-aria-components";
 
-export type TextInputProps = ComponentPropsWithRef<"input">;
+type TextInputScale = "sm" | "md";
+
+export interface TextInputProps
+  extends InputProps,
+    RefAttributes<HTMLInputElement> {
+  scale?: TextInputScale;
+}
+
+const sizeClassNames: Record<TextInputScale, string> = {
+  sm: "text-sm px-3 py-1.5",
+  md: "text-base px-3 py-2",
+};
 
 export function TextInput(props: TextInputProps) {
+  const { scale = "md", ...rest } = props;
   return (
-    <input
-      {...props}
+    <Input
+      {...rest}
       className={clsx(
-        props.className,
-        "bg-app text-default block w-full appearance-none rounded-sm border px-3 py-2 leading-tight",
+        rest.className,
+        "bg-app text-default block w-full appearance-none rounded-sm border leading-tight",
         /* Hover */
         "not-disabled:hover:border-hover",
         /* Focus */
@@ -20,6 +33,8 @@ export function TextInput(props: TextInputProps) {
         "disabled:opacity-disabled",
         /* Group  */
         "group-[*]/text-input:rounded-r-none",
+        /* Scale */
+        sizeClassNames[scale],
       )}
     />
   );

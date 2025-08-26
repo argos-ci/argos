@@ -1,6 +1,15 @@
+import { SearchIcon, XIcon } from "lucide-react";
+import {
+  Autocomplete,
+  Button,
+  SearchField,
+  useFilter,
+} from "react-aria-components";
+
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
+import { TextInput } from "@/ui/TextInput";
 import { useSingleSearchParamState } from "@/util/search-params";
 
 function getBuildNameLabel(buildName: string) {
@@ -20,6 +29,7 @@ export function BuildNameFilter(props: {
   onChange: (value: string | null) => void;
 }) {
   const value = props.value ?? "";
+  const { contains } = useFilter({ sensitivity: "base" });
   return (
     <Select
       aria-label="Build name"
@@ -31,21 +41,43 @@ export function BuildNameFilter(props: {
       <SelectButton className="min-w-[8em] text-sm">
         {getBuildNameLabel(value)}
       </SelectButton>
-      <Popover>
-        <ListBox>
-          <ListBoxItem id="" textValue="All Builds">
-            All Builds
-          </ListBoxItem>
-          {props.buildNames.map((name) => (
-            <ListBoxItem
-              key={name}
-              id={name}
-              textValue={getBuildNameLabel(name)}
-            >
-              {getBuildNameLabel(name)}
+      <Popover className="flex flex-col gap-2">
+        <Autocomplete filter={contains}>
+          <SearchField className="relative">
+            <SearchIcon
+              aria-hidden
+              className="text-low pointer-events-none absolute left-2 top-2 size-4"
+            />
+            <TextInput
+              scale="sm"
+              className="!pl-8 [&::-webkit-search-cancel-button]:hidden"
+              placeholder="Find build name…"
+            />
+            <Button className="text-low data-[hovered]:text-default absolute right-2 top-2">
+              <XIcon className="size-4" />
+            </Button>
+          </SearchField>
+          <ListBox
+            renderEmptyState={() => (
+              <div className="text-low px-1 pb-1 text-sm">
+                No build names found
+              </div>
+            )}
+          >
+            <ListBoxItem id="" textValue="All Builds">
+              All Builds
             </ListBoxItem>
-          ))}
-        </ListBox>
+            {props.buildNames.map((name) => (
+              <ListBoxItem
+                key={name}
+                id={name}
+                textValue={getBuildNameLabel(name)}
+              >
+                {getBuildNameLabel(name)}
+              </ListBoxItem>
+            ))}
+          </ListBox>
+        </Autocomplete>
       </Popover>
     </Select>
   );
