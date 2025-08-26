@@ -55,28 +55,6 @@ async function getBase(
 
   const gitProvider = gitProviders.find((s) => s.detect(project));
 
-  // If we don't have a strategy then we could only count on baseCommit
-  // specified by the user in the build.
-  if (!gitProvider) {
-    if (richBuild.baseCommit) {
-      const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
-        build,
-        richBuild.baseCommit,
-      );
-      return {
-        baseScreenshotBucket,
-        baseBranch: null,
-        baseBranchResolvedFrom: null,
-      };
-    }
-
-    return {
-      baseScreenshotBucket: null,
-      baseBranch: null,
-      baseBranchResolvedFrom: null,
-    };
-  }
-
   const { baseBranch, baseBranchResolvedFrom } = await (async () => {
     if (richBuild.baseBranch) {
       return {
@@ -98,6 +76,28 @@ async function getBase(
     };
   })();
 
+  // If we don't have a strategy then we could only count on baseCommit
+  // specified by the user in the build.
+  if (!gitProvider) {
+    if (richBuild.baseCommit) {
+      const baseScreenshotBucket = await getBaseBucketForBuildAndCommit(
+        build,
+        richBuild.baseCommit,
+      );
+      return {
+        baseScreenshotBucket,
+        baseBranch,
+        baseBranchResolvedFrom,
+      };
+    }
+
+    return {
+      baseScreenshotBucket: null,
+      baseBranch,
+      baseBranchResolvedFrom,
+    };
+  }
+
   const head = compareScreenshotBucket.commit;
 
   const ctx = await gitProvider.getContext(project);
@@ -110,13 +110,15 @@ async function getBase(
     };
   }
 
-  const mergeBaseCommitSha = await gitProvider.getMergeBaseCommitSha({
-    project,
-    ctx,
-    base: baseBranch,
-    head,
-    build,
-  });
+  const mergeBaseCommitSha =
+    build.baseCommit ??
+    (await gitProvider.getMergeBaseCommitSha({
+      project,
+      ctx,
+      base: baseBranch,
+      head,
+      build,
+    }));
 
   if (!mergeBaseCommitSha) {
     return {
@@ -131,12 +133,14 @@ async function getBase(
   // If the merge base is the same as the head, then we have to found an ancestor
   // It happens when we are on a auto-approved branch.
   if (mergeBaseCommitSha === head) {
-    const shas = await gitProvider.listParentCommitShas({
-      project,
-      build,
-      ctx,
-      sha: mergeBaseCommitSha,
-    });
+    const shas =
+      build.parentCommits ??
+      (await gitProvider.listParentCommitShas({
+        project,
+        build,
+        ctx,
+        sha: mergeBaseCommitSha,
+      }));
     const baseScreenshotBucket = await getBucketFromCommits({
       shas: shas.slice(1),
       build: richBuild,
@@ -168,12 +172,14 @@ async function getBase(
   }
 
   // If we don't have a bucket for the merge base commit, then we have to found an ancestor
-  const shas = await gitProvider.listParentCommitShas({
-    project,
-    build,
-    ctx,
-    sha: mergeBaseCommitSha,
-  });
+  const shas =
+    build.parentCommits ??
+    (await gitProvider.listParentCommitShas({
+      project,
+      build,
+      ctx,
+      sha: mergeBaseCommitSha,
+    }));
 
   const baseScreenshotBucket = await getBucketFromCommits({
     shas: shas.slice(1),

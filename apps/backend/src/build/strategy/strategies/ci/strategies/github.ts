@@ -55,7 +55,7 @@ export const GithubStrategy: MergeBaseStrategy<{
   getMergeBaseCommitSha: async (args) => {
     // If the app is light, then we rely on the base commit provided by the user in CLI.
     if (args.ctx.installation.app === "light") {
-      return args.build.baseCommit;
+      throw new Error("Light app does not support merge base detection");
     }
 
     return pRetry(
@@ -86,7 +86,7 @@ export const GithubStrategy: MergeBaseStrategy<{
     // We can't know for sure that it's a parent, but it's the best we can do.
     // It can result into diffs that includes changes more recent than the current branch.
     if (args.ctx.installation.app === "light") {
-      return args.build.parentCommits ?? [];
+      throw new Error("Light app does not support listing parent commits");
     }
 
     try {
