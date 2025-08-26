@@ -38,13 +38,9 @@ export function ListRowLink(props: RACLinkProps) {
 
 type ListRowProps = Omit<ComponentPropsWithRef<"div">, "role">;
 
-export function ListRow(props: ListRowProps) {
+export function ListRow({ className, ...props }: ListRowProps) {
   return (
-    <div
-      {...props}
-      role="row"
-      className={clsx(listRowClassName, props.className)}
-    />
+    <div {...props} role="row" className={clsx(listRowClassName, className)} />
   );
 }
 
