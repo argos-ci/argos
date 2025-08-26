@@ -1,12 +1,14 @@
-import { ComponentPropsWithRef } from "react";
+import { ComponentPropsWithRef, type RefAttributes } from "react";
 import { clsx } from "clsx";
 import { Input, InputProps } from "react-aria-components";
 
 type TextInputScale = "sm" | "md";
 
-export type TextInputProps = InputProps & {
+export interface TextInputProps
+  extends InputProps,
+    RefAttributes<HTMLInputElement> {
   scale?: TextInputScale;
-};
+}
 
 const sizeClassNames: Record<TextInputScale, string> = {
   sm: "text-sm px-3 py-1.5",
