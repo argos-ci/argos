@@ -220,7 +220,7 @@ async function getOrCreateUserAccountFromThirdParty<
 
   if (attachToAccount) {
     const [user, existingUser] = await Promise.all([
-      attachToAccount.$relatedQuery("user"),
+      attachToAccount.$relatedQuery("user").withGraphFetched("account"),
       (() => {
         const query = User.query().withGraphFetched("account");
         if ("user" in thirdPartyKey) {
