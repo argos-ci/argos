@@ -597,7 +597,10 @@ function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
           const user = teamMember?.user ?? null;
           const isMe = Boolean(user && authPayload.account.id === user.id);
           return (
-            <ListRow key={member.id} className="items-center px-4 py-2">
+            <ListRow
+              key={member.id}
+              className="flex items-center gap-6 px-4 py-2"
+            >
               <AccountAvatar
                 avatar={user?.avatar ?? member.githubAccount.avatar}
                 size={36}
