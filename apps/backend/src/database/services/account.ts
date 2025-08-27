@@ -97,7 +97,15 @@ export async function getOrCreateUserAccountFromGhAccount(input: {
     model: ghAccount,
     attachToAccount,
     getEmail: (model) => {
-      invariant(model.email, "GitHub account email is required");
+      if (!model.email) {
+        throw boom(
+          400,
+          "Using GitHub as login provider requires to have a verified email",
+          {
+            code: "GITHUB_NO_VERIFIED_EMAIL",
+          },
+        );
+      }
       return model.email;
     },
     getSlug: (model) => slugify(model.login),
