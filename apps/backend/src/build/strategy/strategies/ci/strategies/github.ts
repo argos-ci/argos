@@ -54,8 +54,10 @@ export const GithubStrategy: MergeBaseStrategy<{
 
   getMergeBaseCommitSha: async (args) => {
     // If the app is light, then we rely on the base commit provided by the user in CLI.
+    // It is already handled in the common logic, so at this point we return null.
+    // Note it may indicates a bad setup.
     if (args.ctx.installation.app === "light") {
-      throw new Error("Light app does not support merge base detection");
+      return null;
     }
 
     return pRetry(
@@ -85,8 +87,10 @@ export const GithubStrategy: MergeBaseStrategy<{
     // If the app is light, we just find the last bucket ancest on the base branch.
     // We can't know for sure that it's a parent, but it's the best we can do.
     // It can result into diffs that includes changes more recent than the current branch.
+    // It is already handled in the common logic, so at this point we return [].
+    // Note it may indicates a bad setup.
     if (args.ctx.installation.app === "light") {
-      throw new Error("Light app does not support listing parent commits");
+      return [];
     }
 
     try {
