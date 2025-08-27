@@ -4,7 +4,6 @@ import type { PartialModelObject } from "objection";
 import type { RestEndpointMethodTypes } from "@/github/index.js";
 import { sanitizeEmail } from "@/util/email.js";
 import { redisLock } from "@/util/redis/index.js";
-import { boom } from "@/web/util.js";
 
 import { GithubAccount } from "../models/GithubAccount.js";
 import { GithubAccountMember } from "../models/GithubAccountMember.js";
@@ -111,16 +110,16 @@ export async function getOrCreateGhAccountFromGhProfile(
 ) {
   const verifiedEmails = emails.filter((email) => email.verified);
   const primaryEmail =
-    verifiedEmails.find((e) => e.primary)?.email ?? verifiedEmails[0]?.email;
-
-  if (!primaryEmail) {
-    throw boom(400, `Argos requires a verified email address in GitHub`, {
-      code: "GITHUB_NO_VERIFIED_EMAIL",
-    });
-  }
+    verifiedEmails.find((e) => e.primary)?.email ??
+    verifiedEmails[0]?.email ??
+    null;
 
   const sortedEmails = Array.from(
-    new Set([primaryEmail, ...verifiedEmails.map((email) => email.email)]),
+    new Set(
+      [primaryEmail, ...verifiedEmails.map((email) => email.email)].filter(
+        (x) => x !== null,
+      ),
+    ),
   );
 
   return getOrCreateGhAccount({
