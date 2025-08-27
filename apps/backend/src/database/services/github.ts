@@ -108,15 +108,16 @@ export async function getOrCreateGhAccountFromGhProfile(
   emails: RestEndpointMethodTypes["users"]["listEmailsForAuthenticatedUser"]["response"]["data"],
   options?: { accessToken?: string; lastLoggedAt?: string; scope?: string },
 ) {
-  const verifiedEmails = emails.filter((email) => email.verified);
   const primaryEmail =
-    verifiedEmails.find((e) => e.primary)?.email ??
-    verifiedEmails[0]?.email ??
+    emails.find((e) => e.primary)?.email ??
+    emails.filter((email) => email.verified)[0]?.email ??
+    emails[0]?.email ??
+    profile.email ??
     null;
 
   const sortedEmails = Array.from(
     new Set(
-      [primaryEmail, ...verifiedEmails.map((email) => email.email)].filter(
+      [primaryEmail, ...emails.map((email) => email.email)].filter(
         (x) => x !== null,
       ),
     ),

@@ -100,9 +100,9 @@ export async function getOrCreateUserAccountFromGhAccount(input: {
       if (!model.email) {
         throw boom(
           400,
-          "Using GitHub as login provider requires to have a verified email",
+          "Using GitHub as login provider requires to have an email",
           {
-            code: "GITHUB_NO_VERIFIED_EMAIL",
+            code: "GITHUB_NO_EMAIL",
           },
         );
       }
