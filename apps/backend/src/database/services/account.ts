@@ -96,18 +96,7 @@ export async function getOrCreateUserAccountFromGhAccount(input: {
     provider: "GitHub",
     model: ghAccount,
     attachToAccount,
-    getEmail: (model) => {
-      if (!model.email) {
-        throw boom(
-          400,
-          "Using GitHub as login provider requires to have a verified email",
-          {
-            code: "GITHUB_NO_VERIFIED_EMAIL",
-          },
-        );
-      }
-      return model.email;
-    },
+    getEmail: (model) => model.email,
     getSlug: (model) => slugify(model.login),
     getName: (model) => model.name,
     getPotentialEmails: (model) => {
@@ -119,6 +108,7 @@ export async function getOrCreateUserAccountFromGhAccount(input: {
       alreadyAttachedToArgosAccount: "GITHUB_ACCOUNT_ALREADY_ATTACHED",
       alreadyAttachedToThirdPartyAccount:
         "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB",
+      noVerifiedEmail: "GITHUB_NO_VERIFIED_EMAIL",
     },
   });
 }
@@ -141,6 +131,7 @@ export async function getOrCreateUserAccountFromGitlabUser(input: {
       alreadyAttachedToArgosAccount: "GITLAB_ACCOUNT_ALREADY_ATTACHED",
       alreadyAttachedToThirdPartyAccount:
         "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITLAB",
+      noVerifiedEmail: "GITLAB_NO_VERIFIED_EMAIL",
     },
   });
 }
@@ -179,6 +170,7 @@ export async function getOrCreateUserAccountFromGoogleUser(input: {
       alreadyAttachedToArgosAccount: "GOOGLE_ACCOUNT_ALREADY_ATTACHED",
       alreadyAttachedToThirdPartyAccount:
         "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE",
+      noVerifiedEmail: "GOOGLE_NO_VERIFIED_EMAIL",
     },
   });
 }
@@ -189,7 +181,7 @@ async function getOrCreateUserAccountFromThirdParty<
   provider: string;
   model: TModel;
   attachToAccount?: Account | null;
-  getEmail: (model: TModel) => string;
+  getEmail: (model: TModel) => string | null;
   getSlug: (model: TModel) => string;
   getName: (model: TModel) => string | null;
   getPotentialEmails: (model: TModel) => string[];
@@ -199,6 +191,7 @@ async function getOrCreateUserAccountFromThirdParty<
   errorCodes: {
     alreadyAttachedToArgosAccount: ErrorCode;
     alreadyAttachedToThirdPartyAccount: ErrorCode;
+    noVerifiedEmail: ErrorCode;
   };
 }) {
   const {
@@ -224,7 +217,8 @@ async function getOrCreateUserAccountFromThirdParty<
     assertNever(thirdPartyKey);
   };
 
-  const email = sanitizeEmail(getEmail(model));
+  const rawEmail = getEmail(model);
+  const email = rawEmail ? sanitizeEmail(rawEmail) : null;
 
   if (attachToAccount) {
     const [user, existingUser] = await Promise.all([
@@ -281,72 +275,72 @@ async function getOrCreateUserAccountFromThirdParty<
   }
 
   const potentialEmails = getPotentialEmails(model).map(sanitizeEmail);
-  const allEmails = Array.from(new Set([email, ...potentialEmails]));
+  const allEmails = Array.from(
+    new Set([email, ...potentialEmails].filter((x) => x !== null)),
+  );
   const existingUsers = await (() => {
     const query = User.query()
       .withGraphFetched("[account,emails]")
-      .withGraphJoined("emails")
-      .whereIn("emails.email", allEmails);
+      .withGraphJoined("[account,emails]");
+
+    if (allEmails.length) {
+      query.whereIn("emails.email", allEmails);
+    }
+
     if ("user" in thirdPartyKey) {
-      return query
-        .withGraphJoined("emails")
-        .whereIn("emails.email", allEmails)
-        .orWhere(thirdPartyKey.user, model.id);
+      return query.orWhere(thirdPartyKey.user, model.id);
     }
 
     if ("account" in thirdPartyKey) {
-      return query
-        .withGraphJoined("[emails,account]")
-        .whereIn("emails.email", allEmails)
-        .orWhere(`account.${thirdPartyKey.account}`, model.id);
+      return query.orWhere(`account.${thirdPartyKey.account}`, model.id);
     }
 
     assertNever(thirdPartyKey);
   })();
 
-  // If we match multiple accounts, it means that another
-  // user has the same email or id
-  // In this case we don't update anything and choose the one with gitLabUserId
-  if (existingUsers.length > 1) {
-    // If we have a user with the same id, we return the account.
-    const userWithId = existingUsers.find(
-      (u) => getThirdPartyValue(u) === model.id,
-    );
-    if (userWithId) {
-      invariant(userWithId.account, "Account not fetched");
-      return userWithId.account;
+  const existingUser = (() => {
+    // If we match multiple accounts, it means that another
+    // user has the same email or id
+    // In this case we don't update anything and choose the one with gitLabUserId
+    if (existingUsers.length > 1) {
+      // If we have a user with the same id, we return the account.
+      const userWithId = existingUsers.find(
+        (u) => getThirdPartyValue(u) === model.id,
+      );
+      if (userWithId) {
+        return userWithId;
+      }
+
+      // Then choose the user by order of potential emails
+      const userWithEmail = allEmails.reduce<User | null>((acc, email) => {
+        return (
+          acc ??
+          existingUsers.find((user) => {
+            invariant(user.emails, "Expected user.emails to be defined");
+            return user.emails.some((userEmail) => userEmail.email === email);
+          }) ??
+          null
+        );
+      }, null);
+
+      invariant(userWithEmail, "A user should be found");
+      return userWithEmail;
     }
 
-    // Then choose the user by order of potential emails
-    const userWithEmail = allEmails.reduce<User | null>((acc, email) => {
-      return (
-        acc ??
-        existingUsers.find((user) => {
-          invariant(user.emails, "Expected user.emails to be defined");
-          return user.emails.some((userEmail) => userEmail.email === email);
-        }) ??
-        null
-      );
-    }, null);
-
-    invariant(userWithEmail, "A user should be found");
-    invariant(userWithEmail.account, "Account not fetched");
-    return userWithEmail.account;
-  }
-
-  const existingUser = existingUsers[0];
+    return existingUsers[0];
+  })();
 
   if (existingUser) {
     invariant(existingUser.account, "Account not fetched");
 
-    await transaction(async (trx) => {
-      const existingUserEmails = existingUser.emails;
-      invariant(existingUserEmails, "Expected user.emails to be defined");
-      const existingUserEmailsSet = new Set(
-        existingUserEmails.map((email) => email.email),
-      );
+    const existingUserEmails = existingUser.emails;
+    invariant(existingUserEmails, "Expected user.emails to be defined");
+    const existingUserEmailsSet = new Set(
+      existingUserEmails.map((email) => email.email),
+    );
 
-      if (!existingUserEmailsSet.has(email)) {
+    await transaction(async (trx) => {
+      if (email && !existingUserEmailsSet.has(email)) {
         // Add missing emails to the user
         await UserEmail.query(trx).insert({
           userId: existingUser.id,
@@ -369,19 +363,25 @@ async function getOrCreateUserAccountFromThirdParty<
         "account" in thirdPartyKey ? { [thirdPartyKey.account]: model.id } : {},
       );
 
-      if (accountData) {
-        await existingUser.account
-          .$clone()
-          .$query(trx)
-          .patchAndFetch(accountData);
-      }
-
-      if (userData) {
-        await existingUser.$clone().$query(trx).patch(userData);
-      }
+      await Promise.all([
+        accountData
+          ? existingUser.account.$clone().$query(trx).patch(accountData)
+          : null,
+        userData ? existingUser.$clone().$query(trx).patch(userData) : null,
+      ]);
     });
 
     return existingUser.account;
+  }
+
+  if (!email) {
+    throw boom(
+      400,
+      `No verified email could be found on the ${provider} account`,
+      {
+        code: errorCodes.noVerifiedEmail,
+      },
+    );
   }
 
   const baseSlug = getSlug(model).toLowerCase();

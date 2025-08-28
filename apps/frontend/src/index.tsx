@@ -30,18 +30,20 @@ if (process.env["NODE_ENV"] === "production") {
           // GitHub
           error.code === "GITHUB_ACCOUNT_ALREADY_ATTACHED" ||
           error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB" ||
+          error.code === "GITHUB_NO_VERIFIED_EMAIL" ||
           // GitHub OAuth errors are also user errors.
           error.code === "GITHUB_AUTH_INCORRECT_CLIENT_CREDENTIALS" ||
           error.code === "GITHUB_AUTH_REDIRECT_URI_MISMATCH" ||
           error.code === "GITHUB_AUTH_BAD_VERIFICATION_CODE" ||
           error.code === "GITHUB_AUTH_UNVERIFIED_USER_EMAIL" ||
-          error.code === "GITHUB_NO_VERIFIED_EMAIL" ||
           // GitLab
           error.code === "GITLAB_ACCOUNT_ALREADY_ATTACHED" ||
           error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITLAB" ||
+          error.code === "GITLAB_NO_VERIFIED_EMAIL" ||
           // Google
           error.code === "GOOGLE_ACCOUNT_ALREADY_ATTACHED" ||
-          error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE"
+          error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE" ||
+          error.code === "GOOGLE_NO_VERIFIED_EMAIL"
         ) {
           event.level = "info";
           return event;
