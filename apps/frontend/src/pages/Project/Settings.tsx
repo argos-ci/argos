@@ -4,7 +4,7 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
-import { SettingsLayout } from "@/containers/Layout";
+import { SettingsPage } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
@@ -91,9 +91,9 @@ export function Component() {
         </PageHeader>
         <Suspense
           fallback={
-            <SettingsLayout>
+            <SettingsPage>
               <PageLoader />
-            </SettingsLayout>
+            </SettingsPage>
           }
         >
           <PageContent accountSlug={accountSlug} projectName={projectName} />
@@ -127,7 +127,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
   );
 
   return (
-    <SettingsLayout>
+    <SettingsPage>
       {hasAdminPermission && <ProjectChangeName project={project} />}
       {hasReviewPermission && <ProjectToken project={project} />}
       {hasAdminPermission && <ProjectGitRepository project={project} />}
@@ -140,6 +140,6 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       )}
       {hasAdminPermission && <ProjectTransfer project={project} />}
       {hasAdminPermission && <ProjectDelete project={project} />}
-    </SettingsLayout>
+    </SettingsPage>
   );
 }

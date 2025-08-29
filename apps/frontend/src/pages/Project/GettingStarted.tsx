@@ -1,4 +1,4 @@
-import { SettingsLayout } from "@/containers/Layout";
+import { SettingsPage } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
 import {
   Card,
@@ -22,7 +22,7 @@ export function GettingStarted(props: {
 }) {
   const { project } = props;
   return (
-    <SettingsLayout className="mx-auto">
+    <SettingsPage className="mx-auto">
       <Card>
         <CardBody>
           <CardTitle>Get started</CardTitle>
@@ -46,6 +46,6 @@ export function GettingStarted(props: {
           for more information about installing and using it.
         </CardFooter>
       </Card>
-    </SettingsLayout>
+    </SettingsPage>
   );
 }

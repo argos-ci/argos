@@ -6,7 +6,7 @@ import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
-import { SettingsLayout } from "@/containers/Layout";
+import { SettingsPage } from "@/containers/Layout";
 import { graphql, type DocumentType } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
@@ -113,9 +113,9 @@ function NewAutomationPage() {
           </PageHeaderContent>
         </PageHeader>
 
-        <SettingsLayout>
+        <SettingsPage>
           <NewAutomationForm project={project} />
-        </SettingsLayout>
+        </SettingsPage>
       </PageContainer>
     </Page>
   );

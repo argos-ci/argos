@@ -6,7 +6,13 @@ import { useVisitAccount } from "@/containers/AccountHistory";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import { TabLink, TabLinkList, TabLinkPanel, TabsLink } from "@/ui/TabLink";
+import {
+  TabLink,
+  TabLinkList,
+  TabLinkPanel,
+  TabsLink,
+  useTabLinkSplat,
+} from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 import { useTestParams } from "../Test/TestParams";
@@ -31,25 +37,6 @@ type Account = NonNullable<
   NonNullable<DocumentType<typeof ProjectQuery>["project"]>["account"]
 >;
 
-function ProjectTabLinkList(props: {
-  permissions: ProjectPermission[];
-  isTeam: boolean;
-}) {
-  const { permissions, isTeam } = props;
-  const showAutomationsTab =
-    isTeam && permissions.includes(ProjectPermission.ViewSettings);
-
-  return (
-    <TabLinkList aria-label="Project navigation">
-      <TabLink href="">Builds</TabLink>
-      {showAutomationsTab && <TabLink href="automations">Automations</TabLink>}
-      {permissions.includes(ProjectPermission.ViewSettings) && (
-        <TabLink href="settings">Project Settings</TabLink>
-      )}
-    </TabLinkList>
-  );
-}
-
 function ProjectTabs(props: {
   permissions: ProjectPermission[];
   account: Account;
@@ -57,13 +44,26 @@ function ProjectTabs(props: {
 }) {
   const { account, children, permissions } = props;
   const isTeam = account.__typename === "Team";
-
+  const showAutomationsTab =
+    isTeam && permissions.includes(ProjectPermission.ViewSettings);
+  const selectedKey = useTabLinkSplat("automations");
   return (
-    <TabsLink className="flex min-h-0 flex-1 flex-col">
-      <ProjectTabLinkList permissions={permissions} isTeam={isTeam} />
+    <TabsLink
+      selectedKey={selectedKey}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <TabLinkList aria-label="Project navigation">
+        <TabLink href="">Builds</TabLink>
+        {showAutomationsTab && (
+          <TabLink href="automations">Automations</TabLink>
+        )}
+        {permissions.includes(ProjectPermission.ViewSettings) && (
+          <TabLink href="settings">Settings</TabLink>
+        )}
+      </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
-      <TabLinkPanel className="flex min-h-0 flex-1 flex-col">
+      <TabLinkPanel id={selectedKey} className="flex min-h-0 flex-1 flex-col">
         {children}
       </TabLinkPanel>
     </TabsLink>

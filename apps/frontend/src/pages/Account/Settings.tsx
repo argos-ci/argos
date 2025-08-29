@@ -1,15 +1,21 @@
-import { Suspense } from "react";
+import {
+  Children,
+  Fragment,
+  isValidElement,
+  Suspense,
+  type ReactNode,
+} from "react";
 import { useSuspenseQuery } from "@apollo/client";
-import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import { AccountChangeName } from "@/containers/Account/ChangeName";
 import { AccountChangeSlug } from "@/containers/Account/ChangeSlug";
 import { AccountGitLab } from "@/containers/Account/GitLab";
 import { useAuthTokenPayload } from "@/containers/Auth";
-import { SettingsLayout } from "@/containers/Layout";
+import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamDelete } from "@/containers/Team/Delete";
@@ -30,10 +36,12 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
 import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useAccountContext } from ".";
+import { getAccountURL, useAccountParams } from "./AccountParams";
 
 const AccountQuery = graphql(`
   query AccountSettings_account($slug: String!) {
@@ -67,7 +75,10 @@ const AccountQuery = graphql(`
 
 /** @route */
 export function Component() {
-  const { accountSlug } = useParams();
+  const params = useAccountParams();
+  invariant(params, "Account params required");
+  const { accountSlug } = params;
+
   const authPayload = useAuthTokenPayload();
   const userSlug = authPayload?.account.slug;
 
@@ -95,24 +106,27 @@ export function Component() {
         </PageHeader>
         <Suspense
           fallback={
-            <SettingsLayout>
+            <SettingsPage>
               <PageLoader />
-            </SettingsLayout>
+            </SettingsPage>
           }
         >
-          <PageContent accountSlug={accountSlug} />
+          <PageContent />
         </Suspense>
       </PageContainer>
     </Page>
   );
 }
 
-function PageContent(props: { accountSlug: string }) {
+function PageContent() {
+  const params = useAccountParams();
+  invariant(params, "Account params required");
+  const { accountSlug } = params;
   const { permissions } = useAccountContext();
   const {
     data: { account },
   } = useSuspenseQuery(AccountQuery, {
-    variables: { slug: props.accountSlug },
+    variables: { slug: accountSlug },
   });
   useScrollToHash();
 
@@ -126,62 +140,140 @@ function PageContent(props: { accountSlug: string }) {
   const fineGrainedAccessControlIncluded = Boolean(
     isTeam && account.plan?.fineGrainedAccessControlIncluded,
   );
+  const settingsUrl = `${getAccountURL(params)}/settings`;
+
+  const routes = [
+    {
+      name: "General",
+      slug: "",
+      element: hasAdminPermission ? (
+        <>
+          {isUser && (
+            <>
+              <AccountChangeName
+                account={account}
+                title="Your Name"
+                description="Please enter your full name, or a display name you are comfortable with."
+              />
+              <AccountChangeSlug
+                account={account}
+                title="Your Username"
+                description="This is your URL namespace within Argos."
+              />
+            </>
+          )}
+          {isTeam && (
+            <>
+              <AccountChangeName
+                account={account}
+                title="Team Name"
+                description="This is your team's visible name within Argos. For example, the
+    name of your company or department."
+              />
+              <AccountChangeSlug
+                account={account}
+                title="Team URL"
+                description="This is your team’s URL namespace on Argos. Within it, your team
+          can inspect their projects or configure settings."
+              />
+            </>
+          )}
+          {isUser && <UserEmails account={account} />}
+          {isTeam && hasAdminPermission && <TeamDelete team={account} />}
+          {isUser && hasAdminPermission && <UserDelete user={account} />}
+        </>
+      ) : null,
+    },
+    {
+      name: "Billing",
+      slug: "billing",
+      element: (
+        <>
+          {hasAdminPermission && <PlanCard account={account} />}
+          {isTeam && <TeamSpendManagement account={account} />}
+        </>
+      ),
+    },
+    {
+      name: "Authentication",
+      slug: "authentication",
+      element: isUser && hasAdminPermission && <UserAuth account={account} />,
+    },
+    {
+      name: "Members",
+      slug: "members",
+      element: (
+        <>
+          {isTeam && <TeamMembers team={account} />}
+          {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
+          {isTeam && hasAdminPermission && fineGrainedAccessControlIncluded && (
+            <TeamAccessRole team={account} />
+          )}
+        </>
+      ),
+    },
+    {
+      name: "Integrations",
+      slug: "integrations",
+      element: (
+        <>
+          {isTeam && <TeamSlack account={account} />}
+          {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
+          {hasAdminPermission && <AccountGitLab account={account} />}
+        </>
+      ),
+    },
+  ];
+
+  const matchedRoutes = routes.filter((route) =>
+    checkIsNonEmptyElement(route.element),
+  );
 
   return (
     <SettingsLayout>
-      {hasAdminPermission &&
-        (() => {
-          switch (account.__typename) {
-            case "User":
-              return (
-                <>
-                  <AccountChangeName
-                    account={account}
-                    title="Your Name"
-                    description="Please enter your full name, or a display name you are comfortable with."
-                  />
-                  <AccountChangeSlug
-                    account={account}
-                    title="Your Username"
-                    description="This is your URL namespace within Argos."
-                  />
-                </>
-              );
-            case "Team":
-              return (
-                <>
-                  <AccountChangeName
-                    account={account}
-                    title="Team Name"
-                    description="This is your team's visible name within Argos. For example, the
-    name of your company or department."
-                  />
-                  <AccountChangeSlug
-                    account={account}
-                    title="Team URL"
-                    description="This is your team’s URL namespace on Argos. Within it, your team
-          can inspect their projects or configure settings."
-                  />
-                </>
-              );
-            default:
-              assertNever(account);
-          }
-        })()}
-      {isUser && hasAdminPermission && <UserAuth account={account} />}
-      {isUser && hasAdminPermission && <UserEmails account={account} />}
-      {hasAdminPermission && <PlanCard account={account} />}
-      {isTeam && <TeamSpendManagement account={account} />}
-      {isTeam && <TeamMembers team={account} />}
-      {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
-      {isTeam && hasAdminPermission && fineGrainedAccessControlIncluded && (
-        <TeamAccessRole team={account} />
-      )}
-      {isTeam && <TeamSlack account={account} />}
-      {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
-      {hasAdminPermission && <AccountGitLab account={account} />}
-      {isTeam && hasAdminPermission && <TeamDelete team={account} />}
-      {isUser && hasAdminPermission && <UserDelete user={account} />}
+      <Nav>
+        <NavList>
+          {matchedRoutes.map((route) => (
+            <NavListItem key={route.slug}>
+              <NavLink
+                to={`${settingsUrl}${route.slug ? `/${route.slug}` : ""}`}
+                end
+              >
+                {route.name}
+              </NavLink>
+            </NavListItem>
+          ))}
+        </NavList>
+      </Nav>
+      <SettingsPage>
+        <Routes>
+          {matchedRoutes.map((route) => {
+            return (
+              <Route
+                key={route.slug}
+                index={!route.slug}
+                path={route.slug}
+                element={route.element}
+              />
+            );
+          })}
+        </Routes>
+      </SettingsPage>
     </SettingsLayout>
   );
+}
+
+function checkIsNonEmptyElement(element: ReactNode): boolean {
+  if (!element) {
+    return false;
+  }
+  if (
+    isValidElement<{ children?: ReactNode }>(element) &&
+    element.type === Fragment
+  ) {
+    return Children.toArray(element.props.children).some(
+      checkIsNonEmptyElement,
+    );
+  }
+  return true;
 }
