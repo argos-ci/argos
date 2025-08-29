@@ -175,7 +175,7 @@ function UserMenu() {
             <MenuItemIcon>
               <SettingsIcon />
             </MenuItemIcon>
-            Personal Settings
+            Settings
           </MenuItem>
           <MenuSeparator />
           <ColorModeSubmenu />

@@ -8,7 +8,7 @@ import { Helmet } from "react-helmet";
 import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
-import { SettingsLayout } from "@/containers/Layout";
+import { SettingsPage } from "@/containers/Layout";
 import { DocumentType, graphql } from "@/gql";
 import { AutomationActionRunStatus, ProjectPermission } from "@/gql/graphql";
 import { Button, LinkButton } from "@/ui/Button";
@@ -382,7 +382,7 @@ function AutomationPage() {
             </Text>
           </PageHeaderContent>
         </PageHeader>
-        <SettingsLayout>
+        <SettingsPage>
           <EditAutomationForm
             automationRule={automationRule}
             project={project}
@@ -390,7 +390,7 @@ function AutomationPage() {
           />
 
           <ActionRunHistory automationRule={automationRule} />
-        </SettingsLayout>
+        </SettingsPage>
       </PageContainer>
     </Page>
   );

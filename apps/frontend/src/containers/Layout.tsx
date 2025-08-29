@@ -71,14 +71,26 @@ export function Layout(props: { children: React.ReactNode }) {
   );
 }
 
-export function SettingsLayout({
-  className,
-  ...props
-}: ComponentPropsWithRef<"div">) {
+export function SettingsLayout(props: ComponentPropsWithRef<"div">) {
   return (
     <div
-      className={clsx(className, "mb-6 flex max-w-4xl flex-col gap-6")}
       {...props}
+      className={clsx(
+        props.className,
+        "grid grid-cols-[12rem_minmax(0,1fr)] gap-16",
+      )}
+    />
+  );
+}
+
+export function SettingsPage(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx(
+        "mb-6 flex max-w-4xl flex-1 flex-col gap-6",
+        props.className,
+      )}
     />
   );
 }

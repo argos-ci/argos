@@ -8,7 +8,13 @@ import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
-import { TabLink, TabLinkList, TabLinkPanel, TabsLink } from "@/ui/TabLink";
+import {
+  TabLink,
+  TabLinkList,
+  TabLinkPanel,
+  TabsLink,
+  useTabLinkSplat,
+} from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 
@@ -34,20 +40,20 @@ export const useAccountContext = () => {
 };
 
 function AccountTabs({ account }: { account: Account }) {
+  const selectedKey = useTabLinkSplat("settings");
   return (
-    <TabsLink className="flex min-h-0 flex-1 flex-col">
+    <TabsLink
+      selectedKey={selectedKey}
+      className="flex min-h-0 flex-1 flex-col"
+    >
       <TabLinkList aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
-        <TabLink href="settings">
-          {account.__typename === "User"
-            ? "Personal Settings"
-            : "Team Settings"}
-        </TabLink>
+        <TabLink href="settings">Settings</TabLink>
       </TabLinkList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
-      <TabLinkPanel className="flex flex-1 flex-col">
+      <TabLinkPanel id={selectedKey} className="flex flex-1 flex-col">
         <Suspense fallback={<PageLoader />}>
           <Outlet
             context={{ permissions: account.permissions } as OutletContext}
