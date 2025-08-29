@@ -225,38 +225,37 @@ function PageContent() {
     },
   ];
 
+  const matchedRoutes = routes.filter((route) =>
+    checkIsNonEmptyElement(route.element),
+  );
+
   return (
     <SettingsLayout>
       <Nav>
         <NavList>
-          {routes
-            .filter((route) => checkIsNonEmptyElement(route.element))
-            .map((route) => (
-              <NavListItem key={route.slug}>
-                <NavLink
-                  to={`${settingsUrl}${route.slug ? `/${route.slug}` : ""}`}
-                  end
-                >
-                  {route.name}
-                </NavLink>
-              </NavListItem>
-            ))}
+          {matchedRoutes.map((route) => (
+            <NavListItem key={route.slug}>
+              <NavLink
+                to={`${settingsUrl}${route.slug ? `/${route.slug}` : ""}`}
+                end
+              >
+                {route.name}
+              </NavLink>
+            </NavListItem>
+          ))}
         </NavList>
       </Nav>
       <SettingsPage>
         <Routes>
-          {routes.map((route) => {
-            if (checkIsNonEmptyElement(route.element)) {
-              return (
-                <Route
-                  key={route.slug}
-                  index={!route.slug}
-                  path={route.slug}
-                  element={route.element}
-                />
-              );
-            }
-            return null;
+          {matchedRoutes.map((route) => {
+            return (
+              <Route
+                key={route.slug}
+                index={!route.slug}
+                path={route.slug}
+                element={route.element}
+              />
+            );
           })}
         </Routes>
       </SettingsPage>
