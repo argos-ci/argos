@@ -8,7 +8,7 @@ import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Code } from "@/ui/Code";
 import { Container } from "@/ui/Container";
-import { getGraphQLErrorMessage } from "@/ui/Form";
+import { getErrorMessage } from "@/util/error";
 
 /** @route */
 export function Component() {
@@ -56,7 +56,7 @@ function VerifyProcess(props: { email: string; token: string }) {
   const [verifyEmail, { data, loading }] = useMutation(VerifyEmailMutation, {
     variables: props,
     onError(error) {
-      toast.error(getGraphQLErrorMessage(error));
+      toast.error(getErrorMessage(error));
     },
   });
   if (data) {

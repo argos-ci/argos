@@ -3,16 +3,17 @@ import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
-import { getGraphQLErrorMessage } from "@/ui/Form";
 import {
   Page,
   PageContainer,
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { getErrorMessage } from "@/util/error";
 
 import { useAccountParams } from "./AccountParams";
 
@@ -129,8 +130,7 @@ export function Component() {
                   installationId,
                 },
               }).catch((error) => {
-                // TODO: Show error in UI
-                alert(getGraphQLErrorMessage(error));
+                toast.error(getErrorMessage(error));
               });
             }}
             onSelectProject={(glProject) => {
@@ -140,8 +140,7 @@ export function Component() {
                   accountSlug: params.accountSlug,
                 },
               }).catch((error) => {
-                // TODO: Show error in UI
-                alert(getGraphQLErrorMessage(error));
+                toast.error(getErrorMessage(error));
               });
             }}
           />

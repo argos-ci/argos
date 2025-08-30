@@ -688,6 +688,8 @@ export type IMutation = {
   removeContributorFromProject: IRemoveContributorFromProjectPayload;
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
+  /** Reset invite link */
+  resetInviteLink: ITeam;
   reviewBuild: IBuild;
   /** Send a verification email for a unverified email */
   sendUserEmailVerification: IUser;
@@ -722,7 +724,7 @@ export type IMutation = {
 
 
 export type IMutationAcceptInvitationArgs = {
-  token: Scalars['String']['input'];
+  secret: Scalars['String']['input'];
 };
 
 
@@ -838,6 +840,11 @@ export type IMutationRemoveContributorFromProjectArgs = {
 
 export type IMutationRemoveUserFromTeamArgs = {
   input: IRemoveUserFromTeamInput;
+};
+
+
+export type IMutationResetInviteLinkArgs = {
+  input: IResetInviteLinkInput;
 };
 
 
@@ -1130,7 +1137,7 @@ export type IQueryGlApiProjectsArgs = {
 
 
 export type IQueryInvitationArgs = {
-  token: Scalars['String']['input'];
+  secret: Scalars['String']['input'];
 };
 
 
@@ -1175,6 +1182,10 @@ export type IRepository = {
   id: Scalars['ID']['output'];
   private: Scalars['Boolean']['output'];
   url: Scalars['String']['output'];
+};
+
+export type IResetInviteLinkInput = {
+  teamAccountId: Scalars['ID']['input'];
 };
 
 export type IReviewBuildInput = {
@@ -1878,6 +1889,7 @@ export type IResolversTypes = ResolversObject<{
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: ResolverTypeWrapper<IRemoveUserFromTeamPayload>;
   Repository: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Repository']>;
+  ResetInviteLinkInput: IResetInviteLinkInput;
   ReviewBuildInput: IReviewBuildInput;
   ReviewState: IReviewState;
   Screenshot: ResolverTypeWrapper<Screenshot>;
@@ -2021,6 +2033,7 @@ export type IResolversParentTypes = ResolversObject<{
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
   RemoveUserFromTeamPayload: IRemoveUserFromTeamPayload;
   Repository: IResolversInterfaceTypes<IResolversParentTypes>['Repository'];
+  ResetInviteLinkInput: IResetInviteLinkInput;
   ReviewBuildInput: IReviewBuildInput;
   Screenshot: Screenshot;
   ScreenshotBucket: ScreenshotBucket;
@@ -2431,7 +2444,7 @@ export interface IJsonObjectScalarConfig extends GraphQLScalarTypeConfig<IResolv
 }
 
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
-  acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'token'>>;
+  acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'secret'>>;
   addOrUpdateProjectContributor?: Resolver<IResolversTypes['ProjectContributor'], ParentType, ContextType, RequireFields<IMutationAddOrUpdateProjectContributorArgs, 'input'>>;
   addUserEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationAddUserEmailArgs, 'email'>>;
   createAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationCreateAutomationRuleArgs, 'input'>>;
@@ -2456,6 +2469,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   regenerateProjectToken?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationRegenerateProjectTokenArgs, 'id'>>;
   removeContributorFromProject?: Resolver<IResolversTypes['RemoveContributorFromProjectPayload'], ParentType, ContextType, RequireFields<IMutationRemoveContributorFromProjectArgs, 'input'>>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
+  resetInviteLink?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationResetInviteLinkArgs, 'input'>>;
   reviewBuild?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationReviewBuildArgs, 'input'>>;
   sendUserEmailVerification?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationSendUserEmailVerificationArgs, 'email'>>;
   setPrimaryEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationSetPrimaryEmailArgs, 'email'>>;
@@ -2564,7 +2578,7 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
   automationRule?: Resolver<Maybe<IResolversTypes['AutomationRule']>, ParentType, ContextType, RequireFields<IQueryAutomationRuleArgs, 'id'>>;
   ghApiInstallationRepositories?: Resolver<IResolversTypes['GhApiRepositoryConnection'], ParentType, ContextType, RequireFields<IQueryGhApiInstallationRepositoriesArgs, 'fromAuthUser' | 'installationId' | 'page'>>;
   glApiProjects?: Resolver<IResolversTypes['GlApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryGlApiProjectsArgs, 'accountId' | 'allProjects' | 'page'>>;
-  invitation?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryInvitationArgs, 'token'>>;
+  invitation?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryInvitationArgs, 'secret'>>;
   me?: Resolver<Maybe<IResolversTypes['User']>, ParentType, ContextType>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   project?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectArgs, 'accountSlug' | 'projectName'>>;

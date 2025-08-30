@@ -15,12 +15,12 @@ import {
 } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
 import { useDialogValueState } from "@/ui/Dialog";
-import { getGraphQLErrorMessage } from "@/ui/Form";
 import { IconButton } from "@/ui/IconButton";
 import { List, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemTooltip } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
+import { getErrorMessage } from "@/util/error";
 
 import { AddUserEmailDialog } from "./emails/AddUserEmailDialog";
 import { DeleteUserEmailDialog } from "./emails/DeleteUserEmailDialog";
@@ -126,7 +126,7 @@ export function UserEmails(props: {
                                   },
                                 })
                                 .catch((error) => {
-                                  toast.error(getGraphQLErrorMessage(error));
+                                  toast.error(getErrorMessage(error));
                                 });
                             }}
                           >

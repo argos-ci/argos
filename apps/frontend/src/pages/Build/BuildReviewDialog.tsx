@@ -14,8 +14,8 @@ import {
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
-import { getGraphQLErrorMessage } from "@/ui/Form";
 import { Modal, ModalProps } from "@/ui/Modal";
+import { getErrorMessage } from "@/util/error";
 
 import { useReviewBuildMutation } from "./BuildReviewAction";
 import { BuildReviewButton } from "./BuildReviewButton";
@@ -133,7 +133,7 @@ function FinishReviewAcceptedDialog(props: {
         </DialogText>
       </DialogBody>
       <DialogFooter>
-        {error && <ErrorMessage>{getGraphQLErrorMessage(error)}</ErrorMessage>}
+        {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
         <DialogDismiss>Cancel</DialogDismiss>
         <Button
           isDisabled={loading}
