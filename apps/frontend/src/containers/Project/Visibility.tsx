@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
@@ -84,44 +84,42 @@ export const ProjectVisibility = (props: {
 
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <CardTitle>Project visibility</CardTitle>
-            <CardParagraph>
-              Make a public project private in order to restrict access to
-              builds and screenshots to only authorized users.
-            </CardParagraph>
-            <FormRadioGroup>
-              <FormRadio
-                {...form.register("visibility")}
-                value="default"
-                label={
-                  <>
-                    Use {repositoryLabel ?? "Git provider"} visibility settings{" "}
-                    {project.repository ? (
-                      <span className="text-low">
-                        ({project.repository.private ? "private" : "public"})
-                      </span>
-                    ) : null}
-                  </>
-                }
-              />
-              <FormRadio
-                {...form.register("visibility")}
-                value="private"
-                label="Visible only from Team members"
-              />
-              <FormRadio
-                {...form.register("visibility")}
-                value="public"
-                label="Visible from everyone"
-              />
-            </FormRadioGroup>
-          </CardBody>
-          <FormCardFooter />
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle>Project visibility</CardTitle>
+          <CardParagraph>
+            Make a public project private in order to restrict access to builds
+            and screenshots to only authorized users.
+          </CardParagraph>
+          <FormRadioGroup>
+            <FormRadio
+              {...form.register("visibility")}
+              value="default"
+              label={
+                <>
+                  Use {repositoryLabel ?? "Git provider"} visibility settings{" "}
+                  {project.repository ? (
+                    <span className="text-low">
+                      ({project.repository.private ? "private" : "public"})
+                    </span>
+                  ) : null}
+                </>
+              }
+            />
+            <FormRadio
+              {...form.register("visibility")}
+              value="private"
+              label="Visible only from Team members"
+            />
+            <FormRadio
+              {...form.register("visibility")}
+              value="public"
+              label="Visible from everyone"
+            />
+          </FormRadioGroup>
+        </CardBody>
+        <FormCardFooter control={form.control} />
+      </Form>
     </Card>
   );
 };

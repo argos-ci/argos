@@ -3,7 +3,7 @@ import { useMutation } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { CircleCheckIcon } from "lucide-react";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -148,129 +148,124 @@ function SpendManagementForm(props: {
 
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit} noValidate>
-          <CardBody>
-            <CardTitle id="spend-management">Spend Management</CardTitle>
-            <CardParagraph>
-              Set a spend amount towards additional screenshots cost. All
-              account owners will be notified when the spend amount reaches{" "}
-              <strong>50%</strong>, <strong>75%</strong>, and{" "}
-              <strong>100%</strong> of the set amount. You can choose to pause
-              builds when the spend amount limit is reached.
-            </CardParagraph>
-            <div className="overflow-hidden rounded-sm border">
-              <div className="flex items-center justify-between gap-4 p-4">
-                <div className="flex items-center gap-2">
-                  <CircleProgress
-                    className="size-12"
-                    radius={24}
-                    strokeWidth={12}
-                    value={isSpendLimitEnabled ? additionalScreenshotsCost : 0}
-                    min={0}
-                    max={
-                      isSpendLimitEnabled ? (meteredSpendLimitByPeriod ?? 0) : 1
-                    }
-                  />
-                  <div>
-                    {isSpendLimitEnabled ? (
-                      <div className="font-medium">
-                        {formatCurrency(additionalScreenshotsCost, currency)} /{" "}
-                        {formatCurrency(meteredSpendLimitByPeriod, currency, 0)}{" "}
-                        (
-                        {Math.min(
-                          (additionalScreenshotsCost /
-                            (meteredSpendLimitByPeriod || 1)) *
-                            100,
+      <Form form={form} onSubmit={onSubmit} noValidate>
+        <CardBody>
+          <CardTitle id="spend-management">Spend Management</CardTitle>
+          <CardParagraph>
+            Set a spend amount towards additional screenshots cost. All account
+            owners will be notified when the spend amount reaches{" "}
+            <strong>50%</strong>, <strong>75%</strong>, and{" "}
+            <strong>100%</strong> of the set amount. You can choose to pause
+            builds when the spend amount limit is reached.
+          </CardParagraph>
+          <div className="overflow-hidden rounded-sm border">
+            <div className="flex items-center justify-between gap-4 p-4">
+              <div className="flex items-center gap-2">
+                <CircleProgress
+                  className="size-12"
+                  radius={24}
+                  strokeWidth={12}
+                  value={isSpendLimitEnabled ? additionalScreenshotsCost : 0}
+                  min={0}
+                  max={
+                    isSpendLimitEnabled ? (meteredSpendLimitByPeriod ?? 0) : 1
+                  }
+                />
+                <div>
+                  {isSpendLimitEnabled ? (
+                    <div className="font-medium">
+                      {formatCurrency(additionalScreenshotsCost, currency)} /{" "}
+                      {formatCurrency(meteredSpendLimitByPeriod, currency, 0)} (
+                      {Math.min(
+                        (additionalScreenshotsCost /
+                          (meteredSpendLimitByPeriod || 1)) *
                           100,
-                        ).toFixed(0)}
-                        %)
-                      </div>
-                    ) : (
-                      <div className="font-medium">
-                        Current period additional costs —{" "}
-                        {formatCurrency(additionalScreenshotsCost, currency)}
-                      </div>
-                    )}
-                    <div
-                      className={clsx(
-                        "text-low text-sm",
-                        isSpendLimitEnabled && "text-sm",
-                      )}
-                    >
-                      {isSpendLimitEnabled
-                        ? "Spend management enabled"
-                        : "Spend management disabled"}
+                        100,
+                      ).toFixed(0)}
+                      %)
                     </div>
+                  ) : (
+                    <div className="font-medium">
+                      Current period additional costs —{" "}
+                      {formatCurrency(additionalScreenshotsCost, currency)}
+                    </div>
+                  )}
+                  <div
+                    className={clsx(
+                      "text-low text-sm",
+                      isSpendLimitEnabled && "text-sm",
+                    )}
+                  >
+                    {isSpendLimitEnabled
+                      ? "Spend management enabled"
+                      : "Spend management disabled"}
                   </div>
                 </div>
-                <SwitchField
-                  control={form.control}
-                  name="isSpendLimitEnabled"
-                />
               </div>
-              {isSpendLimitEnabled && hasAdminPermission ? (
-                <>
-                  <Separator orientation="horizontal" />
-                  <div className="bg-subtle grid grid-cols-2 p-4">
-                    <FormTextInput
-                      {...defaultMeteredSpendLimitByPeriodProps}
-                      ref={(element) => {
-                        defaultMeteredSpendLimitByPeriodProps.ref(element);
-                        if (
-                          element &&
-                          form.formState.defaultValues?.isSpendLimitEnabled !==
-                            isSpendLimitEnabled
-                        ) {
-                          element.focus();
-                        }
-                      }}
-                      label="Set amount"
-                      type="number"
-                      pattern="\d*"
-                      min={0}
-                      step={50}
-                      inputMode="numeric"
-                      formNoValidate
-                      addon={currency}
-                      placeholder={formatCurrency(0, currency, 0)}
-                      description={
-                        <>
-                          Set the additional screenshots usage amount, to
-                          trigger notifications if the amount is reached within
-                          a billing period.
-                        </>
-                      }
-                      className="max-w-[200px]"
-                    />
-                    <FormSwitch
-                      control={form.control}
-                      name="blockWhenSpendLimitIsReached"
-                      label="Pause builds"
-                      description={
-                        <>
-                          When enabled, builds for all projects on this team
-                          will be paused when the spend amount is reached.
-                        </>
-                      }
-                    />
-                  </div>
-                </>
-              ) : null}
+              <SwitchField control={form.control} name="isSpendLimitEnabled" />
             </div>
-          </CardBody>
-          <FormCardFooter isSuccessful={isSuccessful}>
-            Learn more about{" "}
-            <Link
-              href="https://argos-ci.com/docs/spend-management"
-              target="_blank"
-            >
-              Spend Management
-            </Link>
-            .
-          </FormCardFooter>
-        </Form>
-      </FormProvider>
+            {isSpendLimitEnabled && hasAdminPermission ? (
+              <>
+                <Separator orientation="horizontal" />
+                <div className="bg-subtle grid grid-cols-2 p-4">
+                  <FormTextInput
+                    control={form.control}
+                    {...defaultMeteredSpendLimitByPeriodProps}
+                    ref={(element) => {
+                      defaultMeteredSpendLimitByPeriodProps.ref(element);
+                      if (
+                        element &&
+                        form.formState.defaultValues?.isSpendLimitEnabled !==
+                          isSpendLimitEnabled
+                      ) {
+                        element.focus();
+                      }
+                    }}
+                    label="Set amount"
+                    type="number"
+                    pattern="\d*"
+                    min={0}
+                    step={50}
+                    inputMode="numeric"
+                    formNoValidate
+                    addon={currency}
+                    placeholder={formatCurrency(0, currency, 0)}
+                    description={
+                      <>
+                        Set the additional screenshots usage amount, to trigger
+                        notifications if the amount is reached within a billing
+                        period.
+                      </>
+                    }
+                    className="max-w-[200px]"
+                  />
+                  <FormSwitch
+                    control={form.control}
+                    name="blockWhenSpendLimitIsReached"
+                    label="Pause builds"
+                    description={
+                      <>
+                        When enabled, builds for all projects on this team will
+                        be paused when the spend amount is reached.
+                      </>
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
+          </div>
+        </CardBody>
+        <FormCardFooter control={form.control} isSuccessful={isSuccessful}>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/spend-management"
+            target="_blank"
+          >
+            Spend Management
+          </Link>
+          .
+        </FormCardFooter>
+      </Form>
       <Modal
         isOpen={confirmation.isOpen}
         onOpenChange={(isOpen) =>
@@ -320,107 +315,107 @@ function ConfirmDialog(props: {
 
   return (
     <Dialog size="medium">
-      <FormProvider {...form}>
-        <Form onSubmit={props.onSubmit}>
-          <DialogBody>
-            <DialogTitle>Spend Management</DialogTitle>
-            {data.meteredSpendLimitByPeriod === null ? (
-              <>
-                <DialogText>
-                  Continuing will disable spend management on the{" "}
-                  <strong>{accountName}</strong> team and immediately cause the
-                  following actions:
-                </DialogText>
+      <Form form={form} onSubmit={props.onSubmit}>
+        <DialogBody>
+          <DialogTitle>Spend Management</DialogTitle>
+          {data.meteredSpendLimitByPeriod === null ? (
+            <>
+              <DialogText>
+                Continuing will disable spend management on the{" "}
+                <strong>{accountName}</strong> team and immediately cause the
+                following actions:
+              </DialogText>
+              <DialogText>
+                <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
+                No further notifications will be sent when the spend limit is
+                reached.
+              </DialogText>
+              {account.blockWhenSpendLimitIsReached && (
                 <DialogText>
                   <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                  No further notifications will be sent when the spend limit is
+                  Builds will no longer be paused when the spend limit is
                   reached.
                 </DialogText>
-                {account.blockWhenSpendLimitIsReached && (
-                  <DialogText>
-                    <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                    Builds will no longer be paused when the spend limit is
-                    reached.
-                  </DialogText>
-                )}
-              </>
-            ) : data.meteredSpendLimitByPeriod <
-              account.additionalScreenshotsCost ? (
-              <>
-                <DialogText>
-                  Your current spend exceeds{" "}
-                  <strong>
-                    {formatCurrency(
-                      data.meteredSpendLimitByPeriod,
-                      account.subscription.currency,
-                      0,
-                    )}
-                  </strong>
-                  . Continuing will immediately cause the following actions on{" "}
-                  {accountName} team.
-                </DialogText>
-                <DialogText>
-                  <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                  Notifications are sent to all team owner members.
-                </DialogText>
-                {data.blockWhenSpendLimitIsReached && (
-                  <DialogText>
-                    <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                    All builds are paused.
-                  </DialogText>
-                )}
-              </>
-            ) : (
-              <>
-                <DialogText>
-                  Your current spend is below{" "}
-                  <strong>
-                    {formatCurrency(
-                      data.meteredSpendLimitByPeriod,
-                      account.subscription.currency,
-                      0,
-                    )}
-                  </strong>
-                  . Continuing will cause the following actions on {accountName}{" "}
-                  team.
-                </DialogText>
+              )}
+            </>
+          ) : data.meteredSpendLimitByPeriod <
+            account.additionalScreenshotsCost ? (
+            <>
+              <DialogText>
+                Your current spend exceeds{" "}
+                <strong>
+                  {formatCurrency(
+                    data.meteredSpendLimitByPeriod,
+                    account.subscription.currency,
+                    0,
+                  )}
+                </strong>
+                . Continuing will immediately cause the following actions on{" "}
+                {accountName} team.
+              </DialogText>
+              <DialogText>
+                <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
+                Notifications are sent to all team owner members.
+              </DialogText>
+              {data.blockWhenSpendLimitIsReached && (
                 <DialogText>
                   <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                  Notifications will be sent to all team owner members.
+                  All builds are paused.
                 </DialogText>
-                {data.blockWhenSpendLimitIsReached && (
-                  <DialogText>
-                    <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
-                    Builds will be paused when the spend limit is reached.
-                  </DialogText>
-                )}
+              )}
+            </>
+          ) : (
+            <>
+              <DialogText>
+                Your current spend is below{" "}
+                <strong>
+                  {formatCurrency(
+                    data.meteredSpendLimitByPeriod,
+                    account.subscription.currency,
+                    0,
+                  )}
+                </strong>
+                . Continuing will cause the following actions on {accountName}{" "}
+                team.
+              </DialogText>
+              <DialogText>
+                <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
+                Notifications will be sent to all team owner members.
+              </DialogText>
+              {data.blockWhenSpendLimitIsReached && (
+                <DialogText>
+                  <CircleCheckIcon className="mr-3 inline size-[1.4em]" />
+                  Builds will be paused when the spend limit is reached.
+                </DialogText>
+              )}
+            </>
+          )}
+          <FormTextInput
+            control={form.control}
+            {...form.register("slug", {
+              validate: (value) => {
+                if (value !== account.slug) {
+                  return "Team slug does not match";
+                }
+                return true;
+              },
+            })}
+            autoFocus
+            className="mb-4"
+            label={
+              <>
+                Enter the team slug <strong>{account.slug}</strong> to continue:
               </>
-            )}
-            <FormTextInput
-              {...form.register("slug", {
-                validate: (value) => {
-                  if (value !== account.slug) {
-                    return "Team slug does not match";
-                  }
-                  return true;
-                },
-              })}
-              autoFocus
-              className="mb-4"
-              label={
-                <>
-                  Enter the team slug <strong>{account.slug}</strong> to
-                  continue:
-                </>
-              }
-            />
-          </DialogBody>
-          <DialogFooter>
-            <DialogDismiss>Cancel</DialogDismiss>
-            <FormSubmit variant="destructive">Continue</FormSubmit>
-          </DialogFooter>
-        </Form>
-      </FormProvider>
+            }
+          />
+        </DialogBody>
+        <DialogFooter>
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit control={form.control} variant="destructive">
+            Continue
+          </FormSubmit>
+        </DialogFooter>
+      </Form>
     </Dialog>
   );
 }

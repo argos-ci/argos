@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
@@ -61,34 +61,33 @@ export const ProjectChangeName = (props: {
   };
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <CardTitle>Project Name</CardTitle>
-            <CardParagraph>
-              Used to identify your Project on the Dashboard, in the URL and in
-              your Builds.
-            </CardParagraph>
-            <FormTextInput
-              {...form.register("name", {
-                required: "Please enter a project name",
-                maxLength: {
-                  value: 100,
-                  message: "Project name must be 100 characters or less",
-                },
-                pattern: {
-                  value: /^[a-zA-Z0-9\-_.]+$/,
-                  message:
-                    "Project names must be alphanumeric characters with dots, hyphens and lodashes.",
-                },
-              })}
-              label="Project name"
-              hiddenLabel
-            />
-          </CardBody>
-          <FormCardFooter />
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle>Project Name</CardTitle>
+          <CardParagraph>
+            Used to identify your Project on the Dashboard, in the URL and in
+            your Builds.
+          </CardParagraph>
+          <FormTextInput
+            control={form.control}
+            {...form.register("name", {
+              required: "Please enter a project name",
+              maxLength: {
+                value: 100,
+                message: "Project name must be 100 characters or less",
+              },
+              pattern: {
+                value: /^[a-zA-Z0-9\-_.]+$/,
+                message:
+                  "Project names must be alphanumeric characters with dots, hyphens and lodashes.",
+              },
+            })}
+            label="Project name"
+            hiddenLabel
+          />
+        </CardBody>
+        <FormCardFooter control={form.control} />
+      </Form>
     </Card>
   );
 };

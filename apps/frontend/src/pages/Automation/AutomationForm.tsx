@@ -63,6 +63,7 @@ export function AutomationNameField(props: { form: AutomationForm }) {
   const { form } = props;
   return (
     <FormTextInput
+      control={form.control}
       {...form.register("name")}
       label="Automation rule name"
       placeholder="eg. Notify team in Slack when a build completes"

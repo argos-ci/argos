@@ -108,6 +108,7 @@ function SendSlackMessageAction(props: {
     <div>
       Send notification to the {slackInstallation.teamName} workspace to{" "}
       <FormTextInput
+        control={form.control}
         {...form.register(`${name}.payload.name`)}
         orientation="horizontal"
         label="Slack Channel Name"
@@ -118,6 +119,7 @@ function SendSlackMessageAction(props: {
       />{" "}
       (optionnaly an ID:{" "}
       <FormTextInput
+        control={form.control}
         {...form.register(`${name}.payload.slackId`)}
         orientation="horizontal"
         label="Slack Channel"

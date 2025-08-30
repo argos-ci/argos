@@ -1,21 +1,30 @@
-import { useFormContext } from "react-hook-form";
+import { useFormState, type Control, type FieldValues } from "react-hook-form";
 
 import { Button, ButtonProps } from "./Button";
 
-export function FormSubmit({
-  children,
-  ...props
-}: ButtonProps & {
+interface FormSubmitProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+> extends ButtonProps {
   disableIfPristine?: boolean;
-}) {
-  const { formState } = useFormContext();
+  control: Control<TFieldValues, TContext, TTransformedValues>;
+}
+
+export function FormSubmit<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+>(props: FormSubmitProps<TFieldValues, TContext, TTransformedValues>) {
+  const { control, isDisabled: isDisabledProp } = props;
+  const formState = useFormState({ control });
   const isDisabled =
-    props.isDisabled ||
+    isDisabledProp ||
     formState.isSubmitting ||
     (props.disableIfPristine && !formState.isDirty);
   return (
     <Button type="submit" {...props} isDisabled={isDisabled}>
-      {children ?? "Save"}
+      {props.children ?? "Save"}
     </Button>
   );
 }

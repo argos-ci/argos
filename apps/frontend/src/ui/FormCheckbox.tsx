@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { InfoIcon } from "lucide-react";
-import { FieldValues, useFormContext, type Path } from "react-hook-form";
+import { FieldValues, type Path } from "react-hook-form";
 
 import { CheckboxField, type CheckboxFieldProps } from "./Checkbox";
 import { ErrorMessage } from "./ErrorMessage";
@@ -22,8 +22,7 @@ export function FormCheckbox<
 }) {
   const genId = useId();
   const id = idProp ?? genId;
-  const form = useFormContext();
-  const error = form.getFieldState(props.name)?.error;
+  const { error } = props.control.getFieldState(props.name);
   return (
     <div className={className}>
       <div className="flex items-center gap-2">

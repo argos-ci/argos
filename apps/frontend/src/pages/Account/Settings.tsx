@@ -21,7 +21,7 @@ import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
-import { TeamMembers } from "@/containers/Team/Members";
+import { TeamMembers } from "@/containers/Team/members/Members";
 import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";

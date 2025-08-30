@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { SettingsPage } from "@/containers/Layout";
@@ -183,48 +183,46 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
 
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <div className="flex flex-col gap-6">
-              <AutomationNameField form={form} />
-              <AutomationWhenStep form={form} />
-              <AutomationConditionsStep
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <div className="flex flex-col gap-6">
+            <AutomationNameField form={form} />
+            <AutomationWhenStep form={form} />
+            <AutomationConditionsStep
+              form={form}
+              projectBuildNames={project.buildNames}
+            />
+            <AutomationActionsStep form={form} />
+            <div>
+              <TestAutomationButton
                 form={form}
-                projectBuildNames={project.buildNames}
-              />
-              <AutomationActionsStep form={form} />
-              <div>
-                <TestAutomationButton
-                  form={form}
-                  projectId={project.id}
-                  isDisabled={form.formState.isSubmitting}
-                />
-              </div>
-              <FormRootError form={form} />
-            </div>
-          </CardBody>
-
-          <CardFooter>
-            <div className="flex items-center justify-end gap-2">
-              <LinkButton
-                href={`${getProjectURL(params)}/automations`}
-                variant="secondary"
-                className="order-2"
-              >
-                Cancel
-              </LinkButton>
-              <Button
-                type="submit"
+                projectId={project.id}
                 isDisabled={form.formState.isSubmitting}
-                className="order-3"
-              >
-                Create Rule
-              </Button>
+              />
             </div>
-          </CardFooter>
-        </Form>
-      </FormProvider>
+            <FormRootError control={form.control} />
+          </div>
+        </CardBody>
+
+        <CardFooter>
+          <div className="flex items-center justify-end gap-2">
+            <LinkButton
+              href={`${getProjectURL(params)}/automations`}
+              variant="secondary"
+              className="order-2"
+            >
+              Cancel
+            </LinkButton>
+            <Button
+              type="submit"
+              isDisabled={form.formState.isSubmitting}
+              className="order-3"
+            >
+              Create Rule
+            </Button>
+          </div>
+        </CardFooter>
+      </Form>
     </Card>
   );
 }

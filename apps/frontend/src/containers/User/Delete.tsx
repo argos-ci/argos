@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonProps } from "@/ui/Button";
@@ -93,64 +93,66 @@ function UserDeleteDialog(props: DeleteUserButtonProps) {
   };
   return (
     <Dialog size="medium">
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <DialogBody>
-            <DialogTitle>Delete Account</DialogTitle>
-            <DialogText>
-              Argos will <strong>delete all of your Account's projects</strong>,
-              along with all of its Builds, Screenshots, Screenshot Diffs,
-              Settings and other resources belonging to your Account.
-            </DialogText>
-            <DialogText>
-              Argos recommends that you transfer projects you want to keep to a
-              Team before deleting this Account.
-            </DialogText>
-            <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
-              <strong>Warning:</strong> This action is not reversible. Please be
-              certain.
-            </div>
-            <FormTextInput
-              {...form.register("slugConfirm", {
-                validate: (value) => {
-                  if (value !== props.userSlug) {
-                    return "Account name does not match";
-                  }
-                  return true;
-                },
-              })}
-              className="mb-4"
-              autoFocus
-              label={
-                <>
-                  Enter the user name <strong>{props.userSlug}</strong> to
-                  continue:
-                </>
-              }
-            />
-            <FormTextInput
-              {...form.register("verify", {
-                validate: (value) => {
-                  if (value !== "delete my account") {
-                    return "Please type 'delete my account' to confirm";
-                  }
-                  return true;
-                },
-              })}
-              label={
-                <>
-                  To verify, type <strong>delete my account</strong> below:
-                </>
-              }
-            />
-          </DialogBody>
-          <DialogFooter>
-            <FormRootError />
-            <DialogDismiss>Cancel</DialogDismiss>
-            <FormSubmit variant="destructive">Delete</FormSubmit>
-          </DialogFooter>
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Delete Account</DialogTitle>
+          <DialogText>
+            Argos will <strong>delete all of your Account's projects</strong>,
+            along with all of its Builds, Screenshots, Screenshot Diffs,
+            Settings and other resources belonging to your Account.
+          </DialogText>
+          <DialogText>
+            Argos recommends that you transfer projects you want to keep to a
+            Team before deleting this Account.
+          </DialogText>
+          <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
+            <strong>Warning:</strong> This action is not reversible. Please be
+            certain.
+          </div>
+          <FormTextInput
+            control={form.control}
+            {...form.register("slugConfirm", {
+              validate: (value) => {
+                if (value !== props.userSlug) {
+                  return "Account name does not match";
+                }
+                return true;
+              },
+            })}
+            className="mb-4"
+            autoFocus
+            label={
+              <>
+                Enter the user name <strong>{props.userSlug}</strong> to
+                continue:
+              </>
+            }
+          />
+          <FormTextInput
+            control={form.control}
+            {...form.register("verify", {
+              validate: (value) => {
+                if (value !== "delete my account") {
+                  return "Please type 'delete my account' to confirm";
+                }
+                return true;
+              },
+            })}
+            label={
+              <>
+                To verify, type <strong>delete my account</strong> below:
+              </>
+            }
+          />
+        </DialogBody>
+        <DialogFooter>
+          <FormRootError control={form.control} />
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit control={form.control} variant="destructive">
+            Delete
+          </FormSubmit>
+        </DialogFooter>
+      </Form>
     </Dialog>
   );
 }

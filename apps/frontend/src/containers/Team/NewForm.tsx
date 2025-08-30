@@ -1,7 +1,7 @@
 import { useApolloClient } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { graphql } from "@/gql";
 import { Form } from "@/ui/Form";
@@ -72,32 +72,31 @@ export const TeamNewForm = (props: {
     await createTeamAndRedirect(data);
   };
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={onSubmit}>
-        <FormTextInput
-          {...form.register("name", {
-            required: "Team name is required",
-          })}
-          label="Team Name"
-          autoFocus
-          autoComplete="off"
-        />
-        <p
-          className={clsx(
-            "text-default mt-4 text-sm font-medium",
-            !data && "invisible",
-          )}
-        >
-          {!data?.me?.hasSubscribedToTrial
-            ? "Continue will start a 14-day Pro plan trial"
-            : "You will be redirected to Stripe to complete the subscription"}
-          .
-        </p>
-        <div className="mt-8 flex items-center justify-end gap-4">
-          <FormRootError form={form} />
-          <FormSubmit>Continue</FormSubmit>
-        </div>
-      </Form>
-    </FormProvider>
+    <Form form={form} onSubmit={onSubmit}>
+      <FormTextInput
+        control={form.control}
+        {...form.register("name", {
+          required: "Team name is required",
+        })}
+        label="Team Name"
+        autoFocus
+        autoComplete="off"
+      />
+      <p
+        className={clsx(
+          "text-default mt-4 text-sm font-medium",
+          !data && "invisible",
+        )}
+      >
+        {!data?.me?.hasSubscribedToTrial
+          ? "Continue will start a 14-day Pro plan trial"
+          : "You will be redirected to Stripe to complete the subscription"}
+        .
+      </p>
+      <div className="mt-8 flex items-center justify-end gap-4">
+        <FormRootError control={form.control} />
+        <FormSubmit control={form.control}>Continue</FormSubmit>
+      </div>
+    </Form>
   );
 };

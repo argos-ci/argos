@@ -41,10 +41,7 @@ export function SwitchField<TFieldValues extends FieldValues>(
   props: SwitchFieldProps<TFieldValues>,
 ) {
   const { ref, control, name, ...rest } = props;
-  const { field } = useController({
-    control,
-    name,
-  });
+  const { field } = useController({ control, name });
   const mergedRef = mergeRefs(field.ref, ref);
   return (
     <Switch

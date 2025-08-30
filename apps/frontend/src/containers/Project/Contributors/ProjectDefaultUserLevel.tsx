@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
   Control,
-  FormProvider,
   SubmitHandler,
   useController,
   useForm,
@@ -113,24 +112,24 @@ function ProjectDefaultUserLevelDialog(props: {
   };
   return (
     <Dialog size="medium">
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <DialogBody>
-            <DialogTitle>Set default contributor level</DialogTitle>
-            <DialogText>
-              Set the default access level for team contributors on this
-              project. Team members with the “contributor” role will inherit
-              this access level unless a specific access level is assigned to
-              them for this project.
-            </DialogText>
-            <ProjectDefaultUserLevelField control={form.control} />
-          </DialogBody>
-          <DialogFooter>
-            <DialogDismiss>Close</DialogDismiss>
-            <FormSubmit disableIfPristine>Save</FormSubmit>
-          </DialogFooter>
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Set default contributor level</DialogTitle>
+          <DialogText>
+            Set the default access level for team contributors on this project.
+            Team members with the “contributor” role will inherit this access
+            level unless a specific access level is assigned to them for this
+            project.
+          </DialogText>
+          <ProjectDefaultUserLevelField control={form.control} />
+        </DialogBody>
+        <DialogFooter>
+          <DialogDismiss>Close</DialogDismiss>
+          <FormSubmit control={form.control} disableIfPristine>
+            Save
+          </FormSubmit>
+        </DialogFooter>
+      </Form>
     </Dialog>
   );
 }

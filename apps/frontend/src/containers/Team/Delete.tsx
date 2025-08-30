@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
@@ -93,67 +93,69 @@ function TeamDeleteDialog(props: DeleteTeamButtonProps) {
   };
   return (
     <Dialog size="medium">
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <DialogBody>
-            <DialogTitle>Delete Team</DialogTitle>
-            <DialogText>
-              Argos will <strong>delete all of your Team's projects</strong>,
-              along with all of its Builds, Screenshots, Screenshot Diffs,
-              Settings and other resources belonging to your Team.
-            </DialogText>
-            <DialogText>
-              Your existing subscription will be cancelled, and you will no
-            </DialogText>
-            <DialogText>
-              Argos recommends that you transfer projects you want to keep to
-              another Team before deleting this Team.
-            </DialogText>
-            <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
-              <strong>Warning:</strong> This action is not reversible. Please be
-              certain.
-            </div>
-            <FormTextInput
-              {...form.register("slugConfirm", {
-                validate: (value) => {
-                  if (value !== props.teamSlug) {
-                    return "Team name does not match";
-                  }
-                  return true;
-                },
-              })}
-              className="mb-4"
-              autoFocus
-              label={
-                <>
-                  Enter the team name <strong>{props.teamSlug}</strong> to
-                  continue:
-                </>
-              }
-            />
-            <FormTextInput
-              {...form.register("verify", {
-                validate: (value) => {
-                  if (value !== "delete my team") {
-                    return "Please type 'delete my team' to confirm";
-                  }
-                  return true;
-                },
-              })}
-              label={
-                <>
-                  To verify, type <strong>delete my team</strong> below:
-                </>
-              }
-            />
-          </DialogBody>
-          <DialogFooter>
-            <FormRootError />
-            <DialogDismiss>Cancel</DialogDismiss>
-            <FormSubmit variant="destructive">Delete</FormSubmit>
-          </DialogFooter>
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Delete Team</DialogTitle>
+          <DialogText>
+            Argos will <strong>delete all of your Team's projects</strong>,
+            along with all of its Builds, Screenshots, Screenshot Diffs,
+            Settings and other resources belonging to your Team.
+          </DialogText>
+          <DialogText>
+            Your existing subscription will be cancelled, and you will no
+          </DialogText>
+          <DialogText>
+            Argos recommends that you transfer projects you want to keep to
+            another Team before deleting this Team.
+          </DialogText>
+          <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
+            <strong>Warning:</strong> This action is not reversible. Please be
+            certain.
+          </div>
+          <FormTextInput
+            control={form.control}
+            {...form.register("slugConfirm", {
+              validate: (value) => {
+                if (value !== props.teamSlug) {
+                  return "Team name does not match";
+                }
+                return true;
+              },
+            })}
+            className="mb-4"
+            autoFocus
+            label={
+              <>
+                Enter the team name <strong>{props.teamSlug}</strong> to
+                continue:
+              </>
+            }
+          />
+          <FormTextInput
+            control={form.control}
+            {...form.register("verify", {
+              validate: (value) => {
+                if (value !== "delete my team") {
+                  return "Please type 'delete my team' to confirm";
+                }
+                return true;
+              },
+            })}
+            label={
+              <>
+                To verify, type <strong>delete my team</strong> below:
+              </>
+            }
+          />
+        </DialogBody>
+        <DialogFooter>
+          <FormRootError control={form.control} />
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit control={form.control} variant="destructive">
+            Delete
+          </FormSubmit>
+        </DialogFooter>
+      </Form>
     </Dialog>
   );
 }

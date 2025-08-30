@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { config } from "@/config";
 import { DocumentType, graphql } from "@/gql";
@@ -58,69 +58,68 @@ export const AccountGitLab = (props: {
   };
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <CardTitle id="gitlab">GitLab</CardTitle>
-            <CardParagraph>
-              Setup GitLab to get Argos updates in your merge requests.
-            </CardParagraph>
-            <FormTextInput
-              {...form.register("gitlabAccessToken", {
-                validate: (value) => {
-                  if (value && !/^(glpat-)?[a-zA-Z0-9_-]{20,}$/.test(value)) {
-                    return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9_-]{20,}).";
-                  }
-                  return true;
-                },
-              })}
-              label="Personal access token"
-              disabled={!userIsAdmin}
-              placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
-            />
-            <div className="text-low mt-2 text-sm">
-              The access token is used to update commit status in GitLab. These
-              updates are made on behalf of the user who created the access
-              token. It must have access to the repository you want to integrate
-              with.
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle id="gitlab">GitLab</CardTitle>
+          <CardParagraph>
+            Setup GitLab to get Argos updates in your merge requests.
+          </CardParagraph>
+          <FormTextInput
+            control={form.control}
+            {...form.register("gitlabAccessToken", {
+              validate: (value) => {
+                if (value && !/^(glpat-)?[a-zA-Z0-9_-]{20,}$/.test(value)) {
+                  return "Invalid GitLab personal access token, please be sure to enter a valid one ([a-zA-Z0-9_-]{20,}).";
+                }
+                return true;
+              },
+            })}
+            label="Personal access token"
+            disabled={!userIsAdmin}
+            placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+          />
+          <div className="text-low mt-2 text-sm">
+            The access token is used to update commit status in GitLab. These
+            updates are made on behalf of the user who created the access token.
+            It must have access to the repository you want to integrate with.
+          </div>
+          {account.gitlabBaseUrl && (
+            <div>
+              <h3 className="mb-2 mt-4 font-semibold">
+                On-premise configuration
+              </h3>
+              <FormTextInput
+                control={form.control}
+                {...form.register("gitlabBaseUrl")}
+                label="GitLab proxy URL"
+                readOnly
+              />
+              <div className="text-low mt-2 text-sm">
+                Proxy URL used to connect to your GitLab on-premise instance. If
+                you have any issue with your GitLab on-premise configuration,
+                please contact us{" "}
+                <Link href={`mailto:${config.contactEmail}`} target="_blank">
+                  by email
+                </Link>
+                .
+              </div>
             </div>
-            {account.gitlabBaseUrl && (
-              <div>
-                <h3 className="mb-2 mt-4 font-semibold">
-                  On-premise configuration
-                </h3>
-                <FormTextInput
-                  {...form.register("gitlabBaseUrl")}
-                  label="GitLab proxy URL"
-                  readOnly
-                />
-                <div className="text-low mt-2 text-sm">
-                  Proxy URL used to connect to your GitLab on-premise instance.
-                  If you have any issue with your GitLab on-premise
-                  configuration, please contact us{" "}
-                  <Link href={`mailto:${config.contactEmail}`} target="_blank">
-                    by email
-                  </Link>
-                  .
-                </div>
-              </div>
-            )}
-            {!userIsAdmin && (
-              <div className="mt-4">
-                If you want to setup GitLab integration, please ask your team
-                owner to setup it.
-              </div>
-            )}
-          </CardBody>
-          <FormCardFooter>
-            Learn more about{" "}
-            <Link href="https://argos-ci.com/docs/gitlab" target="_blank">
-              setting up GitLab + Argos integration
-            </Link>
-            .
-          </FormCardFooter>
-        </Form>
-      </FormProvider>
+          )}
+          {!userIsAdmin && (
+            <div className="mt-4">
+              If you want to setup GitLab integration, please ask your team
+              owner to setup it.
+            </div>
+          )}
+        </CardBody>
+        <FormCardFooter control={form.control}>
+          Learn more about{" "}
+          <Link href="https://argos-ci.com/docs/gitlab" target="_blank">
+            setting up GitLab + Argos integration
+          </Link>
+          .
+        </FormCardFooter>
+      </Form>
     </Card>
   );
 };
