@@ -70,10 +70,8 @@ export function Checkbox(props: CheckboxProps) {
 export type CheckboxFieldProps<
   TFieldValues extends FieldValues,
   TName extends Path<TFieldValues>,
-> = Pick<
-  UseControllerProps<TFieldValues, TName>,
-  "control" | "name" | "rules"
-> &
+> = Pick<UseControllerProps<TFieldValues, TName>, "rules"> &
+  Required<Pick<UseControllerProps<TFieldValues, TName>, "control" | "name">> &
   CheckboxProps;
 
 export function CheckboxField<

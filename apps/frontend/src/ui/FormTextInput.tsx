@@ -1,7 +1,12 @@
 import { useId } from "react";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
-import { useFormContext } from "react-hook-form";
+import {
+  useFormState,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form";
 
 import { ErrorMessage } from "./ErrorMessage";
 import { Label } from "./Label";
@@ -13,8 +18,13 @@ import {
 } from "./TextInput";
 import { Tooltip } from "./Tooltip";
 
-interface FormTextInputProps extends TextInputProps {
-  name: string;
+interface FormTextInputProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+> extends Omit<TextInputProps, "form"> {
+  control: Control<TFieldValues, TContext, TTransformedValues>;
+  name: Path<TFieldValues>;
   label: React.ReactNode;
   hiddenLabel?: boolean;
   addon?: React.ReactNode;
@@ -23,7 +33,11 @@ interface FormTextInputProps extends TextInputProps {
   inline?: boolean;
 }
 
-export function FormTextInput({
+export function FormTextInput<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+>({
   label,
   id: idProp,
   hiddenLabel = false,
@@ -34,11 +48,11 @@ export function FormTextInput({
   description,
   orientation = "vertical",
   inline = false,
+  control,
   ...props
-}: FormTextInputProps) {
-  const form = useFormContext();
-  const error = form.getFieldState(name)?.error;
-  const { isSubmitting } = form.formState;
+}: FormTextInputProps<TFieldValues, TContext, TTransformedValues>) {
+  const { isSubmitting } = useFormState({ control });
+  const { error } = control.getFieldState(name);
   const genId = useId();
   const id = idProp || genId;
   const invalid = Boolean(error);

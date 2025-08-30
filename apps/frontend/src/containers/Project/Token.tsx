@@ -1,7 +1,7 @@
 import { ComponentProps, useEffect, useRef } from "react";
 import { useApolloClient } from "@apollo/client";
 import { DialogTrigger } from "react-aria-components";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
@@ -158,42 +158,43 @@ function RegenerateTokenDialog(props: {
   };
   return (
     <Dialog size="medium">
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <DialogBody>
-            <DialogTitle>Regenerate token</DialogTitle>
-            <DialogText>
-              Regenerating the token if you suspect it has been compromised.
-            </DialogText>
-            <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
-              <strong>Warning:</strong> By regenerating the token, the current
-              token will be invalidated immediately.
-            </div>
-            <FormTextInput
-              {...form.register("slug", {
-                validate: (value) => {
-                  if (value !== projectSlug) {
-                    return "Project name does not match";
-                  }
-                  return true;
-                },
-              })}
-              autoFocus
-              className="mb-4"
-              label={
-                <>
-                  Enter the project name <strong>{projectSlug}</strong> to
-                  continue:
-                </>
-              }
-            />
-          </DialogBody>
-          <DialogFooter>
-            <DialogDismiss>Cancel</DialogDismiss>
-            <FormSubmit variant="destructive">Regenerate</FormSubmit>
-          </DialogFooter>
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Regenerate token</DialogTitle>
+          <DialogText>
+            Regenerating the token if you suspect it has been compromised.
+          </DialogText>
+          <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
+            <strong>Warning:</strong> By regenerating the token, the current
+            token will be invalidated immediately.
+          </div>
+          <FormTextInput
+            control={form.control}
+            {...form.register("slug", {
+              validate: (value) => {
+                if (value !== projectSlug) {
+                  return "Project name does not match";
+                }
+                return true;
+              },
+            })}
+            autoFocus
+            className="mb-4"
+            label={
+              <>
+                Enter the project name <strong>{projectSlug}</strong> to
+                continue:
+              </>
+            }
+          />
+        </DialogBody>
+        <DialogFooter>
+          <DialogDismiss>Cancel</DialogDismiss>
+          <FormSubmit control={form.control} variant="destructive">
+            Regenerate
+          </FormSubmit>
+        </DialogFooter>
+      </Form>
     </Dialog>
   );
 }

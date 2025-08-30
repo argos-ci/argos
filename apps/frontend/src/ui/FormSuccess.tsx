@@ -1,24 +1,39 @@
-import { HTMLProps } from "react";
+import type { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 import { CheckIcon } from "lucide-react";
-import { useFormContext } from "react-hook-form";
+import { useFormState, type Control, type FieldValues } from "react-hook-form";
 
-export const FormSuccess = ({
+interface FormSuccessProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+> extends ComponentPropsWithRef<"div"> {
+  control: Control<TFieldValues, TContext, TTransformedValues>;
+  isSuccessful?: boolean;
+}
+
+export function FormSuccess<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+>({
   className,
   children,
   isSuccessful,
   ...props
-}: HTMLProps<HTMLDivElement> & { isSuccessful?: boolean }) => {
-  const { formState } = useFormContext();
+}: FormSuccessProps<TFieldValues, TContext, TTransformedValues>) {
+  const { control, ...rest } = props;
+  const formState = useFormState({ control });
   if (!isSuccessful && !formState.isSubmitSuccessful) {
     return null;
   }
   return (
     <div
       className={clsx(className, "flex items-center gap-2 font-medium")}
-      {...props}
+      {...rest}
     >
-      <CheckIcon className="text-success size-4" /> {children}
+      <CheckIcon className="text-success size-4" />
+      {children}
     </div>
   );
-};
+}

@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { InfoIcon } from "lucide-react";
-import { FieldValues, useFormContext } from "react-hook-form";
+import { FieldValues, useWatch } from "react-hook-form";
 
 import { Label } from "./Label";
 import { SwitchField, SwitchFieldProps } from "./Switch";
@@ -19,8 +19,10 @@ export function FormSwitch<TFieldValues extends FieldValues>({
 }) {
   const genId = useId();
   const id = idProp ?? genId;
-  const form = useFormContext();
-  const value = form.watch(props.name);
+  const value = useWatch({
+    name: props.name,
+    control: props.control,
+  });
   return (
     <div className={className}>
       <Label htmlFor={id} className="text-low text-sm font-medium">

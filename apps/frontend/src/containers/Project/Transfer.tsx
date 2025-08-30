@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useApolloClient } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
@@ -222,105 +222,104 @@ const ReviewStep = (props: ReviewStepProps) => {
   };
   return (
     <>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <DialogBody>
-            <DialogTitle>Transfer Project</DialogTitle>
-            <div className="my-10 flex justify-around gap-10 text-center">
-              <div className="flex flex-1 flex-col items-center">
-                <AccountAvatar avatar={actualAccount.avatar} size={64} />
-                <div className="mt-2 text-xl">
-                  {actualAccount.name || actualAccount.slug}
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <ArrowRightCircleIcon
-                  className="text-low"
-                  style={{ width: 64, height: 64 }}
-                />
-              </div>
-              <div className="flex flex-1 flex-col items-center">
-                <AccountAvatar avatar={targetAccount.avatar} size={64} />
-                <div className="mt-2 text-xl">
-                  {targetAccount.name || targetAccount.slug}
-                </div>
+      <Form form={form} onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Transfer Project</DialogTitle>
+          <div className="my-10 flex justify-around gap-10 text-center">
+            <div className="flex flex-1 flex-col items-center">
+              <AccountAvatar avatar={actualAccount.avatar} size={64} />
+              <div className="mt-2 text-xl">
+                {actualAccount.name || actualAccount.slug}
               </div>
             </div>
-            <div className="my-8">
-              <FormTextInput
-                {...form.register("name", {
-                  required: "Project name is required",
-                })}
-                label="New Project name"
+            <div className="flex items-center justify-center">
+              <ArrowRightCircleIcon
+                className="text-low"
+                style={{ width: 64, height: 64 }}
               />
             </div>
-            {(() => {
-              if (!data) {
-                return <DialogText>Loading...</DialogText>;
-              }
-              const project = data.projectById;
-              invariant(
-                project && data.actualAccount && data.targetAccount,
-                "data not found",
-              );
-              const buildCount = project.builds.pageInfo.totalCount;
-              const screenshotCount = project.totalScreenshots;
-              const samePlan =
-                data.actualAccount.plan?.id === data.targetAccount.plan?.id;
-              return (
-                <>
-                  <DialogText>
-                    The following elements will be transfered:
-                  </DialogText>
-                  <ul className="list-disc pl-4">
-                    {buildCount > 0 ? (
-                      <li>
-                        {buildCount} build{buildCount > 1 && "s"}
-                      </li>
-                    ) : (
-                      <li>No build</li>
-                    )}
-                    {screenshotCount > 0 ? (
-                      <li>
-                        {screenshotCount} screenshot{screenshotCount > 1 && "s"}
-                      </li>
-                    ) : (
-                      <li>No screenshots</li>
-                    )}
-                  </ul>
-                  {samePlan ? (
-                    <DialogText>
-                      <strong>
-                        Both accounts are on the same plan
-                        {data.actualAccount.plan
-                          ? ` (${data.actualAccount.plan.displayName})`
-                          : ""}
-                        .
-                      </strong>{" "}
-                      The project will be transfered without any change to the
-                      plan.
-                    </DialogText>
+            <div className="flex flex-1 flex-col items-center">
+              <AccountAvatar avatar={targetAccount.avatar} size={64} />
+              <div className="mt-2 text-xl">
+                {targetAccount.name || targetAccount.slug}
+              </div>
+            </div>
+          </div>
+          <div className="my-8">
+            <FormTextInput
+              control={form.control}
+              {...form.register("name", {
+                required: "Project name is required",
+              })}
+              label="New Project name"
+            />
+          </div>
+          {(() => {
+            if (!data) {
+              return <DialogText>Loading...</DialogText>;
+            }
+            const project = data.projectById;
+            invariant(
+              project && data.actualAccount && data.targetAccount,
+              "data not found",
+            );
+            const buildCount = project.builds.pageInfo.totalCount;
+            const screenshotCount = project.totalScreenshots;
+            const samePlan =
+              data.actualAccount.plan?.id === data.targetAccount.plan?.id;
+            return (
+              <>
+                <DialogText>
+                  The following elements will be transfered:
+                </DialogText>
+                <ul className="list-disc pl-4">
+                  {buildCount > 0 ? (
+                    <li>
+                      {buildCount} build{buildCount > 1 && "s"}
+                    </li>
                   ) : (
-                    <DialogText>
-                      The project is actually on the plan{" "}
-                      {data.actualAccount.plan?.displayName ?? `"no plan"`}. The
-                      project will be transfered to the target account and the
-                      plan will be changed to{" "}
-                      {data.targetAccount.plan?.displayName ?? `"no plan"`}.
-                    </DialogText>
+                    <li>No build</li>
                   )}
-                </>
-              );
-            })()}
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="secondary" onPress={props.onBack}>
-              Back
-            </Button>
-            <FormSubmit>Transfer</FormSubmit>
-          </DialogFooter>
-        </Form>
-      </FormProvider>
+                  {screenshotCount > 0 ? (
+                    <li>
+                      {screenshotCount} screenshot{screenshotCount > 1 && "s"}
+                    </li>
+                  ) : (
+                    <li>No screenshots</li>
+                  )}
+                </ul>
+                {samePlan ? (
+                  <DialogText>
+                    <strong>
+                      Both accounts are on the same plan
+                      {data.actualAccount.plan
+                        ? ` (${data.actualAccount.plan.displayName})`
+                        : ""}
+                      .
+                    </strong>{" "}
+                    The project will be transfered without any change to the
+                    plan.
+                  </DialogText>
+                ) : (
+                  <DialogText>
+                    The project is actually on the plan{" "}
+                    {data.actualAccount.plan?.displayName ?? `"no plan"`}. The
+                    project will be transfered to the target account and the
+                    plan will be changed to{" "}
+                    {data.targetAccount.plan?.displayName ?? `"no plan"`}.
+                  </DialogText>
+                )}
+              </>
+            );
+          })()}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="secondary" onPress={props.onBack}>
+            Back
+          </Button>
+          <FormSubmit control={form.control}>Transfer</FormSubmit>
+        </DialogFooter>
+      </Form>
     </>
   );
 };

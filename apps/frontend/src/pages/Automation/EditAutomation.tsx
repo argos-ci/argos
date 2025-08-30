@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { CheckCircle2Icon, CircleDotIcon, XCircleIcon } from "lucide-react";
 import { DialogTrigger, Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { SettingsPage } from "@/containers/Layout";
@@ -169,72 +169,70 @@ function EditAutomationForm(props: {
 
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <div className="flex flex-col gap-6">
-              <AutomationNameField form={form} />
-              <AutomationWhenStep form={form} />
-              <AutomationConditionsStep
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <div className="flex flex-col gap-6">
+            <AutomationNameField form={form} />
+            <AutomationWhenStep form={form} />
+            <AutomationConditionsStep
+              form={form}
+              projectBuildNames={project.buildNames}
+            />
+            <AutomationActionsStep form={form} />
+            <div>
+              <TestAutomationButton
                 form={form}
-                projectBuildNames={project.buildNames}
+                projectId={project.id}
+                isDisabled={!hasEditPermission || form.formState.isSubmitting}
               />
-              <AutomationActionsStep form={form} />
-              <div>
-                <TestAutomationButton
-                  form={form}
-                  projectId={project.id}
-                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
-                />
-              </div>
-              <FormRootError form={form} />
             </div>
-          </CardBody>
+            <FormRootError control={form.control} />
+          </div>
+        </CardBody>
 
-          <CardFooter>
-            <div className="flex items-center gap-2">
-              <div className="flex flex-1">
-                <DialogTrigger>
-                  <Button variant="destructive">Delete</Button>
-                  <Modal>
-                    <DeleteAutomationDialog
-                      automationRuleId={automationRule.id}
-                      projectId={project.id}
-                      onCompleted={() => {
-                        navigate(`${getProjectURL(params)}/automations`, {
-                          replace: true,
-                        });
-                      }}
-                    />
-                  </Modal>
-                </DialogTrigger>
-              </div>
-              <LinkButton
-                href={`${getProjectURL(params)}/automations`}
-                variant="secondary"
-                className="order-2"
-              >
-                {hasEditPermission ? "Cancel" : "Back"}
-              </LinkButton>
-              <Tooltip
-                content={
-                  hasEditPermission
-                    ? ""
-                    : "You don't have permission to edit this automation."
-                }
-              >
-                <Button
-                  type="submit"
-                  isDisabled={!hasEditPermission || form.formState.isSubmitting}
-                  className="order-3"
-                >
-                  Save Changes
-                </Button>
-              </Tooltip>
+        <CardFooter>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1">
+              <DialogTrigger>
+                <Button variant="destructive">Delete</Button>
+                <Modal>
+                  <DeleteAutomationDialog
+                    automationRuleId={automationRule.id}
+                    projectId={project.id}
+                    onCompleted={() => {
+                      navigate(`${getProjectURL(params)}/automations`, {
+                        replace: true,
+                      });
+                    }}
+                  />
+                </Modal>
+              </DialogTrigger>
             </div>
-          </CardFooter>
-        </Form>
-      </FormProvider>
+            <LinkButton
+              href={`${getProjectURL(params)}/automations`}
+              variant="secondary"
+              className="order-2"
+            >
+              {hasEditPermission ? "Cancel" : "Back"}
+            </LinkButton>
+            <Tooltip
+              content={
+                hasEditPermission
+                  ? ""
+                  : "You don't have permission to edit this automation."
+              }
+            >
+              <Button
+                type="submit"
+                isDisabled={!hasEditPermission || form.formState.isSubmitting}
+                className="order-3"
+              >
+                Save Changes
+              </Button>
+            </Tooltip>
+          </div>
+        </CardFooter>
+      </Form>
     </Card>
   );
 }

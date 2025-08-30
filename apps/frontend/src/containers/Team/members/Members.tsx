@@ -4,6 +4,17 @@ import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { useNavigate } from "react-router-dom";
 
+import { AccountAvatar } from "@/containers/AccountAvatar";
+import {
+  useAssertAuthTokenPayload,
+  useAuthTokenPayload,
+} from "@/containers/Auth";
+import { GithubAccountLink } from "@/containers/GithubAccountLink";
+import {
+  RemoveMenu,
+  TeamMemberLabel,
+  UserListRow,
+} from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -39,11 +50,7 @@ import { Switch } from "@/ui/Switch";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
-import { AccountAvatar } from "../AccountAvatar";
-import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
-import { GithubAccountLink } from "../GithubAccountLink";
-import { RemoveMenu, TeamMemberLabel, UserListRow } from "../UserList";
-import { InviteLinkDialog } from "./members/InviteLink";
+import { InviteLinkDialog } from "./InviteLink";
 
 const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
@@ -679,9 +686,9 @@ function ShowPendingSwitch(props: {
   );
 }
 
-export const TeamMembers = (props: {
+export function TeamMembers(props: {
   team: DocumentType<typeof _TeamFragment>;
-}) => {
+}) {
   const { team } = props;
   const authPayload = useAssertAuthTokenPayload();
   const [removedUser, setRemovedUser] = useState<RemovedUser | null>(null);
@@ -761,4 +768,4 @@ export const TeamMembers = (props: {
       </CardFooter>
     </Card>
   );
-};
+}

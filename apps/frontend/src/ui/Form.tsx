@@ -2,7 +2,7 @@ import { ApolloError } from "@apollo/client";
 import type { ErrorCode } from "@argos/error-types";
 import {
   SubmitHandler,
-  useFormContext,
+  type FieldValues,
   type UseFormReturn,
 } from "react-hook-form";
 
@@ -30,15 +30,17 @@ function unwrapErrors(error: unknown) {
   ];
 }
 
-export function Form({
-  ref,
-  onSubmit,
-  autoComplete = "off",
-  ...props
-}: Omit<React.ComponentPropsWithRef<"form">, "onSubmit"> & {
-  onSubmit: SubmitHandler<any>;
-}) {
-  const form = useFormContext();
+export function Form<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+>(
+  props: Omit<React.ComponentPropsWithRef<"form">, "onSubmit"> & {
+    form: UseFormReturn<TFieldValues, TContext, TTransformedValues>;
+    onSubmit: SubmitHandler<TTransformedValues>;
+  },
+) {
+  const { ref, onSubmit, autoComplete = "off", form, ...rest } = props;
   return (
     <form
       ref={ref}
@@ -51,7 +53,7 @@ export function Form({
         }
       })}
       autoComplete={autoComplete}
-      {...props}
+      {...rest}
     />
   );
 }

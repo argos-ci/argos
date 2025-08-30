@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
@@ -52,26 +52,25 @@ export const AccountChangeName = (props: {
   };
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <CardTitle>{props.title}</CardTitle>
-            <CardParagraph>{props.description}</CardParagraph>
-            <FormTextInput
-              {...form.register("name", {
-                required: "Please enter a name",
-                maxLength: {
-                  value: 40,
-                  message: "Name must be 40 characters or less",
-                },
-              })}
-              label="Name"
-              hiddenLabel
-            />
-          </CardBody>
-          <FormCardFooter />
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle>{props.title}</CardTitle>
+          <CardParagraph>{props.description}</CardParagraph>
+          <FormTextInput
+            control={form.control}
+            {...form.register("name", {
+              required: "Please enter a name",
+              maxLength: {
+                value: 40,
+                message: "Name must be 40 characters or less",
+              },
+            })}
+            label="Name"
+            hiddenLabel
+          />
+        </CardBody>
+        <FormCardFooter control={form.control} />
+      </Form>
     </Card>
   );
 };

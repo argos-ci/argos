@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { TeamDefaultUserLevel } from "@/gql/graphql";
@@ -58,54 +58,52 @@ export function TeamAccessRole(props: {
 
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <CardTitle>Default access role</CardTitle>
-            <CardParagraph>
-              Choose the role assigned to members who are either invited to the
-              Team or synchronized from Single Sign-On (SSO).
-            </CardParagraph>
-            <FormRadioGroup>
-              <FormRadio
-                {...form.register("level")}
-                value="member"
-                label={
-                  <div className="ml-2">
-                    Member
-                    <p className="text-low text-sm font-normal">
-                      New members will have access to all projects.
-                    </p>
-                  </div>
-                }
-              />
-              <FormRadio
-                {...form.register("level")}
-                value="contributor"
-                label={
-                  <div className="ml-2">
-                    Contributor
-                    <p className="text-low text-sm font-normal">
-                      New members will not have access to any projects until you
-                      add them to a project.
-                    </p>
-                  </div>
-                }
-              />
-            </FormRadioGroup>
-          </CardBody>
-          <FormCardFooter>
-            Learn more about{" "}
-            <Link
-              href="https://argos-ci.com/docs/team-members-and-roles"
-              target="_blank"
-            >
-              access roles
-            </Link>
-            .
-          </FormCardFooter>
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle>Default access role</CardTitle>
+          <CardParagraph>
+            Choose the role assigned to members who are either invited to the
+            Team or synchronized from Single Sign-On (SSO).
+          </CardParagraph>
+          <FormRadioGroup>
+            <FormRadio
+              {...form.register("level")}
+              value="member"
+              label={
+                <div className="ml-2">
+                  Member
+                  <p className="text-low text-sm font-normal">
+                    New members will have access to all projects.
+                  </p>
+                </div>
+              }
+            />
+            <FormRadio
+              {...form.register("level")}
+              value="contributor"
+              label={
+                <div className="ml-2">
+                  Contributor
+                  <p className="text-low text-sm font-normal">
+                    New members will not have access to any projects until you
+                    add them to a project.
+                  </p>
+                </div>
+              }
+            />
+          </FormRadioGroup>
+        </CardBody>
+        <FormCardFooter control={form.control}>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/team-members-and-roles"
+            target="_blank"
+          >
+            access roles
+          </Link>
+          .
+        </FormCardFooter>
+      </Form>
     </Card>
   );
 }

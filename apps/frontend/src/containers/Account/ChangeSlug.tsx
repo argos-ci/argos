@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
@@ -56,31 +56,30 @@ export const AccountChangeSlug = (props: {
   };
   return (
     <Card>
-      <FormProvider {...form}>
-        <Form onSubmit={onSubmit}>
-          <CardBody>
-            <CardTitle>{props.title}</CardTitle>
-            <CardParagraph>{props.description}</CardParagraph>
-            <FormTextInput
-              {...form.register("slug", {
-                required: "Please enter a slug",
-                maxLength: {
-                  value: 48,
-                  message: "Account slugs must be 48 characters or less",
-                },
-                pattern: {
-                  value: /^[-a-z0-9]+$/,
-                  message:
-                    "Account slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
-                },
-              })}
-              label="URL namespace"
-              hiddenLabel
-            />
-          </CardBody>
-          <FormCardFooter />
-        </Form>
-      </FormProvider>
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle>{props.title}</CardTitle>
+          <CardParagraph>{props.description}</CardParagraph>
+          <FormTextInput
+            control={form.control}
+            {...form.register("slug", {
+              required: "Please enter a slug",
+              maxLength: {
+                value: 48,
+                message: "Account slugs must be 48 characters or less",
+              },
+              pattern: {
+                value: /^[-a-z0-9]+$/,
+                message:
+                  "Account slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
+              },
+            })}
+            label="URL namespace"
+            hiddenLabel
+          />
+        </CardBody>
+        <FormCardFooter control={form.control} />
+      </Form>
     </Card>
   );
 };

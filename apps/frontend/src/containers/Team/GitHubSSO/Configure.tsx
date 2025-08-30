@@ -1,11 +1,12 @@
 import { useApolloClient } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
 import {
-  FormProvider,
   SubmitHandler,
   useController,
   useForm,
-  useFormContext,
+  type Control,
+  type FieldValues,
+  type Path,
 } from "react-hook-form";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
@@ -63,9 +64,18 @@ const query = graphql(`
   }
 `);
 
-function GitHubInstallationsSelectControl(props: { teamAccountId: string }) {
+function GitHubInstallationsSelectControl<
+  TFieldValues extends FieldValues = FieldValues,
+  TContext = any,
+  TTransformedValues = TFieldValues,
+>(props: {
+  name: Path<TFieldValues>;
+  teamAccountId: string;
+  control: Control<TFieldValues, TContext, TTransformedValues>;
+}) {
+  const { teamAccountId, control, name } = props;
   const { data } = useSafeQuery(query, {
-    variables: { teamAccountId: props.teamAccountId },
+    variables: { teamAccountId },
   });
   const installations = (() => {
     if (!data) {
@@ -83,10 +93,9 @@ function GitHubInstallationsSelectControl(props: { teamAccountId: string }) {
     invariant(data.teamAccount?.__typename === "Team", "Expected teamAccount");
     return data.teamAccount.githubLightInstallation ? "light" : "main";
   })();
-  const form = useFormContext();
   const controller = useController({
-    name: "ghInstallationId",
-    control: form.control,
+    name,
+    control,
     rules: { required: "Please select a GitHub account" },
   });
   const installation = (() => {
@@ -171,50 +180,52 @@ function ActiveConfigureSSOForm(props: {
     state.close();
   };
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={onSubmit}>
-        <DialogBody>
-          <DialogTitle>Enable GitHub Single Sign-On</DialogTitle>
-          <DialogText className="mb-8">
-            Choose a GitHub Organization to enable GitHub Single Sign-On. People
-            from your GitHub organization will be automatically added to your
-            Argos Team. You will be able to configure role for each Team member.
-          </DialogText>
-          <GitHubInstallationsSelectControl
-            teamAccountId={props.teamAccountId}
-          />
-          {props.priced ? (
-            <>
-              <div className="my-8">
-                By clicking <strong>Enable and Pay</strong>, the amount of{" "}
-                <strong>${GITHUB_SSO_PRICING}</strong> will be added to your
-                invoice and your credit card will be charged at the end of your
-                next billing cycle.
-              </div>
-              <div className="text-low my-2 flex justify-between font-bold">
-                <div>GitHub Single Sign-On</div>
-                <div>${GITHUB_SSO_PRICING} / month</div>
-              </div>
-              <hr className="my-2 border-0 border-t" />
-              <div className="my-2 flex justify-between font-bold">
-                <div>Total</div>
-                <div>${GITHUB_SSO_PRICING} / month</div>
-              </div>
-            </>
-          ) : (
+    <Form form={form} onSubmit={onSubmit}>
+      <DialogBody>
+        <DialogTitle>Enable GitHub Single Sign-On</DialogTitle>
+        <DialogText className="mb-8">
+          Choose a GitHub Organization to enable GitHub Single Sign-On. People
+          from your GitHub organization will be automatically added to your
+          Argos Team. You will be able to configure role for each Team member.
+        </DialogText>
+        <GitHubInstallationsSelectControl
+          control={form.control}
+          name="ghInstallationId"
+          teamAccountId={props.teamAccountId}
+        />
+        {props.priced ? (
+          <>
             <div className="my-8">
-              By clicking <strong>Enable</strong>, you will enable the GitHub
-              Single Sign-On feature for your Team.
+              By clicking <strong>Enable and Pay</strong>, the amount of{" "}
+              <strong>${GITHUB_SSO_PRICING}</strong> will be added to your
+              invoice and your credit card will be charged at the end of your
+              next billing cycle.
             </div>
-          )}
-        </DialogBody>
-        <DialogFooter>
-          <FormRootError form={form} />
-          <DialogDismiss>Cancel</DialogDismiss>
-          <FormSubmit>{props.priced ? "Enable and Pay" : "Enable"}</FormSubmit>
-        </DialogFooter>
-      </Form>
-    </FormProvider>
+            <div className="text-low my-2 flex justify-between font-bold">
+              <div>GitHub Single Sign-On</div>
+              <div>${GITHUB_SSO_PRICING} / month</div>
+            </div>
+            <hr className="my-2 border-0 border-t" />
+            <div className="my-2 flex justify-between font-bold">
+              <div>Total</div>
+              <div>${GITHUB_SSO_PRICING} / month</div>
+            </div>
+          </>
+        ) : (
+          <div className="my-8">
+            By clicking <strong>Enable</strong>, you will enable the GitHub
+            Single Sign-On feature for your Team.
+          </div>
+        )}
+      </DialogBody>
+      <DialogFooter>
+        <FormRootError control={form.control} />
+        <DialogDismiss>Cancel</DialogDismiss>
+        <FormSubmit control={form.control}>
+          {props.priced ? "Enable and Pay" : "Enable"}
+        </FormSubmit>
+      </DialogFooter>
+    </Form>
   );
 }
 

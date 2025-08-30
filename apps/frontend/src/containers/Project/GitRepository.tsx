@@ -1,5 +1,5 @@
 import { useApolloClient, useMutation } from "@apollo/client";
-import { FormProvider, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
@@ -227,19 +227,17 @@ const GitOptionsForm = ({
   };
 
   return (
-    <FormProvider {...form}>
-      <Form onSubmit={onSubmit}>
-        <div className="mx-4 mb-4">
-          <FormSwitch
-            name="enabled"
-            control={form.control}
-            label="Pull request comments"
-            description="When enabled, comments will be posted on pull requests with the status of the Argos builds."
-          />
-        </div>
-        <FormCardFooter />
-      </Form>
-    </FormProvider>
+    <Form form={form} onSubmit={onSubmit}>
+      <div className="mx-4 mb-4">
+        <FormSwitch
+          name="enabled"
+          control={form.control}
+          label="Pull request comments"
+          description="When enabled, comments will be posted on pull requests with the status of the Argos builds."
+        />
+      </div>
+      <FormCardFooter control={form.control} />
+    </Form>
   );
 };
 
