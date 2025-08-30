@@ -15,8 +15,8 @@ import { PageLoader } from "@/ui/PageLoader";
 import { getAccountURL } from "./Account/AccountParams";
 
 const InvitationQuery = graphql(`
-  query Invite_invitation($token: String!) {
-    invitation(token: $token) {
+  query Invite_invitation($secret: String!) {
+    invitation(secret: $secret) {
       id
       name
       slug
@@ -35,22 +35,19 @@ const InvitationQuery = graphql(`
 `);
 
 const AcceptInvitationMutation = graphql(`
-  mutation Invite_acceptInvitation($token: String!) {
-    acceptInvitation(token: $token) {
+  mutation Invite_acceptInvitation($secret: String!) {
+    acceptInvitation(secret: $secret) {
       id
       slug
     }
   }
 `);
 
-const JoinTeamButton = (props: {
-  token: string;
-  children: React.ReactNode;
-}) => {
+function JoinTeamButton(props: { secret: string; children: React.ReactNode }) {
   const navigate = useNavigate();
   const [accept, { data, loading }] = useMutation(AcceptInvitationMutation, {
     variables: {
-      token: props.token,
+      secret: props.secret,
     },
     onCompleted(data) {
       const team = data.acceptInvitation;
@@ -68,18 +65,16 @@ const JoinTeamButton = (props: {
       {props.children}
     </Button>
   );
-};
+}
 
 /** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
   const params = useParams();
-  const token = params.inviteToken;
-  invariant(token, "no invite token");
+  const secret = params.inviteSecret;
+  invariant(secret, "no invite secret");
   const { data } = useSafeQuery(InvitationQuery, {
-    variables: {
-      token,
-    },
+    variables: { secret },
   });
 
   const team = data?.invitation;
@@ -141,7 +136,7 @@ export function Component() {
                     Let's use Argos to review visual differences in your
                     applications.
                   </p>
-                  <JoinTeamButton token={token}>
+                  <JoinTeamButton secret={secret}>
                     Join {teamTitle}
                   </JoinTeamButton>
                 </div>

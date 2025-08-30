@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
-import { getGraphQLErrorMessage } from "@/ui/Form";
+import { getErrorMessage } from "@/util/error";
 
 type SendUserEmailVerificationButtonProps = {
   email: string;
@@ -39,7 +39,7 @@ export function SendUserEmailVerificationButton(
         });
       },
       onError: (error) => {
-        toast.error(getGraphQLErrorMessage(error));
+        toast.error(getErrorMessage(error));
       },
     },
   );

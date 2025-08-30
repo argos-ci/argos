@@ -603,7 +603,7 @@ enum MetricsPeriod {
 
 type Mutation {
   """Accept an invitation to join a team"""
-  acceptInvitation(token: String!): Team!
+  acceptInvitation(secret: String!): Team!
 
   """Add contributor to project"""
   addOrUpdateProjectContributor(input: AddContributorToProjectInput!): ProjectContributor!
@@ -670,6 +670,9 @@ type Mutation {
 
   """Remove a user from a team"""
   removeUserFromTeam(input: RemoveUserFromTeamInput!): RemoveUserFromTeamPayload!
+
+  """Reset invite link"""
+  resetInviteLink(input: ResetInviteLinkInput!): Team!
   reviewBuild(input: ReviewBuildInput!): Build!
 
   """Send a verification email for a unverified email"""
@@ -866,7 +869,7 @@ type Query {
   automationRule(id: String!): AutomationRule
   ghApiInstallationRepositories(fromAuthUser: Boolean!, installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
   glApiProjects(accountId: ID!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
-  invitation(token: String!): Team
+  invitation(secret: String!): Team
 
   """Get the authenticated user"""
   me: User
@@ -906,6 +909,10 @@ interface Repository implements Node {
   id: ID!
   private: Boolean!
   url: String!
+}
+
+input ResetInviteLinkInput {
+  teamAccountId: ID!
 }
 
 input ReviewBuildInput {

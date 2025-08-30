@@ -15,8 +15,8 @@ import {
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
-import { getGraphQLErrorMessage } from "@/ui/Form";
 import { List } from "@/ui/List";
+import { getErrorMessage } from "@/util/error";
 
 import { removeContributor } from "./operations";
 
@@ -66,9 +66,7 @@ export const LeaveProjectDialog = memo(
           <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>
         <DialogFooter>
-          {error && (
-            <ErrorMessage>{getGraphQLErrorMessage(error)}</ErrorMessage>
-          )}
+          {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
             isDisabled={loading}

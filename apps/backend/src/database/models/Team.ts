@@ -1,5 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
-import type { RelationExpression, RelationMappings } from "objection";
+import type { RelationMappings } from "objection";
 
 import config from "@/config/index.js";
 
@@ -96,62 +96,30 @@ export class Team extends Model {
   owners?: User[];
   ssoGithubAccount?: GithubAccount | null;
 
-  static generateInviteToken(payload: {
-    teamId: string;
-    secret: string;
-  }): string {
-    return Buffer.from(JSON.stringify(payload)).toString("base64url");
+  /**
+   * Generate the invitation secret.
+   */
+  static async generateInviteSecret() {
+    return generateRandomHexString(20);
   }
 
-  static parseInviteToken(
-    token: string,
-  ): { teamId: string; secret: string } | null {
-    const raw = Buffer.from(token, "base64url").toString("utf8");
-    try {
-      const payload = JSON.parse(raw);
-      if (typeof payload.teamId !== "string") {
-        return null;
-      }
-      if (typeof payload.secret !== "string") {
-        return null;
-      }
-      return {
-        teamId: payload.teamId,
-        secret: payload.secret,
-      };
-    } catch {
-      return null;
+  /**
+   * Generate an invitation link for the team.
+   */
+  async $getInviteLink() {
+    if (!this.inviteSecret) {
+      this.inviteSecret = await Team.generateInviteSecret();
+      await Team.query()
+        .findById(this.id)
+        .patch({ inviteSecret: this.inviteSecret });
     }
+    return new URL(`/invite/${this.inviteSecret}`, config.get("server.url"))
+      .href;
   }
 
-  static async verifyInviteToken(
-    token: string,
-    options: {
-      withGraphFetched?: RelationExpression<Team>;
-    } = {},
-  ): Promise<Team | null> {
-    const payload = Team.parseInviteToken(token);
-    if (!payload) {
-      return null;
-    }
-    const teamQuery = Team.query().findById(payload.teamId);
-
-    if (options?.withGraphFetched) {
-      teamQuery.withGraphFetched(options.withGraphFetched);
-    }
-
-    const team = await teamQuery;
-
-    if (!team) {
-      return null;
-    }
-
-    if (team.inviteSecret !== payload.secret) {
-      return null;
-    }
-    return team;
-  }
-
+  /**
+   * Get permissions for a user in a team.
+   */
   static async getPermissions(
     teamId: string,
     user: User | null,
@@ -191,20 +159,5 @@ export class Team extends Model {
       .select("userId")
       .where({ teamId, userLevel: "owner" });
     return teamUsers.map((teamUser) => teamUser.userId);
-  }
-
-  async $getInviteLink() {
-    if (!this.inviteSecret) {
-      this.inviteSecret = await generateRandomHexString(20);
-      await Team.query()
-        .findById(this.id)
-        .patch({ inviteSecret: this.inviteSecret });
-    }
-    const payload = {
-      teamId: this.id,
-      secret: this.inviteSecret,
-    };
-    const token = Team.generateInviteToken(payload);
-    return new URL(`/invite/${token}`, config.get("server.url")).href;
   }
 }

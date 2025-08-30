@@ -14,7 +14,6 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
-import { CopyButton } from "@/ui/CopyButton";
 import {
   Dialog,
   DialogBody,
@@ -26,7 +25,6 @@ import {
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
-import { getGraphQLErrorMessage } from "@/ui/Form";
 import { List, ListRow, ListTitle } from "@/ui/List";
 import {
   ListBox,
@@ -39,11 +37,13 @@ import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { Switch } from "@/ui/Switch";
 import { Tooltip } from "@/ui/Tooltip";
+import { getErrorMessage } from "@/util/error";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { useAssertAuthTokenPayload, useAuthTokenPayload } from "../Auth";
 import { GithubAccountLink } from "../GithubAccountLink";
 import { RemoveMenu, TeamMemberLabel, UserListRow } from "../UserList";
+import { InviteLinkDialog } from "./members/InviteLink";
 
 const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
@@ -133,6 +133,7 @@ const _TeamFragment = graphql(`
       id
       level
     }
+    ...InviteLinkDialog_Team
   }
 `);
 
@@ -180,9 +181,7 @@ const LeaveTeamDialog = memo(
           <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>
         <DialogFooter>
-          {error && (
-            <ErrorMessage>{getGraphQLErrorMessage(error)}</ErrorMessage>
-          )}
+          {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
           <DialogDismiss>Cancel</DialogDismiss>
           <Button
             isDisabled={loading}
@@ -368,39 +367,6 @@ function LevelSelect(props: {
         </ListBox>
       </Popover>
     </Select>
-  );
-}
-
-function InviteLinkButton(props: { inviteLink: string }) {
-  return (
-    <DialogTrigger>
-      <Button variant="secondary">Invite Link</Button>
-      <Modal>
-        <Dialog>
-          <DialogBody>
-            <DialogTitle>Invite Link</DialogTitle>
-            <DialogText>
-              Share this link with your friends to invite them to your team.
-            </DialogText>
-
-            <div className="flex gap-2 rounded-sm border p-2">
-              <pre className="w-0 flex-1 overflow-auto">
-                <code>{props.inviteLink}</code>
-              </pre>
-              <CopyButton text={props.inviteLink} />
-            </div>
-
-            <DialogText>
-              <strong>Warning:</strong> Anyone with this link will be able to
-              join your team.
-            </DialogText>
-          </DialogBody>
-          <DialogFooter>
-            <DialogDismiss single>OK</DialogDismiss>
-          </DialogFooter>
-        </Dialog>
-      </Modal>
-    </DialogTrigger>
   );
 }
 
@@ -780,7 +746,12 @@ export const TeamMembers = (props: {
         {team.inviteLink ? (
           <>
             <div>Invite people to collaborate in the Team.</div>
-            <InviteLinkButton inviteLink={team.inviteLink} />
+            <DialogTrigger>
+              <Button variant="secondary">Invite Link</Button>
+              <Modal>
+                <InviteLinkDialog team={team} />
+              </Modal>
+            </DialogTrigger>
           </>
         ) : (
           <>

@@ -6,16 +6,9 @@ import {
   type UseFormReturn,
 } from "react-hook-form";
 
-const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+import { DEFAULT_ERROR_MESSAGE } from "@/util/error";
 
-export const getGraphQLErrorMessage = (error: unknown): string => {
-  if (error instanceof ApolloError && error.graphQLErrors[0]) {
-    return error.graphQLErrors[0].message ?? DEFAULT_ERROR_MESSAGE;
-  }
-  return DEFAULT_ERROR_MESSAGE;
-};
-
-const unwrapErrors = (error: unknown) => {
+function unwrapErrors(error: unknown) {
   if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
     return error.graphQLErrors.map((error) => {
       const code =
@@ -35,7 +28,7 @@ const unwrapErrors = (error: unknown) => {
       code: null,
     },
   ];
-};
+}
 
 export function Form({
   ref,

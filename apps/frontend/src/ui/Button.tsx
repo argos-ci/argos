@@ -1,4 +1,4 @@
-import { Children, cloneElement } from "react";
+import { Children, cloneElement, useState } from "react";
 import { clsx } from "clsx";
 import { LoaderIcon } from "lucide-react";
 import {
@@ -7,6 +7,9 @@ import {
   Link as RACLink,
   LinkProps as RACLinkProps,
 } from "react-aria-components";
+import { toast } from "sonner";
+
+import { getErrorMessage } from "@/util/error";
 
 type ButtonVariant =
   | "primary"
@@ -70,20 +73,53 @@ function getButtonProps(options: ButtonOptions) {
 export interface ButtonProps
   extends RACButtonProps,
     ButtonOptions,
-    React.RefAttributes<HTMLButtonElement> {}
+    React.RefAttributes<HTMLButtonElement> {
+  /**
+   * Run an asynchronous action when the button is pressed.
+   * Automatically set the button in pending mode and
+   * handles errors.
+   * @example
+   * <Button
+   *   onAction={async () => {
+   *     await resetLink();
+   *   }}
+   * >
+   *  Reset link
+   * </Button>
+   */
+  onAction?: () => Promise<void>;
+}
 
 export function Button({
   className,
   variant,
   size,
   children,
+  onAction,
+  onPress,
   ...props
 }: ButtonProps) {
   const buttonProps = getButtonProps({ variant, size });
+  const [isPending, setIsPending] = useState(false);
   return (
     <RACButton
       {...buttonProps}
       className={clsx(buttonProps.className, "cursor-default", className)}
+      isPending={props.isPending ?? isPending}
+      onPress={(event) => {
+        onPress?.(event);
+        const promise = onAction?.();
+        if (promise) {
+          setIsPending(true);
+          promise
+            .catch((error) => {
+              toast.error(getErrorMessage(error));
+            })
+            .finally(() => {
+              setIsPending(false);
+            });
+        }
+      }}
       {...props}
     >
       {(renderProps) => {

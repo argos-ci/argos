@@ -162,7 +162,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
               lazy: () => import("./pages/Signup"),
             },
             {
-              path: "invite/:inviteToken",
+              path: "invite/:inviteSecret",
               HydrateFallback,
               lazy: () => import("./pages/Invite"),
             },

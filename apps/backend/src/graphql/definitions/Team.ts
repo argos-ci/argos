@@ -166,8 +166,12 @@ export const typeDefs = gql`
     level: TeamDefaultUserLevel!
   }
 
+  input ResetInviteLinkInput {
+    teamAccountId: ID!
+  }
+
   extend type Query {
-    invitation(token: String!): Team
+    invitation(secret: String!): Team
   }
 
   extend type Mutation {
@@ -180,7 +184,7 @@ export const typeDefs = gql`
       input: RemoveUserFromTeamInput!
     ): RemoveUserFromTeamPayload!
     "Accept an invitation to join a team"
-    acceptInvitation(token: String!): Team!
+    acceptInvitation(secret: String!): Team!
     "Set member level"
     setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
     "Delete team and all its projects"
@@ -191,6 +195,8 @@ export const typeDefs = gql`
     disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
     "Set team default user level"
     setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
+    "Reset invite link"
+    resetInviteLink(input: ResetInviteLinkInput!): Team!
   }
 `;
 
@@ -411,14 +417,15 @@ export const resolvers: IResolvers = {
     },
   },
   Query: {
-    invitation: async (_root, { token }) => {
-      const team = await Team.verifyInviteToken(token, {
-        withGraphFetched: "account",
-      });
+    invitation: async (_root, args) => {
+      const team = await Team.query()
+        .withGraphFetched("account")
+        .findOne({ inviteSecret: args.secret });
+
       if (!team) {
         return null;
       }
-      invariant(team, "Invalid token");
+
       invariant(team.account, "Team account not loaded");
       return team.account;
     },
@@ -599,10 +606,12 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         throw unauthenticated();
       }
-      const team = await Team.verifyInviteToken(args.token, {
-        withGraphFetched: "account",
-      });
-      invariant(team, "Invalid token");
+
+      const team = await Team.query()
+        .withGraphFetched("account")
+        .findOne({ inviteSecret: args.secret });
+
+      invariant(team, "Invalid invitation secret");
       invariant(team.account, "Team account not loaded");
 
       const teamUser = await TeamUser.query().findOne({
@@ -839,6 +848,26 @@ export const resolvers: IResolvers = {
       await Team.query().findById(teamAccount.teamId).patch({
         defaultUserLevel: args.input.level,
       });
+
+      return teamAccount;
+    },
+    resetInviteLink: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      await Team.query()
+        .findById(teamAccount.teamId)
+        .patch({
+          inviteSecret: await Team.generateInviteSecret(),
+        });
 
       return teamAccount;
     },
