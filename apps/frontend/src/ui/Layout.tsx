@@ -117,7 +117,7 @@ export function StandalonePage(props: ContainerProps) {
           {
             level: 1,
             className:
-              "mx-auto max-w-sm text-balance text-center text-2xl font-semibold leading-tight",
+              "mx-auto text-balance text-center text-2xl font-semibold leading-tight",
           },
         ],
       ]}
