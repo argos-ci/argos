@@ -11,7 +11,7 @@ import { Toaster } from "./ui/Toaster";
 export function App() {
   return (
     <>
-      <Helmet defaultTitle="Argos" />
+      <Helmet defaultTitle="Argos" titleTemplate="%s - Argos" />
       <ColorModeProvider>
         <AuthContextProvider>
           <ApolloInitializer>

@@ -15,6 +15,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { PageLoader } from "@/ui/PageLoader";
+import { Separator } from "@/ui/Separator";
 
 const AutoCreateTeam = ({ name }: { name: string }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
@@ -43,7 +44,7 @@ export function Component() {
       <Helmet>
         <title>New Team</title>
       </Helmet>
-      <hr className="border-t" />
+      <Separator />
       <AuthGuard>
         {() => {
           return (

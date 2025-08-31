@@ -172,6 +172,11 @@ export const router: ReturnType<typeof createBrowserRouter> =
               lazy: () => import("./pages/NewTeam"),
             },
             {
+              path: "teams",
+              HydrateFallback,
+              lazy: () => import("./pages/Teams"),
+            },
+            {
               path: ":accountSlug/:projectName",
               lazy: () => import("./pages/Project"),
               HydrateFallback,
