@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
-import { LoginButtons } from "@/containers/LoginButtons";
+import { LoginOptions } from "@/containers/LoginOptions";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
@@ -50,7 +50,7 @@ export function Component() {
           </Alert>
         )}
 
-        <LoginButtons redirect={redirect} />
+        <LoginOptions redirect={redirect} />
       </Container>
     </>
   );
