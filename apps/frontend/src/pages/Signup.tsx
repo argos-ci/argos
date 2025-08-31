@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
 import { CheckIcon } from "lucide-react";
 import { useObjectRef } from "react-aria";
-import { Radio, RadioGroup } from "react-aria-components";
+import { Heading, Radio, RadioGroup } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import {
   useController,
@@ -20,12 +20,12 @@ import { SignupOptions } from "@/containers/SignupOptions";
 import { BrandShield } from "@/ui/BrandShield";
 import { Card } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
-import { Container } from "@/ui/Container";
 import { Details, Summary } from "@/ui/Details";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
+import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 
 function AccountTypeField<
@@ -48,7 +48,7 @@ function AccountTypeField<
       isDisabled={field.disabled}
       onBlur={field.onBlur}
     >
-      <Label>Plan Type</Label>
+      <Label>How do you plan to use Argos?</Label>
       <div className="flex flex-col">
         <RadioAccordion value="hobby">
           <div className="flex items-center justify-between gap-4">
@@ -63,6 +63,14 @@ function AccountTypeField<
             I’m working on commercial projects
             <Chip color="info" scale="sm">
               Pro
+            </Chip>
+          </div>
+        </RadioAccordion>
+        <RadioAccordion value="existing-team">
+          <div className="flex items-center justify-between gap-4">
+            I’m joining an existing team
+            <Chip color="success" scale="sm">
+              Member
             </Chip>
           </div>
         </RadioAccordion>
@@ -121,43 +129,41 @@ function SignupPage() {
     name: "form",
   });
   return (
-    <>
+    <StandalonePage>
       <Helmet>
         <title>Sign up</title>
       </Helmet>
 
-      <Container className="flex justify-center pt-16">
-        {(() => {
-          switch (step.name) {
-            case "form":
-              return (
-                <FormStep
-                  onSubmit={(data) => {
-                    setStep({ name: "provider", data });
-                  }}
-                />
-              );
-            case "provider": {
-              return <ProviderStep data={step.data} />;
-            }
-            default:
-              assertNever(step);
+      {(() => {
+        switch (step.name) {
+          case "form":
+            return (
+              <FormStep
+                onSubmit={(data) => {
+                  setStep({ name: "provider", data });
+                }}
+              />
+            );
+          case "provider": {
+            return <ProviderStep data={step.data} />;
           }
-        })()}
-      </Container>
-    </>
+          default:
+            assertNever(step);
+        }
+      })()}
+    </StandalonePage>
   );
 }
 
-type AccountPlan = "hobby" | "pro";
+type AccountUsage = "hobby" | "pro" | "existing-team";
 
 interface SignupFormValues {
-  plan: AccountPlan | null;
+  usage: AccountUsage | null;
   name: string;
 }
 
 interface SignupFormTransformedValues {
-  plan: AccountPlan;
+  usage: AccountUsage;
   name: string;
 }
 
@@ -166,7 +172,7 @@ function FormStep(props: {
 }) {
   const { onSubmit } = props;
   const [searchParams] = useSearchParams();
-  const [defaultPlan] = useState<SignupFormValues["plan"]>(() => {
+  const [defaultUsage] = useState<SignupFormValues["usage"]>(() => {
     const planParam = searchParams.get("plan");
     if (planParam === "hobby" || planParam === "pro") {
       return planParam;
@@ -175,27 +181,27 @@ function FormStep(props: {
   });
   const form = useForm<SignupFormValues, any, SignupFormTransformedValues>({
     defaultValues: {
-      plan: defaultPlan,
+      usage: defaultUsage,
       name: "",
     },
   });
-  const plan = form.watch("plan");
-  const isPro = plan === "pro";
+  const usage = form.watch("usage");
+  const isPro = usage === "pro";
   const registerName = form.register("name", {
     required: { value: true, message: "Name is required" },
     minLength: { value: 2, message: "Too short" },
   });
   const nameRef = useObjectRef(registerName.ref);
   useEffect(() => {
-    if (plan) {
+    if (usage) {
       nameRef.current?.focus();
     }
-  }, [plan, nameRef]);
+  }, [usage, nameRef]);
   return (
     <SignupCard title="Create your Argos Account">
       <Form form={form} onSubmit={onSubmit} className="contents">
-        <AccountTypeField control={form.control} name="plan" />
-        {plan && (
+        <AccountTypeField control={form.control} name="usage" />
+        {usage && (
           <div className="mt-10">
             <FormTextInput
               control={form.control}
@@ -238,11 +244,18 @@ function ProviderStep(props: { data: SignupFormTransformedValues }) {
   return (
     <SignupCard title="Let’s create your account">
       <SignupOptions
-        redirect={
-          data.plan === "pro"
-            ? `/teams/new?name=${encodeURIComponent(data.name)}&autoSubmit=true`
-            : "/"
-        }
+        redirect={(() => {
+          switch (data.usage) {
+            case "pro":
+              return `/teams/new?name=${encodeURIComponent(data.name)}&autoSubmit=true`;
+            case "hobby":
+              return "/";
+            case "existing-team":
+              return "/teams";
+            default:
+              assertNever(data.usage);
+          }
+        })()}
       />
     </SignupCard>
   );
@@ -253,9 +266,7 @@ function SignupCard(props: { title: ReactNode; children: ReactNode }) {
   return (
     <Card className="flex max-w-lg flex-col p-10">
       <BrandShield className="size-15 mb-2 self-center" />
-      <h1 className="mx-auto mb-10 max-w-sm text-balance text-center text-2xl font-semibold leading-tight">
-        {title}
-      </h1>
+      <Heading className="mb-10">{title}</Heading>
       {children}
     </Card>
   );

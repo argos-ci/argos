@@ -2,7 +2,7 @@ import { ComponentPropsWithRef } from "react";
 import clsx from "clsx";
 import { HeadingContext, Provider, TextContext } from "react-aria-components";
 
-import { Container } from "./Container";
+import { Container, type ContainerProps } from "./Container";
 
 export function PageHeader(props: ComponentPropsWithRef<"div">) {
   return (
@@ -102,5 +102,33 @@ export function Page(props: ComponentPropsWithRef<"div">) {
         props.className,
       )}
     />
+  );
+}
+
+/**
+ * Layout to use for standalone page like signup.
+ */
+export function StandalonePage(props: ContainerProps) {
+  return (
+    <Provider
+      values={[
+        [
+          HeadingContext,
+          {
+            level: 1,
+            className:
+              "mx-auto max-w-sm text-balance text-center text-2xl font-semibold leading-tight",
+          },
+        ],
+      ]}
+    >
+      <Container
+        {...props}
+        className={clsx(
+          "flex min-h-0 flex-1 flex-col items-center pb-4 pt-16",
+          props.className,
+        )}
+      />
+    </Provider>
   );
 }

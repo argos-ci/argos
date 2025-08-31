@@ -1,7 +1,9 @@
 import { ComponentPropsWithRef } from "react";
 import { clsx } from "clsx";
 
-export function Container(props: ComponentPropsWithRef<"div">) {
+export type ContainerProps = ComponentPropsWithRef<"div">;
+
+export function Container(props: ContainerProps) {
   return (
     <div
       {...props}
