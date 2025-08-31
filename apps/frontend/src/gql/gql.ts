@@ -23,6 +23,7 @@ type Documents = {
     "\n  fragment AccountAvatarFragment on AccountAvatar {\n    url(size: 64)\n    color\n    initial\n  }\n": typeof types.AccountAvatarFragmentFragmentDoc,
     "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n    ...AccountPlanChip_Account\n  }\n": typeof types.AccountItem_AccountFragmentDoc,
     "\n  fragment AccountPlanChip_Account on Account {\n    subscriptionStatus\n    plan {\n      id\n      displayName\n    }\n  }\n": typeof types.AccountPlanChip_AccountFragmentDoc,
+    "\n  mutation AuthWithEmail_authenticateWithEmail(\n    $email: String!\n    $code: String!\n  ) {\n    authenticateWithEmail(input: { email: $email, code: $code }) {\n      jwt\n      creation\n    }\n  }\n": typeof types.AuthWithEmail_AuthenticateWithEmailDocument,
     "\n  query AccountBreadcrumb_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n      ...AccountPlanChip_Account\n    }\n  }\n": typeof types.AccountBreadcrumb_AccountDocument,
     "\n  fragment AccountBreadcrumbMenu_Account on Account {\n    id\n    slug\n    ...AccountItem_Account\n  }\n": typeof types.AccountBreadcrumbMenu_AccountFragmentDoc,
     "\n  query AccountBreadcrumbMenu_me {\n    me {\n      id\n      ...AccountBreadcrumbMenu_Account\n      teams {\n        id\n        ...AccountBreadcrumbMenu_Account\n      }\n    }\n  }\n": typeof types.AccountBreadcrumbMenu_MeDocument,
@@ -35,12 +36,13 @@ type Documents = {
     "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    mode\n    baseBranch\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n    ...ReviewDescription_Build\n  }\n": typeof types.BuildStatusDescription_BuildFragmentDoc,
     "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n": typeof types.ReviewDescription_BuildFragmentDoc,
     "\n  fragment BuildTestStatusChip_Build on Build {\n    metadata {\n      testReport {\n        status\n      }\n    }\n  }\n": typeof types.BuildTestStatusChip_BuildFragmentDoc,
-    "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n": typeof types.FeatureFlagProvider_AccountDocument,
+    "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      slug\n    }\n  }\n": typeof types.FeatureFlagProvider_AccountDocument,
     "\n  fragment GithubAccountLink_GithubAccount on GithubAccount {\n    login\n    name\n    url\n  }\n": typeof types.GithubAccountLink_GithubAccountFragmentDoc,
     "\n  fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": typeof types.GithubInstallationsSelect_GhApiInstallationFragmentDoc,
     "\n  query GithubRepositoryList_ghApiInstallationRepositories(\n    $installationId: ID!\n    $page: Int!\n    $reposPerPage: Int\n    $fromAuthUser: Boolean!\n  ) {\n    ghApiInstallationRepositories(\n      installationId: $installationId\n      fromAuthUser: $fromAuthUser\n      page: $page\n      reposPerPage: $reposPerPage\n    ) {\n      edges {\n        id\n        name\n        updated_at\n        owner_login\n      }\n      pageInfo {\n        hasNextPage\n        totalCount\n      }\n    }\n  }\n": typeof types.GithubRepositoryList_GhApiInstallationRepositoriesDocument,
     "\n  fragment GitlabNamespacesSelect_GlApiNamespace on GlApiNamespace {\n    id\n    name\n    path\n  }\n": typeof types.GitlabNamespacesSelect_GlApiNamespaceFragmentDoc,
     "\n  query GitlabProjectList_glApiProjects(\n    $accountId: ID!\n    $userId: ID\n    $groupId: ID\n    $allProjects: Boolean!\n    $page: Int!\n    $search: String\n  ) {\n    glApiProjects(\n      userId: $userId\n      groupId: $groupId\n      allProjects: $allProjects\n      accountId: $accountId\n      page: $page\n      search: $search\n    ) {\n      edges {\n        id\n        name\n        last_activity_at\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n": typeof types.GitlabProjectList_GlApiProjectsDocument,
+    "\n  mutation LoginOptions_requestEmailSignin($email: String!) {\n    requestEmailSignin(email: $email)\n  }\n": typeof types.LoginOptions_RequestEmailSigninDocument,
     "\n  query NavUserControl_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n": typeof types.NavUserControl_AccountDocument,
     "\n  fragment PaymentBanner_Account on Account {\n    id\n    subscriptionStatus\n    permissions\n    stripeCustomerId\n\n    subscription {\n      id\n      trialDaysRemaining\n      endDate\n    }\n  }\n": typeof types.PaymentBanner_AccountFragmentDoc,
     "\n  query PaymentBanner_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n": typeof types.PaymentBanner_MeDocument,
@@ -85,6 +87,7 @@ type Documents = {
     "\n  fragment PullRequestStatusIcon_PullRequest on PullRequest {\n    draft\n    merged\n    state\n  }\n": typeof types.PullRequestStatusIcon_PullRequestFragmentDoc,
     "\n  fragment PullRequestInfo_PullRequest on PullRequest {\n    title\n    draft\n    merged\n    mergedAt\n    closedAt\n    state\n    number\n    date\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ... on GithubPullRequest {\n      creator {\n        id\n        login\n        name\n      }\n    }\n  }\n": typeof types.PullRequestInfo_PullRequestFragmentDoc,
     "\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ...PullRequestInfo_PullRequest\n  }\n": typeof types.PullRequestButton_PullRequestFragmentDoc,
+    "\n  mutation SignupOptions_requestEmailSignup($email: String!) {\n    requestEmailSignup(email: $email)\n  }\n": typeof types.SignupOptions_RequestEmailSignupDocument,
     "\n  fragment TeamAccessRole_Team on Team {\n    id\n    defaultUserLevel\n  }\n": typeof types.TeamAccessRole_TeamFragmentDoc,
     "\n  mutation TeamAccessUserLevel_setTeamDefaultUserLevel(\n    $teamAccountId: ID!\n    $level: TeamDefaultUserLevel!\n  ) {\n    setTeamDefaultUserLevel(\n      input: { teamAccountId: $teamAccountId, level: $level }\n    ) {\n      ...TeamAccessRole_Team\n    }\n  }\n": typeof types.TeamAccessUserLevel_SetTeamDefaultUserLevelDocument,
     "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    subscription {\n      id\n      status\n      endDate\n    }\n  }\n": typeof types.TeamDelete_TeamFragmentDoc,
@@ -182,6 +185,7 @@ const documents: Documents = {
     "\n  fragment AccountAvatarFragment on AccountAvatar {\n    url(size: 64)\n    color\n    initial\n  }\n": types.AccountAvatarFragmentFragmentDoc,
     "\n  fragment AccountItem_Account on Account {\n    id\n    slug\n    name\n    avatar {\n      ...AccountAvatarFragment\n    }\n    ...AccountPlanChip_Account\n  }\n": types.AccountItem_AccountFragmentDoc,
     "\n  fragment AccountPlanChip_Account on Account {\n    subscriptionStatus\n    plan {\n      id\n      displayName\n    }\n  }\n": types.AccountPlanChip_AccountFragmentDoc,
+    "\n  mutation AuthWithEmail_authenticateWithEmail(\n    $email: String!\n    $code: String!\n  ) {\n    authenticateWithEmail(input: { email: $email, code: $code }) {\n      jwt\n      creation\n    }\n  }\n": types.AuthWithEmail_AuthenticateWithEmailDocument,
     "\n  query AccountBreadcrumb_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n      ...AccountPlanChip_Account\n    }\n  }\n": types.AccountBreadcrumb_AccountDocument,
     "\n  fragment AccountBreadcrumbMenu_Account on Account {\n    id\n    slug\n    ...AccountItem_Account\n  }\n": types.AccountBreadcrumbMenu_AccountFragmentDoc,
     "\n  query AccountBreadcrumbMenu_me {\n    me {\n      id\n      ...AccountBreadcrumbMenu_Account\n      teams {\n        id\n        ...AccountBreadcrumbMenu_Account\n      }\n    }\n  }\n": types.AccountBreadcrumbMenu_MeDocument,
@@ -194,12 +198,13 @@ const documents: Documents = {
     "\n  fragment BuildStatusDescription_Build on Build {\n    type\n    status\n    mode\n    baseBranch\n    stats {\n      total\n    }\n    parallel {\n      total\n      received\n      nonce\n    }\n    ...ReviewDescription_Build\n  }\n": types.BuildStatusDescription_BuildFragmentDoc,
     "\n  fragment ReviewDescription_Build on Build {\n    status\n    reviews {\n      id\n      date\n      state\n      user {\n        id\n        name\n        avatar {\n          ...AccountAvatarFragment\n        }\n      }\n    }\n  }\n": types.ReviewDescription_BuildFragmentDoc,
     "\n  fragment BuildTestStatusChip_Build on Build {\n    metadata {\n      testReport {\n        status\n      }\n    }\n  }\n": types.BuildTestStatusChip_BuildFragmentDoc,
-    "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n": types.FeatureFlagProvider_AccountDocument,
+    "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      slug\n    }\n  }\n": types.FeatureFlagProvider_AccountDocument,
     "\n  fragment GithubAccountLink_GithubAccount on GithubAccount {\n    login\n    name\n    url\n  }\n": types.GithubAccountLink_GithubAccountFragmentDoc,
     "\n  fragment GithubInstallationsSelect_GhApiInstallation on GhApiInstallation {\n    id\n    account {\n      id\n      login\n      name\n    }\n  }\n": types.GithubInstallationsSelect_GhApiInstallationFragmentDoc,
     "\n  query GithubRepositoryList_ghApiInstallationRepositories(\n    $installationId: ID!\n    $page: Int!\n    $reposPerPage: Int\n    $fromAuthUser: Boolean!\n  ) {\n    ghApiInstallationRepositories(\n      installationId: $installationId\n      fromAuthUser: $fromAuthUser\n      page: $page\n      reposPerPage: $reposPerPage\n    ) {\n      edges {\n        id\n        name\n        updated_at\n        owner_login\n      }\n      pageInfo {\n        hasNextPage\n        totalCount\n      }\n    }\n  }\n": types.GithubRepositoryList_GhApiInstallationRepositoriesDocument,
     "\n  fragment GitlabNamespacesSelect_GlApiNamespace on GlApiNamespace {\n    id\n    name\n    path\n  }\n": types.GitlabNamespacesSelect_GlApiNamespaceFragmentDoc,
     "\n  query GitlabProjectList_glApiProjects(\n    $accountId: ID!\n    $userId: ID\n    $groupId: ID\n    $allProjects: Boolean!\n    $page: Int!\n    $search: String\n  ) {\n    glApiProjects(\n      userId: $userId\n      groupId: $groupId\n      allProjects: $allProjects\n      accountId: $accountId\n      page: $page\n      search: $search\n    ) {\n      edges {\n        id\n        name\n        last_activity_at\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n": types.GitlabProjectList_GlApiProjectsDocument,
+    "\n  mutation LoginOptions_requestEmailSignin($email: String!) {\n    requestEmailSignin(email: $email)\n  }\n": types.LoginOptions_RequestEmailSigninDocument,
     "\n  query NavUserControl_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      avatar {\n        ...AccountAvatarFragment\n      }\n    }\n  }\n": types.NavUserControl_AccountDocument,
     "\n  fragment PaymentBanner_Account on Account {\n    id\n    subscriptionStatus\n    permissions\n    stripeCustomerId\n\n    subscription {\n      id\n      trialDaysRemaining\n      endDate\n    }\n  }\n": types.PaymentBanner_AccountFragmentDoc,
     "\n  query PaymentBanner_me {\n    me {\n      id\n      hasSubscribedToTrial\n    }\n  }\n": types.PaymentBanner_MeDocument,
@@ -244,6 +249,7 @@ const documents: Documents = {
     "\n  fragment PullRequestStatusIcon_PullRequest on PullRequest {\n    draft\n    merged\n    state\n  }\n": types.PullRequestStatusIcon_PullRequestFragmentDoc,
     "\n  fragment PullRequestInfo_PullRequest on PullRequest {\n    title\n    draft\n    merged\n    mergedAt\n    closedAt\n    state\n    number\n    date\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ... on GithubPullRequest {\n      creator {\n        id\n        login\n        name\n      }\n    }\n  }\n": types.PullRequestInfo_PullRequestFragmentDoc,
     "\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ...PullRequestInfo_PullRequest\n  }\n": types.PullRequestButton_PullRequestFragmentDoc,
+    "\n  mutation SignupOptions_requestEmailSignup($email: String!) {\n    requestEmailSignup(email: $email)\n  }\n": types.SignupOptions_RequestEmailSignupDocument,
     "\n  fragment TeamAccessRole_Team on Team {\n    id\n    defaultUserLevel\n  }\n": types.TeamAccessRole_TeamFragmentDoc,
     "\n  mutation TeamAccessUserLevel_setTeamDefaultUserLevel(\n    $teamAccountId: ID!\n    $level: TeamDefaultUserLevel!\n  ) {\n    setTeamDefaultUserLevel(\n      input: { teamAccountId: $teamAccountId, level: $level }\n    ) {\n      ...TeamAccessRole_Team\n    }\n  }\n": types.TeamAccessUserLevel_SetTeamDefaultUserLevelDocument,
     "\n  fragment TeamDelete_Team on Team {\n    id\n    slug\n    subscription {\n      id\n      status\n      endDate\n    }\n  }\n": types.TeamDelete_TeamFragmentDoc,
@@ -385,6 +391,10 @@ export function graphql(source: "\n  fragment AccountPlanChip_Account on Account
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation AuthWithEmail_authenticateWithEmail(\n    $email: String!\n    $code: String!\n  ) {\n    authenticateWithEmail(input: { email: $email, code: $code }) {\n      jwt\n      creation\n    }\n  }\n"): (typeof documents)["\n  mutation AuthWithEmail_authenticateWithEmail(\n    $email: String!\n    $code: String!\n  ) {\n    authenticateWithEmail(input: { email: $email, code: $code }) {\n      jwt\n      creation\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query AccountBreadcrumb_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n      ...AccountPlanChip_Account\n    }\n  }\n"): (typeof documents)["\n  query AccountBreadcrumb_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      slug\n      name\n      avatar {\n        ...AccountAvatarFragment\n      }\n      ...AccountPlanChip_Account\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -433,7 +443,7 @@ export function graphql(source: "\n  fragment BuildTestStatusChip_Build on Build
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n"): (typeof documents)["\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n    }\n  }\n"];
+export function graphql(source: "\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      slug\n    }\n  }\n"): (typeof documents)["\n  query FeatureFlagProvider_account($slug: String!) {\n    account(slug: $slug) {\n      id\n      name\n      slug\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -454,6 +464,10 @@ export function graphql(source: "\n  fragment GitlabNamespacesSelect_GlApiNamesp
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GitlabProjectList_glApiProjects(\n    $accountId: ID!\n    $userId: ID\n    $groupId: ID\n    $allProjects: Boolean!\n    $page: Int!\n    $search: String\n  ) {\n    glApiProjects(\n      userId: $userId\n      groupId: $groupId\n      allProjects: $allProjects\n      accountId: $accountId\n      page: $page\n      search: $search\n    ) {\n      edges {\n        id\n        name\n        last_activity_at\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n"): (typeof documents)["\n  query GitlabProjectList_glApiProjects(\n    $accountId: ID!\n    $userId: ID\n    $groupId: ID\n    $allProjects: Boolean!\n    $page: Int!\n    $search: String\n  ) {\n    glApiProjects(\n      userId: $userId\n      groupId: $groupId\n      allProjects: $allProjects\n      accountId: $accountId\n      page: $page\n      search: $search\n    ) {\n      edges {\n        id\n        name\n        last_activity_at\n      }\n      pageInfo {\n        hasNextPage\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation LoginOptions_requestEmailSignin($email: String!) {\n    requestEmailSignin(email: $email)\n  }\n"): (typeof documents)["\n  mutation LoginOptions_requestEmailSignin($email: String!) {\n    requestEmailSignin(email: $email)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -630,6 +644,10 @@ export function graphql(source: "\n  fragment PullRequestInfo_PullRequest on Pul
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ...PullRequestInfo_PullRequest\n  }\n"): (typeof documents)["\n  fragment PullRequestButton_PullRequest on PullRequest {\n    title\n    number\n    url\n    ...PullRequestStatusIcon_PullRequest\n    ...PullRequestInfo_PullRequest\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SignupOptions_requestEmailSignup($email: String!) {\n    requestEmailSignup(email: $email)\n  }\n"): (typeof documents)["\n  mutation SignupOptions_requestEmailSignup($email: String!) {\n    requestEmailSignup(email: $email)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

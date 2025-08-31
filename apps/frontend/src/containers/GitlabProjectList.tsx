@@ -63,7 +63,7 @@ export function GitlabProjectList(props: GitlabProjectListProps) {
   const data = result.data || result.previousData;
 
   if (!data) {
-    return <Loader />;
+    return <Loader className="size-16" />;
   }
 
   const { glApiProjects } = data;

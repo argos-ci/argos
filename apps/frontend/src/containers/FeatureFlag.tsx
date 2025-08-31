@@ -68,6 +68,7 @@ const AccountQuery = graphql(`
     account(slug: $slug) {
       id
       name
+      slug
     }
   }
 `);
@@ -93,7 +94,10 @@ function CompanyAndUserProvider(
       {...props}
       company={
         data.account
-          ? { id: data.account.id, name: data.account.name || undefined }
+          ? {
+              id: data.account.id,
+              name: data.account.name || data.account.slug || undefined,
+            }
           : undefined
       }
     />

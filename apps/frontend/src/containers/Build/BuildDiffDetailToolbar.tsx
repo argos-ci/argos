@@ -35,7 +35,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       <FitToggle />
       {isChanged && (
         <>
-          <Separator orientation="vertical" className="mx-1 !h-6" />
+          <Separator orientation="vertical" className="mx-1 h-6" />
           <OverlayToggle />
           <ButtonGroup>
             <GoToPreviousChangesButton />
@@ -48,7 +48,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       <div className="group contents">
         <Separator
           orientation="vertical"
-          className="mx-1 !h-6 group-empty:hidden"
+          className="mx-1 h-6 group-empty:hidden"
         />
         {children}
       </div>

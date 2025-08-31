@@ -45,6 +45,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "fast-fuzzy": "^1.12.0",
     "graphql": "^16.11.0",
+    "input-otp": "^1.4.2",
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "linkify-plugin-ticket": "^4.3.2",

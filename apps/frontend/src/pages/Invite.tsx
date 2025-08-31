@@ -1,16 +1,19 @@
+import type { ComponentPropsWithRef } from "react";
 import { useMutation } from "@apollo/client";
 import { invariant } from "@apollo/client/utilities/globals";
+import clsx from "clsx";
 import { Helmet } from "react-helmet";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useSafeQuery } from "@/containers/Apollo";
 import { useIsLoggedIn } from "@/containers/Auth";
-import { LoginOptions } from "@/containers/LoginOptions";
 import { graphql } from "@/gql";
 import { Button, LinkButton } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
 import { Container } from "@/ui/Container";
 import { PageLoader } from "@/ui/PageLoader";
+import { Separator } from "@/ui/Separator";
 
 import { getAccountURL } from "./Account/AccountParams";
 
@@ -76,6 +79,7 @@ export function Component() {
   const { data } = useSafeQuery(InvitationQuery, {
     variables: { secret },
   });
+  const { pathname } = useLocation();
 
   const team = data?.invitation;
   const teamName = team?.name || team?.slug;
@@ -86,7 +90,7 @@ export function Component() {
       <Helmet>
         <title>{`Join ${teamTitle}`}</title>
       </Helmet>
-      <Container className="mt-32 text-center">
+      <Container className="mt-32 max-w-3xl text-center">
         {(() => {
           if (data) {
             const team = data.invitation;
@@ -94,14 +98,54 @@ export function Component() {
               if (!loggedIn) {
                 return (
                   <div className="flex flex-col items-center">
-                    <AccountAvatar avatar={team.avatar} size={72} />
-                    <h1 className="my-4 text-4xl font-medium">
-                      Join <strong>{teamTitle}</strong> on Argos.
-                    </h1>
-                    <p className="mb-10 text-xl">
-                      Log in or create an account to accept this invitation.
-                    </p>
-                    <LoginOptions />
+                    <AccountAvatar
+                      avatar={team.avatar}
+                      className="size-18 mb-8"
+                    />
+                    <Heading>
+                      You’ve been invited to the <strong>{teamTitle}</strong>{" "}
+                      team.
+                    </Heading>
+                    <Paragraph>
+                      Before accepting the invite you have to create a new Argos
+                      Account or login to an existing one.
+                    </Paragraph>
+                    <div className="mt-15 gap-15 flex self-stretch text-left">
+                      <div className="flex flex-1 flex-col gap-4">
+                        <div className="text-low text-xs font-medium uppercase">
+                          I don’t have an Argos account
+                        </div>
+                        <LinkButton
+                          href={`/signup?r=${encodeURIComponent(pathname)}`}
+                          size="large"
+                          className="justify-center"
+                        >
+                          Sign Up
+                        </LinkButton>
+                      </div>
+                      <div className="relative">
+                        <Separator orientation="vertical" className="h-full" />
+                        <Chip
+                          scale="sm"
+                          color="neutral"
+                          className="-translate-1/2 absolute top-1/2"
+                        >
+                          OR
+                        </Chip>
+                      </div>
+                      <div className="flex flex-1 flex-col gap-4">
+                        <div className="text-low text-xs font-medium uppercase">
+                          I already have an Argos account
+                        </div>
+                        <LinkButton
+                          href={`/login?r=${encodeURIComponent(pathname)}`}
+                          size="large"
+                          className="justify-center"
+                        >
+                          Log In
+                        </LinkButton>
+                      </div>
+                    </div>
                   </div>
                 );
               }
@@ -110,32 +154,35 @@ export function Component() {
               );
               if (alreadyJoined) {
                 return (
-                  <>
-                    <h1 className="mb-4 text-4xl font-medium">
-                      This invitation has already been accepted
-                    </h1>
-                    <p className="mb-10 text-xl">
-                      You are a member of {teamTitle}.
-                    </p>
+                  <div className="flex flex-col items-center">
+                    <Heading>This invitation has already been accepted</Heading>
+                    <Paragraph>
+                      You are already a member of <strong>{teamTitle}</strong>{" "}
+                      team.
+                    </Paragraph>
                     <LinkButton
+                      className="mt-8"
                       size="large"
                       href={getAccountURL({ accountSlug: team.slug })}
                     >
                       View Team Projects
                     </LinkButton>
-                  </>
+                  </div>
                 );
               }
               return (
                 <div className="flex flex-col items-center">
-                  <AccountAvatar avatar={team.avatar} size={72} />
-                  <h1 className="my-4 text-4xl font-medium">
-                    Join <strong>{teamTitle}</strong> on Argos.
-                  </h1>
-                  <p className="mb-10 text-xl">
+                  <AccountAvatar
+                    avatar={team.avatar}
+                    className="size-18 mb-8"
+                  />
+                  <Heading>
+                    You’ve been invited to the <strong>{teamTitle}</strong> team
+                  </Heading>
+                  <Paragraph className="mb-8">
                     Let's use Argos to review visual differences in your
                     applications.
-                  </p>
+                  </Paragraph>
                   <JoinTeamButton secret={secret}>
                     Join {teamTitle}
                   </JoinTeamButton>
@@ -144,13 +191,11 @@ export function Component() {
             }
             return (
               <>
-                <h1 className="mb-4 text-4xl font-medium">
-                  Invalid invitation
-                </h1>
-                <p className="mb-10 text-xl">
+                <Heading>Invalid invitation</Heading>
+                <Paragraph>
                   Team not found by the given invite code or user is not
                   authorized to join team.
-                </p>
+                </Paragraph>
               </>
             );
           }
@@ -159,4 +204,17 @@ export function Component() {
       </Container>
     </>
   );
+}
+
+function Heading(props: ComponentPropsWithRef<"h1">) {
+  return (
+    <h1
+      {...props}
+      className={clsx("mb-2 text-2xl font-medium", props.className)}
+    />
+  );
+}
+
+function Paragraph(props: ComponentPropsWithRef<"p">) {
+  return <p {...props} className={clsx("text-low", props.className)} />;
 }

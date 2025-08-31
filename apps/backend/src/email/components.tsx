@@ -8,15 +8,20 @@ import {
   Img,
   LinkProps,
   Preview,
+  Button as REButton,
   Hr as REHr,
   Link as RELink,
   Section,
   Tailwind,
   Text,
+  type ButtonProps,
 } from "@react-email/components";
 import clsx from "clsx";
+import { z } from "zod";
 
 import config from "@/config";
+
+import type { LocationSchema } from "./schemas";
 
 export function Paragraph(props: {
   children: React.ReactNode;
@@ -45,7 +50,7 @@ export function Hi(props: { name: string | null }) {
 
 export function H1(props: { children: React.ReactNode }) {
   return (
-    <Heading className="mb-5 mt-3 p-0 text-xl font-medium">
+    <Heading className="mb-5 mt-3 p-0 text-2xl font-medium">
       {props.children}
     </Heading>
   );
@@ -72,7 +77,15 @@ export function Link(props: LinkProps) {
 
 export function HighlightBlock(props: { children: React.ReactNode }) {
   return (
-    <Text className="bg-[#f6f6f6] p-4 text-center text-base font-bold">
+    <Text className="rounded bg-[#f6f6f6] p-4 text-center text-base font-bold">
+      {props.children}
+    </Text>
+  );
+}
+
+export function OTPCode(props: { children: React.ReactNode }) {
+  return (
+    <Text className="inline-block rounded bg-[#f6f6f6] p-4 text-2xl font-bold tracking-[0.2em]">
       {props.children}
     </Text>
   );
@@ -82,13 +95,83 @@ export function InfoText(props: { children: React.ReactNode }) {
   return <Text className="my-4 text-xs text-gray-700">{props.children}</Text>;
 }
 
-export function SafetyInfo() {
+export function Button(props: ButtonProps) {
   return (
-    <InfoText>
+    <REButton
+      {...props}
+      className={clsx(
+        "rounded bg-[#5746af] px-10 py-2.5 text-lg font-medium text-white",
+        props.className,
+      )}
+    />
+  );
+}
+
+export function FromLocation(props: {
+  location: { city: string; country: string } | null;
+}) {
+  const { location } = props;
+  if (!location) {
+    return null;
+  }
+  return (
+    <>
+      {" "}
+      from{" "}
+      <strong>
+        {location.city}, {location.country}
+      </strong>
+    </>
+  );
+}
+
+export function SafetyDisclaimer() {
+  return (
+    <>
       If you are concerned about your account's safety, please{" "}
       <Link href="https://argos-ci.com/docs/contact-us">contact us</Link> to get
       in touch with us.
-    </InfoText>
+    </>
+  );
+}
+
+export function SignupAgreement() {
+  return (
+    <Paragraph>
+      Please note that by completing your sign-up you are agreeing to our{" "}
+      <Link href="https://argos-ci.com/terms">Terms of Service</Link> and{" "}
+      <Link href="https://argos-ci.com/privacy">Privacy Policy</Link>.
+    </Paragraph>
+  );
+}
+
+export function SigninDisclaimer(props: {
+  location: z.infer<typeof LocationSchema>;
+}) {
+  return (
+    <>
+      If you didn't attempt to sign in but received this email,{" "}
+      {props.location ? "or if the location doesn't match, " : ""}you can ignore
+      this email. Don't share or forward the 6-digit code with anyone. Our
+      customer service will never ask for it. Do not read this code out loud. Be
+      cautious of phishing attempts and always verify the sender and domain
+      (argos-ci.com) before acting. <SafetyDisclaimer />
+    </>
+  );
+}
+
+export function SignupDisclaimer(props: {
+  location: z.infer<typeof LocationSchema>;
+}) {
+  return (
+    <>
+      If you didn't attempt to sign up but received this email,{" "}
+      {props.location ? "or if the location doesn't match, " : ""}you can ignore
+      this email. No account will be created. Don't share or forward the 6-digit
+      code with anyone. Our customer service will never ask for it. Do not read
+      this code out loud. Be cautious of phishing attempts and always verify the
+      sender and domain (argos-ci.com) before acting. <SafetyDisclaimer />
+    </>
   );
 }
 

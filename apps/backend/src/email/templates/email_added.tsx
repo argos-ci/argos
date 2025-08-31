@@ -7,8 +7,9 @@ import {
   Hi,
   HighlightBlock,
   Hr,
+  InfoText,
   Paragraph,
-  SafetyInfo,
+  SafetyDisclaimer,
 } from "../components";
 import { defineEmailTemplate } from "../template";
 
@@ -41,7 +42,9 @@ export const handler = defineEmailTemplate({
           </Paragraph>
           <HighlightBlock>{props.email}</HighlightBlock>
           <Hr />
-          <SafetyInfo />
+          <InfoText>
+            <SafetyDisclaimer />
+          </InfoText>
         </EmailLayout>
       ),
     };

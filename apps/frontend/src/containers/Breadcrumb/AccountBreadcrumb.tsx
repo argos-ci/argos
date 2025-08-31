@@ -45,7 +45,7 @@ function AccountBreadcrumbLink({ accountSlug }: { accountSlug: string }) {
     >
       <BreadcrumbItemIcon>
         {data.account ? (
-          <AccountAvatar avatar={data.account.avatar} size={24} />
+          <AccountAvatar avatar={data.account.avatar} className="size-6" />
         ) : (
           <OrganizationIcon size={18} />
         )}

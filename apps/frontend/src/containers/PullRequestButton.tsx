@@ -138,8 +138,7 @@ function PullRequestInfo(props: {
                 <Time date={pullRequest.date} tooltip="title" /> by
                 <ImageAvatar
                   url={`https://github.com/${pullRequest.creator.login}.png?size=32`}
-                  size={16}
-                  className="shrink-0"
+                  className="size-4 shrink-0"
                 />
                 <span>
                   {pullRequest.creator.name || pullRequest.creator.login}

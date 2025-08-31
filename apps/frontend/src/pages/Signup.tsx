@@ -40,13 +40,14 @@ function AccountTypeField<
 >(props: {
   name: Path<TFieldValues>;
   control: Control<TFieldValues, TContext, TTransformedValues>;
+  className?: string;
 }) {
   const { control, name } = props;
   const { field } = useController({ control, name });
   return (
     <RadioGroup
       orientation="vertical"
-      className="w-full"
+      className={clsx("w-full", props.className)}
       ref={field.ref}
       onChange={field.onChange}
       value={field.value}
@@ -126,6 +127,10 @@ function ProPlanWarning() {
 }
 
 function SignupPage() {
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("r") || null;
+  const isFromInvite = redirect?.startsWith("/invite/") ?? false;
+  const defaultEmail = searchParams.get("email") ?? "";
   const [step, setStep] = useState<
     | {
         name: "form";
@@ -145,18 +150,27 @@ function SignupPage() {
           case "form":
             return (
               <FormStep
+                isFromInvite={isFromInvite}
                 onSubmit={(data) => {
                   setStep({ name: "provider", data });
                 }}
               />
             );
           case "provider": {
-            return <ProviderStep data={step.data} />;
+            return (
+              <ProviderStep
+                isFromInvite={isFromInvite}
+                redirect={redirect}
+                defaultEmail={defaultEmail}
+                data={step.data}
+              />
+            );
           }
           default:
             assertNever(step);
         }
       })()}
+      <Customers />
     </StandalonePage>
   );
 }
@@ -174,11 +188,15 @@ interface SignupFormTransformedValues {
 }
 
 function FormStep(props: {
+  isFromInvite: boolean;
   onSubmit: SubmitHandler<SignupFormTransformedValues>;
 }) {
-  const { onSubmit } = props;
+  const { isFromInvite, onSubmit } = props;
   const [searchParams] = useSearchParams();
   const [defaultUsage] = useState<SignupFormValues["usage"]>(() => {
+    if (isFromInvite) {
+      return "existing-team";
+    }
     const planParam = searchParams.get("plan");
     if (planParam === "hobby" || planParam === "pro") {
       return planParam;
@@ -204,95 +222,120 @@ function FormStep(props: {
     }
   }, [usage, nameRef]);
   return (
-    <>
-      <SignupCard title="The easiest way to catch visual bugs starts with Argos.">
-        <Form form={form} onSubmit={onSubmit} className="contents">
-          <AccountTypeField control={form.control} name="usage" />
-          {usage && (
-            <div className="mt-10">
-              <FormTextInput
-                control={form.control}
-                label={isPro ? "Team Name" : "Your Name"}
-                {...registerName}
-                ref={nameRef}
-                id="name"
-                placeholder={isPro ? "Gryffindor" : "John Wick"}
-                autoComplete="off"
-              />
-              {isPro && <ProPlanWarning />}
-            </div>
-          )}
-          <FormSubmit
+    <SignupCard title="The easiest way to catch visual bugs starts with Argos.">
+      <Form form={form} onSubmit={onSubmit} className="contents">
+        {isFromInvite ? null : (
+          <AccountTypeField
             control={form.control}
-            size="large"
-            className="mt-10 justify-center"
-            disableIfPristine
-          >
-            Continue
-          </FormSubmit>
-          <p className="text-low mt-10 text-center text-xs">
-            By joining, you agree to our{" "}
-            <Link href="https://argos-ci.com/terms" target="_blank">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="https://argos-ci.com/privacy" target="_blank">
-              Privacy Policy
-            </Link>
-            .
-          </p>
-        </Form>
-      </SignupCard>
-      <div className="mt-10">
-        <p className="text-low mb-2 text-center text-sm font-medium">
-          Trusted by leading teams
+            name="usage"
+            className="mb-10"
+          />
+        )}
+        {usage && (
+          <div>
+            <FormTextInput
+              control={form.control}
+              label={isPro ? "Team Name" : "Your Name"}
+              {...registerName}
+              ref={nameRef}
+              id="name"
+              placeholder={isPro ? "Gryffindor" : "John Wick"}
+              autoComplete="off"
+            />
+            {isPro && <ProPlanWarning />}
+          </div>
+        )}
+        <FormSubmit
+          control={form.control}
+          size="large"
+          className="mt-10 justify-center"
+          disableIfPristine
+        >
+          Continue
+        </FormSubmit>
+        <p className="text-low mt-10 text-center text-xs">
+          By joining, you agree to our{" "}
+          <Link href="https://argos-ci.com/terms" target="_blank">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="https://argos-ci.com/privacy" target="_blank">
+            Privacy Policy
+          </Link>
+          .
         </p>
-        <div className="flex gap-4">
-          <img
-            src={metaImg}
-            alt="Meta"
-            className="h-8 opacity-70 brightness-0 dark:invert"
-          />
-          <img
-            src={wizImg}
-            alt="Wiz"
-            className="h-8 opacity-70 brightness-0 dark:invert"
-          />
-          <img
-            src={mermaidImg}
-            alt="Mermaid"
-            className="h-8 opacity-70 brightness-0 dark:invert"
-          />
-          <img
-            src={muiImg}
-            alt="MUI"
-            className="h-8 opacity-70 brightness-0 dark:invert"
-          />
-        </div>
-      </div>
-    </>
+      </Form>
+    </SignupCard>
   );
 }
 
-function ProviderStep(props: { data: SignupFormTransformedValues }) {
-  const { data } = props;
+function ProviderStep(props: {
+  defaultEmail: string;
+  data: SignupFormTransformedValues;
+  redirect: string | null;
+  isFromInvite: boolean;
+}) {
+  const { defaultEmail, data, redirect, isFromInvite } = props;
   return (
     <SignupCard title="Let’s create your account">
       <SignupOptions
+        defaultEmail={defaultEmail}
         redirect={(() => {
+          if (redirect) {
+            return redirect;
+          }
           switch (data.usage) {
             case "pro":
+              // If creating a Pro team, we will not follow the redirect.
               return `/teams/new?name=${encodeURIComponent(data.name)}&autoSubmit=true`;
             case "hobby":
-              return "/";
-            case "existing-team":
+              // In case of hobby, we go to the homepage or the redirect if any.
+              return redirect ?? "/";
+            case "existing-team": {
+              // If coming from an invite, follow the invite redirect.
+              if (isFromInvite && redirect) {
+                return redirect;
+              }
               return "/teams";
+            }
             default:
               assertNever(data.usage);
           }
         })()}
       />
     </SignupCard>
+  );
+}
+
+function Customers() {
+  return (
+    <div className="mt-10">
+      <p className="text-low mb-2 text-center text-sm font-medium">
+        Trusted by leading teams
+      </p>
+      <div className="flex gap-4">
+        <img
+          src={metaImg}
+          alt="Meta"
+          className="h-8 opacity-70 brightness-0 dark:invert"
+        />
+        <img
+          src={wizImg}
+          alt="Wiz"
+          className="h-8 opacity-70 brightness-0 dark:invert"
+        />
+        <img
+          src={mermaidImg}
+          alt="Mermaid"
+          className="h-8 opacity-70 brightness-0 dark:invert"
+        />
+        <img
+          src={muiImg}
+          alt="MUI"
+          className="h-8 opacity-70 brightness-0 dark:invert"
+        />
+      </div>
+    </div>
   );
 }
 

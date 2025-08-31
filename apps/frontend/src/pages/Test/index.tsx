@@ -349,10 +349,7 @@ export function Component() {
                     from={period.from}
                   />
                 </div>
-                <Separator
-                  className="h-auto! self-stretch"
-                  orientation="vertical"
-                />
+                <Separator className="self-stretch" orientation="vertical" />
                 {test.firstSeenDiff && test.lastSeenDiff ? (
                   <div className="flex flex-col gap-2">
                     <Seen
@@ -647,7 +644,7 @@ function BuildHeader(props: {
           </CounterValue>
         </Counter>
         <Separator
-          className="h-auto! self-stretch max-lg:hidden"
+          className="self-stretch max-lg:hidden"
           orientation="vertical"
         />
         <div className="flex gap-x-6 gap-y-0.5">

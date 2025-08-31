@@ -167,6 +167,17 @@ export type IAddContributorToProjectInput = {
   userAccountId: Scalars['ID']['input'];
 };
 
+export type IAuthFromEmailInput = {
+  code: Scalars['String']['input'];
+  email: Scalars['String']['input'];
+};
+
+export type IAuthPayload = {
+  __typename?: 'AuthPayload';
+  creation: Scalars['Boolean']['output'];
+  jwt: Scalars['String']['output'];
+};
+
 export type IAutomationAction = {
   __typename?: 'AutomationAction';
   action: Scalars['String']['output'];
@@ -647,6 +658,8 @@ export type IMutation = {
   addOrUpdateProjectContributor: IProjectContributor;
   /** Add a user email */
   addUserEmail: IUser;
+  /** Authenticate from email */
+  authenticateWithEmail: IAuthPayload;
   /** Create automation */
   createAutomationRule: IAutomationRule;
   /** Create a team */
@@ -688,6 +701,10 @@ export type IMutation = {
   removeContributorFromProject: IRemoveContributorFromProjectPayload;
   /** Remove a user from a team */
   removeUserFromTeam: IRemoveUserFromTeamPayload;
+  /** Request a login with an email */
+  requestEmailSignin: Scalars['Boolean']['output'];
+  /** Request a signup with an email */
+  requestEmailSignup: Scalars['Boolean']['output'];
   /** Reset invite link */
   resetInviteLink: ITeam;
   reviewBuild: IBuild;
@@ -735,6 +752,11 @@ export type IMutationAddOrUpdateProjectContributorArgs = {
 
 export type IMutationAddUserEmailArgs = {
   email: Scalars['String']['input'];
+};
+
+
+export type IMutationAuthenticateWithEmailArgs = {
+  input: IAuthFromEmailInput;
 };
 
 
@@ -840,6 +862,16 @@ export type IMutationRemoveContributorFromProjectArgs = {
 
 export type IMutationRemoveUserFromTeamArgs = {
   input: IRemoveUserFromTeamInput;
+};
+
+
+export type IMutationRequestEmailSigninArgs = {
+  email: Scalars['String']['input'];
+};
+
+
+export type IMutationRequestEmailSignupArgs = {
+  email: Scalars['String']['input'];
 };
 
 
@@ -1805,6 +1837,8 @@ export type IResolversTypes = ResolversObject<{
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  AuthFromEmailInput: IAuthFromEmailInput;
+  AuthPayload: ResolverTypeWrapper<IAuthPayload>;
   AutomationAction: ResolverTypeWrapper<IAutomationAction>;
   AutomationActionInput: IAutomationActionInput;
   AutomationActionRun: ResolverTypeWrapper<AutomationActionRun>;
@@ -1962,6 +1996,8 @@ export type IResolversParentTypes = ResolversObject<{
   AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  AuthFromEmailInput: IAuthFromEmailInput;
+  AuthPayload: IAuthPayload;
   AutomationAction: IAutomationAction;
   AutomationActionInput: IAutomationActionInput;
   AutomationActionRun: AutomationActionRun;
@@ -2161,6 +2197,12 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
   provider?: Resolver<IResolversTypes['AccountSubscriptionProvider'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['AccountSubscriptionStatus'], ParentType, ContextType>;
   trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAuthPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AuthPayload'] = IResolversParentTypes['AuthPayload']> = ResolversObject<{
+  creation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  jwt?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2447,6 +2489,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'secret'>>;
   addOrUpdateProjectContributor?: Resolver<IResolversTypes['ProjectContributor'], ParentType, ContextType, RequireFields<IMutationAddOrUpdateProjectContributorArgs, 'input'>>;
   addUserEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationAddUserEmailArgs, 'email'>>;
+  authenticateWithEmail?: Resolver<IResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<IMutationAuthenticateWithEmailArgs, 'input'>>;
   createAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationCreateAutomationRuleArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deactivateAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationDeactivateAutomationRuleArgs, 'id'>>;
@@ -2469,6 +2512,8 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   regenerateProjectToken?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationRegenerateProjectTokenArgs, 'id'>>;
   removeContributorFromProject?: Resolver<IResolversTypes['RemoveContributorFromProjectPayload'], ParentType, ContextType, RequireFields<IMutationRemoveContributorFromProjectArgs, 'input'>>;
   removeUserFromTeam?: Resolver<IResolversTypes['RemoveUserFromTeamPayload'], ParentType, ContextType, RequireFields<IMutationRemoveUserFromTeamArgs, 'input'>>;
+  requestEmailSignin?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationRequestEmailSigninArgs, 'email'>>;
+  requestEmailSignup?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationRequestEmailSignupArgs, 'email'>>;
   resetInviteLink?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationResetInviteLinkArgs, 'input'>>;
   reviewBuild?: Resolver<IResolversTypes['Build'], ParentType, ContextType, RequireFields<IMutationReviewBuildArgs, 'input'>>;
   sendUserEmailVerification?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationSendUserEmailVerificationArgs, 'email'>>;
@@ -2923,6 +2968,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountMetrics?: IAccountMetricsResolvers<ContextType>;
   AccountScreenshotMetrics?: IAccountScreenshotMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
+  AuthPayload?: IAuthPayloadResolvers<ContextType>;
   AutomationAction?: IAutomationActionResolvers<ContextType>;
   AutomationActionRun?: IAutomationActionRunResolvers<ContextType>;
   AutomationCondition?: IAutomationConditionResolvers<ContextType>;

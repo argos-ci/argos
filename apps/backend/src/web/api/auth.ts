@@ -3,11 +3,11 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { createJWT, JWT_VERSION } from "@/auth/jwt.js";
 import { AuthPayload } from "@/auth/request.js";
 import config from "@/config/index.js";
 import type { Account } from "@/database/models/index.js";
 import {
+  createJWTFromAccount,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
@@ -37,17 +37,6 @@ import { asyncHandler } from "../util.js";
 const router: Router = Router();
 
 export default router;
-
-function createJWTFromAccount(account: Account) {
-  return createJWT({
-    version: JWT_VERSION,
-    account: {
-      id: account.id,
-      name: account.name,
-      slug: account.slug,
-    },
-  });
-}
 
 const OAuthBodySchema = z.object({
   code: z.string(),

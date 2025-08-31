@@ -13,14 +13,14 @@ type JWTData = {
   };
 };
 
-export const createJWT = (data: JWTData) => {
+export function createJWT(data: JWTData) {
   return jwt.sign(data, config.get("server.sessionSecret"), {
     expiresIn: "60d",
     encoding: "utf-8",
   });
-};
+}
 
-export const verifyJWT = (token: string) => {
+export function verifyJWT(token: string): JWTData | null {
   try {
     const payload = jwt.verify(token, config.get("server.sessionSecret"));
     if (typeof payload !== "object" || payload["version"] !== JWT_VERSION) {
@@ -30,4 +30,4 @@ export const verifyJWT = (token: string) => {
   } catch {
     return null;
   }
-};
+}

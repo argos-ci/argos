@@ -45,7 +45,7 @@ function TeamsList() {
                 className="flex items-center gap-3 p-4 text-lg"
                 href={getAccountURL({ accountSlug: team.slug })}
               >
-                <AccountAvatar avatar={team.avatar} size={24} />
+                <AccountAvatar avatar={team.avatar} className="size-6" />
                 {team.name || team.slug}
               </ListRowLink>
             ))}

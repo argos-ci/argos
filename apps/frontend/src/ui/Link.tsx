@@ -1,8 +1,11 @@
+import type { RefAttributes } from "react";
 import { clsx } from "clsx";
 import { ExternalLinkIcon } from "lucide-react";
 import {
+  Button,
   Link as RACLink,
   LinkProps as RACLinkProps,
+  type ButtonProps,
 } from "react-aria-components";
 
 type LinkProps = RACLinkProps & {
@@ -43,14 +46,21 @@ export function HeadlessLink({
   );
 }
 
+const linkClassName =
+  "text-primary-low rac-focus no-underline hover:underline cursor-pointer";
+
+export function LinkButton({
+  className,
+  ...props
+}: ButtonProps & RefAttributes<HTMLButtonElement>) {
+  return <Button className={clsx(linkClassName, className)} {...props} />;
+}
+
 export function Link({ ref, className, ...props }: LinkProps) {
   return (
     <HeadlessLink
       ref={ref}
-      className={clsx(
-        "text-primary-low rac-focus no-underline hover:underline",
-        className,
-      )}
+      className={clsx(linkClassName, className)}
       {...props}
     />
   );

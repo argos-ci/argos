@@ -63,7 +63,7 @@ export async function unfurlBuild(
   })();
 
   const attachment: Bolt.types.MessageAttachment = {
-    title: `Build ${build.number} — ${build.name} — ${build.project.account.name || build.project.account.slug}/${build.project.name}`,
+    title: `Build ${build.number} — ${build.name} — ${build.project.account.displayName}/${build.project.name}`,
     fields: [
       { title: "Status", value: getBuildLabel(build.type, status) },
       statsMessage ? { title: "Screenshots", value: statsMessage } : null,

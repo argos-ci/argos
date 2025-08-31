@@ -3,8 +3,12 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type { PartialModelObject } from "objection";
 
+import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email.js";
+import { createJWT, JWT_VERSION } from "@/auth/jwt.js";
+import { sendEmailTemplate } from "@/email/send-email-template.js";
 import { sendNotification } from "@/notification/index.js";
-import { sanitizeEmail } from "@/util/email.js";
+import { getSlugFromEmail, sanitizeEmail } from "@/util/email.js";
+import type { RequestLocation } from "@/util/request-location.js";
 import { slugify } from "@/util/slug.js";
 import { boom } from "@/web/util.js";
 
@@ -28,6 +32,20 @@ const RESERVED_SLUGS = [
   "invite",
   "teams",
 ];
+
+/**
+ * Create a JWT token from an account.
+ */
+export function createJWTFromAccount(account: Account) {
+  return createJWT({
+    version: JWT_VERSION,
+    account: {
+      id: account.id,
+      name: account.name,
+      slug: account.slug,
+    },
+  });
+}
 
 /**
  * Join SSO teams if needed.
@@ -388,32 +406,19 @@ async function getOrCreateUserAccountFromThirdParty<
     );
   }
 
-  const baseSlug = getSlug(model).toLowerCase();
-  invariant(baseSlug, `Invalid slug: ${baseSlug}`);
+  const slug = getSlug(model).toLowerCase();
+  invariant(slug, `Invalid slug: ${slug}`);
 
-  const slug = await resolveAccountSlug(slugify(baseSlug));
-
-  const { account, user } = await transaction(async (trx) => {
-    const userData: PartialModelObject<User> = { email };
-    if ("user" in thirdPartyKey) {
-      userData[thirdPartyKey.user] = model.id;
-    }
-    const user = await User.query(trx).insertAndFetch(userData);
-    await UserEmail.query(trx).insert({
-      userId: user.id,
-      email,
-      verified: true,
-    });
-    const accountData: PartialModelObject<Account> = {
-      userId: user.id,
+  const { account, user } = await createAccount({
+    email,
+    slug,
+    userData: "user" in thirdPartyKey ? { [thirdPartyKey.user]: model.id } : {},
+    accountData: {
       name: getName(model),
-      slug,
-    };
-    if ("account" in thirdPartyKey) {
-      accountData[thirdPartyKey.account] = model.id;
-    }
-    const account = await Account.query(trx).insertAndFetch(accountData);
-    return { account, user };
+      ...("account" in thirdPartyKey
+        ? { [thirdPartyKey.account]: model.id }
+        : {}),
+    },
   });
 
   await sendNotification({
@@ -423,4 +428,173 @@ async function getOrCreateUserAccountFromThirdParty<
   });
 
   return account;
+}
+
+/**
+ * Create a new user account.
+ */
+async function createAccount(args: {
+  email: string;
+  slug: string;
+  accountData?: PartialModelObject<Account>;
+  userData?: PartialModelObject<User>;
+}) {
+  const email = sanitizeEmail(args.email);
+  const slug = await resolveAccountSlug(slugify(args.slug));
+  const { account, user } = await transaction(async (trx) => {
+    const userData: PartialModelObject<User> = { email, ...args.userData };
+    const user = await User.query(trx).insertAndFetch(userData);
+    await UserEmail.query(trx).insert({
+      userId: user.id,
+      email,
+      verified: true,
+    });
+    const accountData: PartialModelObject<Account> = {
+      userId: user.id,
+      slug,
+      ...args.accountData,
+    };
+    const account = await Account.query(trx).insertAndFetch(accountData);
+    return { account, user };
+  });
+  await sendNotification({
+    type: "welcome",
+    data: {},
+    recipients: [user.id],
+  });
+  return { account, user };
+}
+
+/**
+ * Request an account creation from email.
+ */
+export async function requestEmailSignup(args: {
+  email: string;
+  requestLocation: RequestLocation | null;
+}): Promise<void> {
+  const { requestLocation } = args;
+  const email = sanitizeEmail(args.email);
+  const user = await User.query()
+    .withGraphFetched("account")
+    .whereExists(
+      UserEmail.query()
+        .whereRaw('user_emails."userId" = users.id')
+        .where("email", email),
+    )
+    .first();
+
+  const code = await generateAuthEmailCode(email);
+
+  if (user) {
+    invariant(user.account, "Account not fetched");
+    await sendEmailTemplate({
+      template: "signup_signin_verification",
+      data: {
+        code,
+        location: requestLocation,
+        name: user.account.displayName,
+      },
+      to: [email],
+    });
+  } else {
+    await sendEmailTemplate({
+      template: "signup_verification",
+      data: {
+        code,
+        location: requestLocation,
+      },
+      to: [email],
+    });
+  }
+}
+
+/**
+ * Request to sign in from email.
+ */
+export async function requestEmailSignin(args: {
+  email: string;
+  requestLocation: RequestLocation | null;
+}): Promise<void> {
+  const { requestLocation } = args;
+  const email = sanitizeEmail(args.email);
+  const user = await User.query()
+    .withGraphFetched("account")
+    .whereExists(
+      UserEmail.query()
+        .whereRaw('user_emails."userId" = users.id')
+        .where("email", email),
+    )
+    .first();
+
+  if (!user) {
+    await sendEmailTemplate({
+      template: "signin_attempt",
+      data: {
+        location: requestLocation,
+        email,
+      },
+      to: [email],
+    });
+    return;
+  }
+
+  const code = await generateAuthEmailCode(email);
+
+  invariant(user.account, "Account not fetched");
+  await sendEmailTemplate({
+    template: "signin_verification",
+    data: {
+      code,
+      location: requestLocation,
+      name: user.account.displayName,
+    },
+    to: [email],
+  });
+}
+
+/**
+ * Authenticate a user with an email.
+ * - Either login the user if the account exists
+ * - Or create a new account if it doesn't
+ */
+export async function authenticateWithEmail(args: {
+  email: string;
+  code: string;
+}): Promise<{
+  account: Account;
+  creation: boolean;
+}> {
+  const { code } = args;
+  const email = sanitizeEmail(args.email);
+
+  const verified = await verifyAuthEmailCode({ email, code });
+
+  if (!verified) {
+    throw boom(400, `Invalid email verification code`, {
+      code: "INVALID_EMAIL_VERIFICATION_CODE",
+    });
+  }
+
+  const existingUser = await User.query()
+    .withGraphFetched("account")
+    .whereExists(
+      UserEmail.query()
+        .whereRaw('user_emails."userId" = users.id')
+        .where("email", email),
+    )
+    .first();
+
+  if (existingUser) {
+    invariant(existingUser.account, "Account not fetched");
+    return { account: existingUser.account, creation: false };
+  }
+
+  const slug = getSlugFromEmail(email);
+
+  const { account } = await createAccount({
+    email,
+    slug,
+  });
+
+  return { account, creation: true };
 }

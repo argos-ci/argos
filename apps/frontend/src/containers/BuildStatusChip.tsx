@@ -98,7 +98,7 @@ function BuildReviewUsers(props: {
           <div key={review.id}>
             <AccountAvatar
               avatar={review.user.avatar}
-              size={16}
+              className="size-4"
               alt={review.user.name ?? undefined}
             />
           </div>

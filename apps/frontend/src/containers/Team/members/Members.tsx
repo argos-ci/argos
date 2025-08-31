@@ -576,8 +576,7 @@ function TeamGithubMembersFetchList(props: TeamGithubMembersFetchListProps) {
             >
               <AccountAvatar
                 avatar={user?.avatar ?? member.githubAccount.avatar}
-                size={36}
-                className="shrink-0"
+                className="size-9 shrink-0"
               />
               {user ? (
                 <div className="flex-1">

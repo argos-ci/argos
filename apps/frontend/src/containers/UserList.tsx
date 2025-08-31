@@ -57,7 +57,7 @@ export function UserListRow(props: {
   const { user } = props;
   return (
     <ListRow className="flex items-center gap-6 px-4 py-2">
-      <AccountAvatar avatar={user.avatar} size={36} className="shrink-0" />
+      <AccountAvatar avatar={user.avatar} className="size-9 shrink-0" />
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <div className="text-sm font-semibold">{user.name}</div>

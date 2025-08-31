@@ -157,7 +157,7 @@ export function GithubRepositoryList(props: {
   const data = result.data || result.previousData;
 
   if (!data) {
-    return <Loader />;
+    return <Loader className="size-16" />;
   }
 
   const { ghApiInstallationRepositories } = data;

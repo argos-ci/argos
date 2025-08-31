@@ -228,8 +228,7 @@ function ReviewDescription(props: {
                     <>
                       &nbsp;by&nbsp;
                       <AccountAvatar
-                        className="shrink-0"
-                        size={16}
+                        className="size-4 shrink-0"
                         avatar={review.user.avatar}
                       />
                       &nbsp;{review.user.name}
