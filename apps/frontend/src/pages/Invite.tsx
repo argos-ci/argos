@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useSafeQuery } from "@/containers/Apollo";
 import { useIsLoggedIn } from "@/containers/Auth";
-import { LoginButtons } from "@/containers/LoginButtons";
+import { LoginOptions } from "@/containers/LoginOptions";
 import { graphql } from "@/gql";
 import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
@@ -101,7 +101,7 @@ export function Component() {
                     <p className="mb-10 text-xl">
                       Log in or create an account to accept this invitation.
                     </p>
-                    <LoginButtons />
+                    <LoginOptions />
                   </div>
                 );
               }
