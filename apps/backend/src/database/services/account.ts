@@ -224,14 +224,12 @@ async function getOrCreateUserAccountFromThirdParty<
     const [user, existingUser] = await Promise.all([
       attachToAccount.$relatedQuery("user").withGraphFetched("account"),
       (() => {
-        const query = User.query().withGraphFetched("account");
+        const query = User.query().withGraphJoined("account");
         if ("user" in thirdPartyKey) {
           return query.findOne({ [thirdPartyKey.user]: model.id });
         }
         if ("account" in thirdPartyKey) {
-          return query
-            .withGraphJoined("account")
-            .findOne(`account.${thirdPartyKey.account}`, model.id);
+          return query.findOne(`account.${thirdPartyKey.account}`, model.id);
         }
         assertNever(thirdPartyKey);
       })(),
@@ -279,20 +277,24 @@ async function getOrCreateUserAccountFromThirdParty<
     new Set([email, ...potentialEmails].filter((x) => x !== null)),
   );
   const existingUsers = await (() => {
-    const query = User.query()
-      .withGraphFetched("[account,emails]")
-      .withGraphJoined("[account,emails]");
+    const query = User.query();
 
     if (allEmails.length) {
-      query.whereIn("emails.email", allEmails);
+      query
+        .withGraphJoined("[account, emails]")
+        .whereIn("emails.email", allEmails);
     }
 
     if ("user" in thirdPartyKey) {
-      return query.orWhere(thirdPartyKey.user, model.id);
+      return query
+        .withGraphFetched("account")
+        .orWhere(thirdPartyKey.user, model.id);
     }
 
     if ("account" in thirdPartyKey) {
-      return query.orWhere(`account.${thirdPartyKey.account}`, model.id);
+      return query
+        .withGraphJoined("account")
+        .orWhere(`account.${thirdPartyKey.account}`, model.id);
     }
 
     assertNever(thirdPartyKey);
