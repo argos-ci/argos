@@ -277,7 +277,7 @@ async function getOrCreateUserAccountFromThirdParty<
     new Set([email, ...potentialEmails].filter((x) => x !== null)),
   );
   const existingUsers = await (() => {
-    const query = User.query();
+    const query = User.query().withGraphJoined("account");
 
     if (allEmails.length) {
       query
@@ -286,15 +286,11 @@ async function getOrCreateUserAccountFromThirdParty<
     }
 
     if ("user" in thirdPartyKey) {
-      return query
-        .withGraphFetched("account")
-        .orWhere(thirdPartyKey.user, model.id);
+      return query.orWhere(thirdPartyKey.user, model.id);
     }
 
     if ("account" in thirdPartyKey) {
-      return query
-        .withGraphJoined("account")
-        .orWhere(`account.${thirdPartyKey.account}`, model.id);
+      return query.orWhere(`account.${thirdPartyKey.account}`, model.id);
     }
 
     assertNever(thirdPartyKey);
