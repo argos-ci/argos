@@ -518,16 +518,30 @@ export const resolvers: IResolvers = {
               throw badUserInput(
                 "The provided GitLab access token does not have the `api` scope. Please create a new one with the `api` scope.",
                 {
+                  code: "MISSING_GITLAB_ACCESS_TOKEN_SCOPE",
                   field: "gitlabAccessToken",
                 },
               );
             }
           } catch (error: unknown) {
             if (error instanceof GitbeakerRequestError) {
+              if (error.cause?.response.status === 404) {
+                throw badUserInput(
+                  "The provided GitLab access token does not exist.",
+
+                  {
+                    code: "GITLAB_ACCESS_TOKEN_NOT_FOUND",
+                    field: "gitlabAccessToken",
+                  },
+                );
+              }
               if (error.cause?.response.status === 401) {
                 throw badUserInput(
                   "The provided GitLab access token is not valid.",
-                  { field: "gitlabAccessToken" },
+                  {
+                    code: "INVALID_GITLAB_ACCESS_TOKEN",
+                    field: "gitlabAccessToken",
+                  },
                 );
               }
             }
