@@ -277,12 +277,14 @@ async function getOrCreateUserAccountFromThirdParty<
     new Set([email, ...potentialEmails].filter((x) => x !== null)),
   );
   const existingUsers = await (() => {
-    const query = User.query().withGraphJoined("account");
+    const query = User.query().withGraphFetched("[account, emails]");
 
     if (allEmails.length) {
-      query
-        .withGraphJoined("[account, emails]")
-        .whereIn("emails.email", allEmails);
+      query.whereExists(
+        UserEmail.query()
+          .whereRaw('user_emails."userId" = users.id')
+          .whereIn("email", allEmails),
+      );
     }
 
     if ("user" in thirdPartyKey) {
@@ -290,7 +292,11 @@ async function getOrCreateUserAccountFromThirdParty<
     }
 
     if ("account" in thirdPartyKey) {
-      return query.orWhere(`account.${thirdPartyKey.account}`, model.id);
+      return query.orWhereExists(
+        Account.query()
+          .whereRaw('accounts."userId" = users.id')
+          .where(`accounts.${thirdPartyKey.account}`, model.id),
+      );
     }
 
     assertNever(thirdPartyKey);
