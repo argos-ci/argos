@@ -32,7 +32,7 @@ export function AccountItem({
       {...props}
       className={clsx("flex items-center gap-2", props.className)}
     >
-      <AccountAvatar avatar={account.avatar} size={18} />
+      <AccountAvatar avatar={account.avatar} className="size-4.5" />
       {account.name || account.slug}
       {showPlan && <AccountPlanChip account={account} />}
     </div>

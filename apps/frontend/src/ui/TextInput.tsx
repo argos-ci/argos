@@ -2,7 +2,7 @@ import { ComponentPropsWithRef, type RefAttributes } from "react";
 import { clsx } from "clsx";
 import { Input, InputProps } from "react-aria-components";
 
-type TextInputScale = "sm" | "md";
+type TextInputScale = "sm" | "md" | "lg";
 
 export interface TextInputProps
   extends InputProps,
@@ -11,8 +11,9 @@ export interface TextInputProps
 }
 
 const sizeClassNames: Record<TextInputScale, string> = {
-  sm: "text-sm px-3 py-1.5",
-  md: "text-base px-3 py-2",
+  sm: "text-sm px-3 py-1.5 rounded-sm leading-tight",
+  md: "text-base px-3 py-2 rounded-sm leading-tight",
+  lg: "text-base p-3 rounded-xl",
 };
 
 export function TextInput(props: TextInputProps) {
@@ -22,7 +23,7 @@ export function TextInput(props: TextInputProps) {
       {...rest}
       className={clsx(
         rest.className,
-        "bg-app text-default block w-full appearance-none rounded-sm border leading-tight",
+        "bg-app text-default block w-full appearance-none border",
         /* Hover */
         "not-disabled:hover:border-hover",
         /* Focus */

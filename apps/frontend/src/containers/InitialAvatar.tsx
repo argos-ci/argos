@@ -3,23 +3,19 @@ import { clsx } from "clsx";
 export function InitialAvatar(props: {
   ref?: React.Ref<HTMLDivElement>;
   className?: string;
-  size?: number;
   color: string;
   initial: string;
   alt?: string;
 }) {
-  const size = props.size;
   return (
     <div
       ref={props.ref}
       className={clsx(
         props.className,
-        "flex select-none items-center justify-center rounded-full",
+        "relative flex select-none items-center justify-center rounded-full",
       )}
       style={{
         backgroundColor: props.color,
-        width: size,
-        height: size,
       }}
       role="img"
       aria-label={props.alt}

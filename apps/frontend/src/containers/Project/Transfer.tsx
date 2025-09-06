@@ -227,7 +227,10 @@ const ReviewStep = (props: ReviewStepProps) => {
           <DialogTitle>Transfer Project</DialogTitle>
           <div className="my-10 flex justify-around gap-10 text-center">
             <div className="flex flex-1 flex-col items-center">
-              <AccountAvatar avatar={actualAccount.avatar} size={64} />
+              <AccountAvatar
+                avatar={actualAccount.avatar}
+                className="size-16"
+              />
               <div className="mt-2 text-xl">
                 {actualAccount.name || actualAccount.slug}
               </div>
@@ -239,7 +242,10 @@ const ReviewStep = (props: ReviewStepProps) => {
               />
             </div>
             <div className="flex flex-1 flex-col items-center">
-              <AccountAvatar avatar={targetAccount.avatar} size={64} />
+              <AccountAvatar
+                avatar={targetAccount.avatar}
+                className="size-16"
+              />
               <div className="mt-2 text-xl">
                 {targetAccount.name || targetAccount.slug}
               </div>

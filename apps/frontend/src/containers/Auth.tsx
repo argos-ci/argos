@@ -17,7 +17,7 @@ type AuthToken = null | string;
 
 interface AuthContextValue {
   token: AuthToken;
-  setToken: (token: AuthToken) => void;
+  setToken: (token: AuthToken, options?: { silent?: boolean }) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -51,14 +51,19 @@ export const AuthContextProvider = ({
   const [token, setStateToken] = useState<string | null>(() =>
     readAuthTokenCookie(),
   );
-  const setToken = useCallback((newToken: AuthToken) => {
-    setStateToken(newToken);
-    if (newToken === null) {
-      removeAuthTokenCookie();
-    } else {
-      setAuthTokenCookie(newToken);
-    }
-  }, []);
+  const setToken = useCallback<AuthContextValue["setToken"]>(
+    (newToken, options) => {
+      if (newToken === null) {
+        removeAuthTokenCookie();
+      } else {
+        setAuthTokenCookie(newToken);
+      }
+      if (!options?.silent) {
+        setStateToken(newToken);
+      }
+    },
+    [],
+  );
   useEffect(() => {
     if (token) {
       const payload = decodeAuthToken(token);

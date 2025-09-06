@@ -1,8 +1,9 @@
 import * as React from "react";
-import { Button, Section } from "@react-email/components";
+import { Section } from "@react-email/components";
 import { z } from "zod";
 
 import {
+  Button,
   EmailLayout,
   H1,
   Hi,
@@ -11,6 +12,7 @@ import {
   InfoText,
   Link,
   Paragraph,
+  SafetyDisclaimer,
 } from "../components";
 import { defineEmailTemplate } from "../template";
 
@@ -48,12 +50,7 @@ export const handler = defineEmailTemplate({
             below:
           </Paragraph>
           <Section className="my-4 text-center">
-            <Button
-              href={verifyUrl}
-              className="rounded bg-[#5746af] px-10 py-2.5 text-lg font-medium text-white"
-            >
-              Verify Email
-            </Button>
+            <Button href={verifyUrl}>Verify Email</Button>
           </Section>
           <Paragraph>
             Or copy and paste this URL into a new tab of your browser:
@@ -62,9 +59,7 @@ export const handler = defineEmailTemplate({
           <Hr />
           <InfoText>
             If you didn't attempt to add {email} to your account, please ignore
-            this email. If you are concerned about your account's safety, please{" "}
-            <Link href="https://argos-ci.com/docs/contact-us">contact us</Link>{" "}
-            to get in touch with us.
+            this email. <SafetyDisclaimer />
           </InfoText>
         </EmailLayout>
       ),

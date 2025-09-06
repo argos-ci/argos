@@ -10,7 +10,7 @@ export function PageLoader() {
         visibility: visible ? "visible" : "hidden",
       }}
     >
-      <Loader delay={0} />
+      <Loader className="size-16" delay={0} />
       <div className="text-low text-sm">Loading, please be patient...</div>
     </Container>
   );

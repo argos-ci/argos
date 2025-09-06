@@ -122,6 +122,16 @@ input AddContributorToProjectInput {
   userAccountId: ID!
 }
 
+input AuthFromEmailInput {
+  code: String!
+  email: String!
+}
+
+type AuthPayload {
+  creation: Boolean!
+  jwt: String!
+}
+
 type AutomationAction {
   action: String!
   actionPayload: JSONObject!
@@ -611,6 +621,9 @@ type Mutation {
   """Add a user email"""
   addUserEmail(email: String!): User!
 
+  """Authenticate from email"""
+  authenticateWithEmail(input: AuthFromEmailInput!): AuthPayload!
+
   """Create automation"""
   createAutomationRule(input: CreateAutomationRuleInput!): AutomationRule!
 
@@ -670,6 +683,12 @@ type Mutation {
 
   """Remove a user from a team"""
   removeUserFromTeam(input: RemoveUserFromTeamInput!): RemoveUserFromTeamPayload!
+
+  """Request a login with an email"""
+  requestEmailSignin(email: String!): Boolean!
+
+  """Request a signup with an email"""
+  requestEmailSignup(email: String!): Boolean!
 
   """Reset invite link"""
   resetInviteLink(input: ResetInviteLinkInput!): Team!

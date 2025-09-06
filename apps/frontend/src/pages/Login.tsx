@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
@@ -11,14 +12,15 @@ import { Link } from "@/ui/Link";
 /** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
-  const [params] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const [email, setEmail] = useState(searchParams.get("email") || "");
 
   if (loggedIn) {
     return <Navigate to="/" replace />;
   }
 
-  const redirect = params.get("r");
-  const error = params.get("error");
+  const redirect = searchParams.get("r") || null;
+  const error = searchParams.get("error") || null;
 
   return (
     <>
@@ -26,10 +28,10 @@ export function Component() {
         <title>Login</title>
       </Helmet>
 
-      <Container className="mt-12 flex flex-col items-center justify-center px-4">
+      <Container className="mt-12 flex max-w-sm flex-col items-center justify-center px-4">
         <BrandShield className="mb-6 w-28" />
 
-        <div className="mb-10 text-3xl font-semibold">Login to Argos</div>
+        <h1 className="mb-10 text-3xl font-semibold">Login to Argos</h1>
 
         {error && (
           <Alert className="border-danger mb-8 rounded-sm border p-4">
@@ -50,8 +52,33 @@ export function Component() {
           </Alert>
         )}
 
-        <LoginOptions redirect={redirect} />
+        <LoginOptions
+          redirect={redirect}
+          email={email}
+          onEmailChange={setEmail}
+        />
+
+        <p className="mt-8">
+          Don’t have an account?{" "}
+          <Link href={getSignupUrl({ email, redirect })}>Sign up</Link>
+        </p>
       </Container>
     </>
   );
+}
+
+function getSignupUrl(props: {
+  email: string | null;
+  redirect: string | null;
+}) {
+  const searchParams = new URLSearchParams();
+  const { email, redirect } = props;
+  if (email) {
+    searchParams.set("email", email);
+  }
+  if (redirect) {
+    searchParams.set("r", redirect);
+  }
+  const strParams = searchParams.toString();
+  return `/signup${strParams ? `?${strParams}` : ""}`;
 }

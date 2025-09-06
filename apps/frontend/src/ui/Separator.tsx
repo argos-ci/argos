@@ -12,7 +12,7 @@ export function Separator(
       {...separatorProps}
       className={clsx(
         "bg-(--border-color-default) shrink-0",
-        props.orientation === "vertical" ? "h-full w-px" : "h-px w-full",
+        props.orientation === "vertical" ? "w-px" : "h-px w-full",
         props.className,
       )}
     />

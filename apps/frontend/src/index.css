@@ -177,15 +177,31 @@
 
   --ring-color-google: var(--gray-6);
 
+  --outline-color-primary: var(--violet-6);
+
   --stroke-low: var(--border-color-low);
 
   --fill-subtle: var(--background-color-subtle);
   --fill-text-low: var(--text-color-low);
 
-  --animate-bounce-down: bounce-down 1s infinite;
-
   --z-index-hover-card: 800;
   --z-index-dialog: 900;
+
+  --animate-caret-blink: caret-blink 1.2s ease-out infinite;
+
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
+
+  --animate-bounce-down: bounce-down 1s infinite;
 
   @keyframes bounce-down {
     0%,

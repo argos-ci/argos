@@ -153,7 +153,7 @@ export const resolvers: IResolvers = {
               template: "email_added",
               data: {
                 email,
-                name: ctx.auth.account.name || ctx.auth.account.slug,
+                name: ctx.auth.account.displayName,
               },
               to: [ctx.auth.user.email],
             })
@@ -186,7 +186,7 @@ export const resolvers: IResolvers = {
           template: "email_removed",
           data: {
             email,
-            name: ctx.auth.account.name || ctx.auth.account.slug,
+            name: ctx.auth.account.displayName,
           },
           to: [ctx.auth.user.email],
         });

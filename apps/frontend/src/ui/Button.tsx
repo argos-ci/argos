@@ -1,6 +1,5 @@
 import { Children, cloneElement, useState } from "react";
 import { clsx } from "clsx";
-import { LoaderIcon } from "lucide-react";
 import {
   Button as RACButton,
   ButtonProps as RACButtonProps,
@@ -10,6 +9,8 @@ import {
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/util/error";
+
+import { Loader } from "./Loader";
 
 type ButtonVariant =
   | "primary"
@@ -129,7 +130,7 @@ export function Button({
           return (
             <>
               <ButtonIcon>
-                <LoaderIcon className="animate-spin duration-[2s]" />
+                <Loader />
               </ButtonIcon>
               {childrenRes}
             </>

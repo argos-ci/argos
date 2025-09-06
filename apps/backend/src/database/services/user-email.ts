@@ -31,13 +31,15 @@ async function generateEmailVerificationURL(email: string) {
 /**
  * Verify that the token is valid for the given email.
  */
-async function verifyEmailToken(token: string, email: string) {
+async function verifyEmailToken(args: { token: string; email: string }) {
+  const { token, email } = args;
   const redis = await getRedisClient();
-  const storedEmail = await redis.get(getRedisKey(token));
+  const key = getRedisKey(token);
+  const storedEmail = await redis.get(key);
   if (storedEmail !== email) {
     return false;
   }
-  await redis.del(`email_verification:${token}`);
+  await redis.del(key);
   return true;
 }
 
@@ -49,7 +51,7 @@ export async function markEmailAsVerified(input: {
   email: string;
   token: string;
 }) {
-  const verified = await verifyEmailToken(input.token, input.email);
+  const verified = await verifyEmailToken(input);
   if (!verified) {
     return false;
   }
@@ -71,7 +73,7 @@ export async function sendVerificationEmail(input: {
     template: "email_verification",
     data: {
       email: input.email,
-      name: input.account.name || input.account.slug,
+      name: input.account.displayName,
       verifyUrl: url.toString(),
     },
     to: [input.email],

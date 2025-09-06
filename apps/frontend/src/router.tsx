@@ -100,7 +100,7 @@ function RootErrorBoundary() {
 function HydrateFallback() {
   return (
     <div className="text-primary flex h-full flex-1 items-center justify-center">
-      <Loader />
+      <Loader className="size-16" />
     </div>
   );
 }

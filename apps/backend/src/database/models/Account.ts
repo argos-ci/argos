@@ -177,7 +177,7 @@ export class Account extends Model {
 
   _cachedSubscriptionManager?: AccountSubscriptionManager;
 
-  static override virtualAttributes = ["type"];
+  static override virtualAttributes = ["type", "displayName"];
 
   get type() {
     if (this.userId && !this.teamId) {
@@ -187,6 +187,13 @@ export class Account extends Model {
       return "team";
     }
     throw new Error("Incoherent account type");
+  }
+
+  /**
+   * Best display name for the account.
+   */
+  get displayName() {
+    return this.name || this.slug;
   }
 
   async $checkHasSubscribedToTrial() {

@@ -60,8 +60,7 @@ function ProjectCard({ project }: { project: Project }) {
         <div className="flex min-w-0 items-center gap-4">
           <AccountAvatar
             avatar={project.account.avatar}
-            size={32}
-            className="shrink-0"
+            className="size-8 shrink-0"
           />
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{project.name}</div>

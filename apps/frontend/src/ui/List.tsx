@@ -55,7 +55,7 @@ const ListLoader = memo(function ListLoader(props: { children: ReactNode }) {
   }
   return (
     <>
-      <Loader size={24} delay={0} />
+      <Loader className="size-6" delay={0} />
       <span>{props.children}</span>
     </>
   );

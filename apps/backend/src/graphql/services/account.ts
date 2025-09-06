@@ -15,7 +15,7 @@ import { boltApp } from "@/slack/app.js";
 import { uninstallSlackInstallation } from "@/slack/helpers.js";
 import { cancelStripeSubscription } from "@/stripe/index.js";
 
-import { badUserInput, forbidden } from "../util.js";
+import { badUserInput, forbidden, unauthenticated } from "../util.js";
 import { unsafe_deleteProject } from "./project.js";
 
 /**
@@ -26,7 +26,9 @@ export async function getAdminAccount(args: {
   user: User | undefined | null;
   withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
-  invariant(args.user, "no user");
+  if (!args.user) {
+    throw unauthenticated();
+  }
   const query = Account.query().findById(args.id).throwIfNotFound();
   if (args.withGraphFetched) {
     query.withGraphFetched(args.withGraphFetched);

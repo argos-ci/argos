@@ -14,7 +14,13 @@ import {
   ProjectUser,
   TeamUser,
 } from "@/database/models/index.js";
-import { checkAccountSlug } from "@/database/services/account.js";
+import {
+  authenticateWithEmail,
+  checkAccountSlug,
+  createJWTFromAccount,
+  requestEmailSignin,
+  requestEmailSignup,
+} from "@/database/services/account.js";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
 import {
@@ -25,6 +31,7 @@ import { sendNotification } from "@/notification/index.js";
 import { boltApp } from "@/slack/app.js";
 import { uninstallSlackInstallation } from "@/slack/helpers";
 import { encodeStripeClientReferenceId } from "@/stripe/index.js";
+import { HTTPError } from "@/web/util.js";
 
 import {
   IAccountPermission,
@@ -160,6 +167,16 @@ export const typeDefs = gql`
     accountId: ID!
   }
 
+  input AuthFromEmailInput {
+    email: String!
+    code: String!
+  }
+
+  type AuthPayload {
+    jwt: String!
+    creation: Boolean!
+  }
+
   extend type Query {
     "Get Account by slug"
     account(slug: String!): Account
@@ -180,6 +197,12 @@ export const typeDefs = gql`
     disconnectGitLabAuth(input: DisconnectGitLabAuthInput!): Account!
     "Disconnect Google Account"
     disconnectGoogleAuth(input: DisconnectGoogleAuthInput!): Account!
+    "Request a signup with an email"
+    requestEmailSignup(email: String!): Boolean!
+    "Request a login with an email"
+    requestEmailSignin(email: String!): Boolean!
+    "Authenticate from email"
+    authenticateWithEmail(input: AuthFromEmailInput!): AuthPayload!
   }
 `;
 
@@ -363,7 +386,9 @@ export const resolvers: IResolvers = {
         ? await ctx.loaders.GithubAccount.load(account.githubAccountId)
         : null;
 
-      const initial = ((account.name || account.slug)[0] || "x").toUpperCase();
+      const firstLetter = account.displayName[0];
+      invariant(firstLetter, "Account should have a display name");
+      const initial = firstLetter.toUpperCase();
       const color = getAvatarColor(account.id);
 
       if (ghAccount) {
@@ -635,6 +660,49 @@ export const resolvers: IResolvers = {
         user: ctx.auth?.user,
       });
       return disconnectGoogleAuth(account);
+    },
+    requestEmailSignup: async (_root, args, ctx) => {
+      const { email } = args;
+
+      await requestEmailSignup({
+        email,
+        requestLocation: ctx.requestLocation,
+      });
+
+      return true;
+    },
+    requestEmailSignin: async (_root, args, ctx) => {
+      const { email } = args;
+
+      await requestEmailSignin({
+        email,
+        requestLocation: ctx.requestLocation,
+      });
+
+      return true;
+    },
+    authenticateWithEmail: async (_root, args) => {
+      const { email, code } = args.input;
+
+      try {
+        const { account, creation } = await authenticateWithEmail({
+          email,
+          code,
+        });
+
+        return { jwt: createJWTFromAccount(account), creation };
+      } catch (error) {
+        if (
+          error instanceof HTTPError &&
+          error.code === "INVALID_EMAIL_VERIFICATION_CODE"
+        ) {
+          throw badUserInput(error.message, {
+            field: "code",
+            code: error.code,
+          });
+        }
+        throw error;
+      }
     },
   },
 };

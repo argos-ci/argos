@@ -47,7 +47,9 @@ const ApolloProvider = (props: {
           if (
             error instanceof Error &&
             "statusCode" in error &&
-            error.statusCode === 401
+            typeof error.statusCode === "number" &&
+            error.statusCode >= 400 &&
+            error.statusCode < 500
           ) {
             return false;
           }

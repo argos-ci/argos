@@ -127,13 +127,13 @@ function TeamContributorsList(props: {
           onChange={(e) => setSearch(e.target.value)}
         />
         {result.loading && (
-          <Loader size={16} delay={0} className="absolute right-2.5 top-2.5" />
+          <Loader delay={0} className="absolute right-2.5 top-2.5 size-4" />
         )}
       </div>
       <div className="flex-1 overflow-auto">
         {(() => {
           if (loading) {
-            return <Loader size={32} className="mx-auto mt-4" />;
+            return <Loader className="mx-auto mt-4 size-8" />;
           }
           invariant(data.team, "Team not found");
           const members = data.team.members.edges;
