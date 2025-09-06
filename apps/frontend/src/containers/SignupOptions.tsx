@@ -3,6 +3,7 @@ import { useApolloClient } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSetAtom } from "jotai/react";
 import { MailIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "react-router-dom";
@@ -20,6 +21,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { LinkButton } from "@/ui/Link";
 
 import { AuthWithEmail } from "./AuthWithEmail";
+import { lastLoginMethodAtom } from "./LastLoginMethod";
 
 type Screen = "providers" | "email" | "verifyEmail";
 
@@ -31,6 +33,7 @@ export function SignupOptions(props: {
   const redirect = props.redirect ?? location.pathname + location.search;
   const [email, setEmail] = useState(props.defaultEmail ?? "");
   const [screen, setScreen] = useState<Screen>("providers");
+  const setLastLoginMethod = useSetAtom(lastLoginMethodAtom);
   switch (screen) {
     case "providers": {
       return (
@@ -64,6 +67,7 @@ export function SignupOptions(props: {
             email={email}
             onBack={() => setScreen("email")}
             redirect={redirect}
+            onSuccess={() => setLastLoginMethod("email")}
           />
         </div>
       );
@@ -141,12 +145,14 @@ function ProvidersScreen(props: {
   onContinueWithEmail: () => void;
 }) {
   const { redirect, onContinueWithEmail } = props;
+  const setLastLoginMethod = useSetAtom(lastLoginMethodAtom);
   return (
     <div className="flex flex-col gap-4">
       <GoogleLoginButton
         redirect={redirect}
         size="large"
         className="w-full justify-center"
+        onPress={() => setLastLoginMethod("google")}
       >
         Continue with Google
       </GoogleLoginButton>
@@ -154,6 +160,7 @@ function ProvidersScreen(props: {
         redirect={redirect}
         size="large"
         className="w-full justify-center"
+        onPress={() => setLastLoginMethod("github")}
       >
         Continue with GitHub
       </GitHubLoginButton>
@@ -161,6 +168,7 @@ function ProvidersScreen(props: {
         redirect={redirect}
         size="large"
         className="w-full justify-center"
+        onPress={() => setLastLoginMethod("gitlab")}
       >
         Continue with GitLab
       </GitLabLoginButton>
