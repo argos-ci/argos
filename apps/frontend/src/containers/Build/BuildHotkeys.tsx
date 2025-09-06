@@ -250,6 +250,15 @@ export function useBuildHotkey(
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
 
+      // If the element has a modal as ancestor, it means a modal is open (because of focus trap).
+      // So by doing that we ignore all hotkeys when a modal is open.
+      if (
+        event.target instanceof HTMLElement &&
+        event.target.closest("[data-modal]")
+      ) {
+        return;
+      }
+
       if (!options.enabled) {
         return;
       }

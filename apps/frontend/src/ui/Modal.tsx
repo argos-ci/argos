@@ -26,7 +26,9 @@ export function Modal(props: ModalProps) {
   const { children, ...rest } = props;
   return (
     <ModalOverlay {...rest} className={overlayStyles}>
-      <RACModal className={modalStyles}>{children}</RACModal>
+      <RACModal data-modal="" className={modalStyles}>
+        {children}
+      </RACModal>
     </ModalOverlay>
   );
 }
