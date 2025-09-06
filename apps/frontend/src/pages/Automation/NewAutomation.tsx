@@ -147,13 +147,17 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
       },
       update(cache, { data }) {
         const newAutomation = data?.createAutomationRule;
-        if (!newAutomation) return;
+        if (!newAutomation) {
+          return;
+        }
 
         const projectIdInCache = cache.identify({
           __typename: "Project",
           id: project.id,
         });
-        if (!projectIdInCache) return;
+        if (!projectIdInCache) {
+          return;
+        }
 
         cache.modify({
           id: projectIdInCache,

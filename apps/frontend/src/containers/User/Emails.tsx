@@ -54,11 +54,19 @@ export function UserEmails(props: {
   // Put primary email first, then verified, then others
   const sortedEmails = Array.from(account.emails).sort((a, b) => {
     // Primary email first
-    if (a.email === account.email && b.email !== account.email) return -1;
-    if (b.email === account.email && a.email !== account.email) return 1;
+    if (a.email === account.email && b.email !== account.email) {
+      return -1;
+    }
+    if (b.email === account.email && a.email !== account.email) {
+      return 1;
+    }
     // Verified before unverified
-    if (a.verified && !b.verified) return -1;
-    if (!a.verified && b.verified) return 1;
+    if (a.verified && !b.verified) {
+      return -1;
+    }
+    if (!a.verified && b.verified) {
+      return 1;
+    }
     // Otherwise, sort alphabetically
     return a.email.localeCompare(b.email);
   });

@@ -13,6 +13,7 @@ const config = tseslint.config(
   {
     name: "argos/custom-ts-rules",
     rules: {
+      curly: "error",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",

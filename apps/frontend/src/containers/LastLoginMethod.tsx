@@ -10,7 +10,9 @@ export function LastUsedIndicator(props: {
   isEnabled: boolean;
   children: React.ReactNode;
 }) {
-  if (!props.isEnabled) return props.children;
+  if (!props.isEnabled) {
+    return props.children;
+  }
 
   return (
     <div className="relative">
