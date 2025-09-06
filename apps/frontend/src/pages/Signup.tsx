@@ -224,46 +224,44 @@ function FormStep(props: {
   return (
     <SignupCard title="The easiest way to catch visual bugs starts with Argos.">
       <Form form={form} onSubmit={onSubmit} className="contents">
-        {isFromInvite ? null : (
-          <AccountTypeField
+        <div className="flex flex-col gap-10">
+          {isFromInvite ? null : (
+            <AccountTypeField control={form.control} name="usage" />
+          )}
+          {usage && (
+            <div>
+              <FormTextInput
+                control={form.control}
+                label={isPro ? "Team Name" : "Your Name"}
+                {...registerName}
+                ref={nameRef}
+                id="name"
+                placeholder={isPro ? "Gryffindor" : "John Wick"}
+                autoComplete="off"
+              />
+              {isPro && <ProPlanWarning />}
+            </div>
+          )}
+          <FormSubmit
             control={form.control}
-            name="usage"
-            className="mb-10"
-          />
-        )}
-        {usage && (
-          <div>
-            <FormTextInput
-              control={form.control}
-              label={isPro ? "Team Name" : "Your Name"}
-              {...registerName}
-              ref={nameRef}
-              id="name"
-              placeholder={isPro ? "Gryffindor" : "John Wick"}
-              autoComplete="off"
-            />
-            {isPro && <ProPlanWarning />}
-          </div>
-        )}
-        <FormSubmit
-          control={form.control}
-          size="large"
-          className="mt-10 justify-center"
-          disableIfPristine
-        >
-          Continue
-        </FormSubmit>
-        <p className="text-low mt-10 text-center text-xs">
-          By joining, you agree to our{" "}
-          <Link href="https://argos-ci.com/terms" target="_blank">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="https://argos-ci.com/privacy" target="_blank">
-            Privacy Policy
-          </Link>
-          .
-        </p>
+            size="large"
+            className="justify-center"
+            disableIfPristine
+          >
+            Continue
+          </FormSubmit>
+          <p className="text-low text-center text-xs">
+            By joining, you agree to our{" "}
+            <Link href="https://argos-ci.com/terms" target="_blank">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="https://argos-ci.com/privacy" target="_blank">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
       </Form>
     </SignupCard>
   );
