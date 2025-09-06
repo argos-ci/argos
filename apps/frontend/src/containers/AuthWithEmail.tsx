@@ -58,7 +58,9 @@ export function AuthWithEmail(props: {
         onComplete={() => {
           authenticateWithEmail({
             variables: { email, code },
-          }).catch(() => {});
+          }).catch(() => {
+            // Error is handled in the mutation error state
+          });
         }}
       />
       {error ? (

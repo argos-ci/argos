@@ -47,7 +47,7 @@ export const handler = defineEmailTemplate({
           <Paragraph>
             We have received a sign-up attempt
             <FromLocation location={location} />, however, we couldn't find an
-            account associated with this email address. .
+            account associated with this email address.
           </Paragraph>
           <Paragraph>
             If you would like to create a new account, please click the button

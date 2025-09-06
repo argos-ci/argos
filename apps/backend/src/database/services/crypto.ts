@@ -17,5 +17,5 @@ export async function generateRandomHexString(length: number): Promise<string> {
 export async function generateRandomDigits(length: number): Promise<string> {
   // Generate a random integer between 0 and 999999
   const randomNumber = randomInt(0, 10 ** length);
-  return randomNumber.toString().padStart(6, "0");
+  return randomNumber.toString().padStart(length, "0");
 }
