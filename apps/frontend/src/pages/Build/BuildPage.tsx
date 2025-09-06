@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
 import { useSafeQuery } from "@/containers/Apollo";
-import { BuildDiffColorStateProvider } from "@/containers/Build/BuildDiffColorState";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { graphql } from "@/gql";
@@ -79,41 +78,39 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   return (
     <ProjectPermissionsContext value={data?.project?.permissions ?? null}>
       <BuildDiffProvider params={params} build={build}>
-        <BuildDiffColorStateProvider>
-          <BuildReviewStateProvider
-            params={params}
-            buildStatus={data?.project?.build?.status ?? null}
-            buildType={data?.project?.build?.type ?? null}
-          >
-            <BuildReviewDialogProvider project={data?.project ?? null}>
-              <div className="flex h-screen min-h-0 flex-col">
-                {data?.project?.account && (
-                  <>
-                    <PaymentBanner account={data.project.account} />
-                    <OvercapacityBanner
-                      account={data.project.account}
-                      accountSlug={params.accountSlug}
-                    />
-                  </>
-                )}
-                <BuildHeader
-                  buildNumber={params.buildNumber}
-                  accountSlug={params.accountSlug}
-                  projectName={params.projectName}
-                  build={build}
-                  project={data?.project ?? null}
-                />
-                {project && build ? (
-                  <BuildWorkspace
-                    params={params}
-                    build={build}
-                    project={project}
+        <BuildReviewStateProvider
+          params={params}
+          buildStatus={data?.project?.build?.status ?? null}
+          buildType={data?.project?.build?.type ?? null}
+        >
+          <BuildReviewDialogProvider project={data?.project ?? null}>
+            <div className="flex h-screen min-h-0 flex-col">
+              {data?.project?.account && (
+                <>
+                  <PaymentBanner account={data.project.account} />
+                  <OvercapacityBanner
+                    account={data.project.account}
+                    accountSlug={params.accountSlug}
                   />
-                ) : null}
-              </div>
-            </BuildReviewDialogProvider>
-          </BuildReviewStateProvider>
-        </BuildDiffColorStateProvider>
+                </>
+              )}
+              <BuildHeader
+                buildNumber={params.buildNumber}
+                accountSlug={params.accountSlug}
+                projectName={params.projectName}
+                build={build}
+                project={data?.project ?? null}
+              />
+              {project && build ? (
+                <BuildWorkspace
+                  params={params}
+                  build={build}
+                  project={project}
+                />
+              ) : null}
+            </div>
+          </BuildReviewDialogProvider>
+        </BuildReviewStateProvider>
       </BuildDiffProvider>
     </ProjectPermissionsContext>
   );

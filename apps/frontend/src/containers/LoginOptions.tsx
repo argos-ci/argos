@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useApolloClient } from "@apollo/client";
 import { assertNever } from "@argos/util/assertNever";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAtom } from "jotai/react";
 import { MailIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "react-router-dom";
@@ -19,6 +20,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { Separator } from "@/ui/Separator";
 
 import { AuthWithEmail } from "./AuthWithEmail";
+import { lastLoginMethodAtom, LastUsedIndicator } from "./LastLoginMethod";
 
 type Screen = "providers" | "verifyEmail";
 
@@ -33,11 +35,13 @@ export function LoginOptions(props: {
   const { email, onEmailChange } = props;
   const redirect = props.redirect ?? location.pathname + location.search;
   const [screen, setScreen] = useState<Screen>("providers");
+  const [lastLoginMethod, setLastLoginMethod] = useAtom(lastLoginMethodAtom);
   switch (screen) {
     case "providers": {
       return (
         <div className="flex w-full flex-col gap-6">
           <EmailForm
+            isLastUsed={lastLoginMethod === "email"}
             defaultEmail={email}
             onContinue={({ email }) => {
               onEmailChange(email);
@@ -46,30 +50,39 @@ export function LoginOptions(props: {
           />
           <Separator />
           <div className="flex flex-col gap-4">
-            <GoogleLoginButton
-              redirect={redirect}
-              size="large"
-              className="w-full justify-center"
-              isDisabled={props.isDisabled}
-            >
-              Continue with Google
-            </GoogleLoginButton>
-            <GitHubLoginButton
-              redirect={redirect}
-              size="large"
-              className="w-full justify-center"
-              isDisabled={props.isDisabled}
-            >
-              Continue with GitHub
-            </GitHubLoginButton>
-            <GitLabLoginButton
-              redirect={redirect}
-              size="large"
-              className="w-full justify-center"
-              isDisabled={props.isDisabled}
-            >
-              Continue with GitLab
-            </GitLabLoginButton>
+            <LastUsedIndicator isEnabled={lastLoginMethod === "google"}>
+              <GoogleLoginButton
+                redirect={redirect}
+                size="large"
+                className="w-full justify-center"
+                isDisabled={props.isDisabled}
+                onPress={() => setLastLoginMethod("google")}
+              >
+                Continue with Google
+              </GoogleLoginButton>
+            </LastUsedIndicator>
+            <LastUsedIndicator isEnabled={lastLoginMethod === "github"}>
+              <GitHubLoginButton
+                redirect={redirect}
+                size="large"
+                className="w-full justify-center"
+                isDisabled={props.isDisabled}
+                onPress={() => setLastLoginMethod("github")}
+              >
+                Continue with GitHub
+              </GitHubLoginButton>
+            </LastUsedIndicator>
+            <LastUsedIndicator isEnabled={lastLoginMethod === "gitlab"}>
+              <GitLabLoginButton
+                redirect={redirect}
+                size="large"
+                className="w-full justify-center"
+                isDisabled={props.isDisabled}
+                onPress={() => setLastLoginMethod("gitlab")}
+              >
+                Continue with GitLab
+              </GitLabLoginButton>
+            </LastUsedIndicator>
           </div>
         </div>
       );
@@ -85,6 +98,7 @@ export function LoginOptions(props: {
             email={email}
             onBack={() => setScreen("providers")}
             redirect={redirect}
+            onSuccess={() => setLastLoginMethod("email")}
           />
           <Separator />
         </div>
@@ -107,12 +121,13 @@ const EmailFormValuesSchema = z.object({
 
 function EmailForm(props: {
   defaultEmail: string;
+  isLastUsed: boolean;
   onContinue: (data: { email: string }) => void;
 }) {
-  const { onContinue } = props;
+  const { onContinue, isLastUsed, defaultEmail } = props;
   const client = useApolloClient();
   const form = useForm({
-    defaultValues: { email: props.defaultEmail },
+    defaultValues: { email: defaultEmail },
     resolver: zodResolver(EmailFormValuesSchema),
   });
   return (
@@ -129,18 +144,20 @@ function EmailForm(props: {
       }}
     >
       <FormRootToastError control={form.control} />
-      <FormTextInput
-        label="Email Address"
-        hiddenLabel
-        control={form.control}
-        scale="lg"
-        placeholder="Email Address"
-        className="mb-4"
-        type="email"
-        autoFocus
-        {...form.register("email")}
-        disabled={form.formState.isSubmitting}
-      />
+      <LastUsedIndicator isEnabled={isLastUsed}>
+        <FormTextInput
+          label="Email Address"
+          hiddenLabel
+          control={form.control}
+          scale="lg"
+          placeholder="Email Address"
+          className="mb-4"
+          type="email"
+          autoFocus
+          {...form.register("email")}
+          disabled={form.formState.isSubmitting}
+        />
+      </LastUsedIndicator>
       <FormSubmit
         control={form.control}
         size="large"

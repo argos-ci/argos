@@ -6,7 +6,9 @@ import { useEffect } from "react";
 export function useScrollToHash() {
   useEffect(() => {
     const hash = window.location.hash;
-    if (!hash) return;
+    if (!hash) {
+      return;
+    }
 
     // Delay to ensure DOM is ready
     const el = document.querySelector(hash);

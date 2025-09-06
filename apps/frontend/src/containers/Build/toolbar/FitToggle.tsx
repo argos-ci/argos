@@ -1,15 +1,16 @@
 import { memo, startTransition } from "react";
+import { useAtom } from "jotai/react";
 import { ShrinkIcon } from "lucide-react";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
-import { useBuildDiffFitState } from "../BuildDiffFitState";
+import { buildDiffFitContainedAtom } from "../BuildDiffFit";
 import { useBuildHotkey } from "../BuildHotkeys";
 import { useZoomerSyncContext } from "../Zoomer";
 
 export const FitToggle = memo(() => {
-  const { contained, setContained } = useBuildDiffFitState();
+  const [contained, setContained] = useAtom(buildDiffFitContainedAtom);
   const { reset } = useZoomerSyncContext();
   const toggle = () => {
     startTransition(() => {

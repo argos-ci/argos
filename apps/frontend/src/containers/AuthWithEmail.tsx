@@ -25,15 +25,17 @@ const AuthenticateWithEmailMutation = graphql(`
 
 export function AuthWithEmail(props: {
   email: string;
+  onSuccess?: () => void;
   onBack: () => void;
   redirect: string | undefined;
 }) {
-  const { email, onBack, redirect } = props;
+  const { email, onBack, redirect, onSuccess } = props;
   const { setToken } = useAuth();
   const [authenticateWithEmail, { loading, error }] = useMutation(
     AuthenticateWithEmailMutation,
     {
       onCompleted: (data) => {
+        onSuccess?.();
         if (data.authenticateWithEmail.creation && redirect) {
           setToken(data.authenticateWithEmail.jwt, {
             silent: true,
