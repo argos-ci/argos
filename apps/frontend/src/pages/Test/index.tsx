@@ -14,7 +14,6 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
-import { BuildDiffColorStateProvider } from "@/containers/Build/BuildDiffColorState";
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
 import {
@@ -556,31 +555,29 @@ function ChangesExplorer(props: {
     );
   }
   return (
-    <BuildDiffColorStateProvider>
-      <div className="bg-app flex gap-4 rounded-lg border" style={{ height }}>
-        <div className="flex min-w-60 border-r">
-          <ChangesList
-            test={test}
-            onSelect={setActiveChangeId}
-            activeChange={activeChange}
-          />
-        </div>
-        {activeChange && (
-          <BuildDiffDetail
-            build={activeChange.stats.lastSeenDiff.build}
-            diff={activeChange.stats.lastSeenDiff}
-            repoUrl={null}
-            header={
-              <BuildHeader
-                change={activeChange}
-                test={test}
-                onActiveTestChange={setActiveChangeId}
-              />
-            }
-          />
-        )}
+    <div className="bg-app flex gap-4 rounded-lg border" style={{ height }}>
+      <div className="flex min-w-60 border-r">
+        <ChangesList
+          test={test}
+          onSelect={setActiveChangeId}
+          activeChange={activeChange}
+        />
       </div>
-    </BuildDiffColorStateProvider>
+      {activeChange && (
+        <BuildDiffDetail
+          build={activeChange.stats.lastSeenDiff.build}
+          diff={activeChange.stats.lastSeenDiff}
+          repoUrl={null}
+          header={
+            <BuildHeader
+              change={activeChange}
+              test={test}
+              onActiveTestChange={setActiveChangeId}
+            />
+          }
+        />
+      )}
+    </div>
   );
 }
 

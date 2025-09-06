@@ -1,11 +1,12 @@
 import { createContext, use, useEffect, useMemo, useRef } from "react";
 import { invariant } from "@argos/util/invariant";
+import { useAtom } from "jotai/react";
+import { atomFamily, atomWithStorage } from "jotai/utils";
 
 import { BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { usePrevious } from "@/ui/usePrevious";
-import { useStorageState } from "@/util/useStorageState";
 
 import {
   checkDiffCanBeReviewed,
@@ -365,6 +366,13 @@ export function useBuildDiffStatusState(args: {
   ] as const;
 }
 
+const diffStatusesFamily = atomFamily((params: BuildParams) =>
+  atomWithStorage<Record<string, EvaluationStatus>>(
+    `${params.projectName}#${params.buildNumber}.review.diffStatuses`,
+    {},
+  ),
+);
+
 /**
  * Provider to manage the review status of the build.
  */
@@ -375,10 +383,9 @@ export function BuildReviewStateProvider(props: {
   buildType: BuildType | null;
 }) {
   const { buildStatus, buildType } = props;
-  const storageKey = `${props.params.projectName}#${props.params.buildNumber}.review.diffStatuses`;
-  const [diffStatuses, setDiffStatuses] = useStorageState<
-    Record<string, EvaluationStatus>
-  >(storageKey, {});
+  const [diffStatuses, setDiffStatuses] = useAtom(
+    diffStatusesFamily(props.params),
+  );
   const listenersRef = useRef<Listener[]>([]);
   const previousDiffStatuses = usePrevious(diffStatuses);
   useEffect(() => {

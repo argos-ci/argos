@@ -1,4 +1,5 @@
 import { memo, startTransition } from "react";
+import { useAtom } from "jotai/react";
 import { ColumnsIcon } from "lucide-react";
 
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -6,11 +7,11 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
 import { Hotkey, useBuildHotkey } from "../BuildHotkeys";
-import { useBuildDiffViewModeState } from "../useBuildDiffViewModeState";
+import { buildViewModeAtom } from "../BuildViewMode";
 import { useZoomerSyncContext } from "../Zoomer";
 
 export const ViewToggle = memo(() => {
-  const { setViewMode, viewMode } = useBuildDiffViewModeState();
+  const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
   const showBaselineHotkey = useBuildHotkey(
     "showBaseline",
     () => {
@@ -51,7 +52,7 @@ function ViewButton(props: {
   hotkey: Hotkey;
   children: React.ReactNode;
 }) {
-  const { setViewMode, viewMode } = useBuildDiffViewModeState();
+  const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
   const activate = () => {
     startTransition(() => {
       setViewMode(props.viewMode);
@@ -75,7 +76,7 @@ function ViewButton(props: {
 }
 
 export const SplitViewToggle = memo(() => {
-  const { viewMode, setViewMode } = useBuildDiffViewModeState();
+  const [viewMode, setViewMode] = useAtom(buildViewModeAtom);
   const { reset } = useZoomerSyncContext();
   const toggleSplitView = () => {
     setViewMode((viewMode) => (viewMode === "split" ? "changes" : "split"));

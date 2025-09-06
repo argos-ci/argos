@@ -11,6 +11,7 @@ import {
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
+import { useAtomValue } from "jotai/react";
 import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
 import { useObjectRef } from "react-aria";
 
@@ -30,29 +31,20 @@ import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
 import { fetchImage } from "@/util/image";
 
-import {
-  useBuildDiffColorState,
-  useBuildDiffColorStyle,
-} from "./BuildDiffColorState";
-import {
-  BuildDiffFitStateProvider,
-  useBuildDiffFitState,
-} from "./BuildDiffFitState";
+import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getGroupIcon } from "./BuildDiffGroup";
 import {
   BuildDiffHighlighterProvider,
   Highlighter,
   useBuildDiffHighlighterContext,
 } from "./BuildDiffHighlighterContext";
+import { buildViewModeAtom } from "./BuildViewMode";
 import {
-  BuildDiffVisibleStateProvider,
-  useBuildDiffVisibleState,
-} from "./BuildDiffVisibleState";
+  overlayColorAtom,
+  overlayVisibleAtom,
+  useOverlayStyle,
+} from "./OverlayStyle";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
-import {
-  BuildDiffViewModeStateProvider,
-  useBuildDiffViewModeState,
-} from "./useBuildDiffViewModeState";
 import {
   useZoomerSyncContext,
   useZoomTransform,
@@ -463,7 +455,7 @@ function BaseScreenshot({
   diff: BuildDiffDetailDocument;
   buildId: string;
 }) {
-  const { contained } = useBuildDiffFitState();
+  const contained = useAtomValue(buildDiffFitContainedAtom);
   switch (diff.status) {
     case ScreenshotDiffStatus.Added:
       return (
@@ -599,8 +591,8 @@ function CompareScreenshot(props: {
   buildId: string;
 }) {
   const { diff, buildId } = props;
-  const { visible } = useBuildDiffVisibleState();
-  const { contained } = useBuildDiffFitState();
+  const visible = useAtomValue(overlayVisibleAtom);
+  const contained = useAtomValue(buildDiffFitContainedAtom);
   switch (diff.status) {
     case ScreenshotDiffStatus.Added: {
       invariant(diff.compareScreenshot);
@@ -786,7 +778,7 @@ function RectHighlights(props: {
   imgSize: { width: number; height: number };
 }) {
   const { url, paneSize, imgSize } = props;
-  const { color } = useBuildDiffColorState();
+  const color = useAtomValue(overlayColorAtom);
   const containerRef = useRef<HTMLDivElement>(null);
   const transform = useZoomTransform();
   const rects = useColoredRects({ url, blockSize: 24 });
@@ -902,7 +894,7 @@ function rectToSquare(rect: Rect, minSize: number): Rect {
 }
 
 function ChangesScreenshotPicture(props: ScreenshotPictureProps) {
-  const style = useBuildDiffColorStyle({ src: props.src });
+  const style = useOverlayStyle({ src: props.src });
   const imageRendering = useImageRendering();
   return (
     <span style={{ ...style, imageRendering, ...props.style }}>
@@ -925,7 +917,7 @@ const DiffIndicator = memo(function DiffIndicator(props: {
   const { imgSize, url } = props;
   const [imgScale] = useScaleContext();
   const rects = useColoredRects({ url, blockSize: 5 });
-  const { color } = useBuildDiffColorState();
+  const color = useAtomValue(overlayColorAtom);
   const transform = useZoomTransform();
   const [containerSize, setContainerSize] = useState<{
     width: number;
@@ -1042,7 +1034,7 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 
 const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
-    const { viewMode } = useBuildDiffViewModeState();
+    const viewMode = useAtomValue(buildViewModeAtom);
     const showBaseline = viewMode === "split" || viewMode === "baseline";
     const showChanges = viewMode === "split" || viewMode === "changes";
 
@@ -1128,22 +1120,16 @@ export function BuildDiffDetail(props: {
       {diff ? (
         <ZoomerSyncProvider id={diff.id}>
           <BuildDiffHighlighterProvider>
-            <BuildDiffVisibleStateProvider>
-              <BuildDiffFitStateProvider>
-                <BuildDiffViewModeStateProvider>
-                  <div
-                    className={clsx(
-                      "sticky top-0 z-20 shrink-0 border-b p-4 transition-colors",
-                      !scrolled && "border-b-transparent",
-                    )}
-                  >
-                    {header}
-                  </div>
-                  <BuildScreenshots build={build} diff={diff} />
-                  <BuildPreviousReviewDialog build={build} />
-                </BuildDiffViewModeStateProvider>
-              </BuildDiffFitStateProvider>
-            </BuildDiffVisibleStateProvider>
+            <div
+              className={clsx(
+                "sticky top-0 z-20 shrink-0 border-b p-4 transition-colors",
+                !scrolled && "border-b-transparent",
+              )}
+            >
+              {header}
+            </div>
+            <BuildScreenshots build={build} diff={diff} />
+            <BuildPreviousReviewDialog build={build} />
           </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>
       ) : build.stats?.total === 0 ? (

@@ -8,7 +8,7 @@ import {
   useObjectRef,
 } from "react-aria";
 
-import { useBuildDiffColorStyle } from "@/containers/Build/BuildDiffColorState";
+import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
@@ -92,7 +92,7 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
 });
 
 function DiffPicture(props: ImageKitPictureProps) {
-  const style = useBuildDiffColorStyle({ src: props.src });
+  const style = useOverlayStyle({ src: props.src });
   return (
     <span className="z-10" style={{ ...style, ...props.style }}>
       <ImageKitPicture {...props} style={{ opacity: 0, display: "block" }} />
