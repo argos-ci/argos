@@ -9,7 +9,7 @@ type SwitchProps = ComponentPropsWithRef<typeof RACSwitch> & {
   size?: "sm" | "md";
 };
 
-export function Switch(props: SwitchProps) {
+function Switch(props: SwitchProps) {
   const { size = "md", ...rest } = props;
   return (
     <RACSwitch {...rest} className={clsx("group", rest.className)}>

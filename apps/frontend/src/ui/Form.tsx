@@ -18,6 +18,13 @@ function unwrapErrors(error: unknown) {
       if (typeof error.extensions?.field === "string") {
         return { field: error.extensions.field, message: error.message, code };
       }
+      if (Array.isArray(error.extensions?.field)) {
+        return {
+          fields: error.extensions.field as string[],
+          message: error.message,
+          code,
+        };
+      }
       return { field: "root.serverError", message: error.message, code };
     });
   }
@@ -67,9 +74,12 @@ export function handleFormError(
 ) {
   const errors = unwrapErrors(error);
   errors.forEach((error) => {
-    form.setError(error.field, {
-      type: error.code ?? "manual",
-      message: error.message,
+    const fields = error.fields ?? [error.field];
+    fields.forEach((field) => {
+      form.setError(field, {
+        type: error.code ?? "manual",
+        message: error.message,
+      });
     });
   });
 }

@@ -75,7 +75,7 @@ export function ProjectContributorsList(props: {
           if (!result.data) {
             return (
               <List>
-                <ListRowLoader>Loading contributors...</ListRowLoader>
+                <ListRowLoader>Loading contributors…</ListRowLoader>
               </List>
             );
           }

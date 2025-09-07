@@ -9,10 +9,8 @@ function getRedisKey(email: string) {
  * Generate a code for email authentication.
  */
 export async function generateAuthEmailCode(email: string) {
-  const [redis, code] = await Promise.all([
-    getRedisClient(),
-    generateRandomDigits(6),
-  ]);
+  const redis = await getRedisClient();
+  const code = generateRandomDigits(6);
   await redis.set(getRedisKey(email), code, {
     expiration: {
       type: "PX",

@@ -23,7 +23,10 @@ export function TextInput(props: TextInputProps) {
       {...rest}
       className={clsx(
         rest.className,
+        "peer/input",
+        "search-cancel:hidden",
         "bg-app text-default block w-full appearance-none border",
+        "placeholder:text-placeholder",
         /* Hover */
         "not-disabled:hover:border-hover",
         /* Focus */
@@ -32,11 +35,21 @@ export function TextInput(props: TextInputProps) {
         "aria-invalid:border-danger aria-invalid:focus:border-danger-active aria-invalid:hover:border-danger-hover",
         /* Disabled */
         "disabled:opacity-disabled",
-        /* Group  */
-        "group-[*]/text-input:rounded-r-none",
+        /* Addon  */
+        "peer-first/addon:rounded-l-none",
+        "peer-last/addon:rounded-r-none",
+        /* Icon */
+        "peer-first/icon:pl-9",
         /* Scale */
         sizeClassNames[scale],
       )}
+      {...(props.autoComplete === "off"
+        ? {
+            "data-1p-ignore": "true",
+            "data-lpignore": "true",
+            "data-protonpass-ignore": "true",
+          }
+        : {})}
     />
   );
 }
@@ -45,7 +58,19 @@ export function TextInputGroup(props: ComponentPropsWithRef<"div">) {
   return (
     <div
       {...props}
-      className={clsx("group/text-input flex items-stretch", props.className)}
+      className={clsx("relative flex items-stretch", props.className)}
+    />
+  );
+}
+
+export function TextInputIcon(props: ComponentPropsWithRef<"div">) {
+  return (
+    <div
+      {...props}
+      className={clsx(
+        "peer/icon text-placeholder pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 [&>svg]:size-4",
+        props.className,
+      )}
     />
   );
 }
@@ -55,7 +80,8 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "bg-ui text-low flex select-none items-center rounded-r border border-l-0 p-2 text-sm",
+        "peer/addon bg-ui text-low flex select-none items-center border p-2 text-sm",
+        "first:rounded-l first:border-r-0 last:rounded-r last:border-l-0",
         props.className,
       )}
     />

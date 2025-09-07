@@ -58,7 +58,7 @@ export function ProjectTeamMembersList(props: {
         if (loading) {
           return (
             <List>
-              <ListRowLoader>Loading team members...</ListRowLoader>
+              <ListRowLoader>Loading team members…</ListRowLoader>
             </List>
           );
         }

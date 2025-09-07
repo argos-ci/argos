@@ -27,12 +27,12 @@ export function unauthenticated(message: string = "Unauthenticated") {
 
 export function badUserInput(
   message: string,
-  options?: { field?: string; code?: ErrorCode },
+  options?: { field?: string | string[]; code?: ErrorCode },
 ) {
   const extensions: {
     code: string;
     argosErrorCode?: ErrorCode;
-    field?: string;
+    field?: string | string[];
   } = {
     code: "BAD_USER_INPUT",
   };

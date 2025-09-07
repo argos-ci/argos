@@ -120,6 +120,7 @@ function EmailScreen(props: {
         className="mb-4"
         type="email"
         autoFocus
+        autoComplete="email"
         {...form.register("email")}
         disabled={form.formState.isSubmitting}
       />

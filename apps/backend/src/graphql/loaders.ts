@@ -13,6 +13,7 @@ import {
   BuildReview,
   File,
   GithubAccount,
+  GithubAccountMember,
   GithubInstallation,
   GithubPullRequest,
   GithubRepository,
@@ -30,7 +31,11 @@ import {
   Test,
   User,
 } from "@/database/models/index.js";
-import { getAppOctokit, GhApiInstallation } from "@/github/index.js";
+import {
+  checkErrorStatus,
+  getAppOctokit,
+  GhApiInstallation,
+} from "@/github/index.js";
 import { getTestAllMetrics } from "@/metrics/test";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(
@@ -213,6 +218,37 @@ function createTeamUserFromGithubAccountMemberLoader() {
   );
 }
 
+function createGitHubAccountMemberLoader() {
+  return new DataLoader<
+    { githubAccountId: string; githubMemberId: string },
+    GithubAccountMember | null,
+    string
+  >(
+    async (args) => {
+      const members = await GithubAccountMember.query().whereRaw(
+        `
+        ("githubAccountId", "githubMemberId") IN (
+          ${args.map(() => "(?, ?)").join(", ")}
+        )
+      `,
+        args.flatMap((a) => [a.githubAccountId, a.githubMemberId]),
+      );
+      return args.map((arg) => {
+        return (
+          members.find(
+            (m) =>
+              m.githubAccountId === arg.githubAccountId &&
+              m.githubMemberId === arg.githubMemberId,
+          ) ?? null
+        );
+      });
+    },
+    {
+      cacheKeyFn: (input) => `${input.githubAccountId}-${input.githubMemberId}`,
+    },
+  );
+}
+
 function createBuildFromCompareScreenshotBucketIdLoader() {
   return new DataLoader<string, Build | null>(
     async (compareScreenshotBucketIds) => {
@@ -239,13 +275,20 @@ function createGhApiInstallationLoader() {
       return Promise.all(
         inputs.map(async (input) => {
           const octokit = getAppOctokit({ app: input.app, proxy: input.proxy });
-          const result = await octokit.apps.getInstallation({
-            installation_id: input.installationId,
-          });
-          if (!result.data.account || !("login" in result.data.account)) {
-            return null;
+          try {
+            const result = await octokit.apps.getInstallation({
+              installation_id: input.installationId,
+            });
+            if (!result.data.account || !("login" in result.data.account)) {
+              return null;
+            }
+            return result.data;
+          } catch (error) {
+            if (checkErrorStatus(404, error)) {
+              return null;
+            }
+            throw error;
           }
-          return result.data;
         }),
       );
     },
@@ -543,6 +586,7 @@ export const createLoaders = () => ({
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),
   GithubAccount: createModelLoader(GithubAccount),
+  GitHubAccountMemberLoader: createGitHubAccountMemberLoader(),
   GithubInstallation: createModelLoader(GithubInstallation),
   GithubPullRequest: createModelLoader(GithubPullRequest),
   GithubRepository: createModelLoader(GithubRepository),

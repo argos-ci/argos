@@ -1,4 +1,4 @@
-import { ComponentPropsWithRef, memo, ReactNode } from "react";
+import { ComponentPropsWithRef, memo, ReactNode, useTransition } from "react";
 import { clsx } from "clsx";
 import {
   Link as RACLink,
@@ -67,7 +67,7 @@ export function ListRowLoader({ children, ...rest }: ListRowProps) {
       {...rest}
       className={clsx(
         rest.className,
-        "text-low flex items-center justify-center gap-2",
+        "text-low flex select-none items-center justify-center gap-2",
       )}
     >
       <ListLoader>{children}</ListLoader>
@@ -76,12 +76,18 @@ export function ListRowLoader({ children, ...rest }: ListRowProps) {
 }
 
 export function ListLoadMore(props: { onPress: () => void }) {
+  const [isPending, startTransition] = useTransition();
   return (
     <div className="pt-2">
       <Button
         variant="secondary"
         className="w-full justify-center"
-        onPress={props.onPress}
+        isPending={isPending}
+        onPress={() => {
+          startTransition(() => {
+            props.onPress();
+          });
+        }}
       >
         Load more
       </Button>

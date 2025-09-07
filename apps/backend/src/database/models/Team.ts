@@ -97,24 +97,26 @@ export class Team extends Model {
   ssoGithubAccount?: GithubAccount | null;
 
   /**
-   * Generate the invitation secret.
+   * Generate the invite secret.
    */
-  static async generateInviteSecret() {
+  static generateInviteSecret() {
     return generateRandomHexString(20);
   }
 
   /**
-   * Generate an invitation link for the team.
+   * Generate an invite link for the team.
    */
   async $getInviteLink() {
     if (!this.inviteSecret) {
-      this.inviteSecret = await Team.generateInviteSecret();
+      this.inviteSecret = Team.generateInviteSecret();
       await Team.query()
         .findById(this.id)
         .patch({ inviteSecret: this.inviteSecret });
     }
-    return new URL(`/invite/${this.inviteSecret}`, config.get("server.url"))
-      .href;
+    return new URL(
+      `/teams/invite/${this.inviteSecret}`,
+      config.get("server.url"),
+    ).href;
   }
 
   /**

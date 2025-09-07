@@ -1,3 +1,8 @@
+type AcceptInvitePayload {
+  jwt: String
+  team: Team!
+}
+
 interface Account implements Node {
   additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
@@ -577,6 +582,16 @@ input ImportGitlabProjectInput {
   gitlabProjectId: ID!
 }
 
+input InviteMemberInput {
+  email: String!
+  level: TeamUserLevel!
+}
+
+input InviteMembersInput {
+  members: [InviteMemberInput!]!
+  teamAccountId: ID!
+}
+
 scalar JSONObject
 
 enum JobStatus {
@@ -612,8 +627,11 @@ enum MetricsPeriod {
 }
 
 type Mutation {
-  """Accept an invitation to join a team"""
-  acceptInvitation(secret: String!): Team!
+  """Accept an invite"""
+  acceptInvite(secret: String!): AcceptInvitePayload!
+
+  """Accept a team invite"""
+  acceptTeamInvite(secret: String!): Team!
 
   """Add contributor to project"""
   addOrUpdateProjectContributor(input: AddContributorToProjectInput!): ProjectContributor!
@@ -623,6 +641,9 @@ type Mutation {
 
   """Authenticate from email"""
   authenticateWithEmail(input: AuthFromEmailInput!): AuthPayload!
+
+  """Cancel a team invite"""
+  cancelInvite(teamInviteId: ID!): Team!
 
   """Create automation"""
   createAutomationRule(input: CreateAutomationRuleInput!): AutomationRule!
@@ -666,6 +687,12 @@ type Mutation {
 
   """Import a project from GitLab"""
   importGitlabProject(input: ImportGitlabProjectInput!): Project!
+
+  """Invite members to a team"""
+  inviteMembers(input: InviteMembersInput!): [TeamInvite!]!
+
+  """Join a team (if the user has an invite)"""
+  joinTeam(teamAccountId: ID!): Team!
 
   """Leave a team"""
   leaveTeam(input: LeaveTeamInput!): Boolean!
@@ -888,7 +915,9 @@ type Query {
   automationRule(id: String!): AutomationRule
   ghApiInstallationRepositories(fromAuthUser: Boolean!, installationId: ID!, page: Int!, reposPerPage: Int): GhApiRepositoryConnection!
   glApiProjects(accountId: ID!, allProjects: Boolean!, groupId: ID, page: Int!, search: String, userId: ID): GlApiProjectConnection!
-  invitation(secret: String!): Team
+
+  """Get a invite (specific to a user) by its secret"""
+  invite(secret: String!): TeamInvite
 
   """Get the authenticated user"""
   me: User
@@ -902,6 +931,9 @@ type Query {
 
   """Get Team by id"""
   teamById(id: ID!): Team
+
+  """Get a team invite (global to team) by its secret"""
+  teamInvite(secret: String!): Team
 }
 
 input RemoveContributorFromProjectInput {
@@ -1119,7 +1151,16 @@ type Team implements Account & Node {
   defaultUserLevel: TeamDefaultUserLevel!
   githubAccount: GithubAccount
   githubLightInstallation: GithubInstallation
-  githubMembers(after: Int = 0, first: Int = 30, isTeamMember: Boolean): TeamGithubMemberConnection
+  githubMembers(
+    after: Int = 0
+    first: Int = 30
+
+    """Filter members that are part of the team (true) or not (false)"""
+    isTeamMember: Boolean
+
+    """Search members by their GitHub login"""
+    search: String
+  ): TeamGithubMemberConnection
   gitlabAccessToken: String
   gitlabBaseUrl: String
   glNamespaces: GlApiNamespaceConnection
@@ -1127,8 +1168,32 @@ type Team implements Account & Node {
   id: ID!
   includedScreenshots: Int!
   inviteLink: String
+  invites(
+    after: Int = 0
+    first: Int = 30
+
+    """Search members by their email"""
+    search: String
+  ): TeamInviteConnection
   me: TeamMember
-  members(after: Int = 0, first: Int = 30, levels: [TeamUserLevel!], search: String, sso: Boolean): TeamMemberConnection!
+  members(
+    after: Int = 0
+    first: Int = 30
+
+    """Filter members by their user level"""
+    levels: [TeamUserLevel!]
+
+    """Order members by"""
+    orderBy: TeamMembersOrderBy = DATE
+
+    """Search members by their name, slug or email"""
+    search: String
+
+    """
+    Filter members that are part of the GitHub SSO (true) or not (false). Only works when SSO is activated.
+    """
+    sso: Boolean
+  ): TeamMemberConnection!
   meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
@@ -1163,7 +1228,23 @@ type TeamGithubMemberConnection implements Connection {
   pageInfo: PageInfo!
 }
 
+type TeamInvite implements Node {
+  avatar: AccountAvatar!
+  email: String!
+  expired: Boolean!
+  id: ID!
+  invitedBy: User!
+  team: Team!
+  userLevel: TeamUserLevel!
+}
+
+type TeamInviteConnection implements Connection {
+  edges: [TeamInvite!]!
+  pageInfo: PageInfo!
+}
+
 type TeamMember implements Node {
+  fromSSO: Boolean!
   id: ID!
   level: TeamUserLevel!
   user: User!
@@ -1172,6 +1253,12 @@ type TeamMember implements Node {
 type TeamMemberConnection implements Connection {
   edges: [TeamMember!]!
   pageInfo: PageInfo!
+}
+
+enum TeamMembersOrderBy {
+  DATE
+  NAME_ASC
+  NAME_DESC
 }
 
 enum TeamUserLevel {
@@ -1344,6 +1431,7 @@ type User implements Account & Node {
   hasSubscribedToTrial: Boolean!
   id: ID!
   includedScreenshots: Int!
+  invites: [TeamInvite!]!
   lastSubscription: AccountSubscription
   meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!

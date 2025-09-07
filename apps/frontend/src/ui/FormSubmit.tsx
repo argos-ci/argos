@@ -23,7 +23,13 @@ export function FormSubmit<
     formState.isSubmitting ||
     (props.disableIfPristine && !formState.isDirty);
   return (
-    <Button type="submit" {...props} isDisabled={isDisabled}>
+    <Button
+      type="submit"
+      {...props}
+      // Required to focus correctly the field when we use `setError` in the `onSubmit`
+      preventFocusOnPress
+      isDisabled={isDisabled}
+    >
       {props.children ?? "Save"}
     </Button>
   );

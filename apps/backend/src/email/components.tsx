@@ -21,7 +21,7 @@ import { z } from "zod";
 
 import config from "@/config";
 
-import type { LocationSchema } from "./schemas";
+import type { AvatarSchema, LocationSchema } from "./schemas";
 
 export function Paragraph(props: {
   children: React.ReactNode;
@@ -88,6 +88,43 @@ export function OTPCode(props: { children: React.ReactNode }) {
     <Text className="inline-block rounded bg-[#f6f6f6] p-4 text-2xl font-bold tracking-[0.2em]">
       {props.children}
     </Text>
+  );
+}
+
+export function Avatar(props: {
+  avatar: z.infer<typeof AvatarSchema>;
+  size: number;
+}) {
+  const { avatar, size } = props;
+  if (avatar.url) {
+    return (
+      <Img
+        src={avatar.url}
+        width={size}
+        height={size}
+        alt="Avatar"
+        className="rounded-full"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className="rounded-full"
+      style={{
+        backgroundColor: avatar.color,
+        width: size,
+        height: size,
+        textAlign: "center",
+      }}
+    >
+      <span
+        className="text-lg font-bold text-white"
+        style={{ fontSize: size / 2.5, lineHeight: `${size}px` }}
+      >
+        {avatar.initial}
+      </span>
+    </div>
   );
 }
 

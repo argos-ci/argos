@@ -5,6 +5,7 @@ import {
   Account,
   ProjectUser,
   Subscription,
+  TeamInvite,
   User,
   UserEmail,
 } from "@/database/models/index.js";
@@ -55,6 +56,7 @@ export const typeDefs = gql`
     hasSubscribedToTrial: Boolean!
     lastSubscription: AccountSubscription
     teams: [Team!]!
+    invites: [TeamInvite!]!
     ghInstallations: GhApiInstallationConnection!
     projectsContributedOn(
       after: Int = 0
@@ -281,6 +283,18 @@ export const resolvers: IResolvers = {
         .whereIn(
           "teamId",
           User.relatedQuery("teams").select("teams.id").for(account.userId),
+        );
+    },
+    invites: async (account) => {
+      invariant(account.userId, "account.userId is undefined");
+      return TeamInvite.query()
+        .whereRaw(`"expiresAt" > now()`)
+        .whereIn(
+          "email",
+          UserEmail.query()
+            .select("email")
+            .where("userId", account.userId)
+            .where("verified", true),
         );
     },
     ghInstallations: async (account, _args, ctx) => {

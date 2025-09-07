@@ -173,7 +173,7 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
         {fields.map((_field, index) => {
           return (
             <RemovableTask key={index} onRemove={() => remove(index)}>
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<div>Loading…</div>}>
                 <ActionDetail form={form} name={`${name}.${index}`} />
               </Suspense>
             </RemovableTask>

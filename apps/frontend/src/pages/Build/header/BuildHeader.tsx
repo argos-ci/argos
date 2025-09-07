@@ -113,7 +113,7 @@ function LoggedReviewButton(props: {
     return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
   }
   if (!progression) {
-    return <DisabledBuildReviewButton tooltip="Loading..." />;
+    return <DisabledBuildReviewButton tooltip="Loading…" />;
   }
   if (progression.toReview.length === 0) {
     return <DisabledBuildReviewButton tooltip="No changes to review" />;

@@ -11,7 +11,7 @@ export function PageLoader() {
       }}
     >
       <Loader className="size-16" delay={0} />
-      <div className="text-low text-sm">Loading, please be patient...</div>
+      <div className="text-low text-sm">Loading, please be patient…</div>
     </Container>
   );
 }

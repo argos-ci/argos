@@ -262,7 +262,7 @@ const ReviewStep = (props: ReviewStepProps) => {
           </div>
           {(() => {
             if (!data) {
-              return <DialogText>Loading...</DialogText>;
+              return <DialogText>Loading…</DialogText>;
             }
             const project = data.projectById;
             invariant(

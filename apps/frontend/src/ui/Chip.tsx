@@ -99,7 +99,7 @@ function getChipClassName(props: {
         "group-[*]/button-group:last:rounded-r-lg",
       ),
     scale === "xs" && "px-2 text-xs [--chip-gap:--spacing(1)]",
-    scale === "sm" && "px-3 py-1 text-xs [--chip-gap:--spacing(1)]",
+    scale === "sm" && "px-3 py-1 text-xs [--chip-gap:--spacing(1.5)]",
     scale === "md" && "px-4 py-2 text-sm [--chip-gap:--spacing(2)]",
     "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border font-medium leading-4",
   );
