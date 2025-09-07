@@ -37,20 +37,13 @@ import {
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListRow, ListTitle } from "@/ui/List";
-import {
-  ListBox,
-  ListBoxItem,
-  ListBoxItemDescription,
-  ListBoxItemLabel,
-} from "@/ui/ListBox";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
-import { Select, SelectButton } from "@/ui/Select";
 import { Switch } from "@/ui/Switch";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
-import { InviteLinkDialog } from "./InviteLink";
+import { InviteDialog } from "./InviteDialog";
+import { MemberLevelSelect } from "./MemberLevelSelect";
 
 const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
@@ -140,7 +133,7 @@ const _TeamFragment = graphql(`
       id
       level
     }
-    ...InviteLinkDialog_Team
+    ...InviteDialog_Team
   }
 `);
 
@@ -322,12 +315,14 @@ function LevelSelect(props: {
   hasFineGrainedAccessControl: boolean;
   member: DocumentType<typeof _LevelSelectTeamMemberFragment>;
 }) {
-  const { member } = props;
+  const { member, hasFineGrainedAccessControl } = props;
   const [setTeamMemberLevel] = useMutation(SetTeamMemberLevelMutation);
 
   return (
-    <Select
-      aria-label="Levels"
+    <MemberLevelSelect
+      size="sm"
+      className="text-low"
+      hasFineGrainedAccessControl={hasFineGrainedAccessControl}
       selectedKey={member.level}
       onSelectionChange={(value) => {
         setTeamMemberLevel({
@@ -345,35 +340,7 @@ function LevelSelect(props: {
           },
         });
       }}
-    >
-      <SelectButton className="text-low w-full text-sm">
-        {TeamMemberLabel[member.level]}
-      </SelectButton>
-      <Popover>
-        <ListBox>
-          {props.hasFineGrainedAccessControl && (
-            <ListBoxItem id="contributor" textValue="Contributor">
-              <ListBoxItemLabel>Contributor</ListBoxItemLabel>
-              <ListBoxItemDescription>
-                Access control at the project level
-              </ListBoxItemDescription>
-            </ListBoxItem>
-          )}
-          <ListBoxItem id="member" textValue="Member">
-            <ListBoxItemLabel>Member</ListBoxItemLabel>
-            <ListBoxItemDescription>
-              See and review builds
-            </ListBoxItemDescription>
-          </ListBoxItem>
-          <ListBoxItem id="owner" textValue="Owner">
-            <ListBoxItemLabel>Owner</ListBoxItemLabel>
-            <ListBoxItemDescription>
-              Admin level access to the entire team
-            </ListBoxItemDescription>
-          </ListBoxItem>
-        </ListBox>
-      </Popover>
-    </Select>
+    />
   );
 }
 
@@ -755,7 +722,7 @@ export function TeamMembers(props: {
             <DialogTrigger>
               <Button variant="secondary">Invite Link</Button>
               <Modal>
-                <InviteLinkDialog team={team} />
+                <InviteDialog team={team} />
               </Modal>
             </DialogTrigger>
           </>
