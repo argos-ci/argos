@@ -577,6 +577,16 @@ input ImportGitlabProjectInput {
   gitlabProjectId: ID!
 }
 
+input InviteMemberInput {
+  email: String!
+  level: TeamUserLevel!
+}
+
+input InviteMembersInput {
+  members: [InviteMemberInput!]!
+  teamAccountId: ID!
+}
+
 scalar JSONObject
 
 enum JobStatus {
@@ -666,6 +676,9 @@ type Mutation {
 
   """Import a project from GitLab"""
   importGitlabProject(input: ImportGitlabProjectInput!): Project!
+
+  """Invite members to a team"""
+  inviteMembers(input: InviteMembersInput!): Boolean!
 
   """Leave a team"""
   leaveTeam(input: LeaveTeamInput!): Boolean!

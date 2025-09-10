@@ -170,6 +170,16 @@ export const typeDefs = gql`
     teamAccountId: ID!
   }
 
+  input InviteMembersInput {
+    teamAccountId: ID!
+    members: [InviteMemberInput!]!
+  }
+
+  input InviteMemberInput {
+    email: String!
+    level: TeamUserLevel!
+  }
+
   extend type Query {
     invitation(secret: String!): Team
   }
@@ -197,6 +207,8 @@ export const typeDefs = gql`
     setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
     "Reset invite link"
     resetInviteLink(input: ResetInviteLinkInput!): Team!
+    "Invite members to a team"
+    inviteMembers(input: InviteMembersInput!): Boolean!
   }
 `;
 
@@ -852,13 +864,9 @@ export const resolvers: IResolvers = {
       return teamAccount;
     },
     resetInviteLink: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        user: ctx.auth?.user,
       });
 
       invariant(teamAccount.teamId, "Account teamId is undefined");
@@ -870,6 +878,18 @@ export const resolvers: IResolvers = {
         });
 
       return teamAccount;
+    },
+    inviteMembers: async (_root, args, ctx) => {
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth?.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      // @TODO implement email sending
+
+      return true;
     },
   },
 };

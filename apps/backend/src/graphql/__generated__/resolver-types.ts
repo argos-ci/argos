@@ -618,6 +618,16 @@ export type IImportGitlabProjectInput = {
   gitlabProjectId: Scalars['ID']['input'];
 };
 
+export type IInviteMemberInput = {
+  email: Scalars['String']['input'];
+  level: ITeamUserLevel;
+};
+
+export type IInviteMembersInput = {
+  members: Array<IInviteMemberInput>;
+  teamAccountId: Scalars['ID']['input'];
+};
+
 export enum IJobStatus {
   Aborted = 'aborted',
   Complete = 'complete',
@@ -689,6 +699,8 @@ export type IMutation = {
   importGithubProject: IProject;
   /** Import a project from GitLab */
   importGitlabProject: IProject;
+  /** Invite members to a team */
+  inviteMembers: Scalars['Boolean']['output'];
   /** Leave a team */
   leaveTeam: Scalars['Boolean']['output'];
   /** Link GitHub Repository */
@@ -832,6 +844,11 @@ export type IMutationImportGithubProjectArgs = {
 
 export type IMutationImportGitlabProjectArgs = {
   input: IImportGitlabProjectInput;
+};
+
+
+export type IMutationInviteMembersArgs = {
+  input: IInviteMembersInput;
 };
 
 
@@ -1906,6 +1923,8 @@ export type IResolversTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  InviteMemberInput: IInviteMemberInput;
+  InviteMembersInput: IInviteMembersInput;
   JSONObject: ResolverTypeWrapper<Scalars['JSONObject']['output']>;
   JobStatus: IJobStatus;
   LeaveTeamInput: ILeaveTeamInput;
@@ -2058,6 +2077,8 @@ export type IResolversParentTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: Scalars['Int']['output'];
+  InviteMemberInput: IInviteMemberInput;
+  InviteMembersInput: IInviteMembersInput;
   JSONObject: Scalars['JSONObject']['output'];
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
@@ -2514,6 +2535,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   ignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationIgnoreChangeArgs, 'input'>>;
   importGithubProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGithubProjectArgs, 'input'>>;
   importGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGitlabProjectArgs, 'input'>>;
+  inviteMembers?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationInviteMembersArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   linkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGithubRepositoryArgs, 'input'>>;
   linkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGitlabProjectArgs, 'input'>>;

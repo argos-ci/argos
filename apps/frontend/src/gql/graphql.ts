@@ -611,6 +611,16 @@ export type ImportGitlabProjectInput = {
   gitlabProjectId: Scalars['ID']['input'];
 };
 
+export type InviteMemberInput = {
+  email: Scalars['String']['input'];
+  level: TeamUserLevel;
+};
+
+export type InviteMembersInput = {
+  members: Array<InviteMemberInput>;
+  teamAccountId: Scalars['ID']['input'];
+};
+
 export enum JobStatus {
   Aborted = 'aborted',
   Complete = 'complete',
@@ -682,6 +692,8 @@ export type Mutation = {
   importGithubProject: Project;
   /** Import a project from GitLab */
   importGitlabProject: Project;
+  /** Invite members to a team */
+  inviteMembers: Scalars['Boolean']['output'];
   /** Leave a team */
   leaveTeam: Scalars['Boolean']['output'];
   /** Link GitHub Repository */
@@ -825,6 +837,11 @@ export type MutationImportGithubProjectArgs = {
 
 export type MutationImportGitlabProjectArgs = {
   input: ImportGitlabProjectInput;
+};
+
+
+export type MutationInviteMembersArgs = {
+  input: InviteMembersInput;
 };
 
 

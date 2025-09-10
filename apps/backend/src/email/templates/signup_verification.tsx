@@ -27,6 +27,7 @@ export const handler = defineEmailTemplate({
     location: {
       city: "Paris",
       country: "France",
+      ip: "93.19.70.152",
     },
   },
   email: (props) => {

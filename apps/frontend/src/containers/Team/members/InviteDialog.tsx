@@ -67,8 +67,16 @@ export function InviteDialog(props: {
     <Dialog size="medium">
       <Form
         form={form}
-        onSubmit={(data) => {
-          console.log(data);
+        onSubmit={async (data) => {
+          const validMembers = data.members.filter((m) => m.email);
+          if (validMembers.length === 0) {
+            form.setError(
+              "members.0.email",
+              { message: "Email is required" },
+              { shouldFocus: true },
+            );
+            return;
+          }
         }}
         noValidate
       >
@@ -79,7 +87,7 @@ export function InviteDialog(props: {
             by entering their email addresses.
           </DialogText>
 
-          <h3 className="mb-2 font-medium">Invite Link</h3>
+          <h3 className="text-low mb-2 font-medium">Invite Link</h3>
           <div className="mb-4 flex gap-2 rounded-sm border p-2">
             <pre className="w-0 flex-1 overflow-auto">
               <code>{team.inviteLink}</code>
@@ -104,6 +112,7 @@ export function InviteDialog(props: {
                       placeholder="tony@stark.com"
                       className="flex-1"
                       type="email"
+                      autoFocus
                       {...form.register(`members.${index}.email`)}
                     />
                     <Controller

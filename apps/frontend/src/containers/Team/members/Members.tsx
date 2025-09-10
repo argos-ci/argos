@@ -718,9 +718,9 @@ export function TeamMembers(props: {
       <CardFooter className="flex items-center justify-between gap-4">
         {team.inviteLink ? (
           <>
-            <div>Invite people to collaborate in the Team.</div>
+            <div>Invite people to collaborate in the team.</div>
             <DialogTrigger>
-              <Button variant="secondary">Invite Link</Button>
+              <Button variant="secondary">Invite</Button>
               <Modal>
                 <InviteDialog team={team} />
               </Modal>
@@ -728,7 +728,7 @@ export function TeamMembers(props: {
           </>
         ) : (
           <>
-            <div>Only a owners can invite people in the Team.</div>
+            <div>Only a owners can invite people in the team.</div>
           </>
         )}
       </CardFooter>

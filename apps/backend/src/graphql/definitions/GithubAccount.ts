@@ -1,7 +1,7 @@
 import gqlTag from "graphql-tag";
 
 import type { IResolvers } from "../__generated__/resolver-types.js";
-import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
+import { getAvatarColor, getGitHubAvatarFactory } from "../services/avatar.js";
 
 const { gql } = gqlTag;
 
@@ -28,7 +28,7 @@ export const resolvers: IResolvers = {
       const color = getAvatarColor(ghAccount.id);
 
       return {
-        getUrl: githubAvatarUrlFactory(ghAccount.login),
+        url: getGitHubAvatarFactory({ login: ghAccount.login }),
         initial,
         color,
       };
