@@ -43,7 +43,7 @@ export function ListBoxItem(
       {...restProps}
     >
       <CheckIcon className="not-in-[[role=listbox]]:hidden size-4 opacity-0 group-aria-selected/item:opacity-100" />
-      <div className="flex items-center">{children}</div>
+      <div className="flex flex-wrap items-center">{children}</div>
     </RACListBoxItem>
   );
 }
@@ -56,7 +56,7 @@ export function ListBoxItemDescription(props: { children: React.ReactNode }) {
   return (
     <>
       <div className="h-0 basis-full" />
-      <Text slot="description" className="text-low ml-6" {...props} />
+      <Text slot="description" className="text-low" {...props} />
     </>
   );
 }
