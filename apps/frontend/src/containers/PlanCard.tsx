@@ -232,7 +232,7 @@ function ConsumptionBlock({
             {screenshotsSum.storybook > 0 ? (
               <span className="text-low ml-4 text-sm font-normal">
                 ({screenshotsSum.storybook.toLocaleString()} Storybook +{" "}
-                {screenshotsSum.neutral.toLocaleString()} others)
+                {screenshotsSum.neutral.toLocaleString()} classic)
               </span>
             ) : null}
           </div>
@@ -258,8 +258,19 @@ function ConsumptionBlock({
                 className="flex items-center justify-between border-b p-1 last:border-b-0"
               >
                 <span>{project.name}</span>
-                <span className="tabular-nums">
-                  {project.currentPeriodScreenshots.toLocaleString()}
+                <span
+                  className={
+                    screenshotsSum.storybook > 0 ? undefined : "tabular-nums"
+                  }
+                >
+                  {screenshotsSum.all.toLocaleString()}{" "}
+                  {screenshotsSum.all > 1 ? "screenshots" : "screenshot"}{" "}
+                  {screenshotsSum.storybook > 0 ? (
+                    <span className="text-low ml-4 text-sm font-normal">
+                      ({screenshotsSum.storybook.toLocaleString()} Storybook +{" "}
+                      {screenshotsSum.neutral.toLocaleString()} classic)
+                    </span>
+                  ) : null}
                 </span>
               </li>
             ))}
