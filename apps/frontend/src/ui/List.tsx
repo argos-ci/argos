@@ -110,7 +110,7 @@ export function ListHeaderRow(props: ComponentPropsWithRef<"div">) {
       {...props}
       className={clsx(
         listRowClassName,
-        "items-center p-4 text-sm font-semibold",
+        "flex items-center gap-6 p-4 text-sm font-semibold",
         props.className,
       )}
     />
