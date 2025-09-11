@@ -16,7 +16,7 @@ import {
   createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
   getCustomerIdFromUserAccount,
-  getDefaultTeamPlanPrices,
+  getDefaultTeamPlanItems,
   getStripeProPlanOrThrow,
   getSubscriptionData,
   stripe,
@@ -484,12 +484,12 @@ export const resolvers: IResolvers = {
       // Register the Stripe customer id to the team account
       await teamAccount.$query().patchAndFetch({ stripeCustomerId });
 
-      const prices = await getDefaultTeamPlanPrices(plan);
+      const items = await getDefaultTeamPlanItems(plan);
 
       // Create a Stripe subscription for the user
       const stripeSubscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
-        items: prices.map((price) => ({ price: price.id })),
+        items,
         ...getSubscriptionData({
           trial: true,
           accountId: teamAccount.id,

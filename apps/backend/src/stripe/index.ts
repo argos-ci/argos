@@ -401,9 +401,9 @@ async function getArgosSubscriptionFromStripeSubscriptionId(
 /**
  * Get Stripe prices for the default team plan.
  */
-export async function getDefaultTeamPlanPrices(
+export async function getDefaultTeamPlanItems(
   plan: Plan,
-): Promise<Stripe.Price[]> {
+): Promise<{ price: string; quantity?: number }[]> {
   invariant(
     plan.stripeProductId,
     `"stripeProductId" is empty on plan ${plan.id}`,
@@ -428,7 +428,10 @@ export async function getDefaultTeamPlanPrices(
       typeof defaultPrice !== "string",
       `stripe default price is a string (id: ${id})`,
     );
-    return defaultPrice;
+    if (defaultPrice.recurring?.usage_type !== "metered") {
+      return { price: defaultPrice.id, quantity: 1 };
+    }
+    return { price: defaultPrice.id };
   });
 }
 
@@ -712,15 +715,15 @@ export async function createStripeCheckoutSession(args: {
 
   const manager = teamAccount.$getSubscriptionManager();
 
-  const [activeSubscription, prices] = await Promise.all([
+  const [activeSubscription, items] = await Promise.all([
     manager.getActiveSubscription(),
-    getDefaultTeamPlanPrices(plan),
+    getDefaultTeamPlanItems(plan),
   ]);
 
   invariant(!activeSubscription, "account already has an active subscription");
 
   return stripe.checkout.sessions.create({
-    line_items: prices.map((price) => ({ price: price.id })),
+    line_items: items,
     subscription_data: getSubscriptionData({
       trial,
       accountId: teamAccount.id,
