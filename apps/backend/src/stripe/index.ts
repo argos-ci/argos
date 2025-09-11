@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import config from "@/config/index.js";
 import { Account, Plan, Subscription } from "@/database/models/index.js";
+import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 
 export type { Stripe };
 
@@ -82,14 +83,38 @@ async function getStripeSubscriptionFromSession(
   return session.subscription;
 }
 
+function getSingleItemFromStripeSubscription(
+  subscription: Stripe.Subscription,
+  type: "screenshot" | "storybook_screenshot",
+): Stripe.SubscriptionItem | null {
+  // All addons prices have a metadata (type: "addon")
+  const items = subscription.items.data.filter(
+    (item) => item.price.metadata["type"] === type,
+  );
+  if (items.length === 0) {
+    return null;
+  }
+  const item = items[0];
+  if (!item) {
+    return null;
+  }
+  invariant(items.length === 1, "multiple items found");
+  return item;
+}
+
 function getPlanItemFromStripeSubscription(
   subscription: Stripe.Subscription,
 ): Stripe.SubscriptionItem {
   // All addons prices have a metadata (type: "addon")
   // all others are considered as plan prices.
-  const planItems = subscription.items.data.filter(
-    (item) => item.price.metadata["type"] !== "addon",
-  );
+  const planItems = subscription.items.data.filter((item) => {
+    const type = item.price.metadata["type"];
+    return (
+      type !== "addon" &&
+      type !== "screenshot" &&
+      type !== "storybook_screenshot"
+    );
+  });
   const item = planItems[0];
   invariant(item, "no plan items found");
   invariant(planItems.length === 1, "multiple plan items found");
@@ -197,11 +222,14 @@ async function getPriceInfosFromStripeSubscription(
 ): Promise<
   Pick<
     Subscription,
-    "includedScreenshots" | "currency" | "additionalScreenshotPrice"
+    | "includedScreenshots"
+    | "currency"
+    | "additionalScreenshotPrice"
+    | "additionalStorybookScreenshotPrice"
   >
 > {
-  const firstItem = getPlanItemFromStripeSubscription(stripeSubscription);
-  const price = firstItem.price;
+  const planItem = getPlanItemFromStripeSubscription(stripeSubscription);
+  const { price } = planItem;
   const currency = CurrencySchema.parse(price.currency);
 
   switch (price.billing_scheme) {
@@ -230,8 +258,10 @@ async function getPriceInfosFromStripeSubscription(
       return {
         includedScreenshots,
         currency,
-        additionalScreenshotPrice:
-          Number(firstUsageTier.unit_amount_decimal) / 100,
+        additionalScreenshotPrice: decimalToNumber(
+          firstUsageTier.unit_amount_decimal,
+        ),
+        additionalStorybookScreenshotPrice: null,
       };
     }
     case "per_unit": {
@@ -243,11 +273,28 @@ async function getPriceInfosFromStripeSubscription(
           const includedScreenshots = Number(
             price.metadata["includedScreenshots"],
           );
+
+          // If includedScreenshots is not present on the metadata,
+          // then it is considered invalid
           if (Number.isInteger(includedScreenshots)) {
+            const screenshotItem = getSingleItemFromStripeSubscription(
+              stripeSubscription,
+              "screenshot",
+            );
+            const storybookScreenshotItem = getSingleItemFromStripeSubscription(
+              stripeSubscription,
+              "storybook_screenshot",
+            );
+
             return {
-              includedScreenshots,
+              includedScreenshots: includedScreenshots,
               currency,
-              additionalScreenshotPrice: null,
+              additionalScreenshotPrice: screenshotItem
+                ? getUnitAmountFromPrice(screenshotItem.price)
+                : null,
+              additionalStorybookScreenshotPrice: storybookScreenshotItem
+                ? getUnitAmountFromPrice(storybookScreenshotItem.price)
+                : null,
             };
           }
         }
@@ -256,6 +303,7 @@ async function getPriceInfosFromStripeSubscription(
         includedScreenshots: null,
         currency,
         additionalScreenshotPrice: null,
+        additionalStorybookScreenshotPrice: null,
       };
     }
     default:
@@ -263,8 +311,24 @@ async function getPriceInfosFromStripeSubscription(
         includedScreenshots: null,
         currency,
         additionalScreenshotPrice: null,
+        additionalStorybookScreenshotPrice: null,
       };
   }
+}
+
+/**
+ * Get the unit amount from a Stripe price.
+ */
+function getUnitAmountFromPrice(price: Stripe.Price): number | null {
+  invariant(price.unit_amount_decimal !== null, "unit_amount_decimal is null");
+  return decimalToNumber(price.unit_amount_decimal);
+}
+
+/**
+ * Convert a decimal string (e.g. "1000") to a number (e.g. 10.00).
+ */
+function decimalToNumber(value: string): number {
+  return Number(value) / 100;
 }
 
 async function getArgosSubscriptionDataFromStripe(
@@ -334,25 +398,38 @@ async function getArgosSubscriptionFromStripeSubscriptionId(
   return subscription ?? null;
 }
 
-export async function getStripePriceFromPlanOrThrow(
+/**
+ * Get Stripe prices for the default team plan.
+ */
+export async function getDefaultTeamPlanPrices(
   plan: Plan,
-): Promise<Stripe.Price> {
-  const { stripeProductId } = plan;
-  invariant(stripeProductId, `"stripeProductId" is empty on plan ${plan.id}`);
-
-  const stripeProduct = await stripe.products.retrieve(stripeProductId, {
-    expand: ["default_price"],
-  });
-  invariant(stripeProduct, `stripe product not found for plan ${plan.id}`);
-
-  const defaultPrice = stripeProduct.default_price;
-  invariant(defaultPrice, `stripe default price not found for plan ${plan.id}`);
+): Promise<Stripe.Price[]> {
   invariant(
-    typeof defaultPrice !== "string",
-    `stripe default price is a string for plan ${plan.id}`,
+    plan.stripeProductId,
+    `"stripeProductId" is empty on plan ${plan.id}`,
   );
 
-  return defaultPrice;
+  const ids = [
+    plan.stripeProductId,
+    config.get("stripe.screenshotProductId"),
+    config.get("stripe.storybookScreenshotProductId"),
+  ];
+  const products = await stripe.products.list({
+    ids,
+    expand: ["data.default_price"],
+  });
+  return ids.map((id) => {
+    const product = products.data.find((product) => product.id === id);
+    invariant(product, `stripe product not found (id: ${id})`);
+
+    const defaultPrice = product.default_price;
+    invariant(defaultPrice, `stripe default price not found (id: ${id})`);
+    invariant(
+      typeof defaultPrice !== "string",
+      `stripe default price is a string (id: ${id})`,
+    );
+    return defaultPrice;
+  });
 }
 
 /**
@@ -371,7 +448,7 @@ function checkIsUsageBasedSubscriptionIncomplete(
 
 export async function updateStripeUsage(input: {
   account: Account;
-  screenshots: { all: number; storybook: number };
+  screenshots: { all: number; neutral: number; storybook: number };
   includedScreenshots: number;
 }): Promise<void> {
   const { account, screenshots, includedScreenshots } = input;
@@ -416,22 +493,11 @@ export async function updateStripeUsage(input: {
     const stripeCustomerId = stripeSubscription.customer;
     invariant(typeof stripeCustomerId === "string");
 
-    const nonStorybookScreenshots = screenshots.all - screenshots.storybook;
-    const metered = {
-      screenshots: nonStorybookScreenshots,
+    const additional = computeAdditionalScreenshots({
+      included: includedScreenshots,
+      neutral: screenshots.neutral,
       storybook: screenshots.storybook,
-    };
-
-    // If we don't match the number of included screenshots with
-    // non-storybook screenshots, we fill the remaining with storybook screenshots.
-    if (metered.screenshots < includedScreenshots) {
-      const includedStorybookScreenshots = Math.min(
-        screenshots.storybook,
-        includedScreenshots - metered.screenshots,
-      );
-      metered.screenshots += includedStorybookScreenshots;
-      metered.storybook -= includedStorybookScreenshots;
-    }
+    });
 
     await Promise.all([
       stripe.billing.meterEvents.create({
@@ -439,7 +505,7 @@ export async function updateStripeUsage(input: {
         timestamp,
         payload: {
           stripe_customer_id: stripeCustomerId,
-          value: String(metered.screenshots),
+          value: String(additional.neutral),
         },
       }),
       stripe.billing.meterEvents.create({
@@ -447,7 +513,7 @@ export async function updateStripeUsage(input: {
         timestamp,
         payload: {
           stripe_customer_id: stripeCustomerId,
-          value: String(metered.storybook),
+          value: String(additional.storybook),
         },
       }),
       await stripe.subscriptionItems.createUsageRecord(item.id, {
@@ -467,9 +533,17 @@ export async function updateStripeUsage(input: {
   }
 }
 
+/**
+ * Get the reference Pro plan used for subscription.
+ */
 export async function getStripeProPlanOrThrow(): Promise<Plan> {
   return Plan.query()
-    .findOne({ name: "pro", usageBased: true })
+    .findOne({
+      name: "pro",
+      usageBased: true,
+      // We have a legacy Pro plan that includes 15K
+      includedScreenshots: 35000,
+    })
     .throwIfNotFound();
 }
 
@@ -618,14 +692,10 @@ export function getSubscriptionData(args: {
   } satisfies Partial<Stripe.SubscriptionCreateParams>;
 }
 
-export async function createStripeCheckoutSession({
-  plan,
-  teamAccount,
-  trial,
-  subscriberAccount,
-  successUrl,
-  cancelUrl,
-}: {
+/**
+ * Create the Stripe checkout session, used for Team subscription.
+ */
+export async function createStripeCheckoutSession(args: {
   plan: Plan;
   teamAccount: Account;
   trial: boolean;
@@ -633,6 +703,8 @@ export async function createStripeCheckoutSession({
   successUrl: string;
   cancelUrl: string;
 }): Promise<Stripe.Response<Stripe.Checkout.Session>> {
+  const { plan, teamAccount, trial, subscriberAccount, successUrl, cancelUrl } =
+    args;
   invariant(
     subscriberAccount.userId,
     "Subscriber account must be a user account",
@@ -640,15 +712,15 @@ export async function createStripeCheckoutSession({
 
   const manager = teamAccount.$getSubscriptionManager();
 
-  const [activeSubscription, price] = await Promise.all([
+  const [activeSubscription, prices] = await Promise.all([
     manager.getActiveSubscription(),
-    getStripePriceFromPlanOrThrow(plan),
+    getDefaultTeamPlanPrices(plan),
   ]);
 
   invariant(!activeSubscription, "account already has an active subscription");
 
   return stripe.checkout.sessions.create({
-    line_items: [{ price: price.id }],
+    line_items: prices.map((price) => ({ price: price.id })),
     subscription_data: getSubscriptionData({
       trial,
       accountId: teamAccount.id,

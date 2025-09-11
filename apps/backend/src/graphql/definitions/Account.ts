@@ -113,12 +113,18 @@ export const typeDefs = gql`
     groupBy: TimeSeriesGroupBy!
   }
 
+  type ScreenshotsCount {
+    all: Int!
+    neutral: Int!
+    storybook: Int!
+  }
+
   interface Account implements Node {
     id: ID!
     stripeCustomerId: String
     stripeClientReferenceId: String!
     consumptionRatio: Float!
-    currentPeriodScreenshots: Int!
+    currentPeriodScreenshots: ScreenshotsCount!
     additionalScreenshotsCost: Float!
     includedScreenshots: Int!
     slug: String!
@@ -332,8 +338,7 @@ export const resolvers: IResolvers = {
     },
     currentPeriodScreenshots: async (account) => {
       const manager = account.$getSubscriptionManager();
-      const screenshots = await manager.getCurrentPeriodScreenshots();
-      return screenshots.all;
+      return manager.getCurrentPeriodScreenshots();
     },
     additionalScreenshotsCost: async (account) => {
       const manager = account.$getSubscriptionManager();

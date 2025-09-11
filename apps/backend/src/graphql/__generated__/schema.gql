@@ -3,7 +3,7 @@ interface Account implements Node {
   avatar: AccountAvatar!
   blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
-  currentPeriodScreenshots: Int!
+  currentPeriodScreenshots: ScreenshotsCount!
   githubAccount: GithubAccount
   gitlabAccessToken: String
   gitlabBaseUrl: String
@@ -778,7 +778,7 @@ type Project implements Node {
   contributors(after: Int = 0, first: Int = 30): ProjectContributorConnection!
 
   """Current month used screenshots"""
-  currentPeriodScreenshots: Int!
+  currentPeriodScreenshots: ScreenshotsCount!
 
   """Glob pattern for auto-approved branches edited by the user"""
   customAutoApprovedBranchGlob: String
@@ -1079,6 +1079,12 @@ type ScreenshotMetadataViewport {
   width: Int!
 }
 
+type ScreenshotsCount {
+  all: Int!
+  neutral: Int!
+  storybook: Int!
+}
+
 input SetTeamDefaultUserLevelInput {
   level: TeamDefaultUserLevel!
   teamAccountId: ID!
@@ -1109,7 +1115,7 @@ type Team implements Account & Node {
   avatar: AccountAvatar!
   blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
-  currentPeriodScreenshots: Int!
+  currentPeriodScreenshots: ScreenshotsCount!
   defaultUserLevel: TeamDefaultUserLevel!
   githubAccount: GithubAccount
   githubLightInstallation: GithubInstallation
@@ -1320,7 +1326,7 @@ type User implements Account & Node {
   avatar: AccountAvatar!
   blockWhenSpendLimitIsReached: Boolean!
   consumptionRatio: Float!
-  currentPeriodScreenshots: Int!
+  currentPeriodScreenshots: ScreenshotsCount!
 
   """Primary email of the user"""
   email: String

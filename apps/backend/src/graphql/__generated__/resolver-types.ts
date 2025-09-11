@@ -33,7 +33,7 @@ export type IAccount = {
   avatar: IAccountAvatar;
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
-  currentPeriodScreenshots: Scalars['Int']['output'];
+  currentPeriodScreenshots: IScreenshotsCount;
   githubAccount?: Maybe<IGithubAccount>;
   gitlabAccessToken?: Maybe<Scalars['String']['output']>;
   gitlabBaseUrl?: Maybe<Scalars['String']['output']>;
@@ -996,7 +996,7 @@ export type IProject = INode & {
   /** Contributors */
   contributors: IProjectContributorConnection;
   /** Current month used screenshots */
-  currentPeriodScreenshots: Scalars['Int']['output'];
+  currentPeriodScreenshots: IScreenshotsCount;
   /** Glob pattern for auto-approved branches edited by the user */
   customAutoApprovedBranchGlob?: Maybe<Scalars['String']['output']>;
   /** Default base branch edited by the user */
@@ -1375,6 +1375,13 @@ export type IScreenshotMetadataViewport = {
   width: Scalars['Int']['output'];
 };
 
+export type IScreenshotsCount = {
+  __typename?: 'ScreenshotsCount';
+  all: Scalars['Int']['output'];
+  neutral: Scalars['Int']['output'];
+  storybook: Scalars['Int']['output'];
+};
+
 export type ISetTeamDefaultUserLevelInput = {
   level: ITeamDefaultUserLevel;
   teamAccountId: Scalars['ID']['input'];
@@ -1407,7 +1414,7 @@ export type ITeam = IAccount & INode & {
   avatar: IAccountAvatar;
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
-  currentPeriodScreenshots: Scalars['Int']['output'];
+  currentPeriodScreenshots: IScreenshotsCount;
   defaultUserLevel: ITeamDefaultUserLevel;
   githubAccount?: Maybe<IGithubAccount>;
   githubLightInstallation?: Maybe<IGithubInstallation>;
@@ -1672,7 +1679,7 @@ export type IUser = IAccount & INode & {
   avatar: IAccountAvatar;
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
-  currentPeriodScreenshots: Scalars['Int']['output'];
+  currentPeriodScreenshots: IScreenshotsCount;
   /** Primary email of the user */
   email?: Maybe<Scalars['String']['output']>;
   /** List of email addresses associated with the user */
@@ -1942,6 +1949,7 @@ export type IResolversTypes = ResolversObject<{
   ScreenshotMetadataTest: ResolverTypeWrapper<IScreenshotMetadataTest>;
   ScreenshotMetadataTestAnnotation: ResolverTypeWrapper<IScreenshotMetadataTestAnnotation>;
   ScreenshotMetadataViewport: ResolverTypeWrapper<IScreenshotMetadataViewport>;
+  ScreenshotsCount: ResolverTypeWrapper<IScreenshotsCount>;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SlackInstallation: ResolverTypeWrapper<SlackInstallation>;
@@ -2084,6 +2092,7 @@ export type IResolversParentTypes = ResolversObject<{
   ScreenshotMetadataTest: IScreenshotMetadataTest;
   ScreenshotMetadataTestAnnotation: IScreenshotMetadataTestAnnotation;
   ScreenshotMetadataViewport: IScreenshotMetadataViewport;
+  ScreenshotsCount: IScreenshotsCount;
   SetTeamDefaultUserLevelInput: ISetTeamDefaultUserLevelInput;
   SetTeamMemberLevelInput: ISetTeamMemberLevelInput;
   SlackInstallation: SlackInstallation;
@@ -2125,7 +2134,7 @@ export type IAccountResolvers<ContextType = Context, ParentType extends IResolve
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
-  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
   githubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   gitlabBaseUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2561,7 +2570,7 @@ export type IProjectResolvers<ContextType = Context, ParentType extends IResolve
   buildNames?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
   builds?: Resolver<IResolversTypes['BuildConnection'], ParentType, ContextType, RequireFields<IProjectBuildsArgs, 'after' | 'first'>>;
   contributors?: Resolver<IResolversTypes['ProjectContributorConnection'], ParentType, ContextType, RequireFields<IProjectContributorsArgs, 'after' | 'first'>>;
-  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
   customAutoApprovedBranchGlob?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   customDefaultBaseBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   defaultBaseBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -2759,6 +2768,13 @@ export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentTy
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type IScreenshotsCountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotsCount'] = IResolversParentTypes['ScreenshotsCount']> = ResolversObject<{
+  all?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  neutral?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  storybook?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type ISlackInstallationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['SlackInstallation'] = IResolversParentTypes['SlackInstallation']> = ResolversObject<{
   connectedAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -2773,7 +2789,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
-  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
   defaultUserLevel?: Resolver<IResolversTypes['TeamDefaultUserLevel'], ParentType, ContextType>;
   githubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
   githubLightInstallation?: Resolver<Maybe<IResolversTypes['GithubInstallation']>, ParentType, ContextType>;
@@ -2912,7 +2928,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
-  currentPeriodScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
   email?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   emails?: Resolver<Array<IResolversTypes['UserEmail']>, ParentType, ContextType>;
   ghInstallations?: Resolver<IResolversTypes['GhApiInstallationConnection'], ParentType, ContextType>;
@@ -3028,6 +3044,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   ScreenshotMetadataTest?: IScreenshotMetadataTestResolvers<ContextType>;
   ScreenshotMetadataTestAnnotation?: IScreenshotMetadataTestAnnotationResolvers<ContextType>;
   ScreenshotMetadataViewport?: IScreenshotMetadataViewportResolvers<ContextType>;
+  ScreenshotsCount?: IScreenshotsCountResolvers<ContextType>;
   SlackInstallation?: ISlackInstallationResolvers<ContextType>;
   Team?: ITeamResolvers<ContextType>;
   TeamGithubMember?: ITeamGithubMemberResolvers<ContextType>;

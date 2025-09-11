@@ -16,7 +16,7 @@ import {
   createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
   getCustomerIdFromUserAccount,
-  getStripePriceFromPlanOrThrow,
+  getDefaultTeamPlanPrices,
   getStripeProPlanOrThrow,
   getSubscriptionData,
   stripe,
@@ -44,7 +44,7 @@ export const typeDefs = gql`
     stripeCustomerId: String
     stripeClientReferenceId: String!
     consumptionRatio: Float!
-    currentPeriodScreenshots: Int!
+    currentPeriodScreenshots: ScreenshotsCount!
     additionalScreenshotsCost: Float!
     includedScreenshots: Int!
     slug: String!
@@ -484,12 +484,12 @@ export const resolvers: IResolvers = {
       // Register the Stripe customer id to the team account
       await teamAccount.$query().patchAndFetch({ stripeCustomerId });
 
-      const price = await getStripePriceFromPlanOrThrow(plan);
+      const prices = await getDefaultTeamPlanPrices(plan);
 
       // Create a Stripe subscription for the user
       const stripeSubscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
-        items: [{ price: price.id }],
+        items: prices.map((price) => ({ price: price.id })),
         ...getSubscriptionData({
           trial: true,
           accountId: teamAccount.id,
@@ -743,7 +743,7 @@ export const resolvers: IResolvers = {
 
         const [stripeSubscription, stripeProduct] = await Promise.all([
           stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
-          stripe.products.retrieve(config.get("githubSso.stripeProductId")),
+          stripe.products.retrieve(config.get("stripe.githubSSOProductId")),
         ]);
 
         invariant(
@@ -752,7 +752,7 @@ export const resolvers: IResolvers = {
         );
         invariant(
           stripeProduct,
-          `Product ${config.get("githubSso.stripeProductId")} not found`,
+          `Product ${config.get("stripe.githubSSOProductId")} not found`,
         );
         invariant(
           typeof stripeProduct.default_price === "string",
@@ -804,7 +804,7 @@ export const resolvers: IResolvers = {
       if (subscription?.stripeSubscriptionId) {
         const [stripeSubscription, stripeProduct] = await Promise.all([
           stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
-          stripe.products.retrieve(config.get("githubSso.stripeProductId")),
+          stripe.products.retrieve(config.get("stripe.githubSSOProductId")),
         ]);
 
         invariant(
@@ -814,7 +814,7 @@ export const resolvers: IResolvers = {
 
         invariant(
           stripeProduct,
-          `Product ${config.get("githubSso.stripeProductId")} not found`,
+          `Product ${config.get("stripe.githubSSOProductId")} not found`,
         );
 
         const item = stripeSubscription.items.data.find(

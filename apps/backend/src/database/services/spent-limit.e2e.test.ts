@@ -39,6 +39,7 @@ describe("spent limit", () => {
       includedScreenshots: 1000,
       currency: "usd",
       additionalScreenshotPrice: 0.5,
+      additionalStorybookScreenshotPrice: 0.25,
       provider: "stripe",
       stripeSubscriptionId: "sub_123",
       subscriberId: user.id,

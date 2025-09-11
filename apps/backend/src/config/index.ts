@@ -248,13 +248,23 @@ export function createConfig() {
         env: "STRIPE_WEBHOOK_SECRET",
         default: "whsec_XXX",
       },
-    },
-    githubSso: {
-      stripeProductId: {
+      githubSSOProductId: {
         doc: "GitHub SSO Stripe product ID",
         format: String,
         env: "GITHUB_SSO_STRIPE_PRODUCT_ID",
         default: "prod_PZKO1PwFyJfJyU",
+      },
+      screenshotProductId: {
+        doc: "Additional screenshots Stripe product ID",
+        format: String,
+        env: "SCREENSHOT_STRIPE_PRODUCT_ID",
+        default: "prod_T1xmrvvRAED02k",
+      },
+      storybookScreenshotProductId: {
+        doc: "Additional Storybook screenshots Stripe product ID",
+        format: String,
+        env: "STORYBOOK_SCREENSHOT_STRIPE_PRODUCT_ID",
+        default: "prod_T1xnaWwaZSXRm3",
       },
     },
     redis: {
