@@ -355,22 +355,7 @@ async function getOrCreateUserAccountFromThirdParty<
   if (existingUser) {
     invariant(existingUser.account, "Account not fetched");
 
-    const existingUserEmails = existingUser.emails;
-    invariant(existingUserEmails, "Expected user.emails to be defined");
-    const existingUserEmailsSet = new Set(
-      existingUserEmails.map((email) => email.email),
-    );
-
     await transaction(async (trx) => {
-      if (email && !existingUserEmailsSet.has(email)) {
-        // Add missing emails to the user
-        await UserEmail.query(trx).insert({
-          userId: existingUser.id,
-          email,
-          verified: true,
-        });
-      }
-
       // Either update the id or the email if needed
       const userData = getPartialModelUpdate(existingUser, {
         email: existingUser.email ?? email,
@@ -386,6 +371,16 @@ async function getOrCreateUserAccountFromThirdParty<
       );
 
       await Promise.all([
+        (async () => {
+          // If the existing user doesn't have an email, and we have one, we add it
+          if (!existingUser.email && email) {
+            await UserEmail.query(trx).insert({
+              userId: existingUser.id,
+              email,
+              verified: true,
+            });
+          }
+        })(),
         accountData
           ? existingUser.account.$clone().$query(trx).patch(accountData)
           : null,
