@@ -5,6 +5,7 @@ import type { Pojo, RelationMappings } from "objection";
 
 import { slugJsonSchema } from "@/util/slug.js";
 
+import { computeAdditionalScreenshots } from "../services/additional-screenshots.js";
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
 import { GithubAccount } from "./GithubAccount.js";
@@ -37,6 +38,7 @@ type AccountSubscriptionManager = {
     projectId?: string;
   }): Promise<{
     all: number;
+    neutral: number;
     storybook: number;
   }>;
   getAdditionalScreenshotCost(options?: {
@@ -453,18 +455,27 @@ export class Account extends Model {
           "There should be an active subscription for usage based plans",
         );
 
-        if (
-          !subscription.includedScreenshots ||
-          !subscription.additionalScreenshotPrice
-        ) {
+        if (subscription.includedScreenshots === null) {
           return 0;
         }
 
-        const overage = Math.max(
-          0,
-          periodScreenshots.all - subscription.includedScreenshots,
+        const price = {
+          neutral: subscription.additionalScreenshotPrice ?? 0,
+          storybook:
+            subscription.additionalStorybookScreenshotPrice ??
+            subscription.additionalScreenshotPrice ??
+            0,
+        };
+
+        const additional = computeAdditionalScreenshots({
+          ...periodScreenshots,
+          included: subscription.includedScreenshots,
+        });
+
+        return (
+          additional.neutral * price.neutral +
+          additional.storybook * price.storybook
         );
-        return overage * subscription.additionalScreenshotPrice;
       });
 
     this._cachedSubscriptionManager = {
@@ -492,6 +503,7 @@ export class Account extends Model {
     },
   ): Promise<{
     all: number;
+    neutral: number;
     storybook: number;
   }> {
     const query = ScreenshotBucket.query()
@@ -514,10 +526,10 @@ export class Account extends Model {
       all: string | null;
       storybook: string | null;
     };
-    return {
-      all: result.all ? Number(result.all) : 0,
-      storybook: result.storybook ? Number(result.storybook) : 0,
-    };
+    const all = result.all ? Number(result.all) : 0;
+    const storybook = result.storybook ? Number(result.storybook) : 0;
+    const neutral = all - storybook;
+    return { all, neutral, storybook };
   }
 
   static async getPermissions(

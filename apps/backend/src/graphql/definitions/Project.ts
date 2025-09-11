@@ -123,7 +123,7 @@ export const typeDefs = gql`
     "Override repository's Github privacy"
     private: Boolean
     "Current month used screenshots"
-    currentPeriodScreenshots: Int!
+    currentPeriodScreenshots: ScreenshotsCount!
     "Total screenshots used"
     totalScreenshots: Int!
     "Project slug"
@@ -600,10 +600,9 @@ export const resolvers: IResolvers = {
       const account = await ctx.loaders.Account.load(project.accountId);
       invariant(account, "Account not found");
       const manager = account.$getSubscriptionManager();
-      const screenshots = await manager.getCurrentPeriodScreenshots({
+      return manager.getCurrentPeriodScreenshots({
         projectId: project.id,
       });
-      return screenshots.all;
     },
     totalScreenshots: async (project) => {
       return Screenshot.query()

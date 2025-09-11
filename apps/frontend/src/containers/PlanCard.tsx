@@ -59,7 +59,11 @@ const _PlanCardFragment = graphql(`
         id
         name
         public
-        currentPeriodScreenshots
+        currentPeriodScreenshots {
+          all
+          neutral
+          storybook
+        }
       }
     }
     ...AccountPlanChip_Account
@@ -70,7 +74,11 @@ type Project = {
   id: string;
   name: string;
   public: boolean;
-  currentPeriodScreenshots: number;
+  currentPeriodScreenshots: {
+    all: number;
+    neutral: number;
+    storybook: number;
+  };
 };
 
 function PlanStatus(props: {
@@ -202,8 +210,15 @@ function ConsumptionBlock({
   includedScreenshots: number;
 }) {
   const screenshotsSum = projects.reduce(
-    (sum, project) => project.currentPeriodScreenshots + sum,
-    0,
+    (sum, project) => {
+      const s = project.currentPeriodScreenshots;
+      return {
+        all: sum.all + s.all,
+        neutral: sum.neutral + s.neutral,
+        storybook: sum.storybook + s.storybook,
+      };
+    },
+    { all: 0, neutral: 0, storybook: 0 },
   );
 
   return (
@@ -212,15 +227,21 @@ function ConsumptionBlock({
       <div className="flex flex-col gap-1">
         <div className="flex justify-between font-medium">
           <div>
-            {screenshotsSum.toLocaleString()}{" "}
-            {screenshotsSum > 1 ? "screenshots" : "screenshot"}
+            {screenshotsSum.all.toLocaleString()}{" "}
+            {screenshotsSum.all > 1 ? "screenshots" : "screenshot"}{" "}
+            {screenshotsSum.storybook > 0 ? (
+              <span className="text-low ml-4 text-sm font-normal">
+                ({screenshotsSum.storybook.toLocaleString()} Storybook +{" "}
+                {screenshotsSum.neutral.toLocaleString()} others)
+              </span>
+            ) : null}
           </div>
           <div className="text-low">
             / {includedScreenshots.toLocaleString()}
           </div>
         </div>
         <Progress
-          value={screenshotsSum}
+          value={screenshotsSum.all}
           max={includedScreenshots}
           min={0}
           className="w-full"

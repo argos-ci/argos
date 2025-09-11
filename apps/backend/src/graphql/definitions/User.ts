@@ -28,7 +28,7 @@ export const typeDefs = gql`
     stripeCustomerId: String
     stripeClientReferenceId: String!
     consumptionRatio: Float!
-    currentPeriodScreenshots: Int!
+    currentPeriodScreenshots: ScreenshotsCount!
     additionalScreenshotsCost: Float!
     includedScreenshots: Int!
     slug: String!

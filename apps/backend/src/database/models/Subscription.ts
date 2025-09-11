@@ -49,6 +49,9 @@ export class Subscription extends Model {
           additionalScreenshotPrice: {
             anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
           },
+          additionalStorybookScreenshotPrice: {
+            anyOf: [{ type: "null" }, { type: "number", minimum: 0 }],
+          },
           usageUpdatedAt: { type: ["string", "null"] },
           currency: {
             anyOf: [{ type: "null" }, { type: "string", enum: ["usd", "eur"] }],
@@ -78,6 +81,7 @@ export class Subscription extends Model {
     | "paused";
   includedScreenshots!: number | null;
   additionalScreenshotPrice!: number | null;
+  additionalStorybookScreenshotPrice!: number | null;
   usageUpdatedAt!: string | null;
   currency!: "usd" | "eur" | null;
 

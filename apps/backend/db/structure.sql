@@ -1546,6 +1546,7 @@ CREATE TABLE public.subscriptions (
     "additionalScreenshotPrice" real,
     currency character varying(255),
     "usageUpdatedAt" timestamp with time zone,
+    "additionalStorybookScreenshotPrice" real,
     CONSTRAINT check_stripe_fields CHECK (((provider <> 'stripe'::text) OR (("stripeSubscriptionId" IS NOT NULL) AND ("subscriberId" IS NOT NULL)))),
     CONSTRAINT subscriptions_provider_check CHECK ((provider = ANY (ARRAY['stripe'::text, 'github'::text])))
 );
@@ -3689,3 +3690,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250820185036_slack-channel-id.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250821180259_user-emails.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250822020923_github-account-emails.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250911075747_additional-storybook-screenshot-price.js', 1, NOW());
