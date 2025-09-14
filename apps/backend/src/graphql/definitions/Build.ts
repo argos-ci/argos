@@ -311,6 +311,11 @@ export const resolvers: IResolvers = {
 
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
 
+      // If branch is not set, we cannot find previous approvals
+      if (!compareBucket.branch) {
+        return [];
+      }
+
       const previousApprovals = await ScreenshotDiff.query()
         .select("screenshot_diffs.id")
         .joinRelated("compareScreenshot")
