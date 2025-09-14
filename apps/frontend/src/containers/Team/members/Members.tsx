@@ -1,7 +1,16 @@
-import { memo, useId, useState, useTransition } from "react";
+import {
+  memo,
+  useDeferredValue,
+  useId,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { Reference, useMutation, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
+import { SearchIcon, UsersIcon } from "lucide-react";
+import { Heading, TabPanel, Tabs, Text } from "react-aria-components";
 import { useNavigate } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -16,7 +25,11 @@ import {
   UserListRow,
 } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
-import { AccountPermission, TeamUserLevel } from "@/gql/graphql";
+import {
+  AccountPermission,
+  TeamMembersOrderBy,
+  TeamUserLevel,
+} from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -25,6 +38,7 @@ import {
   CardParagraph,
   CardTitle,
 } from "@/ui/Card";
+import { Chip } from "@/ui/Chip";
 import {
   Dialog,
   DialogBody,
@@ -36,23 +50,46 @@ import {
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
+import { EmptyState, EmptyStateActions, EmptyStateIcon } from "@/ui/Layout";
 import { List, ListRow, ListTitle } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Switch } from "@/ui/Switch";
+import { Tab, TabList } from "@/ui/Tab";
+import {
+  TextInput,
+  TextInputAddon,
+  TextInputGroup,
+  TextInputIcon,
+} from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { InviteDialog } from "./InviteDialog";
 import { MemberLevelSelect } from "./MemberLevelSelect";
+import { SortSelect } from "./SortSelect";
+import { SourceSelect, type Source } from "./SourceSelect";
 
 const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
 
 const TeamMembersQuery = graphql(`
-  query TeamMembers_teamMembers($id: ID!, $first: Int!, $after: Int!) {
+  query TeamMembers_teamMembers(
+    $id: ID!
+    $first: Int!
+    $after: Int!
+    $search: String
+    $sso: Boolean
+    $orderBy: TeamMembersOrderBy
+  ) {
     team: teamById(id: $id) {
       id
-      members(first: $first, after: $after, sso: false) {
+      members(
+        first: $first
+        after: $after
+        search: $search
+        sso: $sso
+        orderBy: $orderBy
+      ) {
         edges {
           id
           level
@@ -62,6 +99,7 @@ const TeamMembersQuery = graphql(`
             ...RemoveFromTeamDialog_User
           }
           ...LevelSelect_TeamMember
+          fromSSO
         }
         pageInfo {
           hasNextPage
@@ -345,19 +383,31 @@ function LevelSelect(props: {
 }
 
 function TeamMembersList(props: {
-  teamId: string;
-  teamName: string;
+  team: DocumentType<typeof _TeamFragment>;
   amOwner: boolean;
   onRemove: (user: RemovedUser) => void;
   hasGithubSSO: boolean;
   hasFineGrainedAccessControl: boolean;
 }) {
   const authPayload = useAssertAuthTokenPayload();
+  const [search, setSearch] = useState("");
+  const [source, setSource] = useState<Source>("everyone");
+  const [orderBy, setOrderBy] = useState<TeamMembersOrderBy>(
+    TeamMembersOrderBy.Date,
+  );
+  const filters = useMemo(
+    () => ({ search, source, orderBy }),
+    [search, source, orderBy],
+  );
+  const deferredFilters = useDeferredValue(filters);
   const { data, fetchMore } = useSuspenseQuery(TeamMembersQuery, {
     variables: {
-      id: props.teamId,
+      id: props.team.id,
       after: 0,
       first: INITIAL_NB_MEMBERS,
+      search: deferredFilters.search,
+      sso: { everyone: null, sso: true, invite: false }[deferredFilters.source],
+      orderBy: deferredFilters.orderBy,
     },
   });
   const [isPending, startTransition] = useTransition();
@@ -370,14 +420,33 @@ function TeamMembersList(props: {
     !props.hasGithubSSO && data.team.members.pageInfo.totalCount === 1;
   return (
     <div className="my-4">
-      {props.hasGithubSSO && <ListTitle>Invited members</ListTitle>}
+      <div className="mb-2 flex gap-2">
+        <TextInputGroup className="w-full">
+          <TextInputIcon>
+            <SearchIcon />
+          </TextInputIcon>
+          <TextInput
+            type="search"
+            placeholder="Filter…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </TextInputGroup>
+        <SourceSelect value={source} onChange={setSource} />
+        <SortSelect value={orderBy} onChange={setOrderBy} />
+      </div>
       {members.length > 0 ? (
-        <List>
+        <List className={filters !== deferredFilters ? "opacity-disabled" : ""}>
           {members.map((member) => {
             const { user } = member;
             const isMe = authPayload.account.id === user.id;
             return (
               <UserListRow key={user.id} user={user}>
+                {member.fromSSO ? (
+                  <Chip icon={<MarkGithubIcon />} scale="sm" color="neutral">
+                    SSO
+                  </Chip>
+                ) : null}
                 {isMe || !props.amOwner ? (
                   <div className="text-low text-sm">
                     {TeamMemberLabel[member.level]}
@@ -385,7 +454,7 @@ function TeamMembersList(props: {
                 ) : (
                   <div>
                     <LevelSelect
-                      teamId={props.teamId}
+                      teamId={props.team.id}
                       member={member}
                       hasFineGrainedAccessControl={
                         props.hasFineGrainedAccessControl
@@ -395,25 +464,45 @@ function TeamMembersList(props: {
                 )}
                 {isMe || props.amOwner ? (
                   <RemoveMenu
-                    isDisabled={lastOne}
+                    isDisabled={lastOne || member.fromSSO}
                     tooltip={
                       isMe && lastOne
                         ? "You are the last user of this team, you can't leave it"
-                        : null
+                        : member.fromSSO
+                          ? "Disable GitHub SSO to remove this member"
+                          : undefined
                     }
                     label="Member actions"
                     actionLabel={isMe ? "Leave Team" : "Remove from Team"}
                     onRemove={() => props.onRemove(user as RemovedUser)}
                   />
                 ) : (
-                  <div className="w-4" />
+                  <div className="w-8" />
                 )}
               </UserListRow>
             );
           })}
         </List>
       ) : (
-        <div className="my-2">No invited member</div>
+        <EmptyState>
+          <Heading>No members found</Heading>
+          <Text slot="description">
+            Your team has no members matching the current filters.
+          </Text>
+          <EmptyStateActions>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setSearch("");
+                setSource("everyone");
+                setOrderBy(TeamMembersOrderBy.Date);
+              }}
+              isPending={filters !== deferredFilters}
+            >
+              Clear filters
+            </Button>
+          </EmptyStateActions>
+        </EmptyState>
       )}
       {data.team.members.pageInfo.hasNextPage && (
         <div className="pt-2">
@@ -683,15 +772,23 @@ export function TeamMembers(props: {
         <CardParagraph>
           Add members to your team to give them access to your projects.
         </CardParagraph>
-        <TeamMembersList
-          teamId={team.id}
-          teamName={teamName}
-          amOwner={amOwner}
-          onRemove={setRemovedUser}
-          hasGithubSSO={hasGithubSSO}
-          hasFineGrainedAccessControl={hasFineGrainedAccessControl}
-        />
-        {team.ssoGithubAccount && (
+        <Tabs>
+          <TabList className="border-b">
+            <Tab id="members">Members</Tab>
+            <Tab id="pending">Pending invitations</Tab>
+          </TabList>
+          <TabPanel id="members">
+            <TeamMembersList
+              team={team}
+              amOwner={amOwner}
+              onRemove={setRemovedUser}
+              hasGithubSSO={hasGithubSSO}
+              hasFineGrainedAccessControl={hasFineGrainedAccessControl}
+            />
+          </TabPanel>
+          <TabPanel id="pending">Pending</TabPanel>
+        </Tabs>
+        {/* {team.ssoGithubAccount && (
           <TeamGithubMembersList
             teamId={team.id}
             teamName={teamName}
@@ -700,7 +797,7 @@ export function TeamMembers(props: {
             onRemove={setRemovedUser}
             hasFineGrainedAccessControl={hasFineGrainedAccessControl}
           />
-        )}
+        )} */}
         <Modal {...removeFromTeamModal}>
           {removedUser ? (
             authPayload.account.id === removedUser.id ? (

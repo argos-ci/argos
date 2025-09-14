@@ -27,13 +27,13 @@ function SelectArrow() {
   );
 }
 
-interface SelectProps
-  extends AriaSelectSelectProps,
+interface SelectProps<T extends object>
+  extends AriaSelectSelectProps<T>,
     React.RefAttributes<HTMLDivElement> {
   orientation?: "horizontal" | "vertical";
 }
 
-export function Select(props: SelectProps) {
+export function Select<T extends object>(props: SelectProps<T>) {
   const { orientation = "vertical", ...rest } = props;
   return (
     <AriaSelect
@@ -54,7 +54,7 @@ type SelectFieldProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   name: Path<TFieldValues>;
   children: React.ReactNode;
-} & Omit<SelectProps, "children">;
+} & Omit<SelectProps<object>, "children">;
 
 export function SelectField<TFieldValues extends FieldValues>(
   props: SelectFieldProps<TFieldValues>,

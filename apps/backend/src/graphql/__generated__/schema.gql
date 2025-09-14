@@ -1141,7 +1141,7 @@ type Team implements Account & Node {
   includedScreenshots: Int!
   inviteLink: String
   me: TeamMember
-  members(after: Int = 0, first: Int = 30, levels: [TeamUserLevel!], search: String, sso: Boolean): TeamMemberConnection!
+  members(after: Int = 0, first: Int = 30, levels: [TeamUserLevel!], orderBy: TeamMembersOrderBy = DATE, search: String, sso: Boolean): TeamMemberConnection!
   meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
@@ -1177,6 +1177,7 @@ type TeamGithubMemberConnection implements Connection {
 }
 
 type TeamMember implements Node {
+  fromSSO: Boolean!
   id: ID!
   level: TeamUserLevel!
   user: User!
@@ -1185,6 +1186,12 @@ type TeamMember implements Node {
 type TeamMemberConnection implements Connection {
   edges: [TeamMember!]!
   pageInfo: PageInfo!
+}
+
+enum TeamMembersOrderBy {
+  DATE
+  NAME_ASC
+  NAME_DESC
 }
 
 enum TeamUserLevel {

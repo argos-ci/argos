@@ -22,10 +22,11 @@ import {
   stripe,
 } from "@/stripe/index.js";
 
-import type {
-  IResolvers,
-  ITeamDefaultUserLevel,
-  ITeamUserLevel,
+import {
+  ITeamMembersOrderBy,
+  type IResolvers,
+  type ITeamDefaultUserLevel,
+  type ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
 import { deleteAccount, getAdminAccount } from "../services/account.js";
 import {
@@ -39,6 +40,12 @@ import { paginateResult } from "./PageInfo.js";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  enum TeamMembersOrderBy {
+    DATE
+    NAME_ASC
+    NAME_DESC
+  }
+
   type Team implements Node & Account {
     id: ID!
     stripeCustomerId: String
@@ -75,6 +82,7 @@ export const typeDefs = gql`
       search: String
       levels: [TeamUserLevel!]
       sso: Boolean
+      orderBy: TeamMembersOrderBy = DATE
     ): TeamMemberConnection!
     githubMembers(
       after: Int = 0
@@ -107,6 +115,7 @@ export const typeDefs = gql`
     id: ID!
     user: User!
     level: TeamUserLevel!
+    fromSSO: Boolean!
   }
 
   type TeamGithubMemberConnection implements Connection {
@@ -234,6 +243,28 @@ export const resolvers: IResolvers = {
       return account;
     },
     level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    fromSSO: async (teamUser, _args, ctx) => {
+      const [team, userAccount] = await Promise.all([
+        ctx.loaders.Team.load(teamUser.teamId),
+        ctx.loaders.AccountFromRelation.load({
+          userId: teamUser.userId,
+        }),
+      ]);
+
+      invariant(team, "team not found");
+      invariant(userAccount, "user account not found");
+
+      if (!team.ssoGithubAccountId || !userAccount.githubAccountId) {
+        return false;
+      }
+
+      const githubTeamUser = await ctx.loaders.GitHubAccountMemberLoader.load({
+        githubAccountId: team.ssoGithubAccountId,
+        githubMemberId: userAccount.githubAccountId,
+      });
+
+      return Boolean(githubTeamUser);
+    },
   },
   Team: {
     me: async (account, _args, ctx) => {
@@ -273,23 +304,35 @@ export const resolvers: IResolvers = {
 
       const hasGithubSSO = Boolean(team.ssoGithubAccountId);
 
+      const orderBy = args.orderBy ?? ITeamMembersOrderBy.Date;
+
       const query = TeamUser.query()
+        .withGraphJoined("user.account")
         .where("team_users.teamId", account.teamId)
-        .orderByRaw(
-          `(CASE WHEN team_users."userId" = ? THEN 0
-     ELSE team_users."id"
-     END) ASC
-    `,
-          ctx.auth.user.id,
-        )
         .range(after, after + first - 1);
+
+      switch (orderBy) {
+        case ITeamMembersOrderBy.Date:
+          query.orderBy("team_users.id", "DESC");
+          break;
+        case ITeamMembersOrderBy.NameAsc:
+          query
+            .orderBy("user:account.name", "ASC")
+            .orderBy("user:account.slug", "ASC");
+          break;
+        case ITeamMembersOrderBy.NameDesc:
+          query
+            .orderBy("user:account.name", "DESC")
+            .orderBy("user:account.slug", "DESC");
+          break;
+      }
 
       if (levels && levels.length > 0) {
         query.whereIn("team_users.userLevel", levels);
       }
 
       if (search) {
-        query.withGraphJoined("user.account").where((qb) => {
+        query.where((qb) => {
           qb.where("user:account.name", "ilike", `%${search}%`)
             .orWhere("user:account.slug", "ilike", `%${search}%`)
             .orWhere("user.email", "ilike", `%${search}%`);

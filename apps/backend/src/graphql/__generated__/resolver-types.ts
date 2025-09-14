@@ -1475,6 +1475,7 @@ export type ITeamMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   levels?: InputMaybe<Array<ITeamUserLevel>>;
+  orderBy?: InputMaybe<ITeamMembersOrderBy>;
   search?: InputMaybe<Scalars['String']['input']>;
   sso?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -1510,6 +1511,7 @@ export type ITeamGithubMemberConnection = IConnection & {
 
 export type ITeamMember = INode & {
   __typename?: 'TeamMember';
+  fromSSO: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   level: ITeamUserLevel;
   user: IUser;
@@ -1520,6 +1522,12 @@ export type ITeamMemberConnection = IConnection & {
   edges: Array<ITeamMember>;
   pageInfo: IPageInfo;
 };
+
+export enum ITeamMembersOrderBy {
+  Date = 'DATE',
+  NameAsc = 'NAME_ASC',
+  NameDesc = 'NAME_DESC'
+}
 
 export enum ITeamUserLevel {
   Contributor = 'contributor',
@@ -1980,6 +1988,7 @@ export type IResolversTypes = ResolversObject<{
   TeamGithubMemberConnection: ResolverTypeWrapper<Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamGithubMember']> }>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
+  TeamMembersOrderBy: ITeamMembersOrderBy;
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
   TestAutomationRuleInput: ITestAutomationRuleInput;
@@ -2824,7 +2833,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
-  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
+  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first' | 'orderBy'>>;
   meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<ITeamMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2858,6 +2867,7 @@ export type ITeamGithubMemberConnectionResolvers<ContextType = Context, ParentTy
 }>;
 
 export type ITeamMemberResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamMember'] = IResolversParentTypes['TeamMember']> = ResolversObject<{
+  fromSSO?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   level?: Resolver<IResolversTypes['TeamUserLevel'], ParentType, ContextType>;
   user?: Resolver<IResolversTypes['User'], ParentType, ContextType>;
