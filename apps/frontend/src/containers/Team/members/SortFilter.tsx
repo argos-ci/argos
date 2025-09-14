@@ -14,7 +14,7 @@ import { Select, SelectButton } from "@/ui/Select";
 const OrderBySchema = z.enum(TeamMembersOrderBy);
 export type OrderBy = z.infer<typeof OrderBySchema>;
 
-export function SortSelect(props: {
+export function SortFilter(props: {
   value: OrderBy | null;
   onChange: (value: OrderBy) => void;
 }) {

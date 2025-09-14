@@ -1,6 +1,8 @@
 import type { RefAttributes } from "react";
 import { SelectValue, type SelectProps } from "react-aria-components";
+import z from "zod";
 
+import { TeamUserLevel } from "@/gql/graphql";
 import {
   ListBox,
   ListBoxItem,
@@ -21,7 +23,7 @@ export function MemberLevelSelect(
   const { hasFineGrainedAccessControl, size, className, ...rest } = props;
 
   return (
-    <Select aria-label="Levels" className={className} {...rest}>
+    <Select aria-label="User role" className={className} {...rest}>
       <SelectButton size={size}>
         <SelectValue>
           {({ selectedText, defaultChildren }) => {
@@ -51,6 +53,47 @@ export function MemberLevelSelect(
               Admin level access to the entire team
             </ListBoxItemDescription>
           </ListBoxItem>
+        </ListBox>
+      </Popover>
+    </Select>
+  );
+}
+
+const FilterUserLevelSchema = z.enum([
+  "all",
+  TeamUserLevel.Contributor,
+  TeamUserLevel.Member,
+  TeamUserLevel.Owner,
+]);
+
+export type FilterUserLevel = z.infer<typeof FilterUserLevelSchema>;
+
+export function MemberLevelFilter(props: {
+  hasFineGrainedAccessControl: boolean;
+  value: FilterUserLevel;
+  onChange: (value: FilterUserLevel) => void;
+}) {
+  const { hasFineGrainedAccessControl, value, onChange } = props;
+
+  return (
+    <Select
+      aria-label="User role"
+      selectedKey={value}
+      onSelectionChange={(value) =>
+        onChange(FilterUserLevelSchema.parse(value))
+      }
+    >
+      <SelectButton>
+        <SelectValue />
+      </SelectButton>
+      <Popover>
+        <ListBox>
+          <ListBoxItem id="all">All roles</ListBoxItem>
+          {hasFineGrainedAccessControl && (
+            <ListBoxItem id="contributor">Contributor</ListBoxItem>
+          )}
+          <ListBoxItem id="member">Member</ListBoxItem>
+          <ListBoxItem id="owner">Owner</ListBoxItem>
         </ListBox>
       </Popover>
     </Select>

@@ -8,7 +8,7 @@ import { Select, SelectButton } from "@/ui/Select";
 const SourceSchema = z.enum(["everyone", "sso", "invite"]);
 export type Source = z.infer<typeof SourceSchema>;
 
-export function SourceSelect(props: {
+export function SourceFilter(props: {
   value: Source | null;
   onChange: (value: Source) => void;
 }) {

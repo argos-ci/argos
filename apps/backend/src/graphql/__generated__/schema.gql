@@ -1132,7 +1132,16 @@ type Team implements Account & Node {
   defaultUserLevel: TeamDefaultUserLevel!
   githubAccount: GithubAccount
   githubLightInstallation: GithubInstallation
-  githubMembers(after: Int = 0, first: Int = 30, isTeamMember: Boolean): TeamGithubMemberConnection
+  githubMembers(
+    after: Int = 0
+    first: Int = 30
+
+    """Filter members that are part of the team (true) or not (false)"""
+    isTeamMember: Boolean
+
+    """Search members by their GitHub login"""
+    search: String
+  ): TeamGithubMemberConnection
   gitlabAccessToken: String
   gitlabBaseUrl: String
   glNamespaces: GlApiNamespaceConnection
@@ -1141,7 +1150,24 @@ type Team implements Account & Node {
   includedScreenshots: Int!
   inviteLink: String
   me: TeamMember
-  members(after: Int = 0, first: Int = 30, levels: [TeamUserLevel!], orderBy: TeamMembersOrderBy = DATE, search: String, sso: Boolean): TeamMemberConnection!
+  members(
+    after: Int = 0
+    first: Int = 30
+
+    """Filter members by their user level"""
+    levels: [TeamUserLevel!]
+
+    """Order members by"""
+    orderBy: TeamMembersOrderBy = DATE
+
+    """Search members by their name, slug or email"""
+    search: String
+
+    """
+    Filter members that are part of the GitHub SSO (true) or not (false). Only works when SSO is activated.
+    """
+    sso: Boolean
+  ): TeamMemberConnection!
   meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String

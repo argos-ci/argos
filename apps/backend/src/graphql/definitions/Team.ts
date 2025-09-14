@@ -79,14 +79,21 @@ export const typeDefs = gql`
     members(
       after: Int = 0
       first: Int = 30
+      "Search members by their name, slug or email"
       search: String
+      "Filter members by their user level"
       levels: [TeamUserLevel!]
+      "Filter members that are part of the GitHub SSO (true) or not (false). Only works when SSO is activated."
       sso: Boolean
+      "Order members by"
       orderBy: TeamMembersOrderBy = DATE
     ): TeamMemberConnection!
     githubMembers(
       after: Int = 0
       first: Int = 30
+      "Search members by their GitHub login"
+      search: String
+      "Filter members that are part of the team (true) or not (false)"
       isTeamMember: Boolean
     ): TeamGithubMemberConnection
     inviteLink: String
@@ -371,7 +378,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { first, after } = args;
+      const { first, after, search } = args;
 
       invariant(account.teamId);
 
@@ -383,6 +390,7 @@ export const resolvers: IResolvers = {
       }
 
       const query = GithubAccountMember.query()
+        .withGraphJoined("githubMember")
         .where(
           "github_account_members.githubAccountId",
           team.ssoGithubAccountId,
@@ -390,19 +398,30 @@ export const resolvers: IResolvers = {
         .orderBy("githubMember.login", "asc")
         .range(after, after + first - 1);
 
-      if (args.isTeamMember) {
-        query
-          .withGraphJoined("githubMember.account")
-          .where(
-            "github_account_members.githubAccountId",
-            team.ssoGithubAccountId,
-          )
-          .whereIn(
-            "githubMember:account.userId",
-            TeamUser.query().select("userId").where("teamId", team.id),
-          );
-      } else {
-        query.withGraphJoined("githubMember");
+      if (search) {
+        query.where("githubMember.login", "ilike", `%${search}%`);
+      }
+
+      if (typeof args.isTeamMember === "boolean") {
+        if (args.isTeamMember) {
+          query
+            .withGraphJoined("githubMember.account")
+            .whereIn(
+              "githubMember:account.userId",
+              TeamUser.query().select("userId").where("teamId", team.id),
+            );
+        } else {
+          query
+            .withGraphJoined("githubMember.account", {
+              joinOperation: "leftJoin",
+            })
+            .where((qb) => {
+              qb.whereNull("githubMember:account.userId").orWhereNotIn(
+                "githubMember:account.userId",
+                TeamUser.query().select("userId").where("teamId", team.id),
+              );
+            });
+        }
       }
 
       const result = await query;
