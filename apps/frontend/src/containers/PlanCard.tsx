@@ -260,15 +260,22 @@ function ConsumptionBlock({
                 <span>{project.name}</span>
                 <span
                   className={
-                    screenshotsSum.storybook > 0 ? undefined : "tabular-nums"
+                    project.currentPeriodScreenshots.storybook > 0
+                      ? undefined
+                      : "tabular-nums"
                   }
                 >
-                  {screenshotsSum.all.toLocaleString()}{" "}
-                  {screenshotsSum.all > 1 ? "screenshots" : "screenshot"}{" "}
-                  {screenshotsSum.storybook > 0 ? (
+                  {project.currentPeriodScreenshots.all.toLocaleString()}{" "}
+                  {project.currentPeriodScreenshots.all > 1
+                    ? "screenshots"
+                    : "screenshot"}{" "}
+                  {project.currentPeriodScreenshots.storybook > 0 ? (
                     <span className="text-low ml-4 text-sm font-normal">
-                      ({screenshotsSum.storybook.toLocaleString()} Storybook +{" "}
-                      {screenshotsSum.neutral.toLocaleString()} classic)
+                      (
+                      {project.currentPeriodScreenshots.storybook.toLocaleString()}{" "}
+                      Storybook +{" "}
+                      {project.currentPeriodScreenshots.neutral.toLocaleString()}{" "}
+                      classic)
                     </span>
                   ) : null}
                 </span>
