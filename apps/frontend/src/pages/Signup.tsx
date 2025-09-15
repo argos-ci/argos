@@ -31,7 +31,6 @@ import { Link } from "@/ui/Link";
 import mermaidImg from "./signup/mermaid.svg";
 import metaImg from "./signup/meta.svg";
 import muiImg from "./signup/mui.svg";
-import wizImg from "./signup/wiz.svg";
 
 function AccountTypeField<
   TFieldValues extends FieldValues = FieldValues,
@@ -315,11 +314,6 @@ function Customers() {
         <img
           src={metaImg}
           alt="Meta"
-          className="h-8 opacity-70 brightness-0 dark:invert"
-        />
-        <img
-          src={wizImg}
-          alt="Wiz"
           className="h-8 opacity-70 brightness-0 dark:invert"
         />
         <img
