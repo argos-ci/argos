@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { DocumentType, graphql } from "@/gql";
+import { TeamUserLevel } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { CopyButton } from "@/ui/CopyButton";
 import {
@@ -16,6 +17,7 @@ import {
   DialogFooter,
   DialogText,
   DialogTitle,
+  useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
@@ -36,14 +38,18 @@ const _TeamFragment = graphql(`
   }
 `);
 
+const InviteMembersMutation = graphql(`
+  mutation InviteMembers($input: InviteMembersInput!) {
+    inviteMembers(input: $input)
+  }
+`);
+
 const FormSchema = z.object({
   members: z
     .array(
       z.object({
         email: z.email().or(z.literal("")),
-        level: z
-          .enum(["owner", "member", "contributor"])
-          .nonoptional("Level is required"),
+        level: z.enum(TeamUserLevel).nonoptional("Level is required"),
       }),
     )
     .min(1, "At least one member is required"),
@@ -53,16 +59,17 @@ export function InviteDialog(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
+  const client = useApolloClient();
   invariant(team.inviteLink, "Team invite link is required");
   const form = useForm({
     resolver: zodResolver(FormSchema),
-    defaultValues: { members: [{ email: "", level: "member" as const }] },
+    defaultValues: { members: [{ email: "", level: TeamUserLevel.Member }] },
   });
   const { fields, append } = useFieldArray({
     control: form.control,
     name: "members",
   });
-  console.log(form.formState);
+  const state = useOverlayTriggerState();
   return (
     <Dialog size="medium">
       <Form
@@ -77,6 +84,17 @@ export function InviteDialog(props: {
             );
             return;
           }
+          await client.mutate({
+            mutation: InviteMembersMutation,
+            variables: {
+              input: {
+                teamAccountId: team.id,
+                members: validMembers,
+              },
+            },
+          });
+          state.close();
+          toast.success("Invitations sent successfully");
         }}
         noValidate
       >
@@ -139,7 +157,9 @@ export function InviteDialog(props: {
               <Button
                 variant="secondary"
                 className="self-start"
-                onPress={() => append({ email: "", level: "member" as const })}
+                onPress={() =>
+                  append({ email: "", level: TeamUserLevel.Member })
+                }
                 isDisabled={fields.length >= 10}
               >
                 <ButtonIcon>

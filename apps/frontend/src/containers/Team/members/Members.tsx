@@ -1,10 +1,4 @@
-import {
-  useDeferredValue,
-  useId,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useDeferredValue, useMemo, useState, useTransition } from "react";
 import { useMutation, useSuspenseQuery } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -13,7 +7,6 @@ import { Heading, TabPanel, Tabs, Text } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAssertAuthTokenPayload } from "@/containers/Auth";
-import { GithubAccountLink } from "@/containers/GithubAccountLink";
 import {
   RemoveMenu,
   TeamMemberLabel,
@@ -36,9 +29,8 @@ import {
 import { Chip } from "@/ui/Chip";
 import { DialogTrigger } from "@/ui/Dialog";
 import { EmptyState, EmptyStateActions } from "@/ui/Layout";
-import { List, ListRow, ListTitle } from "@/ui/List";
+import { List, ListRow } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
-import { Switch } from "@/ui/Switch";
 import { Tab, TabList } from "@/ui/Tab";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
@@ -257,7 +249,6 @@ function TeamMembersList(props: {
       levels: deferredFilters.level === "all" ? null : [deferredFilters.level],
     },
   });
-  const [isPending, startTransition] = useTransition();
   if (!data) {
     return null;
   }

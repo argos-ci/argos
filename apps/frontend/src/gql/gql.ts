@@ -105,6 +105,7 @@ type Documents = {
     "\n  mutation TeamSpendManagement_updateAccount(\n    $id: ID!\n    $meteredSpendLimitByPeriod: Int\n    $blockWhenSpendLimitIsReached: Boolean\n  ) {\n    updateAccount(\n      input: {\n        id: $id\n        meteredSpendLimitByPeriod: $meteredSpendLimitByPeriod\n        blockWhenSpendLimitIsReached: $blockWhenSpendLimitIsReached\n      }\n    ) {\n      ...TeamSpendManagement_Account\n    }\n  }\n": typeof types.TeamSpendManagement_UpdateAccountDocument,
     "\n  query UpgradeDialog_me {\n    me {\n      id\n      slug\n      hasSubscribedToTrial\n      ...AccountItem_Account\n      teams {\n        id\n        slug\n        subscriptionStatus\n        ...AccountItem_Account\n      }\n    }\n  }\n": typeof types.UpgradeDialog_MeDocument,
     "\n  fragment InviteDialog_Team on Team {\n    id\n    inviteLink\n    plan {\n      id\n      fineGrainedAccessControlIncluded\n    }\n  }\n": typeof types.InviteDialog_TeamFragmentDoc,
+    "\n  mutation InviteMembers($input: InviteMembersInput!) {\n    inviteMembers(input: $input)\n  }\n": typeof types.InviteMembersDocument,
     "\n  mutation ResetInviteLink($teamAccountId: ID!) {\n    resetInviteLink(input: { teamAccountId: $teamAccountId }) {\n      id\n      ...InviteLinkDialog_Team\n    }\n  }\n": typeof types.ResetInviteLinkDocument,
     "\n  fragment InviteLinkDialog_Team on Team {\n    id\n    inviteLink\n  }\n": typeof types.InviteLinkDialog_TeamFragmentDoc,
     "\n  mutation TeamMembers_leaveTeam($teamAccountId: ID!) {\n    leaveTeam(input: { teamAccountId: $teamAccountId })\n  }\n": typeof types.TeamMembers_LeaveTeamDocument,
@@ -268,6 +269,7 @@ const documents: Documents = {
     "\n  mutation TeamSpendManagement_updateAccount(\n    $id: ID!\n    $meteredSpendLimitByPeriod: Int\n    $blockWhenSpendLimitIsReached: Boolean\n  ) {\n    updateAccount(\n      input: {\n        id: $id\n        meteredSpendLimitByPeriod: $meteredSpendLimitByPeriod\n        blockWhenSpendLimitIsReached: $blockWhenSpendLimitIsReached\n      }\n    ) {\n      ...TeamSpendManagement_Account\n    }\n  }\n": types.TeamSpendManagement_UpdateAccountDocument,
     "\n  query UpgradeDialog_me {\n    me {\n      id\n      slug\n      hasSubscribedToTrial\n      ...AccountItem_Account\n      teams {\n        id\n        slug\n        subscriptionStatus\n        ...AccountItem_Account\n      }\n    }\n  }\n": types.UpgradeDialog_MeDocument,
     "\n  fragment InviteDialog_Team on Team {\n    id\n    inviteLink\n    plan {\n      id\n      fineGrainedAccessControlIncluded\n    }\n  }\n": types.InviteDialog_TeamFragmentDoc,
+    "\n  mutation InviteMembers($input: InviteMembersInput!) {\n    inviteMembers(input: $input)\n  }\n": types.InviteMembersDocument,
     "\n  mutation ResetInviteLink($teamAccountId: ID!) {\n    resetInviteLink(input: { teamAccountId: $teamAccountId }) {\n      id\n      ...InviteLinkDialog_Team\n    }\n  }\n": types.ResetInviteLinkDocument,
     "\n  fragment InviteLinkDialog_Team on Team {\n    id\n    inviteLink\n  }\n": types.InviteLinkDialog_TeamFragmentDoc,
     "\n  mutation TeamMembers_leaveTeam($teamAccountId: ID!) {\n    leaveTeam(input: { teamAccountId: $teamAccountId })\n  }\n": types.TeamMembers_LeaveTeamDocument,
@@ -718,6 +720,10 @@ export function graphql(source: "\n  query UpgradeDialog_me {\n    me {\n      i
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment InviteDialog_Team on Team {\n    id\n    inviteLink\n    plan {\n      id\n      fineGrainedAccessControlIncluded\n    }\n  }\n"): (typeof documents)["\n  fragment InviteDialog_Team on Team {\n    id\n    inviteLink\n    plan {\n      id\n      fineGrainedAccessControlIncluded\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation InviteMembers($input: InviteMembersInput!) {\n    inviteMembers(input: $input)\n  }\n"): (typeof documents)["\n  mutation InviteMembers($input: InviteMembersInput!) {\n    inviteMembers(input: $input)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

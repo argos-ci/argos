@@ -8,9 +8,12 @@ import {
   GithubAccountMember,
   GithubInstallation,
   Team,
+  TeamInvite,
   TeamUser,
+  UserEmail,
 } from "@/database/models/index.js";
 import { createTeamAccount } from "@/database/services/team.js";
+import { sendEmailTemplate } from "@/email/send-email-template.js";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
 import {
   createArgosSubscriptionFromStripe,
@@ -21,6 +24,7 @@ import {
   getSubscriptionData,
   stripe,
 } from "@/stripe/index.js";
+import { sanitizeEmail } from "@/util/email.js";
 
 import {
   ITeamMembersOrderBy,
@@ -29,12 +33,13 @@ import {
   type ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
 import { deleteAccount, getAdminAccount } from "../services/account.js";
+import { getAccountAvatar, getAvatarColor } from "../services/avatar.js";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
   importOrgMembers,
 } from "../services/github.js";
-import { forbidden, unauthenticated } from "../util.js";
+import { badUserInput, forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -933,23 +938,121 @@ export const resolvers: IResolvers = {
 
       invariant(teamAccount.teamId, "Account teamId is undefined");
 
-      await Team.query()
-        .findById(teamAccount.teamId)
-        .patch({
-          inviteSecret: await Team.generateInviteSecret(),
-        });
+      await Team.query().findById(teamAccount.teamId).patch({
+        inviteSecret: Team.generateInviteSecret(),
+      });
 
       return teamAccount;
     },
     inviteMembers: async (_root, args, ctx) => {
+      const { auth } = ctx;
+
+      if (!auth) {
+        throw unauthenticated();
+      }
+
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth?.user,
+        user: auth?.user,
       });
 
-      invariant(teamAccount.teamId, "Account teamId is undefined");
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
 
-      // @TODO implement email sending
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
+      const data = args.input.members.map((member) => ({
+        secret: TeamInvite.generateSecret(),
+        email: sanitizeEmail(member.email),
+        teamId,
+        userLevel: member.level,
+        expiresAt: expiresAt.toISOString(), // 72 hours
+      }));
+
+      const userEmails = await UserEmail.query()
+        .whereIn(
+          "user_emails.email",
+          data.map((d) => d.email),
+        )
+        .withGraphJoined("user.[teams,account]");
+
+      const usersInTeam = userEmails.filter((ue) => {
+        invariant(ue.user?.teams, "relation not fetched");
+        return ue.user.teams.some((tu) => tu.id === teamId);
+      });
+
+      if (usersInTeam.length > 0) {
+        const fields = usersInTeam.map((user) => {
+          const index = data.findIndex((d) => d.email === user.email);
+          return `members.${index}.email`;
+        });
+        throw badUserInput("User already in the team", {
+          field: fields,
+        });
+      }
+
+      const invites = await TeamInvite.query()
+        .insertAndFetch(data)
+        .onConflict(["email", "teamId"])
+        .merge();
+
+      await Promise.all(
+        invites.map(async (invite) => {
+          const user = userEmails.find((ue) => ue.email === invite.email)?.user;
+
+          const [teamAvatar, avatar] = await Promise.all([
+            getAccountAvatar(teamAccount, ctx.loaders),
+            user?.account ? getAccountAvatar(user.account, ctx.loaders) : null,
+          ]);
+
+          const [teamAvatarURL, avatarURL] = await Promise.all([
+            teamAvatar.url({ size: 128 }),
+            avatar?.url({ size: 128 }) ?? null,
+          ]);
+
+          const firstEmailLetter = invite.email[0]?.toUpperCase();
+          invariant(firstEmailLetter, "Email is empty");
+
+          await sendEmailTemplate({
+            template: "team_invite",
+            to: [invite.email],
+            data: {
+              email: invite.email,
+              userLevel: invite.userLevel,
+              avatar: avatar
+                ? {
+                    url: avatarURL,
+                    initial: avatar.initial,
+                    color: avatar.color,
+                  }
+                : {
+                    url: null,
+                    initial: firstEmailLetter.toUpperCase(),
+                    color: getAvatarColor(invite.email),
+                  },
+              invite: {
+                url: new URL(
+                  `/invites/${invite.secret}`,
+                  config.get("server.url"),
+                ).href,
+                date: new Date(invite.createdAt),
+              },
+              team: {
+                name: teamAccount.displayName,
+                avatar: {
+                  url: teamAvatarURL,
+                  initial: teamAvatar.initial,
+                  color: teamAvatar.color,
+                },
+              },
+              invitedBy: {
+                name: auth.account.displayName,
+                email: auth.user.email,
+                location: ctx.requestLocation,
+              },
+            },
+          });
+        }),
+      );
 
       return true;
     },

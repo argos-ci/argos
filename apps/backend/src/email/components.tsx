@@ -110,12 +110,17 @@ export function Avatar(props: {
   }
   return (
     <div
-      className="flex items-center justify-center rounded-full"
-      style={{ backgroundColor: avatar.color, width: size, height: size }}
+      className="rounded-full"
+      style={{
+        backgroundColor: avatar.color,
+        width: size,
+        height: size,
+        textAlign: "center",
+      }}
     >
       <span
         className="text-lg font-bold text-white"
-        style={{ fontSize: size / 2.5 }}
+        style={{ fontSize: size / 2.5, lineHeight: `${size}px` }}
       >
         {avatar.initial}
       </span>

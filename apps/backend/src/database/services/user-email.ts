@@ -12,10 +12,8 @@ function getRedisKey(token: string) {
  * Generate a URL for email verification.
  */
 async function generateEmailVerificationURL(email: string) {
-  const [redis, token] = await Promise.all([
-    getRedisClient(),
-    generateRandomHexString(24),
-  ]);
+  const redis = await getRedisClient();
+  const token = generateRandomHexString(24);
   await redis.set(getRedisKey(token), email, {
     expiration: {
       type: "PX",

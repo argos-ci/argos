@@ -30,6 +30,7 @@ export const handler = defineEmailTemplate({
   schema: z.object({
     email: z.email(),
     userLevel: TeamUserLevelSchema,
+    avatar: AvatarSchema,
     invite: z.object({
       date: z.date(),
       url: z.url(),
@@ -40,14 +41,18 @@ export const handler = defineEmailTemplate({
     }),
     invitedBy: z.object({
       name: z.string(),
-      email: z.email(),
-      avatar: AvatarSchema,
+      email: z.email().nullable(),
       location: LocationSchema,
     }),
   }),
   previewData: {
     email: "john.doe@example.com",
     userLevel: "owner",
+    avatar: {
+      url: null,
+      initial: "J",
+      color: getAvatarColor(8),
+    },
     invite: {
       url: "https://example.com/invite",
       date: new Date("2025-09-07T15:59:00.000Z"),
@@ -68,15 +73,10 @@ export const handler = defineEmailTemplate({
         country: "France",
         ip: "93.19.70.152",
       },
-      avatar: {
-        url: null,
-        initial: "J",
-        color: getAvatarColor(8),
-      },
     },
   },
   email: (props) => {
-    const { invite, invitedBy, email, userLevel, team } = props;
+    const { invite, invitedBy, email, userLevel, team, avatar } = props;
     return {
       subject: `${invitedBy.name} has invited you to the ${team.name} team on Argos`,
       body: (
@@ -84,11 +84,12 @@ export const handler = defineEmailTemplate({
           preview={`Join the ${team.name} team on Argos.`}
           footer={false}
         >
-          <H1>Verify your email to sign in to Argos</H1>
+          <H1>Join {team.name} on Argos</H1>
           <Paragraph>Hi {props.email},</Paragraph>
           <Paragraph>
-            <strong>{invitedBy.name}</strong> ({invitedBy.email}) has invited
-            you to join the <strong>{team.name}</strong> team on{" "}
+            <strong>{invitedBy.name}</strong>
+            {invitedBy.email ? ` (${invitedBy.email})` : null} has invited you
+            to join the <strong>{team.name}</strong> team on{" "}
             <strong>Argos</strong> with the{" "}
             <strong>{getTeamUserLevelLabel(userLevel)}</strong> role.
           </Paragraph>
@@ -96,7 +97,7 @@ export const handler = defineEmailTemplate({
           <Section className="my-8 w-auto">
             <Row>
               <Column className="px-8">
-                <Avatar avatar={invitedBy.avatar} size={64} />
+                <Avatar avatar={avatar} size={64} />
               </Column>
               <Column className="text-2xl text-gray-700">→</Column>
               <Column className="px-8">

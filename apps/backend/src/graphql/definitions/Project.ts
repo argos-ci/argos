@@ -979,7 +979,7 @@ export const resolvers: IResolvers = {
         user: ctx.auth.user,
       });
 
-      const token = await Project.generateToken();
+      const token = Project.generateToken();
       return project.$query().patchAndFetch({ token });
     },
   },
