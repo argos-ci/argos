@@ -74,6 +74,11 @@ function getJobStatus({
 }
 
 export async function createBuildDiffs(build: Build) {
+  // If the build already has a type, it means the diffs have already been created.
+  if (build.type) {
+    return ScreenshotDiff.query().where({ buildId: build.id });
+  }
+
   const strategy = getBuildStrategy(build);
 
   const richBuild = await build
