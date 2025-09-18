@@ -522,7 +522,7 @@ export async function updateStripeUsage(input: {
       }),
       // Whereas old plans are using usage records.
       item.plan.usage_type === "metered"
-        ? await stripe.subscriptionItems.createUsageRecord(item.id, {
+        ? stripe.subscriptionItems.createUsageRecord(item.id, {
             action: "set",
             quantity: screenshots.all,
             timestamp,
