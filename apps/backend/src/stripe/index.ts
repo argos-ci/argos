@@ -503,6 +503,7 @@ export async function updateStripeUsage(input: {
     });
 
     await Promise.all([
+      // New plans are using metered events for screenshots tracking.
       stripe.billing.meterEvents.create({
         event_name: "screenshots",
         timestamp,
@@ -519,11 +520,14 @@ export async function updateStripeUsage(input: {
           value: String(additional.storybook),
         },
       }),
-      await stripe.subscriptionItems.createUsageRecord(item.id, {
-        action: "set",
-        quantity: screenshots.all,
-        timestamp,
-      }),
+      // Whereas old plans are using usage records.
+      item.plan.usage_type === "metered"
+        ? await stripe.subscriptionItems.createUsageRecord(item.id, {
+            action: "set",
+            quantity: screenshots.all,
+            timestamp,
+          })
+        : null,
     ]);
 
     await subscription.$query().patch({
