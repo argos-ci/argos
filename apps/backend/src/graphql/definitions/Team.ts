@@ -8,9 +8,12 @@ import {
   GithubAccountMember,
   GithubInstallation,
   Team,
+  TeamInvite,
   TeamUser,
+  UserEmail,
 } from "@/database/models/index.js";
 import { createTeamAccount } from "@/database/services/team.js";
+import { sendEmailTemplate } from "@/email/send-email-template.js";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
 import {
   createArgosSubscriptionFromStripe,
@@ -21,24 +24,33 @@ import {
   getSubscriptionData,
   stripe,
 } from "@/stripe/index.js";
+import { sanitizeEmail } from "@/util/email.js";
 
-import type {
-  IResolvers,
-  ITeamDefaultUserLevel,
-  ITeamUserLevel,
+import {
+  ITeamMembersOrderBy,
+  type IResolvers,
+  type ITeamDefaultUserLevel,
+  type ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
 import { deleteAccount, getAdminAccount } from "../services/account.js";
+import { getAccountAvatar, getAvatarColor } from "../services/avatar.js";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
   importOrgMembers,
 } from "../services/github.js";
-import { forbidden, unauthenticated } from "../util.js";
+import { badUserInput, forbidden, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  enum TeamMembersOrderBy {
+    DATE
+    NAME_ASC
+    NAME_DESC
+  }
+
   type Team implements Node & Account {
     id: ID!
     stripeCustomerId: String
@@ -72,13 +84,21 @@ export const typeDefs = gql`
     members(
       after: Int = 0
       first: Int = 30
+      "Search members by their name, slug or email"
       search: String
+      "Filter members by their user level"
       levels: [TeamUserLevel!]
+      "Filter members that are part of the GitHub SSO (true) or not (false). Only works when SSO is activated."
       sso: Boolean
+      "Order members by"
+      orderBy: TeamMembersOrderBy = DATE
     ): TeamMemberConnection!
     githubMembers(
       after: Int = 0
       first: Int = 30
+      "Search members by their GitHub login"
+      search: String
+      "Filter members that are part of the team (true) or not (false)"
       isTeamMember: Boolean
     ): TeamGithubMemberConnection
     inviteLink: String
@@ -107,6 +127,7 @@ export const typeDefs = gql`
     id: ID!
     user: User!
     level: TeamUserLevel!
+    fromSSO: Boolean!
   }
 
   type TeamGithubMemberConnection implements Connection {
@@ -170,6 +191,16 @@ export const typeDefs = gql`
     teamAccountId: ID!
   }
 
+  input InviteMembersInput {
+    teamAccountId: ID!
+    members: [InviteMemberInput!]!
+  }
+
+  input InviteMemberInput {
+    email: String!
+    level: TeamUserLevel!
+  }
+
   extend type Query {
     invitation(secret: String!): Team
   }
@@ -197,6 +228,8 @@ export const typeDefs = gql`
     setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
     "Reset invite link"
     resetInviteLink(input: ResetInviteLinkInput!): Team!
+    "Invite members to a team"
+    inviteMembers(input: InviteMembersInput!): Boolean!
   }
 `;
 
@@ -222,6 +255,28 @@ export const resolvers: IResolvers = {
       return account;
     },
     level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    fromSSO: async (teamUser, _args, ctx) => {
+      const [team, userAccount] = await Promise.all([
+        ctx.loaders.Team.load(teamUser.teamId),
+        ctx.loaders.AccountFromRelation.load({
+          userId: teamUser.userId,
+        }),
+      ]);
+
+      invariant(team, "team not found");
+      invariant(userAccount, "user account not found");
+
+      if (!team.ssoGithubAccountId || !userAccount.githubAccountId) {
+        return false;
+      }
+
+      const githubTeamUser = await ctx.loaders.GitHubAccountMemberLoader.load({
+        githubAccountId: team.ssoGithubAccountId,
+        githubMemberId: userAccount.githubAccountId,
+      });
+
+      return Boolean(githubTeamUser);
+    },
   },
   Team: {
     me: async (account, _args, ctx) => {
@@ -261,23 +316,35 @@ export const resolvers: IResolvers = {
 
       const hasGithubSSO = Boolean(team.ssoGithubAccountId);
 
+      const orderBy = args.orderBy ?? ITeamMembersOrderBy.Date;
+
       const query = TeamUser.query()
+        .withGraphJoined("user.account")
         .where("team_users.teamId", account.teamId)
-        .orderByRaw(
-          `(CASE WHEN team_users."userId" = ? THEN 0
-     ELSE team_users."id"
-     END) ASC
-    `,
-          ctx.auth.user.id,
-        )
         .range(after, after + first - 1);
+
+      switch (orderBy) {
+        case ITeamMembersOrderBy.Date:
+          query.orderBy("team_users.id", "DESC");
+          break;
+        case ITeamMembersOrderBy.NameAsc:
+          query
+            .orderBy("user:account.name", "ASC")
+            .orderBy("user:account.slug", "ASC");
+          break;
+        case ITeamMembersOrderBy.NameDesc:
+          query
+            .orderBy("user:account.name", "DESC")
+            .orderBy("user:account.slug", "DESC");
+          break;
+      }
 
       if (levels && levels.length > 0) {
         query.whereIn("team_users.userLevel", levels);
       }
 
       if (search) {
-        query.withGraphJoined("user.account").where((qb) => {
+        query.where((qb) => {
           qb.where("user:account.name", "ilike", `%${search}%`)
             .orWhere("user:account.slug", "ilike", `%${search}%`)
             .orWhere("user.email", "ilike", `%${search}%`);
@@ -316,7 +383,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { first, after } = args;
+      const { first, after, search } = args;
 
       invariant(account.teamId);
 
@@ -328,6 +395,7 @@ export const resolvers: IResolvers = {
       }
 
       const query = GithubAccountMember.query()
+        .withGraphJoined("githubMember")
         .where(
           "github_account_members.githubAccountId",
           team.ssoGithubAccountId,
@@ -335,19 +403,30 @@ export const resolvers: IResolvers = {
         .orderBy("githubMember.login", "asc")
         .range(after, after + first - 1);
 
-      if (args.isTeamMember) {
-        query
-          .withGraphJoined("githubMember.account")
-          .where(
-            "github_account_members.githubAccountId",
-            team.ssoGithubAccountId,
-          )
-          .whereIn(
-            "githubMember:account.userId",
-            TeamUser.query().select("userId").where("teamId", team.id),
-          );
-      } else {
-        query.withGraphJoined("githubMember");
+      if (search) {
+        query.where("githubMember.login", "ilike", `%${search}%`);
+      }
+
+      if (typeof args.isTeamMember === "boolean") {
+        if (args.isTeamMember) {
+          query
+            .withGraphJoined("githubMember.account")
+            .whereIn(
+              "githubMember:account.userId",
+              TeamUser.query().select("userId").where("teamId", team.id),
+            );
+        } else {
+          query
+            .withGraphJoined("githubMember.account", {
+              joinOperation: "leftJoin",
+            })
+            .where((qb) => {
+              qb.whereNull("githubMember:account.userId").orWhereNotIn(
+                "githubMember:account.userId",
+                TeamUser.query().select("userId").where("teamId", team.id),
+              );
+            });
+        }
       }
 
       const result = await query;
@@ -852,24 +931,130 @@ export const resolvers: IResolvers = {
       return teamAccount;
     },
     resetInviteLink: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth?.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      await Team.query().findById(teamAccount.teamId).patch({
+        inviteSecret: Team.generateInviteSecret(),
+      });
+
+      return teamAccount;
+    },
+    inviteMembers: async (_root, args, ctx) => {
+      const { auth } = ctx;
+
+      if (!auth) {
         throw unauthenticated();
       }
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        user: auth?.user,
       });
 
-      invariant(teamAccount.teamId, "Account teamId is undefined");
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
 
-      await Team.query()
-        .findById(teamAccount.teamId)
-        .patch({
-          inviteSecret: await Team.generateInviteSecret(),
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
+      const data = args.input.members.map((member) => ({
+        secret: TeamInvite.generateSecret(),
+        email: sanitizeEmail(member.email),
+        teamId,
+        userLevel: member.level,
+        expiresAt: expiresAt.toISOString(), // 72 hours
+      }));
+
+      const userEmails = await UserEmail.query()
+        .whereIn(
+          "user_emails.email",
+          data.map((d) => d.email),
+        )
+        .withGraphJoined("user.[teams,account]");
+
+      const usersInTeam = userEmails.filter((ue) => {
+        invariant(ue.user?.teams, "relation not fetched");
+        return ue.user.teams.some((tu) => tu.id === teamId);
+      });
+
+      if (usersInTeam.length > 0) {
+        const fields = usersInTeam.map((user) => {
+          const index = data.findIndex((d) => d.email === user.email);
+          return `members.${index}.email`;
         });
+        throw badUserInput("User already in the team", {
+          field: fields,
+        });
+      }
 
-      return teamAccount;
+      const invites = await TeamInvite.query()
+        .insertAndFetch(data)
+        .onConflict(["email", "teamId"])
+        .merge();
+
+      await Promise.all(
+        invites.map(async (invite) => {
+          const user = userEmails.find((ue) => ue.email === invite.email)?.user;
+
+          const [teamAvatar, avatar] = await Promise.all([
+            getAccountAvatar(teamAccount, ctx.loaders),
+            user?.account ? getAccountAvatar(user.account, ctx.loaders) : null,
+          ]);
+
+          const [teamAvatarURL, avatarURL] = await Promise.all([
+            teamAvatar.url({ size: 128 }),
+            avatar?.url({ size: 128 }) ?? null,
+          ]);
+
+          const firstEmailLetter = invite.email[0]?.toUpperCase();
+          invariant(firstEmailLetter, "Email is empty");
+
+          await sendEmailTemplate({
+            template: "team_invite",
+            to: [invite.email],
+            data: {
+              email: invite.email,
+              userLevel: invite.userLevel,
+              avatar: avatar
+                ? {
+                    url: avatarURL,
+                    initial: avatar.initial,
+                    color: avatar.color,
+                  }
+                : {
+                    url: null,
+                    initial: firstEmailLetter.toUpperCase(),
+                    color: getAvatarColor(invite.email),
+                  },
+              invite: {
+                url: new URL(
+                  `/invites/${invite.secret}`,
+                  config.get("server.url"),
+                ).href,
+                date: new Date(invite.createdAt),
+              },
+              team: {
+                name: teamAccount.displayName,
+                avatar: {
+                  url: teamAvatarURL,
+                  initial: teamAvatar.initial,
+                  color: teamAvatar.color,
+                },
+              },
+              invitedBy: {
+                name: auth.account.displayName,
+                email: auth.user.email,
+                location: ctx.requestLocation,
+              },
+            },
+          });
+        }),
+      );
+
+      return true;
     },
   },
 };

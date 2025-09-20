@@ -1,7 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
 import { GitbeakerRequestError } from "@gitbeaker/rest";
-import axios from "axios";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
@@ -40,7 +38,7 @@ import {
 } from "../__generated__/resolver-types.js";
 import type { Context } from "../context.js";
 import { getAdminAccount } from "../services/account.js";
-import { getAvatarColor, githubAvatarUrlFactory } from "../services/avatar.js";
+import { getAccountAvatar } from "../services/avatar.js";
 import { badUserInput, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
@@ -387,51 +385,7 @@ export const resolvers: IResolvers = {
       return account.gitlabAccessToken;
     },
     avatar: async (account, _args, ctx) => {
-      const ghAccount = account.githubAccountId
-        ? await ctx.loaders.GithubAccount.load(account.githubAccountId)
-        : null;
-
-      const firstLetter = account.displayName[0];
-      invariant(firstLetter, "Account should have a display name");
-      const initial = firstLetter.toUpperCase();
-      const color = getAvatarColor(account.id);
-
-      if (ghAccount) {
-        return {
-          getUrl: githubAvatarUrlFactory(ghAccount.login),
-          initial,
-          color,
-        };
-      }
-
-      if (account.userId) {
-        const user = await ctx.loaders.User.load(account.userId);
-        invariant(user, "User not found");
-        if (user.gitlabUserId && user.email) {
-          const email = user.email;
-          return {
-            getUrl: async ({ size }: { size?: number }) => {
-              const url = new URL("https://gitlab.com/api/v4/avatar");
-              url.searchParams.set("email", email);
-              if (size) {
-                url.searchParams.set("size", String(size));
-              }
-              const result = await axios.get<{ avatar_url: string }>(
-                String(url),
-              );
-              return result.data.avatar_url;
-            },
-            initial,
-            color,
-          };
-        }
-      }
-
-      return {
-        getUrl: () => null,
-        initial,
-        color,
-      };
+      return getAccountAvatar(account, ctx.loaders);
     },
     glNamespaces: async (account) => {
       const client = await getGitlabClientFromAccount(account);
@@ -475,11 +429,6 @@ export const resolvers: IResolvers = {
         screenshots,
         builds,
       };
-    },
-  },
-  AccountAvatar: {
-    url: (avatar, args) => {
-      return avatar.getUrl(args);
     },
   },
   Query: {

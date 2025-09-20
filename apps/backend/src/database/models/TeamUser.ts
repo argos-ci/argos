@@ -1,9 +1,12 @@
-import { RelationMappings } from "objection";
+import { RelationMappings, type JSONSchema } from "objection";
+import { z } from "zod";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
 import { Team } from "./Team.js";
 import { User } from "./User.js";
+
+export const TeamUserLevelSchema = z.enum(["owner", "member", "contributor"]);
 
 export class TeamUser extends Model {
   static override tableName = "team_users";
@@ -17,10 +20,7 @@ export class TeamUser extends Model {
         properties: {
           userId: { type: "string" },
           teamId: { type: "string" },
-          userLevel: {
-            type: "string",
-            enum: ["owner", "member", "contributor"],
-          },
+          userLevel: z.toJSONSchema(TeamUserLevelSchema) as JSONSchema,
         },
       },
     ],
@@ -28,7 +28,7 @@ export class TeamUser extends Model {
 
   userId!: string;
   teamId!: string;
-  userLevel!: "owner" | "member" | "contributor";
+  userLevel!: z.infer<typeof TeamUserLevelSchema>;
 
   static override get relationMappings(): RelationMappings {
     return {

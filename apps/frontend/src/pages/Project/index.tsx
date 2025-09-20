@@ -6,13 +6,8 @@ import { useVisitAccount } from "@/containers/AccountHistory";
 import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
-import {
-  TabLink,
-  TabLinkList,
-  TabLinkPanel,
-  TabsLink,
-  useTabLinkSplat,
-} from "@/ui/TabLink";
+import { TabList } from "@/ui/Tab";
+import { TabLink, TabLinkPanel, TabsLink, useTabLinkSplat } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 import { useTestParams } from "../Test/TestParams";
@@ -52,7 +47,7 @@ function ProjectTabs(props: {
       selectedKey={selectedKey}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <TabLinkList aria-label="Project navigation">
+      <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
@@ -60,7 +55,7 @@ function ProjectTabs(props: {
         {permissions.includes(ProjectPermission.ViewSettings) && (
           <TabLink href="settings">Settings</TabLink>
         )}
-      </TabLinkList>
+      </TabList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel id={selectedKey} className="flex min-h-0 flex-1 flex-col">

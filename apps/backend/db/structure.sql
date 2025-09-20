@@ -1576,6 +1576,23 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
+-- Name: team_invites; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_invites (
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "expiresAt" timestamp with time zone NOT NULL,
+    secret character varying(20) NOT NULL,
+    "teamId" bigint NOT NULL,
+    email character varying(255) NOT NULL,
+    "userLevel" text NOT NULL,
+    CONSTRAINT "team_invites_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
+);
+
+
+ALTER TABLE public.team_invites OWNER TO postgres;
+
+--
 -- Name: team_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2434,6 +2451,22 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: team_invites team_invites_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_invites
+    ADD CONSTRAINT team_invites_pkey PRIMARY KEY ("teamId", email);
+
+
+--
+-- Name: team_invites team_invites_secret_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_invites
+    ADD CONSTRAINT team_invites_secret_unique UNIQUE (secret);
+
+
+--
 -- Name: team_users team_users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2936,6 +2969,20 @@ CREATE INDEX subscriptions_planid_index ON public.subscriptions USING btree ("pl
 --
 
 CREATE INDEX subscriptions_subscriberid_index ON public.subscriptions USING btree ("subscriberId");
+
+
+--
+-- Name: team_invites_email_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_invites_email_index ON public.team_invites USING btree (email);
+
+
+--
+-- Name: team_invites_secret_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_invites_secret_index ON public.team_invites USING btree (secret);
 
 
 --
@@ -3446,6 +3493,14 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: team_invites team_invites_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_invites
+    ADD CONSTRAINT team_invites_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id);
+
+
+--
 -- Name: team_users team_users_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3691,3 +3746,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250821180259_user-emails.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250822020923_github-account-emails.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250911075747_additional-storybook-screenshot-price.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250915191132_team_invites.js', 1, NOW());

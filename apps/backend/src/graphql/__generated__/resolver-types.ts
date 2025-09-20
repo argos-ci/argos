@@ -618,6 +618,16 @@ export type IImportGitlabProjectInput = {
   gitlabProjectId: Scalars['ID']['input'];
 };
 
+export type IInviteMemberInput = {
+  email: Scalars['String']['input'];
+  level: ITeamUserLevel;
+};
+
+export type IInviteMembersInput = {
+  members: Array<IInviteMemberInput>;
+  teamAccountId: Scalars['ID']['input'];
+};
+
 export enum IJobStatus {
   Aborted = 'aborted',
   Complete = 'complete',
@@ -689,6 +699,8 @@ export type IMutation = {
   importGithubProject: IProject;
   /** Import a project from GitLab */
   importGitlabProject: IProject;
+  /** Invite members to a team */
+  inviteMembers: Scalars['Boolean']['output'];
   /** Leave a team */
   leaveTeam: Scalars['Boolean']['output'];
   /** Link GitHub Repository */
@@ -832,6 +844,11 @@ export type IMutationImportGithubProjectArgs = {
 
 export type IMutationImportGitlabProjectArgs = {
   input: IImportGitlabProjectInput;
+};
+
+
+export type IMutationInviteMembersArgs = {
+  input: IInviteMembersInput;
 };
 
 
@@ -1451,6 +1468,7 @@ export type ITeamGithubMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   isTeamMember?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1458,6 +1476,7 @@ export type ITeamMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   levels?: InputMaybe<Array<ITeamUserLevel>>;
+  orderBy?: InputMaybe<ITeamMembersOrderBy>;
   search?: InputMaybe<Scalars['String']['input']>;
   sso?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -1493,6 +1512,7 @@ export type ITeamGithubMemberConnection = IConnection & {
 
 export type ITeamMember = INode & {
   __typename?: 'TeamMember';
+  fromSSO: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   level: ITeamUserLevel;
   user: IUser;
@@ -1503,6 +1523,12 @@ export type ITeamMemberConnection = IConnection & {
   edges: Array<ITeamMember>;
   pageInfo: IPageInfo;
 };
+
+export enum ITeamMembersOrderBy {
+  Date = 'DATE',
+  NameAsc = 'NAME_ASC',
+  NameDesc = 'NAME_DESC'
+}
 
 export enum ITeamUserLevel {
   Contributor = 'contributor',
@@ -1906,6 +1932,8 @@ export type IResolversTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  InviteMemberInput: IInviteMemberInput;
+  InviteMembersInput: IInviteMembersInput;
   JSONObject: ResolverTypeWrapper<Scalars['JSONObject']['output']>;
   JobStatus: IJobStatus;
   LeaveTeamInput: ILeaveTeamInput;
@@ -1961,6 +1989,7 @@ export type IResolversTypes = ResolversObject<{
   TeamGithubMemberConnection: ResolverTypeWrapper<Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamGithubMember']> }>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
+  TeamMembersOrderBy: ITeamMembersOrderBy;
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
   TestAutomationRuleInput: ITestAutomationRuleInput;
@@ -2058,6 +2087,8 @@ export type IResolversParentTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: Scalars['Int']['output'];
+  InviteMemberInput: IInviteMemberInput;
+  InviteMembersInput: IInviteMembersInput;
   JSONObject: Scalars['JSONObject']['output'];
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
@@ -2514,6 +2545,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   ignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationIgnoreChangeArgs, 'input'>>;
   importGithubProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGithubProjectArgs, 'input'>>;
   importGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGitlabProjectArgs, 'input'>>;
+  inviteMembers?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationInviteMembersArgs, 'input'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   linkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGithubRepositoryArgs, 'input'>>;
   linkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGitlabProjectArgs, 'input'>>;
@@ -2802,7 +2834,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
-  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
+  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first' | 'orderBy'>>;
   meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<ITeamMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2836,6 +2868,7 @@ export type ITeamGithubMemberConnectionResolvers<ContextType = Context, ParentTy
 }>;
 
 export type ITeamMemberResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamMember'] = IResolversParentTypes['TeamMember']> = ResolversObject<{
+  fromSSO?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   level?: Resolver<IResolversTypes['TeamUserLevel'], ParentType, ContextType>;
   user?: Resolver<IResolversTypes['User'], ParentType, ContextType>;

@@ -6,6 +6,7 @@ import * as signin_attempt from "./signin_attempt";
 import * as signin_verification from "./signin_verification";
 import * as signup_signin_verification from "./signup_signin_verification";
 import * as signup_verification from "./signup_verification";
+import * as team_invite from "./team_invite";
 
 export const emailTemplates = [
   email_added.handler,
@@ -15,6 +16,7 @@ export const emailTemplates = [
   signin_verification.handler,
   signup_signin_verification.handler,
   signup_verification.handler,
+  team_invite.handler,
 ] satisfies EmailTemplate[];
 
 type AnyTemplate = (typeof emailTemplates)[number];

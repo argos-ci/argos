@@ -20,7 +20,7 @@ import { User } from "./User.js";
 
 /** @public */
 export type AccountAvatar = {
-  getUrl(args: { size?: number }): string | Promise<string> | null;
+  url(args: { size?: number }): string | null | Promise<string | null>;
   initial: string;
   color: string;
 };

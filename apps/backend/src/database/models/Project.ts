@@ -137,7 +137,7 @@ export class Project extends Model {
 
   override async $beforeInsert(queryContext: QueryContext) {
     await super.$beforeInsert(queryContext);
-    this.token = this.token || (await Project.generateToken());
+    this.token = this.token || Project.generateToken();
   }
 
   static async getPermissions(
@@ -255,8 +255,8 @@ export class Project extends Model {
   /**
    * Generate a new token for the project.
    */
-  static async generateToken() {
-    const token = await generateRandomHexString(34);
+  static generateToken() {
+    const token = generateRandomHexString(34);
     return `argos_${token}`;
   }
 
