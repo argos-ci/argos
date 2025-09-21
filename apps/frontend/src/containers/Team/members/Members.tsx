@@ -105,7 +105,7 @@ export function TeamMembers(props: {
             {team.ssoGithubAccount ? (
               <Tab id="pending-github-members">Pending GitHub Members</Tab>
             ) : null}
-            <Tab id="pending">Pending invites</Tab>
+            <Tab id="pending">Pending Invitations</Tab>
           </TabList>
           <TabPanel id="members" className="my-4">
             <TeamMembersList
