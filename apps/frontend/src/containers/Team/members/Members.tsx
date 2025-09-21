@@ -105,7 +105,7 @@ export function TeamMembers(props: {
             {team.ssoGithubAccount ? (
               <Tab id="pending-github-members">Pending GitHub Members</Tab>
             ) : null}
-            <Tab id="pending">Pending Invitations</Tab>
+            {amOwner ? <Tab id="pending">Pending Invitations</Tab> : null}
           </TabList>
           <TabPanel id="members" className="my-4">
             <TeamMembersList
@@ -130,11 +130,13 @@ export function TeamMembers(props: {
               </Suspense>
             </TabPanel>
           ) : null}
-          <TabPanel id="pending" className="my-4">
-            <Suspense fallback={<ListPlaceholder />}>
-              <TeamInvitesList team={team} amOwner={amOwner} />
-            </Suspense>
-          </TabPanel>
+          {amOwner ? (
+            <TabPanel id="pending" className="my-4">
+              <Suspense fallback={<ListPlaceholder />}>
+                <TeamInvitesList team={team} amOwner={amOwner} />
+              </Suspense>
+            </TabPanel>
+          ) : null}
         </Tabs>
         <Modal {...removeFromTeamModal}>
           {removedUser ? (
