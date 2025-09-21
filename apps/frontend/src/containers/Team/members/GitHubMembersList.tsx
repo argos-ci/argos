@@ -21,7 +21,7 @@ const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
 
 const TeamGithubMembersQuery = graphql(`
-  query TeamMembers_githubMembers(
+  query GitHubMembersList_githubMembers(
     $id: ID!
     $first: Int!
     $after: Int!
@@ -67,8 +67,8 @@ const TeamGithubMembersQuery = graphql(`
   }
 `);
 
-const _TeamGithubMembersListGithubAccountFragment = graphql(`
-  fragment TeamGithubMembersList_GithubAccount on GithubAccount {
+const _GithubAccountFragment = graphql(`
+  fragment GitHubMembersList_GithubAccount on GithubAccount {
     id
     ...GithubAccountLink_GithubAccount
   }
@@ -79,9 +79,7 @@ interface TeamGithubMembersListProps {
   teamName: string;
   amOwner: boolean;
   onRemove: (user: RemovedUser) => void;
-  githubAccount: DocumentType<
-    typeof _TeamGithubMembersListGithubAccountFragment
-  >;
+  githubAccount: DocumentType<typeof _GithubAccountFragment>;
   hasFineGrainedAccessControl: boolean;
 }
 

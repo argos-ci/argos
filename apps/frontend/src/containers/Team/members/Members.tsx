@@ -35,7 +35,7 @@ const _TeamFragment = graphql(`
     permissions
     ssoGithubAccount {
       id
-      ...TeamGithubMembersList_GithubAccount
+      ...GitHubMembersList_GithubAccount
     }
     plan {
       id
