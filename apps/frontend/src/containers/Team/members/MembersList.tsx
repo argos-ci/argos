@@ -28,7 +28,7 @@ import { SourceFilter, type Source } from "./SourceFilter";
 const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
 
-export const TeamMembersQuery = graphql(`
+const TeamMembersQuery = graphql(`
   query MembersList_teamMembers(
     $id: ID!
     $first: Int!
