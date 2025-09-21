@@ -29,7 +29,7 @@ const INITIAL_NB_MEMBERS = 10;
 const NB_MEMBERS_PER_PAGE = 100;
 
 const TeamMembersQuery = graphql(`
-  query TeamMembers_teamMembers(
+  query MembersList_teamMembers(
     $id: ID!
     $first: Int!
     $after: Int!

@@ -19,9 +19,7 @@ export function FormSubmit<
   const { control, isDisabled: isDisabledProp } = props;
   const formState = useFormState({ control });
   const isDisabled =
-    isDisabledProp ||
-    formState.isSubmitting ||
-    (props.disableIfPristine && !formState.isDirty);
+    isDisabledProp || (props.disableIfPristine && !formState.isDirty);
   return (
     <Button
       type="submit"
@@ -29,6 +27,7 @@ export function FormSubmit<
       // Required to focus correctly the field when we use `setError` in the `onSubmit`
       preventFocusOnPress
       isDisabled={isDisabled}
+      isPending={props.isPending || formState.isSubmitting}
     >
       {props.children ?? "Save"}
     </Button>
