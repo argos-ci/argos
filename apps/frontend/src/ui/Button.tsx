@@ -132,7 +132,7 @@ export function Button({
           return (
             <>
               <ButtonIcon>
-                <Loader />
+                <Loader delay={0} />
               </ButtonIcon>
               {childrenRes}
             </>
