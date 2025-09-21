@@ -33,6 +33,7 @@ export * from "./SlackChannel.js";
 export * from "./SlackInstallation.js";
 export * from "./Subscription.js";
 export * from "./Team.js";
+export * from "./TeamInvite.js";
 export * from "./TeamUser.js";
 export * from "./Test.js";
 export * from "./User.js";

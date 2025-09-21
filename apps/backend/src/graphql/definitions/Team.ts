@@ -8,9 +8,16 @@ import {
   GithubAccountMember,
   GithubInstallation,
   Team,
+  TeamInvite,
   TeamUser,
+  UserEmail,
 } from "@/database/models/index.js";
+import {
+  createAccount,
+  createJWTFromAccount,
+} from "@/database/services/account.js";
 import { createTeamAccount } from "@/database/services/team.js";
+import { sendEmailTemplate } from "@/email/send-email-template.js";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
 import {
   createArgosSubscriptionFromStripe,
@@ -21,24 +28,33 @@ import {
   getSubscriptionData,
   stripe,
 } from "@/stripe/index.js";
+import { getSlugFromEmail, sanitizeEmail } from "@/util/email.js";
 
-import type {
-  IResolvers,
-  ITeamDefaultUserLevel,
-  ITeamUserLevel,
+import {
+  ITeamMembersOrderBy,
+  type IResolvers,
+  type ITeamDefaultUserLevel,
+  type ITeamUserLevel,
 } from "../__generated__/resolver-types.js";
 import { deleteAccount, getAdminAccount } from "../services/account.js";
+import { getAccountAvatar, getAvatarColor } from "../services/avatar.js";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
   importOrgMembers,
 } from "../services/github.js";
-import { forbidden, unauthenticated } from "../util.js";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  enum TeamMembersOrderBy {
+    DATE
+    NAME_ASC
+    NAME_DESC
+  }
+
   type Team implements Node & Account {
     id: ID!
     stripeCustomerId: String
@@ -72,15 +88,29 @@ export const typeDefs = gql`
     members(
       after: Int = 0
       first: Int = 30
+      "Search members by their name, slug or email"
       search: String
+      "Filter members by their user level"
       levels: [TeamUserLevel!]
+      "Filter members that are part of the GitHub SSO (true) or not (false). Only works when SSO is activated."
       sso: Boolean
+      "Order members by"
+      orderBy: TeamMembersOrderBy = DATE
     ): TeamMemberConnection!
     githubMembers(
       after: Int = 0
       first: Int = 30
+      "Search members by their GitHub login"
+      search: String
+      "Filter members that are part of the team (true) or not (false)"
       isTeamMember: Boolean
     ): TeamGithubMemberConnection
+    invites(
+      after: Int = 0
+      first: Int = 30
+      "Search members by their email"
+      search: String
+    ): TeamInviteConnection
     inviteLink: String
     ssoGithubAccount: GithubAccount
     defaultUserLevel: TeamDefaultUserLevel!
@@ -107,6 +137,7 @@ export const typeDefs = gql`
     id: ID!
     user: User!
     level: TeamUserLevel!
+    fromSSO: Boolean!
   }
 
   type TeamGithubMemberConnection implements Connection {
@@ -122,6 +153,26 @@ export const typeDefs = gql`
 
   type RemoveUserFromTeamPayload {
     teamMemberId: ID!
+  }
+
+  type TeamInvite implements Node {
+    id: ID!
+    email: String!
+    team: Team!
+    invitedBy: User!
+    userLevel: TeamUserLevel!
+    avatar: AccountAvatar!
+    expired: Boolean!
+  }
+
+  type TeamInviteConnection implements Connection {
+    pageInfo: PageInfo!
+    edges: [TeamInvite!]!
+  }
+
+  type AcceptInvitePayload {
+    jwt: String
+    team: Team!
   }
 
   input CreateTeamInput {
@@ -170,8 +221,21 @@ export const typeDefs = gql`
     teamAccountId: ID!
   }
 
+  input InviteMembersInput {
+    teamAccountId: ID!
+    members: [InviteMemberInput!]!
+  }
+
+  input InviteMemberInput {
+    email: String!
+    level: TeamUserLevel!
+  }
+
   extend type Query {
-    invitation(secret: String!): Team
+    "Get a invite (specific to a user) by its secret"
+    invite(secret: String!): TeamInvite
+    "Get a team invite (global to team) by its secret"
+    teamInvite(secret: String!): Team
   }
 
   extend type Mutation {
@@ -183,8 +247,12 @@ export const typeDefs = gql`
     removeUserFromTeam(
       input: RemoveUserFromTeamInput!
     ): RemoveUserFromTeamPayload!
-    "Accept an invitation to join a team"
-    acceptInvitation(secret: String!): Team!
+    "Join a team (if the user has an invite)"
+    joinTeam(teamAccountId: ID!): Team!
+    "Accept an invite"
+    acceptInvite(secret: String!): AcceptInvitePayload!
+    "Accept a team invite"
+    acceptTeamInvite(secret: String!): Team!
     "Set member level"
     setTeamMemberLevel(input: SetTeamMemberLevelInput!): TeamMember!
     "Delete team and all its projects"
@@ -197,6 +265,10 @@ export const typeDefs = gql`
     setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
     "Reset invite link"
     resetInviteLink(input: ResetInviteLinkInput!): Team!
+    "Invite members to a team"
+    inviteMembers(input: InviteMembersInput!): [TeamInvite!]!
+    "Cancel a team invite"
+    cancelInvite(teamInviteId: ID!): Team!
   }
 `;
 
@@ -222,6 +294,28 @@ export const resolvers: IResolvers = {
       return account;
     },
     level: (teamUser) => teamUser.userLevel as ITeamUserLevel,
+    fromSSO: async (teamUser, _args, ctx) => {
+      const [team, userAccount] = await Promise.all([
+        ctx.loaders.Team.load(teamUser.teamId),
+        ctx.loaders.AccountFromRelation.load({
+          userId: teamUser.userId,
+        }),
+      ]);
+
+      invariant(team, "team not found");
+      invariant(userAccount, "user account not found");
+
+      if (!team.ssoGithubAccountId || !userAccount.githubAccountId) {
+        return false;
+      }
+
+      const githubTeamUser = await ctx.loaders.GitHubAccountMemberLoader.load({
+        githubAccountId: team.ssoGithubAccountId,
+        githubMemberId: userAccount.githubAccountId,
+      });
+
+      return Boolean(githubTeamUser);
+    },
   },
   Team: {
     me: async (account, _args, ctx) => {
@@ -261,23 +355,35 @@ export const resolvers: IResolvers = {
 
       const hasGithubSSO = Boolean(team.ssoGithubAccountId);
 
+      const orderBy = args.orderBy ?? ITeamMembersOrderBy.Date;
+
       const query = TeamUser.query()
+        .withGraphJoined("user.account")
         .where("team_users.teamId", account.teamId)
-        .orderByRaw(
-          `(CASE WHEN team_users."userId" = ? THEN 0
-     ELSE team_users."id"
-     END) ASC
-    `,
-          ctx.auth.user.id,
-        )
         .range(after, after + first - 1);
+
+      switch (orderBy) {
+        case ITeamMembersOrderBy.Date:
+          query.orderBy("team_users.id", "DESC");
+          break;
+        case ITeamMembersOrderBy.NameAsc:
+          query
+            .orderBy("user:account.name", "ASC")
+            .orderBy("user:account.slug", "ASC");
+          break;
+        case ITeamMembersOrderBy.NameDesc:
+          query
+            .orderBy("user:account.name", "DESC")
+            .orderBy("user:account.slug", "DESC");
+          break;
+      }
 
       if (levels && levels.length > 0) {
         query.whereIn("team_users.userLevel", levels);
       }
 
       if (search) {
-        query.withGraphJoined("user.account").where((qb) => {
+        query.where((qb) => {
           qb.where("user:account.name", "ilike", `%${search}%`)
             .orWhere("user:account.slug", "ilike", `%${search}%`)
             .orWhere("user.email", "ilike", `%${search}%`);
@@ -316,7 +422,7 @@ export const resolvers: IResolvers = {
         throw unauthenticated();
       }
 
-      const { first, after } = args;
+      const { first, after, search } = args;
 
       invariant(account.teamId);
 
@@ -328,6 +434,7 @@ export const resolvers: IResolvers = {
       }
 
       const query = GithubAccountMember.query()
+        .withGraphJoined("githubMember")
         .where(
           "github_account_members.githubAccountId",
           team.ssoGithubAccountId,
@@ -335,19 +442,30 @@ export const resolvers: IResolvers = {
         .orderBy("githubMember.login", "asc")
         .range(after, after + first - 1);
 
-      if (args.isTeamMember) {
-        query
-          .withGraphJoined("githubMember.account")
-          .where(
-            "github_account_members.githubAccountId",
-            team.ssoGithubAccountId,
-          )
-          .whereIn(
-            "githubMember:account.userId",
-            TeamUser.query().select("userId").where("teamId", team.id),
-          );
-      } else {
-        query.withGraphJoined("githubMember");
+      if (search) {
+        query.where("githubMember.login", "ilike", `%${search}%`);
+      }
+
+      if (typeof args.isTeamMember === "boolean") {
+        if (args.isTeamMember) {
+          query
+            .withGraphJoined("githubMember.account")
+            .whereIn(
+              "githubMember:account.userId",
+              TeamUser.query().select("userId").where("teamId", team.id),
+            );
+        } else {
+          query
+            .withGraphJoined("githubMember.account", {
+              joinOperation: "leftJoin",
+            })
+            .where((qb) => {
+              qb.whereNull("githubMember:account.userId").orWhereNotIn(
+                "githubMember:account.userId",
+                TeamUser.query().select("userId").where("teamId", team.id),
+              );
+            });
+        }
       }
 
       const result = await query;
@@ -415,19 +533,85 @@ export const resolvers: IResolvers = {
       }
       return installation;
     },
+    invites: async (account, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      invariant(account.teamId);
+      const permissions = await Team.getPermissions(
+        account.teamId,
+        ctx.auth.user,
+      );
+
+      if (!permissions.includes("admin")) {
+        return null;
+      }
+
+      const { first, after, search } = args;
+
+      const query = TeamInvite.query()
+        .where("teamId", account.teamId)
+        .orderBy("createdAt", "desc")
+        .range(after, after + first - 1);
+
+      if (search) {
+        query.where("email", "ilike", `%${search}%`);
+      }
+
+      const result = await query;
+      return paginateResult({ result, first, after });
+    },
+  },
+  TeamInvite: {
+    id: (teamInvite) => TeamInvite.formatId(teamInvite),
+    team: async (teamInvite, _args, ctx) => {
+      const teamAccount = await ctx.loaders.AccountFromRelation.load({
+        teamId: teamInvite.teamId,
+      });
+      invariant(teamAccount, "team account not found");
+      return teamAccount;
+    },
+    invitedBy: async (teamInvite, _args, ctx) => {
+      const invitedByAccount = await ctx.loaders.AccountFromRelation.load({
+        userId: teamInvite.invitedById,
+      });
+      invariant(invitedByAccount, "invited by account not found");
+      return invitedByAccount;
+    },
+    avatar: (teamInvite) => {
+      const firstEmailLetter = teamInvite.email.charAt(0);
+      invariant(firstEmailLetter);
+      return {
+        url: () => null,
+        initial: firstEmailLetter.toUpperCase(),
+        color: getAvatarColor(teamInvite.email),
+      };
+    },
+    expired: (teamInvite) => {
+      return new Date(teamInvite.expiresAt) < new Date();
+    },
   },
   Query: {
-    invitation: async (_root, args) => {
+    teamInvite: async (_root, args) => {
       const team = await Team.query()
         .withGraphFetched("account")
         .findOne({ inviteSecret: args.secret });
 
-      if (!team) {
-        return null;
+      if (team) {
+        invariant(team.account, "Team account not loaded");
+        return team.account;
       }
 
-      invariant(team.account, "Team account not loaded");
-      return team.account;
+      return null;
+    },
+    invite: async (_root, args) => {
+      const teamInvite = await TeamInvite.query()
+        .where("secret", args.secret)
+        .whereRaw(`"expiresAt" > now()`)
+        .first();
+
+      return teamInvite ?? null;
     },
   },
   Mutation: {
@@ -602,8 +786,9 @@ export const resolvers: IResolvers = {
         teamMemberId: teamUser.id,
       };
     },
-    acceptInvitation: async (_root, args, ctx): Promise<Account> => {
-      if (!ctx.auth) {
+    acceptTeamInvite: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
         throw unauthenticated();
       }
 
@@ -611,25 +796,173 @@ export const resolvers: IResolvers = {
         .withGraphFetched("account")
         .findOne({ inviteSecret: args.secret });
 
-      invariant(team, "Invalid invitation secret");
+      invariant(team, "Invalid invite secret");
       invariant(team.account, "Team account not loaded");
 
       const teamUser = await TeamUser.query().findOne({
         teamId: team.id,
-        userId: ctx.auth.user.id,
+        userId: auth.user.id,
       });
 
       if (teamUser) {
         return team.account;
       }
 
-      await TeamUser.query().insert({
-        userId: ctx.auth.user.id,
-        teamId: team.id,
-        userLevel: team.defaultUserLevel,
+      await transaction(async (trx) => {
+        await Promise.all([
+          // Add the user to the team.
+          TeamUser.query(trx).insert({
+            userId: auth.user.id,
+            teamId: team.id,
+            userLevel: team.defaultUserLevel,
+          }),
+          // Delete all invites for this user email.
+          TeamInvite.query(trx)
+            .where("teamId", team.id)
+            .whereIn(
+              "email",
+              UserEmail.query()
+                .select("email")
+                .where("userId", auth.user.id)
+                .where("verified", true),
+            ),
+        ]);
       });
 
       return team.account;
+    },
+    acceptInvite: async (_root, args, ctx) => {
+      const teamInvite = await TeamInvite.query()
+        .where("secret", args.secret)
+        .whereRaw(`"expiresAt" > now()`)
+        .withGraphFetched("team.account")
+        .first();
+
+      invariant(teamInvite, "Invalid invite secret");
+
+      const { team } = teamInvite;
+      invariant(team, "Team relation not loaded");
+      const teamAccount = team.account;
+      invariant(teamAccount, "Account relation not loaded");
+      const email = sanitizeEmail(teamInvite.email);
+
+      const { auth } = ctx;
+
+      if (!auth) {
+        // Get or create the user account based on the email of the invite.
+        const { account, user } = await (async () => {
+          const userEmail = await UserEmail.query()
+            .where("email", email)
+            .withGraphFetched("user.account")
+            .first();
+          if (userEmail) {
+            invariant(userEmail.user?.account, "Account relation not loaded");
+            return {
+              account: userEmail.user.account,
+              user: userEmail.user,
+            };
+          }
+          const slug = getSlugFromEmail(teamInvite.email);
+          const { account, user } = await createAccount({ email, slug });
+          return { account, user };
+        })();
+
+        // Add user to the team and delete the invite in a transaction.
+        await transaction(async (trx) => {
+          await Promise.all([
+            // Add the user to the team.
+            TeamUser.query(trx).insert({
+              userId: user.id,
+              teamId: team.id,
+              userLevel: teamInvite.userLevel,
+            }),
+            // Delete the invite.
+            teamInvite.$query(trx).delete(),
+          ]);
+        });
+
+        const jwt = createJWTFromAccount(account);
+        return { jwt, team: teamAccount };
+      }
+
+      // If the user is logged in:
+      // - Add the user to the team
+      // - Add the email to the user if not already present
+      // - Delete the invite
+      await transaction(async (trx) => {
+        await Promise.all([
+          // Add the user to the team.
+          TeamUser.query(trx)
+            .insert({
+              userId: auth.user.id,
+              teamId: team.id,
+              userLevel: teamInvite.userLevel,
+            })
+            .onConflict()
+            .ignore(),
+          // Add the email to the user if not already present.
+          UserEmail.query(trx)
+            .insert({
+              email,
+              verified: true,
+              userId: auth.user.id,
+            })
+            .onConflict()
+            .ignore(),
+          // Delete the invite.
+          teamInvite.$query(trx).delete(),
+        ]);
+      });
+
+      return { jwt: null, team: teamAccount };
+    },
+    joinTeam: async (_root, args, ctx) => {
+      const { auth } = ctx;
+
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await Account.query()
+        .findById(args.teamAccountId)
+        .throwIfNotFound();
+
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account is not a team");
+
+      const teamInvite = await TeamInvite.query()
+        .whereRaw(`"expiresAt" > now()`)
+        .where("teamId", teamId)
+        .whereIn(
+          "email",
+          UserEmail.query()
+            .select("email")
+            .where("userId", auth.user.id)
+            .where("verified", true),
+        )
+        .first();
+
+      if (!teamInvite) {
+        throw badUserInput("You don't have an invite for this team");
+      }
+
+      await transaction(async (trx) => {
+        await Promise.all([
+          // Add the user to the team.
+          TeamUser.query(trx)
+            .insert({
+              userId: auth.user.id,
+              teamId: teamId,
+              userLevel: teamInvite.userLevel,
+            })
+            .onConflict()
+            .ignore(),
+          // Delete the invite.
+          teamInvite.$query(trx).delete(),
+        ]);
+      });
+
+      return teamAccount;
     },
     setTeamMemberLevel: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -852,23 +1185,150 @@ export const resolvers: IResolvers = {
       return teamAccount;
     },
     resetInviteLink: async (_root, args, ctx) => {
-      if (!ctx.auth) {
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth?.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      await Team.query().findById(teamAccount.teamId).patch({
+        inviteSecret: Team.generateInviteSecret(),
+      });
+
+      return teamAccount;
+    },
+    inviteMembers: async (_root, args, ctx) => {
+      const { auth } = ctx;
+
+      if (!auth) {
         throw unauthenticated();
       }
 
       const teamAccount = await getAdminAccount({
         id: args.input.teamAccountId,
-        user: ctx.auth.user,
+        user: auth?.user,
       });
 
-      invariant(teamAccount.teamId, "Account teamId is undefined");
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
 
-      await Team.query()
-        .findById(teamAccount.teamId)
-        .patch({
-          inviteSecret: await Team.generateInviteSecret(),
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
+      const data = args.input.members.map((member) => ({
+        secret: TeamInvite.generateSecret(),
+        email: sanitizeEmail(member.email),
+        teamId,
+        userLevel: member.level,
+        expiresAt: expiresAt.toISOString(),
+        invitedById: auth.user.id,
+      }));
+
+      const userEmails = await UserEmail.query()
+        .whereIn(
+          "user_emails.email",
+          data.map((d) => d.email),
+        )
+        .withGraphJoined("user.[teams,account]");
+
+      const usersInTeam = userEmails.filter((ue) => {
+        invariant(ue.user?.teams, "relation not fetched");
+        return ue.user.teams.some((tu) => tu.id === teamId);
+      });
+
+      if (usersInTeam.length > 0) {
+        const fields = usersInTeam.map((user) => {
+          const index = data.findIndex((d) => d.email === user.email);
+          return `members.${index}.email`;
         });
+        throw badUserInput("User already in the team", {
+          field: fields,
+        });
+      }
 
+      const invites = await TeamInvite.query()
+        .insertAndFetch(data)
+        .onConflict(["email", "teamId"])
+        .merge();
+
+      await Promise.all(
+        invites.map(async (invite) => {
+          const user = userEmails.find((ue) => ue.email === invite.email)?.user;
+
+          const [teamAvatar, avatar] = await Promise.all([
+            getAccountAvatar(teamAccount, ctx.loaders),
+            user?.account ? getAccountAvatar(user.account, ctx.loaders) : null,
+          ]);
+
+          const [teamAvatarURL, avatarURL] = await Promise.all([
+            teamAvatar.url({ size: 128 }),
+            avatar?.url({ size: 128 }) ?? null,
+          ]);
+
+          const firstEmailLetter = invite.email[0]?.toUpperCase();
+          invariant(firstEmailLetter, "Email is empty");
+
+          await sendEmailTemplate({
+            template: "team_invite",
+            to: [invite.email],
+            data: {
+              email: invite.email,
+              userLevel: invite.userLevel,
+              avatar: avatar
+                ? {
+                    url: avatarURL,
+                    initial: avatar.initial,
+                    color: avatar.color,
+                  }
+                : {
+                    url: null,
+                    initial: firstEmailLetter.toUpperCase(),
+                    color: getAvatarColor(invite.email),
+                  },
+              invite: {
+                url: new URL(
+                  `/invites/${invite.secret}`,
+                  config.get("server.url"),
+                ).href,
+                date: new Date(invite.createdAt),
+              },
+              team: {
+                name: teamAccount.displayName,
+                avatar: {
+                  url: teamAvatarURL,
+                  initial: teamAvatar.initial,
+                  color: teamAvatar.color,
+                },
+              },
+              invitedBy: {
+                name: auth.account.displayName,
+                email: auth.user.email,
+                location: ctx.requestLocation,
+              },
+            },
+          });
+        }),
+      );
+
+      return invites;
+    },
+    cancelInvite: async (_root, args, ctx) => {
+      const parsedId = TeamInvite.parseId(args.teamInviteId);
+      if (!parsedId) {
+        throw notFound("Team invite not found");
+      }
+      // Fetch the team invite and ensure the user has admin access to the team in parallel.
+      const [teamInvite, teamAccount] = await Promise.all([
+        TeamInvite.query().findOne(parsedId),
+        // Ensure the user has admin access to the team.
+        getAdminAccount({
+          id: parsedId.teamId,
+          user: ctx.auth?.user,
+        }),
+      ]);
+      if (!teamInvite) {
+        throw notFound("Team invite not found");
+      }
+      await teamInvite.$query().delete();
       return teamAccount;
     },
   },

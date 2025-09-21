@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { ScreenshotMetadataSDK } from '../../database/schemas/ScreenshotMetadata.js';
@@ -26,6 +26,12 @@ export type Scalars = {
   JSONObject: { input: any; output: any; }
   Time: { input: any; output: any; }
   Timestamp: { input: Number; output: Number; }
+};
+
+export type IAcceptInvitePayload = {
+  __typename?: 'AcceptInvitePayload';
+  jwt?: Maybe<Scalars['String']['output']>;
+  team: ITeam;
 };
 
 export type IAccount = {
@@ -618,6 +624,16 @@ export type IImportGitlabProjectInput = {
   gitlabProjectId: Scalars['ID']['input'];
 };
 
+export type IInviteMemberInput = {
+  email: Scalars['String']['input'];
+  level: ITeamUserLevel;
+};
+
+export type IInviteMembersInput = {
+  members: Array<IInviteMemberInput>;
+  teamAccountId: Scalars['ID']['input'];
+};
+
 export enum IJobStatus {
   Aborted = 'aborted',
   Complete = 'complete',
@@ -652,14 +668,18 @@ export enum IMetricsPeriod {
 
 export type IMutation = {
   __typename?: 'Mutation';
-  /** Accept an invitation to join a team */
-  acceptInvitation: ITeam;
+  /** Accept an invite */
+  acceptInvite: IAcceptInvitePayload;
+  /** Accept a team invite */
+  acceptTeamInvite: ITeam;
   /** Add contributor to project */
   addOrUpdateProjectContributor: IProjectContributor;
   /** Add a user email */
   addUserEmail: IUser;
   /** Authenticate from email */
   authenticateWithEmail: IAuthPayload;
+  /** Cancel a team invite */
+  cancelInvite: ITeam;
   /** Create automation */
   createAutomationRule: IAutomationRule;
   /** Create a team */
@@ -689,6 +709,10 @@ export type IMutation = {
   importGithubProject: IProject;
   /** Import a project from GitLab */
   importGitlabProject: IProject;
+  /** Invite members to a team */
+  inviteMembers: Array<ITeamInvite>;
+  /** Join a team (if the user has an invite) */
+  joinTeam: ITeam;
   /** Leave a team */
   leaveTeam: Scalars['Boolean']['output'];
   /** Link GitHub Repository */
@@ -740,7 +764,12 @@ export type IMutation = {
 };
 
 
-export type IMutationAcceptInvitationArgs = {
+export type IMutationAcceptInviteArgs = {
+  secret: Scalars['String']['input'];
+};
+
+
+export type IMutationAcceptTeamInviteArgs = {
   secret: Scalars['String']['input'];
 };
 
@@ -757,6 +786,11 @@ export type IMutationAddUserEmailArgs = {
 
 export type IMutationAuthenticateWithEmailArgs = {
   input: IAuthFromEmailInput;
+};
+
+
+export type IMutationCancelInviteArgs = {
+  teamInviteId: Scalars['ID']['input'];
 };
 
 
@@ -832,6 +866,16 @@ export type IMutationImportGithubProjectArgs = {
 
 export type IMutationImportGitlabProjectArgs = {
   input: IImportGitlabProjectInput;
+};
+
+
+export type IMutationInviteMembersArgs = {
+  input: IInviteMembersInput;
+};
+
+
+export type IMutationJoinTeamArgs = {
+  teamAccountId: Scalars['ID']['input'];
 };
 
 
@@ -1122,7 +1166,8 @@ export type IQuery = {
   automationRule?: Maybe<IAutomationRule>;
   ghApiInstallationRepositories: IGhApiRepositoryConnection;
   glApiProjects: IGlApiProjectConnection;
-  invitation?: Maybe<ITeam>;
+  /** Get a invite (specific to a user) by its secret */
+  invite?: Maybe<ITeamInvite>;
   /** Get the authenticated user */
   me?: Maybe<IUser>;
   ping: Scalars['Boolean']['output'];
@@ -1132,6 +1177,8 @@ export type IQuery = {
   projectById?: Maybe<IProject>;
   /** Get Team by id */
   teamById?: Maybe<ITeam>;
+  /** Get a team invite (global to team) by its secret */
+  teamInvite?: Maybe<ITeam>;
 };
 
 
@@ -1168,7 +1215,7 @@ export type IQueryGlApiProjectsArgs = {
 };
 
 
-export type IQueryInvitationArgs = {
+export type IQueryInviteArgs = {
   secret: Scalars['String']['input'];
 };
 
@@ -1186,6 +1233,11 @@ export type IQueryProjectByIdArgs = {
 
 export type IQueryTeamByIdArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type IQueryTeamInviteArgs = {
+  secret: Scalars['String']['input'];
 };
 
 export type IRemoveContributorFromProjectInput = {
@@ -1426,6 +1478,7 @@ export type ITeam = IAccount & INode & {
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
   inviteLink?: Maybe<Scalars['String']['output']>;
+  invites?: Maybe<ITeamInviteConnection>;
   me?: Maybe<ITeamMember>;
   members: ITeamMemberConnection;
   meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
@@ -1451,6 +1504,14 @@ export type ITeamGithubMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   isTeamMember?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type ITeamInvitesArgs = {
+  after?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1458,6 +1519,7 @@ export type ITeamMembersArgs = {
   after?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   levels?: InputMaybe<Array<ITeamUserLevel>>;
+  orderBy?: InputMaybe<ITeamMembersOrderBy>;
   search?: InputMaybe<Scalars['String']['input']>;
   sso?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -1491,8 +1553,26 @@ export type ITeamGithubMemberConnection = IConnection & {
   pageInfo: IPageInfo;
 };
 
+export type ITeamInvite = INode & {
+  __typename?: 'TeamInvite';
+  avatar: IAccountAvatar;
+  email: Scalars['String']['output'];
+  expired: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  invitedBy: IUser;
+  team: ITeam;
+  userLevel: ITeamUserLevel;
+};
+
+export type ITeamInviteConnection = IConnection & {
+  __typename?: 'TeamInviteConnection';
+  edges: Array<ITeamInvite>;
+  pageInfo: IPageInfo;
+};
+
 export type ITeamMember = INode & {
   __typename?: 'TeamMember';
+  fromSSO: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   level: ITeamUserLevel;
   user: IUser;
@@ -1503,6 +1583,12 @@ export type ITeamMemberConnection = IConnection & {
   edges: Array<ITeamMember>;
   pageInfo: IPageInfo;
 };
+
+export enum ITeamMembersOrderBy {
+  Date = 'DATE',
+  NameAsc = 'NAME_ASC',
+  NameDesc = 'NAME_DESC'
+}
 
 export enum ITeamUserLevel {
   Contributor = 'contributor',
@@ -1695,6 +1781,7 @@ export type IUser = IAccount & INode & {
   hasSubscribedToTrial: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   includedScreenshots: Scalars['Int']['output'];
+  invites: Array<ITeamInvite>;
   lastSubscription?: Maybe<IAccountSubscription>;
   meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
   metrics: IAccountMetrics;
@@ -1823,23 +1910,24 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping of interface types */
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Account: ( Account ) | ( Account );
-  Connection: ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } ) | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( AutomationActionRun ) | ( AutomationRule ) | ( AutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamUser ) | ( Test ) | ( TestChangeObject ) | ( Account );
+  Connection: ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } ) | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamInviteConnection, 'edges'> & { edges: Array<_RefType['TeamInvite']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
+  Node: ( Subscription ) | ( AutomationActionRun ) | ( AutomationRule ) | ( AutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamInvite ) | ( TeamUser ) | ( Test ) | ( TestChangeObject ) | ( Account );
   PullRequest: ( GithubPullRequest );
   Repository: ( GithubRepository ) | ( GitlabProject );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
 export type IResolversTypes = ResolversObject<{
+  AcceptInvitePayload: ResolverTypeWrapper<Omit<IAcceptInvitePayload, 'team'> & { team: IResolversTypes['Team'] }>;
   Account: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Account']>;
   AccountAvatar: ResolverTypeWrapper<AccountAvatar>;
-  AccountBuildsMetrics: ResolverTypeWrapper<Omit<IAccountBuildsMetrics, 'projects'> & { projects: Array<IResolversTypes['Project']> }>;
+  AccountBuildsMetrics: ResolverTypeWrapper<Omit<IAccountBuildsMetrics, 'all' | 'projects'> & { all: IResolversTypes['AccountMetricData'], projects: Array<IResolversTypes['Project']> }>;
   AccountMetricData: ResolverTypeWrapper<IAccountMetricData>;
   AccountMetricDataPoint: ResolverTypeWrapper<IAccountMetricDataPoint>;
   AccountMetrics: ResolverTypeWrapper<Omit<IAccountMetrics, 'builds' | 'screenshots'> & { builds: IResolversTypes['AccountBuildsMetrics'], screenshots: IResolversTypes['AccountScreenshotMetrics'] }>;
   AccountMetricsInput: IAccountMetricsInput;
   AccountPermission: IAccountPermission;
-  AccountScreenshotMetrics: ResolverTypeWrapper<Omit<IAccountScreenshotMetrics, 'projects'> & { projects: Array<IResolversTypes['Project']> }>;
+  AccountScreenshotMetrics: ResolverTypeWrapper<Omit<IAccountScreenshotMetrics, 'all' | 'projects'> & { all: IResolversTypes['AccountMetricData'], projects: Array<IResolversTypes['Project']> }>;
   AccountSubscription: ResolverTypeWrapper<Subscription>;
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
@@ -1906,6 +1994,8 @@ export type IResolversTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  InviteMemberInput: IInviteMemberInput;
+  InviteMembersInput: IInviteMembersInput;
   JSONObject: ResolverTypeWrapper<Scalars['JSONObject']['output']>;
   JobStatus: IJobStatus;
   LeaveTeamInput: ILeaveTeamInput;
@@ -1959,8 +2049,11 @@ export type IResolversTypes = ResolversObject<{
   TeamDefaultUserLevel: ITeamDefaultUserLevel;
   TeamGithubMember: ResolverTypeWrapper<GithubAccountMember>;
   TeamGithubMemberConnection: ResolverTypeWrapper<Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamGithubMember']> }>;
+  TeamInvite: ResolverTypeWrapper<TeamInvite>;
+  TeamInviteConnection: ResolverTypeWrapper<Omit<ITeamInviteConnection, 'edges'> & { edges: Array<IResolversTypes['TeamInvite']> }>;
   TeamMember: ResolverTypeWrapper<TeamUser>;
   TeamMemberConnection: ResolverTypeWrapper<Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversTypes['TeamMember']> }>;
+  TeamMembersOrderBy: ITeamMembersOrderBy;
   TeamUserLevel: ITeamUserLevel;
   Test: ResolverTypeWrapper<Test>;
   TestAutomationRuleInput: ITestAutomationRuleInput;
@@ -1994,14 +2087,15 @@ export type IResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type IResolversParentTypes = ResolversObject<{
+  AcceptInvitePayload: Omit<IAcceptInvitePayload, 'team'> & { team: IResolversParentTypes['Team'] };
   Account: IResolversInterfaceTypes<IResolversParentTypes>['Account'];
   AccountAvatar: AccountAvatar;
-  AccountBuildsMetrics: Omit<IAccountBuildsMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
+  AccountBuildsMetrics: Omit<IAccountBuildsMetrics, 'all' | 'projects'> & { all: IResolversParentTypes['AccountMetricData'], projects: Array<IResolversParentTypes['Project']> };
   AccountMetricData: IAccountMetricData;
   AccountMetricDataPoint: IAccountMetricDataPoint;
   AccountMetrics: Omit<IAccountMetrics, 'builds' | 'screenshots'> & { builds: IResolversParentTypes['AccountBuildsMetrics'], screenshots: IResolversParentTypes['AccountScreenshotMetrics'] };
   AccountMetricsInput: IAccountMetricsInput;
-  AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'projects'> & { projects: Array<IResolversParentTypes['Project']> };
+  AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'all' | 'projects'> & { all: IResolversParentTypes['AccountMetricData'], projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
   AuthFromEmailInput: IAuthFromEmailInput;
@@ -2058,6 +2152,8 @@ export type IResolversParentTypes = ResolversObject<{
   ImportGithubProjectInput: IImportGithubProjectInput;
   ImportGitlabProjectInput: IImportGitlabProjectInput;
   Int: Scalars['Int']['output'];
+  InviteMemberInput: IInviteMemberInput;
+  InviteMembersInput: IInviteMembersInput;
   JSONObject: Scalars['JSONObject']['output'];
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
@@ -2100,6 +2196,8 @@ export type IResolversParentTypes = ResolversObject<{
   Team: Account;
   TeamGithubMember: GithubAccountMember;
   TeamGithubMemberConnection: Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamGithubMember']> };
+  TeamInvite: TeamInvite;
+  TeamInviteConnection: Omit<ITeamInviteConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamInvite']> };
   TeamMember: TeamUser;
   TeamMemberConnection: Omit<ITeamMemberConnection, 'edges'> & { edges: Array<IResolversParentTypes['TeamMember']> };
   Test: Test;
@@ -2126,6 +2224,12 @@ export type IResolversParentTypes = ResolversObject<{
   User: Account;
   UserConnection: Omit<IUserConnection, 'edges'> & { edges: Array<IResolversParentTypes['User']> };
   UserEmail: IUserEmail;
+}>;
+
+export type IAcceptInvitePayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AcceptInvitePayload'] = IResolversParentTypes['AcceptInvitePayload']> = ResolversObject<{
+  jwt?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  team?: Resolver<IResolversTypes['Team'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Account'] = IResolversParentTypes['Account']> = ResolversObject<{
@@ -2341,7 +2445,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AutomationRuleConnection' | 'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamMemberConnection' | 'TestChangesConnection' | 'UserConnection', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AutomationRuleConnection' | 'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamInviteConnection' | 'TeamMemberConnection' | 'TestChangesConnection' | 'UserConnection', ParentType, ContextType>;
   edges?: Resolver<Array<IResolversTypes['Node']>, ParentType, ContextType>;
   pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
@@ -2495,10 +2599,12 @@ export interface IJsonObjectScalarConfig extends GraphQLScalarTypeConfig<IResolv
 }
 
 export type IMutationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Mutation'] = IResolversParentTypes['Mutation']> = ResolversObject<{
-  acceptInvitation?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptInvitationArgs, 'secret'>>;
+  acceptInvite?: Resolver<IResolversTypes['AcceptInvitePayload'], ParentType, ContextType, RequireFields<IMutationAcceptInviteArgs, 'secret'>>;
+  acceptTeamInvite?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationAcceptTeamInviteArgs, 'secret'>>;
   addOrUpdateProjectContributor?: Resolver<IResolversTypes['ProjectContributor'], ParentType, ContextType, RequireFields<IMutationAddOrUpdateProjectContributorArgs, 'input'>>;
   addUserEmail?: Resolver<IResolversTypes['User'], ParentType, ContextType, RequireFields<IMutationAddUserEmailArgs, 'email'>>;
   authenticateWithEmail?: Resolver<IResolversTypes['AuthPayload'], ParentType, ContextType, RequireFields<IMutationAuthenticateWithEmailArgs, 'input'>>;
+  cancelInvite?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationCancelInviteArgs, 'teamInviteId'>>;
   createAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationCreateAutomationRuleArgs, 'input'>>;
   createTeam?: Resolver<IResolversTypes['CreateTeamResult'], ParentType, ContextType, RequireFields<IMutationCreateTeamArgs, 'input'>>;
   deactivateAutomationRule?: Resolver<IResolversTypes['AutomationRule'], ParentType, ContextType, RequireFields<IMutationDeactivateAutomationRuleArgs, 'id'>>;
@@ -2514,6 +2620,8 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   ignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationIgnoreChangeArgs, 'input'>>;
   importGithubProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGithubProjectArgs, 'input'>>;
   importGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGitlabProjectArgs, 'input'>>;
+  inviteMembers?: Resolver<Array<IResolversTypes['TeamInvite']>, ParentType, ContextType, RequireFields<IMutationInviteMembersArgs, 'input'>>;
+  joinTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationJoinTeamArgs, 'teamAccountId'>>;
   leaveTeam?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType, RequireFields<IMutationLeaveTeamArgs, 'input'>>;
   linkGithubRepository?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGithubRepositoryArgs, 'input'>>;
   linkGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationLinkGitlabProjectArgs, 'input'>>;
@@ -2543,7 +2651,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamInvite' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
@@ -2632,12 +2740,13 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
   automationRule?: Resolver<Maybe<IResolversTypes['AutomationRule']>, ParentType, ContextType, RequireFields<IQueryAutomationRuleArgs, 'id'>>;
   ghApiInstallationRepositories?: Resolver<IResolversTypes['GhApiRepositoryConnection'], ParentType, ContextType, RequireFields<IQueryGhApiInstallationRepositoriesArgs, 'fromAuthUser' | 'installationId' | 'page'>>;
   glApiProjects?: Resolver<IResolversTypes['GlApiProjectConnection'], ParentType, ContextType, RequireFields<IQueryGlApiProjectsArgs, 'accountId' | 'allProjects' | 'page'>>;
-  invitation?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryInvitationArgs, 'secret'>>;
+  invite?: Resolver<Maybe<IResolversTypes['TeamInvite']>, ParentType, ContextType, RequireFields<IQueryInviteArgs, 'secret'>>;
   me?: Resolver<Maybe<IResolversTypes['User']>, ParentType, ContextType>;
   ping?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   project?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectArgs, 'accountSlug' | 'projectName'>>;
   projectById?: Resolver<Maybe<IResolversTypes['Project']>, ParentType, ContextType, RequireFields<IQueryProjectByIdArgs, 'id'>>;
   teamById?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryTeamByIdArgs, 'id'>>;
+  teamInvite?: Resolver<Maybe<IResolversTypes['Team']>, ParentType, ContextType, RequireFields<IQueryTeamInviteArgs, 'secret'>>;
 }>;
 
 export type IRemoveContributorFromProjectPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveContributorFromProjectPayload'] = IResolversParentTypes['RemoveContributorFromProjectPayload']> = ResolversObject<{
@@ -2801,8 +2910,9 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   inviteLink?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  invites?: Resolver<Maybe<IResolversTypes['TeamInviteConnection']>, ParentType, ContextType, RequireFields<ITeamInvitesArgs, 'after' | 'first'>>;
   me?: Resolver<Maybe<IResolversTypes['TeamMember']>, ParentType, ContextType>;
-  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first'>>;
+  members?: Resolver<IResolversTypes['TeamMemberConnection'], ParentType, ContextType, RequireFields<ITeamMembersArgs, 'after' | 'first' | 'orderBy'>>;
   meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<ITeamMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -2835,7 +2945,25 @@ export type ITeamGithubMemberConnectionResolvers<ContextType = Context, ParentTy
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ITeamInviteResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamInvite'] = IResolversParentTypes['TeamInvite']> = ResolversObject<{
+  avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
+  email?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  expired?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  invitedBy?: Resolver<IResolversTypes['User'], ParentType, ContextType>;
+  team?: Resolver<IResolversTypes['Team'], ParentType, ContextType>;
+  userLevel?: Resolver<IResolversTypes['TeamUserLevel'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ITeamInviteConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamInviteConnection'] = IResolversParentTypes['TeamInviteConnection']> = ResolversObject<{
+  edges?: Resolver<Array<IResolversTypes['TeamInvite']>, ParentType, ContextType>;
+  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type ITeamMemberResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TeamMember'] = IResolversParentTypes['TeamMember']> = ResolversObject<{
+  fromSSO?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   level?: Resolver<IResolversTypes['TeamUserLevel'], ParentType, ContextType>;
   user?: Resolver<IResolversTypes['User'], ParentType, ContextType>;
@@ -2942,6 +3070,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   hasSubscribedToTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
+  invites?: Resolver<Array<IResolversTypes['TeamInvite']>, ParentType, ContextType>;
   lastSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IUserMetricsArgs, 'input'>>;
@@ -2976,6 +3105,7 @@ export type IUserEmailResolvers<ContextType = Context, ParentType extends IResol
 }>;
 
 export type IResolvers<ContextType = Context> = ResolversObject<{
+  AcceptInvitePayload?: IAcceptInvitePayloadResolvers<ContextType>;
   Account?: IAccountResolvers<ContextType>;
   AccountAvatar?: IAccountAvatarResolvers<ContextType>;
   AccountBuildsMetrics?: IAccountBuildsMetricsResolvers<ContextType>;
@@ -3049,6 +3179,8 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   Team?: ITeamResolvers<ContextType>;
   TeamGithubMember?: ITeamGithubMemberResolvers<ContextType>;
   TeamGithubMemberConnection?: ITeamGithubMemberConnectionResolvers<ContextType>;
+  TeamInvite?: ITeamInviteResolvers<ContextType>;
+  TeamInviteConnection?: ITeamInviteConnectionResolvers<ContextType>;
   TeamMember?: ITeamMemberResolvers<ContextType>;
   TeamMemberConnection?: ITeamMemberConnectionResolvers<ContextType>;
   Test?: ITestResolvers<ContextType>;

@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import type { PartialModelObject } from "objection";
 
 import { slugify } from "@/util/slug.js";
@@ -46,3 +47,19 @@ export const createTeamAccount = async (props: {
     return Account.query(trx).insertAndFetch(accountData);
   });
 };
+
+/**
+ * Get the label for a given team user level.
+ */
+export function getTeamUserLevelLabel(level: TeamUser["userLevel"]) {
+  switch (level) {
+    case "owner":
+      return "Owner";
+    case "member":
+      return "Member";
+    case "contributor":
+      return "Contributor";
+    default:
+      assertNever(level);
+  }
+}

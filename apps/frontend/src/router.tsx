@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import { RouterProvider } from "react-aria-components";
 import {
@@ -8,6 +9,7 @@ import {
   Outlet,
   useHref,
   useNavigate,
+  useParams,
   useRouteError,
 } from "react-router-dom";
 
@@ -105,6 +107,13 @@ function HydrateFallback() {
   );
 }
 
+function RedirectToTeamInvite() {
+  const params = useParams<{ inviteSecret: string }>();
+  const secret = params.inviteSecret;
+  invariant(secret, "no invite secret");
+  return <Navigate to={`/teams/invite/${secret}`} replace={true} />;
+}
+
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
@@ -163,6 +172,15 @@ export const router: ReturnType<typeof createBrowserRouter> =
             },
             {
               path: "invite/:inviteSecret",
+              Component: RedirectToTeamInvite,
+            },
+            {
+              path: "teams/invite/:inviteSecret",
+              HydrateFallback,
+              lazy: () => import("./pages/TeamsInvite"),
+            },
+            {
+              path: "invites/:inviteSecret",
               HydrateFallback,
               lazy: () => import("./pages/Invite"),
             },

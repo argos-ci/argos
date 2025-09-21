@@ -1,11 +1,12 @@
-import { clsx } from "clsx";
-import { Tab, TabList, TabPanel, Tabs } from "react-aria-components";
+import { TabPanel, Tabs } from "react-aria-components";
 import {
   useHref,
   useLocation,
   useMatch,
   useResolvedPath,
 } from "react-router-dom";
+
+import { Tab } from "./Tab";
 
 /**
  * Allow to compute the selected key for a tab link splat.
@@ -37,22 +38,6 @@ export function TabsLink(props: {
   );
 }
 
-export function TabLinkList({
-  className,
-  ...props
-}: {
-  "aria-label": string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <TabList
-      className={clsx(className, "container relative mx-auto px-4")}
-      {...props}
-    />
-  );
-}
-
 export function TabLinkPanel(props: {
   children: React.ReactNode;
   className?: string;
@@ -65,7 +50,6 @@ export function TabLinkPanel(props: {
 
 export function TabLink({
   href,
-  className,
   ...props
 }: {
   href: string;
@@ -74,15 +58,6 @@ export function TabLink({
 }) {
   const resolvedHref = useHref(href);
   return (
-    <Tab
-      key={resolvedHref}
-      id={resolvedHref}
-      href={resolvedHref}
-      className={clsx(
-        className,
-        "text-low hover:text-default aria-selected:text-default data-[focus-visible]:ring-default focus:outline-hidden z-10 -mb-px inline-block rounded-t border-b-2 border-b-transparent p-3 text-sm font-medium transition aria-selected:cursor-default aria-selected:border-b-current data-[focus-visible]:ring-2",
-      )}
-      {...props}
-    />
+    <Tab key={resolvedHref} id={resolvedHref} href={resolvedHref} {...props} />
   );
 }

@@ -128,7 +128,7 @@ function ProPlanWarning() {
 function SignupPage() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("r") || null;
-  const isFromInvite = redirect?.startsWith("/invite/") ?? false;
+  const isFromInvite = redirect?.startsWith("/teams/invite/") ?? false;
   const defaultEmail = searchParams.get("email") ?? "";
   const [step, setStep] = useState<
     | {

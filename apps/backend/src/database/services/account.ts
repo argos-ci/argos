@@ -1,7 +1,7 @@
 import type { ErrorCode } from "@argos/error-types";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import type { PartialModelObject } from "objection";
+import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email.js";
 import { createJWT, JWT_VERSION } from "@/auth/jwt.js";
@@ -17,6 +17,7 @@ import { GithubAccount } from "../models/GithubAccount.js";
 import type { GitlabUser } from "../models/GitlabUser.js";
 import { GoogleUser } from "../models/GoogleUser.js";
 import { Team } from "../models/Team.js";
+import { TeamInvite } from "../models/TeamInvite.js";
 import { TeamUser } from "../models/TeamUser.js";
 import { User } from "../models/User.js";
 import { UserEmail } from "../models/UserEmail.js";
@@ -372,13 +373,17 @@ async function getOrCreateUserAccountFromThirdParty<
 
       await Promise.all([
         (async () => {
-          // If the existing user doesn't have an email, and we have one, we add it
+          // If the existing user doesn't have an email, and we have one, we add it,
+          // and we also accept all invites for this email.
           if (!existingUser.email && email) {
-            await UserEmail.query(trx).insert({
-              userId: existingUser.id,
-              email,
-              verified: true,
-            });
+            await Promise.all([
+              UserEmail.query(trx).insert({
+                userId: existingUser.id,
+                email,
+                verified: true,
+              }),
+              acceptAllInvitesForEmail({ trx, email, userId: existingUser.id }),
+            ]);
           }
         })(),
         accountData
@@ -404,7 +409,7 @@ async function getOrCreateUserAccountFromThirdParty<
   const slug = getSlug(model).toLowerCase();
   invariant(slug, `Invalid slug: ${slug}`);
 
-  const { account, user } = await createAccount({
+  const { account } = await createAccount({
     email,
     slug,
     userData: "user" in thirdPartyKey ? { [thirdPartyKey.user]: model.id } : {},
@@ -416,19 +421,13 @@ async function getOrCreateUserAccountFromThirdParty<
     },
   });
 
-  await sendNotification({
-    type: "welcome",
-    data: {},
-    recipients: [user.id],
-  });
-
   return account;
 }
 
 /**
  * Create a new user account.
  */
-async function createAccount(args: {
+export async function createAccount(args: {
   email: string;
   slug: string;
   accountData?: PartialModelObject<Account>;
@@ -439,25 +438,70 @@ async function createAccount(args: {
   const { account, user } = await transaction(async (trx) => {
     const userData: PartialModelObject<User> = { email, ...args.userData };
     const user = await User.query(trx).insertAndFetch(userData);
-    await UserEmail.query(trx).insert({
-      userId: user.id,
-      email,
-      verified: true,
-    });
+
     const accountData: PartialModelObject<Account> = {
       userId: user.id,
       slug,
       ...args.accountData,
     };
-    const account = await Account.query(trx).insertAndFetch(accountData);
+    const [account] = await Promise.all([
+      // Create the account
+      Account.query(trx).insertAndFetch(accountData),
+      // Add the email to the user as verified
+      UserEmail.query(trx).insert({
+        userId: user.id,
+        email,
+        verified: true,
+      }),
+    ]);
     return { account, user };
   });
-  await sendNotification({
-    type: "welcome",
-    data: {},
-    recipients: [user.id],
-  });
+
+  await Promise.all([
+    acceptAllInvitesForEmail({ email, userId: user.id }),
+    sendNotification({
+      type: "welcome",
+      data: {},
+      recipients: [user.id],
+    }),
+  ]);
+
   return { account, user };
+}
+
+/**
+ * Accept all team invites for the given email.
+ */
+async function acceptAllInvitesForEmail(input: {
+  email: string;
+  userId: string;
+  trx?: TransactionOrKnex;
+}) {
+  const teamInvites = await TeamInvite.query(input.trx)
+    .whereRaw(`"expiresAt" > now()`)
+    .where("email", input.email);
+
+  if (teamInvites.length === 0) {
+    return;
+  }
+
+  await transaction(input.trx, async (trx) => {
+    await Promise.all([
+      // Add the user to all teams he was invited to.
+      ...teamInvites.map((invite) =>
+        TeamUser.query(trx).insert({
+          teamId: invite.teamId,
+          userId: input.userId,
+          userLevel: invite.userLevel,
+        }),
+      ),
+      // Delete all the invites as they have been accepted.
+      TeamInvite.query(trx)
+        .whereRaw(`"expiresAt" > now()`)
+        .where("email", input.email)
+        .delete(),
+    ]);
+  });
 }
 
 /**

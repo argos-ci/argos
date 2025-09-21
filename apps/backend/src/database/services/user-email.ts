@@ -12,10 +12,8 @@ function getRedisKey(token: string) {
  * Generate a URL for email verification.
  */
 async function generateEmailVerificationURL(email: string) {
-  const [redis, token] = await Promise.all([
-    getRedisClient(),
-    generateRandomHexString(24),
-  ]);
+  const redis = await getRedisClient();
+  const token = generateRandomHexString(24);
   await redis.set(getRedisKey(token), email, {
     expiration: {
       type: "PX",
@@ -55,9 +53,12 @@ export async function markEmailAsVerified(input: {
   if (!verified) {
     return false;
   }
-  await UserEmail.query().where({ email: input.email }).patch({
-    verified: true,
-  });
+  const userEmail = await UserEmail.query().findOne({ email: input.email });
+  if (userEmail) {
+    await UserEmail.query().where({ email: input.email }).patch({
+      verified: true,
+    });
+  }
   return true;
 }
 

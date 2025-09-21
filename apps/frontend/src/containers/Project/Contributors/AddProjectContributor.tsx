@@ -122,7 +122,7 @@ function TeamContributorsList(props: {
           ref={searchInputRef}
           type="search"
           placeholder="Search for a team member"
-          className="search-cancel:appearance-none mb-2 w-full"
+          className="mb-2 w-full"
           disabled={loading || noContributors}
           onChange={(e) => setSearch(e.target.value)}
         />

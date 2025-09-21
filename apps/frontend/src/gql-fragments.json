@@ -15,6 +15,7 @@
       "ProjectContributorConnection",
       "ScreenshotDiffConnection",
       "TeamGithubMemberConnection",
+      "TeamInviteConnection",
       "TeamMemberConnection",
       "TestChangesConnection",
       "UserConnection"
@@ -47,6 +48,7 @@
       "SlackInstallation",
       "Team",
       "TeamGithubMember",
+      "TeamInvite",
       "TeamMember",
       "Test",
       "TestChange",

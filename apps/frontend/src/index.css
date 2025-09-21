@@ -40,6 +40,7 @@
 
   --text-color-default: var(--mauve-12);
   --text-color-low: var(--mauve-11);
+  --text-color-placeholder: var(--mauve-10);
 
   --text-color-primary: var(--violet-12);
   --text-color-primary-low: var(--violet-11);
@@ -250,7 +251,7 @@
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:where(.dark, .dark *));
-@custom-variant search-cancel &::-webkit-search-cancel-button;
+@custom-variant search-cancel (&::-webkit-search-cancel-button);
 
 @utility rac-focus {
   &[data-focused]:not([data-focus-visible]) {

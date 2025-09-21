@@ -190,7 +190,9 @@ function PageContent() {
       element: (
         <>
           {hasAdminPermission && <PlanCard account={account} />}
-          {isTeam && <TeamSpendManagement account={account} />}
+          {isTeam && account.subscription ? (
+            <TeamSpendManagement account={account} />
+          ) : null}
         </>
       ),
     },
@@ -233,10 +235,10 @@ function PageContent() {
     <SettingsLayout>
       <Nav>
         <NavList>
-          {matchedRoutes.map((route) => (
+          {matchedRoutes.map((route, index) => (
             <NavListItem key={route.slug}>
               <NavLink
-                to={`${settingsUrl}${route.slug ? `/${route.slug}` : ""}`}
+                to={`${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`}
                 end
               >
                 {route.name}
@@ -247,12 +249,12 @@ function PageContent() {
       </Nav>
       <SettingsPage>
         <Routes>
-          {matchedRoutes.map((route) => {
+          {matchedRoutes.map((route, index) => {
             return (
               <Route
                 key={route.slug}
-                index={!route.slug}
-                path={route.slug}
+                index={index === 0}
+                path={index === 0 ? "" : route.slug}
                 element={route.element}
               />
             );

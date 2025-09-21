@@ -51,6 +51,7 @@ const config: CodegenConfig = {
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",
+          TeamInvite: "../../database/models/index.js#TeamInvite",
           TeamMember: "../../database/models/index.js#TeamUser",
           TeamGithubMember:
             "../../database/models/index.js#GithubAccountMember",

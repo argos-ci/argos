@@ -37,6 +37,6 @@ export function addLoadCommand(program: Command) {
     .command("load")
     .description("Load the database schema from a file.")
     .action(async () => {
-      await oraPromise(loadDatabaseSchema(), "Loading database schema...");
+      await oraPromise(loadDatabaseSchema(), "Loading database schema…");
     });
 }

@@ -10,6 +10,7 @@ import {
 import { GitlabUser } from "./GitlabUser.js";
 import { GoogleUser } from "./GoogleUser.js";
 import { Team } from "./Team.js";
+import { TeamInvite } from "./TeamInvite.js";
 import { UserEmail } from "./UserEmail.js";
 
 export class User extends Model {
@@ -98,11 +99,21 @@ export class User extends Model {
           to: "user_emails.userId",
         },
       },
+      teamInvites: {
+        relation: Model.HasManyRelation,
+        modelClass: TeamInvite,
+        join: {
+          from: "users.id",
+          to: "team_invites.userId",
+        },
+        modify: (query) => query.whereRaw(`team_invites."expiresAt" > now()`),
+      },
     };
   }
 
   account?: Account;
   teams?: Team[];
+  teamInvites?: TeamInvite[];
   ownedTeams?: Team[];
   gitlabUser?: GitlabUser;
   googleUser?: GoogleUser;

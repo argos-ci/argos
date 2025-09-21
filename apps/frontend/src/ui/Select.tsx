@@ -1,3 +1,4 @@
+import type { RefAttributes } from "react";
 import { clsx } from "clsx";
 import { ChevronDownIcon } from "lucide-react";
 import {
@@ -26,13 +27,13 @@ function SelectArrow() {
   );
 }
 
-interface SelectProps
-  extends AriaSelectSelectProps,
+interface SelectProps<T extends object>
+  extends AriaSelectSelectProps<T>,
     React.RefAttributes<HTMLDivElement> {
   orientation?: "horizontal" | "vertical";
 }
 
-export function Select(props: SelectProps) {
+export function Select<T extends object>(props: SelectProps<T>) {
   const { orientation = "vertical", ...rest } = props;
   return (
     <AriaSelect
@@ -53,7 +54,7 @@ type SelectFieldProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   name: Path<TFieldValues>;
   children: React.ReactNode;
-} & Omit<SelectProps, "children">;
+} & Omit<SelectProps<object>, "children">;
 
 export function SelectField<TFieldValues extends FieldValues>(
   props: SelectFieldProps<TFieldValues>,
@@ -97,15 +98,18 @@ export function SelectField<TFieldValues extends FieldValues>(
   );
 }
 
+export interface SelectButtonProps
+  extends ButtonProps,
+    RefAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+  size?: "sm" | "md";
+}
+
 export function SelectButton({
   children,
   size = "md",
   ...rest
-}: ButtonProps & {
-  ref?: React.Ref<HTMLButtonElement>;
-  children: React.ReactNode;
-  size?: "sm" | "md";
-}) {
+}: SelectButtonProps) {
   return (
     <Button
       {...rest}
@@ -122,6 +126,8 @@ export function SelectButton({
         "group-data-[disabled]/select:opacity-disabled group-data-[disabled]/select:cursor-not-allowed",
         /* Invalid */
         "group-data-[invalid]/select:border-danger group-data-[invalid]/select:group-data-[focused]/select:border-danger-active group-data-[invalid]/select:data-[hovered]:border-danger-hover",
+        /* Placeholder */
+        "has-[[data-placeholder]]:text-low",
         {
           md: "gap-2 px-3 py-2 text-base",
           sm: "gap-2 px-2 py-1 text-sm",

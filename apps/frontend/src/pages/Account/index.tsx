@@ -8,13 +8,8 @@ import { PaymentBanner } from "@/containers/PaymentBanner";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { PageLoader } from "@/ui/PageLoader";
-import {
-  TabLink,
-  TabLinkList,
-  TabLinkPanel,
-  TabsLink,
-  useTabLinkSplat,
-} from "@/ui/TabLink";
+import { TabList } from "@/ui/Tab";
+import { TabLink, TabLinkPanel, TabsLink, useTabLinkSplat } from "@/ui/TabLink";
 
 import { NotFound } from "../NotFound";
 
@@ -46,11 +41,11 @@ function AccountTabs({ account }: { account: Account }) {
       selectedKey={selectedKey}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <TabLinkList aria-label="Account navigation">
+      <TabList className="px-4" aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
         <TabLink href="settings">Settings</TabLink>
-      </TabLinkList>
+      </TabList>
       <hr className="border-t" />
       <PaymentBanner account={account} />
       <TabLinkPanel id={selectedKey} className="flex flex-1 flex-col">
