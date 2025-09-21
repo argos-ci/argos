@@ -1,5 +1,4 @@
 import { Suspense, useState } from "react";
-import { SearchIcon } from "lucide-react";
 import { TabPanel, Tabs } from "react-aria-components";
 
 import { useAssertAuthTokenPayload } from "@/containers/Auth";
@@ -17,7 +16,6 @@ import { DialogTrigger } from "@/ui/Dialog";
 import { List, ListRowLoader } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Tab, TabList } from "@/ui/Tab";
-import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 
 import { TeamGithubMembersList } from "./GitHubMembersList";
 import { InviteDialog } from "./InviteDialog";
@@ -25,6 +23,7 @@ import { TeamInvitesList } from "./InvitesList";
 import { LeaveTeamDialog } from "./LeaveTeamDialog";
 import { TeamMembersList } from "./MembersList";
 import { RemoveFromTeamDialog, type RemovedUser } from "./RemoveFromTeamDialog";
+import { SearchFilter } from "./SearchFilter";
 
 const _TeamFragment = graphql(`
   fragment TeamMembers_Team on Team {
@@ -52,17 +51,14 @@ const _TeamFragment = graphql(`
 
 function ListPlaceholder() {
   return (
-    <div className="my-4">
+    <div>
       <div className="mb-2 flex gap-2">
-        <TextInputGroup className="w-full">
-          <TextInputIcon>
-            <SearchIcon />
-          </TextInputIcon>
-          <TextInput disabled type="search" placeholder="Filter…" />
-        </TextInputGroup>
+        <SearchFilter disabled value="" />
       </div>
       <List className="opacity-disabled">
-        <ListRowLoader className="p-4">Loading…</ListRowLoader>
+        <ListRowLoader delay={0} className="p-4">
+          Loading…
+        </ListRowLoader>
       </List>
     </div>
   );
@@ -108,13 +104,15 @@ export function TeamMembers(props: {
             {amOwner ? <Tab id="pending">Pending Invitations</Tab> : null}
           </TabList>
           <TabPanel id="members" className="my-4">
-            <TeamMembersList
-              teamId={team.id}
-              amOwner={amOwner}
-              onRemove={setRemovedUser}
-              hasGithubSSO={hasGithubSSO}
-              hasFineGrainedAccessControl={hasFineGrainedAccessControl}
-            />
+            <Suspense fallback={<ListPlaceholder />}>
+              <TeamMembersList
+                teamId={team.id}
+                amOwner={amOwner}
+                onRemove={setRemovedUser}
+                hasGithubSSO={hasGithubSSO}
+                hasFineGrainedAccessControl={hasFineGrainedAccessControl}
+              />
+            </Suspense>
           </TabPanel>
           {team.ssoGithubAccount ? (
             <TabPanel id="pending-github-members" className="my-4">
