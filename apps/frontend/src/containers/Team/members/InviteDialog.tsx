@@ -68,6 +68,7 @@ export function InviteDialog(props: {
     resolver: zodResolver(FormSchema),
     defaultValues: { members: [{ email: "", level: TeamUserLevel.Member }] },
   });
+  const { isSubmitting } = form.formState;
   const { fields, append } = useFieldArray({
     control: form.control,
     name: "members",
@@ -116,7 +117,10 @@ export function InviteDialog(props: {
             </pre>
             <CopyButton text={team.inviteLink} />
           </div>
-          <ResetInviteLinkButton teamAccountId={team.id} />
+          <ResetInviteLinkButton
+            teamAccountId={team.id}
+            isDisabled={isSubmitting}
+          />
           <Separator className="my-8" />
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
@@ -150,6 +154,7 @@ export function InviteDialog(props: {
                           onSelectionChange={field.onChange}
                           onBlur={field.onBlur}
                           className="flex-1"
+                          isDisabled={isSubmitting}
                         />
                       )}
                     />
@@ -164,7 +169,7 @@ export function InviteDialog(props: {
                 onPress={() =>
                   append({ email: "", level: TeamUserLevel.Member })
                 }
-                isDisabled={fields.length >= 10}
+                isDisabled={fields.length >= 10 || isSubmitting}
               >
                 <ButtonIcon>
                   <PlusCircleIcon />
@@ -197,7 +202,10 @@ const ResetInviteLinkMutation = graphql(`
   }
 `);
 
-function ResetInviteLinkButton(props: { teamAccountId: string }) {
+function ResetInviteLinkButton(props: {
+  teamAccountId: string;
+  isDisabled?: boolean;
+}) {
   const client = useApolloClient();
   return (
     <Button
@@ -210,6 +218,7 @@ function ResetInviteLinkButton(props: { teamAccountId: string }) {
       }}
       variant="secondary"
       className="w-full justify-center"
+      isDisabled={props.isDisabled}
     >
       Reset Invite Link
     </Button>
