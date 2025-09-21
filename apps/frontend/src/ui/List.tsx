@@ -48,20 +48,31 @@ export function ListRow(props: ListRowProps) {
   );
 }
 
-const ListLoader = memo(function ListLoader(props: { children: ReactNode }) {
-  const visible = useDelayedVisible(500);
+interface ListLoaderProps {
+  children: ReactNode;
+  /**
+   * Delay in ms before showing the loader.
+   * @default 500
+   */
+  delay?: number;
+}
+
+const ListLoader = memo(function ListLoader(props: ListLoaderProps) {
+  const { children, delay = 500 } = props;
+  const visible = useDelayedVisible(delay);
   if (!visible) {
     return null;
   }
   return (
     <>
       <Loader className="size-6" delay={0} />
-      <span>{props.children}</span>
+      <span>{children}</span>
     </>
   );
 });
 
-export function ListRowLoader({ children, ...rest }: ListRowProps) {
+export function ListRowLoader(props: ListRowProps & ListLoaderProps) {
+  const { children, delay, ...rest } = props;
   return (
     <ListRow
       {...rest}
@@ -70,7 +81,7 @@ export function ListRowLoader({ children, ...rest }: ListRowProps) {
         "text-low flex select-none items-center justify-center gap-2",
       )}
     >
-      <ListLoader>{children}</ListLoader>
+      <ListLoader delay={delay}>{children}</ListLoader>
     </ListRow>
   );
 }
