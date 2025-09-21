@@ -96,7 +96,19 @@ export function InviteDialog(props: {
                 members: validMembers,
               },
             },
-            refetchQueries: ["TeamMembers_invites"],
+            update(cache) {
+              cache.modify({
+                id: cache.identify({
+                  __typename: "Account",
+                  id: team.id,
+                }),
+                fields: {
+                  invites: (_existingInvites, { DELETE }) => {
+                    return DELETE;
+                  },
+                },
+              });
+            },
           });
           state.close();
           toast.success("Invitations sent successfully");
