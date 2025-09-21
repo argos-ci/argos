@@ -1,3 +1,4 @@
+import { use } from "react";
 import { ApolloError } from "@apollo/client";
 import type { ErrorCode } from "@argos/error-types";
 import {
@@ -7,6 +8,8 @@ import {
 } from "react-hook-form";
 
 import { DEFAULT_ERROR_MESSAGE } from "@/util/error";
+
+import { ModalActionContext } from "./Modal";
 
 function unwrapErrors(error: unknown) {
   if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
@@ -48,15 +51,19 @@ export function Form<
   },
 ) {
   const { ref, onSubmit, autoComplete = "off", form, ...rest } = props;
+  const actionContext = use(ModalActionContext);
   return (
     <form
       ref={ref}
       onSubmit={form.handleSubmit(async (data, event) => {
+        actionContext?.setIsPending(true);
         try {
           form.clearErrors();
           await onSubmit(data, event);
         } catch (error) {
           handleFormError(form, error);
+        } finally {
+          actionContext?.setIsPending(false);
         }
       })}
       autoComplete={autoComplete}

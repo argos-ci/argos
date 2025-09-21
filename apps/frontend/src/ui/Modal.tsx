@@ -1,3 +1,4 @@
+import { createContext, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import {
   ModalOverlay,
@@ -20,15 +21,64 @@ const modalStyles = (props: ModalRenderProps) =>
     props.isExiting && "animate-out zoom-out-95 ease-in duration-200",
   );
 
+interface ActionContextValue {
+  isPending: boolean;
+  setIsPending: (isPending: boolean) => void;
+}
+
+export const ModalActionContext = createContext<ActionContextValue | null>(
+  null,
+);
+
+// For now we don't use this hook because it's automatic for forms in dialogs
+// ---
+// /**
+//  * Hook to manage modal actions with pending state.
+//  * Must be used within a Modal.
+//  * @example
+//  * const [isPending, startDialogAction] = useModalAction();
+//  */
+// export function useModalAction() {
+//   const context = use(ModalActionContext);
+//   if (!context) {
+//     throw new Error("useModalAction must be used within a Modal");
+//   }
+//   const startDialogAction = (action: () => Promise<void>) => {
+//     context.setIsPending(true);
+//     return action().finally(() => {
+//       context.setIsPending(false);
+//     });
+//   };
+//   return [context.isPending, startDialogAction] as const;
+// }
+
 export type ModalProps = ModalOverlayProps;
 
 export function Modal(props: ModalProps) {
   const { children, ...rest } = props;
+  const [isPending, setIsPending] = useState(false);
+  const actionContextValue = useMemo(
+    () => ({ isPending, setIsPending }),
+    [isPending],
+  );
+  const isDismissable = isPending ? false : props.isDismissable;
   return (
-    <ModalOverlay {...rest} className={overlayStyles}>
-      <RACModal data-modal="" className={modalStyles}>
-        {children}
-      </RACModal>
-    </ModalOverlay>
+    <ModalActionContext.Provider value={actionContextValue}>
+      <ModalOverlay
+        {...rest}
+        className={overlayStyles}
+        isDismissable={isDismissable}
+        isKeyboardDismissDisabled={isPending}
+      >
+        <RACModal
+          data-modal=""
+          className={modalStyles}
+          isDismissable={isDismissable}
+          isKeyboardDismissDisabled={isPending}
+        >
+          {children}
+        </RACModal>
+      </ModalOverlay>
+    </ModalActionContext.Provider>
   );
 }

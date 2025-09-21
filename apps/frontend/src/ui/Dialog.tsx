@@ -10,6 +10,7 @@ import {
 import type { OverlayTriggerState } from "react-stately";
 
 import { Button, ButtonProps } from "./Button";
+import { ModalActionContext } from "./Modal";
 import { usePersistentValue } from "./usePersistentValue";
 
 export { DialogTrigger } from "react-aria-components";
@@ -89,6 +90,7 @@ export function DialogDismiss(props: {
   isDisabled?: boolean;
 }) {
   const state = useOverlayTriggerState();
+  const actionContext = use(ModalActionContext);
   return (
     <Button
       ref={props.ref}
@@ -98,7 +100,7 @@ export function DialogDismiss(props: {
         props.onPress?.(event);
         state.close();
       }}
-      isDisabled={props.isDisabled}
+      isDisabled={props.isDisabled || actionContext?.isPending}
     >
       {props.children}
     </Button>
