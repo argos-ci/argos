@@ -77,6 +77,10 @@ export const TeamNewForm = (props: {
         control={form.control}
         {...form.register("name", {
           required: "Team name is required",
+          maxLength: {
+            value: 255,
+            message: "Team name must be 255 characters or less",
+          },
         })}
         label="Team Name"
         autoFocus

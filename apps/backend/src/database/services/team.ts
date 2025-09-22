@@ -10,7 +10,10 @@ import { transaction } from "../transaction.js";
 
 const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   const nameSlug = slugify(name);
-  const slug = index ? `${nameSlug}-${index}` : nameSlug;
+  const slug = index
+    ? // Be sure the slug is not too long (max 48 chars)
+      `${nameSlug.slice(0, 48 - 1 - String(index).length)}-${index}`
+    : nameSlug;
 
   const existingAccount = await Account.query().select("id").findOne({ slug });
 
