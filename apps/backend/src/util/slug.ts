@@ -14,7 +14,8 @@ export const slugJsonSchema = {
  * Slugify a string to match "^[-a-z0-9]+$" pattern.
  */
 export function slugify(str: string): string {
-  const slug = baseSlugify(str);
+  // Be sure the slug is not too long (max 48 chars)
+  const slug = baseSlugify(str).slice(0, 48);
   // We failed to generate a slug, return a generic one.
   // It can happen with strings that are not ASCII.
   if (str.length > 0 && slug.length === 0) {
