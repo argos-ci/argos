@@ -871,11 +871,14 @@ export const resolvers: IResolvers = {
         await transaction(async (trx) => {
           await Promise.all([
             // Add the user to the team.
-            TeamUser.query(trx).insert({
-              userId: user.id,
-              teamId: team.id,
-              userLevel: teamInvite.userLevel,
-            }),
+            TeamUser.query(trx)
+              .insert({
+                userId: user.id,
+                teamId: team.id,
+                userLevel: teamInvite.userLevel,
+              })
+              .onConflict()
+              .ignore(),
             // Delete the invite.
             teamInvite.$query(trx).delete(),
           ]);
