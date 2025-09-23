@@ -838,7 +838,9 @@ export const resolvers: IResolvers = {
         .withGraphFetched("team.account")
         .first();
 
-      invariant(teamInvite, "Invalid invite secret");
+      if (!teamInvite) {
+        throw notFound("Invitation not found or expired");
+      }
 
       const { team } = teamInvite;
       invariant(team, "Team relation not loaded");

@@ -3,6 +3,7 @@ import { invariant } from "@apollo/client/utilities/globals";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 import { useSafeQuery } from "@/containers/Apollo";
 import { useAuth, useIsLoggedIn } from "@/containers/Auth";
@@ -15,6 +16,7 @@ import {
 import { graphql } from "@/gql";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { PageLoader } from "@/ui/PageLoader";
+import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "./Account/AccountParams";
 
@@ -67,6 +69,9 @@ function AcceptInviteButton(
   const [accept, { data, loading }] = useMutation(AcceptInviteMutation, {
     variables: {
       secret: props.secret,
+    },
+    onError(error) {
+      toast.error(getErrorMessage(error));
     },
     onCompleted(data) {
       const { jwt, team } = data.acceptInvite;
