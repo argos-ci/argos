@@ -5,7 +5,7 @@ import { InitialAvatar } from "./InitialAvatar";
 
 const _AvatarFragment = graphql(`
   fragment AccountAvatarFragment on AccountAvatar {
-    url(size: 64)
+    url(size: 144)
     color
     initial
   }

@@ -107,7 +107,7 @@ export function Component() {
 
   const team = data?.invite?.team;
   const teamName = team?.name || team?.slug;
-  const teamTitle = teamName ? `${team?.name || team?.slug} Team` : `Team`;
+  const teamTitle = teamName ? `${teamName} Team` : `Team`;
 
   return (
     <>
@@ -120,29 +120,27 @@ export function Component() {
             const { invite } = data;
             if (invite) {
               const { team } = invite;
+              const teamName = team.name || team.slug;
               const alreadyJoined = Boolean(
                 data.me?.teams?.some((t) => t.id === team?.id),
               );
               if (alreadyJoined) {
                 return (
-                  <AlreadyJoined
-                    teamTitle={teamTitle}
-                    accountSlug={team.slug}
-                  />
+                  <AlreadyJoined teamName={teamName} accountSlug={team.slug} />
                 );
               }
               return (
                 <>
                   <InviteAccountAvatar avatar={team.avatar} />
                   <Heading>
-                    You’ve been invited to the <strong>{teamTitle}</strong> team
+                    You’ve been invited to the <strong>{teamName}</strong> team
                   </Heading>
                   <Text className="mb-8">
                     Invited by {invite.invitedBy.name || invite.invitedBy.slug}
                   </Text>
                   <AcceptInviteButton secret={secret} size="large">
                     {isLoggedIn ? (
-                      <>Join {teamTitle}</>
+                      <>Join {teamName}</>
                     ) : (
                       <>Continue as {invite.email}</>
                     )}

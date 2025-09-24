@@ -402,14 +402,14 @@ export const resolvers: IResolvers = {
                 .where("githubAccountId", team.ssoGithubAccountId),
             );
         } else {
-          query
-            .withGraphJoined("user.account")
-            .whereNotIn(
+          query.withGraphJoined("user.account").where((qb) => {
+            qb.whereNull("user:account.githubAccountId").orWhereNotIn(
               "user:account.githubAccountId",
               GithubAccountMember.query()
                 .select("githubMemberId")
                 .where("githubAccountId", team.ssoGithubAccountId),
             );
+          });
         }
       }
 
