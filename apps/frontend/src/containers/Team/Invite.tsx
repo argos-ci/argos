@@ -38,15 +38,15 @@ export function InviteAccountAvatar(props: {
 }
 
 export function AlreadyJoined(props: {
-  teamTitle: string;
+  teamName: string;
   accountSlug: string;
 }) {
-  const { teamTitle, accountSlug } = props;
+  const { teamName, accountSlug } = props;
   return (
     <>
       <Heading>This invite has already been accepted</Heading>
       <Text>
-        You are already a member of <strong>{teamTitle}</strong> team.
+        You are already a member of <strong>{teamName}</strong> team.
       </Text>
       <LinkButton
         className="mt-8"

@@ -86,7 +86,7 @@ export function Component() {
 
   const team = data?.teamInvite;
   const teamName = team?.name || team?.slug;
-  const teamTitle = teamName ? `${team?.name || team?.slug} Team` : `Team`;
+  const teamTitle = teamName ? `${teamName} Team` : `Team`;
 
   return (
     <>
@@ -98,12 +98,13 @@ export function Component() {
           if (data) {
             const team = data.teamInvite;
             if (team) {
+              const teamName = team.name || team.slug;
               if (!loggedIn) {
                 return (
                   <>
                     <InviteAccountAvatar avatar={team.avatar} />
                     <Heading>
-                      You’ve been invited to the <strong>{teamTitle}</strong>{" "}
+                      You’ve been invited to the <strong>{teamName}</strong>{" "}
                       team.
                     </Heading>
                     <Text>
@@ -154,24 +155,21 @@ export function Component() {
               );
               if (alreadyJoined) {
                 return (
-                  <AlreadyJoined
-                    teamTitle={teamTitle}
-                    accountSlug={team.slug}
-                  />
+                  <AlreadyJoined teamName={teamName} accountSlug={team.slug} />
                 );
               }
               return (
                 <>
                   <InviteAccountAvatar avatar={team.avatar} />
                   <Heading>
-                    You’ve been invited to the <strong>{teamTitle}</strong> team
+                    You’ve been invited to the <strong>{teamName}</strong> team
                   </Heading>
                   <Text className="mb-8">
                     Let's use Argos to review visual differences in your
                     applications.
                   </Text>
                   <JoinTeamButton secret={secret}>
-                    Join {teamTitle}
+                    Join {teamName}
                   </JoinTeamButton>
                 </>
               );
