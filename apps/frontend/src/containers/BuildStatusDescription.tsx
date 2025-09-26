@@ -184,6 +184,7 @@ const _ReviewDescriptionBuildFragment = graphql(`
       user {
         id
         name
+        slug
         avatar {
           ...AccountAvatarFragment
         }
@@ -231,7 +232,7 @@ function ReviewDescription(props: {
                         className="size-4 shrink-0"
                         avatar={review.user.avatar}
                       />
-                      &nbsp;{review.user.name}
+                      &nbsp;{review.user.name || review.user.slug}
                     </>
                   )}
                 </div>
