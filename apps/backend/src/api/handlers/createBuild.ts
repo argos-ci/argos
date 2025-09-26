@@ -35,9 +35,9 @@ const RequestBodySchema = z.object({
   parallel: z.boolean().nullable().optional(),
   parallelNonce: z.string().nullable().optional(),
   prNumber: z.number().int().min(1).nullable().optional(),
-  prHeadCommit: z.string().nullable().optional(),
+  prHeadCommit: Sha1HashSchema.nullable().optional(),
   // To avoid breaking change, we keep referenceCommit instead of baseCommit
-  referenceCommit: z.string().nullable().optional(),
+  referenceCommit: Sha1HashSchema.nullable().optional(),
   // To avoid breaking change, we keep referenceBranch instead of baseBranch
   referenceBranch: z.string().nullable().optional(),
   parentCommits: z.array(Sha1HashSchema).nullable().optional(),
