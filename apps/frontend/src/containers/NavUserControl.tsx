@@ -1,5 +1,5 @@
-import { Suspense, useMemo } from "react";
-import { useSuspenseQuery } from "@apollo/client/react";
+import { useMemo } from "react";
+import { useQuery } from "@apollo/client/react";
 import clsx from "clsx";
 import {
   ActivitySquareIcon,
@@ -111,9 +111,19 @@ const AccountQuery = graphql(`
 `);
 
 function Avatar(props: { slug: string; className?: string }) {
-  const { data } = useSuspenseQuery(AccountQuery, {
+  const { data, error } = useQuery(AccountQuery, {
     variables: { slug: props.slug },
   });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return (
+      <InitialAvatar initial="" color="var(--mauve-3)" className="size-7" />
+    );
+  }
 
   if (!data.account) {
     return null;
@@ -141,17 +151,7 @@ function UserMenu() {
         )}
         aria-label="User settings"
       >
-        <Suspense
-          fallback={
-            <InitialAvatar
-              initial=""
-              color="var(--mauve-3)"
-              className="size-7"
-            />
-          }
-        >
-          <Avatar slug={authPayload.account.slug} className="size-7" />
-        </Suspense>
+        <Avatar slug={authPayload.account.slug} className="size-7" />
       </RACButton>
       <Popover placement="bottom end">
         <Menu className="w-60">

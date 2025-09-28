@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
+import { MenuTrigger } from "react-aria-components";
 import { useMatch, useParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -11,7 +12,9 @@ import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLink,
+  BreadcrumbMenuButton,
 } from "@/ui/Breadcrumb";
+import { Popover } from "@/ui/Popover";
 
 import { AccountBreadcrumbMenu } from "./AccountBreadcrumbMenu";
 
@@ -75,7 +78,14 @@ export function AccountBreadcrumbItem() {
       ) : (
         <HomeBreadcrumbLink />
       )}
-      {loggedIn && <AccountBreadcrumbMenu />}
+      {loggedIn && (
+        <MenuTrigger>
+          <BreadcrumbMenuButton />
+          <Popover placement="bottom start">
+            <AccountBreadcrumbMenu />
+          </Popover>
+        </MenuTrigger>
+      )}
     </BreadcrumbItem>
   );
 }
