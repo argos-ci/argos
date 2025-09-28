@@ -1847,7 +1847,7 @@ export type ResolverTypeWrapper<T> = Promise<T> | T;
 export type ResolverWithResolve<TResult, TParent, TContext, TArgs> = {
   resolve: ResolverFn<TResult, TParent, TContext, TArgs>;
 };
-export type Resolver<TResult, TParent = {}, TContext = {}, TArgs = {}> = ResolverFn<TResult, TParent, TContext, TArgs> | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
+export type Resolver<TResult, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> = ResolverFn<TResult, TParent, TContext, TArgs> | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
 
 export type ResolverFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
@@ -1884,21 +1884,21 @@ export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, 
   | SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs>
   | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
 
-export type SubscriptionResolver<TResult, TKey extends string, TParent = {}, TContext = {}, TArgs = {}> =
+export type SubscriptionResolver<TResult, TKey extends string, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> =
   | ((...args: any[]) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
   | SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>;
 
-export type TypeResolveFn<TTypes, TParent = {}, TContext = {}> = (
+export type TypeResolveFn<TTypes, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (
   parent: TParent,
   context: TContext,
   info: GraphQLResolveInfo
 ) => Maybe<TTypes> | Promise<Maybe<TTypes>>;
 
-export type IsTypeOfResolverFn<T = {}, TContext = {}> = (obj: T, context: TContext, info: GraphQLResolveInfo) => boolean | Promise<boolean>;
+export type IsTypeOfResolverFn<T = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>> = (obj: T, context: TContext, info: GraphQLResolveInfo) => boolean | Promise<boolean>;
 
 export type NextResolverFn<T> = () => Promise<T>;
 
-export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs = {}> = (
+export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = Record<PropertyKey, never>, TContext = Record<PropertyKey, never>, TArgs = Record<PropertyKey, never>> = (
   next: NextResolverFn<TResult>,
   parent: TParent,
   args: TArgs,
@@ -1907,13 +1907,69 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 ) => TResult | Promise<TResult>;
 
 
+
+
 /** Mapping of interface types */
 export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Account: ( Account ) | ( Account );
-  Connection: ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } ) | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } ) | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } ) | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } ) | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } ) | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } ) | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } ) | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } ) | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } ) | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } ) | ( Omit<ITeamInviteConnection, 'edges'> & { edges: Array<_RefType['TeamInvite']> } ) | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } ) | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } ) | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } );
-  Node: ( Subscription ) | ( AutomationActionRun ) | ( AutomationRule ) | ( AutomationRun ) | ( Build ) | ( BuildReview ) | ( GhApiInstallation ) | ( IGhApiInstallationAccount ) | ( GhApiRepository ) | ( GithubAccount ) | ( GithubInstallation ) | ( GithubPullRequest ) | ( GithubRepository ) | ( GitlabProject ) | ( GitlabUser ) | ( GlApiNamespace ) | ( GlApiProject ) | ( GoogleUser ) | ( Plan ) | ( Project ) | ( ProjectUser ) | ( Screenshot ) | ( ScreenshotBucket ) | ( ScreenshotDiff ) | ( SlackInstallation ) | ( Account ) | ( GithubAccountMember ) | ( TeamInvite ) | ( TeamUser ) | ( Test ) | ( TestChangeObject ) | ( Account );
+  Account:
+    | ( Account )
+    | ( Account )
+  ;
+  Connection:
+    | ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } )
+    | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } )
+    | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } )
+    | ( Omit<IGhApiRepositoryConnection, 'edges'> & { edges: Array<_RefType['GhApiRepository']> } )
+    | ( Omit<IGlApiNamespaceConnection, 'edges'> & { edges: Array<_RefType['GlApiNamespace']> } )
+    | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } )
+    | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } )
+    | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } )
+    | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } )
+    | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } )
+    | ( Omit<ITeamInviteConnection, 'edges'> & { edges: Array<_RefType['TeamInvite']> } )
+    | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } )
+    | ( Omit<ITestChangesConnection, 'edges'> & { edges: Array<_RefType['TestChange']> } )
+    | ( Omit<IUserConnection, 'edges'> & { edges: Array<_RefType['User']> } )
+  ;
+  Node:
+    | ( Subscription )
+    | ( AutomationActionRun )
+    | ( AutomationRule )
+    | ( AutomationRun )
+    | ( Build )
+    | ( BuildReview )
+    | ( GhApiInstallation )
+    | ( IGhApiInstallationAccount )
+    | ( GhApiRepository )
+    | ( GithubAccount )
+    | ( GithubInstallation )
+    | ( GithubPullRequest )
+    | ( GithubRepository )
+    | ( GitlabProject )
+    | ( GitlabUser )
+    | ( GlApiNamespace )
+    | ( GlApiProject )
+    | ( GoogleUser )
+    | ( Plan )
+    | ( Project )
+    | ( ProjectUser )
+    | ( Screenshot )
+    | ( ScreenshotBucket )
+    | ( ScreenshotDiff )
+    | ( SlackInstallation )
+    | ( Account )
+    | ( GithubAccountMember )
+    | ( TeamInvite )
+    | ( TeamUser )
+    | ( Test )
+    | ( TestChangeObject )
+    | ( Account )
+  ;
   PullRequest: ( GithubPullRequest );
-  Repository: ( GithubRepository ) | ( GitlabProject );
+  Repository:
+    | ( GithubRepository )
+    | ( GitlabProject )
+  ;
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -2002,7 +2058,7 @@ export type IResolversTypes = ResolversObject<{
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
   MetricsPeriod: IMetricsPeriod;
-  Mutation: ResolverTypeWrapper<{}>;
+  Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
   Node: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['Node']>;
   PageInfo: ResolverTypeWrapper<IPageInfo>;
   Plan: ResolverTypeWrapper<Plan>;
@@ -2014,7 +2070,7 @@ export type IResolversTypes = ResolversObject<{
   ProjectUserLevel: IProjectUserLevel;
   PullRequest: ResolverTypeWrapper<IResolversInterfaceTypes<IResolversTypes>['PullRequest']>;
   PullRequestState: IPullRequestState;
-  Query: ResolverTypeWrapper<{}>;
+  Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
   RemoveContributorFromProjectInput: IRemoveContributorFromProjectInput;
   RemoveContributorFromProjectPayload: ResolverTypeWrapper<IRemoveContributorFromProjectPayload>;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
@@ -2158,7 +2214,7 @@ export type IResolversParentTypes = ResolversObject<{
   LeaveTeamInput: ILeaveTeamInput;
   LinkGithubRepositoryInput: ILinkGithubRepositoryInput;
   LinkGitlabProjectInput: ILinkGitlabProjectInput;
-  Mutation: {};
+  Mutation: Record<PropertyKey, never>;
   Node: IResolversInterfaceTypes<IResolversParentTypes>['Node'];
   PageInfo: IPageInfo;
   Plan: Plan;
@@ -2167,7 +2223,7 @@ export type IResolversParentTypes = ResolversObject<{
   ProjectContributor: ProjectUser;
   ProjectContributorConnection: Omit<IProjectContributorConnection, 'edges'> & { edges: Array<IResolversParentTypes['ProjectContributor']> };
   PullRequest: IResolversInterfaceTypes<IResolversParentTypes>['PullRequest'];
-  Query: {};
+  Query: Record<PropertyKey, never>;
   RemoveContributorFromProjectInput: IRemoveContributorFromProjectInput;
   RemoveContributorFromProjectPayload: IRemoveContributorFromProjectPayload;
   RemoveUserFromTeamInput: IRemoveUserFromTeamInput;
@@ -2229,77 +2285,44 @@ export type IResolversParentTypes = ResolversObject<{
 export type IAcceptInvitePayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AcceptInvitePayload'] = IResolversParentTypes['AcceptInvitePayload']> = ResolversObject<{
   jwt?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   team?: Resolver<IResolversTypes['Team'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Account'] = IResolversParentTypes['Account']> = ResolversObject<{
   __resolveType: TypeResolveFn<'Team' | 'User', ParentType, ContextType>;
-  additionalScreenshotsCost?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
-  avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
-  blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
-  currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
-  githubAccount?: Resolver<Maybe<IResolversTypes['GithubAccount']>, ParentType, ContextType>;
-  gitlabAccessToken?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  gitlabBaseUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  glNamespaces?: Resolver<Maybe<IResolversTypes['GlApiNamespaceConnection']>, ParentType, ContextType>;
-  hasForcedPlan?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  includedScreenshots?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IAccountMetricsArgs, 'input'>>;
-  name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
-  plan?: Resolver<Maybe<IResolversTypes['Plan']>, ParentType, ContextType>;
-  projects?: Resolver<IResolversTypes['ProjectConnection'], ParentType, ContextType, RequireFields<IAccountProjectsArgs, 'after' | 'first'>>;
-  slackInstallation?: Resolver<Maybe<IResolversTypes['SlackInstallation']>, ParentType, ContextType>;
-  slug?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  stripeClientReferenceId?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  stripeCustomerId?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  subscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
-  subscriptionStatus?: Resolver<Maybe<IResolversTypes['AccountSubscriptionStatus']>, ParentType, ContextType>;
 }>;
 
 export type IAccountAvatarResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountAvatar'] = IResolversParentTypes['AccountAvatar']> = ResolversObject<{
   color?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   initial?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType, RequireFields<IAccountAvatarUrlArgs, 'size'>>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountBuildsMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountBuildsMetrics'] = IResolversParentTypes['AccountBuildsMetrics']> = ResolversObject<{
   all?: Resolver<IResolversTypes['AccountMetricData'], ParentType, ContextType>;
   projects?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
   series?: Resolver<Array<IResolversTypes['AccountMetricDataPoint']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountMetricDataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetricData'] = IResolversParentTypes['AccountMetricData']> = ResolversObject<{
   projects?: Resolver<IResolversTypes['JSONObject'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountMetricDataPointResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetricDataPoint'] = IResolversParentTypes['AccountMetricDataPoint']> = ResolversObject<{
   projects?: Resolver<IResolversTypes['JSONObject'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ts?: Resolver<IResolversTypes['Timestamp'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountMetrics'] = IResolversParentTypes['AccountMetrics']> = ResolversObject<{
   builds?: Resolver<IResolversTypes['AccountBuildsMetrics'], ParentType, ContextType>;
   screenshots?: Resolver<IResolversTypes['AccountScreenshotMetrics'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountScreenshotMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountScreenshotMetrics'] = IResolversParentTypes['AccountScreenshotMetrics']> = ResolversObject<{
   all?: Resolver<IResolversTypes['AccountMetricData'], ParentType, ContextType>;
   projects?: Resolver<Array<IResolversTypes['Project']>, ParentType, ContextType>;
   series?: Resolver<Array<IResolversTypes['AccountMetricDataPoint']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAccountSubscriptionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AccountSubscription'] = IResolversParentTypes['AccountSubscription']> = ResolversObject<{
@@ -2316,13 +2339,11 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
 export type IAuthPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AuthPayload'] = IResolversParentTypes['AuthPayload']> = ResolversObject<{
   creation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   jwt?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAutomationActionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationAction'] = IResolversParentTypes['AutomationAction']> = ResolversObject<{
   action?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   actionPayload?: Resolver<IResolversTypes['JSONObject'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAutomationActionRunResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationActionRun'] = IResolversParentTypes['AutomationActionRun']> = ResolversObject<{
@@ -2339,12 +2360,10 @@ export type IAutomationActionRunResolvers<ContextType = Context, ParentType exte
 export type IAutomationConditionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationCondition'] = IResolversParentTypes['AutomationCondition']> = ResolversObject<{
   type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   value?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAutomationConditionsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationConditions'] = IResolversParentTypes['AutomationConditions']> = ResolversObject<{
   all?: Resolver<Array<IResolversTypes['AutomationCondition']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IAutomationRuleResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationRule'] = IResolversParentTypes['AutomationRule']> = ResolversObject<{
@@ -2414,14 +2433,12 @@ export type IBuildConnectionResolvers<ContextType = Context, ParentType extends 
 
 export type IBuildMetadataResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildMetadata'] = IResolversParentTypes['BuildMetadata']> = ResolversObject<{
   testReport?: Resolver<Maybe<IResolversTypes['TestReport']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IBuildParallelResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildParallel'] = IResolversParentTypes['BuildParallel']> = ResolversObject<{
   nonce?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   received?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IBuildReviewResolvers<ContextType = Context, ParentType extends IResolversParentTypes['BuildReview'] = IResolversParentTypes['BuildReview']> = ResolversObject<{
@@ -2441,19 +2458,15 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
   retryFailure?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   unchanged?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AutomationRuleConnection' | 'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamInviteConnection' | 'TeamMemberConnection' | 'TestChangesConnection' | 'UserConnection', ParentType, ContextType>;
-  edges?: Resolver<Array<IResolversTypes['Node']>, ParentType, ContextType>;
-  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
 }>;
 
 export type ICreateTeamResultResolvers<ContextType = Context, ParentType extends IResolversParentTypes['CreateTeamResult'] = IResolversParentTypes['CreateTeamResult']> = ResolversObject<{
   redirectUrl?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   team?: Resolver<IResolversTypes['Team'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export interface IDateScalarConfig extends GraphQLScalarTypeConfig<IResolversTypes['Date'], any> {
@@ -2652,13 +2665,11 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamInvite' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
 }>;
 
 export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PageInfo'] = IResolversParentTypes['PageInfo']> = ResolversObject<{
   hasNextPage?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   totalCount?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IPlanResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Plan'] = IResolversParentTypes['Plan']> = ResolversObject<{
@@ -2722,16 +2733,6 @@ export type IProjectContributorConnectionResolvers<ContextType = Context, Parent
 
 export type IPullRequestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PullRequest'] = IResolversParentTypes['PullRequest']> = ResolversObject<{
   __resolveType: TypeResolveFn<'GithubPullRequest', ParentType, ContextType>;
-  closedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  date?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  draft?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  merged?: Resolver<Maybe<IResolversTypes['Boolean']>, ParentType, ContextType>;
-  mergedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  number?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  state?: Resolver<Maybe<IResolversTypes['PullRequestState']>, ParentType, ContextType>;
-  title?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type IQueryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Query'] = IResolversParentTypes['Query']> = ResolversObject<{
@@ -2751,21 +2752,14 @@ export type IQueryResolvers<ContextType = Context, ParentType extends IResolvers
 
 export type IRemoveContributorFromProjectPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveContributorFromProjectPayload'] = IResolversParentTypes['RemoveContributorFromProjectPayload']> = ResolversObject<{
   projectContributorId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IRemoveUserFromTeamPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['RemoveUserFromTeamPayload'] = IResolversParentTypes['RemoveUserFromTeamPayload']> = ResolversObject<{
   teamMemberId?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IRepositoryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Repository'] = IResolversParentTypes['Repository']> = ResolversObject<{
   __resolveType: TypeResolveFn<'GithubRepository' | 'GitlabProject', ParentType, ContextType>;
-  defaultBranch?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  fullName?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  private?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type IScreenshotResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Screenshot'] = IResolversParentTypes['Screenshot']> = ResolversObject<{
@@ -2823,33 +2817,28 @@ export type IScreenshotMetadataResolvers<ContextType = Context, ParentType exten
   test?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataTest']>, ParentType, ContextType>;
   url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   viewport?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataViewport']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataAutomationLibraryResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataAutomationLibrary'] = IResolversParentTypes['ScreenshotMetadataAutomationLibrary']> = ResolversObject<{
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataBrowserResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataBrowser'] = IResolversParentTypes['ScreenshotMetadataBrowser']> = ResolversObject<{
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataLocationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataLocation'] = IResolversParentTypes['ScreenshotMetadataLocation']> = ResolversObject<{
   column?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   file?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   line?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataSdkResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataSDK'] = IResolversParentTypes['ScreenshotMetadataSDK']> = ResolversObject<{
   latestVersion?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   version?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTest'] = IResolversParentTypes['ScreenshotMetadataTest']> = ResolversObject<{
@@ -2861,27 +2850,23 @@ export type IScreenshotMetadataTestResolvers<ContextType = Context, ParentType e
   retry?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   title?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   titlePath?: Resolver<Array<IResolversTypes['String']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataTestAnnotationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataTestAnnotation'] = IResolversParentTypes['ScreenshotMetadataTestAnnotation']> = ResolversObject<{
   description?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   location?: Resolver<Maybe<IResolversTypes['ScreenshotMetadataLocation']>, ParentType, ContextType>;
   type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotMetadataViewportResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotMetadataViewport'] = IResolversParentTypes['ScreenshotMetadataViewport']> = ResolversObject<{
   height?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   width?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IScreenshotsCountResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotsCount'] = IResolversParentTypes['ScreenshotsCount']> = ResolversObject<{
   all?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   neutral?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   storybook?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type ISlackInstallationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['SlackInstallation'] = IResolversParentTypes['SlackInstallation']> = ResolversObject<{
@@ -2998,7 +2983,6 @@ export type ITestChangeStatsResolvers<ContextType = Context, ParentType extends 
   firstSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
   lastSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
   totalOccurences?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type ITestChangesConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestChangesConnection'] = IResolversParentTypes['TestChangesConnection']> = ResolversObject<{
@@ -3014,7 +2998,6 @@ export type ITestMetricDataResolvers<ContextType = Context, ParentType extends I
   stability?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   uniqueChanges?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type ITestMetricDataPointResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestMetricDataPoint'] = IResolversParentTypes['TestMetricDataPoint']> = ResolversObject<{
@@ -3022,25 +3005,21 @@ export type ITestMetricDataPointResolvers<ContextType = Context, ParentType exte
   total?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
   ts?: Resolver<IResolversTypes['Timestamp'], ParentType, ContextType>;
   uniqueChanges?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type ITestMetricsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestMetrics'] = IResolversParentTypes['TestMetrics']> = ResolversObject<{
   all?: Resolver<IResolversTypes['TestMetricData'], ParentType, ContextType>;
   series?: Resolver<Array<IResolversTypes['TestMetricDataPoint']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type ITestReportResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestReport'] = IResolversParentTypes['TestReport']> = ResolversObject<{
   stats?: Resolver<Maybe<IResolversTypes['TestReportStats']>, ParentType, ContextType>;
   status?: Resolver<IResolversTypes['TestReportStatus'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type ITestReportStatsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestReportStats'] = IResolversParentTypes['TestReportStats']> = ResolversObject<{
   duration?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   startTime?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export interface ITimeScalarConfig extends GraphQLScalarTypeConfig<IResolversTypes['Time'], any> {
@@ -3101,7 +3080,6 @@ export type IUserConnectionResolvers<ContextType = Context, ParentType extends I
 export type IUserEmailResolvers<ContextType = Context, ParentType extends IResolversParentTypes['UserEmail'] = IResolversParentTypes['UserEmail']> = ResolversObject<{
   email?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   verified?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type IResolvers<ContextType = Context> = ResolversObject<{

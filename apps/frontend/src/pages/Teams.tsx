@@ -1,4 +1,4 @@
-import { useMutation, useSuspenseQuery } from "@apollo/client";
+import { useMutation, useSuspenseQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Helmet } from "react-helmet";

@@ -1,4 +1,4 @@
-import { MutationHookOptions, useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
@@ -38,7 +38,7 @@ const _BuildFragment = graphql(`
 export function useReviewBuildMutation(
   build: DocumentType<typeof _BuildFragment>,
   options?: Pick<
-    MutationHookOptions<
+    useMutation.Options<
       BuildReviewAction_ReviewBuildMutation,
       BuildReviewAction_ReviewBuildMutationVariables
     >,

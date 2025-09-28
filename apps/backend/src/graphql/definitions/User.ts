@@ -19,6 +19,7 @@ import { checkErrorStatus, getTokenOctokit } from "@/github/index.js";
 import type { IResolvers } from "../__generated__/resolver-types.js";
 import { deleteAccount } from "../services/account.js";
 import { badUserInput, forbidden, unauthenticated } from "../util.js";
+import { commonAccountResolvers } from "./Account.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -263,6 +264,7 @@ export const resolvers: IResolvers = {
     },
   },
   User: {
+    ...commonAccountResolvers,
     hasSubscribedToTrial: async (account) => {
       return account.$checkHasSubscribedToTrial();
     },

@@ -1,10 +1,10 @@
+import { useQuery } from "@apollo/client/react";
+
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
 import { Time } from "@/ui/Time";
-
-import { useSafeQuery } from "./Apollo";
 
 const ProjectsQuery = graphql(`
   query GitlabProjectList_glApiProjects(
@@ -49,7 +49,7 @@ export type GitlabProjectListProps = {
 );
 
 export function GitlabProjectList(props: GitlabProjectListProps) {
-  const result = useSafeQuery(ProjectsQuery, {
+  const result = useQuery(ProjectsQuery, {
     variables: {
       accountId: props.accountId,
       userId: props.userId,
@@ -59,6 +59,10 @@ export function GitlabProjectList(props: GitlabProjectListProps) {
       page: 1,
     },
   });
+
+  if (result.error) {
+    throw result.error;
+  }
 
   const data = result.data || result.previousData;
 

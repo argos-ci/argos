@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { Navigate, useParams } from "react-router-dom";
 
 import { graphql } from "@/gql";

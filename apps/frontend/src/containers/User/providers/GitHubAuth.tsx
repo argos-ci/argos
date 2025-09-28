@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";

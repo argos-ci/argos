@@ -1,4 +1,5 @@
 import { FolderCode } from "lucide-react";
+import { MenuTrigger } from "react-aria-components";
 import { useMatch } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
@@ -6,7 +7,9 @@ import {
   BreadcrumbItem,
   BreadcrumbItemIcon,
   BreadcrumbLink,
+  BreadcrumbMenuButton,
 } from "@/ui/Breadcrumb";
+import { Popover } from "@/ui/Popover";
 
 import { ProjectBreadcrumbMenu } from "./ProjectBreadcrumbMenu";
 
@@ -30,7 +33,14 @@ export function ProjectBreadcrumbItem(props: {
         </BreadcrumbItemIcon>
         {projectName}
       </BreadcrumbLink>
-      {loggedIn && <ProjectBreadcrumbMenu />}
+      {loggedIn && (
+        <MenuTrigger>
+          <BreadcrumbMenuButton />
+          <Popover placement="bottom start">
+            <ProjectBreadcrumbMenu />
+          </Popover>
+        </MenuTrigger>
+      )}
     </BreadcrumbItem>
   );
 }

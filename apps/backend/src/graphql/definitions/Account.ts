@@ -229,6 +229,195 @@ const accountById = async (
   return account;
 };
 
+export const commonAccountResolvers: IResolvers["Team"] = {
+  stripeClientReferenceId: (account, _args, ctx) => {
+    if (!ctx.auth) {
+      throw unauthenticated();
+    }
+    return encodeStripeClientReferenceId({
+      accountId: account.id,
+      subscriberId: ctx.auth.user.id,
+    });
+  },
+  projects: async (account, args, ctx) => {
+    const { auth } = ctx;
+    if (!auth) {
+      throw unauthenticated();
+    }
+    const projectsQuery = Project.query()
+      .where("accountId", account.id)
+      // Sort by most recently created project or build
+      .orderByRaw(
+        `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
+      )
+      .range(args.after, args.after + args.first - 1);
+
+    // Staff can view all projects
+    if (auth.user.staff) {
+      const result = await projectsQuery;
+      return paginateResult({
+        after: args.after,
+        first: args.first,
+        result,
+      });
+    }
+
+    switch (account.type) {
+      case "user": {
+        if (account.userId !== auth.user.id) {
+          throw unauthenticated();
+        }
+
+        const result = await projectsQuery;
+        return paginateResult({
+          after: args.after,
+          first: args.first,
+          result,
+        });
+      }
+      case "team": {
+        const teamUserQuery = TeamUser.query().where({
+          teamId: account.teamId,
+          userId: auth.user.id,
+        });
+
+        const result = await projectsQuery.where((qb) => {
+          // User is a team member or owner
+          qb.whereExists(
+            teamUserQuery
+              .select(1)
+              .clone()
+              .whereIn("userLevel", ["owner", "member"]),
+          ).orWhere((qb) => {
+            // User is a contributor
+            qb.whereExists(
+              teamUserQuery.select(1).clone().where("userLevel", "contributor"),
+            ).where((qb) => {
+              // And is a contributor to the project
+              qb.whereExists(
+                ProjectUser.query()
+                  .select(1)
+                  .whereRaw(`projects.id = project_users."projectId"`)
+                  .where("userId", auth.user.id),
+              )
+                // Or where there is a default user level set on the project
+                .orWhereNotNull("projects.defaultUserLevel");
+            });
+          });
+        });
+
+        return paginateResult({
+          after: args.after,
+          first: args.first,
+          result,
+        });
+      }
+      default:
+        assertNever(account.type);
+    }
+  },
+  consumptionRatio: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getCurrentPeriodConsumptionRatio();
+  },
+  currentPeriodScreenshots: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getCurrentPeriodScreenshots();
+  },
+  additionalScreenshotsCost: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getAdditionalScreenshotCost();
+  },
+  includedScreenshots: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getIncludedScreenshots();
+  },
+  periodStartDate: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getCurrentPeriodStartDate();
+  },
+  periodEndDate: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getCurrentPeriodEndDate();
+  },
+  subscription: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getActiveSubscription();
+  },
+  subscriptionStatus: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    const status = await manager.getSubscriptionStatus();
+    return status as IAccountSubscriptionStatus;
+  },
+  hasForcedPlan: async (account) => {
+    return account.forcedPlanId !== null;
+  },
+  plan: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.getPlan();
+  },
+  permissions: async (account, _args, ctx) => {
+    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    return permissions as IAccountPermission[];
+  },
+  gitlabAccessToken: async (account, _args, ctx) => {
+    if (!account.gitlabAccessToken) {
+      return null;
+    }
+    const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+    if (!permissions.includes("admin")) {
+      return `••••••••`;
+    }
+    return account.gitlabAccessToken;
+  },
+  avatar: async (account, _args, ctx) => {
+    return getAccountAvatar(account, ctx.loaders);
+  },
+  glNamespaces: async (account) => {
+    const client = await getGitlabClientFromAccount(account);
+    if (!client) {
+      return null;
+    }
+    const namespaces = await client.Namespaces.all();
+    return {
+      edges: namespaces,
+      pageInfo: {
+        hasNextPage: false,
+        totalCount: namespaces.length,
+      },
+    };
+  },
+  slackInstallation: async (account, _args, ctx) => {
+    if (!account.slackInstallationId) {
+      return null;
+    }
+    return ctx.loaders.SlackInstallation.load(account.slackInstallationId);
+  },
+  githubAccount: async (account, _args, ctx) => {
+    if (!account.githubAccountId) {
+      return null;
+    }
+    return ctx.loaders.GithubAccount.load(account.githubAccountId);
+  },
+  metrics: async (account, args) => {
+    const params = {
+      accountId: account.id,
+      projectIds: args.input.projectIds,
+      from: args.input.from,
+      to: new Date(),
+      groupBy: args.input.groupBy,
+    };
+    const [screenshots, builds] = await Promise.all([
+      getAccountScreenshotMetrics(params),
+      getAccountBuildMetrics(params),
+    ]);
+    return {
+      screenshots,
+      builds,
+    };
+  },
+};
+
 export const resolvers: IResolvers = {
   Account: {
     __resolveType: (account) => {
@@ -240,195 +429,6 @@ export const resolvers: IResolvers = {
         default:
           assertNever(account.type);
       }
-    },
-    stripeClientReferenceId: (account, _args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-      return encodeStripeClientReferenceId({
-        accountId: account.id,
-        subscriberId: ctx.auth.user.id,
-      });
-    },
-    projects: async (account, args, ctx) => {
-      const { auth } = ctx;
-      if (!auth) {
-        throw unauthenticated();
-      }
-      const projectsQuery = Project.query()
-        .where("accountId", account.id)
-        // Sort by most recently created project or build
-        .orderByRaw(
-          `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
-        )
-        .range(args.after, args.after + args.first - 1);
-
-      // Staff can view all projects
-      if (auth.user.staff) {
-        const result = await projectsQuery;
-        return paginateResult({
-          after: args.after,
-          first: args.first,
-          result,
-        });
-      }
-
-      switch (account.type) {
-        case "user": {
-          if (account.userId !== auth.user.id) {
-            throw unauthenticated();
-          }
-
-          const result = await projectsQuery;
-          return paginateResult({
-            after: args.after,
-            first: args.first,
-            result,
-          });
-        }
-        case "team": {
-          const teamUserQuery = TeamUser.query().where({
-            teamId: account.teamId,
-            userId: auth.user.id,
-          });
-
-          const result = await projectsQuery.where((qb) => {
-            // User is a team member or owner
-            qb.whereExists(
-              teamUserQuery
-                .select(1)
-                .clone()
-                .whereIn("userLevel", ["owner", "member"]),
-            ).orWhere((qb) => {
-              // User is a contributor
-              qb.whereExists(
-                teamUserQuery
-                  .select(1)
-                  .clone()
-                  .where("userLevel", "contributor"),
-              ).where((qb) => {
-                // And is a contributor to the project
-                qb.whereExists(
-                  ProjectUser.query()
-                    .select(1)
-                    .whereRaw(`projects.id = project_users."projectId"`)
-                    .where("userId", auth.user.id),
-                )
-                  // Or where there is a default user level set on the project
-                  .orWhereNotNull("projects.defaultUserLevel");
-              });
-            });
-          });
-
-          return paginateResult({
-            after: args.after,
-            first: args.first,
-            result,
-          });
-        }
-        default:
-          assertNever(account.type);
-      }
-    },
-    consumptionRatio: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getCurrentPeriodConsumptionRatio();
-    },
-    currentPeriodScreenshots: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getCurrentPeriodScreenshots();
-    },
-    additionalScreenshotsCost: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getAdditionalScreenshotCost();
-    },
-    includedScreenshots: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getIncludedScreenshots();
-    },
-    periodStartDate: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getCurrentPeriodStartDate();
-    },
-    periodEndDate: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getCurrentPeriodEndDate();
-    },
-    subscription: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getActiveSubscription();
-    },
-    subscriptionStatus: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      const status = await manager.getSubscriptionStatus();
-      return status as IAccountSubscriptionStatus;
-    },
-    hasForcedPlan: async (account) => {
-      return account.forcedPlanId !== null;
-    },
-    plan: async (account) => {
-      const manager = account.$getSubscriptionManager();
-      return manager.getPlan();
-    },
-    permissions: async (account, _args, ctx) => {
-      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
-      return permissions as IAccountPermission[];
-    },
-    gitlabAccessToken: async (account, _args, ctx) => {
-      if (!account.gitlabAccessToken) {
-        return null;
-      }
-      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
-      if (!permissions.includes("admin")) {
-        return `••••••••`;
-      }
-      return account.gitlabAccessToken;
-    },
-    avatar: async (account, _args, ctx) => {
-      return getAccountAvatar(account, ctx.loaders);
-    },
-    glNamespaces: async (account) => {
-      const client = await getGitlabClientFromAccount(account);
-      if (!client) {
-        return null;
-      }
-      const namespaces = await client.Namespaces.all();
-      return {
-        edges: namespaces,
-        pageInfo: {
-          hasNextPage: false,
-          totalCount: namespaces.length,
-        },
-      };
-    },
-    slackInstallation: async (account, _args, ctx) => {
-      if (!account.slackInstallationId) {
-        return null;
-      }
-      return ctx.loaders.SlackInstallation.load(account.slackInstallationId);
-    },
-    githubAccount: async (account, _args, ctx) => {
-      if (!account.githubAccountId) {
-        return null;
-      }
-      return ctx.loaders.GithubAccount.load(account.githubAccountId);
-    },
-    metrics: async (account, args) => {
-      const params = {
-        accountId: account.id,
-        projectIds: args.input.projectIds,
-        from: args.input.from,
-        to: new Date(),
-        groupBy: args.input.groupBy,
-      };
-      const [screenshots, builds] = await Promise.all([
-        getAccountScreenshotMetrics(params),
-        getAccountBuildMetrics(params),
-      ]);
-      return {
-        screenshots,
-        builds,
-      };
     },
   },
   Query: {

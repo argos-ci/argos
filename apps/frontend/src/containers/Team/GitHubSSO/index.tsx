@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import { GITHUB_SSO_PRICING } from "@/constants";

@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";

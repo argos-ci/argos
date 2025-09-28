@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
 import { DialogTrigger } from "react-aria-components";

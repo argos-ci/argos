@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@apollo/client/react";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
@@ -7,7 +8,6 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams, useResolvedPath, useSearchParams } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { BuildTestStatusChip } from "@/containers/BuildTestStatusChip";
@@ -311,12 +311,15 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     useBuildStatusFilterState();
   const [buildType, setBuildType, isBuildTypeDirty] = useBuildTypeFilterState();
   const hasFilters = isBuildNameDirty || isBuildStatusDirty || isBuildTypeDirty;
-  const projectResult = useSafeQuery(ProjectQuery, {
+  const projectResult = useQuery(ProjectQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
     },
   });
+  if (projectResult.error) {
+    throw projectResult.error;
+  }
 
   const filters = useMemo(() => {
     return {
@@ -326,7 +329,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     };
   }, [buildName, buildType, buildStatus]);
 
-  const buildsResult = useSafeQuery(ProjectBuildsQuery, {
+  const buildsResult = useQuery(ProjectBuildsQuery, {
     variables: {
       accountSlug: props.accountSlug,
       projectName: props.projectName,
@@ -335,6 +338,9 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       first: 20,
     },
   });
+  if (buildsResult.error) {
+    throw buildsResult.error;
+  }
 
   const { fetchMore } = buildsResult;
   const buildResultRef = useRef(buildsResult);

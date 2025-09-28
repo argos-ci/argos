@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { CheckIcon } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 

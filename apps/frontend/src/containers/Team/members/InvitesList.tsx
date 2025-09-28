@@ -1,5 +1,6 @@
 import { useDeferredValue, useState } from "react";
-import { useMutation, useSuspenseQuery, type Reference } from "@apollo/client";
+import type { Reference } from "@apollo/client";
+import { useMutation, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
   CircleXIcon,

@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { useAssertAuthTokenPayload } from "@/containers/Auth";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
 import { RemoveMenu, UserListRow } from "@/containers/UserList";
@@ -60,13 +60,16 @@ export function ProjectContributorsList(props: {
       }
     },
   };
-  const result = useSafeQuery(ProjectContributorsQuery, {
+  const result = useQuery(ProjectContributorsQuery, {
     variables: {
       projectId: props.projectId,
       after: 0,
       first: NB_MEMBERS_PER_PAGE,
     },
   });
+  if (result.error) {
+    throw result.error;
+  }
   return (
     <>
       <div className="my-4">

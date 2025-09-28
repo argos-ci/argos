@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { Reference, useMutation } from "@apollo/client";
+import type { Reference } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 
 import { UserListRow } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";

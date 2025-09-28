@@ -2,19 +2,13 @@ import { useEffect, useMemo } from "react";
 import {
   ApolloClient,
   ApolloLink,
-  ApolloProvider as BaseApolloProvider,
-  DocumentNode,
   HttpLink,
   InMemoryCache,
-  OperationVariables,
-  QueryHookOptions,
-  QueryResult,
-  TypedDocumentNode,
-  useQuery,
 } from "@apollo/client";
-import { onError } from "@apollo/client/link/error";
+import { ErrorLink } from "@apollo/client/link/error";
 import { RetryLink } from "@apollo/client/link/retry";
-import { invariant } from "@apollo/client/utilities/globals";
+import { ApolloProvider as BaseApolloProvider } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 
 import fragments from "@/gql-fragments.json";
 
@@ -26,12 +20,8 @@ const ApolloProvider = (props: {
 }) => {
   const authorization = props.authToken ? `Bearer ${props.authToken}` : null;
   const apolloClient = useMemo(() => {
-    const logoutLink = onError(({ networkError }) => {
-      if (
-        networkError &&
-        "statusCode" in networkError &&
-        networkError.statusCode === 401
-      ) {
+    const logoutLink = new ErrorLink(({ error }) => {
+      if (error && "statusCode" in error && error.statusCode === 401) {
         logout();
       }
     });
@@ -93,20 +83,6 @@ export const ApolloInitializer = (props: { children: React.ReactNode }) => {
     <ApolloProvider authToken={authToken}>{props.children}</ApolloProvider>
   );
 };
-
-export function useSafeQuery<
-  TData = any,
-  TVariables extends OperationVariables = OperationVariables,
->(
-  query: DocumentNode | TypedDocumentNode<TData, TVariables>,
-  options?: QueryHookOptions<TData, TVariables>,
-): Omit<QueryResult<TData, TVariables>, "error"> {
-  const { loading, error, data, ...others } = useQuery(query, options);
-  if (error) {
-    throw error;
-  }
-  return { loading, data, ...others };
-}
 
 /**
  * A hook that refetches data when the document becomes visible or the window gains focus.

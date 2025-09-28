@@ -1,4 +1,4 @@
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MoreVerticalIcon, PlusIcon } from "lucide-react";
 import { DialogTrigger, MenuTrigger } from "react-aria-components";

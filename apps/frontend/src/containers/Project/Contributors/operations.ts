@@ -1,4 +1,4 @@
-import { ApolloCache, Reference } from "@apollo/client";
+import type { ApolloCache, Reference } from "@apollo/client";
 
 import { graphql } from "@/gql";
 import { ProjectUserLevel } from "@/gql/graphql";
@@ -18,7 +18,7 @@ const ProjectContributedOnFragment = graphql(`
 export const OPTIMISTIC_CONTRIBUTOR_ID = "temp-id";
 
 export function removeContributor(
-  cache: ApolloCache<unknown>,
+  cache: ApolloCache,
   data: { projectId: string; userId: string; projectContributorId: string },
 ) {
   cache.modify({
@@ -53,7 +53,7 @@ export function removeContributor(
 }
 
 export function addContributor(
-  cache: ApolloCache<unknown>,
+  cache: ApolloCache,
   data: {
     projectId: string;
     userId: string;

@@ -1,5 +1,5 @@
 import { ComponentProps, useEffect, useRef } from "react";
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient } from "@apollo/client/react";
 import { DialogTrigger } from "react-aria-components";
 import { SubmitHandler, useForm } from "react-hook-form";
 

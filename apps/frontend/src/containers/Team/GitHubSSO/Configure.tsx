@@ -1,5 +1,5 @@
-import { useApolloClient } from "@apollo/client";
-import { invariant } from "@apollo/client/utilities/globals";
+import { useApolloClient, useQuery } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import {
   SubmitHandler,
   useController,
@@ -10,7 +10,6 @@ import {
 } from "react-hook-form";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
-import { useSafeQuery } from "@/containers/Apollo";
 import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelect";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -74,9 +73,12 @@ function GitHubInstallationsSelectControl<
   control: Control<TFieldValues, TContext, TTransformedValues>;
 }) {
   const { teamAccountId, control, name } = props;
-  const { data } = useSafeQuery(query, {
+  const { data, error } = useQuery(query, {
     variables: { teamAccountId },
   });
+  if (error) {
+    throw error;
+  }
   const installations = (() => {
     if (!data) {
       return [];

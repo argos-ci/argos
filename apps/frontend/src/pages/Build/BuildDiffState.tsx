@@ -9,12 +9,12 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router-dom";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { DIFF_GROUPS, type DiffGroup } from "@/containers/Build/BuildDiffGroup";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
@@ -374,7 +374,7 @@ function useDataState({
   projectName: string;
   buildNumber: number;
 }) {
-  const { data, loading, fetchMore } = useSafeQuery(ProjectQuery, {
+  const { data, loading, fetchMore, error } = useQuery(ProjectQuery, {
     variables: {
       accountSlug,
       projectName,
@@ -383,6 +383,9 @@ function useDataState({
       first: 20,
     },
   });
+  if (error) {
+    throw error;
+  }
   useEffect(() => {
     if (
       !loading &&

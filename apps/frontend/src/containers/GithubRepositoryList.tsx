@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@apollo/client/react";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -15,7 +16,6 @@ import {
 } from "@/ui/Pagination";
 import { Time } from "@/ui/Time";
 
-import { useSafeQuery } from "./Apollo";
 import { getGitHubAppInstallURL } from "./GitHub";
 
 const InstallationQuery = graphql(`
@@ -145,7 +145,7 @@ export function GithubRepositoryList(props: {
   const reposPerPage = 100;
   const [page, setPage] = useState(1);
 
-  const result = useSafeQuery(InstallationQuery, {
+  const result = useQuery(InstallationQuery, {
     variables: {
       installationId: props.installationId,
       page,
@@ -153,6 +153,10 @@ export function GithubRepositoryList(props: {
       fromAuthUser: props.app === "main",
     },
   });
+
+  if (result.error) {
+    throw result.error;
+  }
 
   const data = result.data || result.previousData;
 

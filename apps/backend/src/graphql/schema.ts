@@ -8,5 +8,4 @@ export const schema = makeExecutableSchema({
     .map((def) => def.typeDefs)
     .filter(Boolean) as DocumentNode[],
   resolvers: definitions.map((def) => def.resolvers).filter(Boolean) as any,
-  inheritResolversFromInterfaces: true,
 });

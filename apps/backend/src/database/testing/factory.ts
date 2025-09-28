@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type * as Bolt from "@slack/bolt";
 import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import moment from "moment";
 import type { Model, ModelClass, PartialModelObject } from "objection";
@@ -33,22 +34,21 @@ const bytesToString = (bytes: Buffer) => {
   return output;
 };
 
-const defineFactory = <
-  TModel extends Model,
-  TModelClass extends ModelClass<TModel>,
->(
-  modelClass: TModelClass,
-  definition: () => PartialModelObject<TModel>,
-) => {
-  const factory = FactoryGirl.define<TModelClass, PartialModelObject<TModel>>(
-    modelClass,
-    definition,
-  );
-  return factory;
-};
+export function defineFactory<C extends ModelClass<any>>(
+  modelClass: C,
+  definition: () => PartialModelObject<InstanceType<C>>,
+) {
+  return FactoryGirl.define<
+    C,
+    PartialModelObject<InstanceType<C>>,
+    any,
+    // @ts-expect-error probably a typing issue in factory
+    InstanceType<C>
+  >(modelClass, definition);
+}
 
 export const Team = defineFactory(models.Team, () => ({
-  defaultUserLevel: "member",
+  defaultUserLevel: "member" as const,
 }));
 
 export const User = defineFactory(models.User, () => ({
@@ -58,7 +58,7 @@ export const User = defineFactory(models.User, () => ({
 export const GithubAccount = defineFactory(models.GithubAccount, () => ({
   login: FactoryGirl.sequence("githubAccount.login", (n) => `login-${n}`),
   githubId: FactoryGirl.sequence("githubAccount.githubId", (n) => n),
-  type: "user",
+  type: "user" as const,
 }));
 
 export const GithubRepository = defineFactory(models.GithubRepository, () => ({
@@ -66,48 +66,48 @@ export const GithubRepository = defineFactory(models.GithubRepository, () => ({
   private: true,
   defaultBranch: "main",
   githubId: FactoryGirl.sequence("githubRepository.githubId", (n) => n),
-  githubAccountId: GithubAccount.associate("id"),
+  githubAccountId: GithubAccount.associate("id") as unknown as string,
 }));
 
 export const UserAccount = defineFactory(models.Account, () => ({
-  userId: User.associate("id"),
+  userId: User.associate("id") as unknown as string,
   name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),
   slug: FactoryGirl.sequence("account.slug", (n) => `account-${n}`),
   githubAccountId: GithubAccount.extend(() => ({ type: "user" })).associate(
     "id",
-  ),
+  ) as unknown as string,
 }));
 
 export const Subscription = defineFactory(models.Subscription, () => ({
-  planId: Plan.associate("id"),
-  accountId: UserAccount.associate("id"),
+  planId: Plan.associate("id") as unknown as string,
+  accountId: UserAccount.associate("id") as unknown as string,
   startDate: moment().startOf("day").subtract(2, "months").toISOString(),
   endDate: null,
-  provider: "github",
+  provider: "github" as const,
   paymentMethodFilled: false,
-  status: "active",
+  status: "active" as const,
 }));
 
 export const TeamAccount = defineFactory(models.Account, () => ({
-  teamId: Team.associate("id"),
+  teamId: Team.associate("id") as unknown as string,
   name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),
   slug: FactoryGirl.sequence("account.slug", (n) => `account-${n}`),
   githubAccountId: GithubAccount.extend(() => ({
     type: "organization",
-  })).associate("id"),
+  })).associate("id") as unknown as string,
 }));
 
 export const Project = defineFactory(models.Project, () => ({
   name: "awesome-project",
-  accountId: TeamAccount.associate("id"),
-  githubRepositoryId: GithubRepository.associate("id"),
+  accountId: TeamAccount.associate("id") as unknown as string,
+  githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));
 
 export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
   name: "default",
   commit: bytesToString(randomBytes(20)),
   branch: "master",
-  projectId: Project.associate("id"),
+  projectId: Project.associate("id") as unknown as string,
   screenshotCount: 0,
   storybookScreenshotCount: 0,
   complete: true,
@@ -115,15 +115,15 @@ export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
 }));
 
 export const Build = defineFactory(models.Build, () => {
-  const projectId = Project.associate("id");
+  const projectId = Project.associate("id") as unknown as string;
   return {
     createdAt: new Date().toISOString(),
-    jobStatus: "complete",
+    jobStatus: "complete" as const,
     projectId,
     compareScreenshotBucketId: ScreenshotBucket.extend(() => ({
       projectId,
-    })).associate("id"),
-    conclusion: "no-changes",
+    })).associate("id") as unknown as string,
+    conclusion: "no-changes" as const,
     stats: {
       failure: 0,
       added: 0,
@@ -132,6 +132,7 @@ export const Build = defineFactory(models.Build, () => {
       removed: 0,
       total: 0,
       retryFailure: 0,
+      ignored: 0,
     },
   };
 });
@@ -139,52 +140,52 @@ export const Build = defineFactory(models.Build, () => {
 export const BuildNotification = defineFactory(
   models.BuildNotification,
   () => ({
-    buildId: Build.associate("id"),
-    jobStatus: "complete",
-    type: "no-diff-detected",
+    buildId: Build.associate("id") as unknown as string,
+    jobStatus: "complete" as const,
+    type: "no-diff-detected" as const,
   }),
 );
 
 export const TeamUser = defineFactory(models.TeamUser, () => ({
-  userId: User.associate("id"),
-  teamId: Team.associate("id"),
-  userLevel: "owner",
+  userId: User.associate("id") as unknown as string,
+  teamId: Team.associate("id") as unknown as string,
+  userLevel: "owner" as const,
 }));
 
 export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({
-  buildId: Build.associate("id"),
-  baseScreenshotId: Screenshot.associate("id"),
-  compareScreenshotId: Screenshot.associate("id"),
-  jobStatus: "complete",
+  buildId: Build.associate("id") as unknown as string,
+  baseScreenshotId: Screenshot.associate("id") as unknown as string,
+  compareScreenshotId: Screenshot.associate("id") as unknown as string,
+  jobStatus: "complete" as const,
   score: 0,
 }));
 
 export const BuildReview = defineFactory(models.BuildReview, () => ({
-  buildId: Build.associate("id"),
-  userId: User.associate("id"),
-  state: "accepted",
+  buildId: Build.associate("id") as unknown as string,
+  userId: User.associate("id") as unknown as string,
+  state: "approved" as const,
 }));
 
 export const ScreenshotDiffReview = defineFactory(
   models.ScreenshotDiffReview,
   () => ({
-    buildReviewId: BuildReview.associate("id"),
-    screenshotDiffId: ScreenshotDiff.associate("id"),
-    state: "accepted",
+    buildReviewId: BuildReview.associate("id") as unknown as string,
+    screenshotDiffId: ScreenshotDiff.associate("id") as unknown as string,
+    state: "approved" as const,
   }),
 );
 
 export const Test = defineFactory(models.Test, () => ({
   name: "test",
-  projectId: Project.associate("id"),
+  projectId: Project.associate("id") as unknown as string,
   buildName: "default",
 }));
 
 export const Screenshot = defineFactory(models.Screenshot, () => ({
   name: FactoryGirl.sequence("repository.name", (n) => `screen-${n}`),
   s3Id: "test-s3-id",
-  screenshotBucketId: ScreenshotBucket.associate("id"),
-  testId: Test.associate("id"),
+  screenshotBucketId: ScreenshotBucket.associate("id") as unknown as string,
+  testId: Test.associate("id") as unknown as string,
 }));
 
 export const File = defineFactory(models.File, () => ({
@@ -200,7 +201,7 @@ export const Plan = defineFactory(models.Plan, () => ({
   usageBased: false,
   githubSsoIncluded: true,
   fineGrainedAccessControlIncluded: true,
-  interval: "month",
+  interval: "month" as const,
 }));
 
 export const SlackInstallation = defineFactory(
@@ -225,26 +226,26 @@ export const SlackInstallation = defineFactory(
         botAccessToken: "botAccessToken",
         botScopes: ["chat:write"],
       },
-    },
+    } as unknown as Bolt.Installation,
   }),
 );
 export const SlackChannel = defineFactory(models.SlackChannel, () => ({
   slackId: FactoryGirl.sequence("slackChannel.slackId", (n) => `slack-${n}`),
   name: FactoryGirl.sequence("slackChannel.name", (n) => `channel-${n}`),
-  slackInstallationId: SlackInstallation.associate("id"),
+  slackInstallationId: SlackInstallation.associate("id") as unknown as string,
 }));
 
 export const AutomationRule = defineFactory(models.AutomationRule, () => ({
   active: true,
   name: FactoryGirl.sequence("automationRule.name", (n) => `rule-${n}`),
-  projectId: Project.associate("id"),
-  on: ["build.completed"],
+  projectId: Project.associate("id") as unknown as string,
+  on: ["build.completed" as const],
   if: {
     all: [],
   },
   then: [
     {
-      action: "sendSlackMessage",
+      action: "sendSlackMessage" as const,
       actionPayload: { channelId: "1234" },
     },
   ],
@@ -253,11 +254,11 @@ export const AutomationRule = defineFactory(models.AutomationRule, () => ({
 export const AutomationActionRun = defineFactory(
   models.AutomationActionRun,
   () => ({
-    jobStatus: "pending",
+    jobStatus: "pending" as const,
     conclusion: null,
     failureReason: null,
-    automationRunId: AutomationRun.associate("id"),
-    action: "sendSlackMessage",
+    automationRunId: AutomationRun.associate("id") as unknown as string,
+    action: "sendSlackMessage" as const,
     actionPayload: {
       channelId: "1234",
     },
@@ -267,20 +268,20 @@ export const AutomationActionRun = defineFactory(
 );
 
 export const AutomationRun = defineFactory(models.AutomationRun, () => ({
-  automationRuleId: AutomationRule.associate("id"),
-  event: "build.completed",
-  buildId: Build.associate("id"),
+  automationRuleId: AutomationRule.associate("id") as unknown as string,
+  event: "build.completed" as const,
+  buildId: Build.associate("id") as unknown as string,
 }));
 
 export const PullRequest = defineFactory(models.GithubPullRequest, () => ({
   number: 99,
   title: "Fix bug",
-  state: "open",
+  state: "open" as const,
   merged: false,
   mergedAt: null,
   closedAt: null,
   draft: false,
-  jobStatus: "complete",
+  jobStatus: "complete" as const,
   date: new Date().toISOString(),
-  githubRepositoryId: GithubRepository.associate("id"),
+  githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));

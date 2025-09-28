@@ -1,4 +1,4 @@
-import { invariant } from "@apollo/client/utilities/globals";
+import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ListIcon, PlusIcon } from "lucide-react";
 

@@ -44,6 +44,7 @@ import {
   importOrgMembers,
 } from "../services/github.js";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util.js";
+import { commonAccountResolvers } from "./Account.js";
 import { paginateResult } from "./PageInfo.js";
 
 const { gql } = gqlTag;
@@ -318,6 +319,7 @@ export const resolvers: IResolvers = {
     },
   },
   Team: {
+    ...commonAccountResolvers,
     me: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
 

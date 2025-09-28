@@ -1,4 +1,4 @@
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -9,8 +9,6 @@ import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { useEventCallback } from "@/ui/useEventCallback";
-
-import { useSafeQuery } from "../Apollo";
 
 const CreateTeamMutation = graphql(`
   mutation NewTeam_createTeam($name: String!) {
@@ -62,7 +60,10 @@ export const TeamNewForm = (props: {
 }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
 
-  const { data } = useSafeQuery(MeQuery);
+  const { data, error } = useQuery(MeQuery);
+  if (error) {
+    throw error;
+  }
   const form = useForm<Inputs>({
     defaultValues: {
       name: props.defaultTeamName ?? "",

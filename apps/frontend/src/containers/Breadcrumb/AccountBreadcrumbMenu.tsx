@@ -1,21 +1,11 @@
-import { Suspense } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
-import { BreadcrumbMenuButton } from "@/ui/Breadcrumb";
-import {
-  Menu,
-  MenuItem,
-  MenuItemIcon,
-  MenuLoader,
-  MenuTitle,
-  MenuTrigger,
-} from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
+import { Menu, MenuItem, MenuItemIcon, MenuLoader, MenuTitle } from "@/ui/Menu";
 
 import { AccountItem } from "../AccountItem";
 
@@ -53,38 +43,42 @@ function resolveAccountPath(slug: string, pathname: string) {
 function AccountMenuItems(props: { accounts: Account[] }) {
   const { accounts } = props;
   const location = useLocation();
-  return (
-    <>
-      {accounts.map((account) => {
-        return (
-          <MenuItem
-            key={account.id}
-            href={resolveAccountPath(account.slug, location.pathname)}
-          >
-            <AccountItem account={account} />
-          </MenuItem>
-        );
-      })}
-    </>
-  );
+  return accounts.map((account) => {
+    return (
+      <MenuItem
+        key={account.id}
+        href={resolveAccountPath(account.slug, location.pathname)}
+      >
+        <AccountItem account={account} />
+      </MenuItem>
+    );
+  });
 }
 
-function MenuContent() {
-  const { data } = useSuspenseQuery(MeQuery);
-  if (!data.me) {
+export function AccountBreadcrumbMenu() {
+  const { data, error } = useQuery(MeQuery);
+
+  if (error) {
+    throw error;
+  }
+
+  if (data && !data.me) {
     return null;
   }
-  const userAccounts = [data.me];
-  const teamAccounts = data.me.teams;
+
   return (
     <Menu>
       <MenuSection>
         <MenuTitle>Personal</MenuTitle>
-        <AccountMenuItems accounts={userAccounts} />
+        {data?.me ? <AccountMenuItems accounts={[data.me]} /> : <MenuLoader />}
       </MenuSection>
       <MenuSection>
         <MenuTitle>Teams</MenuTitle>
-        <AccountMenuItems accounts={teamAccounts} />
+        {data?.me ? (
+          <AccountMenuItems accounts={data.me.teams} />
+        ) : (
+          <MenuLoader />
+        )}
         <MenuItem href="/teams/new">
           <MenuItemIcon>
             <PlusCircleIcon />
@@ -93,37 +87,5 @@ function MenuContent() {
         </MenuItem>
       </MenuSection>
     </Menu>
-  );
-}
-
-export function AccountBreadcrumbMenu() {
-  return (
-    <MenuTrigger>
-      <BreadcrumbMenuButton />
-      <Popover placement="bottom start">
-        <Suspense
-          fallback={
-            <Menu>
-              <MenuSection>
-                <MenuTitle>Personal</MenuTitle>
-                <MenuLoader />
-              </MenuSection>
-              <MenuSection>
-                <MenuTitle>Teams</MenuTitle>
-                <MenuLoader />
-                <MenuItem href="/teams/new">
-                  <MenuItemIcon>
-                    <PlusCircleIcon />
-                  </MenuItemIcon>
-                  Create a Team
-                </MenuItem>
-              </MenuSection>
-            </Menu>
-          }
-        >
-          <MenuContent />
-        </Suspense>
-      </Popover>
-    </MenuTrigger>
   );
 }
