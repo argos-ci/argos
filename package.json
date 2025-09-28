@@ -29,10 +29,10 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@10.16.1+sha512.0e155aa2629db8672b49e8475da6226aa4bdea85fdcdfdc15350874946d4f3c91faaf64cbdc4a5d1ab8002f473d5c3fcedcd197989cf0390f9badd3c04678706",
+  "packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d455cbf92e5cf4b39d34985d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.0",
-    "@argos-ci/playwright": "^6.1.6",
+    "@argos-ci/playwright": "^6.1.7",
     "@eslint/js": "catalog:",
     "@graphql-codegen/cli": "^6.0.0",
     "@graphql-codegen/client-preset": "^5.0.1",
