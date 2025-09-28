@@ -133,6 +133,8 @@ export function ChartTooltipContent({
     hideLabel?: boolean;
     hideIndicator?: boolean;
     indicator?: "line" | "dot" | "dashed";
+    label?: React.ReactNode;
+    payload?: any[] | undefined;
     nameKey?: string;
     labelKey?: string;
   }) {
@@ -309,7 +311,8 @@ export function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentPropsWithRef<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+  Pick<RechartsPrimitive.LegendProps, "verticalAlign"> & {
+    payload?: readonly RechartsPrimitive.LegendPayload[] | undefined;
     hideIcon?: boolean;
     nameKey?: string;
   }) {
