@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import Cookie from "js-cookie";
 
 import { config } from "@/config";
 import * as storage from "@/util/storage";
@@ -27,16 +28,18 @@ function getOAuthNonceKey(provider: AuthProvider): string {
  */
 function getNonce(provider: AuthProvider): string {
   const key = getOAuthNonceKey(provider);
-  const existing = storage.getItem(key);
-  if (existing) {
-    return existing;
+  const fromStorage = storage.getItem(key);
+  if (fromStorage) {
+    return fromStorage;
+  }
+  const fromCookie = Cookie.get(key);
+  if (fromCookie) {
+    return fromCookie;
   }
   const nonce = Math.random().toString(36).substring(2);
-  const stored = storage.setItem(getOAuthNonceKey(provider), nonce);
-  if (!stored) {
-    throw new Error(
-      "Failed to store OAuth nonce, please check localStorage permissions.",
-    );
+  const storedInStorage = storage.setItem(key, nonce);
+  if (!storedInStorage) {
+    Cookie.set(key, nonce, { expires: 1 / 24 }); // 1 hour
   }
   return nonce;
 }
