@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { AlertCircleIcon } from "lucide-react";
 
 import { graphql } from "@/gql";

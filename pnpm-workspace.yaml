@@ -3,14 +3,14 @@ packages:
   - packages/*
 
 catalog:
-  '@eslint/js': ^9.35.0
+  '@eslint/js': ^9.36.0
   '@types/express': ^5.0.3
   '@types/express-serve-static-core': ^5.0.7
-  '@types/react': ^19.1.10
-  '@types/react-dom': ^19.1.7
+  '@types/react': ^19.1.14
+  '@types/react-dom': ^19.1.9
   express: ^5.1.0
   react: ^19.1.1
   react-dom: ^19.1.1
-  undici: ^7.13.0
+  undici: ^7.16.0
 
 minimumReleaseAge: 1440

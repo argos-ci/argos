@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";

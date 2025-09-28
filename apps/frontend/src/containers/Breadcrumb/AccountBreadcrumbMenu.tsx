@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router-dom";

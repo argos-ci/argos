@@ -1,5 +1,5 @@
 import { use } from "react";
-import { ApolloError } from "@apollo/client";
+import { CombinedGraphQLErrors } from "@apollo/client";
 import type { ErrorCode } from "@argos/error-types";
 import {
   SubmitHandler,
@@ -12,8 +12,8 @@ import { DEFAULT_ERROR_MESSAGE } from "@/util/error";
 import { ModalActionContext } from "./Modal";
 
 function unwrapErrors(error: unknown) {
-  if (error instanceof ApolloError && error.graphQLErrors.length > 0) {
-    return error.graphQLErrors.map((error) => {
+  if (CombinedGraphQLErrors.is(error) && error.errors.length > 0) {
+    return error.errors.map((error) => {
       const code =
         typeof error.extensions?.argosErrorCode === "string"
           ? (error.extensions.argosErrorCode as ErrorCode)

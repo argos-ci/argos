@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { TriangleAlertIcon } from "lucide-react";

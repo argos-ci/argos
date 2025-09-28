@@ -1,6 +1,6 @@
+import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { ProjectContributorLevelLabel } from "@/containers/ProjectContributor";
 import { TeamMemberLabel, UserListRow } from "@/containers/UserList";
 import { graphql } from "@/gql";
@@ -41,13 +41,16 @@ export function ProjectTeamMembersList(props: {
   projectId: string;
   teamAccountId: string;
 }) {
-  const result = useSafeQuery(TeamMembersQuery, {
+  const result = useQuery(TeamMembersQuery, {
     variables: {
       teamAccountId: props.teamAccountId,
       after: 0,
       first: 10,
     },
   });
+  if (result.error) {
+    throw result.error;
+  }
   const data = result.data || result.previousData;
   const loading = !data;
 

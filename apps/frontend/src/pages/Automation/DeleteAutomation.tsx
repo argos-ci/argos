@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";

@@ -1,5 +1,5 @@
 import { Suspense, useMemo } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import clsx from "clsx";
 import {
   ActivitySquareIcon,

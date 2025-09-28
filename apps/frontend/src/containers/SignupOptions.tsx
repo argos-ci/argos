@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";

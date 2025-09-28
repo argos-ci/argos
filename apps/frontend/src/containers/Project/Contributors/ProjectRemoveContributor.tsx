@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { useNavigate } from "react-router-dom";
 
 import { UserListRow } from "@/containers/UserList";

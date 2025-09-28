@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
-import { invariant } from "@apollo/client/utilities/globals";
+import { useQuery } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ErrorBoundary } from "@sentry/react";
 import { useDebounce } from "use-debounce";
@@ -25,7 +26,6 @@ import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 import * as storage from "@/util/storage";
 
-import { useSafeQuery } from "../Apollo";
 import { getMainGitHubAppInstallURL, GitHubLoginButton } from "../GitHub";
 import { GitLabLogo } from "../GitLab";
 import {
@@ -306,11 +306,15 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
     }
   }, []);
 
-  const result = useSafeQuery(ConnectRepositoryQuery, {
+  const result = useQuery(ConnectRepositoryQuery, {
     variables: {
       accountSlug: props.accountSlug,
     },
   });
+
+  if (result.error) {
+    throw result.error;
+  }
 
   if (!result.data) {
     return (

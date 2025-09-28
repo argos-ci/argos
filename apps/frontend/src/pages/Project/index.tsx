@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Outlet } from "react-router-dom";
 

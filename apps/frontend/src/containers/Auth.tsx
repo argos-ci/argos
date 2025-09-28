@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { invariant } from "@apollo/client/utilities/globals";
+import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";

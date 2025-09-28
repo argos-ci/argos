@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
 import { useMatch, useParams } from "react-router-dom";
 

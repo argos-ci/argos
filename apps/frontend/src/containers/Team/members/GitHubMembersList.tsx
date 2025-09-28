@@ -1,5 +1,5 @@
 import { useDeferredValue, useState } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 

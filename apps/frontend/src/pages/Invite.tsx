@@ -1,11 +1,10 @@
-import { useMutation } from "@apollo/client";
-import { invariant } from "@apollo/client/utilities/globals";
+import { useMutation, useQuery } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { useAuth, useIsLoggedIn } from "@/containers/Auth";
 import {
   AlreadyJoined,
@@ -101,9 +100,12 @@ export function Component() {
   const params = useParams();
   const secret = params.inviteSecret;
   invariant(secret, "no invite secret");
-  const { data } = useSafeQuery(InviteQuery, {
+  const { data, error } = useQuery(InviteQuery, {
     variables: { secret },
   });
+  if (error) {
+    throw error;
+  }
 
   const team = data?.invite?.team;
   const teamName = team?.name || team?.slug;

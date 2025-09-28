@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";

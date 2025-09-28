@@ -1,5 +1,5 @@
 import { ComponentPropsWithRef, Suspense } from "react";
-import { ApolloError } from "@apollo/client";
+import { CombinedGraphQLErrors } from "@apollo/client";
 import * as Sentry from "@sentry/react";
 import { clsx } from "clsx";
 import { useMatch } from "react-router-dom";
@@ -20,16 +20,16 @@ function Main(props: {
     <main ref={props.ref} className="contents">
       <Sentry.ErrorBoundary
         fallback={<ErrorPage />}
-        onError={(error) => {
+        onError={(error: unknown) => {
           console.error(error);
           if (error instanceof AuthenticationError) {
             logout();
             return;
           }
-          if (error instanceof ApolloError) {
+          if (CombinedGraphQLErrors.is(error)) {
             // Ignore unauthenticated errors & logout the user
             if (
-              error.graphQLErrors.some(
+              error.errors.some(
                 (error) => error.extensions?.code === "UNAUTHENTICATED",
               )
             ) {

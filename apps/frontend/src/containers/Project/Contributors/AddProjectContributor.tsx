@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useDebounce } from "use-debounce";
 
-import { useSafeQuery } from "@/containers/Apollo";
 import { UserListRow } from "@/containers/UserList";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -94,7 +94,7 @@ function TeamContributorsList(props: {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 300);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const result = useSafeQuery(TeamContributorsQuery, {
+  const result = useQuery(TeamContributorsQuery, {
     variables: {
       projectId: props.projectId,
       teamAccountId: props.teamAccountId,
@@ -103,6 +103,9 @@ function TeamContributorsList(props: {
       search: debouncedSearch,
     },
   });
+  if (result.error) {
+    throw result.error;
+  }
 
   const data = result.data || result.previousData;
   const loading = !data;

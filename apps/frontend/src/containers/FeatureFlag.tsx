@@ -1,18 +1,18 @@
+import { useQuery } from "@apollo/client/react";
 import {
-  BucketProps,
-  BucketProvider,
-  Features,
-  useFeature,
-} from "@bucketco/react-sdk";
+  ReflagProps,
+  ReflagProvider,
+  useFlag,
+  type Flags,
+} from "@reflag/react-sdk";
 import { Navigate, useParams } from "react-router-dom";
 
 import { config } from "@/config";
 import { graphql } from "@/gql";
 
-import { useSafeQuery } from "./Apollo";
 import { useAuthTokenPayload } from "./Auth";
 
-declare module "@bucketco/react-sdk" {
+declare module "@reflag/react-sdk" {
   interface Features {
     "changes-ignore": boolean;
   }
@@ -32,20 +32,20 @@ export function FeatureFlagProvider(props: { children: React.ReactNode }) {
   return <UserProvider>{props.children}</UserProvider>;
 }
 
-type UserProviderProps = Omit<BucketProps, "publishableKey" | "user">;
+type UserProviderProps = Omit<ReflagProps, "publishableKey" | "user">;
 
 /**
- * Slug of users where the Bucket toolbar is enabled.
+ * Slug of users where the Reflag toolbar is enabled.
  */
-const BUCKET_TOOLBAR_ENABLED_FOR = ["gregberge", "jsfez"];
+const REFLAG_TOOLBAR_ENABLED_FOR = ["gregberge", "jsfez"];
 
 /**
- * Provides the user data to the BucketProvider.
+ * Provides the user data to the ReflagProvider.
  */
 function UserProvider(props: UserProviderProps) {
   const payload = useAuthTokenPayload();
   return (
-    <BucketProvider
+    <ReflagProvider
       {...props}
       publishableKey={config.bucket.publishableKey}
       user={
@@ -56,7 +56,7 @@ function UserProvider(props: UserProviderProps) {
       toolbar={
         process.env["NODE_ENV"] === "development" ||
         (payload?.account.slug
-          ? BUCKET_TOOLBAR_ENABLED_FOR.includes(payload?.account.slug)
+          ? REFLAG_TOOLBAR_ENABLED_FOR.includes(payload?.account.slug)
           : false)
       }
     />
@@ -81,9 +81,12 @@ function CompanyAndUserProvider(
     accountSlug: string;
   } & Omit<UserProviderProps, "company">,
 ) {
-  const { data } = useSafeQuery(AccountQuery, {
+  const { data, error } = useQuery(AccountQuery, {
     variables: { slug: props.accountSlug },
   });
+  if (error) {
+    throw error;
+  }
 
   if (!data) {
     return null;
@@ -110,9 +113,9 @@ function CompanyAndUserProvider(
  */
 function FeatureGuard(props: {
   children: React.ReactNode;
-  featureKey: keyof Features;
+  flagKey: keyof Flags;
 }) {
-  const feature = useFeature(props.featureKey);
+  const feature = useFlag(props.flagKey);
   if (feature.isLoading) {
     return null;
   }
@@ -123,9 +126,9 @@ function FeatureGuard(props: {
 }
 
 /** @utility */
-export function featureGuardHoc(featureKey: keyof Features) {
+export function featureGuardHoc(flagKey: keyof Flags) {
   return (Component: React.ComponentType) => (props: any) => (
-    <FeatureGuard featureKey={featureKey}>
+    <FeatureGuard flagKey={flagKey}>
       <Component {...props} />
     </FeatureGuard>
   );

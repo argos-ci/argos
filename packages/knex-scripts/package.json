@@ -19,9 +19,9 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "commander": "^14.0.0",
+    "commander": "^14.0.1",
     "fast-glob": "^3.3.3",
-    "ora": "^8.2.0"
+    "ora": "^9.0.0"
   },
   "peerDependencies": {
     "knex": "^3.0.0"

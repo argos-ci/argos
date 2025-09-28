@@ -1,4 +1,4 @@
-import { useApolloClient, useSuspenseQuery } from "@apollo/client";
+import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Heading, Text } from "react-aria-components";

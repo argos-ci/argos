@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useMemo } from "react";
-import { useSuspenseQuery } from "@apollo/client";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";

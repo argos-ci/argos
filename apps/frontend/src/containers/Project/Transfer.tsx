@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ArrowRightCircleIcon, CheckCircle2Icon } from "lucide-react";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -30,7 +30,6 @@ import { Modal } from "@/ui/Modal";
 
 import { AccountAvatar } from "../AccountAvatar";
 import { AccountSelector } from "../AccountSelector";
-import { useSafeQuery } from "../Apollo";
 
 type TransferDialogButtonProps = {
   project: DocumentType<typeof _ProjectFragment>;
@@ -57,7 +56,10 @@ const MeQuery = graphql(`
 `);
 
 const SelectAccountStep = (props: SelectAccountStepProps) => {
-  const { data } = useSafeQuery(MeQuery);
+  const { data, error } = useQuery(MeQuery);
+  if (error) {
+    throw error;
+  }
 
   return (
     <>
@@ -183,13 +185,16 @@ type ReviewInputs = {
 };
 
 const ReviewStep = (props: ReviewStepProps) => {
-  const { data } = useSafeQuery(ReviewQuery, {
+  const { data, error } = useQuery(ReviewQuery, {
     variables: {
       projectId: props.projectId,
       actualAccountId: props.actualAccountId,
       targetAccountId: props.targetAccountId,
     },
   });
+  if (error) {
+    throw error;
+  }
   const client = useApolloClient();
   const readAccountFromCache = (id: string) => {
     return client.readFragment({
