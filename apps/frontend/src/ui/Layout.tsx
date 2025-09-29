@@ -56,7 +56,7 @@ export function EmptyState(props: ComponentPropsWithRef<"div">) {
           TextContext,
           {
             slots: {
-              description: { className: "text-low text-sm" },
+              description: { className: "text-low text-sm text-center" },
             },
           },
         ],

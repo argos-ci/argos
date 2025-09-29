@@ -19,15 +19,18 @@ import { clsx } from "clsx";
 import {
   ChevronDownIcon,
   CornerDownRightIcon,
+  ImagesIcon,
   SquareStackIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "lucide-react";
 import {
+  Heading,
   Button as RACButton,
   ButtonProps as RACButtonProps,
   Tooltip as RACTooltip,
   TooltipProps as RACTooltipProps,
+  Text,
   TooltipTrigger,
 } from "react-aria-components";
 
@@ -45,10 +48,12 @@ import {
   ListItemButton,
   type DiffCardProps,
 } from "@/containers/Build/BuildDiffListPrimitives";
+import { NoScreenshotsBuildEmptyState } from "@/containers/Build/BuildEmptyStates";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
 import { getTooltipAnimationClassName } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
@@ -886,10 +891,6 @@ const InternalBuildDiffList = memo(() => {
 
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  if (hasNoResults) {
-    return <div className="p-4 text-sm">No results</div>;
-  }
-
   return (
     <>
       {stats && !searchMode && (
@@ -906,10 +907,30 @@ const InternalBuildDiffList = memo(() => {
             position: "relative",
           }}
         >
-          {rowVirtualizer
-            .getVirtualItems()
-            .filter((e) => e)
-            .map((virtualRow) => {
+          {(() => {
+            if (hasNoResults) {
+              return (
+                <EmptyState>
+                  <EmptyStateIcon>
+                    <ImagesIcon />
+                  </EmptyStateIcon>
+                  <Heading>No screenshots</Heading>
+                  <Text slot="description">
+                    This build has no screenshots matching the current search.
+                  </Text>
+                </EmptyState>
+              );
+            }
+
+            const virtualItems = rowVirtualizer
+              .getVirtualItems()
+              .filter((x) => x);
+
+            if (virtualItems.length === 0 && !searchMode) {
+              return <NoScreenshotsBuildEmptyState />;
+            }
+
+            return virtualItems.map((virtualRow) => {
               const item = rows[virtualRow.index];
 
               if (!item) {
@@ -976,7 +997,8 @@ const InternalBuildDiffList = memo(() => {
                 default:
                   return null;
               }
-            })}
+            });
+          })()}
         </div>
       </div>
     </>

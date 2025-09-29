@@ -33,7 +33,7 @@ import { User } from "./User.js";
 
 export const BUILD_EXPIRATION_DELAY_MS = 2 * 3600 * 1000; // 2 hours
 
-export type BuildType = "reference" | "check" | "orphan";
+export type BuildType = "reference" | "check" | "orphan" | "skipped";
 
 const BuildStatusSchema = z.enum([
   "expired",
@@ -97,7 +97,10 @@ export class Build extends Model {
           type: {
             anyOf: [
               { type: "null" },
-              { type: "string", enum: ["reference", "check", "orphan"] },
+              {
+                type: "string",
+                enum: ["reference", "check", "orphan", "skipped"],
+              },
             ],
           },
           prNumber: { type: ["integer", "null"] },

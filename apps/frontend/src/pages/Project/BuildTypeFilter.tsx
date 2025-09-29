@@ -10,7 +10,12 @@ import { buildTypeDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
 import { useMultipleSearchParamsState } from "@/util/search-params";
 
-const buildTypes = [BuildType.Check, BuildType.Orphan, BuildType.Reference];
+const buildTypes = [
+  BuildType.Check,
+  BuildType.Orphan,
+  BuildType.Reference,
+  BuildType.Skipped,
+];
 
 const defaultTypes = new Set(buildTypes);
 

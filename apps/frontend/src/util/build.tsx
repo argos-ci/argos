@@ -11,15 +11,14 @@ import {
   HourglassIcon,
   PauseIcon,
   RefreshCcwDotIcon,
+  SquareSlashIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
   XCircleIcon,
   XIcon,
 } from "lucide-react";
 
-import { BuildStatus, TestReportStatus } from "@/gql/graphql";
-
-type BuildType = "reference" | "check" | "orphan";
+import { BuildStatus, BuildType, TestReportStatus } from "@/gql/graphql";
 
 export const buildStatusDescriptors: Record<
   BuildStatus,
@@ -84,20 +83,25 @@ export const buildTypeDescriptors: Record<
     icon: React.ComponentType<any>;
   }
 > = {
-  reference: {
+  [BuildType.Reference]: {
     label: "Auto-approved",
     color: "success" as const,
     icon: BadgeCheckIcon,
   },
-  check: {
+  [BuildType.Check]: {
     label: "Check",
     color: "neutral" as const,
     icon: CircleCheckIcon,
   },
-  orphan: {
+  [BuildType.Orphan]: {
     label: "Orphan",
     color: "info" as const,
     icon: CircleSlashIcon,
+  },
+  [BuildType.Skipped]: {
+    label: "Skipped",
+    color: "neutral" as const,
+    icon: SquareSlashIcon,
   },
 };
 
@@ -106,15 +110,16 @@ export function getBuildDescriptor(
   status: BuildStatus,
 ) {
   switch (type) {
-    case "reference":
-      return buildTypeDescriptors.reference;
-    case "orphan": {
+    case BuildType.Skipped:
+    case BuildType.Reference:
+      return buildTypeDescriptors[type];
+    case BuildType.Orphan: {
       if (status === BuildStatus.Accepted || status === BuildStatus.Rejected) {
         return buildStatusDescriptors[status];
       }
-      return buildTypeDescriptors.orphan;
+      return buildTypeDescriptors[BuildType.Orphan];
     }
-    case "check": {
+    case BuildType.Check: {
       return buildStatusDescriptors[status];
     }
     case null:

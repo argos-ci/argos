@@ -9,11 +9,13 @@ import {
   type NotificationPayload,
 } from "./notification.js";
 
-export async function getAggregatedNotification(
-  commit: string,
-  isAutoApproved: boolean,
-  summaryCheckConfig: Project["summaryCheck"],
-): Promise<NotificationPayload | null> {
+export async function getAggregatedNotification(args: {
+  commit: string;
+  buildType: Build["type"];
+  summaryCheckConfig: Project["summaryCheck"];
+}): Promise<NotificationPayload | null> {
+  const { commit, buildType, summaryCheckConfig } = args;
+
   if (summaryCheckConfig === "never") {
     return null;
   }
@@ -74,7 +76,7 @@ export async function getAggregatedNotification(
 
   const states = getNotificationStates({
     buildNotificationType: type,
-    isAutoApproved,
+    buildType,
   });
   const base = {
     context: "argos/summary",
@@ -85,6 +87,8 @@ export async function getAggregatedNotification(
       state: states.gitlab,
     },
   };
+
+  const isAutoApproved = buildType === "reference";
 
   switch (type) {
     case "queued":
