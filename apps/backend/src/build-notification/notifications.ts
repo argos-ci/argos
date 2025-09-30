@@ -49,7 +49,6 @@ export async function processBuildNotification(
     buildNotification.build.prHeadCommit ??
     buildNotification.build.compareScreenshotBucket.commit;
 
-  const isAutoApproved = buildNotification.build.type === "reference";
   const summaryCheckConfig = buildNotification.build.project.summaryCheck;
 
   const [buildUrl, projectUrl, notification, aggregatedNotification] =
@@ -60,11 +59,11 @@ export async function processBuildNotification(
         buildNotification,
         build: buildNotification.build,
       }),
-      getAggregatedNotification(
-        buildNotification.build.compareScreenshotBucket.commit,
-        isAutoApproved,
+      getAggregatedNotification({
+        commit: buildNotification.build.compareScreenshotBucket.commit,
+        buildType: buildNotification.build.type,
         summaryCheckConfig,
-      ),
+      }),
     ]);
 
   const ctx: SendNotificationContext = {

@@ -11,6 +11,7 @@ import {
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
+import { BuildType } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
@@ -39,6 +40,7 @@ function Tab(
 const _BuildFragment = graphql(`
   fragment BuildSidebar_Build on Build {
     ...BuildInfos_Build
+    type
     stats {
       total
     }
@@ -100,43 +102,45 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
       defaultSelectedKey={!build.stats?.total ? "info" : "screenshots"}
       className="group/sidebar flex w-[295px] shrink-0 flex-col border-r"
     >
-      <div className="flex shrink-0 items-center border-b px-2">
-        {searchMode ? (
-          <>
-            <SearchInput ref={searchInputRef} />
-            <HotkeyTooltip
-              keys={leaveSearchModeHotKey.displayKeys}
-              description="Exit search mode"
-            >
-              <IconButton size="small" onPress={() => setSearchMode(false)}>
-                <XIcon />
-              </IconButton>
-            </HotkeyTooltip>
-          </>
-        ) : (
-          <>
-            <RACTabList
-              className="flex flex-1 shrink-0 gap-2 py-2"
-              aria-label="Build details"
-            >
-              <Tab id="screenshots">Screenshots</Tab>
-              <Tab id="info">Info</Tab>
-            </RACTabList>
-            <HotkeyTooltip
-              keys={searchModeHotKey.displayKeys}
-              description="Find"
-            >
-              <IconButton
-                onPress={() => enterSearchMode()}
-                aria-pressed={searchMode}
-                size="small"
+      {build.type !== BuildType.Skipped ? (
+        <div className="flex shrink-0 items-center border-b px-2">
+          {searchMode ? (
+            <>
+              <SearchInput ref={searchInputRef} />
+              <HotkeyTooltip
+                keys={leaveSearchModeHotKey.displayKeys}
+                description="Exit search mode"
               >
-                <SearchIcon />
-              </IconButton>
-            </HotkeyTooltip>
-          </>
-        )}
-      </div>
+                <IconButton size="small" onPress={() => setSearchMode(false)}>
+                  <XIcon />
+                </IconButton>
+              </HotkeyTooltip>
+            </>
+          ) : (
+            <>
+              <RACTabList
+                className="flex flex-1 shrink-0 gap-2 py-2"
+                aria-label="Build details"
+              >
+                <Tab id="screenshots">Screenshots</Tab>
+                <Tab id="info">Info</Tab>
+              </RACTabList>
+              <HotkeyTooltip
+                keys={searchModeHotKey.displayKeys}
+                description="Find"
+              >
+                <IconButton
+                  onPress={() => enterSearchMode()}
+                  aria-pressed={searchMode}
+                  size="small"
+                >
+                  <SearchIcon />
+                </IconButton>
+              </HotkeyTooltip>
+            </>
+          )}
+        </div>
+      ) : null}
 
       {searchMode ? (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -144,9 +148,11 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
         </div>
       ) : (
         <>
-          <TabPanel id="screenshots" className="flex min-h-0 flex-1 flex-col">
-            <BuildDiffList />
-          </TabPanel>
+          {build.type !== BuildType.Skipped ? (
+            <TabPanel id="screenshots" className="flex min-h-0 flex-1 flex-col">
+              <BuildDiffList />
+            </TabPanel>
+          ) : null}
 
           <TabPanel id="info" className="flex-1 overflow-auto p-4">
             <BuildInfos

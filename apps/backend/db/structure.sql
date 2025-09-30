@@ -460,7 +460,7 @@ CREATE TABLE public.builds (
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
-    CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text])))
+    CONSTRAINT builds_type_check CHECK ((type = ANY (ARRAY['reference'::text, 'check'::text, 'orphan'::text, 'skipped'::text])))
 );
 
 
@@ -3742,3 +3742,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250822020923_github-account-emails.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250911075747_additional-storybook-screenshot-price.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250915191132_team_invites.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250929110439_build_skipped.js', 1, NOW());

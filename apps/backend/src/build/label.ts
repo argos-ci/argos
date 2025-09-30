@@ -49,13 +49,14 @@ export function getBuildLabel(
   status: BuildAggregatedStatus,
 ): string {
   switch (type) {
+    case "skipped":
+      return "⚪️ Skipped build";
     case "orphan":
-      return "🔘 Orphan build";
+      return "🔵 Orphan build";
     case "reference":
       return "✅ Auto-approved build";
-    case "check": {
+    case "check":
       return getBuildStatusLabel(status);
-    }
     case null:
     case undefined:
       return getBuildStatusLabel(status);

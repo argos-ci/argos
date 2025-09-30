@@ -27,6 +27,8 @@ export const typeDefs = gql`
     check
     "No baseline build found"
     orphan
+    "Build skipped, always green, no diff processed"
+    skipped
   }
 
   enum BuildStatus {

@@ -406,7 +406,9 @@ export enum IBuildType {
   /** No baseline build found */
   Orphan = 'orphan',
   /** Build auto-approved */
-  Reference = 'reference'
+  Reference = 'reference',
+  /** Build skipped, always green, no diff processed */
+  Skipped = 'skipped'
 }
 
 export type IBuildsFilterInput = {
