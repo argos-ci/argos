@@ -13,4 +13,4 @@ catalog:
   react-dom: ^19.1.1
   undici: ^7.16.0
 
-minimumReleaseAge: 1440
+minimumReleaseAge: 0
