@@ -81,8 +81,10 @@ describe("diff E2E", () => {
       baseFilepath: join(__dirname, "/test-files", baseFilename),
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
+    invariant(result, "result should be defined");
+    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
 
-    expect(result).toBe(null);
+    expect(scoreAndDimensions).toMatchSnapshot();
   });
 
   it("generates images with big diff", async () => {

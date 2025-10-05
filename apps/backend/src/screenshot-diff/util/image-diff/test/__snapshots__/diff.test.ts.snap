@@ -24,6 +24,14 @@ exports[`diff E2E > generates images with big diff 1`] = `
 }
 `;
 
+exports[`diff E2E > generates the same image where 1 has a transparent background 1`] = `
+{
+  "height": 10,
+  "score": 0.41,
+  "width": 10,
+}
+`;
+
 exports[`diff E2E > takes into account colors in comparison 1`] = `
 {
   "height": 10,
