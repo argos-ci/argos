@@ -27,6 +27,8 @@
     "knex": "^3.0.0"
   },
   "devDependencies": {
-    "@argos/tsconfig": "workspace:*"
+    "@argos/tsconfig": "workspace:*",
+    "@argos/eslint-config": "workspace:*",
+    "eslint": "catalog:"
   }
 }

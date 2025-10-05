@@ -24,7 +24,8 @@ async function getStripePortalLink({
     },
   );
 }
-const useRedirectToStripePortal = () => {
+
+function useRedirectToStripePortal() {
   const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
@@ -45,7 +46,7 @@ const useRedirectToStripePortal = () => {
     },
   );
   return { status, redirect };
-};
+}
 
 export function StripePortalLink({
   stripeCustomerId,

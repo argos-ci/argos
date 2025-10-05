@@ -36,10 +36,10 @@ describe("redis-lock", () => {
     expect(spy2).not.toHaveBeenCalled();
     p1.resolve("first");
     await delay(10);
-    expect(spy1).toHaveBeenCalledWith("first");
+    expect(spy1).toHaveBeenCalledExactlyOnceWith("first");
     expect(spy2).not.toHaveBeenCalledWith("second");
     await delay(50);
-    expect(spy2).toHaveBeenCalledWith("second");
+    expect(spy2).toHaveBeenCalledExactlyOnceWith("second");
     await l1;
     await l2;
   });

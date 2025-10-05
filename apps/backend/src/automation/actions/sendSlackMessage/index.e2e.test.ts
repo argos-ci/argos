@@ -37,7 +37,7 @@ describe("sendSlackMessage", () => {
       payload: { channelId: slackChannel.slackId },
       ctx: { automationActionRun },
     });
-    expect(mockPostMessageToSlackChannel).toHaveBeenCalledWith(
+    expect(mockPostMessageToSlackChannel).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         text: expect.any(String),
         blocks: expect.any(Array),

@@ -12,6 +12,7 @@
     "cypress",
     "@testing-library/cypress",
     "**/*.spec.js",
-    "knexfile.js"
+    "knexfile.js",
+    "eslint.config.mjs"
   ]
 }
