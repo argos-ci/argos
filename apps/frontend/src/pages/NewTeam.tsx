@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router-dom";
@@ -19,13 +19,14 @@ import { Separator } from "@/ui/Separator";
 
 const AutoCreateTeam = ({ name }: { name: string }) => {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
+  const createTeamAndRedirectEvent = useEffectEvent(createTeamAndRedirect);
   useEffect(() => {
-    createTeamAndRedirect({ name }).catch(() => {
+    createTeamAndRedirectEvent({ name }).catch(() => {
       // If there is an error, redirect to the new team page
       // the user will be able to retry
       window.location.replace(`/teams/new?name=${encodeURIComponent(name)}`);
     });
-  }, [name, createTeamAndRedirect]);
+  }, [name]);
   return <PageLoader />;
 };
 

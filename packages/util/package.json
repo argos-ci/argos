@@ -20,6 +20,8 @@
     }
   },
   "devDependencies": {
-    "@argos/tsconfig": "workspace:*"
+    "@argos/eslint-config": "workspace:*",
+    "@argos/tsconfig": "workspace:*",
+    "eslint": "catalog:"
   }
 }

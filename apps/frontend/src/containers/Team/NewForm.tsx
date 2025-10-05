@@ -8,7 +8,6 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
-import { useEventCallback } from "@/ui/useEventCallback";
 
 const CreateTeamMutation = graphql(`
   mutation NewTeam_createTeam($name: String!) {
@@ -32,26 +31,23 @@ const MeQuery = graphql(`
   }
 `);
 
-export const useCreateTeamAndRedirect = () => {
+export function useCreateTeamAndRedirect() {
   const client = useApolloClient();
-  const createTeamAndRedirect = useEventCallback(
-    async (data: { name: string }) => {
-      const result = await client.mutate({
-        mutation: CreateTeamMutation,
-        variables: {
-          name: data.name,
-        },
-      });
-      invariant(result.data, "missing data");
-      const redirectUrl = result.data.createTeam.redirectUrl;
-      window.location.replace(redirectUrl);
-      await new Promise(() => {
-        // Infinite promise while we redirect to keep the form in submitting state
-      });
-    },
-  );
-  return createTeamAndRedirect;
-};
+  return async (data: { name: string }) => {
+    const result = await client.mutate({
+      mutation: CreateTeamMutation,
+      variables: {
+        name: data.name,
+      },
+    });
+    invariant(result.data, "missing data");
+    const redirectUrl = result.data.createTeam.redirectUrl;
+    window.location.replace(redirectUrl);
+    await new Promise(() => {
+      // Infinite promise while we redirect to keep the form in submitting state
+    });
+  };
+}
 
 export const TeamNewForm = (props: {
   defaultTeamName?: string | null;

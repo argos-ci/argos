@@ -32,12 +32,11 @@ describe("redis-cache", () => {
     const res2 = await store.get("x");
     expect(res).toBe("x");
     expect(res2).toBe("x");
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenCalledWith("x");
+    expect(fetch).toHaveBeenCalledExactlyOnceWith("x");
     const res3 = await store.get("y");
     expect(res3).toBe("y");
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenCalledWith("y");
+    expect(fetch).toHaveBeenLastCalledWith("y");
   });
 
   it("supports concurrency", async () => {
@@ -55,7 +54,6 @@ describe("redis-cache", () => {
     const [res, res2] = await Promise.all([store.get("x"), store.get("x")]);
     expect(res).toBe("x");
     expect(res2).toBe("x");
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenCalledWith("x");
+    expect(fetch).toHaveBeenCalledExactlyOnceWith("x");
   });
 });
