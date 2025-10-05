@@ -1,11 +1,12 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 /**
  * Scrolls to the element with the ID matching the current URL hash.
  */
 export function useScrollToHash() {
+  const { hash } = useLocation();
   useEffect(() => {
-    const hash = window.location.hash;
     if (!hash) {
       return;
     }
@@ -15,5 +16,5 @@ export function useScrollToHash() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
-  }, []);
+  }, [hash]);
 }

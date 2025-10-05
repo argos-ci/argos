@@ -75,7 +75,7 @@ export function UserEmails(props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Emails</CardTitle>
+        <CardTitle id="emails">Emails</CardTitle>
         <CardParagraph>
           Enter the email addresses you want to use to log in with Argos. Your
           primary email will be used for account-related notifications.

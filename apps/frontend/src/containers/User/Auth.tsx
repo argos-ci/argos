@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 
+import { EmailAuth } from "./providers/EmailAuth";
 import { GitHubAuth } from "./providers/GitHubAuth";
 import { GitLabAuth } from "./providers/GitLabAuth";
 import { GoogleAuth } from "./providers/GoogleAuth";
@@ -14,6 +15,7 @@ const _AccountFragment = graphql(`
       ...GitHubAuth_Account
       ...GitLabAuth_Account
       ...GoogleAuth_Account
+      ...EmailAuth_Account
     }
   }
 `);
@@ -32,6 +34,7 @@ export function UserAuth(props: {
           login.
         </CardParagraph>
         <div className="flex flex-col gap-2">
+          <EmailAuth account={account} />
           <GitHubAuth account={account} />
           <GitLabAuth account={account} />
           <GoogleAuth account={account} />
