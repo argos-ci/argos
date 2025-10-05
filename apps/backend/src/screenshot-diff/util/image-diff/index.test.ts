@@ -28,6 +28,7 @@ const tests = [
   ["tableAlpha", 0.5, true],
   ["minorChange1", 0.5, true],
   ["minorChange2", 0.5, false],
+  ["minorChange3", 0, true],
 ];
 
 describe("#diffImages", () => {

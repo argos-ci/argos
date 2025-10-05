@@ -156,7 +156,7 @@ export async function diffImages(
       ? 0
       : colorSensitiveScore;
 
-  if (adjustedBaseScore > 0 && adjustedBaseScore > adjustedSensitiveScore) {
+  if (adjustedBaseScore > 0 && adjustedBaseScore >= adjustedSensitiveScore) {
     return {
       ...maxDimensions,
       filepath: baseDiffPath,
