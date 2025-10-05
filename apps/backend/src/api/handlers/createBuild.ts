@@ -3,6 +3,8 @@ import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { createBuild as createBuildService } from "@/build/createBuild.js";
+import { finalizeBuild } from "@/build/finalizeBuild.js";
+import { job as buildJob } from "@/build/index.js";
 import config from "@/config/index.js";
 import { Build } from "@/database/models/Build.js";
 import { Project } from "@/database/models/Project.js";
@@ -27,25 +29,63 @@ import {
 import { CreateAPIHandler } from "../util.js";
 
 const RequestBodySchema = z.object({
-  commit: Sha1HashSchema,
-  branch: z.string(),
-  screenshotKeys: UniqueSha256HashArraySchema,
-  pwTraceKeys: UniqueSha256HashArraySchema.optional(),
-  name: z.string().nullable().optional(),
-  parallel: z.boolean().nullable().optional(),
-  parallelNonce: z.string().nullable().optional(),
-  prNumber: z.number().int().min(1).nullable().optional(),
-  prHeadCommit: Sha1HashSchema.nullable().optional(),
+  commit: Sha1HashSchema.meta({
+    description: "The commit the build is running on",
+  }),
+  branch: z
+    .string()
+    .meta({ description: "The branch the build is running on" }),
+  screenshotKeys: UniqueSha256HashArraySchema.meta({
+    description: "Keys of screenshot files",
+  }),
+  pwTraceKeys: UniqueSha256HashArraySchema.optional().meta({
+    description: "Keys of Playwright trace files",
+  }),
+  name: z.string().nullable().optional().meta({
+    description: "The name of the build (for multi-build setups)",
+  }),
+  parallel: z.boolean().nullable().optional().meta({
+    description: "Whether to run the build in parallel",
+  }),
+  parallelNonce: z.string().nullable().optional().meta({
+    description: "A unique nonce for the parallel build",
+  }),
+  prNumber: z.number().int().min(1).nullable().optional().meta({
+    description: "The pull request number",
+  }),
+  prHeadCommit: Sha1HashSchema.nullable().optional().meta({
+    description: "The head commit of the pull request",
+  }),
   // To avoid breaking change, we keep referenceCommit instead of baseCommit
-  referenceCommit: Sha1HashSchema.nullable().optional(),
+  referenceCommit: Sha1HashSchema.nullable().optional().meta({
+    description: "The commit to use as a reference for the build",
+  }),
   // To avoid breaking change, we keep referenceBranch instead of baseBranch
-  referenceBranch: z.string().nullable().optional(),
-  parentCommits: z.array(Sha1HashSchema).nullable().optional(),
-  mode: z.enum(["ci", "monitoring"]).nullable().optional(),
-  ciProvider: z.string().nullable().optional(),
-  argosSdk: z.string().nullable().optional(),
-  runId: z.string().nullable().optional(),
-  runAttempt: z.number().int().min(1).nullable().optional(),
+  referenceBranch: z.string().nullable().optional().meta({
+    description: "The branch to use as a reference for the build",
+  }),
+  parentCommits: z.array(Sha1HashSchema).nullable().optional().meta({
+    description: "The parent commits of the build",
+  }),
+  mode: z.enum(["ci", "monitoring"]).nullable().optional().meta({
+    description: "The mode in which the build is running",
+  }),
+  ciProvider: z.string().nullable().optional().meta({
+    description: "The CI provider being used",
+  }),
+  argosSdk: z.string().nullable().optional().meta({
+    description: "The version of the Argos SDK being used",
+  }),
+  runId: z.string().nullable().optional().meta({
+    description: "The ID of the current run",
+  }),
+  runAttempt: z.number().int().min(1).nullable().optional().meta({
+    description: "The attempt number of the current run",
+  }),
+  skipped: z.boolean().nullable().optional().meta({
+    description:
+      "Whether the build was skipped, not comparing anything and always succeeding",
+  }),
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
@@ -180,11 +220,26 @@ type CreateResult = {
 };
 
 /**
+ * Create and finalize a skipped build.
+ */
+async function createSkippedBuild(ctx: BuildContext): Promise<Build> {
+  const build = await createBuildFromRequest(ctx);
+  await finalizeBuild({
+    build,
+    single: { metadata: null, screenshots: { all: 0, storybook: 0 } },
+  });
+  await buildJob.push(build.id);
+  return build;
+}
+
+/**
  * Handle creating a single build.
  */
 async function handleCreateSingle(ctx: BuildContext): Promise<CreateResult> {
   const { screenshots, pwTraces } = await getScreenshotAndPwTraces(ctx.body);
-  const build = await createBuildFromRequest(ctx);
+  const build = ctx.body.skipped
+    ? await createSkippedBuild(ctx)
+    : await createBuildFromRequest(ctx);
   return { build, screenshots, pwTraces };
 }
 
@@ -218,6 +273,13 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
           externalId: parallelNonce,
           name: buildName,
         });
+
+      if (ctx.body.skipped) {
+        if (existingBuild) {
+          return existingBuild;
+        }
+        return createSkippedBuild(ctx);
+      }
 
       if (existingBuild) {
         invariant(existingBuild.compareScreenshotBucket, "Bucket should exist");
@@ -260,5 +322,6 @@ async function createBuildFromRequest(ctx: BuildContext) {
     runAttempt: body.runAttempt ?? null,
     ciProvider: body.ciProvider ?? null,
     argosSdk: body.argosSdk ?? null,
+    skipped: body.skipped ?? false,
   });
 }

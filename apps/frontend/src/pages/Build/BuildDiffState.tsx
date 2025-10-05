@@ -672,7 +672,10 @@ export function BuildDiffProvider(props: {
   );
 
   const hasNoResults = Boolean(
-    searchMode && search && !results.length && screenshotDiffs.length > 0,
+    searchMode &&
+      deferredSearch &&
+      !results.length &&
+      screenshotDiffs.length > 0,
   );
 
   const value = useMemo(

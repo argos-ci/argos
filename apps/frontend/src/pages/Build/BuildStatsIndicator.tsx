@@ -153,37 +153,39 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
   className?: string;
   tooltip?: boolean;
 }) {
+  const groups = DIFF_GROUPS.map((group) => {
+    const count = stats[group];
+    if (count === 0) {
+      return null;
+    }
+    return (
+      <Fragment key={group}>
+        {onClickGroup ? (
+          <InteractiveStatCount
+            icon={getGroupIcon(group)}
+            count={count}
+            color={getGroupColor(group)}
+            onActive={() => onClickGroup(group)}
+            hotkeyName={getStatHotkeyName(group)}
+          />
+        ) : (
+          <StatCount
+            icon={getGroupIcon(group)}
+            count={count}
+            color={getGroupColor(group)}
+            tooltip={tooltip ? getGroupLabel(group) : null}
+          />
+        )}
+        <span className="text-(--mauve-7) select-none text-xs last:hidden">
+          •
+        </span>
+      </Fragment>
+    );
+  }).filter((x) => x !== null);
+  if (groups.length === 0) {
+    return null;
+  }
   return (
-    <div className={clsx(className, "flex items-center gap-1.5")}>
-      {DIFF_GROUPS.map((group) => {
-        const count = stats[group];
-        if (count === 0) {
-          return null;
-        }
-        return (
-          <Fragment key={group}>
-            {onClickGroup ? (
-              <InteractiveStatCount
-                icon={getGroupIcon(group)}
-                count={count}
-                color={getGroupColor(group)}
-                onActive={() => onClickGroup(group)}
-                hotkeyName={getStatHotkeyName(group)}
-              />
-            ) : (
-              <StatCount
-                icon={getGroupIcon(group)}
-                count={count}
-                color={getGroupColor(group)}
-                tooltip={tooltip ? getGroupLabel(group) : null}
-              />
-            )}
-            <span className="text-(--mauve-7) select-none text-xs last:hidden">
-              •
-            </span>
-          </Fragment>
-        );
-      })}
-    </div>
+    <div className={clsx("flex items-center gap-1.5", className)}>{groups}</div>
   );
 });

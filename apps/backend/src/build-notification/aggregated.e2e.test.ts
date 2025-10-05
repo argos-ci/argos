@@ -26,20 +26,20 @@ describe("#getAggregatedNotification", () => {
     });
 
     it("returns null", async () => {
-      const notification = await getAggregatedNotification(
-        "58ca89145e1f072e45e112a6158d17a23f54602d",
-        false,
-        "auto",
-      );
+      const notification = await getAggregatedNotification({
+        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        buildType: "check",
+        summaryCheckConfig: "auto",
+      });
       expect(notification).toBeNull();
     });
 
     it("returns a notification if config is `always`", async () => {
-      const notification = await getAggregatedNotification(
-        "58ca89145e1f072e45e112a6158d17a23f54602d",
-        false,
-        "always",
-      );
+      const notification = await getAggregatedNotification({
+        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        buildType: "check",
+        summaryCheckConfig: "always",
+      });
       expect(notification).toEqual({
         context: "argos/summary",
         description: "No diff detected",
@@ -81,11 +81,11 @@ describe("#getAggregatedNotification", () => {
     });
 
     it("returns a notification", async () => {
-      const notification = await getAggregatedNotification(
-        "58ca89145e1f072e45e112a6158d17a23f54602d",
-        false,
-        "auto",
-      );
+      const notification = await getAggregatedNotification({
+        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        buildType: "check",
+        summaryCheckConfig: "auto",
+      });
       expect(notification).toEqual({
         context: "argos/summary",
         description: "Diff detected",
@@ -95,11 +95,11 @@ describe("#getAggregatedNotification", () => {
     });
 
     it("returns null if config is `never`", async () => {
-      const notification = await getAggregatedNotification(
-        "58ca89145e1f072e45e112a6158d17a23f54602d",
-        false,
-        "never",
-      );
+      const notification = await getAggregatedNotification({
+        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        buildType: "check",
+        summaryCheckConfig: "never",
+      });
       expect(notification).toBeNull();
     });
   });
@@ -149,11 +149,11 @@ describe("#getAggregatedNotification", () => {
     });
 
     it("ignores old builds", async () => {
-      const notification = await getAggregatedNotification(
-        "58ca89145e1f072e45e112a6158d17a23f54602d",
-        false,
-        "auto",
-      );
+      const notification = await getAggregatedNotification({
+        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        buildType: "check",
+        summaryCheckConfig: "auto",
+      });
       expect(notification).toEqual({
         context: "argos/summary",
         description: "Diff accepted",

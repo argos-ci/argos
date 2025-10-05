@@ -16,12 +16,11 @@ import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
 import { useObjectRef } from "react-aria";
 
 import { DocumentType, graphql } from "@/gql";
-import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { BuildPreviousReviewDialog } from "@/pages/Build/BuildPreviousReviewDialog";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
-import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -38,6 +37,10 @@ import {
   Highlighter,
   useBuildDiffHighlighterContext,
 } from "./BuildDiffHighlighterContext";
+import {
+  NoScreenshotsBuildEmptyState,
+  SkippedBuildEmptyState,
+} from "./BuildEmptyStates";
 import { buildViewModeAtom } from "./BuildViewMode";
 import {
   overlayColorAtom,
@@ -1132,25 +1135,24 @@ export function BuildDiffDetail(props: {
             <BuildPreviousReviewDialog build={build} />
           </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>
+      ) : build.type === BuildType.Skipped ? (
+        <Centered>
+          <SkippedBuildEmptyState />
+        </Centered>
       ) : build.stats?.total === 0 ? (
-        <div className="flex h-full min-h-0 flex-1 items-center justify-center">
-          <div className="border-info bg-info-app text-info-low m-4 max-w-2xl rounded-lg border p-8 text-center">
-            <div className="mb-2 text-lg font-semibold">
-              No screenshot found
-            </div>
-            Be sure to specify a directory containing images in the upload
-            command.
-            <br />
-            <Link
-              href="https://argos-ci.com/docs/argos-cli#upload-command"
-              target="_blank"
-            >
-              See upload documentation
-            </Link>
-            .
-          </div>
-        </div>
+        <Centered>
+          <NoScreenshotsBuildEmptyState />
+        </Centered>
       ) : null}
     </div>
+  );
+}
+
+function Centered(props: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex h-full min-h-0 flex-1 items-center justify-center"
+      {...props}
+    />
   );
 }

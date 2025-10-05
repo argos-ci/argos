@@ -3,8 +3,9 @@ import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 
 import { DocumentType, graphql } from "@/gql";
-import { BuildMode, BuildStatus } from "@/gql/graphql";
+import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
+import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { buildStatusDescriptors } from "@/util/build";
 import { buildReviewDescriptors } from "@/util/build-review";
@@ -60,7 +61,7 @@ export function BuildStatusDescription(props: {
   }
 
   switch (build.type) {
-    case "orphan":
+    case BuildType.Orphan:
       switch (build.status) {
         case BuildStatus.Accepted: {
           return <ReviewDescription build={build} />;
@@ -110,7 +111,7 @@ export function BuildStatusDescription(props: {
       }
 
     // eslint-disable-next-line no-fallthrough
-    case "reference":
+    case BuildType.Reference:
       return (
         <>
           This build was auto-approved because the branch is identified as an
@@ -118,15 +119,18 @@ export function BuildStatusDescription(props: {
         </>
       );
 
-    case "check": {
+    case BuildType.Check: {
       switch (build.status) {
         case BuildStatus.NoChanges: {
           invariant(build.stats, "Concluded build should have stats");
           if (build.stats.total === 0) {
             return (
               <>
-                No screenshot has been uploaded. Be sure to specify a directory
-                containing images in your upload script.
+                No screenshot has been uploaded. Follow one of our{" "}
+                <Link href="https://argos-ci.com/docs/getting-started">
+                  quick start guides
+                </Link>{" "}
+                to start taking screenshots.
               </>
             );
           }
@@ -160,6 +164,11 @@ export function BuildStatusDescription(props: {
       }
     }
     // eslint-disable-next-line no-fallthrough
+    case BuildType.Skipped: {
+      return <>This build has been skipped in your CI configuration.</>;
+    }
+
+    case undefined:
     case null: {
       switch (build.status) {
         case BuildStatus.Error:
@@ -170,7 +179,7 @@ export function BuildStatusDescription(props: {
       return null;
     }
     default:
-      throw new Error(`Unknown build type: ${build.type}`);
+      assertNever(build.type);
   }
 }
 

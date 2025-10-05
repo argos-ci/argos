@@ -68,14 +68,21 @@ async function getStatusContext(build: Build): Promise<string> {
  * Get the notification status for each platform based on the build
  * notification type and if it's an auto-approved build.
  */
-export function getNotificationStates(input: {
+export function getNotificationStates(args: {
   buildNotificationType: BuildNotification["type"];
-  isAutoApproved: boolean;
+  buildType: Build["type"];
 }): {
   github: NotificationPayload["github"]["state"];
   gitlab: NotificationPayload["gitlab"]["state"];
 } {
-  const { buildNotificationType, isAutoApproved } = input;
+  const { buildNotificationType, buildType } = args;
+  if (buildType === "skipped") {
+    return {
+      github: "success",
+      gitlab: "success",
+    };
+  }
+  const isAutoApproved = buildType === "reference";
   switch (buildNotificationType) {
     case "queued": {
       return {
@@ -135,9 +142,12 @@ function getBuildStatsMessage(build: Build): string {
 function getNotificationDescription(input: {
   buildNotificationType: BuildNotification["type"];
   build: Build;
-  isAutoApproved: boolean;
 }): string {
-  const { buildNotificationType, build, isAutoApproved } = input;
+  const { buildNotificationType, build } = input;
+  if (build.type === "skipped") {
+    return "Build skipped";
+  }
+  const isAutoApproved = build.type === "reference";
   switch (buildNotificationType) {
     case "queued":
       return "Build is queued";
@@ -187,11 +197,10 @@ export async function getNotificationPayload(input: {
   const description = getNotificationDescription({
     buildNotificationType: input.buildNotification.type,
     build: input.build,
-    isAutoApproved: input.build.type === "reference",
   });
   const states = getNotificationStates({
     buildNotificationType: input.buildNotification.type,
-    isAutoApproved: input.build.type === "reference",
+    buildType: input.build.type,
   });
   const context = await getStatusContext(input.build);
 

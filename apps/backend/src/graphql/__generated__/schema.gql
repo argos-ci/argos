@@ -378,6 +378,9 @@ enum BuildType {
 
   """Build auto-approved"""
   reference
+
+  """Build skipped, always green, no diff processed"""
+  skipped
 }
 
 input BuildsFilterInput {
