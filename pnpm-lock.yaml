@@ -4,6 +4,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@eslint/js':
+      specifier: ^9.36.0
+      version: 9.37.0
+    '@types/react':
+      specifier: ^19.1.14
+      version: 19.1.14
+    '@types/react-dom':
+      specifier: ^19.1.9
+      version: 19.1.9
+
 overrides:
   '@types/express': ^5.0.3
   '@types/express-serve-static-core': ^5.0.7
@@ -24,7 +36,7 @@ importers:
         version: 6.1.7
       '@eslint/js':
         specifier: 'catalog:'
-        version: 9.36.0
+        version: 9.37.0
       '@graphql-codegen/cli':
         specifier: ^6.0.0
         version: 6.0.0(@parcel/watcher@2.5.1)(@types/node@24.5.2)(graphql@16.11.0)(typescript@5.9.2)
@@ -242,8 +254,8 @@ importers:
         specifier: ^3.1.4
         version: 3.1.5(knex@3.1.0(pg@8.16.3))
       odiff-bin:
-        specifier: ^4.0.1
-        version: 4.0.1
+        specifier: ^4.0.2
+        version: 4.0.2
       ora:
         specifier: ^9.0.0
         version: 9.0.0
@@ -382,7 +394,7 @@ importers:
         version: link:../../packages/util
       '@eslint/js':
         specifier: 'catalog:'
-        version: 9.36.0
+        version: 9.37.0
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.11.0)
@@ -551,8 +563,6 @@ importers:
       zod:
         specifier: ^4.1.11
         version: 4.1.11
-
-  node_modules/.pnpm/odiff-bin@4.0.1/node_modules/odiff-bin: {}
 
   packages/config-types: {}
 
@@ -6597,8 +6607,8 @@ packages:
     peerDependencies:
       knex: '>=1.0.1'
 
-  odiff-bin@4.0.1:
-    resolution: {integrity: sha512-GLp9u73nIAY4PjGnvHt74e9GLU02Ed8DQy0MkS0lXFkQANzbi7SvTk9Tfsa/uSutOsRjlVofgBq2lrTw0MbMsA==}
+  odiff-bin@4.0.2:
+    resolution: {integrity: sha512-NKXg2mC8VXhQ9Kzw4Txv2OzuzCvXWwxU5EJjM5PcxWxP8nnD0SftVAzd24ZTq3MiNBQq5MrmPcxcvypP1a+5Rg==}
     hasBin: true
 
   on-finished@2.3.0:
@@ -15372,7 +15382,7 @@ snapshots:
       db-errors: 0.2.3
       knex: 3.1.0(pg@8.16.3)
 
-  odiff-bin@4.0.1: {}
+  odiff-bin@4.0.2: {}
 
   on-finished@2.3.0:
     dependencies:
