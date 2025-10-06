@@ -1,9 +1,11 @@
 import type { NotificationHandler } from "../workflow-types";
+import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as slack_automation_action_unavailable from "./slack_automation_action_unavailable";
 import * as spend_limit from "./spend_limit";
 import * as welcome from "./welcome";
 
 export const notificationHandlers = [
+  invalid_gitlab_token.handler,
   spend_limit.handler,
   welcome.handler,
   slack_automation_action_unavailable.handler,
