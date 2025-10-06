@@ -15,6 +15,7 @@ if (process.env["NODE_ENV"] === "production") {
     dsn: config.sentry.clientDsn,
     environment: config.sentry.environment,
     release: config.releaseVersion,
+    ignoreErrors: [/^Unable to preload CSS/],
     beforeSend(event, hint) {
       const error = hint.originalException;
       if (error instanceof APIError) {
