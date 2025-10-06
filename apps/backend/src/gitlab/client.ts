@@ -2,6 +2,7 @@ import { Gitlab } from "@gitbeaker/rest";
 
 import config from "@/config";
 import type { Account } from "@/database/models/index.js";
+import { sendNotification } from "@/notification";
 
 export type { ExpandedUserSchema } from "@gitbeaker/rest";
 
@@ -53,11 +54,23 @@ export async function getGitlabClientFromAccount(
   } catch (error: unknown) {
     if (
       error instanceof Error &&
-      (error.message === "Unauthorized" || error.message === "Not Found")
+      (error.message === "Unauthorized" ||
+        error.message === "Not Found" ||
+        error.message === "invalid_token")
     ) {
-      // @TODO notify user that its token has expired
-      await account.$clone().$query().patch({
-        gitlabAccessToken: null,
+      const ownerIds = await account.$getOwnerIds();
+      await sendNotification({
+        type: "invalid_gitlab_token",
+        data: {
+          account: {
+            name: account.name || account.slug,
+            settingsURL: new URL(
+              `/${account.slug}/settings/integrations#gitlab`,
+              config.get("server.url"),
+            ).toString(),
+          },
+        },
+        recipients: ownerIds,
       });
       return null;
     }
