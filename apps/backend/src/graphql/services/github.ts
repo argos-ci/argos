@@ -10,6 +10,8 @@ import {
 } from "@/database/models/index.js";
 import { getTokenOctokit, Octokit } from "@/github/index.js";
 
+import { notFound } from "../util";
+
 const OwnerTypeSchema = z.enum(["user", "organization"]);
 
 /**
@@ -200,7 +202,9 @@ export async function getOrCreateGithubRepository(args: {
     })
     .then((res) => res.data);
 
-  invariant(ghApiRepo, "Repository not found");
+  if (!ghApiRepo) {
+    throw notFound(`GitHub repository not found: ${args.owner}/${args.repo}`);
+  }
 
   const githubAccount = await getOrCreateGithubAccount(ghApiRepo.owner);
 

@@ -1,5 +1,6 @@
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
@@ -9,6 +10,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { Link } from "@/ui/Link";
+import { getErrorMessage } from "@/util/error";
 
 import { getRepositoryIcon } from "../Repository";
 import { ConnectRepository } from "./ConnectRepository";
@@ -188,6 +190,8 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
             owner: repo.owner_login,
             installationId,
           },
+        }).catch((error) => {
+          toast.error(getErrorMessage(error));
         });
       }}
       onSelectProject={(project) => {
@@ -196,6 +200,8 @@ const LinkRepository = (props: { projectId: string; accountSlug: string }) => {
             projectId: props.projectId,
             gitlabProjectId: project.id,
           },
+        }).catch((error) => {
+          toast.error(getErrorMessage(error));
         });
       }}
     />
