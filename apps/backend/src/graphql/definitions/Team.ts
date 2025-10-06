@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
 import config from "@/config/index.js";
@@ -17,6 +18,7 @@ import {
   createJWTFromAccount,
 } from "@/database/services/account.js";
 import { createTeamAccount } from "@/database/services/team.js";
+import { notifyDiscord } from "@/discord/index.js";
 import { sendEmailTemplate } from "@/email/send-email-template.js";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
 import {
@@ -71,7 +73,7 @@ export const typeDefs = gql`
     plan: Plan
     subscription: AccountSubscription
     subscriptionStatus: AccountSubscriptionStatus
-    oldPaidSubscription: AccountSubscription
+    canExtendTrial: Boolean!
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!
@@ -176,6 +178,11 @@ export const typeDefs = gql`
     team: Team!
   }
 
+  type ExtendTrialResult {
+    team: Team!
+    redirectUrl: String!
+  }
+
   input CreateTeamInput {
     name: String!
   }
@@ -270,6 +277,8 @@ export const typeDefs = gql`
     inviteMembers(input: InviteMembersInput!): [TeamInvite!]!
     "Cancel a team invite"
     cancelInvite(teamInviteId: ID!): Team!
+    "Extend trial period"
+    extendTrial(teamAccountId: ID!): ExtendTrialResult!
   }
 `;
 
@@ -687,6 +696,79 @@ export const resolvers: IResolvers = {
         stripeSubscription,
         account: teamAccount,
         subscriberId: auth.user.id,
+      });
+
+      return {
+        team: teamAccount,
+        redirectUrl: teamUrl,
+      };
+    },
+    extendTrial: async (_root, args, ctx) => {
+      const { auth } = ctx;
+
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const [teamAccount, plan] = await Promise.all([
+        getAdminAccount({
+          id: args.teamAccountId,
+          user: auth.user,
+        }),
+        getStripeProPlanOrThrow(),
+      ]);
+
+      const manager = teamAccount.$getSubscriptionManager();
+      const canExtendTrial = await manager.checkCanExtendTrial();
+
+      if (!canExtendTrial) {
+        throw badUserInput("This team can only extend the trial period once.");
+      }
+
+      const teamUrl = new URL(`/${teamAccount.slug}`, config.get("server.url"))
+        .href;
+
+      const stripeCustomerId = await getCustomerIdFromUserAccount(auth.account);
+
+      // If we failed to create a customer (no email), we will redirect to checkout page
+      if (!stripeCustomerId) {
+        const session = await createStripeCheckoutSession({
+          teamAccount,
+          plan,
+          subscriberAccount: auth.account,
+          trial: true,
+          successUrl: teamUrl,
+          cancelUrl: `${teamUrl}?checkout=cancel`,
+        });
+
+        invariant(session.url, "session.url missing");
+
+        return { team: teamAccount, redirectUrl: session.url };
+      }
+
+      const items = await getDefaultTeamPlanItems(plan);
+
+      const stripeSubscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items,
+        ...getSubscriptionData({
+          trial: true,
+          accountId: teamAccount.id,
+          subscriberId: auth.user.id,
+        }),
+      });
+
+      await createArgosSubscriptionFromStripe({
+        stripeSubscription,
+        account: teamAccount,
+        subscriberId: auth.user.id,
+      });
+
+      await notifyDiscord({
+        content:
+          `Trial extended for ${teamAccount.name} (${teamUrl}) (by ${auth.user.email})`.trim(),
+      }).catch((error) => {
+        captureException(error);
       });
 
       return {

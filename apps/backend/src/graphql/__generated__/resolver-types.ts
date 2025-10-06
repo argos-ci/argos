@@ -38,6 +38,7 @@ export type IAccount = {
   additionalScreenshotsCost: Scalars['Float']['output'];
   avatar: IAccountAvatar;
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
+  canExtendTrial: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: IScreenshotsCount;
   githubAccount?: Maybe<IGithubAccount>;
@@ -474,6 +475,12 @@ export type IEnableGitHubSsoOnTeamInput = {
   teamAccountId: Scalars['ID']['input'];
 };
 
+export type IExtendTrialResult = {
+  __typename?: 'ExtendTrialResult';
+  redirectUrl: Scalars['String']['output'];
+  team: ITeam;
+};
+
 export type IGhApiInstallation = INode & {
   __typename?: 'GhApiInstallation';
   account: IGhApiInstallationAccount;
@@ -706,6 +713,8 @@ export type IMutation = {
   disconnectGoogleAuth: IAccount;
   /** Enable GitHub SSO */
   enableGitHubSSOOnTeam: ITeam;
+  /** Extend trial period */
+  extendTrial: IExtendTrialResult;
   ignoreChange: ITestChange;
   /** Import a project from GitHub */
   importGithubProject: IProject;
@@ -853,6 +862,11 @@ export type IMutationDisconnectGoogleAuthArgs = {
 
 export type IMutationEnableGitHubSsoOnTeamArgs = {
   input: IEnableGitHubSsoOnTeamInput;
+};
+
+
+export type IMutationExtendTrialArgs = {
+  teamAccountId: Scalars['ID']['input'];
 };
 
 
@@ -1467,6 +1481,7 @@ export type ITeam = IAccount & INode & {
   additionalScreenshotsCost: Scalars['Float']['output'];
   avatar: IAccountAvatar;
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
+  canExtendTrial: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: IScreenshotsCount;
   defaultUserLevel: ITeamDefaultUserLevel;
@@ -1486,7 +1501,6 @@ export type ITeam = IAccount & INode & {
   meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
   metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
-  oldPaidSubscription?: Maybe<IAccountSubscription>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IAccountPermission>;
@@ -1766,6 +1780,7 @@ export type IUser = IAccount & INode & {
   additionalScreenshotsCost: Scalars['Float']['output'];
   avatar: IAccountAvatar;
   blockWhenSpendLimitIsReached: Scalars['Boolean']['output'];
+  canExtendTrial: Scalars['Boolean']['output'];
   consumptionRatio: Scalars['Float']['output'];
   currentPeriodScreenshots: IScreenshotsCount;
   /** Primary email of the user */
@@ -1788,7 +1803,6 @@ export type IUser = IAccount & INode & {
   meteredSpendLimitByPeriod?: Maybe<Scalars['Int']['output']>;
   metrics: IAccountMetrics;
   name?: Maybe<Scalars['String']['output']>;
-  oldPaidSubscription?: Maybe<IAccountSubscription>;
   periodEndDate?: Maybe<Scalars['DateTime']['output']>;
   periodStartDate?: Maybe<Scalars['DateTime']['output']>;
   permissions: Array<IAccountPermission>;
@@ -2029,6 +2043,7 @@ export type IResolversTypes = ResolversObject<{
   DisconnectGitLabAuthInput: IDisconnectGitLabAuthInput;
   DisconnectGoogleAuthInput: IDisconnectGoogleAuthInput;
   EnableGitHubSSOOnTeamInput: IEnableGitHubSsoOnTeamInput;
+  ExtendTrialResult: ResolverTypeWrapper<Omit<IExtendTrialResult, 'team'> & { team: IResolversTypes['Team'] }>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   GhApiInstallation: ResolverTypeWrapper<GhApiInstallation>;
   GhApiInstallationAccount: ResolverTypeWrapper<IGhApiInstallationAccount>;
@@ -2188,6 +2203,7 @@ export type IResolversParentTypes = ResolversObject<{
   DisconnectGitLabAuthInput: IDisconnectGitLabAuthInput;
   DisconnectGoogleAuthInput: IDisconnectGoogleAuthInput;
   EnableGitHubSSOOnTeamInput: IEnableGitHubSsoOnTeamInput;
+  ExtendTrialResult: Omit<IExtendTrialResult, 'team'> & { team: IResolversParentTypes['Team'] };
   Float: Scalars['Float']['output'];
   GhApiInstallation: GhApiInstallation;
   GhApiInstallationAccount: IGhApiInstallationAccount;
@@ -2479,6 +2495,11 @@ export interface IDateTimeScalarConfig extends GraphQLScalarTypeConfig<IResolver
   name: 'DateTime';
 }
 
+export type IExtendTrialResultResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ExtendTrialResult'] = IResolversParentTypes['ExtendTrialResult']> = ResolversObject<{
+  redirectUrl?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  team?: Resolver<IResolversTypes['Team'], ParentType, ContextType>;
+}>;
+
 export type IGhApiInstallationResolvers<ContextType = Context, ParentType extends IResolversParentTypes['GhApiInstallation'] = IResolversParentTypes['GhApiInstallation']> = ResolversObject<{
   account?: Resolver<IResolversTypes['GhApiInstallationAccount'], ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
@@ -2632,6 +2653,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
   disconnectGitLabAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGitLabAuthArgs, 'input'>>;
   disconnectGoogleAuth?: Resolver<IResolversTypes['Account'], ParentType, ContextType, RequireFields<IMutationDisconnectGoogleAuthArgs, 'input'>>;
   enableGitHubSSOOnTeam?: Resolver<IResolversTypes['Team'], ParentType, ContextType, RequireFields<IMutationEnableGitHubSsoOnTeamArgs, 'input'>>;
+  extendTrial?: Resolver<IResolversTypes['ExtendTrialResult'], ParentType, ContextType, RequireFields<IMutationExtendTrialArgs, 'teamAccountId'>>;
   ignoreChange?: Resolver<IResolversTypes['TestChange'], ParentType, ContextType, RequireFields<IMutationIgnoreChangeArgs, 'input'>>;
   importGithubProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGithubProjectArgs, 'input'>>;
   importGitlabProject?: Resolver<IResolversTypes['Project'], ParentType, ContextType, RequireFields<IMutationImportGitlabProjectArgs, 'input'>>;
@@ -2884,6 +2906,7 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   additionalScreenshotsCost?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  canExtendTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
   defaultUserLevel?: Resolver<IResolversTypes['TeamDefaultUserLevel'], ParentType, ContextType>;
@@ -2903,7 +2926,6 @@ export type ITeamResolvers<ContextType = Context, ParentType extends IResolversP
   meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<ITeamMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
@@ -3036,6 +3058,7 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   additionalScreenshotsCost?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   avatar?: Resolver<IResolversTypes['AccountAvatar'], ParentType, ContextType>;
   blockWhenSpendLimitIsReached?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
+  canExtendTrial?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   consumptionRatio?: Resolver<IResolversTypes['Float'], ParentType, ContextType>;
   currentPeriodScreenshots?: Resolver<IResolversTypes['ScreenshotsCount'], ParentType, ContextType>;
   email?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
@@ -3056,7 +3079,6 @@ export type IUserResolvers<ContextType = Context, ParentType extends IResolversP
   meteredSpendLimitByPeriod?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['AccountMetrics'], ParentType, ContextType, RequireFields<IUserMetricsArgs, 'input'>>;
   name?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  oldPaidSubscription?: Resolver<Maybe<IResolversTypes['AccountSubscription']>, ParentType, ContextType>;
   periodEndDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   periodStartDate?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   permissions?: Resolver<Array<IResolversTypes['AccountPermission']>, ParentType, ContextType>;
@@ -3112,6 +3134,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   CreateTeamResult?: ICreateTeamResultResolvers<ContextType>;
   Date?: GraphQLScalarType;
   DateTime?: GraphQLScalarType;
+  ExtendTrialResult?: IExtendTrialResultResolvers<ContextType>;
   GhApiInstallation?: IGhApiInstallationResolvers<ContextType>;
   GhApiInstallationAccount?: IGhApiInstallationAccountResolvers<ContextType>;
   GhApiInstallationConnection?: IGhApiInstallationConnectionResolvers<ContextType>;
