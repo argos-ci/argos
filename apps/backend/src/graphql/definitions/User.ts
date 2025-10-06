@@ -40,7 +40,7 @@ export const typeDefs = gql`
     periodEndDate: DateTime
     subscription: AccountSubscription
     subscriptionStatus: AccountSubscriptionStatus
-    oldPaidSubscription: AccountSubscription
+    canExtendTrial: Boolean!
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
     avatar: AccountAvatar!

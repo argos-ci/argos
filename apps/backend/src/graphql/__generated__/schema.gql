@@ -7,6 +7,7 @@ interface Account implements Node {
   additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
   blockWhenSpendLimitIsReached: Boolean!
+  canExtendTrial: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: ScreenshotsCount!
   githubAccount: GithubAccount
@@ -449,6 +450,11 @@ input EnableGitHubSSOOnTeamInput {
   teamAccountId: ID!
 }
 
+type ExtendTrialResult {
+  redirectUrl: String!
+  team: Team!
+}
+
 type GhApiInstallation implements Node {
   account: GhApiInstallationAccount!
   id: ID!
@@ -683,6 +689,9 @@ type Mutation {
 
   """Enable GitHub SSO"""
   enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
+
+  """Extend trial period"""
+  extendTrial(teamAccountId: ID!): ExtendTrialResult!
   ignoreChange(input: IgnoreChangeInput!): TestChange!
 
   """Import a project from GitHub"""
@@ -1149,6 +1158,7 @@ type Team implements Account & Node {
   additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
   blockWhenSpendLimitIsReached: Boolean!
+  canExtendTrial: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: ScreenshotsCount!
   defaultUserLevel: TeamDefaultUserLevel!
@@ -1200,7 +1210,6 @@ type Team implements Account & Node {
   meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
-  oldPaidSubscription: AccountSubscription
   periodEndDate: DateTime
   periodStartDate: DateTime
   permissions: [AccountPermission!]!
@@ -1415,6 +1424,7 @@ type User implements Account & Node {
   additionalScreenshotsCost: Float!
   avatar: AccountAvatar!
   blockWhenSpendLimitIsReached: Boolean!
+  canExtendTrial: Boolean!
   consumptionRatio: Float!
   currentPeriodScreenshots: ScreenshotsCount!
 
@@ -1439,7 +1449,6 @@ type User implements Account & Node {
   meteredSpendLimitByPeriod: Int
   metrics(input: AccountMetricsInput!): AccountMetrics!
   name: String
-  oldPaidSubscription: AccountSubscription
   periodEndDate: DateTime
   periodStartDate: DateTime
   permissions: [AccountPermission!]!

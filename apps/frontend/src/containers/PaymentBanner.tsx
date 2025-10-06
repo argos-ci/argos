@@ -1,11 +1,12 @@
 import { memo } from "react";
-import { useSuspenseQuery } from "@apollo/client/react";
+import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
+import { Button } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
@@ -16,7 +17,7 @@ const _PaymentBannerFragment = graphql(`
     subscriptionStatus
     permissions
     stripeCustomerId
-
+    canExtendTrial
     subscription {
       id
       trialDaysRemaining
@@ -78,10 +79,41 @@ function BannerTemplate(props: {
 }) {
   return (
     <Banner className="flex justify-center" color={props.color ?? "neutral"}>
-      <Container className="flex items-center justify-center gap-2">
+      <Container className="flex items-center justify-center gap-4">
         {props.children}
       </Container>
     </Banner>
+  );
+}
+
+const ExtendTrialMutation = graphql(`
+  mutation PaymentBanner_extendTrial($teamAccountId: ID!) {
+    extendTrial(teamAccountId: $teamAccountId) {
+      redirectUrl
+    }
+  }
+`);
+
+function ExtendTrialButton(props: { accountId: string }) {
+  const client = useApolloClient();
+  return (
+    <Button
+      onAction={async () => {
+        const result = await client.mutate({
+          mutation: ExtendTrialMutation,
+          variables: {
+            teamAccountId: props.accountId,
+          },
+        });
+        invariant(result.data);
+        window.location.replace(result.data.extendTrial.redirectUrl);
+        await new Promise(() => {
+          // Infinite promise while we redirect to keep the form in submitting state
+        });
+      }}
+    >
+      Extend trial
+    </Button>
   );
 }
 
@@ -199,12 +231,17 @@ export const PaymentBanner = memo(
               features.
             </p>
             {userIsAdmin && (
-              <ManageButton
-                stripeCustomerId={stripeCustomerId ?? null}
-                accountId={account.id}
-              >
-                Subscribe
-              </ManageButton>
+              <div className="flex flex-wrap items-center gap-2">
+                <ManageButton
+                  stripeCustomerId={stripeCustomerId ?? null}
+                  accountId={account.id}
+                >
+                  Subscribe
+                </ManageButton>
+                {account.canExtendTrial ? (
+                  <ExtendTrialButton accountId={account.id} />
+                ) : null}
+              </div>
             )}
           </BannerTemplate>
         );

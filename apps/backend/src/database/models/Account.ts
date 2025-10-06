@@ -48,6 +48,7 @@ type AccountSubscriptionManager = {
   checkIsOutOfCapacity(): Promise<"flat-rate" | "trialing" | null>;
   getIncludedScreenshots(): Promise<number>;
   getSubscriptionStatus(): Promise<AccountSubscriptionStatus | null>;
+  checkCanExtendTrial(): Promise<boolean>;
 };
 
 export type AccountPermission = "admin" | "view";
@@ -392,8 +393,8 @@ export class Account extends Model {
 
       if (previousPaidSubscription) {
         if (
-          previousPaidSubscription.endDate ===
-          previousPaidSubscription.trialEndDate
+          previousPaidSubscription.trialEndDate &&
+          new Date(previousPaidSubscription.trialEndDate) < new Date()
         ) {
           return "trial_expired";
         }
@@ -478,6 +479,18 @@ export class Account extends Model {
         );
       });
 
+    const checkCanExtendTrial = memoize(async () => {
+      // Check if there is exactly one trial expired subscription
+      const trialExpiredSubscriptions = await Subscription.query()
+        .where("accountId", this.id)
+        .whereRaw(`"trialEndDate" < now()`)
+        // No need to look more than 2
+        .limit(2)
+        .resultSize();
+
+      return trialExpiredSubscriptions === 1;
+    });
+
     this._cachedSubscriptionManager = {
       getActiveSubscription,
       getPlan,
@@ -490,6 +503,7 @@ export class Account extends Model {
       getIncludedScreenshots,
       getSubscriptionStatus,
       getAdditionalScreenshotCost,
+      checkCanExtendTrial,
     };
 
     return this._cachedSubscriptionManager;

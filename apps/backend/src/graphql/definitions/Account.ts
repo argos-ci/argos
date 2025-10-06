@@ -132,6 +132,7 @@ export const typeDefs = gql`
     periodEndDate: DateTime
     subscription: AccountSubscription
     subscriptionStatus: AccountSubscriptionStatus
+    canExtendTrial: Boolean!
     hasForcedPlan: Boolean!
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
@@ -415,6 +416,10 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       screenshots,
       builds,
     };
+  },
+  canExtendTrial: async (account) => {
+    const manager = account.$getSubscriptionManager();
+    return manager.checkCanExtendTrial();
   },
 };
 
