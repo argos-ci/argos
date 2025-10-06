@@ -1401,23 +1401,34 @@ export const resolvers: IResolvers = {
       return invites;
     },
     cancelInvite: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
       const parsedId = TeamInvite.parseId(args.teamInviteId);
       if (!parsedId) {
         throw notFound("Team invite not found");
       }
+
       // Fetch the team invite and ensure the user has admin access to the team in parallel.
       const [teamInvite, teamAccount] = await Promise.all([
         TeamInvite.query().findOne(parsedId),
-        // Ensure the user has admin access to the team.
-        getAdminAccount({
-          id: parsedId.teamId,
-          user: ctx.auth?.user,
+        ctx.loaders.AccountFromRelation.load({
+          teamId: parsedId.teamId,
         }),
       ]);
-      if (!teamInvite) {
+
+      if (!teamAccount || !teamInvite) {
         throw notFound("Team invite not found");
       }
+
+      const permissions = await teamAccount.$getPermissions(ctx.auth.user);
+      if (!permissions.includes("admin")) {
+        throw forbidden("You don't have access to this invite");
+      }
+
       await teamInvite.$query().delete();
+
       return teamAccount;
     },
   },
