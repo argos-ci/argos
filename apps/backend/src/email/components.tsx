@@ -19,16 +19,21 @@ import {
 import clsx from "clsx";
 import { z } from "zod";
 
-import config from "@/config";
-
 import type { AvatarSchema, LocationSchema } from "./schemas";
 
 export function Paragraph(props: {
   children: React.ReactNode;
   style?: React.CSSProperties;
+  className?: string;
 }) {
   return (
-    <Text className="my-4 text-sm leading-relaxed text-gray-950" {...props} />
+    <Text
+      className={clsx(
+        "my-4 text-sm leading-relaxed text-gray-950",
+        props.className,
+      )}
+      {...props}
+    />
   );
 }
 
@@ -242,12 +247,7 @@ export function EmailLayout(props: {
           <Container className="mx-auto my-10 rounded-sm border border-solid border-gray-200 p-5">
             <Section>
               <Img
-                src={
-                  new URL(
-                    "/static/emails/argos-logo.png",
-                    config.get("server.url"),
-                  ).href
-                }
+                src="https://app.argos-ci.com/static/emails/argos-logo.png"
                 width="40"
                 height="40"
                 alt="Argos"
