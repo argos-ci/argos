@@ -5,6 +5,7 @@ import { Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useAuth, useIsLoggedIn } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";
+import { Linkify } from "@/containers/Linkify";
 import { UniversalNavigate } from "@/containers/Redirect";
 import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
@@ -114,7 +115,9 @@ function ErrorFallback(props: { error: unknown; provider: AuthProvider }) {
             </Helmet>
             <Alert>
               <AlertTitle>Authentication Error</AlertTitle>
-              <AlertText>{errorMessage}</AlertText>
+              <AlertText className="whitespace-pre-wrap">
+                <Linkify repoUrl={null}>{errorMessage}</Linkify>
+              </AlertText>
               <AlertActions>
                 <LinkButton href={redirectUri ?? "/"}>Back</LinkButton>
               </AlertActions>

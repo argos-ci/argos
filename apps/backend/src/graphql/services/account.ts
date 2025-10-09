@@ -5,11 +5,15 @@ import { RelationExpression } from "objection";
 import {
   Account,
   BuildReview,
+  GithubAccount,
+  GitlabUser,
+  GoogleUser,
   Subscription,
   Team,
   TeamUser,
   User,
 } from "@/database/models/index.js";
+import { resolveAccountSlug } from "@/database/services/account.js";
 import { transaction } from "@/database/transaction.js";
 import { boltApp } from "@/slack/app.js";
 import { uninstallSlackInstallation } from "@/slack/helpers.js";
@@ -51,7 +55,7 @@ export async function deleteAccount(args: {
   const account = await getAdminAccount({
     id: args.id,
     user: args.user,
-    withGraphFetched: "[projects,slackInstallation]",
+    withGraphFetched: "[projects,slackInstallation,user]",
   });
   const projects = account.projects;
   invariant(projects, "projects not fetched");
@@ -94,6 +98,7 @@ export async function deleteAccount(args: {
       }
       case "user": {
         const { userId } = account;
+        invariant(account.user, "account.user is undefined");
         invariant(userId, "account.userId is undefined");
 
         const teams = await Team.query(trx)
@@ -127,17 +132,48 @@ export async function deleteAccount(args: {
           BuildReview.query(trx)
             .where("userId", userId)
             .patch({ userId: null }),
+
+          account.githubAccountId
+            ? GithubAccount.query(trx)
+                .where("id", account.githubAccountId)
+                .patch({
+                  accessToken: null,
+                  lastLoggedAt: null,
+                  emails: null,
+                })
+            : null,
+
+          account.user.gitlabUserId
+            ? GitlabUser.query(trx)
+                .where("id", account.user.gitlabUserId)
+                .delete()
+            : null,
+
+          account.user.googleUserId
+            ? GoogleUser.query(trx)
+                .where("id", account.user.googleUserId)
+                .delete()
+            : null,
         ]);
 
-        // Erase the user informations
-        await User.query(trx)
-          .patch({
+        await Promise.all([
+          User.query(trx).where("id", userId).patch({
             deletedAt: new Date().toISOString(),
             gitlabUserId: null,
             googleUserId: null,
             email: null,
-          })
-          .where("id", userId);
+          }),
+          Account.query(trx)
+            .where("userId", userId)
+            .patch({
+              stripeCustomerId: null,
+              githubAccountId: null,
+              name: "Deleted user",
+              slug: await resolveAccountSlug(`deleted-user-${userId}`),
+              gitlabAccessToken: null,
+              gitlabBaseUrl: null,
+            }),
+        ]);
 
         break;
       }

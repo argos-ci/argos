@@ -2052,6 +2052,14 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: accounts accounts_githubaccountid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_githubaccountid_unique UNIQUE ("githubAccountId");
+
+
+--
 -- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3743,3 +3751,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025082
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250911075747_additional-storybook-screenshot-price.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250915191132_team_invites.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250929110439_build_skipped.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20251009205806_unique_account_githubAccountId.js', 1, NOW());

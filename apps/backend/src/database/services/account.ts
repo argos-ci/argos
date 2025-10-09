@@ -91,7 +91,10 @@ export async function checkAccountSlug(slug: string) {
   }
 }
 
-async function resolveAccountSlug(
+/**
+ * Resolve a unique account slug by appending a number if needed.
+ */
+export async function resolveAccountSlug(
   slug: string,
   index: number = 0,
 ): Promise<string> {
@@ -259,7 +262,7 @@ async function getOrCreateUserAccountFromThirdParty<
       if (user.id !== existingUser.id) {
         throw boom(
           400,
-          `${provider} account is already attached to another Argos account`,
+          `${provider} account is already attached to another Argos account.\nSee https://argos-ci.com/docs/account-management#resolving-account-already-attached-issues for more information.`,
           { code: errorCodes.alreadyAttachedToArgosAccount },
         );
       }
@@ -270,7 +273,7 @@ async function getOrCreateUserAccountFromThirdParty<
     if (thirdPartyValue && thirdPartyValue !== model.id) {
       throw boom(
         400,
-        `Argos Account is already attached to another ${provider} account`,
+        `Argos Account is already attached to another ${provider} account.`,
         { code: errorCodes.alreadyAttachedToThirdPartyAccount },
       );
     }
