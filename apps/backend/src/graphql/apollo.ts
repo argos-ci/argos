@@ -64,7 +64,7 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
   },
 };
 
-export const apolloServer = new ApolloServer({
+export const apolloServer = new ApolloServer<Context>({
   schema,
   plugins: [apolloSentryPlugin],
 });

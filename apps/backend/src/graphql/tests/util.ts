@@ -1,15 +1,15 @@
-import type { ApolloServer } from "@apollo/server";
+import type { ApolloServer, BaseContext } from "@apollo/server";
 import express, { RequestHandler } from "express";
 
 import type { Account, User } from "@/database/models/index.js";
 
 let started = false;
 
-export const createApolloServerApp = async (
-  apolloServer: ApolloServer,
+export async function createApolloServerApp<Context extends BaseContext>(
+  apolloServer: ApolloServer<Context>,
   getMiddleware: () => RequestHandler,
   auth: { user: User; account: Account } | null,
-): Promise<express.Express> => {
+): Promise<express.Express> {
   const app = express();
   app.use(((req, _res, next) => {
     (req as any).__MOCKED_AUTH__ = auth;
@@ -23,4 +23,4 @@ export const createApolloServerApp = async (
   app.use("/graphql", express.json(), getMiddleware());
 
   return app;
-};
+}
