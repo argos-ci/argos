@@ -3,10 +3,10 @@ import { expressMiddleware } from "@as-integrations/express5";
 import * as Sentry from "@sentry/node";
 import { RequestHandler } from "express";
 
-import { getContext } from "./context.js";
+import { getContext, type Context } from "./context.js";
 import { schema } from "./schema.js";
 
-const apolloSentryPlugin: ApolloServerPlugin = {
+const apolloSentryPlugin: ApolloServerPlugin<Context> = {
   requestDidStart: async () => {
     return {
       didEncounterErrors: async (ctx) => {
@@ -22,6 +22,15 @@ const apolloSentryPlugin: ApolloServerPlugin = {
           }
 
           Sentry.withScope((scope) => {
+            if (ctx.contextValue.auth) {
+              scope.setUser({
+                id: ctx.contextValue.auth.account.id,
+                username: ctx.contextValue.auth.account.slug,
+                ...(ctx.contextValue.auth.user.email
+                  ? { email: ctx.contextValue.auth.user.email }
+                  : {}),
+              });
+            }
             // Annotate the scope with the query and variables
             scope.setExtras({
               operationName: ctx.operationName,
@@ -55,7 +64,7 @@ const apolloSentryPlugin: ApolloServerPlugin = {
   },
 };
 
-export const apolloServer = new ApolloServer({
+export const apolloServer = new ApolloServer<Context>({
   schema,
   plugins: [apolloSentryPlugin],
 });

@@ -48,9 +48,9 @@ function ProjectDefaultUserLevelField(props: { control: Control<Inputs> }) {
     <Select
       aria-label="Levels"
       name={controller.field.name}
-      selectedKey={controller.field.value}
+      value={controller.field.value}
       onBlur={controller.field.onBlur}
-      onSelectionChange={(value) => {
+      onChange={(value) => {
         invariant(typeof value === "string");
         controller.field.onChange(value as ProjectUserLevel);
       }}

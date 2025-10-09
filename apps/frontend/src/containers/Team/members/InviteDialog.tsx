@@ -162,8 +162,8 @@ export function InviteDialog(props: {
                           hasFineGrainedAccessControl={
                             team.plan?.fineGrainedAccessControlIncluded ?? false
                           }
-                          selectedKey={field.value}
-                          onSelectionChange={field.onChange}
+                          value={field.value}
+                          onChange={field.onChange}
                           onBlur={field.onBlur}
                           className="flex-1"
                           isDisabled={isSubmitting}

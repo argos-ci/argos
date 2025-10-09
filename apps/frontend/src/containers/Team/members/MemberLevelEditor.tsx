@@ -47,8 +47,8 @@ export function MemberLevelEditor(props: {
       size="sm"
       className="text-low"
       hasFineGrainedAccessControl={hasFineGrainedAccessControl}
-      selectedKey={member.level}
-      onSelectionChange={(value) => {
+      value={member.level}
+      onChange={(value) => {
         setTeamMemberLevel({
           variables: {
             teamAccountId: props.teamId,

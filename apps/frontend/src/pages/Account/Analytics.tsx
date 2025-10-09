@@ -733,8 +733,8 @@ function PeriodSelect(props: {
   return (
     <Select
       aria-label="Levels"
-      selectedKey={props.value}
-      onSelectionChange={(value) => props.onChange(value as Period)}
+      value={props.value}
+      onChange={(value) => props.onChange(value as Period)}
     >
       <SelectButton className="w-full text-sm">
         {PeriodLabels[props.value]}

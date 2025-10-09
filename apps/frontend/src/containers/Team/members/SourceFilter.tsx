@@ -16,8 +16,8 @@ export function SourceFilter(props: {
   return (
     <Select
       aria-label="Source"
-      selectedKey={value}
-      onSelectionChange={(value) => onChange(SourceSchema.parse(value))}
+      value={value}
+      onChange={(value) => onChange(SourceSchema.parse(value))}
     >
       <SelectButton>
         <SelectValue />
