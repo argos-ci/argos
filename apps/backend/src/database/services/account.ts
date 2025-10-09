@@ -262,7 +262,7 @@ async function getOrCreateUserAccountFromThirdParty<
       if (user.id !== existingUser.id) {
         throw boom(
           400,
-          `${provider} account is already attached to another Argos account.`,
+          `${provider} account is already attached to another Argos account.\nSee https://argos-ci.com/docs/account-management#resolving-account-already-attached-issues for more information.`,
           { code: errorCodes.alreadyAttachedToArgosAccount },
         );
       }
