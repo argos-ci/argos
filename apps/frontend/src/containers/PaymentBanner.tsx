@@ -2,11 +2,12 @@ import { memo } from "react";
 import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 
+import { config } from "@/config";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
 import { AccountPermission, AccountSubscriptionStatus } from "@/gql/graphql";
 import { Banner, BannerProps } from "@/ui/Banner";
-import { Button } from "@/ui/Button";
+import { Button, LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
@@ -52,24 +53,7 @@ function ManageStripeButton(props: {
     );
   }
   return (
-    <TeamSubscribeDialog initialAccountId={props.accountId}>
-      {props.children}
-    </TeamSubscribeDialog>
-  );
-}
-
-function ManageButton(props: {
-  stripeCustomerId: string | null;
-  accountId: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <ManageStripeButton
-      stripeCustomerId={props.stripeCustomerId}
-      accountId={props.accountId}
-    >
-      {props.children}
-    </ManageStripeButton>
+    <LinkButton href={`mailto:${config.contactEmail}`}>Contact us</LinkButton>
   );
 }
 
@@ -144,12 +128,12 @@ export const PaymentBanner = memo(
             team features until the <Time date={pendingCancelAt} format="LL" />.
           </p>
           {userIsAdmin && (
-            <ManageButton
+            <ManageStripeButton
               stripeCustomerId={stripeCustomerId ?? null}
               accountId={account.id}
             >
               Reactivate {subscriptionTypeLabel}
-            </ManageButton>
+            </ManageStripeButton>
           )}
         </BannerTemplate>
       );
@@ -178,12 +162,12 @@ export const PaymentBanner = memo(
               Add a payment method to retain access to team features.
             </p>
             {userIsAdmin && (
-              <ManageButton
+              <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
               >
                 Add payment method
-              </ManageButton>
+              </ManageStripeButton>
             )}
           </BannerTemplate>
         );
@@ -195,12 +179,12 @@ export const PaymentBanner = memo(
               Your subscription is past due. Please update your payment method.
             </p>
             {userIsAdmin && (
-              <ManageButton
+              <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
               >
                 Update payment method
-              </ManageButton>
+              </ManageStripeButton>
             )}
           </BannerTemplate>
         );
@@ -213,12 +197,12 @@ export const PaymentBanner = memo(
               access to team features.
             </p>
             {userIsAdmin && (
-              <ManageButton
+              <ManageStripeButton
                 stripeCustomerId={stripeCustomerId ?? null}
                 accountId={account.id}
               >
                 Proceed to payment
-              </ManageButton>
+              </ManageStripeButton>
             )}
           </BannerTemplate>
         );
@@ -232,12 +216,9 @@ export const PaymentBanner = memo(
             </p>
             {userIsAdmin && (
               <div className="flex flex-wrap items-center gap-2">
-                <ManageButton
-                  stripeCustomerId={stripeCustomerId ?? null}
-                  accountId={account.id}
-                >
+                <TeamSubscribeDialog initialAccountId={account.id}>
                   Subscribe
-                </ManageButton>
+                </TeamSubscribeDialog>
                 {account.canExtendTrial ? (
                   <ExtendTrialButton accountId={account.id} />
                 ) : null}
@@ -251,12 +232,9 @@ export const PaymentBanner = memo(
           <BannerTemplate color="danger">
             <p>Subscribe to Pro plan to use team features.</p>
             {userIsAdmin && (
-              <ManageButton
-                stripeCustomerId={stripeCustomerId ?? null}
-                accountId={account.id}
-              >
+              <TeamSubscribeDialog initialAccountId={account.id}>
                 Subscribe
-              </ManageButton>
+              </TeamSubscribeDialog>
             )}
           </BannerTemplate>
         );
