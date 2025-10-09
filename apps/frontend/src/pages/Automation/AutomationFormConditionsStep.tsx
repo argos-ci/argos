@@ -251,8 +251,8 @@ export function AutomationConditionsStep(props: {
           control={form.control}
           name={name}
           aria-label="Condition Types"
-          selectedKey={null}
-          onSelectionChange={(key) => {
+          value={null}
+          onChange={(key) => {
             switch (key) {
               case "build-conclusion":
               case "build-type": {

@@ -38,8 +38,8 @@ export const GitlabNamespacesSelect = (props: {
   return (
     <Select
       aria-label="Namespaces"
-      selectedKey={props.value}
-      onSelectionChange={(value) => {
+      value={props.value}
+      onChange={(value) => {
         if (value === "switch-git-provider") {
           props.onSwitch();
           return;

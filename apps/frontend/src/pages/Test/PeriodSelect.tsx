@@ -86,8 +86,8 @@ export function PeriodSelect<TDef extends PeriodsDefinition>(props: {
   return (
     <Select
       aria-label="Periods"
-      selectedKey={String(value)}
-      onSelectionChange={(value) => setValue(String(value))}
+      value={String(value)}
+      onChange={(value) => setValue(String(value))}
     >
       <SelectButton className="text-sm">{current.label}</SelectButton>
       <Popover>

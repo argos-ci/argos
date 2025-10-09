@@ -25,10 +25,8 @@ export function MemberLevelFilter(props: {
   return (
     <Select
       aria-label="User role"
-      selectedKey={value}
-      onSelectionChange={(value) =>
-        onChange(FilterUserLevelSchema.parse(value))
-      }
+      value={value}
+      onChange={(value) => onChange(FilterUserLevelSchema.parse(value))}
     >
       <SelectButton>
         <SelectValue />

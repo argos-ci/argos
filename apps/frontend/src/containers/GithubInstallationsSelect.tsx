@@ -51,8 +51,8 @@ export function GithubInstallationsSelect(props: {
   return (
     <Select
       aria-label="Accounts"
-      selectedKey={props.value}
-      onSelectionChange={(key) => {
+      value={props.value}
+      onChange={(key) => {
         if (key === "switch-git-provider") {
           invariant(props.onSwitchProvider, "Expected onSwitchProvider");
           props.onSwitchProvider();

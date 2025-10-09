@@ -23,8 +23,8 @@ export function AccountSelector(props: {
   return (
     <Select
       aria-label="Accounts"
-      selectedKey={props.value}
-      onSelectionChange={(value) => props.setValue(String(value))}
+      value={props.value}
+      onChange={(value) => props.setValue(String(value))}
     >
       <SelectButton className="w-full">
         {activeAccount ? (

@@ -33,10 +33,8 @@ export function BuildNameFilter(props: {
   return (
     <Select
       aria-label="Build name"
-      selectedKey={value}
-      onSelectionChange={(value) =>
-        props.onChange(value ? String(value) : null)
-      }
+      value={value}
+      onChange={(value) => props.onChange(value ? String(value) : null)}
     >
       <SelectButton className="min-w-[8em] text-sm">
         {getBuildNameLabel(value)}

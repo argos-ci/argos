@@ -42,8 +42,8 @@ export function ProjectContributorLevelSelect(props: {
   return (
     <Select
       aria-label="Levels"
-      selectedKey={props.level}
-      onSelectionChange={(value) => {
+      value={props.level}
+      onChange={(value) => {
         invariant(typeof value === "string");
         addOrUpdateContributor({
           variables: {

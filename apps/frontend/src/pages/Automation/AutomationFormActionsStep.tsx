@@ -183,8 +183,8 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
           control={form.control}
           name={name}
           aria-label="Action Types"
-          selectedKey={null}
-          onSelectionChange={(key) => {
+          value={null}
+          onChange={(key) => {
             switch (key) {
               case "sendSlackMessage": {
                 append({

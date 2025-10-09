@@ -71,8 +71,8 @@ export function SelectField<TFieldValues extends FieldValues>(
         onBlur?.(event);
       }}
       name={field.name}
-      selectedKey={field.value}
-      onSelectionChange={(isSelected) => {
+      value={field.value}
+      onChange={(isSelected) => {
         field.onChange(isSelected);
       }}
       isInvalid={fieldState.invalid}

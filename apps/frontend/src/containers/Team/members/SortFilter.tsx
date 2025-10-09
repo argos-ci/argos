@@ -22,8 +22,8 @@ export function SortFilter(props: {
   return (
     <Select
       aria-label="Sort by"
-      selectedKey={value}
-      onSelectionChange={(value) => onChange(OrderBySchema.parse(value))}
+      value={value}
+      onChange={(value) => onChange(OrderBySchema.parse(value))}
     >
       <SelectButton>
         <SelectValue />
