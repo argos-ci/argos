@@ -6,6 +6,8 @@ import config from "@/config/index.js";
 import { Account, Plan, Subscription } from "@/database/models/index.js";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 
+import { notifySubscriptionStatusUpdate } from "../discord";
+
 export type { Stripe };
 
 async function getPlanFromStripeProductId(stripeProductId: string) {
@@ -374,11 +376,12 @@ export async function createArgosSubscriptionFromStripe({
   stripeSubscription: Stripe.Subscription;
 }): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
-  return Subscription.query().insertAndFetch({
-    ...data,
-    accountId: account.id,
-    subscriberId,
-  });
+  const accountId = account.id;
+  const [newSubscription] = await Promise.all([
+    Subscription.query().insertAndFetch({ ...data, accountId, subscriberId }),
+    notifySubscriptionStatusUpdate({ ...data, accountId }),
+  ]);
+  return newSubscription;
 }
 
 export async function cancelStripeSubscription(subscriptionId: string) {
@@ -581,7 +584,13 @@ async function updateArgosSubscriptionFromStripe(
   stripeSubscription: Stripe.Subscription,
 ): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
-  return argosSubscription.$query().patchAndFetch(data);
+  const [updatedSubscription] = await Promise.all([
+    argosSubscription.$query().patchAndFetch(data),
+    data.status !== argosSubscription.status
+      ? notifySubscriptionStatusUpdate({ ...argosSubscription, ...data })
+      : Promise.resolve(),
+  ]);
+  return updatedSubscription;
 }
 
 export async function handleStripeEvent({
@@ -665,7 +674,13 @@ export async function handleStripeEvent({
       if (!argosSubscription) {
         return;
       }
-      await argosSubscription.$query().patch({ status: "canceled" });
+      await Promise.all([
+        argosSubscription.$query().patch({ status: "canceled" }),
+        notifySubscriptionStatusUpdate({
+          ...argosSubscription,
+          status: "canceled",
+        }),
+      ]);
       return;
     }
 

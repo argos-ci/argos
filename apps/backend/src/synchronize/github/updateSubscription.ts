@@ -2,6 +2,7 @@ import { transaction } from "@/database/index.js";
 import { Subscription } from "@/database/models/index.js";
 import type { Account } from "@/database/models/index.js";
 
+import { notifySubscriptionStatusUpdate } from "../../discord/index.js";
 import { getGithubPlan } from "./eventHelpers.js";
 
 export async function updateSubscription(
@@ -20,15 +21,22 @@ export async function updateSubscription(
   const effectiveDate = payload.effective_date || new Date().toISOString();
 
   if (!activeSubscription) {
-    await Subscription.query().insert({
-      accountId: account.id,
-      planId: plan.id,
-      startDate: effectiveDate,
-      provider: "github",
-      trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
-      paymentMethodFilled: true,
-      status: "active",
-    });
+    await Promise.all([
+      Subscription.query().insert({
+        accountId: account.id,
+        planId: plan.id,
+        startDate: effectiveDate,
+        provider: "github",
+        trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
+        paymentMethodFilled: true,
+        status: "active",
+      }),
+      notifySubscriptionStatusUpdate({
+        accountId: account.id,
+        provider: "github",
+        status: "active",
+      }),
+    ]);
     return;
   }
 

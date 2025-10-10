@@ -22,6 +22,7 @@ import { parsePullRequestData } from "@/github-pull-request/pull-request.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
+import { notifySubscriptionStatusUpdate } from "../../discord/index.js";
 import { synchronizeFromInstallationId } from "../helpers.js";
 import {
   cancelSubscription,
@@ -56,15 +57,22 @@ export async function handleGitHubEvents(
             return;
           }
 
-          await Subscription.query().insert({
-            accountId: account.id,
-            planId: plan.id,
-            startDate: payload.effective_date,
-            provider: "github",
-            trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
-            paymentMethodFilled: true,
-            status: "active",
-          });
+          await Promise.all([
+            Subscription.query().insert({
+              accountId: account.id,
+              planId: plan.id,
+              startDate: payload.effective_date,
+              provider: "github",
+              trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
+              paymentMethodFilled: true,
+              status: "active",
+            }),
+            await notifySubscriptionStatusUpdate({
+              provider: "github",
+              accountId: account.id,
+              status: "active",
+            }),
+          ]);
           return;
         }
         case "changed": {
@@ -82,7 +90,14 @@ export async function handleGitHubEvents(
             logger.error("Cannot cancel purchase, account not found", payload);
             return;
           }
-          await cancelSubscription(payload, account);
+          await Promise.all([
+            cancelSubscription(payload, account),
+            notifySubscriptionStatusUpdate({
+              provider: "github",
+              accountId: account.id,
+              status: "canceled",
+            }),
+          ]);
           return;
         }
       }
