@@ -225,7 +225,6 @@ const BuildsList = ({
   const parentRef = useRef<HTMLDivElement>(null);
   const { hasNextPage } = builds.pageInfo;
   const displayCount = builds.edges.length;
-  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
     estimateSize: () => 75,

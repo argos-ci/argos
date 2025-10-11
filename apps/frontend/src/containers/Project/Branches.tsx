@@ -88,7 +88,6 @@ export const ProjectBranches = (props: {
     form.reset(data);
   };
 
-  // eslint-disable-next-line react-hooks/incompatible-library
   const defaultBaseBranch = form.watch("defaultBaseBranch");
   const noCustomDefaultBaseBranch = form.watch("noCustomDefaultBaseBranch");
   const noCustomApprovedBranchGlob = form.watch("noCustomApprovedBranchGlob");

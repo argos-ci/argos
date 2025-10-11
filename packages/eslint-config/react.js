@@ -11,4 +11,8 @@ export const config = defineConfig(...baseConfig, {
   name: "argos/react",
   files: ["**/*.?(m){jsx,tsx}"],
   ...reactHooks.configs.flat.recommended,
+  rules: {
+    ...reactHooks.configs.flat.recommended.rules,
+    "react-hooks/incompatible-library": "off",
+  },
 });

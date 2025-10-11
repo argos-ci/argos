@@ -809,7 +809,6 @@ const InternalBuildDiffList = memo(() => {
     [estimateListItemHeight, rows],
   );
 
-  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     estimateSize,

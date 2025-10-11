@@ -209,7 +209,6 @@ function FormStep(props: {
       name: "",
     },
   });
-  // eslint-disable-next-line react-hooks/incompatible-library
   const usage = form.watch("usage");
   const isPro = usage === "pro";
   const registerName = form.register("name", {
