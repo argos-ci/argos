@@ -13,6 +13,7 @@ import {
   getGhAccountType,
   getOrCreateGhAccount,
 } from "@/database/services/github.js";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 import { createTeamAccount } from "@/database/services/team.js";
 
 type PartialMarketplacePurchasePurchasedEventPayload = {
@@ -155,18 +156,31 @@ export const getGithubPlan = async (payload: {
   return plan;
 };
 
-export const cancelSubscription = async (
+export async function cancelSubscription(
   payload: { effective_date: string },
   account: Account,
-) => {
+) {
   const manager = account.$getSubscriptionManager();
   const activeSubscription = await manager.getActiveSubscription();
   if (activeSubscription && activeSubscription.provider === "github") {
-    await Subscription.query()
-      .findById(activeSubscription.id)
-      .patch({ endDate: payload.effective_date, status: "canceled" });
+    const subscriptionData = {
+      endDate: payload.effective_date,
+      status: "canceled" as const,
+    };
+    await Promise.all([
+      Subscription.query()
+        .findById(activeSubscription.id)
+        .patch(subscriptionData),
+      notifySubscriptionStatusUpdate({
+        subscription: {
+          ...activeSubscription,
+          ...subscriptionData,
+        },
+        account,
+      }),
+    ]);
   }
-};
+}
 
 export async function getOrCreateInstallation({
   githubId,

@@ -18,11 +18,11 @@ import {
   getOrCreateGhAccount,
   getOrCreateGithubAccountMember,
 } from "@/database/services/github.js";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription.js";
 import { parsePullRequestData } from "@/github-pull-request/pull-request.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
 
-import { notifySubscriptionStatusUpdate } from "../../discord/index.js";
 import { synchronizeFromInstallationId } from "../helpers.js";
 import {
   cancelSubscription,
@@ -57,20 +57,21 @@ export async function handleGitHubEvents(
             return;
           }
 
+          const subscriptionData = {
+            accountId: account.id,
+            planId: plan.id,
+            startDate: payload.effective_date,
+            provider: "github" as const,
+            trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
+            paymentMethodFilled: true,
+            status: "active" as const,
+          };
+
           await Promise.all([
-            Subscription.query().insert({
-              accountId: account.id,
-              planId: plan.id,
-              startDate: payload.effective_date,
-              provider: "github",
-              trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
-              paymentMethodFilled: true,
-              status: "active",
-            }),
+            Subscription.query().insert(subscriptionData),
             await notifySubscriptionStatusUpdate({
-              provider: "github",
-              accountId: account.id,
-              status: "active",
+              subscription: subscriptionData,
+              account,
             }),
           ]);
           return;
@@ -90,14 +91,7 @@ export async function handleGitHubEvents(
             logger.error("Cannot cancel purchase, account not found", payload);
             return;
           }
-          await Promise.all([
-            cancelSubscription(payload, account),
-            notifySubscriptionStatusUpdate({
-              provider: "github",
-              accountId: account.id,
-              status: "canceled",
-            }),
-          ]);
+          await cancelSubscription(payload, account);
           return;
         }
       }

@@ -5,8 +5,7 @@ import { z } from "zod";
 import config from "@/config/index.js";
 import { Account, Plan, Subscription } from "@/database/models/index.js";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
-
-import { notifySubscriptionStatusUpdate } from "../discord";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 
 export type { Stripe };
 
@@ -376,10 +375,17 @@ export async function createArgosSubscriptionFromStripe({
   stripeSubscription: Stripe.Subscription;
 }): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
-  const accountId = account.id;
+  const completeSubscriptionData = {
+    ...data,
+    accountId: account.id,
+    subscriberId,
+  };
   const [newSubscription] = await Promise.all([
-    Subscription.query().insertAndFetch({ ...data, accountId, subscriberId }),
-    notifySubscriptionStatusUpdate({ ...data, accountId }),
+    Subscription.query().insertAndFetch(completeSubscriptionData),
+    notifySubscriptionStatusUpdate({
+      subscription: completeSubscriptionData,
+      account,
+    }),
   ]);
   return newSubscription;
 }
@@ -587,7 +593,9 @@ async function updateArgosSubscriptionFromStripe(
   const [updatedSubscription] = await Promise.all([
     argosSubscription.$query().patchAndFetch(data),
     data.status !== argosSubscription.status
-      ? notifySubscriptionStatusUpdate({ ...argosSubscription, ...data })
+      ? notifySubscriptionStatusUpdate({
+          subscription: { ...argosSubscription, ...data },
+        })
       : Promise.resolve(),
   ]);
   return updatedSubscription;
@@ -674,11 +682,14 @@ export async function handleStripeEvent({
       if (!argosSubscription) {
         return;
       }
+      const subscriptionData = { status: "canceled" as const };
       await Promise.all([
-        argosSubscription.$query().patch({ status: "canceled" }),
+        argosSubscription.$query().patch(subscriptionData),
         notifySubscriptionStatusUpdate({
-          ...argosSubscription,
-          status: "canceled",
+          subscription: {
+            ...argosSubscription,
+            ...subscriptionData,
+          },
         }),
       ]);
       return;
