@@ -225,6 +225,7 @@ const BuildsList = ({
   const parentRef = useRef<HTMLDivElement>(null);
   const { hasNextPage } = builds.pageInfo;
   const displayCount = builds.edges.length;
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
     estimateSize: () => 75,
@@ -344,6 +345,8 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
 
   const { fetchMore } = buildsResult;
   const buildResultRef = useRef(buildsResult);
+  // @TODO try to fix this
+  // eslint-disable-next-line react-hooks/refs
   buildResultRef.current = buildsResult;
 
   const fetchNextPage = useCallback(() => {

@@ -95,26 +95,28 @@ function GitHubInstallationsSelectControl<
     invariant(data.teamAccount?.__typename === "Team", "Expected teamAccount");
     return data.teamAccount.githubLightInstallation ? "light" : "main";
   })();
-  const controller = useController({
+  const { field, fieldState } = useController({
     name,
     control,
     rules: { required: "Please select a GitHub account" },
   });
+  const { value: fieldValue, ref } = field;
   const installation = (() => {
-    if (!controller.field.value) {
+    if (!fieldValue) {
       return null;
     }
     const installation = installations.find(
-      (installation) => installation.id === controller.field.value,
+      (installation) => installation.id === fieldValue,
     );
     invariant(installation, "Expected installation");
     return installation;
   })();
   const value = installation?.id ?? "";
+  const errorMessage = fieldState.error?.message;
   return (
     <div>
       <GithubInstallationsSelect
-        ref={controller.field.ref}
+        ref={ref}
         installations={installations}
         value={value}
         setValue={(value) => {
@@ -122,16 +124,14 @@ function GitHubInstallationsSelectControl<
             (installation) => installation.id === value,
           );
           invariant(installation, "Expected installation");
-          controller.field.onChange(installation.id);
+          field.onChange(installation.id);
         }}
         disabled={!data}
         app={installationType ?? "main"}
         accountId={props.teamAccountId}
       />
-      {controller.fieldState.error?.message && (
-        <ErrorMessage className="mt-2">
-          {controller.fieldState.error.message}
-        </ErrorMessage>
+      {errorMessage && (
+        <ErrorMessage className="mt-2">{errorMessage}</ErrorMessage>
       )}
     </div>
   );

@@ -1,7 +1,11 @@
 import { memo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
-import { GitPullRequestIcon, TowerControlIcon } from "lucide-react";
+import {
+  GitPullRequestIcon,
+  TowerControlIcon,
+  type LucideIcon,
+} from "lucide-react";
 
 import { BuildMode } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
@@ -33,23 +37,17 @@ export function BuildModeLabel(props: { mode: BuildMode }) {
   }
 }
 
-function getBuildModeIcon(mode: BuildMode) {
-  switch (mode) {
-    case BuildMode.Ci:
-      return GitPullRequestIcon;
-    case BuildMode.Monitoring:
-      return TowerControlIcon;
-    default:
-      assertNever(mode);
-  }
-}
+const BuildModeIcons: Record<BuildMode, LucideIcon> = {
+  [BuildMode.Ci]: GitPullRequestIcon,
+  [BuildMode.Monitoring]: TowerControlIcon,
+};
 
 export const BuildModeIndicator = memo(function BuildModeIndicator(props: {
   mode: BuildMode;
   scale?: "sm" | "md";
 }) {
   const scale = props.scale ?? "md";
-  const Icon = getBuildModeIcon(props.mode);
+  const Icon = BuildModeIcons[props.mode];
   return (
     <Tooltip
       content={

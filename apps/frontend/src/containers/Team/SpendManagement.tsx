@@ -104,6 +104,7 @@ function SpendManagementForm(props: {
     defaultValues,
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const isSpendLimitEnabled = form.watch("isSpendLimitEnabled");
   const rawMeteredSpendLimitByPeriod = form.watch("meteredSpendLimitByPeriod");
   const meteredSpendLimitByPeriod = Number.isInteger(

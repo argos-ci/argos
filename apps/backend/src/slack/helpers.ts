@@ -1,5 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import Bolt from "@slack/bolt";
+import type * as Bolt from "@slack/bolt";
 import { TransactionOrKnex } from "objection";
 
 import config from "@/config";

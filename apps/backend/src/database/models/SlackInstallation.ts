@@ -1,4 +1,4 @@
-import type Bolt from "@slack/bolt";
+import type * as Bolt from "@slack/bolt";
 import { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";

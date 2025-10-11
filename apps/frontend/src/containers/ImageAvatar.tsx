@@ -6,12 +6,8 @@ export function ImageAvatar(props: {
   url: string;
   alt?: string;
 }) {
+  const { ref, ...rest } = props;
   return (
-    <img
-      ref={props.ref}
-      src={props.url}
-      alt={props.alt}
-      className={clsx(props.className, "rounded-full")}
-    />
+    <img ref={ref} {...rest} className={clsx(rest.className, "rounded-full")} />
   );
 }

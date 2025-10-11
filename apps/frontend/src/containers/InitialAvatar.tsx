@@ -7,9 +7,10 @@ export function InitialAvatar(props: {
   initial: string;
   alt?: string;
 }) {
+  const { ref } = props;
   return (
     <div
-      ref={props.ref}
+      ref={ref}
       className={clsx(
         props.className,
         "relative flex select-none items-center justify-center rounded-full",

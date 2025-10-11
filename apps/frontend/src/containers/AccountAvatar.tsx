@@ -17,24 +17,24 @@ export function AccountAvatar(props: {
   avatar: DocumentType<typeof _AvatarFragment>;
   alt?: string;
 }) {
-  const { avatar } = props;
+  const { ref, avatar, alt, className } = props;
   if (!avatar.url) {
     return (
       <InitialAvatar
-        ref={props.ref as React.Ref<HTMLDivElement>}
+        ref={ref as React.Ref<HTMLDivElement>}
         initial={avatar.initial}
         color={avatar.color}
-        alt={props.alt}
-        className={props.className}
+        alt={alt}
+        className={className}
       />
     );
   }
   return (
     <ImageAvatar
-      ref={props.ref as React.Ref<HTMLImageElement>}
+      ref={ref as React.Ref<HTMLImageElement>}
       url={avatar.url}
-      className={props.className}
-      alt={props.alt}
+      className={className}
+      alt={alt}
     />
   );
 }

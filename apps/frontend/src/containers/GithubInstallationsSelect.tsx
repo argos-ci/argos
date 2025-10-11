@@ -35,11 +35,11 @@ export function GithubInstallationsSelect(props: {
   app: "main" | "light";
   accountId: string;
 }) {
-  const { installations } = props;
+  const { disabled, installations, value, ref } = props;
   const activeInstallation = (() => {
-    if (props.value) {
+    if (value) {
       const installation = installations.find(
-        (installation) => installation.id === props.value,
+        (installation) => installation.id === value,
       );
       invariant(installation, "Expected installation");
       return installation;
@@ -51,7 +51,7 @@ export function GithubInstallationsSelect(props: {
   return (
     <Select
       aria-label="Accounts"
-      value={props.value}
+      value={value}
       onChange={(key) => {
         if (key === "switch-git-provider") {
           invariant(props.onSwitchProvider, "Expected onSwitchProvider");
@@ -61,11 +61,7 @@ export function GithubInstallationsSelect(props: {
         props.setValue(String(key));
       }}
     >
-      <SelectButton
-        ref={props.ref}
-        className="w-full"
-        isDisabled={props.disabled}
-      >
+      <SelectButton ref={ref} className="w-full" isDisabled={disabled}>
         {activeInstallation ? (
           <div className="flex items-center gap-2">
             <MarkGithubIcon />

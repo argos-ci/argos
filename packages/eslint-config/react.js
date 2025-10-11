@@ -1,4 +1,4 @@
-import pluginReactHooks from "eslint-plugin-react-hooks";
+import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig } from "eslint/config";
 
 import { config as baseConfig } from "./base.js";
@@ -10,8 +10,5 @@ import { config as baseConfig } from "./base.js";
 export const config = defineConfig(...baseConfig, {
   name: "argos/react",
   files: ["**/*.?(m){jsx,tsx}"],
-  plugins: {
-    "react-hooks": pluginReactHooks,
-  },
-  extends: ["react-hooks/recommended"],
+  ...reactHooks.configs.flat.recommended,
 });

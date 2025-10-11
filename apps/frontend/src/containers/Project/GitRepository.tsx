@@ -12,7 +12,7 @@ import { FormSwitch } from "@/ui/FormSwitch";
 import { Link } from "@/ui/Link";
 import { getErrorMessage } from "@/util/error";
 
-import { getRepositoryIcon } from "../Repository";
+import { RepositoryIcons } from "../Repository";
 import { ConnectRepository } from "./ConnectRepository";
 
 const _ProjectFragment = graphql(`
@@ -252,7 +252,7 @@ export const ProjectGitRepository = (props: {
 }) => {
   const { project } = props;
   const RepoIcon = project.repository
-    ? getRepositoryIcon(project.repository.__typename)
+    ? RepositoryIcons[project.repository.__typename]
     : null;
   return (
     <Card>
