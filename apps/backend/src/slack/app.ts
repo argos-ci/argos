@@ -147,8 +147,10 @@ export const SLACK_BOT_SCOPES = [
   "chat:write.public",
 ];
 
-// @ts-expect-error Wrong typing
-export const receiver = new Bolt.default.ExpressReceiver({
+const ExpressReceiver = // @ts-expect-error Types are wrong
+Bolt.default.ExpressReceiver as typeof Bolt.ExpressReceiver;
+
+export const receiver = new ExpressReceiver({
   signingSecret: config.get("slack.signingSecret"),
   clientId: config.get("slack.clientId"),
   clientSecret: config.get("slack.clientSecret"),
