@@ -32,7 +32,7 @@ export function AccountAvatar(props: {
   return (
     <ImageAvatar
       ref={ref as React.Ref<HTMLImageElement>}
-      url={avatar.url}
+      src={avatar.url}
       className={className}
       alt={alt}
     />

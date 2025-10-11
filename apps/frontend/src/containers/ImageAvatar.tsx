@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 export function ImageAvatar(props: {
   ref?: React.Ref<HTMLImageElement>;
   className?: string;
-  url: string;
+  src: string;
   alt?: string;
 }) {
   const { ref, ...rest } = props;
