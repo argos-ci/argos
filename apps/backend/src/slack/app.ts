@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { invariant } from "@argos/util/invariant";
 import * as Bolt from "@slack/bolt";
+import BoltDefault from "@slack/bolt";
 import Cookies from "cookies";
 import { PartialModelObject } from "objection";
 
@@ -148,7 +149,7 @@ export const SLACK_BOT_SCOPES = [
 ];
 
 const ExpressReceiver = // @ts-expect-error Types are wrong
-Bolt.default.ExpressReceiver as typeof Bolt.ExpressReceiver;
+  BoltDefault.ExpressReceiver as typeof Bolt.ExpressReceiver;
 
 export const receiver = new ExpressReceiver({
   signingSecret: config.get("slack.signingSecret"),
