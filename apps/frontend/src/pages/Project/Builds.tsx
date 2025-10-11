@@ -344,6 +344,8 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
 
   const { fetchMore } = buildsResult;
   const buildResultRef = useRef(buildsResult);
+  // @TODO try to fix this
+  // eslint-disable-next-line react-hooks/refs
   buildResultRef.current = buildsResult;
 
   const fetchNextPage = useCallback(() => {

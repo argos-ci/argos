@@ -1103,8 +1103,8 @@ export function BuildDiffDetail(props: {
   header?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { build, diff, header, className } = props;
-  const containerRef = useObjectRef(props.ref);
+  const { build, diff, header, className, ref } = props;
+  const containerRef = useObjectRef(ref);
   useScrollToTop(containerRef, diff);
   const [scrolled, setScrolled] = useState(false);
   useScrollListener((event) => {

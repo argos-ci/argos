@@ -29,7 +29,6 @@ export function Time({
   );
   const [fromNow, setFromNow] = useState(getFormattedDate);
   useLayoutEffect(() => {
-    setFromNow(getFormattedDate());
     const id = setInterval(() => setFromNow(getFormattedDate()), 1000);
     return () => clearInterval(id);
   }, [getFormattedDate]);

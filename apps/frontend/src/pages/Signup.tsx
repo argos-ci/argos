@@ -43,11 +43,12 @@ function AccountTypeField<
 }) {
   const { control, name } = props;
   const { field } = useController({ control, name });
+  const { ref } = field;
   return (
     <RadioGroup
       orientation="vertical"
       className={clsx("w-full", props.className)}
-      ref={field.ref}
+      ref={ref}
       onChange={field.onChange}
       value={field.value}
       isDisabled={field.disabled}

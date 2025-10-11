@@ -137,7 +137,7 @@ function PullRequestInfo(props: {
                 {pullRequest.draft ? "Draft opened" : "Opened"}{" "}
                 <Time date={pullRequest.date} tooltip="title" /> by
                 <ImageAvatar
-                  url={`https://github.com/${pullRequest.creator.login}.png?size=32`}
+                  src={`https://github.com/${pullRequest.creator.login}.png?size=32`}
                   className="size-4 shrink-0"
                 />
                 <span>

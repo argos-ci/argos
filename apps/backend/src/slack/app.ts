@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { invariant } from "@argos/util/invariant";
-import Bolt from "@slack/bolt";
+import * as Bolt from "@slack/bolt";
 import Cookies from "cookies";
 import { PartialModelObject } from "objection";
 
@@ -147,7 +147,10 @@ export const SLACK_BOT_SCOPES = [
   "chat:write.public",
 ];
 
-export const receiver = new Bolt.ExpressReceiver({
+const ExpressReceiver = (Bolt.ExpressReceiver ||
+  (Bolt.default as any).ExpressReceiver) as typeof Bolt.ExpressReceiver;
+
+export const receiver = new ExpressReceiver({
   signingSecret: config.get("slack.signingSecret"),
   clientId: config.get("slack.clientId"),
   clientSecret: config.get("slack.clientSecret"),

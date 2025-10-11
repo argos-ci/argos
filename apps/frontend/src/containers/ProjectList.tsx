@@ -16,7 +16,7 @@ import {
 import { HeadlessLink } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
-import { getRepositoryIcon } from "./Repository";
+import { RepositoryIcons } from "./Repository";
 
 const _ProjectFragment = graphql(`
   fragment ProjectList_Project on Project {
@@ -48,7 +48,7 @@ type Project = DocumentType<typeof _ProjectFragment>;
 function ProjectCard({ project }: { project: Project }) {
   const repositoryType = project.repository?.__typename;
   const RepositoryIcon = repositoryType
-    ? getRepositoryIcon(repositoryType)
+    ? RepositoryIcons[repositoryType]
     : null;
   return (
     <HeadlessLink

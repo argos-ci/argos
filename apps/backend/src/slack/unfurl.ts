@@ -1,6 +1,6 @@
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import Bolt from "@slack/bolt";
+import type * as Bolt from "@slack/bolt";
 import { match } from "path-to-regexp";
 
 import { getBuildLabel } from "@/build/label.js";

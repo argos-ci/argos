@@ -16,8 +16,9 @@ function Main(props: {
   ref?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
 }) {
+  const { ref } = props;
   return (
-    <main ref={props.ref} className="contents">
+    <main ref={ref} className="contents">
       <Sentry.ErrorBoundary
         fallback={<ErrorPage />}
         onError={(error: unknown) => {

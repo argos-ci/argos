@@ -3,15 +3,11 @@ import { clsx } from "clsx";
 export function ImageAvatar(props: {
   ref?: React.Ref<HTMLImageElement>;
   className?: string;
-  url: string;
+  src: string;
   alt?: string;
 }) {
+  const { ref, ...rest } = props;
   return (
-    <img
-      ref={props.ref}
-      src={props.url}
-      alt={props.alt}
-      className={clsx(props.className, "rounded-full")}
-    />
+    <img ref={ref} {...rest} className={clsx(rest.className, "rounded-full")} />
   );
 }

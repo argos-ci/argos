@@ -1,5 +1,5 @@
 import { invariant } from "@argos/util/invariant";
-import type Bolt from "@slack/bolt";
+import type * as Bolt from "@slack/bolt";
 import { z } from "zod";
 
 import { SlackInstallation } from "@/database/models";

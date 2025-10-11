@@ -395,8 +395,8 @@ export function ZoomPane(props: {
   controls?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { dimensions } = props;
-  const paneRef = useObjectRef(props.ref);
+  const { dimensions, children, controls, ref } = props;
+  const paneRef = useObjectRef(ref);
   const { register, getInitialTransform } = useZoomerSyncContext();
   const [imgScale] = useScaleContext();
   const [transform, setTransform] = useState<Transform>(identityTransform);
@@ -417,6 +417,7 @@ export function ZoomPane(props: {
       return { minScale, maxScale };
     })();
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setScales(scales);
     const zoomer = new Zoomer(pane, scales);
 
@@ -442,9 +443,9 @@ export function ZoomPane(props: {
         className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
         style={{ transform: transformToCss(transform) }}
       >
-        {props.children}
+        {children}
       </div>
-      {props.controls && (
+      {controls && (
         <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
           <div
             className={clsx(
@@ -452,7 +453,7 @@ export function ZoomPane(props: {
               "absolute bottom-2 right-2 flex flex-col items-center gap-1",
             )}
           >
-            {props.controls}
+            {controls}
             <FitViewButton />
             <ZoomInButton disabled={transform.scale >= scales.maxScale} />
             <ZoomOutButton disabled={transform.scale <= scales.minScale} />

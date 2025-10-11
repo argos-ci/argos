@@ -48,9 +48,10 @@ export function DialogTitle(props: {
   ref?: React.Ref<HTMLHeadingElement>;
   children: React.ReactNode;
 }) {
+  const { ref, children } = props;
   return (
-    <Heading ref={props.ref} slot="title" className="mb-4 text-xl font-medium">
-      {props.children}
+    <Heading ref={ref} slot="title" className="mb-4 text-xl font-medium">
+      {children}
     </Heading>
   );
 }
@@ -89,20 +90,21 @@ export function DialogDismiss(props: {
   single?: boolean;
   isDisabled?: boolean;
 }) {
+  const { ref, ...rest } = props;
   const state = useOverlayTriggerState();
   const actionContext = use(ModalActionContext);
   return (
     <Button
-      ref={props.ref}
-      className={props.single ? "flex-1 justify-center" : undefined}
+      ref={ref}
+      className={rest.single ? "flex-1 justify-center" : undefined}
       variant="secondary"
       onPress={(event) => {
         props.onPress?.(event);
         state.close();
       }}
-      isDisabled={props.isDisabled || actionContext?.isPending}
+      isDisabled={rest.isDisabled || actionContext?.isPending}
     >
-      {props.children}
+      {rest.children}
     </Button>
   );
 }
@@ -123,16 +125,17 @@ export function Dialog({
   scrollable = true,
   ...props
 }: DialogProps) {
+  const { ref, ...rest } = props;
   return (
     <RACDialog
-      ref={props.ref}
+      ref={ref}
       className={clsx(
         className,
         "focus:outline-hidden relative max-h-[inherit]",
         size === "medium" && "w-[36rem]",
         scrollable === false ? "overflow-hidden" : "overflow-auto",
       )}
-      {...props}
+      {...rest}
     />
   );
 }

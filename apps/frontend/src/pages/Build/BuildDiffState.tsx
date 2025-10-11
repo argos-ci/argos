@@ -578,6 +578,7 @@ export function BuildDiffProvider(props: {
       navigate(getBuildURL({ ...params, diffId: firstDiffId }), {
         replace: true,
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInitialDiffId(firstDiffId);
     }
   }, [params, firstDiffId, navigate]);
@@ -655,6 +656,7 @@ export function BuildDiffProvider(props: {
   useLayoutEffect(() => {
     if (initialDiffGroup) {
       toggleGroup(initialDiffGroup.name, true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
     } else if (complete) {
       setReady(true);
