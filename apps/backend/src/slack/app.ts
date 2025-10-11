@@ -184,7 +184,7 @@ export const receiver = new Bolt.ExpressReceiver({
           .findById(accountId)
           .throwIfNotFound();
         res.writeHead(302, {
-          Location: `/${account.slug}/settings#slack`,
+          Location: `/${account.slug}/settings/integrations#slack`,
         });
         res.end();
       },
