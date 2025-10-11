@@ -74,7 +74,7 @@ function SendSlackMessageAction(props: {
           first.
         </p>
         <LinkButton
-          href={`/${params.accountSlug}/settings#slack`}
+          href={`/${params.accountSlug}/settings/integrations#slack`}
           target="_blank"
         >
           Connect Slack

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { CheckIcon } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
+import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -56,6 +57,10 @@ function useTestAutomation(props: UseTestAutomationProps) {
       onPress: async () => {
         try {
           form.clearErrors();
+          await form.trigger();
+          if (!form.formState.isValid) {
+            return;
+          }
           const data = form.getValues();
           const eventType = data.events[0];
           if (!eventType) {
@@ -78,6 +83,7 @@ function useTestAutomation(props: UseTestAutomationProps) {
               actions: data.actions,
             },
           });
+          toast.success("Test notification sent");
         } catch (error) {
           handleFormError(form, error);
         }
