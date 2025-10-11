@@ -33,7 +33,8 @@ export async function updateSubscription(
     await Promise.all([
       Subscription.query().insert(subscriptionData),
       notifySubscriptionStatusUpdate({
-        subscription: subscriptionData,
+        provider: "github",
+        status: subscriptionData.status,
         account,
       }),
     ]);
@@ -71,7 +72,8 @@ export async function updateSubscription(
       ]);
     }),
     notifySubscriptionStatusUpdate({
-      subscription: subscriptionData,
+      provider: "github",
+      status: subscriptionData.status,
       account,
     }),
   ]);

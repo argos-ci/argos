@@ -172,10 +172,8 @@ export async function cancelSubscription(
         .findById(activeSubscription.id)
         .patch(subscriptionData),
       notifySubscriptionStatusUpdate({
-        subscription: {
-          ...activeSubscription,
-          ...subscriptionData,
-        },
+        provider: "github",
+        status: subscriptionData.status,
         account,
       }),
     ]);

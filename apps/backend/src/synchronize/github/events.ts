@@ -70,7 +70,8 @@ export async function handleGitHubEvents(
           await Promise.all([
             Subscription.query().insert(subscriptionData),
             await notifySubscriptionStatusUpdate({
-              subscription: subscriptionData,
+              provider: "github",
+              status: subscriptionData.status,
               account,
             }),
           ]);
