@@ -10,6 +10,9 @@ const webhookClient = webhookUrl
     })
   : null;
 
+/**
+ * Notify a Discord channel via webhook.
+ */
 export async function notifyDiscord(input: { content: string }) {
   if (webhookClient) {
     await webhookClient.send({

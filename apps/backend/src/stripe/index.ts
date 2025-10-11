@@ -5,6 +5,7 @@ import { z } from "zod";
 import config from "@/config/index.js";
 import { Account, Plan, Subscription } from "@/database/models/index.js";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 
 export type { Stripe };
 
@@ -374,11 +375,19 @@ export async function createArgosSubscriptionFromStripe({
   stripeSubscription: Stripe.Subscription;
 }): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
-  return Subscription.query().insertAndFetch({
-    ...data,
-    accountId: account.id,
-    subscriberId,
-  });
+  const [newSubscription] = await Promise.all([
+    Subscription.query().insertAndFetch({
+      ...data,
+      accountId: account.id,
+      subscriberId,
+    }),
+    notifySubscriptionStatusUpdate({
+      provider: "stripe",
+      status: data.status,
+      account,
+    }),
+  ]);
+  return newSubscription;
 }
 
 export async function cancelStripeSubscription(subscriptionId: string) {
@@ -581,7 +590,22 @@ async function updateArgosSubscriptionFromStripe(
   stripeSubscription: Stripe.Subscription,
 ): Promise<Subscription> {
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
-  return argosSubscription.$query().patchAndFetch(data);
+  const [updatedSubscription] = await Promise.all([
+    argosSubscription.$query().patchAndFetch(data),
+    (async () => {
+      if (data.status !== argosSubscription.status) {
+        const account = await Account.query()
+          .findById(argosSubscription.accountId)
+          .throwIfNotFound();
+        await notifySubscriptionStatusUpdate({
+          provider: "stripe",
+          status: data.status,
+          account,
+        });
+      }
+    })(),
+  ]);
+  return updatedSubscription;
 }
 
 export async function handleStripeEvent({
@@ -665,7 +689,20 @@ export async function handleStripeEvent({
       if (!argosSubscription) {
         return;
       }
-      await argosSubscription.$query().patch({ status: "canceled" });
+      const status = "canceled";
+      await Promise.all([
+        argosSubscription.$query().patch({ status }),
+        (async () => {
+          const account = await Account.query()
+            .findById(argosSubscription.accountId)
+            .throwIfNotFound();
+          await notifySubscriptionStatusUpdate({
+            provider: "stripe",
+            status,
+            account,
+          });
+        })(),
+      ]);
       return;
     }
 

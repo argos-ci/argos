@@ -18,6 +18,7 @@ import {
   getOrCreateGhAccount,
   getOrCreateGithubAccountMember,
 } from "@/database/services/github.js";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription.js";
 import { parsePullRequestData } from "@/github-pull-request/pull-request.js";
 import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
@@ -56,15 +57,24 @@ export async function handleGitHubEvents(
             return;
           }
 
-          await Subscription.query().insert({
+          const subscriptionData = {
             accountId: account.id,
             planId: plan.id,
             startDate: payload.effective_date,
-            provider: "github",
+            provider: "github" as const,
             trialEndDate: payload.marketplace_purchase.free_trial_ends_on,
             paymentMethodFilled: true,
-            status: "active",
-          });
+            status: "active" as const,
+          };
+
+          await Promise.all([
+            Subscription.query().insert(subscriptionData),
+            await notifySubscriptionStatusUpdate({
+              provider: "github",
+              status: subscriptionData.status,
+              account,
+            }),
+          ]);
           return;
         }
         case "changed": {
