@@ -121,7 +121,7 @@ export function TeamSlack(props: {
                 Slack permissions need an update, please reconnect.
               </p>
             </div>
-            <LinkButton href={authURL} variant="google">
+            <LinkButton target="_blank" href={authURL} variant="google">
               <ButtonIcon>
                 <SlackColoredLogo />
               </ButtonIcon>
