@@ -600,6 +600,7 @@ async function updateArgosSubscriptionFromStripe(
         await notifySubscriptionStatusUpdate({
           provider: "stripe",
           status: data.status,
+          previousStatus: argosSubscription.status,
           account,
         });
       }
@@ -698,6 +699,7 @@ export async function handleStripeEvent({
             .throwIfNotFound();
           await notifySubscriptionStatusUpdate({
             provider: "stripe",
+            previousStatus: argosSubscription.status,
             status,
             account,
           });
