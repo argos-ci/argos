@@ -49,11 +49,11 @@ export function useCreateTeamAndRedirect() {
   };
 }
 
-export const TeamNewForm = (props: {
+export function TeamNewForm(props: {
   defaultTeamName?: string | null;
   successUrl?: (team: { id: string; slug: string }) => string;
   cancelUrl?: (team: { id: string; slug: string }) => string;
-}) => {
+}) {
   const createTeamAndRedirect = useCreateTeamAndRedirect();
 
   const { data, error } = useQuery(MeQuery);
@@ -100,4 +100,4 @@ export const TeamNewForm = (props: {
       </div>
     </Form>
   );
-};
+}
