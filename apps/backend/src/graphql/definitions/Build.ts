@@ -3,10 +3,10 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import {
+  ArtifactDiff,
+  ArtifactDiffReview,
   Build,
   BuildReview,
-  ScreenshotDiff,
-  ScreenshotDiffReview,
 } from "@/database/models/index.js";
 
 import {
@@ -87,11 +87,11 @@ export const typeDefs = gql`
     finalizedAt: DateTime
     "Date when the build is concluded (all diffs processed)"
     concludedAt: DateTime
-    "The screenshot diffs between the base screenshot bucket of the compare screenshot bucket"
-    screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
-    "The screenshot bucket that serves as base for comparison"
-    baseScreenshotBucket: ScreenshotBucket
-    "The base build that contains the base screenshot bucket"
+    "The artifact diffs between the base artifact bucket of the compare artifact bucket"
+    diffs(after: Int!, first: Int!): ArtifactDiffConnection!
+    "The artifact bucket that serves as base for comparison"
+    baseBucket: ArtifactBucket
+    "The base build that contains the base artifact bucket"
     baseBuild: Build
     "Continuous number. It is incremented after each build"
     number: Int!
@@ -162,9 +162,9 @@ export const typeDefs = gql`
   }
 `;
 
-const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
-  const bucket = await ctx.loaders.ScreenshotBucket.load(
-    build.compareScreenshotBucketId,
+const getHeadArtifactBucket = async (ctx: Context, build: Build) => {
+  const bucket = await ctx.loaders.ArtifactBucket.load(
+    build.headArtifactBucketId,
   );
   invariant(bucket, "bucket not found");
   return bucket;
@@ -172,7 +172,7 @@ const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
 
 export const resolvers: IResolvers = {
   Build: {
-    screenshotDiffs: async (build, { first, after }) => {
+    diffs: async (build, { first, after }) => {
       // If the build is not concluded, we don't want to return any diffs.
       if (!build.conclusion) {
         return paginateResult({
@@ -182,30 +182,30 @@ export const resolvers: IResolvers = {
         });
       }
       const result = await build
-        .$relatedQuery("screenshotDiffs")
-        .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-        .orderByRaw(ScreenshotDiff.sortDiffByStatus)
-        .orderBy("screenshot_diffs.score", "desc", "last")
-        .orderBy("screenshot_diffs.group", "asc", "last")
-        .orderBy("compareScreenshot.name", "asc")
-        .orderBy("baseScreenshot.name", "asc")
-        .orderBy("screenshot_diffs.id", "asc")
+        .$relatedQuery("artifactDiffs")
+        .leftJoinRelated("[baseArtifact, headArtifact]")
+        .orderByRaw(ArtifactDiff.sortDiffByStatus)
+        .orderBy("artifact_diffs.score", "desc", "last")
+        .orderBy("artifact_diffs.group", "asc", "last")
+        .orderBy("headArtifact.name", "asc")
+        .orderBy("baseArtifact.name", "asc")
+        .orderBy("artifact_diffs.id", "asc")
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
-    baseScreenshotBucket: async (build, _args, ctx) => {
-      if (!build.baseScreenshotBucketId) {
+    baseBucket: async (build, _args, ctx) => {
+      if (!build.baseArtifactBucketId) {
         return null;
       }
-      return ctx.loaders.ScreenshotBucket.load(build.baseScreenshotBucketId);
+      return ctx.loaders.ArtifactBucket.load(build.baseArtifactBucketId);
     },
     baseBuild: async (build, _args, ctx) => {
-      if (!build.baseScreenshotBucketId) {
+      if (!build.baseArtifactBucketId) {
         return null;
       }
-      return ctx.loaders.BuildFromCompareScreenshotBucketId.load(
-        build.baseScreenshotBucketId,
+      return ctx.loaders.BuildFromHeadArtifactBucketId.load(
+        build.baseArtifactBucketId,
       );
     },
     status: async (build, _args, ctx) => {
@@ -237,12 +237,12 @@ export const resolvers: IResolvers = {
       if (build.prHeadCommit) {
         return build.prHeadCommit;
       }
-      const compareBucket = await getCompareScreenshotBucket(ctx, build);
-      return compareBucket.commit;
+      const headBucket = await getHeadArtifactBucket(ctx, build);
+      return headBucket.commit;
     },
     branch: async (build, _args, ctx) => {
-      const compareBucket = await getCompareScreenshotBucket(ctx, build);
-      return compareBucket.branch || null;
+      const headBucket = await getHeadArtifactBucket(ctx, build);
+      return headBucket.branch || null;
     },
     pullRequest: async (build, _args, ctx) => {
       if (!build.githubPullRequestId) {
@@ -264,14 +264,14 @@ export const resolvers: IResolvers = {
       if (build.baseBranch) {
         return build.baseBranch;
       }
-      if (!build.baseScreenshotBucketId) {
+      if (!build.baseArtifactBucketId) {
         return null;
       }
-      const baseScreenshotBucket = await ctx.loaders.ScreenshotBucket.load(
-        build.baseScreenshotBucketId,
+      const baseArtifactBucket = await ctx.loaders.ArtifactBucket.load(
+        build.baseArtifactBucketId,
       );
-      invariant(baseScreenshotBucket, "baseScreenshotBucket not found");
-      return baseScreenshotBucket.branch;
+      invariant(baseArtifactBucket, "baseArtifactBucket not found");
+      return baseArtifactBucket.branch;
     },
     baseBranchResolvedFrom: (build) => {
       switch (build.baseBranchResolvedFrom) {
@@ -311,29 +311,29 @@ export const resolvers: IResolvers = {
         return [];
       }
 
-      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      const headBucket = await getHeadArtifactBucket(ctx, build);
 
       // If branch is not set, we cannot find previous approvals
-      if (!compareBucket.branch) {
+      if (!headBucket.branch) {
         return [];
       }
 
-      const previousApprovals = await ScreenshotDiff.query()
-        .select("screenshot_diffs.id")
-        .joinRelated("compareScreenshot")
-        .where("screenshot_diffs.buildId", build.id)
+      const previousApprovals = await ArtifactDiff.query()
+        .select("artifact_diffs.id")
+        .joinRelated("headArtifact")
+        .where("artifact_diffs.buildId", build.id)
         .whereIn(
-          "compareScreenshot.fileId",
-          ScreenshotDiff.query()
-            .joinRelated("compareScreenshot")
-            .select("compareScreenshot.fileId")
+          "headArtifactBucket.fileId",
+          ArtifactDiff.query()
+            .joinRelated("headArtifact")
+            .select("headArtifact.fileId")
             .whereIn(
               "screenshot_diffs.id",
-              ScreenshotDiffReview.query()
-                .select("screenshot_diff_reviews.screenshotDiffId")
-                .where("screenshot_diff_reviews.state", "approved")
+              ArtifactDiffReview.query()
+                .select("artifact_diff_reviews.artifactDiffId")
+                .where("artifact_diff_reviews.state", "approved")
                 .whereIn(
-                  "screenshot_diff_reviews.buildReviewId",
+                  "artifact_diff_reviews.buildReviewId",
                   BuildReview.query()
                     .select("build_reviews.id")
                     .where("build_reviews.userId", ctx.auth.user.id)
@@ -341,18 +341,12 @@ export const resolvers: IResolvers = {
                       "build_reviews.buildId",
                       Build.query()
                         .select("builds.id")
-                        .joinRelated("compareScreenshotBucket")
+                        .joinRelated("headArtifactBucket")
                         .where("builds.createdAt", "<", build.createdAt)
                         .where("builds.mode", build.mode)
                         .where("builds.conclusion", "changes-detected")
-                        .where(
-                          "compareScreenshotBucket.name",
-                          compareBucket.name,
-                        )
-                        .where(
-                          "compareScreenshotBucket.branch",
-                          compareBucket.branch,
-                        ),
+                        .where("headArtifactBucket.name", headBucket.name)
+                        .where("headArtifactBucket.branch", headBucket.branch),
                     )
                     .orderBy("build_reviews.createdAt", "desc")
                     .limit(1),

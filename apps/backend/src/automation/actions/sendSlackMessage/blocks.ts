@@ -6,11 +6,11 @@ import { getStatsMessage } from "@/build/stats";
 import {
   Build,
   type Account,
+  type ArtifactBucket,
   type BuildAggregatedStatus,
   type BuildReview,
   type GithubPullRequest,
   type Project,
-  type ScreenshotBucket,
 } from "@/database/models";
 import { UnretryableError } from "@/job-core";
 import type { SlackMessageBlock } from "@/slack/channel";
@@ -124,14 +124,14 @@ export function buildReviewBlock(props: {
 export function detailsBlock(props: {
   build: Build;
   project: Project;
-  compareScreenshotBucket: ScreenshotBucket | null;
+  headArtifactBucket: ArtifactBucket | null;
   pullRequest: GithubPullRequest | null;
 }): SlackMessageBlock {
-  const { build, compareScreenshotBucket, project, pullRequest } = props;
-  const commit = compareScreenshotBucket?.commit;
+  const { build, headArtifactBucket, project, pullRequest } = props;
+  const commit = headArtifactBucket?.commit;
   const commitShort = commit ? String(commit).substring(0, 7) : null;
   const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
-  const branch = compareScreenshotBucket?.branch;
+  const branch = headArtifactBucket?.branch;
   const repositoryURL = getRepositoryUrl(project);
   const branchUrl =
     branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : undefined;
@@ -144,7 +144,7 @@ export function detailsBlock(props: {
       statsMessage
         ? {
             type: "mrkdwn" as const,
-            text: `*Screenshots:* ${statsMessage}`,
+            text: `*Artifacts:* ${statsMessage}`,
           }
         : null,
       pullRequest?.number != null

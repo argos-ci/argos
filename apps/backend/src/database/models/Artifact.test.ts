@@ -1,15 +1,15 @@
 import { describe, it } from "vitest";
 
-import { Screenshot } from "./Screenshot.js";
+import { Artifact } from "./Artifact";
 
-describe("Screenshot", () => {
+describe("Artifact", () => {
   describe("metadata validation", () => {
     // eslint-disable-next-line vitest/expect-expect
     it("validates URL with placeholders `{{}}`", () => {
-      Screenshot.fromJson({
+      Artifact.fromJson({
         name: "X",
         s3Id: "x",
-        screenshotBucketId: "screenshot-bucket-id",
+        artifactBucketId: "artifact-bucket-id",
         metadata: {
           sdk: { name: "@argos-ci/storybook", version: "0.2.1" },
           url: "http://127.0.0.1:6006/storybook/iframe.html?id=foundation-typography--default&viewMode={{viewMode}}",

@@ -1,26 +1,26 @@
 import { Model, type RelationMappings } from "objection";
 
-import { BuildReview } from "./BuildReview.js";
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
+import { ArtifactDiff } from "./ArtifactDiff";
+import { BuildReview } from "./BuildReview";
 
-export class ScreenshotDiffReview extends Model {
-  static override tableName = "screenshot_diff_reviews";
+export class ArtifactDiffReview extends Model {
+  static override tableName = "artifact_diff_reviews";
 
   static override get idColumn() {
-    return ["buildReviewId", "screenshotDiffId"];
+    return ["buildReviewId", "artifactDiffId"];
   }
 
   static override jsonSchema = {
     type: "object",
-    required: ["screenshotDiffId", "buildReviewId", "state"],
+    required: ["artifactDiffId", "buildReviewId", "state"],
     properties: {
-      screenshotDiffId: { type: "string" },
+      artifactDiffId: { type: "string" },
       buildReviewId: { type: "string" },
       state: { type: "string", enum: ["approved", "rejected"] },
     },
   };
 
-  screenshotDiffId!: string;
+  artifactDiffId!: string;
   buildReviewId!: string;
   state!: "approved" | "rejected";
 
@@ -34,17 +34,17 @@ export class ScreenshotDiffReview extends Model {
           to: "build_reviews.id",
         },
       },
-      screenshotDiff: {
+      artifactDiff: {
         relation: Model.BelongsToOneRelation,
-        modelClass: ScreenshotDiff,
+        modelClass: ArtifactDiff,
         join: {
-          from: "screenshot_diff_reviews.screenshotDiffId",
-          to: "screenshot_diffs.id",
+          from: "artifact_diff_reviews.artifactDiffId",
+          to: "artifact_diffs.id",
         },
       },
     };
   }
 
   buildReview?: BuildReview;
-  screenshotDiff?: ScreenshotDiff;
+  artifactDiff?: ArtifactDiff;
 }

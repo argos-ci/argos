@@ -5,13 +5,13 @@ import ora from "ora";
 import config, { createConfig } from "@/config";
 import { getKnexConfig, loadDatabaseConfigFromURL } from "@/config/database";
 import {
+  Artifact,
+  ArtifactBucket,
+  ArtifactDiff,
   Build,
   File,
   Model,
   Project,
-  Screenshot,
-  ScreenshotBucket,
-  ScreenshotDiff,
   Test,
 } from "@/database/models";
 import { getS3Client, uploadFromBuffer } from "@/storage";
@@ -95,7 +95,7 @@ spinner.text = `Fetching build`;
 
 const build = await Build.query(fromKnex)
   .withGraphFetched(
-    "[screenshotDiffs.[file,test,compareScreenshot,baseScreenshot], baseScreenshotBucket.screenshots.[test,file,playwrightTraceFile], compareScreenshotBucket.screenshots.[test,file,playwrightTraceFile]]",
+    "[artifactDiffs.[file,test,headArtifact,baseArtifact], baseArtifactBucket.artifacts.[test,file,playwrightTraceFile], headArtifactBucket.artifacts.[test,file,playwrightTraceFile]]",
   )
   .where("number", buildNumber)
   .where("projectId", projectId)
@@ -105,38 +105,32 @@ if (!build) {
   throw new Error("Build not found");
 }
 
-spinner.text = `Uploading screenshots for build`;
+spinner.text = `Uploading artifacts for build`;
 
-const allScreenshots = (() => {
-  const screenshots: Screenshot[] = [];
-  if (build.baseScreenshotBucket) {
-    invariant(
-      build.baseScreenshotBucket.screenshots,
-      "Screenshots must be fetched",
-    );
-    screenshots.push(...build.baseScreenshotBucket.screenshots);
+const allArtifacts = (() => {
+  const artifacts: Artifact[] = [];
+  if (build.baseArtifactBucket) {
+    invariant(build.baseArtifactBucket.artifacts, "Artifacts must be fetched");
+    artifacts.push(...build.baseArtifactBucket.artifacts);
   }
 
-  invariant(
-    build.compareScreenshotBucket?.screenshots,
-    "Screenshots must be fetched",
-  );
+  invariant(build.headArtifactBucket?.artifacts, "Artifacts must be fetched");
 
-  screenshots.push(...build.compareScreenshotBucket.screenshots);
+  artifacts.push(...build.headArtifactBucket.artifacts);
 
-  return screenshots;
+  return artifacts;
 })();
 
 const allFiles = (() => {
   const files: File[] = [];
-  for (const screenshot of allScreenshots) {
-    const file = screenshot.file;
-    invariant(file, "Screenshot must have a file");
+  for (const artifact of allArtifacts) {
+    const file = artifact.file;
+    invariant(file, "Artifact must have a file");
     if (!files.some((f) => f.key === file.key)) {
       files.push(file);
     }
 
-    const traceFile = screenshot.playwrightTraceFile;
+    const traceFile = artifact.playwrightTraceFile;
     if (traceFile) {
       if (!files.some((f) => f.key === traceFile.key)) {
         files.push(traceFile);
@@ -144,9 +138,9 @@ const allFiles = (() => {
     }
   }
 
-  invariant(build.screenshotDiffs, "Screenshot diffs must be fetched");
+  invariant(build.artifactDiffs, "Artifact diffs must be fetched");
 
-  for (const diff of build.screenshotDiffs) {
+  for (const diff of build.artifactDiffs) {
     const file = diff.file;
     if (!file) {
       continue;
@@ -175,34 +169,30 @@ const newFiles = await File.query()
   .merge();
 
 spinner.text = "Inserting buckets...";
-const newBaseScreenshotBucket = await (async () => {
-  if (build.baseScreenshotBucket) {
-    return ScreenshotBucket.query().insertAndFetch({
-      ...toJSON(build.baseScreenshotBucket),
+const newBaseArtifactBucket = await (async () => {
+  if (build.baseArtifactBucket) {
+    return ArtifactBucket.query().insertAndFetch({
+      ...toJSON(build.baseArtifactBucket),
       projectId: toProjectId,
     });
   }
   return null;
 })();
 
-invariant(
-  build.compareScreenshotBucket,
-  "Compare screenshot bucket must exist",
-);
+invariant(build.headArtifactBucket, "Compare artifact bucket must exist");
 
-const newCompareScreenshotBucket =
-  await ScreenshotBucket.query().insertAndFetch({
-    ...toJSON(build.compareScreenshotBucket),
-    projectId: toProjectId,
-  });
+const newHeadArtifactBucket = await ArtifactBucket.query().insertAndFetch({
+  ...toJSON(build.headArtifactBucket),
+  projectId: toProjectId,
+});
 
 spinner.text = "Inserting build...";
 
 const newBuild = await Build.query().insertAndFetch({
   ...toJSON(build),
   projectId: toProjectId,
-  baseScreenshotBucketId: newBaseScreenshotBucket?.id ?? null,
-  compareScreenshotBucketId: newCompareScreenshotBucket.id,
+  baseArtifactBucketId: newBaseArtifactBucket?.id ?? null,
+  headArtifactBucketId: newHeadArtifactBucket.id,
   githubPullRequestId: null,
 });
 
@@ -212,10 +202,10 @@ const existingTests = await Test.query()
   .where("projectId", toProjectId)
   .where("buildName", build.name);
 
-const toInsertTests = allScreenshots
-  .map((screenshot) => {
-    const test = screenshot.test;
-    invariant(test, "Screenshot must have a test");
+const toInsertTests = allArtifacts
+  .map((artifact) => {
+    const test = artifact.test;
+    invariant(test, "Artifact must have a test");
     return {
       ...toJSON(test),
       projectId: toProjectId,
@@ -231,30 +221,30 @@ const insertedTests =
     : [];
 const newTests = [...existingTests, ...insertedTests];
 
-spinner.text = "Inserting screenshots...";
+spinner.text = "Inserting artifacts...";
 
-const newScreenshots = await Screenshot.query().insertAndFetch(
-  allScreenshots.map((screenshot) => {
-    const file = screenshot.file;
-    invariant(file, "Screenshot must have a file");
+const newArtifacts = await Artifact.query().insertAndFetch(
+  allArtifacts.map((artifact) => {
+    const file = artifact.file;
+    invariant(file, "Artifact must have a file");
     const newFile = newFiles.find((f) => f.key === file.key);
     invariant(newFile, "New file must exist");
     const bucket =
-      screenshot.screenshotBucketId === build.baseScreenshotBucketId
-        ? newBaseScreenshotBucket
-        : newCompareScreenshotBucket;
+      artifact.artifactBucketId === build.baseArtifactBucketId
+        ? newBaseArtifactBucket
+        : newHeadArtifactBucket;
     invariant(bucket, "Bucket must exist");
-    const test = newTests.find((t) => t.name === screenshot.name);
+    const test = newTests.find((t) => t.name === artifact.name);
     invariant(test, "Test must exist");
-    const traceFile = screenshot.playwrightTraceFile
-      ? newFiles.find((f) => f.key === screenshot.playwrightTraceFile?.key)
+    const traceFile = artifact.playwrightTraceFile
+      ? newFiles.find((f) => f.key === artifact.playwrightTraceFile?.key)
       : null;
     return {
-      ...toJSON(screenshot),
+      ...toJSON(artifact),
       number: undefined,
       fileId: newFile.id,
       testId: test.id,
-      screenshotBucketId: bucket.id,
+      artifactBucketId: bucket.id,
       playwrightTraceFileId: traceFile?.id ?? null,
       buildShardId: null,
     };
@@ -263,32 +253,32 @@ const newScreenshots = await Screenshot.query().insertAndFetch(
 
 spinner.text = "Inserting diffs...";
 
-const screenshotDiffs = build.screenshotDiffs;
+const artifactDiffs = build.artifactDiffs;
 
-invariant(screenshotDiffs, "Screenshot diffs must be fetched");
+invariant(artifactDiffs, "Artifact diffs must be fetched");
 
-await ScreenshotDiff.query().insert(
-  screenshotDiffs.map((diff) => {
+await ArtifactDiff.query().insert(
+  artifactDiffs.map((diff) => {
     const file = diff.file;
     const newFile = file ? newFiles.find((f) => f.key === file.key) : null;
-    const { baseScreenshot, compareScreenshot } = diff;
-    const screenshot = baseScreenshot ?? compareScreenshot;
-    invariant(screenshot, "Screenshot must exist");
-    const test = newTests.find((t) => t.name === screenshot.name);
+    const { baseArtifact, headArtifact } = diff;
+    const artifact = baseArtifact ?? headArtifact;
+    invariant(artifact, "Artifact must exist");
+    const test = newTests.find((t) => t.name === artifact.name);
     invariant(test, "Test must exist");
-    const newBaseScreenshot =
-      baseScreenshot && newBaseScreenshotBucket
-        ? newScreenshots.find(
+    const newBaseArtifact =
+      baseArtifact && newBaseArtifactBucket
+        ? newArtifacts.find(
             (s) =>
-              s.name === baseScreenshot.name &&
-              s.screenshotBucketId === newBaseScreenshotBucket?.id,
+              s.name === baseArtifact.name &&
+              s.artifactBucketId === newBaseArtifactBucket?.id,
           )
         : null;
-    const newCompareScreenshot = compareScreenshot
-      ? newScreenshots.find(
+    const newHeadArtifact = headArtifact
+      ? newArtifacts.find(
           (s) =>
-            s.name === compareScreenshot.name &&
-            s.screenshotBucketId === newCompareScreenshotBucket.id,
+            s.name === headArtifact.name &&
+            s.artifactBucketId === newHeadArtifactBucket.id,
         )
       : null;
     return {
@@ -296,8 +286,8 @@ await ScreenshotDiff.query().insert(
       number: undefined,
       fileId: newFile?.id ?? null,
       testId: test.id,
-      baseScreenshotId: newBaseScreenshot?.id ?? null,
-      compareScreenshotId: newCompareScreenshot?.id ?? null,
+      baseArtifactId: newBaseArtifact?.id ?? null,
+      headArtifactId: newHeadArtifact?.id ?? null,
       buildId: newBuild.id,
     };
   }),

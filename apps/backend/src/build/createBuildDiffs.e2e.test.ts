@@ -2,10 +2,10 @@ import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  Artifact,
+  ArtifactBucket,
+  ArtifactDiff,
   Build,
-  Screenshot,
-  ScreenshotBucket,
-  ScreenshotDiff,
 } from "@/database/models/index.js";
 import type { File, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
@@ -14,9 +14,9 @@ import { createBuildDiffs } from "./createBuildDiffs.js";
 
 describe("#createBuildDiffs", () => {
   let build: Build;
-  let compareBucket: ScreenshotBucket;
-  let newScreenshot: Screenshot | undefined;
-  let newScreenshotWithoutFile: Screenshot | undefined;
+  let headBucket: ArtifactBucket;
+  let newArtifact: Artifact | undefined;
+  let newArtifactWithoutFile: Artifact | undefined;
   let project: Project;
   let files: File[];
 
@@ -25,117 +25,119 @@ describe("#createBuildDiffs", () => {
     project = await factory.Project.create({
       githubRepositoryId: null,
     });
-    compareBucket = await factory.ScreenshotBucket.create({
+    headBucket = await factory.ArtifactBucket.create({
       branch: "BUGS-123",
       projectId: project.id,
     });
     build = await factory.Build.create({
-      baseScreenshotBucketId: null,
-      compareScreenshotBucketId: compareBucket.id,
+      baseArtifactBucketId: null,
+      compareArtifactBucketId: headBucket.id,
       projectId: project.id,
       jobStatus: "pending",
     });
     files = await factory.File.createMany(10, {
-      type: "screenshot",
+      type: "Artifact",
     });
-    [newScreenshot, newScreenshotWithoutFile] =
-      await factory.Screenshot.createMany(2, [
+    [newArtifact, newArtifactWithoutFile] = await factory.Artifact.createMany(
+      2,
+      [
         {
-          name: "new-screenshot",
+          name: "new-Artifact",
           s3Id: "s3Id-a",
           fileId: files[1]!.id,
-          screenshotBucketId: compareBucket.id,
+          ArtifactBucketId: headBucket.id,
         },
         {
-          name: "new-screenshot",
+          name: "new-Artifact",
           s3Id: "s3Id-b",
-          screenshotBucketId: compareBucket.id,
+          ArtifactBucketId: headBucket.id,
         },
-      ]);
+      ],
+    );
   });
 
   describe("with base bucket", () => {
-    let baseBucket: ScreenshotBucket;
-    let classicDiffBaseScreenshot: Screenshot | undefined;
-    let classicDiffCompareScreenshot: Screenshot | undefined;
-    let removedScreenshot: Screenshot | undefined;
-    let noFileBaseScreenshotBase: Screenshot | undefined;
-    let noFileBaseScreenshotCompare: Screenshot | undefined;
-    let noFileCompareScreenshotBase: Screenshot | undefined;
-    let noFileCompareScreenshotCompare: Screenshot | undefined;
-    let sameFileScreenshotBase: Screenshot | undefined;
-    let sameFileScreenshotCompare: Screenshot | undefined;
+    let baseBucket: ArtifactBucket;
+    let classicDiffBaseArtifact: Artifact | undefined;
+    let classicDiffCompareArtifact: Artifact | undefined;
+    let removedArtifact: Artifact | undefined;
+    let noFileBaseArtifactBase: Artifact | undefined;
+    let noFileBaseArtifactCompare: Artifact | undefined;
+    let noFileCompareArtifactBase: Artifact | undefined;
+    let noFileCompareArtifactCompare: Artifact | undefined;
+    let sameFileArtifactBase: Artifact | undefined;
+    let sameFileArtifactCompare: Artifact | undefined;
 
     beforeEach(async () => {
-      baseBucket = await factory.ScreenshotBucket.create({
+      baseBucket = await factory.ArtifactBucket.create({
         branch: "master",
         projectId: project.id,
       });
       await build
         .$query()
-        .patchAndFetch({ baseScreenshotBucketId: baseBucket.id });
+        .patchAndFetch({ baseArtifactBucketId: baseBucket.id });
       [
-        classicDiffBaseScreenshot,
-        classicDiffCompareScreenshot,
-        removedScreenshot,
-        noFileBaseScreenshotBase,
-        noFileBaseScreenshotCompare,
-        noFileCompareScreenshotBase,
-        noFileCompareScreenshotCompare,
-        sameFileScreenshotBase,
-        sameFileScreenshotCompare,
-      ] = await factory.Screenshot.createMany(9, [
+        classicDiffBaseArtifact,
+        classicDiffCompareArtifact,
+        removedArtifact,
+        noFileBaseArtifactBase,
+        noFileBaseArtifactCompare,
+        noFileCompareArtifactBase,
+        noFileCompareArtifactCompare,
+        sameFileArtifactBase,
+        sameFileArtifactCompare,
+      ] = await factory.Artifact.createMany(9, [
         {
           name: "classic-diff",
           s3Id: "s3Id-c",
           fileId: files[2]!.id,
-          screenshotBucketId: baseBucket.id,
+          ArtifactBucketId: baseBucket.id,
         },
         {
           name: "classic-diff",
           s3Id: "s3Id-d",
           fileId: files[3]!.id,
-          screenshotBucketId: compareBucket.id,
+          ArtifactBucketId: headBucket.id,
         },
         {
-          name: "removed-screenshot",
+          name: "removed-Artifact",
           s3Id: "s3Id-e",
           fileId: files[4]!.id,
-          screenshotBucketId: baseBucket.id,
+          ArtifactBucketId: baseBucket.id,
         },
         {
-          name: "no-file-base-screenshot",
+          name: "no-file-base-Artifact",
           s3Id: "s3Id-f",
-          screenshotBucketId: baseBucket.id,
+          ArtifactBucketId: baseBucket.id,
         },
         {
-          name: "no-file-base-screenshot",
+          name: "no-file-base-Artifact",
           s3Id: "s3Id-g",
           fileId: files[5]!.id,
-          screenshotBucketId: compareBucket.id,
+          ArtifactBucketId: headBucket.id,
         },
         {
-          name: "no-file-compare-screenshot",
+          name: "no-file-compare-Artifact",
           s3Id: "s3Id-h",
           fileId: files[6]!.id,
-          screenshotBucketId: baseBucket.id,
+          ArtifactBucketId: baseBucket.id,
         },
         {
-          name: "no-file-compare-screenshot",
+          name: "no-file-compare-Artifact",
           s3Id: "s3Id-i",
-          screenshotBucketId: compareBucket.id,
+          ArtifactBucketId: headBucket.id,
         },
         {
           name: "same-file",
           s3Id: "s3Id-j",
           fileId: files[7]!.id,
-          screenshotBucketId: baseBucket.id,
+          ArtifactBucketId: baseBucket.id,
         },
         {
           name: "same-file",
           s3Id: "s3Id-j",
           fileId: files[7]!.id,
-          screenshotBucketId: compareBucket.id,
+          ArtifactBucketId: headBucket.id,
         },
       ]);
     });
@@ -146,8 +148,8 @@ describe("#createBuildDiffs", () => {
         addedDiff,
         addDiffWithoutFile,
         updatedDiff,
-        noFileBaseScreenshotDiff,
-        noFileCompareScreenshotDiff,
+        noFileBaseArtifactDiff,
+        noFileCompareArtifactDiff,
         sameFileDiff,
         removedDiff,
       ] = diffs;
@@ -155,65 +157,65 @@ describe("#createBuildDiffs", () => {
       expect(diffs.length).toBe(7);
       expect(addedDiff).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: null,
-        compareScreenshotId: newScreenshot!.id,
+        baseArtifactId: null,
+        compareArtifactId: newArtifact!.id,
         jobStatus: "complete",
       });
       expect(addDiffWithoutFile).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: null,
-        compareScreenshotId: newScreenshotWithoutFile!.id,
+        baseArtifactId: null,
+        compareArtifactId: newArtifactWithoutFile!.id,
         jobStatus: "pending",
       });
       expect(updatedDiff).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: classicDiffBaseScreenshot!.id,
-        compareScreenshotId: classicDiffCompareScreenshot!.id,
+        baseArtifactId: classicDiffBaseArtifact!.id,
+        compareArtifactId: classicDiffCompareArtifact!.id,
         jobStatus: "pending",
       });
       expect(removedDiff).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: removedScreenshot!.id,
-        compareScreenshotId: null,
+        baseArtifactId: removedArtifact!.id,
+        compareArtifactId: null,
         jobStatus: "complete",
         score: null,
       });
-      expect(noFileBaseScreenshotDiff).toMatchObject({
+      expect(noFileBaseArtifactDiff).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: noFileBaseScreenshotBase!.id,
-        compareScreenshotId: noFileBaseScreenshotCompare!.id,
+        baseArtifactId: noFileBaseArtifactBase!.id,
+        compareArtifactId: noFileBaseArtifactCompare!.id,
         jobStatus: "pending",
         score: null,
       });
-      expect(noFileCompareScreenshotDiff).toMatchObject({
+      expect(noFileCompareArtifactDiff).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: noFileCompareScreenshotBase!.id,
-        compareScreenshotId: noFileCompareScreenshotCompare!.id,
+        baseArtifactId: noFileCompareArtifactBase!.id,
+        compareArtifactId: noFileCompareArtifactCompare!.id,
         jobStatus: "pending",
         score: null,
       });
       expect(sameFileDiff).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: sameFileScreenshotBase!.id,
-        compareScreenshotId: sameFileScreenshotCompare!.id,
+        baseArtifactId: sameFileArtifactBase!.id,
+        compareArtifactId: sameFileArtifactCompare!.id,
         jobStatus: "complete",
       });
     });
 
     it("should compare only when file's dimensions is missing", async () => {
-      await compareBucket.$query().patch({ commit: baseBucket.commit });
+      await headBucket.$query().patch({ commit: baseBucket.commit });
 
       const [
         addedDiff,
         addDiffWithoutFile,
         updatedDiff,
-        noFileBaseScreenshotDiff,
-        noFileCompareScreenshotDiff,
+        noFileBaseArtifactDiff,
+        noFileCompareArtifactDiff,
         sameFileDiff,
         removedDiff,
       ] = await createBuildDiffs(build);
-      const getJobStatuses = (diffs: ScreenshotDiff[]) => [
-        ...new Set(diffs.map((diff: ScreenshotDiff) => diff.jobStatus)),
+      const getJobStatuses = (diffs: ArtifactDiff[]) => [
+        ...new Set(diffs.map((diff: ArtifactDiff) => diff.jobStatus)),
       ];
 
       expect(
@@ -223,8 +225,8 @@ describe("#createBuildDiffs", () => {
         getJobStatuses([
           updatedDiff!,
           addDiffWithoutFile!,
-          noFileBaseScreenshotDiff!,
-          noFileCompareScreenshotDiff!,
+          noFileBaseArtifactDiff!,
+          noFileCompareArtifactDiff!,
         ]),
       ).toMatchObject(["pending"]);
     });
@@ -234,7 +236,7 @@ describe("#createBuildDiffs", () => {
         const autoApprovedBranchGlob =
           await project.$getAutoApprovedBranchGlob();
         invariant(autoApprovedBranchGlob);
-        await ScreenshotBucket.query().findById(compareBucket.id).patch({
+        await ArtifactBucket.query().findById(headBucket.id).patch({
           branch: autoApprovedBranchGlob,
         });
       });
@@ -261,14 +263,14 @@ describe("#createBuildDiffs", () => {
       expect(diffs.length).toBe(2);
       expect(diffs[0]).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: null,
-        compareScreenshotId: newScreenshot!.id,
+        baseArtifactId: null,
+        compareArtifactId: newArtifact!.id,
         jobStatus: "complete",
       });
       expect(diffs[1]).toMatchObject({
         buildId: build.id,
-        baseScreenshotId: null,
-        compareScreenshotId: newScreenshotWithoutFile!.id,
+        baseArtifactId: null,
+        compareArtifactId: newArtifactWithoutFile!.id,
         jobStatus: "pending",
       });
     });

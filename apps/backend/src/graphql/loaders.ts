@@ -6,6 +6,9 @@ import type { ModelClass } from "objection";
 import { knex } from "@/database";
 import {
   Account,
+  Artifact,
+  ArtifactBucket,
+  ArtifactDiff,
   AutomationActionRun,
   AutomationRun,
   Build,
@@ -22,9 +25,6 @@ import {
   Model,
   Plan,
   Project,
-  Screenshot,
-  ScreenshotBucket,
-  ScreenshotDiff,
   SlackInstallation,
   Team,
   TeamUser,
@@ -249,20 +249,18 @@ function createGitHubAccountMemberLoader() {
   );
 }
 
-function createBuildFromCompareScreenshotBucketIdLoader() {
-  return new DataLoader<string, Build | null>(
-    async (compareScreenshotBucketIds) => {
-      const builds = await Build.query().whereIn(
-        "compareScreenshotBucketId",
-        compareScreenshotBucketIds as string[],
-      );
-      const buildsMap: Record<string, Build> = {};
-      for (const build of builds) {
-        buildsMap[build.compareScreenshotBucketId] = build;
-      }
-      return compareScreenshotBucketIds.map((id) => buildsMap[id] ?? null);
-    },
-  );
+function createBuildFromHeadArtifactBucketIdLoader() {
+  return new DataLoader<string, Build | null>(async (bucketIds) => {
+    const builds = await Build.query().whereIn(
+      "headArtifactBucketId",
+      bucketIds as string[],
+    );
+    const buildsMap: Record<string, Build> = {};
+    for (const build of builds) {
+      buildsMap[build.headArtifactBucketId] = build;
+    }
+    return bucketIds.map((id) => buildsMap[id] ?? null);
+  });
 }
 
 function createGhApiInstallationLoader() {
@@ -451,8 +449,8 @@ function createTestChangeStatsLoader(): (
   { fileId: string },
   {
     totalOccurences: number;
-    lastSeenDiff: ScreenshotDiff;
-    firstSeenDiff: ScreenshotDiff;
+    lastSeenDiff: ArtifactDiff;
+    firstSeenDiff: ArtifactDiff;
   },
   string
 > {
@@ -463,8 +461,8 @@ function createTestChangeStatsLoader(): (
       },
       {
         totalOccurences: number;
-        lastSeenDiff: ScreenshotDiff;
-        firstSeenDiff: ScreenshotDiff;
+        lastSeenDiff: ArtifactDiff;
+        firstSeenDiff: ArtifactDiff;
       },
       string
     >(
@@ -484,25 +482,25 @@ function createTestChangeStatsLoader(): (
           { testId, fileIds, from },
         );
 
-        const diffQuery = ScreenshotDiff.query()
-          .select("screenshot_diffs.*")
-          .distinctOn("screenshot_diffs.fileId")
+        const diffQuery = ArtifactDiff.query()
+          .select("artifact_diffs.*")
+          .distinctOn("artifact_diffs.fileId")
           .joinRelated("build")
-          .where("screenshot_diffs.testId", testId)
-          .whereIn("screenshot_diffs.fileId", fileIds)
-          .where("screenshot_diffs.score", ">", 0)
+          .where("artifact_diffs.testId", testId)
+          .whereIn("artifact_diffs.fileId", fileIds)
+          .where("artifact_diffs.score", ">", 0)
           .where("build.type", "reference")
           .where("build.createdAt", ">=", from)
-          .whereNotNull("screenshot_diffs.fileId")
-          .orderBy("screenshot_diffs.fileId");
+          .whereNotNull("artifact_diffs.fileId")
+          .orderBy("artifact_diffs.fileId");
 
         const lastSeenQuery = diffQuery
           .clone()
-          .orderBy("screenshot_diffs.createdAt", "desc");
+          .orderBy("artifact_diffs.createdAt", "desc");
 
         const firstSeenQuery = diffQuery
           .clone()
-          .orderBy("screenshot_diffs.createdAt", "asc");
+          .orderBy("artifact_diffs.createdAt", "asc");
 
         const [lastSeenRows, firstSeenRows, totalOccurencesRows] =
           await Promise.all([
@@ -576,10 +574,12 @@ function createIgnoredChangeLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
+  Artifact: createModelLoader(Artifact),
+  ArtifactBucket: createModelLoader(ArtifactBucket),
+  ArtifactDiff: createModelLoader(ArtifactDiff),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   Build: createModelLoader(Build),
-  BuildFromCompareScreenshotBucketId:
-    createBuildFromCompareScreenshotBucketIdLoader(),
+  BuildFromHeadArtifactBucketId: createBuildFromHeadArtifactBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
   getChangesOccurencesLoader: createChangeOccurencesLoader(),
@@ -597,9 +597,6 @@ export const createLoaders = () => ({
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),
   SlackInstallation: createModelLoader(SlackInstallation),
-  Screenshot: createModelLoader(Screenshot),
-  ScreenshotBucket: createModelLoader(ScreenshotBucket),
-  ScreenshotDiff: createModelLoader(ScreenshotDiff),
   Team: createModelLoader(Team),
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),

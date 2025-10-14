@@ -1,7 +1,7 @@
 import { ref, TransactionOrKnex, type PartialModelObject } from "objection";
 
 import { transaction } from "@/database";
-import { Build, BuildShard, Screenshot } from "@/database/models/index.js";
+import { Artifact, Build, BuildShard } from "@/database/models/index.js";
 import { BuildMetadata } from "@/database/schemas/BuildMetadata";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
@@ -92,23 +92,21 @@ export async function finalizeBuild(input: {
   trx?: TransactionOrKnex;
 }) {
   const { trx, build, single } = input;
-  const countQuery = Screenshot.query(trx).where(
-    "screenshotBucketId",
-    build.compareScreenshotBucketId,
+  const countQuery = Artifact.query(trx).where(
+    "artifactBucketId",
+    build.headArtifactBucketId,
   );
-  const [screenshotCount, storybookScreenshotCount, shards] = await Promise.all(
-    [
-      single?.screenshots.all ?? countQuery.resultSize(),
-      single?.screenshots.storybook ??
-        countQuery
-          .clone()
-          .where(ref("metadata:sdk.name").castText(), ARGOS_STORYBOOK_SDK_NAME)
-          .resultSize(),
-      single
-        ? []
-        : BuildShard.query(trx).select("metadata").where("buildId", build.id),
-    ],
-  );
+  const [artifactCount, storybookArtifactCount, shards] = await Promise.all([
+    single?.screenshots.all ?? countQuery.resultSize(),
+    single?.screenshots.storybook ??
+      countQuery
+        .clone()
+        .where(ref("metadata:sdk.name").castText(), ARGOS_STORYBOOK_SDK_NAME)
+        .resultSize(),
+    single
+      ? []
+      : BuildShard.query(trx).select("metadata").where("buildId", build.id),
+  ]);
 
   const valid =
     !single && shards.length > 0
@@ -130,10 +128,12 @@ export async function finalizeBuild(input: {
   await transaction(trx, async (trx) => {
     await Promise.all([
       build.$clone().$query(trx).patch(buildData),
-      build.$relatedQuery("compareScreenshotBucket", trx).patch({
+      build.$relatedQuery("compareArtifactBucket", trx).patch({
         complete: true,
-        screenshotCount,
-        storybookScreenshotCount,
+        artifactCount,
+        storybookArtifactCount,
+        // @TODO implement snapshot counting
+        snapshotCount: 0,
         valid,
       }),
     ]);

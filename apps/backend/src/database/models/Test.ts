@@ -2,9 +2,9 @@ import type { RelationMappings } from "objection";
 
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
+import { Artifact } from "./Artifact.js";
+import { ArtifactDiff } from "./ArtifactDiff.js";
 import { Project } from "./Project.js";
-import { Screenshot } from "./Screenshot.js";
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
 
 export class Test extends Model {
   static override tableName = "tests";
@@ -38,26 +38,26 @@ export class Test extends Model {
           to: "projects.id",
         },
       },
-      screenshots: {
+      artifcats: {
         relation: Model.HasManyRelation,
-        modelClass: Screenshot,
+        modelClass: Artifact,
         join: {
           from: "tests.id",
-          to: "screenshots.testId",
+          to: "artifacts.testId",
         },
       },
-      screenshotDiffs: {
+      artifactDiffs: {
         relation: Model.HasManyRelation,
-        modelClass: ScreenshotDiff,
+        modelClass: ArtifactDiff,
         join: {
           from: "tests.id",
-          to: "screenshot_diffs.testId",
+          to: "artifact_diffs.testId",
         },
       },
     };
   }
 
   project?: Project;
-  screenshotDiffs?: ScreenshotDiff[];
-  screenshots?: Screenshot[];
+  artifactDiffs?: ArtifactDiff[];
+  artifacts?: Artifact[];
 }

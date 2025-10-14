@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Build, ScreenshotBucket } from "@/database/models";
+import { ArtifactBucket, Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { getBaseBucketForBuildAndCommit } from "./query";
 
 describe("#getBaseBucketForBuildAndCommit", () => {
   describe("when the build is triggered by a pull request", () => {
-    let baseBucket: ScreenshotBucket;
+    let baseBucket: ArtifactBucket;
     let build: Build;
     let baseBucketBuild: Build;
 
     beforeEach(async () => {
       await setupDatabase();
       const project = await factory.Project.create();
-      const buckets = await factory.ScreenshotBucket.createMany(2, [
+      const buckets = await factory.ArtifactBucket.createMany(2, [
         {
           projectId: project.id,
           commit: "e80e8d229a86b17c38e91732c52340fbb0dd9a9f",
@@ -28,8 +28,8 @@ describe("#getBaseBucketForBuildAndCommit", () => {
       const bucket = buckets[1]!;
       const builds = await factory.Build.createMany(2, [
         {
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: baseBucket.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: baseBucket.id,
           jobStatus: "complete",
           prHeadCommit: "766b744bc5fa27a330283dfd47ffafdaf905a941",
           name: "default",
@@ -38,8 +38,8 @@ describe("#getBaseBucketForBuildAndCommit", () => {
           mode: "ci",
         },
         {
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: bucket.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: bucket.id,
           jobStatus: "pending",
           prHeadCommit: null,
           name: "default",
@@ -126,13 +126,13 @@ describe("#getBaseBucketForBuildAndCommit", () => {
   });
 
   describe("when the build is triggered normally on main", () => {
-    let baseBucket: ScreenshotBucket;
+    let baseBucket: ArtifactBucket;
     let build: Build;
 
     beforeEach(async () => {
       await setupDatabase();
       const project = await factory.Project.create();
-      const buckets = await factory.ScreenshotBucket.createMany(2, [
+      const buckets = await factory.ArtifactBucket.createMany(2, [
         {
           projectId: project.id,
           commit: "766b744bc5fa27a330283dfd47ffafdaf905a941",
@@ -146,8 +146,8 @@ describe("#getBaseBucketForBuildAndCommit", () => {
       const bucket = buckets[1]!;
       const builds = await factory.Build.createMany(2, [
         {
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: baseBucket.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: baseBucket.id,
           jobStatus: "complete",
           type: "reference",
           prHeadCommit: null,
@@ -155,8 +155,8 @@ describe("#getBaseBucketForBuildAndCommit", () => {
           projectId: project.id,
         },
         {
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: bucket.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: bucket.id,
           jobStatus: "pending",
           prHeadCommit: null,
           name: "default",

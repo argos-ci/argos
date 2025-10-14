@@ -4,11 +4,11 @@ import pTimeout from "p-timeout";
 import { TimeoutError } from "redis";
 
 import {
+  Artifact,
   Build,
   BuildShard,
   GithubRepository,
   Project,
-  Screenshot,
 } from "@/database/models/index.js";
 import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
 import logger from "@/logger/index.js";
@@ -193,7 +193,7 @@ export async function finalizePartialBuilds(input: {
         )
         .returning("id");
 
-      const missingScreenshots = missingShards.flatMap((shard, index) => {
+      const missingArtifactss = missingShards.flatMap((shard, index) => {
         const insertedShard = insertedShards[index];
         invariant(insertedShard, "Inserted shard should be found");
         invariant(shard.screenshots, "Screenshots should be fetched");
@@ -201,7 +201,7 @@ export async function finalizePartialBuilds(input: {
           return {
             name: screenshot.name,
             s3Id: screenshot.s3Id,
-            screenshotBucketId: build.compareScreenshotBucketId,
+            artifactBucketId: build.headArtifactBucketId,
             fileId: screenshot.fileId,
             testId: screenshot.testId,
             metadata: screenshot.metadata,
@@ -211,8 +211,8 @@ export async function finalizePartialBuilds(input: {
         });
       });
 
-      if (missingScreenshots.length > 0) {
-        await Screenshot.query().insert(missingScreenshots);
+      if (missingArtifactss.length > 0) {
+        await Artifact.query().insert(missingArtifactss);
       }
 
       await finalizeBuild({ build });

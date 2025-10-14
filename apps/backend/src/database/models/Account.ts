@@ -8,11 +8,11 @@ import { slugJsonSchema } from "@/util/slug.js";
 import { computeAdditionalScreenshots } from "../services/additional-screenshots.js";
 import { Model } from "../util/model.js";
 import { timestampsSchema } from "../util/schemas.js";
+import { ArtifactBucket } from "./ArtifactBucket.js";
 import { GithubAccount } from "./GithubAccount.js";
 import { GithubInstallation } from "./GithubInstallation.js";
 import { Plan } from "./Plan.js";
 import { Project } from "./Project.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
 import { SlackInstallation } from "./SlackInstallation.js";
 import { Subscription } from "./Subscription.js";
 import { Team } from "./Team.js";
@@ -520,16 +520,16 @@ export class Account extends Model {
     neutral: number;
     storybook: number;
   }> {
-    const query = ScreenshotBucket.query()
-      .sum("screenshot_buckets.screenshotCount as all")
-      .sum("screenshot_buckets.storybookScreenshotCount as storybook")
+    const query = ArtifactBucket.query()
+      .sum("artifact_buckets.artifactCount as all")
+      .sum("artifact_buckets.storybookArtifactCount as storybook")
       .leftJoinRelated("project")
-      .where("screenshot_buckets.createdAt", ">=", from.toISOString())
+      .where("artifact_buckets.createdAt", ">=", from.toISOString())
       .where("project.accountId", this.id)
       .first();
 
     if (to !== "now") {
-      query.where("screenshot_buckets.createdAt", "<", to.toISOString());
+      query.where("artifact_buckets.createdAt", "<", to.toISOString());
     }
 
     if (options?.projectId) {

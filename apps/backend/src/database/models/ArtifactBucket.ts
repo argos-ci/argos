@@ -2,14 +2,14 @@ import type { RelationMappings } from "objection";
 
 import { SHA1_REGEX } from "@/util/validation";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import type { BuildMode } from "./Build.js";
-import { Project } from "./Project.js";
-import { Screenshot } from "./Screenshot.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Artifact } from "./Artifact";
+import type { BuildMode } from "./Build";
+import { Project } from "./Project";
 
-export class ScreenshotBucket extends Model {
-  static override tableName = "screenshot_buckets";
+export class ArtifactBucket extends Model {
+  static override tableName = "artifact_buckets";
 
   static override jsonSchema = {
     allOf: [
@@ -22,10 +22,13 @@ export class ScreenshotBucket extends Model {
           commit: { type: "string", pattern: SHA1_REGEX.source },
           branch: { type: "string" },
           projectId: { type: "string" },
-          screenshotCount: {
+          artifactCount: {
             anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
           storybookScreenshotCount: {
+            anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
+          },
+          snapshotCount: {
             anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
           mode: { type: "string", enum: ["ci", "monitoring"] },
@@ -57,14 +60,19 @@ export class ScreenshotBucket extends Model {
   projectId!: string;
 
   /**
-   * The number of screenshots in the bucket (including Storybook screenshots).
+   * The number of artifacts in the bucket (all types).
    */
-  screenshotCount!: number;
+  artifactCount!: number;
 
   /**
    * The number of Storybook screenshots in the bucket.
    */
   storybookScreenshotCount!: number;
+
+  /**
+   * The number of snapshots (non-screenshot) in the bucket.
+   */
+  snapshotCount!: number;
 
   /**
    * The mode of the build.
@@ -84,12 +92,12 @@ export class ScreenshotBucket extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      screenshots: {
+      artifacts: {
         relation: Model.HasManyRelation,
-        modelClass: Screenshot,
+        modelClass: Artifact,
         join: {
-          from: "screenshot_buckets.id",
-          to: "screenshots.screenshotBucketId",
+          from: "artifact_buckets.id",
+          to: "artifacts.artifactBucketId",
         },
       },
       project: {
@@ -103,6 +111,6 @@ export class ScreenshotBucket extends Model {
     };
   }
 
-  screenshots?: Screenshot[];
+  artifacts?: Artifact[];
   project?: Project;
 }

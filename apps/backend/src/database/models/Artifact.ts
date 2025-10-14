@@ -3,16 +3,16 @@ import type { JSONSchema, RelationMappings } from "objection";
 import {
   ScreenshotMetadata,
   ScreenshotMetadataJSONSchema,
-} from "../schemas/ScreenshotMetadata.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { BuildShard } from "./BuildShard.js";
-import { File } from "./File.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
-import { Test } from "./Test.js";
+} from "../schemas/ScreenshotMetadata";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { ArtifactBucket } from "./ArtifactBucket";
+import { BuildShard } from "./BuildShard";
+import { File } from "./File";
+import { Test } from "./Test";
 
-export class Screenshot extends Model {
-  static override tableName = "screenshots";
+export class Artifact extends Model {
+  static override tableName = "artifacts";
 
   static override get jsonAttributes() {
     return ["metadata"];
@@ -23,12 +23,12 @@ export class Screenshot extends Model {
       timestampsSchema,
       {
         type: "object",
-        required: ["name", "s3Id", "screenshotBucketId"],
+        required: ["name", "s3Id", "artifactBucketId"],
         properties: {
           name: { type: "string", maxLength: 1024 },
           baseName: { type: ["string", "null"], maxLength: 1024 },
           s3Id: { type: "string" },
-          screenshotBucketId: { type: "string" },
+          artifactBucketId: { type: "string" },
           fileId: { type: ["string", "null"] },
           testId: { type: ["string", "null"] },
           metadata: {
@@ -48,7 +48,7 @@ export class Screenshot extends Model {
   name!: string;
   baseName!: string | null;
   s3Id!: string;
-  screenshotBucketId!: string;
+  artifactBucketId!: string;
   fileId!: string | null;
   testId!: string | null;
   metadata!: ScreenshotMetadata | null;
@@ -58,12 +58,12 @@ export class Screenshot extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      screenshotBucket: {
+      artifactBucket: {
         relation: Model.BelongsToOneRelation,
-        modelClass: ScreenshotBucket,
+        modelClass: ArtifactBucket,
         join: {
-          from: "screenshots.screenshotBucketId",
-          to: "screenshot_buckets.id",
+          from: "artifacts.artifactBucketId",
+          to: "artifact_buckets.id",
         },
       },
       file: {
@@ -101,7 +101,7 @@ export class Screenshot extends Model {
     };
   }
 
-  screenshotBucket?: ScreenshotBucket;
+  artifactBucket?: ArtifactBucket;
   file?: File;
   test?: Test | null;
   playwrightTraceFile?: File | null;

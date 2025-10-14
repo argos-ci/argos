@@ -352,7 +352,7 @@ const ProjectQuery = graphql(`
       id
       build(number: $buildNumber) {
         id
-        screenshotDiffs(after: $after, first: $first) {
+        diffs(after: $after, first: $first) {
           pageInfo {
             hasNextPage
           }
@@ -387,20 +387,17 @@ function useDataState({
     throw error;
   }
   useEffect(() => {
-    if (
-      !loading &&
-      data?.project?.build?.screenshotDiffs?.pageInfo?.hasNextPage
-    ) {
+    if (!loading && data?.project?.build?.diffs?.pageInfo?.hasNextPage) {
       fetchMore({
         variables: {
-          after: data.project.build.screenshotDiffs.edges.length,
+          after: data.project.build.diffs.edges.length,
           first: 100,
         },
         updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult?.project?.build?.screenshotDiffs.edges) {
+          if (!fetchMoreResult?.project?.build?.diffs.edges) {
             return prev;
           }
-          if (!prev?.project?.build?.screenshotDiffs.edges) {
+          if (!prev?.project?.build?.diffs.edges) {
             return prev;
           }
 
@@ -410,11 +407,11 @@ function useDataState({
               ...prev.project,
               build: {
                 ...prev.project.build,
-                screenshotDiffs: {
-                  ...fetchMoreResult.project.build.screenshotDiffs,
+                diffs: {
+                  ...fetchMoreResult.project.build.diffs,
                   edges: [
-                    ...prev.project.build.screenshotDiffs.edges,
-                    ...fetchMoreResult.project.build.screenshotDiffs.edges,
+                    ...prev.project.build.diffs.edges,
+                    ...fetchMoreResult.project.build.diffs.edges,
                   ],
                 },
               },
@@ -424,18 +421,17 @@ function useDataState({
       });
     }
   }, [data, loading, fetchMore]);
-  const screenshotDiffs = (data?.project?.build?.screenshotDiffs.edges ??
-    []) as Diff[];
-  return screenshotDiffs;
+  const diffs = (data?.project?.build?.diffs.edges ?? []) as Diff[];
+  return diffs;
 }
 
-function hydrateGroups(groups: DiffGroup[], screenshotDiffs: Diff[]) {
+function hydrateGroups(groups: DiffGroup[], diffs: Diff[]) {
   let index = 0;
   return groups.map((group) => {
     return {
       ...group,
       diffs: group.diffs.map(() => {
-        const diff = screenshotDiffs[index] ?? null;
+        const diff = diffs[index] ?? null;
         index++;
         return diff;
       }),
@@ -539,19 +535,19 @@ export function BuildDiffProvider(props: {
   const { expanded, toggleGroup } = searchMode
     ? searchExpandedState
     : expandedState;
-  const screenshotDiffs = useDataState(params);
-  const complete = Boolean(stats && screenshotDiffs.length === stats?.total);
-  const firstDiff = screenshotDiffs[0] ?? null;
+  const diffs = useDataState(params);
+  const complete = Boolean(stats && diffs.length === stats?.total);
+  const firstDiff = diffs[0] ?? null;
   const firstDiffId = firstDiff?.id ?? null;
 
   const searcher = useMemo(() => {
-    return new Searcher(screenshotDiffs, {
+    return new Searcher(diffs, {
       keySelector: (filter) => [filter.name],
       threshold: 0.8,
       returnMatchData: true,
       ignoreSymbols: false,
     });
-  }, [screenshotDiffs]);
+  }, [diffs]);
 
   const results = useMemo(() => {
     if (!searchMode) {
@@ -562,12 +558,12 @@ export function BuildDiffProvider(props: {
 
   const filteredDiffs = useMemo(() => {
     if (!searchMode) {
-      return screenshotDiffs;
+      return diffs;
     }
     return results.map((result) => {
       return result.item;
     });
-  }, [screenshotDiffs, results, searchMode]);
+  }, [diffs, results, searchMode]);
 
   // Initial diff from the URL params or the first diff
   const [initialDiffId, setInitialDiffId] = useState(params.diffId);
@@ -585,24 +581,22 @@ export function BuildDiffProvider(props: {
 
   // Get the initial diff from the screenshot diffs
   const initialDiff = useMemo(
-    () => screenshotDiffs.find((diff) => diff.id === initialDiffId) ?? null,
-    [initialDiffId, screenshotDiffs],
+    () => diffs.find((diff) => diff.id === initialDiffId) ?? null,
+    [initialDiffId, diffs],
   );
 
   // Get the active diff from the screenshot diffs
   const activeDiff = useMemo(
-    () => screenshotDiffs.find((diff) => diff.id === params.diffId) ?? null,
-    [params.diffId, screenshotDiffs],
+    () => diffs.find((diff) => diff.id === params.diffId) ?? null,
+    [params.diffId, diffs],
   );
 
   const siblingDiffs = useMemo(
     () =>
       activeDiff
-        ? screenshotDiffs.filter(
-            (diff) => diff.variantKey === activeDiff.variantKey,
-          )
+        ? diffs.filter((diff) => diff.variantKey === activeDiff.variantKey)
         : [],
-    [activeDiff, screenshotDiffs],
+    [activeDiff, diffs],
   );
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
@@ -674,10 +668,7 @@ export function BuildDiffProvider(props: {
   );
 
   const hasNoResults = Boolean(
-    searchMode &&
-      deferredSearch &&
-      !results.length &&
-      screenshotDiffs.length > 0,
+    searchMode && deferredSearch && !results.length && diffs.length > 0,
   );
 
   const value = useMemo(

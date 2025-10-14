@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
+import { ArtifactDiff } from "./ArtifactDiff";
 
 const baseData = {
   buildId: "1",
-  baseScreenshotId: "1",
-  compareScreenshotId: "2",
+  baseArtifactId: "1",
+  headArtifactId: "2",
   jobStatus: "pending",
 };
 
-describe("models/ScreenshotDiff", () => {
+describe("models/ArtifactDiff", () => {
   describe("validation", () => {
     it("should throw if the score is invalid", () => {
       expect(() => {
-        ScreenshotDiff.fromJson({
+        ArtifactDiff.fromJson({
           ...baseData,
           score: 2,
         });
@@ -22,25 +22,25 @@ describe("models/ScreenshotDiff", () => {
 
     it("should not throw if the score is valid", () => {
       expect(() => {
-        ScreenshotDiff.fromJson({
+        ArtifactDiff.fromJson({
           ...baseData,
           score: 1,
         });
       }).not.toThrow();
     });
 
-    it("should throw if the screenshots are the same", () => {
+    it("should throw if the artifacts are the same", () => {
       expect(() => {
-        ScreenshotDiff.fromJson({
+        ArtifactDiff.fromJson({
           ...baseData,
-          compareScreenshotId: "1",
+          headArtifactId: "1",
         });
-      }).toThrow("The base screenshot should be different to the compare one.");
+      }).toThrow("The base artifact should be different to the head one.");
     });
 
-    it("should not throw if the screenshots are different", () => {
+    it("should not throw if the artifacts are different", () => {
       expect(() => {
-        ScreenshotDiff.fromJson(baseData);
+        ArtifactDiff.fromJson(baseData);
       }).not.toThrow();
     });
   });

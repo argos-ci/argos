@@ -5,11 +5,11 @@ import { pushBuildNotification } from "@/build-notification/index.js";
 import { checkIsPartialBuild } from "@/build/partial.js";
 import { transaction } from "@/database/index.js";
 import {
+  ArtifactBucket,
   Build,
   BuildMode,
   GithubPullRequest,
   Project,
-  ScreenshotBucket,
 } from "@/database/models/index.js";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
@@ -157,7 +157,7 @@ export async function createBuild(params: {
     ["create-build", params.project.id],
     async () => {
       return transaction(async (trx) => {
-        const bucket = await ScreenshotBucket.query(trx).insertAndFetch({
+        const bucket = await ArtifactBucket.query(trx).insertAndFetch({
           name: buildName,
           commit: params.commit,
           branch: params.branch,
@@ -169,7 +169,7 @@ export async function createBuild(params: {
 
         const build = await Build.query(trx).insertAndFetch({
           jobStatus: "pending" as const,
-          baseScreenshotBucketId: null,
+          baseArtifactBucketId: null,
           externalId: params.parallel ? params.parallel.nonce : null,
           batchCount: params.parallel ? 0 : null,
           projectId: params.project.id,
@@ -181,7 +181,7 @@ export async function createBuild(params: {
           parentCommits: params.parentCommits,
           baseBranch: params.baseBranch,
           baseBranchResolvedFrom: params.baseBranch ? "user" : null,
-          compareScreenshotBucketId: bucket.id,
+          headArtifactBucketId: bucket.id,
           mode,
           ciProvider: params.ciProvider,
           argosSdk: params.argosSdk,

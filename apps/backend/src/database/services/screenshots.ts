@@ -4,10 +4,10 @@ import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { transaction } from "@/database/index.js";
 import {
+  Artifact,
   Build,
   BuildShard,
   File,
-  Screenshot,
   Test,
 } from "@/database/models/index.js";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk.js";
@@ -18,20 +18,20 @@ import { getUnknownFileKeys } from "./file.js";
 const getOrCreateTests = async ({
   projectId,
   buildName,
-  screenshotNames,
+  artifactNames,
   trx,
 }: {
   projectId: string;
   buildName: string;
-  screenshotNames: string[];
+  artifactNames: string[];
   trx: TransactionOrKnex;
 }) => {
   const tests: Test[] = await Test.query(trx)
     .where({ projectId, buildName })
-    .whereIn("name", screenshotNames);
+    .whereIn("name", artifactNames);
   const testNames = tests.map(({ name }: Test) => name);
-  const testNamesToAdd = screenshotNames.filter(
-    (screenshotName) => !testNames.includes(screenshotName),
+  const testNamesToAdd = artifactNames.filter(
+    (artifactName) => !testNames.includes(artifactName),
   );
   if (testNamesToAdd.length === 0) {
     return tests;
@@ -48,7 +48,7 @@ const getOrCreateTests = async ({
 };
 
 type InsertFilesAndScreenshotsParams = {
-  screenshots: {
+  artifacts: {
     key: string;
     name: string;
     metadata?: ScreenshotMetadata | null | undefined;
@@ -70,15 +70,15 @@ export async function insertFilesAndScreenshots(
   all: number;
   storybook: number;
 }> {
-  const screenshots = params.screenshots;
+  const { artifacts } = params;
 
-  if (screenshots.length === 0) {
+  if (artifacts.length === 0) {
     return { all: 0, storybook: 0 };
   }
 
-  const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
-  const pwTraceKeys = screenshots
-    .map((screenshot) => screenshot.pwTraceKey)
+  const screenshotKeys = artifacts.map((artifact) => artifact.key);
+  const pwTraceKeys = artifacts
+    .map((artifact) => artifact.pwTraceKey)
     .filter(checkIsNonNullable);
 
   const unknownKeys = await getUnknownFileKeys(
@@ -87,7 +87,7 @@ export async function insertFilesAndScreenshots(
   );
 
   return await transaction(params.trx, async (trx) => {
-    if (params.screenshots.length === 0) {
+    if (params.artifacts.length === 0) {
       return { all: 0, storybook: 0 };
     }
 
@@ -115,16 +115,14 @@ export async function insertFilesAndScreenshots(
       getOrCreateTests({
         projectId: params.build.projectId,
         buildName: params.build.name,
-        screenshotNames: params.screenshots.map(
-          (screenshot) => screenshot.name,
-        ),
+        artifactNames: params.artifacts.map((artifact) => artifact.name),
         trx,
       }),
-      Screenshot.query(trx)
+      Artifact.query(trx)
         .select("name")
         .where({
-          name: params.screenshots.map((screenshot) => screenshot.name),
-          screenshotBucketId: params.build.compareScreenshotBucketId,
+          name: params.artifacts.map((artifact) => artifact.name),
+          artifactBucketId: params.build.headArtifactBucketId,
         }),
     ]);
 
@@ -138,27 +136,27 @@ export async function insertFilesAndScreenshots(
       );
     }
 
-    // Insert screenshots
-    await Screenshot.query(trx).insert(
-      params.screenshots.map((screenshot): PartialModelObject<Screenshot> => {
-        const file = files.find((f) => f.key === screenshot.key);
-        invariant(file, `File not found for key ${screenshot.key}`);
+    // Insert artifacts
+    await Artifact.query(trx).insert(
+      params.artifacts.map((artifact): PartialModelObject<Artifact> => {
+        const file = files.find((f) => f.key === artifact.key);
+        invariant(file, `File not found for key ${artifact.key}`);
 
-        const test = tests.find((t) => t.name === screenshot.name);
-        invariant(test, `Test not found for screenshot ${screenshot.name}`);
+        const test = tests.find((t) => t.name === artifact.name);
+        invariant(test, `Test not found for artifact ${artifact.name}`);
 
         const pwTraceFile = (() => {
-          if (screenshot.pwTraceKey) {
+          if (artifact.pwTraceKey) {
             const pwTraceFile = files.find(
-              (f) => f.key === screenshot.pwTraceKey,
+              (f) => f.key === artifact.pwTraceKey,
             );
             invariant(
               pwTraceFile,
-              `File not found for key ${screenshot.pwTraceKey}`,
+              `File not found for key ${artifact.pwTraceKey}`,
             );
             invariant(
               pwTraceFile.type === "playwrightTrace",
-              `File ${screenshot.pwTraceKey} is not a playwright trace`,
+              `File ${artifact.pwTraceKey} is not a playwright trace`,
             );
             return pwTraceFile;
           }
@@ -166,25 +164,24 @@ export async function insertFilesAndScreenshots(
         })();
 
         return {
-          screenshotBucketId: params.build.compareScreenshotBucketId,
-          name: screenshot.name,
-          s3Id: screenshot.key,
+          artifactBucketId: params.build.headArtifactBucketId,
+          name: artifact.name,
+          s3Id: artifact.key,
           fileId: file.id,
           testId: test.id,
-          metadata: screenshot.metadata ?? null,
+          metadata: artifact.metadata ?? null,
           playwrightTraceFileId: pwTraceFile?.id ?? null,
           buildShardId: params.shard?.id ?? null,
-          threshold: screenshot.threshold ?? null,
-          baseName: screenshot.baseName ?? null,
+          threshold: artifact.threshold ?? null,
+          baseName: artifact.baseName ?? null,
         };
       }),
     );
 
     return {
-      all: params.screenshots.length,
-      storybook: params.screenshots.filter(
-        (screenshot) =>
-          screenshot.metadata?.sdk.name === ARGOS_STORYBOOK_SDK_NAME,
+      all: params.artifacts.length,
+      storybook: params.artifacts.filter(
+        (artifact) => artifact.metadata?.sdk.name === ARGOS_STORYBOOK_SDK_NAME,
       ).length,
     };
   });

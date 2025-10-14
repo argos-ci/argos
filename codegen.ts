@@ -23,6 +23,9 @@ const config: CodegenConfig = {
         mappers: {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
+          Artifact: "../../database/models/index.js#Artifact",
+          ArtifactBucket: "../../database/models/index.js#ArtifactBucket",
+          ArtifactDiff: "../../database/models/index.js#ArtifactDiff",
           AutomationRule: "../../database/models/index.js#AutomationRule",
           AutomationRun: "../../database/models/index.js#AutomationRun",
           AutomationActionRun:
@@ -43,9 +46,6 @@ const config: CodegenConfig = {
           GoogleUser: "../../database/models/index.js#GoogleUser",
           Plan: "../../database/models/index.js#Plan",
           ProjectContributor: "../../database/models/index.js#ProjectUser",
-          Screenshot: "../../database/models/index.js#Screenshot",
-          ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
-          ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",
           ScreenshotMetadataSDK:
             "../../database/schemas/ScreenshotMetadata.js#ScreenshotMetadataSDK",
           SlackInstallation: "../../database/models/index.js#SlackInstallation",

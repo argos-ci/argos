@@ -3,11 +3,11 @@ import type { JSONSchema, RelationMappings } from "objection";
 import {
   BuildMetadata,
   BuildMetadataJsonSchema,
-} from "../schemas/BuildMetadata.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Build } from "./Build.js";
-import { Screenshot } from "./Screenshot.js";
+} from "../schemas/BuildMetadata";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Artifact } from "./Artifact";
+import { Build } from "./Build";
 
 export class BuildShard extends Model {
   static override tableName = "build_shards";
@@ -47,17 +47,17 @@ export class BuildShard extends Model {
           to: "builds.id",
         },
       },
-      screenshots: {
+      artifacts: {
         relation: Model.HasManyRelation,
-        modelClass: Screenshot,
+        modelClass: Artifact,
         join: {
           from: "build_shards.id",
-          to: "screenshots.buildShardId",
+          to: "artifacts.buildShardId",
         },
       },
     };
   }
 
   build?: Build;
-  screenshots?: Screenshot[];
+  artifacts?: Artifact[];
 }

@@ -1,7 +1,7 @@
-import type { Build, BuildType, ScreenshotBucket } from "@/database/models";
+import type { ArtifactBucket, Build, BuildType } from "@/database/models";
 
 export type GetBaseResult = Promise<{
-  baseScreenshotBucket: ScreenshotBucket | null;
+  baseArtifactBucket: ArtifactBucket | null;
   baseBranch: Build["baseBranch"];
   baseBranchResolvedFrom: Build["baseBranchResolvedFrom"];
 }>;
@@ -15,8 +15,8 @@ export type BuildStrategy<TCtx> = {
   getBase: (build: Build, ctx: TCtx) => GetBaseResult;
   getBuildType: (
     input: {
-      baseScreenshotBucket: ScreenshotBucket | null;
-      compareScreenshotBucket: ScreenshotBucket;
+      baseArtifactBucket: ArtifactBucket | null;
+      headArtifactBucket: ArtifactBucket;
     },
     ctx: TCtx,
   ) => BuildType;

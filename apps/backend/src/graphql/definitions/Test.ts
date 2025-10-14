@@ -3,11 +3,11 @@ import gqlTag from "graphql-tag";
 
 import { transaction } from "@/database";
 import {
+  ArtifactDiff,
   AuditTrail,
   Build,
   IgnoredFile,
   Project,
-  ScreenshotDiff,
   type User,
 } from "@/database/models";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
@@ -58,8 +58,8 @@ export const typeDefs = gql`
 
   type TestChangeStats {
     totalOccurences: Int!
-    firstSeenDiff: ScreenshotDiff!
-    lastSeenDiff: ScreenshotDiff!
+    firstSeenDiff: ArtifactDiff!
+    lastSeenDiff: ArtifactDiff!
   }
 
   type TestChangesConnection implements Connection {
@@ -76,8 +76,8 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     status: TestStatus!
-    firstSeenDiff: ScreenshotDiff
-    lastSeenDiff: ScreenshotDiff
+    firstSeenDiff: ArtifactDiff
+    lastSeenDiff: ArtifactDiff
     changes(
       period: MetricsPeriod!
       after: Int!
@@ -112,7 +112,7 @@ export const resolvers: IResolvers = {
     status: async (test) => {
       // Check if the test is part of any of these builds
       const isActive =
-        (await ScreenshotDiff.query()
+        (await ArtifactDiff.query()
           .where("testId", test.id)
           .whereIn(
             "buildId",
@@ -129,7 +129,7 @@ export const resolvers: IResolvers = {
       return isActive ? ITestStatus.Ongoing : ITestStatus.Removed;
     },
     firstSeenDiff: async (test) => {
-      const result = await ScreenshotDiff.query()
+      const result = await ArtifactDiff.query()
         .where("testId", test.id)
         .whereNotNull("fileId")
         .orderBy("createdAt", "asc")
@@ -138,7 +138,7 @@ export const resolvers: IResolvers = {
       return result ?? null;
     },
     lastSeenDiff: async (test) => {
-      const result = await ScreenshotDiff.query()
+      const result = await ArtifactDiff.query()
         .where("testId", test.id)
         .whereNotNull("fileId")
         .orderBy("createdAt", "desc")
@@ -152,24 +152,24 @@ export const resolvers: IResolvers = {
 
       const totalOccurencesQuery = `
         SELECT sum(tsc.value) FROM test_stats_changes tsc
-          WHERE tsc."testId" = screenshot_diffs."testId"
-          AND tsc."fileId" = screenshot_diffs."fileId"
+          WHERE tsc."testId" = artifact_diffs."testId"
+          AND tsc."fileId" = artifact_diffs."fileId"
           AND tsc."date" >= :from
       `;
 
-      const diffQuery = ScreenshotDiff.query()
-        .select("screenshot_diffs.id")
-        .distinctOn("screenshot_diffs.fileId")
+      const diffQuery = ArtifactDiff.query()
+        .select("artifact_diffs.id")
+        .distinctOn("artifact_diffs.fileId")
         .joinRelated("build")
-        .where("screenshot_diffs.testId", test.id)
-        .where("screenshot_diffs.score", ">", 0)
+        .where("artifact_diffs.testId", test.id)
+        .where("artifact_diffs.score", ">", 0)
         .where("build.type", "reference")
         .where("build.createdAt", ">", from)
-        .whereNotNull("screenshot_diffs.fileId")
-        .orderBy("screenshot_diffs.fileId");
+        .whereNotNull("artifact_diffs.fileId")
+        .orderBy("artifact_diffs.fileId");
 
-      const query = ScreenshotDiff.query()
-        .select("screenshot_diffs.fileId")
+      const query = ArtifactDiff.query()
+        .select("artifact_diffs.fileId")
         .whereIn("id", diffQuery.clone())
         .orderByRaw(`(${totalOccurencesQuery}) DESC`, { from })
         .range(after, after + first - 1);

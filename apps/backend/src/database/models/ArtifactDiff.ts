@@ -2,16 +2,16 @@ import { invariant } from "@argos/util/invariant";
 import { ValidationError } from "objection";
 import type { Pojo, RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import type { JobStatus } from "../util/schemas.js";
-import { jobModelSchema, timestampsSchema } from "../util/schemas.js";
-import { Build } from "./Build.js";
-import { File } from "./File.js";
-import { Screenshot } from "./Screenshot.js";
-import { Test } from "./Test.js";
+import { Model } from "../util/model";
+import type { JobStatus } from "../util/schemas";
+import { jobModelSchema, timestampsSchema } from "../util/schemas";
+import { Artifact } from "./Artifact";
+import { Build } from "./Build";
+import { File } from "./File";
+import { Test } from "./Test";
 
-export class ScreenshotDiff extends Model {
-  static override tableName = "screenshot_diffs";
+export class ArtifactDiff extends Model {
+  static override tableName = "artifact_diffs";
 
   static override jsonSchema = {
     allOf: [
@@ -19,11 +19,11 @@ export class ScreenshotDiff extends Model {
       jobModelSchema,
       {
         type: "object",
-        required: ["buildId", "baseScreenshotId", "compareScreenshotId"],
+        required: ["buildId", "baseArtifactId", "headArtifactId"],
         properties: {
           buildId: { type: "string" },
-          baseScreenshotId: { type: ["string", "null"] },
-          compareScreenshotId: { type: ["string", "null"] },
+          baseArtifactId: { type: ["string", "null"] },
+          headArtifactId: { type: ["string", "null"] },
           s3Id: { type: ["string", "null"] },
           fileId: { type: ["string", "null"] },
           score: { type: ["number", "null"], minimum: 0, maximum: 1 },
@@ -36,8 +36,8 @@ export class ScreenshotDiff extends Model {
   };
 
   buildId!: string;
-  baseScreenshotId!: string | null;
-  compareScreenshotId!: string | null;
+  baseArtifactId!: string | null;
+  headArtifactId!: string | null;
   s3Id!: string | null;
   fileId!: string | null;
   score!: number | null;
@@ -52,24 +52,24 @@ export class ScreenshotDiff extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Build,
         join: {
-          from: "screenshot_diffs.buildId",
+          from: "artifact_diffs.buildId",
           to: "builds.id",
         },
       },
-      baseScreenshot: {
+      baseArtifact: {
         relation: Model.BelongsToOneRelation,
-        modelClass: Screenshot,
+        modelClass: Artifact,
         join: {
-          from: "screenshot_diffs.baseScreenshotId",
-          to: "screenshots.id",
+          from: "artifact_diffs.baseArtifactId",
+          to: "artifacts.id",
         },
       },
-      compareScreenshot: {
+      headArtifact: {
         relation: Model.BelongsToOneRelation,
-        modelClass: Screenshot,
+        modelClass: Artifact,
         join: {
-          from: "screenshot_diffs.compareScreenshotId",
-          to: "screenshots.id",
+          from: "artifact_diffs.headArtifactId",
+          to: "artifacts.id",
         },
       },
       file: {
@@ -92,21 +92,21 @@ export class ScreenshotDiff extends Model {
   }
 
   build?: Build;
-  baseScreenshot?: Screenshot | null;
-  compareScreenshot?: Screenshot | null;
+  baseArtifact?: Artifact | null;
+  headArtifact?: Artifact | null;
   test?: Test | null;
   file?: File | null;
 
-  static screenshotFailureRegexp = / \(failed\)\./;
+  static artifactFailureRegexp = / \(failed\)\./;
 
   static selectDiffStatus = `
     CASE
-      WHEN "compareScreenshotId" IS NULL
+      WHEN "headArtifactId" IS NULL
         THEN 'removed'
-      WHEN "baseScreenshotId" IS NULL
+      WHEN "baseArtifactId" IS NULL
         THEN
           CASE
-            WHEN "name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
+            WHEN "name" ~ '${ArtifactDiff.artifactFailureRegexp.source}'
               THEN
                 CASE
                   WHEN  (
@@ -139,15 +139,15 @@ export class ScreenshotDiff extends Model {
       WHEN "baseScreenshotId" IS NULL
         THEN
           CASE
-            WHEN "compareScreenshot"."name" ~ '${ScreenshotDiff.screenshotFailureRegexp.source}'
+            WHEN "headArtifact"."name" ~ '${ArtifactDiff.artifactFailureRegexp.source}'
               THEN
                 CASE
                   WHEN  (
                     -- Checks for absence of 'retry' and 'retries' or their values being null
-                    ("compareScreenshot".metadata->'test'->>'retry' IS NULL OR "compareScreenshot".metadata->'test'->>'retries' IS NULL)
+                    ("headArtifact".metadata->'test'->>'retry' IS NULL OR "headArtifact".metadata->'test'->>'retries' IS NULL)
                     OR
                     -- Checks for 'retry' being equal to 'retries'
-                    "compareScreenshot".metadata->'test'->>'retry' = "compareScreenshot".metadata->'test'->>'retries'
+                    "headArtifact".metadata->'test'->>'retry' = "headArtifact".metadata->'test'->>'retries'
                   )
                   THEN 0 -- failure
                   ELSE 5 -- retryFailure
@@ -166,26 +166,26 @@ export class ScreenshotDiff extends Model {
   `;
 
   $getDiffStatus = async (
-    loadScreenshot?: (screenshotId: string) => Promise<Screenshot>,
+    loadArtifact?: (artifactId: string) => Promise<Artifact>,
   ) => {
-    if (!this.compareScreenshotId) {
+    if (!this.headArtifactId) {
       return "removed";
     }
 
-    if (!this.baseScreenshotId) {
-      const compareScreenshot = await (() => {
-        if (this.compareScreenshot) {
-          return this.compareScreenshot;
+    if (!this.baseArtifactId) {
+      const headArtifact = await (() => {
+        if (this.headArtifact) {
+          return this.headArtifact;
         }
         invariant(
-          loadScreenshot,
-          "compareScreenshot is not loaded and no loader is provided",
+          loadArtifact,
+          "headArtifact is not loaded and no loader is provided",
         );
-        return loadScreenshot(this.compareScreenshotId);
+        return loadArtifact(this.headArtifactId);
       })();
 
-      const { name, metadata } = compareScreenshot;
-      return ScreenshotDiff.screenshotFailureRegexp.test(name)
+      const { name, metadata } = headArtifact;
+      return ArtifactDiff.artifactFailureRegexp.test(name)
         ? metadata?.test?.retry == null ||
           metadata?.test?.retries == null ||
           metadata.test.retry === metadata.test.retries
@@ -219,12 +219,12 @@ export class ScreenshotDiff extends Model {
 
   override $afterValidate(json: Pojo) {
     if (
-      json["baseScreenshotId"] &&
-      json["baseScreenshotId"] === json["compareScreenshotId"]
+      json["baseArtifactId"] &&
+      json["baseArtifactId"] === json["headArtifactId"]
     ) {
       throw new ValidationError({
         type: "ModelValidation",
-        message: "The base screenshot should be different to the compare one.",
+        message: "The base artifact should be different to the head one.",
       });
     }
   }

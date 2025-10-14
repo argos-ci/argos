@@ -5,7 +5,7 @@ import { IResolvers } from "../__generated__/resolver-types";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type ScreenshotBucket implements Node {
+  type ArtifactBucket implements Node {
     id: ID!
     createdAt: DateTime!
     commit: String!
@@ -14,9 +14,9 @@ export const typeDefs = gql`
 `;
 
 export const resolvers: IResolvers = {
-  ScreenshotBucket: {
-    branch(screenshotBucket) {
-      return screenshotBucket.branch || null;
+  ArtifactBucket: {
+    branch(bucket) {
+      return bucket.branch || null;
     },
   },
 };

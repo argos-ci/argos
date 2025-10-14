@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
+import { ArtifactBucket } from "./ArtifactBucket";
 
 const baseData = {
   name: "878",
@@ -10,12 +10,12 @@ const baseData = {
   complete: true,
 };
 
-describe("ScreenshotBucket", () => {
+describe("ArtifactBucket", () => {
   describe("validation commit", () => {
-    it("should throw if the screenshot buckets are the same", () => {
+    it("should throw if the buckets are the same", () => {
       expect.assertions(1);
       try {
-        ScreenshotBucket.fromJson({
+        ArtifactBucket.fromJson({
           ...baseData,
           commit: "esfsefsfsef",
         });
@@ -29,9 +29,9 @@ describe("ScreenshotBucket", () => {
       }
     });
 
-    it("should not throw if the screenshot buckets are different", () => {
+    it("should not throw if the buckets are different", () => {
       expect(() => {
-        ScreenshotBucket.fromJson(baseData);
+        ArtifactBucket.fromJson(baseData);
       }).not.toThrow();
     });
   });

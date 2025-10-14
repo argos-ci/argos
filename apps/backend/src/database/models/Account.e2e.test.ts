@@ -2,15 +2,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { factory, setupDatabase } from "../testing/index.js";
 import { Account } from "./Account.js";
-import type { ScreenshotBucket } from "./index.js";
+import type { ArtifactBucket } from "./index.js";
 import { Plan } from "./Plan.js";
 
 describe("Account", () => {
   let plans: Plan[];
   let account: Account, vipAccount: Account;
-  let bucket1: ScreenshotBucket,
-    bucket2: ScreenshotBucket,
-    bucketOtherOrga: ScreenshotBucket;
+  let bucket1: ArtifactBucket,
+    bucket2: ArtifactBucket,
+    bucketOtherOrga: ArtifactBucket;
 
   beforeEach(async () => {
     await setupDatabase();
@@ -35,7 +35,7 @@ describe("Account", () => {
       { accountId: account.id, private: false },
       { accountId: vipAccount.id, private: true },
     ]);
-    const buckets = await factory.ScreenshotBucket.createMany(4, [
+    const buckets = await factory.ArtifactBucket.createMany(4, [
       { projectId: projects[0]!.id },
       { projectId: projects[1]!.id },
       { projectId: projects[2]!.id },
@@ -120,7 +120,7 @@ describe("Account", () => {
     it("counts screenshots used this month", async () => {
       await bucket1.$query().patch({
         complete: true,
-        screenshotCount: 10,
+        artifactCount: 10,
         storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
@@ -132,7 +132,7 @@ describe("Account", () => {
     it("counts screenshots used on other account's repository", async () => {
       await bucket2.$query().patch({
         complete: true,
-        screenshotCount: 10,
+        artifactCount: 10,
         storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
@@ -145,7 +145,7 @@ describe("Account", () => {
       await bucket2.$query().patch({
         createdAt: new Date(2012, 1, 1).toISOString(),
         complete: true,
-        screenshotCount: 10,
+        artifactCount: 10,
         storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();
@@ -157,7 +157,7 @@ describe("Account", () => {
     it("ignores screenshots of other account", async () => {
       await bucketOtherOrga.$query().patch({
         complete: true,
-        screenshotCount: 10,
+        artifactCount: 10,
         storybookScreenshotCount: 4,
       });
       const manager = account.$getSubscriptionManager();

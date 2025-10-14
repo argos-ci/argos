@@ -103,13 +103,13 @@ export const Project = defineFactory(models.Project, () => ({
   githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));
 
-export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
+export const ArtifactBucket = defineFactory(models.ArtifactBucket, () => ({
   name: "default",
   commit: bytesToString(randomBytes(20)),
   branch: "master",
   projectId: Project.associate("id") as unknown as string,
-  screenshotCount: 0,
-  storybookScreenshotCount: 0,
+  ArtifactCount: 0,
+  storybookArtifactCount: 0,
   complete: true,
   valid: true,
 }));
@@ -120,7 +120,7 @@ export const Build = defineFactory(models.Build, () => {
     createdAt: new Date().toISOString(),
     jobStatus: "complete" as const,
     projectId,
-    compareScreenshotBucketId: ScreenshotBucket.extend(() => ({
+    headArtifactBucketId: ArtifactBucket.extend(() => ({
       projectId,
     })).associate("id") as unknown as string,
     conclusion: "no-changes" as const,
@@ -152,10 +152,10 @@ export const TeamUser = defineFactory(models.TeamUser, () => ({
   userLevel: "owner" as const,
 }));
 
-export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({
+export const ArtifactDiff = defineFactory(models.ArtifactDiff, () => ({
   buildId: Build.associate("id") as unknown as string,
-  baseScreenshotId: Screenshot.associate("id") as unknown as string,
-  compareScreenshotId: Screenshot.associate("id") as unknown as string,
+  baseArtifactId: Artifact.associate("id") as unknown as string,
+  headArtifactId: Artifact.associate("id") as unknown as string,
   jobStatus: "complete" as const,
   score: 0,
 }));
@@ -166,11 +166,11 @@ export const BuildReview = defineFactory(models.BuildReview, () => ({
   state: "approved" as const,
 }));
 
-export const ScreenshotDiffReview = defineFactory(
-  models.ScreenshotDiffReview,
+export const ArtifactDiffReview = defineFactory(
+  models.ArtifactDiffReview,
   () => ({
     buildReviewId: BuildReview.associate("id") as unknown as string,
-    screenshotDiffId: ScreenshotDiff.associate("id") as unknown as string,
+    ArtifactDiffId: ArtifactDiff.associate("id") as unknown as string,
     state: "approved" as const,
   }),
 );
@@ -181,10 +181,10 @@ export const Test = defineFactory(models.Test, () => ({
   buildName: "default",
 }));
 
-export const Screenshot = defineFactory(models.Screenshot, () => ({
+export const Artifact = defineFactory(models.Artifact, () => ({
   name: FactoryGirl.sequence("repository.name", (n) => `screen-${n}`),
   s3Id: "test-s3-id",
-  screenshotBucketId: ScreenshotBucket.associate("id") as unknown as string,
+  ArtifactBucketId: ArtifactBucket.associate("id") as unknown as string,
   testId: Test.associate("id") as unknown as string,
 }));
 
@@ -196,7 +196,7 @@ export const File = defineFactory(models.File, () => ({
 
 export const Plan = defineFactory(models.Plan, () => ({
   name: "pro",
-  includedScreenshots: 7000,
+  includedArtifacts: 7000,
   githubPlanId: FactoryGirl.sequence("plan.githubId", (n) => n),
   usageBased: false,
   githubSsoIncluded: true,

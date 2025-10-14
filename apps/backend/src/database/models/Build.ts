@@ -10,26 +10,22 @@ import type {
 } from "objection";
 import { z } from "zod";
 
-import config from "@/config/index.js";
+import config from "@/config";
 import { SHA1_REGEX } from "@/util/validation";
 
 import {
   BuildMetadata,
   BuildMetadataJsonSchema,
-} from "../schemas/BuildMetadata.js";
-import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
-import { BuildReview } from "./BuildReview.js";
-import { BuildShard } from "./BuildShard.js";
-import { GithubPullRequest } from "./GithubPullRequest.js";
-import { Project } from "./Project.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
-import { User } from "./User.js";
+} from "../schemas/BuildMetadata";
+import { Model } from "../util/model";
+import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { ArtifactBucket } from "./ArtifactBucket.js";
+import { ArtifactDiff } from "./ArtifactDiff";
+import { BuildReview } from "./BuildReview";
+import { BuildShard } from "./BuildShard";
+import { GithubPullRequest } from "./GithubPullRequest";
+import { Project } from "./Project";
+import { User } from "./User";
 
 export const BUILD_EXPIRATION_DELAY_MS = 2 * 3600 * 1000; // 2 hours
 
@@ -84,11 +80,11 @@ export class Build extends Model {
       jobModelSchema,
       {
         type: "object",
-        required: ["compareScreenshotBucketId", "projectId"],
+        required: ["headArtifactBucketId", "projectId"],
         properties: {
           name: { type: "string", maxLength: 255 },
-          baseScreenshotBucketId: { type: ["string", "null"] },
-          compareScreenshotBucketId: { type: "string" },
+          baseArtifactBucketId: { type: ["string", "null"] },
+          headArtifactBucketId: { type: "string" },
           projectId: { type: "string" },
           number: { type: "integer" },
           externalId: { type: ["string", "null"] },
@@ -178,8 +174,8 @@ export class Build extends Model {
 
   name!: string;
   jobStatus!: JobStatus;
-  baseScreenshotBucketId!: string | null;
-  compareScreenshotBucketId!: string;
+  baseArtifactBucketId!: string | null;
+  headArtifactBucketId!: string;
   projectId!: string;
   number!: number;
   externalId!: string | null;
@@ -207,20 +203,20 @@ export class Build extends Model {
 
   static override get relationMappings(): RelationMappings {
     return {
-      baseScreenshotBucket: {
+      baseArtifactBucket: {
         relation: Model.BelongsToOneRelation,
-        modelClass: ScreenshotBucket,
+        modelClass: ArtifactBucket,
         join: {
-          from: "builds.baseScreenshotBucketId",
-          to: "screenshot_buckets.id",
+          from: "builds.baseArtifactBucketId",
+          to: "artifact_buckets.id",
         },
       },
-      compareScreenshotBucket: {
+      compareArtifactBucket: {
         relation: Model.BelongsToOneRelation,
-        modelClass: ScreenshotBucket,
+        modelClass: ArtifactBucket,
         join: {
-          from: "builds.compareScreenshotBucketId",
-          to: "screenshot_buckets.id",
+          from: "builds.headArtifactBucketId",
+          to: "artifact_buckets.id",
         },
       },
       project: {
@@ -231,12 +227,12 @@ export class Build extends Model {
           to: "projects.id",
         },
       },
-      screenshotDiffs: {
+      artifactDiffs: {
         relation: Model.HasManyRelation,
-        modelClass: ScreenshotDiff,
+        modelClass: ArtifactDiff,
         join: {
           from: "builds.id",
-          to: "screenshot_diffs.buildId",
+          to: "artifact_diffs.buildId",
         },
       },
       pullRequest: {
@@ -258,22 +254,22 @@ export class Build extends Model {
     };
   }
 
-  baseScreenshotBucket?: ScreenshotBucket | null;
-  compareScreenshotBucket?: ScreenshotBucket;
+  baseArtifactBucket?: ArtifactBucket | null;
+  headArtifactBucket?: ArtifactBucket;
   project?: Project;
-  screenshotDiffs?: ScreenshotDiff[];
+  artifactDiffs?: ArtifactDiff[];
   pullRequest?: GithubPullRequest | null;
   shards?: BuildShard[];
 
   override $afterValidate(json: Pojo) {
     if (
-      json["baseScreenshotBucketId"] &&
-      json["baseScreenshotBucketId"] === json["compareScreenshotBucketId"]
+      json["baseArtifactBucketId"] &&
+      json["baseArtifactBucketId"] === json["headArtifactBucketId"]
     ) {
       throw new ValidationError({
         type: "ModelValidation",
         message:
-          "The base screenshot bucket should be different to the compare one.",
+          "The base artifact bucket should be different to the compare one.",
       });
     }
   }
@@ -302,18 +298,18 @@ export class Build extends Model {
   }
 
   /**
-   * Get screenshot diffs statuses for each build.
+   * Get artifact diffs statuses for each build.
    */
-  static async getScreenshotDiffsStatuses(buildIds: string[]) {
-    const screenshotDiffs = buildIds.length
-      ? await ScreenshotDiff.query()
+  static async getArtifactDiffsStatuses(buildIds: string[]) {
+    const diffs = buildIds.length
+      ? await ArtifactDiff.query()
           .select("buildId", "jobStatus")
           .whereIn("buildId", buildIds)
           .groupBy("buildId", "jobStatus")
       : [];
 
     return buildIds.map((buildId) => {
-      const diffJobStatuses = screenshotDiffs
+      const diffJobStatuses = diffs
         .filter((screenshotDiff) => screenshotDiff.buildId === buildId)
         .map(({ jobStatus }) => jobStatus);
 
@@ -342,7 +338,7 @@ export class Build extends Model {
       .map(({ id }) => id);
 
     const screenshotDiffStatuses =
-      await Build.getScreenshotDiffsStatuses(unconcludedBuilds);
+      await Build.getArtifactDiffsStatuses(unconcludedBuilds);
 
     return builds.map((build) => {
       switch (build.jobStatus) {
@@ -377,10 +373,10 @@ export class Build extends Model {
    * Compute stats for a list of builds.
    */
   static async computeStats(buildIds: string[]): Promise<BuildStats[]> {
-    const data = (await ScreenshotDiff.query()
+    const data = (await ArtifactDiff.query()
       .whereIn("buildId", buildIds)
-      .leftJoinRelated("compareScreenshot")
-      .select("buildId", raw(`(${ScreenshotDiff.selectDiffStatus}) as status`))
+      .leftJoinRelated("headArtifact")
+      .select("buildId", raw(`(${ArtifactDiff.selectDiffStatus}) as status`))
       .count("*")
       .groupBy("status", "buildId")) as unknown as {
       buildId: string;
@@ -426,11 +422,11 @@ export class Build extends Model {
     );
 
     const buildsDiffCount = (completeBuildIds.length
-      ? await ScreenshotDiff.query()
+      ? await ArtifactDiff.query()
           .select("buildId")
-          .leftJoinRelated("compareScreenshot")
+          .leftJoinRelated("headArtifact")
           .count("*")
-          .whereIn(raw(ScreenshotDiff.selectDiffStatus), [
+          .whereIn(raw(ArtifactDiff.selectDiffStatus), [
             "added",
             "changed",
             "removed",

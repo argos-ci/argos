@@ -1,22 +1,22 @@
-import { concludeBuild } from "@/build/concludeBuild.js";
+import { concludeBuild } from "@/build/concludeBuild";
 
-import { Account } from "./models/Account.js";
-import { Build } from "./models/Build.js";
-import { BuildReview } from "./models/BuildReview.js";
-import { File } from "./models/File.js";
-import { GithubAccount } from "./models/GithubAccount.js";
-import { GithubInstallation } from "./models/GithubInstallation.js";
-import { GithubRepository } from "./models/GithubRepository.js";
-import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation.js";
-import { Plan } from "./models/Plan.js";
-import { Project } from "./models/Project.js";
-import { Screenshot } from "./models/Screenshot.js";
-import { ScreenshotBucket } from "./models/ScreenshotBucket.js";
-import { ScreenshotDiff } from "./models/ScreenshotDiff.js";
-import { Team } from "./models/Team.js";
-import { TeamUser } from "./models/TeamUser.js";
-import { Test } from "./models/Test.js";
-import { User } from "./models/User.js";
+import { Account } from "./models/Account";
+import { Artifact } from "./models/Artifact";
+import { ArtifactBucket } from "./models/ArtifactBucket";
+import { ArtifactDiff } from "./models/ArtifactDiff";
+import { Build } from "./models/Build";
+import { BuildReview } from "./models/BuildReview";
+import { File } from "./models/File";
+import { GithubAccount } from "./models/GithubAccount";
+import { GithubInstallation } from "./models/GithubInstallation";
+import { GithubRepository } from "./models/GithubRepository";
+import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
+import { Plan } from "./models/Plan";
+import { Project } from "./models/Project";
+import { Team } from "./models/Team";
+import { TeamUser } from "./models/TeamUser";
+import { Test } from "./models/Test";
+import { User } from "./models/User";
 
 const now = new Date().toISOString();
 
@@ -207,10 +207,10 @@ export async function seed() {
     complete: true,
     valid: true,
     screenshotCount: 0,
-    storybookScreenshotCount: 0,
+    storybookArtifactCount: 0,
   };
 
-  const screenshotBuckets = await ScreenshotBucket.query().insertAndFetch([
+  const screenshotBuckets = await ArtifactBucket.query().insertAndFetch([
     screenshotBucketProps,
     {
       ...screenshotBucketProps,
@@ -264,7 +264,7 @@ export async function seed() {
     })),
   );
 
-  const screenshots = await Screenshot.query().insertAndFetch(
+  const screenshots = await Artifact.query().insertAndFetch(
     screenshotsProps.map((screenshot) => ({
       testId: tests.find((t) => t.name === screenshot.name)!.id,
       name: screenshot.name,
@@ -321,11 +321,11 @@ export async function seed() {
   ]);
 
   const [
-    smallDummyScreenshot,
-    mediumDummyScreenshot,
-    largeDummyScreenshot,
-    ...bearScreenshots
-  ] = await Screenshot.query().insertAndFetch(
+    smallDummyArtifact,
+    mediumDummyArtifact,
+    largeDummyArtifact,
+    ...bearArtifacts
+  ] = await Artifact.query().insertAndFetch(
     screenshotFiles.map((file) => ({
       screenshotBucketId: screenshotBuckets[1]!.id,
       name: file.key,
@@ -334,13 +334,13 @@ export async function seed() {
     })),
   );
 
-  const bearScreenshotIds = bearScreenshots.map(({ id }) => id);
+  const bearArtifactIds = bearArtifacts.map(({ id }) => id);
 
   const build = {
     number: 1,
     name: "main",
-    baseScreenshotBucketId: screenshotBuckets[0]!.id,
-    compareScreenshotBucketId: screenshotBuckets[1]!.id,
+    baseArtifactBucketId: screenshotBuckets[0]!.id,
+    headArtifactBucketId: screenshotBuckets[1]!.id,
     projectId: bigProject!.id,
     jobStatus: "complete" as const,
     type: "check" as const,
@@ -364,7 +364,7 @@ export async function seed() {
     ,
     removedBuild,
   ] = await Build.query().insertAndFetch([
-    { ...build, number: 1, type: "orphan", baseScreenshotBucketId: null },
+    { ...build, number: 1, type: "orphan", baseArtifactBucketId: null },
     { ...build, number: 2, type: "reference" },
     { ...build, number: 3, jobStatus: "progress" }, // Expired
     { ...build, number: 4, jobStatus: "aborted" },
@@ -380,9 +380,9 @@ export async function seed() {
     { ...build, number: 14 }, // Removed
   ]);
 
-  const defaultScreenshotDiff = {
-    baseScreenshotId: screenshots[0]!.id,
-    compareScreenshotId: screenshots[1]!.id,
+  const defaultArtifactDiff = {
+    baseArtifactId: screenshots[0]!.id,
+    headArtifactId: screenshots[1]!.id,
     score: null,
     jobStatus: "complete" as const,
     s3Id: "penelope-diff-transparent.png",
@@ -390,90 +390,87 @@ export async function seed() {
     updatedAt: now,
   };
 
-  const stableScreenshotDiff = {
-    ...defaultScreenshotDiff,
+  const stableArtifactDiff = {
+    ...defaultArtifactDiff,
     s3Id: null,
     score: 0,
   };
 
-  const addedScreenshotDiff = {
-    ...defaultScreenshotDiff,
-    baseScreenshotId: null,
+  const addedArtifactDiff = {
+    ...defaultArtifactDiff,
+    baseArtifactId: null,
     s3Id: null,
     score: null,
   };
 
-  const updatedScreenshotDiff = {
-    ...defaultScreenshotDiff,
+  const updatedArtifactDiff = {
+    ...defaultArtifactDiff,
     score: 0.3,
   };
 
-  const removedScreenshotDiff = {
-    ...defaultScreenshotDiff,
-    compareScreenshotId: null,
+  const removedArtifactDiff = {
+    ...defaultArtifactDiff,
+    headArtifactId: null,
   };
 
-  const failedScreenshotDiff = {
-    ...addedScreenshotDiff,
-    compareScreenshotId: screenshots[2]!.id,
+  const failedArtifactDiff = {
+    ...addedArtifactDiff,
+    headArtifactId: screenshots[2]!.id,
   };
 
-  const buildScreenshotDiffs = {
-    [orphanBuild!.id]: duplicate(addedScreenshotDiff, 3),
+  const buildArtifactDiffs = {
+    [orphanBuild!.id]: duplicate(addedArtifactDiff, 3),
     [referenceBuild!.id]: [
-      ...duplicate(addedScreenshotDiff, 2),
-      ...duplicate(stableScreenshotDiff, 3),
+      ...duplicate(addedArtifactDiff, 2),
+      ...duplicate(stableArtifactDiff, 3),
     ],
     [diffDetectedBuild!.id]: [
-      ...duplicate(stableScreenshotDiff, 2),
-      ...duplicate(failedScreenshotDiff, 2),
-      ...duplicate(removedScreenshotDiff, 2),
-      ...bearScreenshotIds.map((id) => ({
-        ...addedScreenshotDiff,
-        compareScreenshotId: id,
+      ...duplicate(stableArtifactDiff, 2),
+      ...duplicate(failedArtifactDiff, 2),
+      ...duplicate(removedArtifactDiff, 2),
+      ...bearArtifactIds.map((id) => ({
+        ...addedArtifactDiff,
+        headArtifactId: id,
       })),
       {
-        ...updatedScreenshotDiff,
+        ...updatedArtifactDiff,
         s3Id: "diff-1024-to-720.png",
-        baseScreenshotId: mediumDummyScreenshot!.id,
-        compareScreenshotId: smallDummyScreenshot!.id,
+        baseArtifactId: mediumDummyArtifact!.id,
+        headArtifactId: smallDummyArtifact!.id,
         fileId: dummiesDiffFiles[0]!.id,
-        testId: smallDummyScreenshot!.testId,
+        testId: smallDummyArtifact!.testId,
       },
       {
-        ...updatedScreenshotDiff,
+        ...updatedArtifactDiff,
         s3Id: "diff-1024-to-1440.png",
-        baseScreenshotId: mediumDummyScreenshot!.id,
-        compareScreenshotId: largeDummyScreenshot!.id,
+        baseArtifactId: mediumDummyArtifact!.id,
+        headArtifactId: largeDummyArtifact!.id,
         fileId: dummiesDiffFiles[1]!.id,
-        testId: largeDummyScreenshot!.testId,
+        testId: largeDummyArtifact!.testId,
       },
       ...duplicate(
-        { ...updatedScreenshotDiff, group: updatedScreenshotDiff.s3Id },
+        { ...updatedArtifactDiff, group: updatedArtifactDiff.s3Id },
         4,
       ),
     ],
     [acceptedBuild!.id]: [
-      { ...addedScreenshotDiff },
-      ...duplicate({ ...stableScreenshotDiff }, 3),
-      ...duplicate({ ...updatedScreenshotDiff }, 2),
+      { ...addedArtifactDiff },
+      ...duplicate({ ...stableArtifactDiff }, 3),
+      ...duplicate({ ...updatedArtifactDiff }, 2),
     ],
     [rejectedBuild!.id]: [
-      { ...addedScreenshotDiff },
-      ...duplicate({ ...stableScreenshotDiff }, 3),
-      ...duplicate({ ...updatedScreenshotDiff }, 3),
+      { ...addedArtifactDiff },
+      ...duplicate({ ...stableArtifactDiff }, 3),
+      ...duplicate({ ...updatedArtifactDiff }, 3),
     ],
     [inProgressBuild!.id]: [
-      { ...updatedScreenshotDiff, jobStatus: "pending" as const },
+      { ...updatedArtifactDiff, jobStatus: "pending" as const },
     ],
-    [failBuild!.id]: [
-      ...duplicate(stableScreenshotDiff, 3),
-      failedScreenshotDiff,
-    ],
-    [stableBuild!.id]: duplicate(stableScreenshotDiff, 3),
+    [failBuild!.id]: [...duplicate(stableArtifactDiff, 3), failedArtifactDiff],
+    [stableBuild!.id]: duplicate(stableArtifactDiff, 3),
     [removedBuild!.id]: [
-      ...duplicate(stableScreenshotDiff, 3),
-      ...duplicate(removedScreenshotDiff, 2),
+      ...duplicate(stableArtifactDiff, 3),
+      ...duplicate(removedArtifactDiff, 2),
     ],
   };
 
@@ -490,11 +487,11 @@ export async function seed() {
     },
   ]);
 
-  const screenshotDiffs = await ScreenshotDiff.query()
-    .withGraphFetched("compareScreenshot.test")
+  const screenshotDiffs = await ArtifactDiff.query()
+    .withGraphFetched("compareArtifact.test")
     .insertAndFetch(
-      Object.keys(buildScreenshotDiffs).flatMap((buildId) =>
-        buildScreenshotDiffs[buildId]!.map((screenshotDiff) => {
+      Object.keys(buildArtifactDiffs).flatMap((buildId) =>
+        buildArtifactDiffs[buildId]!.map((screenshotDiff) => {
           return {
             ...screenshotDiff,
             buildId,
@@ -504,11 +501,11 @@ export async function seed() {
     );
 
   await Promise.all(
-    screenshotDiffs.map(async ({ id, compareScreenshot }) => {
-      if (compareScreenshot?.test?.id) {
-        await ScreenshotDiff.query()
+    screenshotDiffs.map(async ({ id, headArtifact }) => {
+      if (headArtifact?.test?.id) {
+        await ArtifactDiff.query()
           .findById(id)
-          .patch({ testId: compareScreenshot.test.id });
+          .patch({ testId: headArtifact.test.id });
       }
     }),
   );

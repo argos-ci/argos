@@ -1,25 +1,25 @@
 import { invariant } from "@argos/util/invariant";
 
 import { transaction } from "@/database/index.js";
-import { Build, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
-import type { ScreenshotBucket } from "@/database/models/index.js";
+import { Artifact, ArtifactDiff, Build } from "@/database/models/index.js";
+import type { ArtifactBucket } from "@/database/models/index.js";
 
 import { BuildStrategy, getBuildStrategy } from "./strategy/index.js";
 
 /**
  * Get the base screenshot bucket for a build, or retrieve it if it doesn't exist.
  */
-async function getOrRetrieveBaseScreenshotBucket<T>(input: {
+async function getOrRetrieveBaseArtifactBucket<T>(input: {
   build: Build;
   strategy: BuildStrategy<T>;
   ctx: T;
-}): Promise<ScreenshotBucket | null> {
+}): Promise<ArtifactBucket | null> {
   const { build, strategy, ctx } = input;
-  if (build.baseScreenshotBucket) {
-    return build.baseScreenshotBucket;
+  if (build.baseArtifactBucket) {
+    return build.baseArtifactBucket;
   }
 
-  const { baseBranch, baseBranchResolvedFrom, baseScreenshotBucket } =
+  const { baseBranch, baseBranchResolvedFrom, baseArtifactBucket } =
     await strategy.getBase(build, ctx);
 
   await Promise.all([
@@ -28,41 +28,41 @@ async function getOrRetrieveBaseScreenshotBucket<T>(input: {
       .patch({
         baseBranch,
         baseBranchResolvedFrom,
-        baseScreenshotBucketId: baseScreenshotBucket?.id ?? null,
+        baseArtifactBucketId: baseArtifactBucket?.id ?? null,
       }),
-    baseScreenshotBucket?.$fetchGraph("screenshots"),
+    baseArtifactBucket?.$fetchGraph("screenshots"),
   ]);
 
-  return baseScreenshotBucket;
+  return baseArtifactBucket;
 }
 
 function getJobStatus({
-  baseScreenshot,
+  baseArtifact,
   sameFileId,
-  compareScreenshot,
+  headArtifact,
 }: {
-  baseScreenshot: Screenshot | null;
+  baseArtifact: Artifact | null;
   sameFileId: boolean;
-  compareScreenshot: Screenshot;
+  headArtifact: Artifact;
 }) {
   if (
-    baseScreenshot &&
-    (baseScreenshot.fileId === null ||
-      baseScreenshot.file?.width == null ||
-      baseScreenshot.file?.height == null)
+    baseArtifact &&
+    (baseArtifact.fileId === null ||
+      baseArtifact.file?.width == null ||
+      baseArtifact.file?.height == null)
   ) {
     return "pending" as const;
   }
 
   if (
-    compareScreenshot.fileId === null ||
-    compareScreenshot.file?.width == null ||
-    compareScreenshot.file?.height == null
+    headArtifact.fileId === null ||
+    headArtifact.file?.width == null ||
+    headArtifact.file?.height == null
   ) {
     return "pending" as const;
   }
 
-  if (!baseScreenshot) {
+  if (!baseArtifact) {
     return "complete" as const;
   }
 
@@ -76,7 +76,7 @@ function getJobStatus({
 export async function createBuildDiffs(build: Build) {
   // If the build already has a type, it means the diffs have already been created.
   if (build.type) {
-    return ScreenshotDiff.query().where({ buildId: build.id });
+    return ArtifactDiff.query().where({ buildId: build.id });
   }
 
   const strategy = getBuildStrategy(build);
@@ -84,108 +84,104 @@ export async function createBuildDiffs(build: Build) {
   const richBuild = await build
     .$query()
     .withGraphFetched(
-      "[project, baseScreenshotBucket.screenshots.file, compareScreenshotBucket.screenshots.file]",
+      "[project, baseArtifactBucket.artifacts.file, headArtifactBucket.artifacts.file]",
     );
 
   const project = richBuild.project;
   invariant(project, "no project found for build");
 
-  const compareScreenshotBucket = richBuild.compareScreenshotBucket;
-  invariant(
-    compareScreenshotBucket,
-    "no compare screenshot bucket found for build",
-  );
+  const headArtifactBucket = richBuild.headArtifactBucket;
+  invariant(headArtifactBucket, "no compare screenshot bucket found for build");
 
-  invariant(compareScreenshotBucket.complete, "compare bucket is not complete");
+  invariant(headArtifactBucket.complete, "compare bucket is not complete");
 
-  const compareScreenshots = compareScreenshotBucket.screenshots;
-  invariant(compareScreenshots, "no compare screenshots found for build");
+  const headArtifacts = headArtifactBucket.artifacts;
+  invariant(headArtifacts, "no compare artifacts found for build");
 
   const ctx = await strategy.getContext(richBuild);
-  const baseScreenshotBucket = await getOrRetrieveBaseScreenshotBucket({
+  const baseArtifactBucket = await getOrRetrieveBaseArtifactBucket({
     build: richBuild,
     strategy,
     ctx,
   });
 
   const sameBucket = Boolean(
-    baseScreenshotBucket &&
-      baseScreenshotBucket.id === compareScreenshotBucket.id,
+    baseArtifactBucket && baseArtifactBucket.id === headArtifactBucket.id,
   );
 
-  const inserts = compareScreenshots.map((compareScreenshot) => {
-    const baseScreenshot = (() => {
+  const inserts = headArtifacts.map((artifact) => {
+    const baseArtifact = (() => {
       if (sameBucket) {
         return null;
       }
 
-      if (!baseScreenshotBucket) {
+      if (!baseArtifactBucket) {
         return null;
       }
 
-      // Don't create diffs for failure screenshots
-      if (ScreenshotDiff.screenshotFailureRegexp.test(compareScreenshot.name)) {
+      // Don't create diffs for failure artifacts
+      if (ArtifactDiff.artifactFailureRegexp.test(artifact.name)) {
         return null;
       }
 
       invariant(
-        baseScreenshotBucket.screenshots,
-        "no base screenshots found for build",
+        baseArtifactBucket.artifacts,
+        "no base artifacts found for build",
       );
 
-      return baseScreenshotBucket.screenshots.find(({ name }) => {
-        if (compareScreenshot.baseName) {
-          return name === compareScreenshot.baseName;
+      return baseArtifactBucket.artifacts.find(({ name }) => {
+        if (artifact.baseName) {
+          return name === artifact.baseName;
         }
-        return name === compareScreenshot.name;
+        return name === artifact.name;
       });
     })();
 
     const sameFileId = Boolean(
-      baseScreenshot?.fileId &&
-        compareScreenshot.fileId &&
-        baseScreenshot.fileId === compareScreenshot.fileId,
+      baseArtifact?.fileId &&
+        artifact.fileId &&
+        baseArtifact.fileId === artifact.fileId,
     );
 
     return {
       buildId: richBuild.id,
-      baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
-      compareScreenshotId: compareScreenshot.id,
+      baseArtifactId: baseArtifact ? baseArtifact.id : null,
+      headArtifactId: artifact.id,
       jobStatus: getJobStatus({
-        baseScreenshot: baseScreenshot ?? null,
+        baseArtifact: baseArtifact ?? null,
         sameFileId,
-        compareScreenshot,
+        headArtifact: artifact,
       }),
       score: sameFileId ? 0 : null,
-      testId: compareScreenshot.testId,
+      testId: artifact.testId,
     };
   });
 
-  const compareScreenshotNames = compareScreenshots.map(({ name }) => name);
+  const headArtifactNames = headArtifacts.map(({ name }) => name);
 
-  const removedScreenshots =
-    baseScreenshotBucket?.screenshots
+  const removedArtifacts =
+    baseArtifactBucket?.artifacts
       ?.filter(
         ({ name }) =>
-          !compareScreenshotNames.includes(name) &&
-          // Don't mark failure screenshots as removed
-          !ScreenshotDiff.screenshotFailureRegexp.test(name),
+          !headArtifactNames.includes(name) &&
+          // Don't mark failure artifacts as removed
+          !ArtifactDiff.artifactFailureRegexp.test(name),
       )
-      .map((baseScreenshot) => ({
+      .map((baseArtifact) => ({
         buildId: richBuild.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: null,
+        baseArtifactId: baseArtifact.id,
+        headArtifactId: null,
         jobStatus: "complete" as const,
         score: null,
-        testId: baseScreenshot.testId,
+        testId: baseArtifact.testId,
       })) ?? [];
 
-  const allInserts = [...inserts, ...removedScreenshots];
+  const allInserts = [...inserts, ...removedArtifacts];
 
   const buildType = strategy.getBuildType(
     {
-      baseScreenshotBucket,
-      compareScreenshotBucket,
+      baseArtifactBucket,
+      headArtifactBucket,
     },
     ctx,
   );
@@ -193,7 +189,7 @@ export async function createBuildDiffs(build: Build) {
   return transaction(async (trx) => {
     const [screenshots] = await Promise.all([
       allInserts.length > 0
-        ? ScreenshotDiff.query(trx).insertAndFetch(allInserts)
+        ? ArtifactDiff.query(trx).insertAndFetch(allInserts)
         : [],
       Build.query(trx).findById(build.id).patch({ type: buildType }),
     ]);

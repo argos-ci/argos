@@ -5,6 +5,7 @@ import type { PartialModelObject } from "objection";
 
 import {
   Account,
+  Artifact,
   AutomationRule,
   Build,
   BUILD_EXPIRATION_DELAY_MS,
@@ -12,7 +13,6 @@ import {
   GitlabProject,
   Project,
   ProjectUser,
-  Screenshot,
   User,
 } from "@/database/models/index.js";
 import {
@@ -605,9 +605,9 @@ export const resolvers: IResolvers = {
       });
     },
     totalScreenshots: async (project) => {
-      return Screenshot.query()
-        .joinRelated("screenshotBucket")
-        .where("screenshotBucket.projectId", project.id)
+      return Artifact.query()
+        .joinRelated("artifactBucket")
+        .where("artifactBucket.projectId", project.id)
         .resultSize();
     },
     slug: async (project, _args, ctx) => {

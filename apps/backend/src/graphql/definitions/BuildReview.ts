@@ -2,13 +2,13 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { triggerAndRunAutomation } from "@/automation/index.js";
-import { AutomationEvents } from "@/automation/types/events.js";
-import { pushBuildNotification } from "@/build-notification/notifications.js";
-import { Build } from "@/database/models/Build.js";
-import { BuildReview } from "@/database/models/BuildReview.js";
-import { ScreenshotDiffReview } from "@/database/models/ScreenshotDiffReview.js";
-import { transaction } from "@/database/transaction.js";
+import { triggerAndRunAutomation } from "@/automation";
+import { AutomationEvents } from "@/automation/types/events";
+import { pushBuildNotification } from "@/build-notification/notifications";
+import { ArtifactDiffReview } from "@/database/models/ArtifactDiffReview";
+import { Build } from "@/database/models/Build";
+import { BuildReview } from "@/database/models/BuildReview";
+import { transaction } from "@/database/transaction";
 
 import {
   IReviewState,
@@ -34,11 +34,11 @@ export const typeDefs = gql`
   input ReviewBuildInput {
     buildId: ID!
     state: ReviewState!
-    screenshotDiffReviews: [ScreenshotDiffReviewInput!]!
+    diffReviews: [ArtifactDiffReviewInput!]!
   }
 
-  input ScreenshotDiffReviewInput {
-    screenshotDiffId: ID!
+  input ArtifactDiffReviewInput {
+    artifactDiffId: ID!
     state: ReviewState!
   }
 
@@ -97,10 +97,10 @@ export const resolvers: IResolvers = {
           userId: auth.user.id,
           state: parseState(input.state),
         });
-        if (input.screenshotDiffReviews.length) {
-          await ScreenshotDiffReview.query(trx).insert(
-            input.screenshotDiffReviews.map((diffReviewInput) => ({
-              screenshotDiffId: diffReviewInput.screenshotDiffId,
+        if (input.diffReviews.length) {
+          await ArtifactDiffReview.query(trx).insert(
+            input.diffReviews.map((diffReviewInput) => ({
+              artifactDiffId: diffReviewInput.artifactDiffId,
               buildReviewId: buildReview.id,
               state: parseState(diffReviewInput.state),
             })),

@@ -1,4 +1,4 @@
-import { Build, ScreenshotBucket } from "@/database/models/index.js";
+import { ArtifactBucket, Build } from "@/database/models/index.js";
 
 /**
  * Get the base bucket for a build and a commit.
@@ -16,7 +16,7 @@ export async function getBaseBucketForBuildAndCommit(
       // then the relevant commit is "prHeadCommit"
       .orWhereIn(
         "id",
-        Build.query().select("compareScreenshotBucketId").findOne({
+        Build.query().select("headArtifactBucketId").findOne({
           projectId: build.projectId,
           name: build.name,
           prHeadCommit: commit,
@@ -41,7 +41,7 @@ export function queryBaseBucket(
   build: Build,
   options?: QueryBaseBucketOptions,
 ) {
-  const query = ScreenshotBucket.query().where({
+  const query = ArtifactBucket.query().where({
     projectId: build.projectId,
     name: build.name,
     complete: true,
@@ -54,7 +54,7 @@ export function queryBaseBucket(
       "id",
       // List approved builds
       Build.query()
-        .select("compareScreenshotBucketId")
+        .select("headArtifactBucketId")
         .where("projectId", build.projectId)
         .where("name", build.name)
         .where("mode", build.mode)

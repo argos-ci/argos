@@ -5,16 +5,16 @@ import { getStartDateFromPeriod } from "@/metrics/test.js";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage/index.js";
 
 import {
+  IArtifactDiffResolvers,
+  IArtifactDiffStatus,
   IResolvers,
-  IScreenshotDiffResolvers,
-  IScreenshotDiffStatus,
 } from "../__generated__/resolver-types.js";
 import { getVariantKey } from "../services/variant-key.js";
 
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  enum ScreenshotDiffStatus {
+  enum ArtifactDiffStatus {
     pending
     removed
     failure
@@ -25,12 +25,12 @@ export const typeDefs = gql`
     ignored
   }
 
-  type ScreenshotDiff implements Node {
+  type ArtifactDiff implements Node {
     id: ID!
     createdAt: DateTime!
     build: Build!
-    baseScreenshot: Screenshot
-    compareScreenshot: Screenshot
+    base: Screenshot
+    head: Screenshot
     url: String
     "Name of the diff (either base or compare screenshot name)"
     name: String!
@@ -40,92 +40,88 @@ export const typeDefs = gql`
     change: TestChange
     width: Int
     height: Int
-    status: ScreenshotDiffStatus!
+    status: ArtifactDiffStatus!
     group: String
     threshold: Float
     test: Test
     occurrences(period: MetricsPeriod!): Int!
   }
 
-  type ScreenshotDiffConnection implements Connection {
+  type ArtifactDiffConnection implements Connection {
     pageInfo: PageInfo!
-    edges: [ScreenshotDiff!]!
+    edges: [ArtifactDiff!]!
   }
 `;
 
-const nameResolver: IScreenshotDiffResolvers["name"] = async (
-  screenshotDiff,
+const nameResolver: IArtifactDiffResolvers["name"] = async (
+  diff,
   _args,
   ctx,
 ) => {
-  const [baseScreenshot, compareScreenshot] = await Promise.all([
-    screenshotDiff.baseScreenshotId
-      ? ctx.loaders.Screenshot.load(screenshotDiff.baseScreenshotId)
-      : null,
-    screenshotDiff.compareScreenshotId
-      ? ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId)
-      : null,
+  const [baseArtifact, headArtifact] = await Promise.all([
+    diff.baseArtifactId ? ctx.loaders.Artifact.load(diff.baseArtifactId) : null,
+    diff.headArtifactId ? ctx.loaders.Artifact.load(diff.headArtifactId) : null,
   ]);
-  const name = baseScreenshot?.name || compareScreenshot?.name;
+  const name = baseArtifact?.name || headArtifact?.name;
   invariant(name, "screenshot diff without name");
   return name;
 };
 
-const statusResolver: IScreenshotDiffResolvers["status"] = async (
-  screenshotDiff,
+const statusResolver: IArtifactDiffResolvers["status"] = async (
+  diff,
   _args,
   ctx,
 ) => {
-  const diffStatus = await screenshotDiff.$getDiffStatus(async (id) => {
-    const screenshot = await ctx.loaders.Screenshot.load(id);
-    invariant(screenshot, "Screenshot not found");
-    return screenshot;
+  const diffStatus = await diff.$getDiffStatus(async (id) => {
+    const artifact = await ctx.loaders.Artifact.load(id);
+    invariant(artifact, "Screenshot not found");
+    return artifact;
   });
 
-  return diffStatus as IScreenshotDiffStatus;
+  return diffStatus as IArtifactDiffStatus;
 };
 
 export const resolvers: IResolvers = {
-  ScreenshotDiff: {
-    change: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.fileId || !screenshotDiff.testId) {
+  ArtifactDiff: {
+    change: async (diff, _args, ctx) => {
+      if (!diff.fileId || !diff.testId) {
         return null;
       }
-      const build = await ctx.loaders.Build.load(screenshotDiff.buildId);
-      invariant(build, "ScreenshotDiff without build");
+      const build = await ctx.loaders.Build.load(diff.buildId);
+      invariant(build, "ArtifactDiff without build");
       const project = await ctx.loaders.Project.load(build.projectId);
       invariant(project, "Build without project");
       return {
         project,
-        fileId: screenshotDiff.fileId,
-        testId: screenshotDiff.testId,
+        fileId: diff.fileId,
+        testId: diff.testId,
       };
     },
-    build: async (screenshotDiff, _args, ctx) => {
-      const build = await ctx.loaders.Build.load(screenshotDiff.buildId);
-      invariant(build, "ScreenshotDiff without build");
+    build: async (diff, _args, ctx) => {
+      const build = await ctx.loaders.Build.load(diff.buildId);
+      invariant(build, "ArtifactDiff without build");
       return build;
     },
-    baseScreenshot: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.baseScreenshotId) {
+    baseArtifact: async (diff, _args, ctx) => {
+      if (!diff.baseArtifactId) {
         return null;
       }
-      return ctx.loaders.Screenshot.load(screenshotDiff.baseScreenshotId);
+      return ctx.loaders.Artifact.load(diff.baseArtifactId);
     },
-    compareScreenshot: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.compareScreenshotId) {
+    headArtifact: async (diff, _args, ctx) => {
+      if (!diff.headArtifactId) {
         return null;
       }
-      return ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId);
+      return ctx.loaders.Artifact.load(diff.headArtifactId);
     },
-    url: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.fileId) {
-        if (!screenshotDiff.s3Id) {
+    url: async (diff, _args, ctx) => {
+      if (!diff.fileId) {
+        if (!diff.s3Id) {
           return null;
         }
-        return getTwicPicsUrl(screenshotDiff.s3Id);
+        return getTwicPicsUrl(diff.s3Id);
       }
-      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      const file = await ctx.loaders.File.load(diff.fileId);
       invariant(file, "File not found");
       return getPublicImageFileUrl(file);
     },
@@ -134,50 +130,50 @@ export const resolvers: IResolvers = {
       const name = await nameResolver(...args);
       return getVariantKey(name);
     },
-    width: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.fileId) {
+    width: async (diff, _args, ctx) => {
+      if (!diff.fileId) {
         return null;
       }
-      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      const file = await ctx.loaders.File.load(diff.fileId);
       invariant(file, "File not found");
       return file.width;
     },
-    height: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.fileId) {
+    height: async (diff, _args, ctx) => {
+      if (!diff.fileId) {
         return null;
       }
-      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      const file = await ctx.loaders.File.load(diff.fileId);
       invariant(file, "File not found");
       return file.height;
     },
     status: statusResolver,
-    threshold: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.compareScreenshotId) {
+    threshold: async (diff, _args, ctx) => {
+      if (!diff.headArtifactId) {
         return null;
       }
-      const compareScreenshot = await ctx.loaders.Screenshot.load(
-        screenshotDiff.compareScreenshotId,
+      const headArtifact = await ctx.loaders.Screenshot.load(
+        diff.headArtifactId,
       );
-      return compareScreenshot?.threshold ?? null;
+      return headArtifact?.threshold ?? null;
     },
-    test: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.testId) {
+    test: async (diff, _args, ctx) => {
+      if (!diff.testId) {
         return null;
       }
-      const test = await ctx.loaders.Test.load(screenshotDiff.testId);
+      const test = await ctx.loaders.Test.load(diff.testId);
       invariant(test, "Test not found");
       return test;
     },
-    occurrences: async (screenshotDiff, args, ctx) => {
-      if (!screenshotDiff.fileId || !screenshotDiff.testId) {
+    occurrences: async (diff, args, ctx) => {
+      if (!diff.fileId || !diff.testId) {
         return 0;
       }
       const from = getStartDateFromPeriod(args.period);
       const count = await ctx.loaders
         .getChangesOccurencesLoader(from.toISOString())
         .load({
-          fileId: screenshotDiff.fileId,
-          testId: screenshotDiff.testId,
+          fileId: diff.fileId,
+          testId: diff.testId,
         });
       return count;
     },
