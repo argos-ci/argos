@@ -664,7 +664,11 @@ export async function handleStripeEvent({
       return;
     }
     case "customer.subscription.updated": {
-      const stripeSubscription = data.object as Stripe.Subscription;
+      const stripeSubscription = data.object;
+      invariant(
+        stripeSubscription.object === "subscription",
+        "not a subscription",
+      );
       const argosSubscription =
         await getArgosSubscriptionFromStripeSubscriptionId(
           stripeSubscription.id,
@@ -673,10 +677,39 @@ export async function handleStripeEvent({
         argosSubscription,
         `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
       );
-      await updateArgosSubscriptionFromStripe(
-        argosSubscription,
-        stripeSubscription,
-      );
+
+      await Promise.all([
+        updateArgosSubscriptionFromStripe(
+          argosSubscription,
+          stripeSubscription,
+        ),
+        (async () => {
+          // The previous attributes includes "cancel_at", so we can detect
+          // if the subscription has been scheduled to be canceled.
+          if (
+            data.previous_attributes &&
+            "cancel_at" in data.previous_attributes
+          ) {
+            // If cancel_at was previously null and is now set, then the
+            // subscription has been scheduled to be canceled.
+            if (
+              !data.previous_attributes.cancel_at &&
+              stripeSubscription.cancel_at
+            ) {
+              // The subscription has been scheduled to be canceled
+              const account = await Account.query()
+                .findById(argosSubscription.accountId)
+                .throwIfNotFound();
+              await notifySubscriptionStatusUpdate({
+                provider: "stripe",
+                previousStatus: argosSubscription.status,
+                status: "cancel_scheduled",
+                account,
+              });
+            }
+          }
+        })(),
+      ]);
       return;
     }
 
