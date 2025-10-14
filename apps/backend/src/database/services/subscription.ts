@@ -10,7 +10,7 @@ import { Account, type Subscription } from "../models";
  */
 export async function notifySubscriptionStatusUpdate(args: {
   provider: Subscription["provider"];
-  status: Subscription["status"];
+  status: Subscription["status"] | "cancel_scheduled";
   account: Account;
   previousStatus?: Subscription["status"];
 }) {
@@ -41,6 +41,8 @@ export async function notifySubscriptionStatusUpdate(args: {
           return `❌ Trial canceled`;
         }
         return `❌ Subscription canceled`;
+      case "cancel_scheduled":
+        return `⏳ Subscription has been marked to cancel`;
       default:
         return `⚠️ Subscription status changed to *${status}*`;
     }
