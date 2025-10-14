@@ -77,7 +77,7 @@ describe("getAuthProjectBuilds", () => {
   });
 
   describe('with "commit" params', () => {
-    it("filters builds by `compareScreenshotBucket.commit` or `builds.prHeadCommit`", async () => {
+    it("filters builds by `headArtifactBucket.commit` or `builds.prHeadCommit`", async () => {
       const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
       const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
       invariant(withPrHeadCommit && withCompareScreenshotBucket);

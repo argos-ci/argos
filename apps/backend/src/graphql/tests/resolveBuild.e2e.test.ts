@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type {
   Account,
+  Artifact,
   Build,
   Project,
-  Screenshot,
 } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 
@@ -23,7 +23,7 @@ describe("GraphQL", () => {
     let teamAccount: Account;
     let project: Project;
     let build: Build;
-    let screenshot2: Screenshot;
+    let artifact2: Artifact;
 
     beforeEach(async () => {
       userAccount = await factory.UserAccount.create();
@@ -41,32 +41,32 @@ describe("GraphQL", () => {
       build = await factory.Build.create({
         projectId: project.id,
       });
-      const screenshot1 = await factory.Screenshot.create({
+      const artifact1 = await factory.Artifact.create({
         name: "email_deleted",
       });
-      screenshot2 = await factory.Screenshot.create({
+      artifact2 = await factory.Artifact.create({
         name: "email_deleted",
       });
-      const screenshot3 = await factory.Screenshot.create({
+      const artifact3 = await factory.Artifact.create({
         name: "email_added",
       });
-      await factory.ScreenshotDiff.createMany(3, [
+      await factory.ArtifactDiff.createMany(3, [
         {
           buildId: build.id,
-          baseScreenshotId: screenshot1.id,
-          compareScreenshotId: screenshot2.id,
+          baseArtifactId: artifact1.id,
+          headArtifactId: artifact2.id,
           score: 0,
         },
         {
           buildId: build.id,
-          baseScreenshotId: screenshot1.id,
-          compareScreenshotId: screenshot2.id,
+          baseArtifactId: artifact1.id,
+          headArtifactId: artifact2.id,
           score: 0.3,
         },
         {
           buildId: build.id,
-          baseScreenshotId: screenshot1.id,
-          compareScreenshotId: screenshot3.id,
+          baseArtifactId: artifact1.id,
+          headArtifactId: artifact3.id,
           score: 0,
         },
       ]);

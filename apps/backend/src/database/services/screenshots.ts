@@ -47,7 +47,7 @@ const getOrCreateTests = async ({
   return [...tests, ...addedTests];
 };
 
-type InsertFilesAndScreenshotsParams = {
+type InsertFilesAndArtifactsParams = {
   artifacts: {
     key: string;
     name: string;
@@ -62,10 +62,10 @@ type InsertFilesAndScreenshotsParams = {
 };
 
 /**
- * @returns The number of screenshots inserted
+ * @returns The number of artifacts inserted
  */
-export async function insertFilesAndScreenshots(
-  params: InsertFilesAndScreenshotsParams,
+export async function insertFilesAndArtifacts(
+  params: InsertFilesAndArtifactsParams,
 ): Promise<{
   all: number;
   storybook: number;
@@ -76,13 +76,13 @@ export async function insertFilesAndScreenshots(
     return { all: 0, storybook: 0 };
   }
 
-  const screenshotKeys = artifacts.map((artifact) => artifact.key);
+  const artifactKeys = artifacts.map((artifact) => artifact.key);
   const pwTraceKeys = artifacts
     .map((artifact) => artifact.pwTraceKey)
     .filter(checkIsNonNullable);
 
   const unknownKeys = await getUnknownFileKeys(
-    [...screenshotKeys, ...pwTraceKeys],
+    [...artifactKeys, ...pwTraceKeys],
     params.trx,
   );
 
@@ -111,7 +111,7 @@ export async function insertFilesAndScreenshots(
     const [files, tests, duplicates] = await Promise.all([
       File.query(trx)
         .select("id", "key", "type")
-        .whereIn("key", [...screenshotKeys, ...pwTraceKeys]),
+        .whereIn("key", [...artifactKeys, ...pwTraceKeys]),
       getOrCreateTests({
         projectId: params.build.projectId,
         buildName: params.build.name,

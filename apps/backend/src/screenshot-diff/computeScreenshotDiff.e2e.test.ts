@@ -5,10 +5,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config/index.js";
 import {
+  ArtifactBucket,
+  ArtifactDiff,
   Build,
   Project,
-  ScreenshotBucket,
-  ScreenshotDiff,
   Test,
 } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
@@ -16,16 +16,16 @@ import { quitAmqp } from "@/job-core/index.js";
 import { getS3Client, uploadFromFilePath } from "@/storage/index.js";
 import type { S3Client } from "@/storage/index.js";
 
-import { computeScreenshotDiff } from "./computeScreenshotDiff.js";
+import { computeArtifactDiff } from "./computeScreenshotDiff.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-describe("#computeScreenshotDiff", () => {
+describe("#computeArtifactDiff", () => {
   let s3: S3Client;
-  let baseBucket: ScreenshotBucket;
+  let baseBucket: ArtifactBucket;
   let build: Build;
-  let compareBucket: ScreenshotBucket;
-  let screenshotDiff: ScreenshotDiff;
+  let headBucket: ArtifactBucket;
+  let screenshotDiff: ArtifactDiff;
   let project: Project;
 
   beforeAll(async () => {
@@ -49,7 +49,7 @@ describe("#computeScreenshotDiff", () => {
     project = await factory.Project.create({
       token: "xx",
     });
-    const buckets = await factory.ScreenshotBucket.createMany(2, [
+    const buckets = await factory.ArtifactBucket.createMany(2, [
       {
         name: "test-bucket",
         branch: "test-branch",
@@ -61,11 +61,11 @@ describe("#computeScreenshotDiff", () => {
         projectId: project.id,
       },
     ]);
-    compareBucket = buckets[0]!;
+    headBucket = buckets[0]!;
     baseBucket = buckets[1]!;
     build = await factory.Build.create({
-      baseScreenshotBucketId: baseBucket.id,
-      compareScreenshotBucketId: compareBucket.id,
+      baseArtifactBucketId: baseBucket.id,
+      headArtifactBucketId: headBucket.id,
       projectId: project.id,
     });
   });
@@ -78,32 +78,32 @@ describe("#computeScreenshotDiff", () => {
   describe("with two different screenshots", () => {
     let test: Test;
     beforeEach(async () => {
-      const compareScreenshot = await factory.Screenshot.create({
+      const headArtifact = await factory.Artifact.create({
         name: "penelope",
         s3Id: "penelope-argos.png",
-        screenshotBucketId: compareBucket.id,
+        artifactBucketId: headBucket.id,
       });
-      const baseScreenshot = await factory.Screenshot.create({
+      const baseArtifact = await factory.Artifact.create({
         name: "penelope",
         s3Id: "penelope.png",
-        screenshotBucketId: baseBucket.id,
+        artifactBucketId: baseBucket.id,
       });
       test = await factory.Test.create({
-        name: compareScreenshot.name,
+        name: headArtifact.name,
         projectId: project.id,
         buildName: "default",
       });
-      screenshotDiff = await factory.ScreenshotDiff.create({
+      screenshotDiff = await factory.ArtifactDiff.create({
         buildId: build.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: compareScreenshot.id,
+        baseArtifactId: baseArtifact.id,
+        headArtifactId: headArtifact.id,
         jobStatus: "pending",
         testId: test.id,
       });
     });
 
     it('should update result and notify "diff-detected"', async () => {
-      await computeScreenshotDiff(screenshotDiff, {
+      await computeArtifactDiff(screenshotDiff, {
         s3,
         bucket: config.get("s3.screenshotsBucket"),
       });
@@ -120,26 +120,26 @@ describe("#computeScreenshotDiff", () => {
 
   describe("with two same screenshots", () => {
     beforeEach(async () => {
-      const compareScreenshot = await factory.Screenshot.create({
+      const headArtifact = await factory.Artifact.create({
         name: "penelope",
         s3Id: "penelope.png",
-        screenshotBucketId: compareBucket.id,
+        artifactBucketId: headBucket.id,
       });
-      const baseScreenshot = await factory.Screenshot.create({
+      const baseArtifact = await factory.Artifact.create({
         name: "penelope",
         s3Id: "penelope.png",
-        screenshotBucketId: baseBucket.id,
+        artifactBucketId: baseBucket.id,
       });
-      screenshotDiff = await factory.ScreenshotDiff.create({
+      screenshotDiff = await factory.ArtifactDiff.create({
         buildId: build.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: compareScreenshot.id,
+        baseArtifactId: baseArtifact.id,
+        headArtifactId: headArtifact.id,
         jobStatus: "pending",
       });
     });
 
     it('should not update result and notify "no-diff-detected"', async () => {
-      await computeScreenshotDiff(screenshotDiff, {
+      await computeArtifactDiff(screenshotDiff, {
         s3,
         bucket: config.get("s3.screenshotsBucket"),
       });

@@ -24,7 +24,7 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
       // If the build is already concluded, we don't want to update it.
       return;
     }
-    const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
+    const statuses = await Build.getArtifactDiffsStatuses([buildId]);
     const [[conclusion], [stats]] = await Promise.all([
       Build.computeConclusions([buildId], statuses),
       Build.computeStats([buildId]),

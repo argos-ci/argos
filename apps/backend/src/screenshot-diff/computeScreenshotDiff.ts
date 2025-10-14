@@ -7,10 +7,10 @@ import type { TransactionOrKnex } from "objection";
 import { concludeBuild } from "@/build/concludeBuild.js";
 import { transaction } from "@/database/index.js";
 import {
+  Artifact,
+  ArtifactDiff,
   File,
   IgnoredFile,
-  Screenshot,
-  ScreenshotDiff,
 } from "@/database/models/index.js";
 import { upsertTestStats } from "@/metrics/test.js";
 import { S3ImageFile } from "@/storage/index.js";
@@ -49,29 +49,27 @@ const getOrCreateFile = async (
  */
 async function ensureFileDimensions({
   s3Image,
-  screenshot,
+  artifact,
 }: {
   s3Image: S3ImageFile;
-  screenshot: Screenshot;
+  artifact: Artifact;
 }) {
-  if (screenshot?.file?.width != null && screenshot?.file?.height != null) {
+  if (artifact?.file?.width != null && artifact?.file?.height != null) {
     return;
   }
 
   const dimensions = await s3Image.getDimensions();
-  if (screenshot.fileId) {
-    await File.query().findById(screenshot.fileId).patch(dimensions);
+  if (artifact.fileId) {
+    await File.query().findById(artifact.fileId).patch(dimensions);
     return;
   }
 
   await transaction(async (trx) => {
     const file = await getOrCreateFile(
-      { ...dimensions, type: "screenshot", key: screenshot.s3Id },
+      { ...dimensions, type: "screenshot", key: artifact.s3Id },
       trx,
     );
-    await Screenshot.query(trx)
-      .findById(screenshot.id)
-      .patch({ fileId: file.id });
+    await Artifact.query(trx).findById(artifact.id).patch({ fileId: file.id });
   });
 }
 
@@ -135,51 +133,47 @@ async function getOrCreateDiffFile(args: {
 /**
  * Computes the screenshot difference
  */
-export const computeScreenshotDiff = async (
-  poorScreenshotDiff: ScreenshotDiff,
+export const computeArtifactDiff = async (
+  poorArtifactDiff: ArtifactDiff,
   { s3, bucket }: { s3: S3Client; bucket: string },
 ) => {
-  if (poorScreenshotDiff.jobStatus === "complete") {
+  if (poorArtifactDiff.jobStatus === "complete") {
     return;
   }
 
-  const screenshotDiff = await poorScreenshotDiff
+  const screenshotDiff = await poorArtifactDiff
     .$query()
-    .withGraphFetched(
-      "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
-    );
+    .withGraphFetched("[build, baseArtifact.file, headArtifact.file]");
 
-  const { baseScreenshot, compareScreenshot, build } = screenshotDiff;
+  const { baseArtifact, headArtifact, build } = screenshotDiff;
 
   invariant(build, "no build");
-  invariant(compareScreenshot, "no compare screenshot");
+  invariant(headArtifact, "no head artifact");
 
-  const baseImage = baseScreenshot?.s3Id
+  const baseImage = baseArtifact?.s3Id
     ? new S3ImageFile({
         s3,
         bucket: bucket,
-        key: baseScreenshot.s3Id,
+        key: baseArtifact.s3Id,
         dimensions:
-          baseScreenshot.file?.width != null &&
-          baseScreenshot.file?.height != null
+          baseArtifact.file?.width != null && baseArtifact.file?.height != null
             ? {
-                width: baseScreenshot.file.width,
-                height: baseScreenshot.file.height,
+                width: baseArtifact.file.width,
+                height: baseArtifact.file.height,
               }
             : null,
       })
     : null;
 
-  const compareImage = new S3ImageFile({
+  const headImage = new S3ImageFile({
     s3,
     bucket: bucket,
-    key: compareScreenshot.s3Id,
+    key: headArtifact.s3Id,
     dimensions:
-      compareScreenshot.file?.width != null &&
-      compareScreenshot.file?.height != null
+      headArtifact.file?.width != null && headArtifact.file?.height != null
         ? {
-            width: compareScreenshot.file.width,
-            height: compareScreenshot.file.height,
+            width: headArtifact.file.width,
+            height: headArtifact.file.height,
           }
         : null,
   });
@@ -187,29 +181,29 @@ export const computeScreenshotDiff = async (
   const { buildId } = screenshotDiff;
 
   // Patching cannot be done in parallel since the file can be the same and must be created only
-  if (baseImage && baseScreenshot) {
+  if (baseImage && baseArtifact) {
     await ensureFileDimensions({
-      screenshot: baseScreenshot,
+      artifact: baseArtifact,
       s3Image: baseImage,
     });
   }
 
   await ensureFileDimensions({
-    screenshot: compareScreenshot,
-    s3Image: compareImage,
+    artifact: headArtifact,
+    s3Image: headImage,
   });
 
   const diffData = await (async () => {
     if (!baseImage) {
       return {};
     }
-    if (baseImage.key === compareImage.key) {
+    if (baseImage.key === headImage.key) {
       return { score: 0 };
     }
     const result = await diffImages(
       baseImage,
-      compareImage,
-      compareScreenshot.threshold ?? DEFAULT_THRESHOLD,
+      headImage,
+      headArtifact.threshold ?? DEFAULT_THRESHOLD,
     );
     if (result === null) {
       return { score: 0 };
@@ -242,13 +236,13 @@ export const computeScreenshotDiff = async (
   await Promise.all([
     // Unlink images
     baseImage?.unlink(),
-    compareImage.unlink(),
+    headImage.unlink(),
   ]);
 
   // It is problematic to have to do that to conclude the build
   // we should never have to patch jobStatus to complete while the job is not complete
   // we should probably use another key to check if the diff has been computed.
-  await ScreenshotDiff.query()
+  await ArtifactDiff.query()
     .findById(screenshotDiff.id)
     .patch({ ...diffData, jobStatus: "complete" });
 
@@ -284,7 +278,7 @@ async function groupSimilarDiffs(input: {
   buildId: string;
 }) {
   const { diffFileKey, buildId } = input;
-  const similarDiffs = await ScreenshotDiff.query().where({
+  const similarDiffs = await ArtifactDiff.query().where({
     buildId,
     s3Id: diffFileKey,
     group: null,
@@ -300,7 +294,7 @@ async function groupSimilarDiffs(input: {
       // Update diffs
       // We don't do the where in this query because of deadlock issues
       // Having `s3Id` in the where clause causes a deadlock
-      await ScreenshotDiff.query()
+      await ArtifactDiff.query()
         .whereIn("id", diffIdsChunk)
         .patch({ group: diffFileKey });
     }

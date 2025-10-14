@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
 import { pushBuildNotification } from "@/build-notification/index.js";
-import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
+import { ArtifactDiff, Build, Project } from "@/database/models/index.js";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
 import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
@@ -18,11 +18,8 @@ import { createBuildDiffs } from "./createBuildDiffs.js";
  * Pushes the diffs to the screenshot-diff job queue.
  * If there is no diff to proceed, it pushes a notification.
  */
-async function pushDiffs(input: {
-  build: Build;
-  screenshotDiffs: ScreenshotDiff[];
-}) {
-  const toProcessedDiffIds = input.screenshotDiffs
+async function pushDiffs(input: { build: Build; diffs: ArtifactDiff[] }) {
+  const toProcessedDiffIds = input.diffs
     .filter(({ jobStatus }) => jobStatus !== "complete")
     .map(({ id }) => id);
 
@@ -121,8 +118,8 @@ export async function performBuild(build: Build) {
       .withGraphFetched("[gitlabProject, account]")
       .throwIfNotFound(),
     pushBuildNotification({ buildId: build.id, type: "progress" }),
-    createBuildDiffs(build).then(async (screenshotDiffs) => {
-      await pushDiffs({ build, screenshotDiffs });
+    createBuildDiffs(build).then(async (diffs) => {
+      await pushDiffs({ build, diffs });
     }),
   ]);
 

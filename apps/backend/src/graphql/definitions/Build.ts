@@ -87,7 +87,7 @@ export const typeDefs = gql`
     finalizedAt: DateTime
     "Date when the build is concluded (all diffs processed)"
     concludedAt: DateTime
-    "The artifact diffs between the base artifact bucket of the compare artifact bucket"
+    "The artifact diffs between the base artifact bucket of the head artifact bucket"
     diffs(after: Int!, first: Int!): ArtifactDiffConnection!
     "The artifact bucket that serves as base for comparison"
     baseBucket: ArtifactBucket

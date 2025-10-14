@@ -71,9 +71,9 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
       .where("builds.projectId", req.authProject.id);
 
     if (commit) {
-      // Check if the commit is in the compareScreenshotBucket or prHeadCommit
-      filterQuery.joinRelated("compareScreenshotBucket").where((qb) => {
-        qb.where("compareScreenshotBucket.commit", commit).orWhere(
+      // Check if the commit is in the headArtifactBucket or prHeadCommit
+      filterQuery.joinRelated("headArtifactBucket").where((qb) => {
+        qb.where("headArtifactBucket.commit", commit).orWhere(
           "prHeadCommit",
           commit,
         );

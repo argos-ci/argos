@@ -49,11 +49,11 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
 
   invariant(build, "No build found", UnretryableError);
 
-  const { project, compareScreenshotBucket } = build;
+  const { project, headArtifactBucket } = build;
 
   invariant(
-    compareScreenshotBucket,
-    "No compare screenshot bucket found",
+    headArtifactBucket,
+    "No headArtifactBucket found",
     UnretryableError,
   );
 
@@ -95,7 +95,7 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
     }
 
     const body = await getCommentBody({
-      commit: compareScreenshotBucket.commit,
+      commit: headArtifactBucket.commit,
     });
 
     await commentGithubPr({

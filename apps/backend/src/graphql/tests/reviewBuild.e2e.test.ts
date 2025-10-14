@@ -4,10 +4,10 @@ import { test as base, describe, expect } from "vitest";
 import { concludeBuild } from "@/build/concludeBuild.js";
 import {
   Account,
+  ArtifactDiff,
   Build,
   BuildReview,
   Project,
-  ScreenshotDiff,
 } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 
@@ -21,7 +21,7 @@ type Fixtures = {
     teamAccount: Account;
     project: Project;
     build: Build;
-    screenshotDiffs: ScreenshotDiff[];
+    diffs: ArtifactDiff[];
   };
 };
 
@@ -48,24 +48,24 @@ const test = base.extend<Fixtures>({
       projectId: project.id,
       conclusion: null,
     });
-    const screenshots = await factory.Screenshot.createMany(3);
-    const screenshotDiffs = await factory.ScreenshotDiff.createMany(3, [
+    const artifacts = await factory.Artifact.createMany(3);
+    const diffs = await factory.ArtifactDiff.createMany(3, [
       {
         buildId: build.id,
-        baseScreenshotId: screenshots[0]!.id,
-        compareScreenshotId: screenshots[1]!.id,
+        baseArtifactId: artifacts[0]!.id,
+        headArtifactId: artifacts[1]!.id,
         score: 0,
       },
       {
         buildId: build.id,
-        baseScreenshotId: screenshots[0]!.id,
-        compareScreenshotId: screenshots[1]!.id,
+        baseArtifactId: artifacts[0]!.id,
+        headArtifactId: artifacts[1]!.id,
         score: 0.3,
       },
       {
         buildId: build.id,
-        baseScreenshotId: screenshots[0]!.id,
-        compareScreenshotId: screenshots[2]!.id,
+        baseArtifactId: artifacts[0]!.id,
+        headArtifactId: artifacts[2]!.id,
         score: 0,
       },
     ]);
@@ -76,7 +76,7 @@ const test = base.extend<Fixtures>({
       userAccount,
       teamAccount,
       project,
-      screenshotDiffs,
+      diffs,
     });
   },
 });
@@ -109,7 +109,7 @@ describe("GraphQL reviewBuild mutation", () => {
             state: "REJECTED",
             screenshotDiffReviews: [
               {
-                screenshotDiffId: fixture.screenshotDiffs[0]!.id,
+                screenshotDiffId: fixture.diffs[0]!.id,
                 state: "REJECTED",
               },
             ],
@@ -123,14 +123,14 @@ describe("GraphQL reviewBuild mutation", () => {
         buildId: fixture.build.id,
         userId: fixture.userAccount.user!.id,
       })
-      .withGraphFetched("screenshotDiffReviews");
+      .withGraphFetched("artifactDiffReviews");
 
     expect(review!.state).toBe("rejected");
-    expect(review!.screenshotDiffReviews).toHaveLength(1);
-    expect(review!.screenshotDiffReviews![0]!.screenshotDiffId).toBe(
-      fixture.screenshotDiffs[0]!.id,
+    expect(review!.artifactDiffReviews).toHaveLength(1);
+    expect(review!.artifactDiffReviews![0]!.artifactDiffId).toBe(
+      fixture.diffs[0]!.id,
     );
-    expect(review!.screenshotDiffReviews![0]!.state).toBe("rejected");
+    expect(review!.artifactDiffReviews![0]!.state).toBe("rejected");
 
     expectNoGraphQLError(mutationResult);
     expect(mutationResult.status).toBe(200);

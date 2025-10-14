@@ -70,9 +70,9 @@ function aggregateMetadata(allMetatada: (BuildMetadata | null)[]) {
 
 /**
  * Finalize a build.
- * - Count the number of screenshots in the compare bucket.
+ * - Count the number of screenshots in the head bucket.
  * - Check if the build is considered valid.
- * - Update the compare bucket with the screenshot count and validity.
+ * - Update the head bucket with the screenshot count and validity.
  */
 export async function finalizeBuild(input: {
   /**
@@ -84,7 +84,7 @@ export async function finalizeBuild(input: {
    */
   single?: {
     metadata: BuildMetadata | null;
-    screenshots: { all: number; storybook: number };
+    artifacts: { all: number; storybook: number };
   };
   /**
    * Transaction object for database operations.
@@ -96,9 +96,9 @@ export async function finalizeBuild(input: {
     "artifactBucketId",
     build.headArtifactBucketId,
   );
-  const [artifactCount, storybookArtifactCount, shards] = await Promise.all([
-    single?.screenshots.all ?? countQuery.resultSize(),
-    single?.screenshots.storybook ??
+  const [artifactCount, storybookScreenshotCount, shards] = await Promise.all([
+    single?.artifacts.all ?? countQuery.resultSize(),
+    single?.artifacts.storybook ??
       countQuery
         .clone()
         .where(ref("metadata:sdk.name").castText(), ARGOS_STORYBOOK_SDK_NAME)
@@ -128,10 +128,10 @@ export async function finalizeBuild(input: {
   await transaction(trx, async (trx) => {
     await Promise.all([
       build.$clone().$query(trx).patch(buildData),
-      build.$relatedQuery("compareArtifactBucket", trx).patch({
+      build.$relatedQuery("headArtifactBucket", trx).patch({
         complete: true,
         artifactCount,
-        storybookArtifactCount,
+        storybookScreenshotCount,
         // @TODO implement snapshot counting
         snapshotCount: 0,
         valid,

@@ -211,7 +211,7 @@ export class Build extends Model {
           to: "artifact_buckets.id",
         },
       },
-      compareArtifactBucket: {
+      headArtifactBucket: {
         relation: Model.BelongsToOneRelation,
         modelClass: ArtifactBucket,
         join: {
@@ -269,7 +269,7 @@ export class Build extends Model {
       throw new ValidationError({
         type: "ModelValidation",
         message:
-          "The base artifact bucket should be different to the compare one.",
+          "The base artifact bucket should be different to the head one.",
       });
     }
   }

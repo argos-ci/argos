@@ -12,12 +12,12 @@ describe("#getAggregatedNotification", () => {
 
   describe("with a single build", () => {
     beforeEach(async () => {
-      const compareBucket = await factory.ScreenshotBucket.create({
+      const headBucket = await factory.ArtifactBucket.create({
         commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
       });
       const build = await factory.Build.create({
         baseScreenshotBucketId: null,
-        compareScreenshotBucketId: compareBucket.id,
+        headArtifactBucketId: headBucket.id,
         jobStatus: "pending",
       });
       await factory.BuildNotification.create({
@@ -51,19 +51,19 @@ describe("#getAggregatedNotification", () => {
 
   describe("with multiple builds", () => {
     beforeEach(async () => {
-      const buckets = await factory.ScreenshotBucket.createMany(2, {
+      const buckets = await factory.ArtifactBucket.createMany(2, {
         commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
       });
       const builds = await factory.Build.createMany(2, [
         {
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: buckets[0]!.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: buckets[0]!.id,
           jobStatus: "pending",
           name: "a",
         },
         {
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: buckets[1]!.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: buckets[1]!.id,
           jobStatus: "pending",
           name: "b",
         },
@@ -106,28 +106,28 @@ describe("#getAggregatedNotification", () => {
 
   describe("with multiple builds (2)", () => {
     beforeEach(async () => {
-      const buckets = await factory.ScreenshotBucket.createMany(2, {
+      const buckets = await factory.ArtifactBucket.createMany(2, {
         commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
       });
       const builds = await factory.Build.createMany(3, [
         {
           createdAt: new Date("2021-01-01").toISOString(),
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: buckets[0]!.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: buckets[0]!.id,
           jobStatus: "pending",
           name: "a",
         },
         {
           createdAt: new Date("2021-01-02").toISOString(),
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: buckets[1]!.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: buckets[1]!.id,
           jobStatus: "pending",
           name: "a",
         },
         {
           createdAt: new Date("2021-01-02").toISOString(),
-          baseScreenshotBucketId: null,
-          compareScreenshotBucketId: buckets[1]!.id,
+          baseArtifactBucketId: null,
+          headArtifactBucketId: buckets[1]!.id,
           jobStatus: "pending",
           name: "b",
         },

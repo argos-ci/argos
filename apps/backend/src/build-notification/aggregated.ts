@@ -21,11 +21,7 @@ export async function getAggregatedNotification(args: {
   }
 
   const siblingBuilds = await Build.query()
-    .join(
-      "screenshot_buckets as sb",
-      "builds.compareScreenshotBucketId",
-      "sb.id",
-    )
+    .join("screenshot_buckets as sb", "builds.headArtifactBucketId", "sb.id")
     .where("sb.commit", commit)
     .distinctOn("builds.name")
     .orderBy("builds.name")

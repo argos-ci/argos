@@ -226,7 +226,7 @@ async function createSkippedBuild(ctx: BuildContext): Promise<Build> {
   const build = await createBuildFromRequest(ctx);
   await finalizeBuild({
     build,
-    single: { metadata: null, screenshots: { all: 0, storybook: 0 } },
+    single: { metadata: null, artifacts: { all: 0, storybook: 0 } },
   });
   await buildJob.push(build.id);
   return build;
@@ -267,7 +267,7 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
     ],
     async () => {
       const existingBuild = await Build.query()
-        .withGraphFetched("compareScreenshotBucket")
+        .withGraphFetched("headArtifactBucket")
         .findOne({
           "builds.projectId": project.id,
           externalId: parallelNonce,

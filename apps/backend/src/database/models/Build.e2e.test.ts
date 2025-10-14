@@ -148,7 +148,7 @@ describe("models/Build", () => {
             conclusion: null,
             stats: null,
           });
-          await factory.ScreenshotDiff.createMany(2, [
+          await factory.ArtifactDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "error" },
           ]);
@@ -163,7 +163,7 @@ describe("models/Build", () => {
             conclusion: null,
             stats: null,
           });
-          await factory.ScreenshotDiff.createMany(2, [
+          await factory.ArtifactDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "pending" },
           ]);
@@ -178,7 +178,7 @@ describe("models/Build", () => {
             conclusion: null,
             stats: null,
           });
-          await factory.ScreenshotDiff.createMany(2, [
+          await factory.ArtifactDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "progress" },
           ]);
@@ -193,7 +193,7 @@ describe("models/Build", () => {
             conclusion: null,
             stats: null,
           });
-          await factory.ScreenshotDiff.createMany(2, [
+          await factory.ArtifactDiff.createMany(2, [
             { buildId: build.id, jobStatus: "complete" },
             { buildId: build.id, jobStatus: "complete" },
           ]);
@@ -263,7 +263,7 @@ describe("models/Build", () => {
 
     it("should return 'no-changes' when no diff detected", async () => {
       const build = await factory.Build.create();
-      await factory.ScreenshotDiff.createMany(2, [
+      await factory.ArtifactDiff.createMany(2, [
         { buildId: build.id },
         { buildId: build.id },
       ]);
@@ -274,7 +274,7 @@ describe("models/Build", () => {
 
     it("should return 'changes-detected' when diff are detected", async () => {
       const build = await factory.Build.create();
-      await factory.ScreenshotDiff.createMany(2, [
+      await factory.ArtifactDiff.createMany(2, [
         { buildId: build.id },
         { buildId: build.id, score: 0.8 },
       ]);
@@ -297,8 +297,8 @@ describe("models/Build", () => {
       const builds = await factory.Build.createMany(2, {
         conclusion: "no-changes",
       });
-      await factory.ScreenshotDiff.createMany(2, { buildId: builds[0]!.id });
-      await factory.ScreenshotDiff.createMany(2, { buildId: builds[1]!.id });
+      await factory.ArtifactDiff.createMany(2, { buildId: builds[0]!.id });
+      await factory.ArtifactDiff.createMany(2, { buildId: builds[1]!.id });
       const reviewStatuses = await Build.getReviewStatuses(builds);
       expect(reviewStatuses).toEqual([null, null]);
     });

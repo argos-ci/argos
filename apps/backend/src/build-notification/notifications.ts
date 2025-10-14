@@ -30,13 +30,13 @@ export async function processBuildNotification(
   buildNotification: BuildNotification,
 ) {
   await buildNotification.$fetchGraph(
-    `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], account], compareScreenshotBucket]`,
+    `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], account], headArtifactBucket]`,
   );
 
   invariant(buildNotification.build, "No build found", UnretryableError);
   invariant(
-    buildNotification.build.compareScreenshotBucket,
-    "No compareScreenshotBucket found",
+    buildNotification.build.headArtifactBucket,
+    "No headArtifactBucket found",
     UnretryableError,
   );
   invariant(
@@ -47,7 +47,7 @@ export async function processBuildNotification(
 
   const commit =
     buildNotification.build.prHeadCommit ??
-    buildNotification.build.compareScreenshotBucket.commit;
+    buildNotification.build.headArtifactBucket.commit;
 
   const summaryCheckConfig = buildNotification.build.project.summaryCheck;
 
@@ -60,7 +60,7 @@ export async function processBuildNotification(
         build: buildNotification.build,
       }),
       getAggregatedNotification({
-        commit: buildNotification.build.compareScreenshotBucket.commit,
+        commit: buildNotification.build.headArtifactBucket.commit,
         buildType: buildNotification.build.type,
         summaryCheckConfig,
       }),

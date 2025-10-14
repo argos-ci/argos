@@ -128,6 +128,16 @@ input AddContributorToProjectInput {
   userAccountId: ID!
 }
 
+type Artifact implements Node {
+  height: Int
+  id: ID!
+  metadata: ScreenshotMetadata
+  originalUrl: String!
+  playwrightTraceUrl: String
+  url: String!
+  width: Int
+}
+
 type ArtifactBucket implements Node {
   branch: String
   commit: String!
@@ -136,14 +146,14 @@ type ArtifactBucket implements Node {
 }
 
 type ArtifactDiff implements Node {
-  base: Screenshot
+  base: Artifact
   build: Build!
 
   """Change ID of the screenshot diff. Used to be indefied in a test."""
   change: TestChange
   createdAt: DateTime!
   group: String
-  head: Screenshot
+  head: Artifact
   height: Int
   id: ID!
 
@@ -1042,16 +1052,6 @@ input ReviewBuildInput {
 enum ReviewState {
   APPROVED
   REJECTED
-}
-
-type Screenshot implements Node {
-  height: Int
-  id: ID!
-  metadata: ScreenshotMetadata
-  originalUrl: String!
-  playwrightTraceUrl: String
-  url: String!
-  width: Int
 }
 
 type ScreenshotMetadata {

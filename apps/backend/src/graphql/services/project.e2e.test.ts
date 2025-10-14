@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  Artifact,
+  ArtifactBucket,
+  ArtifactDiff,
   AutomationActionRun,
   AutomationRule,
   AutomationRun,
   Build,
   Project,
-  Screenshot,
-  ScreenshotBucket,
-  ScreenshotDiff,
   Test,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing/index.js";
@@ -24,32 +24,32 @@ describe("unsafe_deleteProject", () => {
     await setupDatabase();
 
     project = await factory.Project.create();
-    const compareBucket = await factory.ScreenshotBucket.create({
+    const headBucket = await factory.ArtifactBucket.create({
       projectId: project.id,
     });
 
     const build = await factory.Build.create({
       projectId: project.id,
-      compareScreenshotBucketId: compareBucket.id,
+      headArtifactBucketId: headBucket.id,
     });
 
-    const [slackChannel, screenshot, _notification, review, diff] =
+    const [slackChannel, artifact, _notification, review, diff] =
       await Promise.all([
         factory.SlackChannel.create(),
-        factory.Screenshot.create({ screenshotBucketId: compareBucket.id }),
+        factory.Artifact.create({ artifactBucketId: headBucket.id }),
         factory.BuildNotification.create({ buildId: build.id }),
         factory.BuildReview.create({ buildId: build.id, state: "approved" }),
-        factory.ScreenshotDiff.create({ buildId: build.id }),
+        factory.ArtifactDiff.create({ buildId: build.id }),
       ]);
 
     await Promise.all([
-      factory.ScreenshotDiffReview.create({
+      factory.ArtifactDiffReview.create({
         buildReviewId: review.id,
-        screenshotDiffId: diff.id,
+        artifactDiffId: diff.id,
         state: "approved",
       }),
       factory.Test.create({
-        name: screenshot.name,
+        name: artifact.name,
         projectId: project.id,
         buildName: "default",
       }),
@@ -98,9 +98,9 @@ describe("unsafe_deleteProject", () => {
         automationRunId: automationRun.id,
       }),
       Build.query().where({ projectId: project.id }),
-      ScreenshotBucket.query().where({ projectId: project.id }),
-      Screenshot.query().where({ screenshotBucketId: project.id }),
-      ScreenshotDiff.query().where({ buildId: project.id }),
+      ArtifactBucket.query().where({ projectId: project.id }),
+      Artifact.query().where({ artifactBucketId: project.id }),
+      ArtifactDiff.query().where({ buildId: project.id }),
       Test.query().where({ projectId: project.id }),
       Project.query().where({ id: project.id }),
     ]);

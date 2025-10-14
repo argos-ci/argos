@@ -25,7 +25,7 @@ describe("upsertTestStats", () => {
       type: "reference",
     });
 
-    await factory.ScreenshotDiff.createMany(3, [
+    await factory.ArtifactDiff.createMany(3, [
       {
         buildId: builds[0]!.id,
         testId: test.id,

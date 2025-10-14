@@ -91,12 +91,12 @@ export async function createBuildDiffs(build: Build) {
   invariant(project, "no project found for build");
 
   const headArtifactBucket = richBuild.headArtifactBucket;
-  invariant(headArtifactBucket, "no compare screenshot bucket found for build");
+  invariant(headArtifactBucket, "no head bucket found for build");
 
-  invariant(headArtifactBucket.complete, "compare bucket is not complete");
+  invariant(headArtifactBucket.complete, "head bucket is not complete");
 
   const headArtifacts = headArtifactBucket.artifacts;
-  invariant(headArtifacts, "no compare artifacts found for build");
+  invariant(headArtifacts, "no head artifacts found for build");
 
   const ctx = await strategy.getContext(richBuild);
   const baseArtifactBucket = await getOrRetrieveBaseArtifactBucket({

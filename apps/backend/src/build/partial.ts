@@ -156,7 +156,7 @@ export async function finalizePartialBuilds(input: {
   await Promise.all(
     builds.map(async (build) => {
       const previousBuild = await Build.query()
-        .withGraphFetched("shards.screenshots")
+        .withGraphFetched("shards.artifacts")
         .where("builds.runId", build.runId)
         .where("builds.projectId", build.projectId)
         .where("builds.name", build.name)
@@ -196,16 +196,16 @@ export async function finalizePartialBuilds(input: {
       const missingArtifactss = missingShards.flatMap((shard, index) => {
         const insertedShard = insertedShards[index];
         invariant(insertedShard, "Inserted shard should be found");
-        invariant(shard.screenshots, "Screenshots should be fetched");
-        return shard.screenshots.map((screenshot) => {
+        invariant(shard.artifacts, "Artifacts should be fetched");
+        return shard.artifacts.map((artifact) => {
           return {
-            name: screenshot.name,
-            s3Id: screenshot.s3Id,
+            name: artifact.name,
+            s3Id: artifact.s3Id,
             artifactBucketId: build.headArtifactBucketId,
-            fileId: screenshot.fileId,
-            testId: screenshot.testId,
-            metadata: screenshot.metadata,
-            playwrightTraceFileId: screenshot.playwrightTraceFileId,
+            fileId: artifact.fileId,
+            testId: artifact.testId,
+            metadata: artifact.metadata,
+            playwrightTraceFileId: artifact.playwrightTraceFileId,
             buildShardId: insertedShard.id,
           };
         });

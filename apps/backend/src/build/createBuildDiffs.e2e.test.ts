@@ -31,7 +31,7 @@ describe("#createBuildDiffs", () => {
     });
     build = await factory.Build.create({
       baseArtifactBucketId: null,
-      compareArtifactBucketId: headBucket.id,
+      headArtifactBucketId: headBucket.id,
       projectId: project.id,
       jobStatus: "pending",
     });
@@ -158,46 +158,46 @@ describe("#createBuildDiffs", () => {
       expect(addedDiff).toMatchObject({
         buildId: build.id,
         baseArtifactId: null,
-        compareArtifactId: newArtifact!.id,
+        headArtifactId: newArtifact!.id,
         jobStatus: "complete",
       });
       expect(addDiffWithoutFile).toMatchObject({
         buildId: build.id,
         baseArtifactId: null,
-        compareArtifactId: newArtifactWithoutFile!.id,
+        headArtifactId: newArtifactWithoutFile!.id,
         jobStatus: "pending",
       });
       expect(updatedDiff).toMatchObject({
         buildId: build.id,
         baseArtifactId: classicDiffBaseArtifact!.id,
-        compareArtifactId: classicDiffCompareArtifact!.id,
+        headArtifactId: classicDiffCompareArtifact!.id,
         jobStatus: "pending",
       });
       expect(removedDiff).toMatchObject({
         buildId: build.id,
         baseArtifactId: removedArtifact!.id,
-        compareArtifactId: null,
+        headArtifactId: null,
         jobStatus: "complete",
         score: null,
       });
       expect(noFileBaseArtifactDiff).toMatchObject({
         buildId: build.id,
         baseArtifactId: noFileBaseArtifactBase!.id,
-        compareArtifactId: noFileBaseArtifactCompare!.id,
+        headArtifactId: noFileBaseArtifactCompare!.id,
         jobStatus: "pending",
         score: null,
       });
       expect(noFileCompareArtifactDiff).toMatchObject({
         buildId: build.id,
         baseArtifactId: noFileCompareArtifactBase!.id,
-        compareArtifactId: noFileCompareArtifactCompare!.id,
+        headArtifactId: noFileCompareArtifactCompare!.id,
         jobStatus: "pending",
         score: null,
       });
       expect(sameFileDiff).toMatchObject({
         buildId: build.id,
         baseArtifactId: sameFileArtifactBase!.id,
-        compareArtifactId: sameFileArtifactCompare!.id,
+        headArtifactId: sameFileArtifactCompare!.id,
         jobStatus: "complete",
       });
     });
@@ -264,13 +264,13 @@ describe("#createBuildDiffs", () => {
       expect(diffs[0]).toMatchObject({
         buildId: build.id,
         baseArtifactId: null,
-        compareArtifactId: newArtifact!.id,
+        headArtifactId: newArtifact!.id,
         jobStatus: "complete",
       });
       expect(diffs[1]).toMatchObject({
         buildId: build.id,
         baseArtifactId: null,
-        compareArtifactId: newArtifactWithoutFile!.id,
+        headArtifactId: newArtifactWithoutFile!.id,
         jobStatus: "pending",
       });
     });

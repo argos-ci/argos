@@ -61,11 +61,11 @@ export async function sendGitLabNotification(ctx: SendNotificationContext) {
   const { build, notification } = ctx;
   invariant(build, "no build found", UnretryableError);
 
-  const { project, compareScreenshotBucket } = build;
+  const { project, headArtifactBucket } = build;
 
   invariant(
-    compareScreenshotBucket,
-    "no compare screenshot bucket found",
+    headArtifactBucket,
+    "no headArtifactBucket found",
     UnretryableError,
   );
   invariant(project, "no project found", UnretryableError);

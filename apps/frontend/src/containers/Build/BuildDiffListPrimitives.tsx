@@ -258,14 +258,14 @@ export function getDiffDimensions(
 
   if (
     diff &&
-    diff.compareScreenshot &&
-    diff.compareScreenshot.width != null &&
-    diff.compareScreenshot.height != null
+    diff.head &&
+    diff.head.width != null &&
+    diff.head.height != null
   ) {
     return constraint(
       {
-        width: diff.compareScreenshot.width,
-        height: diff.compareScreenshot.height,
+        width: diff.head.width,
+        height: diff.head.height,
       },
       config,
     );
@@ -273,14 +273,14 @@ export function getDiffDimensions(
 
   if (
     diff &&
-    diff.baseScreenshot &&
-    diff.baseScreenshot.width != null &&
-    diff.baseScreenshot.height != null
+    diff.base &&
+    diff.base.width != null &&
+    diff.base.height != null
   ) {
     return constraint(
       {
-        width: diff.baseScreenshot.width,
-        height: diff.baseScreenshot.height,
+        width: diff.base.width,
+        height: diff.base.height,
       },
       config,
     );

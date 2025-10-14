@@ -36,7 +36,7 @@ export async function buildSlackMessage(args: {
     build.getUrl(),
     build.$clone().$fetchGraph(`
     [
-      compareScreenshotBucket,
+      headArtifactBucket,
       project.[
         githubRepository.[
           githubAccount
@@ -79,7 +79,7 @@ export async function buildSlackMessage(args: {
     detailsBlock({
       build,
       project: richBuild.project,
-      compareScreenshotBucket: richBuild.compareScreenshotBucket ?? null,
+      headArtifactBucket: richBuild.headArtifactBucket ?? null,
       pullRequest: richBuild.pullRequest ?? null,
     }),
   );

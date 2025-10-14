@@ -2,12 +2,7 @@ import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
 import { concludeBuild } from "@/build/concludeBuild.js";
-import {
-  Account,
-  Build,
-  Project,
-  Screenshot,
-} from "@/database/models/index.js";
+import { Account, Artifact, Build, Project } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 
 import { apolloServer, createApolloMiddleware } from "../apollo.js";
@@ -35,57 +30,57 @@ const test = base.extend<Fixtures>({
     ]);
 
     async function createBuild() {
-      const baseBucket = await factory.ScreenshotBucket.create({
+      const baseBucket = await factory.ArtifactBucket.create({
         projectId: project.id,
         branch: "main",
       });
-      const baseScreenshots = await factory.Screenshot.createMany(3, {
-        screenshotBucketId: baseBucket.id,
+      const baseArtifacts = await factory.Artifact.createMany(3, {
+        artifactBucketId: baseBucket.id,
       });
-      const compareBucket = await factory.ScreenshotBucket.create({
+      const headBucket = await factory.ArtifactBucket.create({
         projectId: project.id,
         branch: "main",
       });
       const files = await factory.File.createMany(3, {
         type: "screenshot",
       });
-      const compareScreenshots = await factory.Screenshot.createMany(3, [
+      const headArtifacts = await factory.Artifact.createMany(3, [
         {
-          screenshotBucketId: compareBucket.id,
+          artifactBucketId: headBucket.id,
           fileId: files[0]!.id,
         },
         {
-          screenshotBucketId: compareBucket.id,
+          artifactBucketId: headBucket.id,
           fileId: files[1]!.id,
         },
         {
-          screenshotBucketId: compareBucket.id,
+          artifactBucketId: headBucket.id,
           fileId: files[2]!.id,
         },
       ]);
       const build = await factory.Build.create({
         projectId: project.id,
         conclusion: null,
-        baseScreenshotBucketId: baseBucket.id,
-        compareScreenshotBucketId: compareBucket.id,
+        baseArtifactBucketId: baseBucket.id,
+        headArtifactBucketId: headBucket.id,
       });
-      await factory.ScreenshotDiff.createMany(3, [
+      await factory.ArtifactDiff.createMany(3, [
         {
           buildId: build.id,
-          baseScreenshotId: baseScreenshots[0]!.id,
-          compareScreenshotId: compareScreenshots[0]!.id,
+          baseArtifactId: baseArtifacts[0]!.id,
+          headArtifactId: headArtifacts[0]!.id,
           score: 0,
         },
         {
           buildId: build.id,
-          baseScreenshotId: baseScreenshots[1]!.id,
-          compareScreenshotId: compareScreenshots[1]!.id,
+          baseArtifactId: baseArtifacts[1]!.id,
+          headArtifactId: headArtifacts[1]!.id,
           score: 0.3,
         },
         {
           buildId: build.id,
-          baseScreenshotId: baseScreenshots[2]!.id,
-          compareScreenshotId: compareScreenshots[2]!.id,
+          baseArtifactId: baseArtifacts[2]!.id,
+          headArtifactId: headArtifacts[2]!.id,
           score: 0,
         },
       ]);
@@ -102,39 +97,39 @@ const test = base.extend<Fixtures>({
       userId: userAccount.userId!,
       state: "approved",
     });
-    await factory.ScreenshotDiffReview.createMany(3, [
+    await factory.ArtifactDiffReview.createMany(3, [
       {
         buildReviewId: buildReview.id,
-        screenshotDiffId: firstBuild.screenshotDiffs![0]!.id,
+        artifactDiffId: firstBuild.artifactDiffs![0]!.id,
         state: "approved",
       },
       {
         buildReviewId: buildReview.id,
-        screenshotDiffId: firstBuild.screenshotDiffs![1]!.id,
+        artifactDiffId: firstBuild.artifactDiffs![1]!.id,
         state: "rejected",
       },
       {
         buildReviewId: buildReview.id,
-        screenshotDiffId: firstBuild.screenshotDiffs![2]!.id,
+        artifactDiffId: firstBuild.artifactDiffs![2]!.id,
         state: "approved",
       },
     ]);
     const secondBuild = await createBuild();
-    const [firstBuildScreenshots, secondBuildScreenshots] = await Promise.all([
-      Screenshot.query()
-        .where("screenshotBucketId", firstBuild.compareScreenshotBucketId)
+    const [firstBuildArtifacts, secondBuildArtifacts] = await Promise.all([
+      Artifact.query()
+        .where("artifactBucketId", firstBuild.headArtifactBucketId)
         .orderBy("id", "desc"),
-      Screenshot.query()
-        .where("screenshotBucketId", secondBuild.compareScreenshotBucketId)
+      Artifact.query()
+        .where("artifactBucketId", secondBuild.headArtifactBucketId)
         .orderBy("id", "desc"),
     ]);
 
-    // Copy fileId from first build screenshots to second build screenshots
+    // Copy fileId from first build artifacts to second build artifacts
     await Promise.all(
-      firstBuildScreenshots.map(async (s1, i) => {
-        const s2 = secondBuildScreenshots[i];
-        await s2!.$query().patch({
-          fileId: s1.fileId,
+      firstBuildArtifacts.map(async (a1, i) => {
+        const a2 = secondBuildArtifacts[i];
+        await a2!.$query().patch({
+          fileId: a1.fileId,
         });
       }),
     );
@@ -177,7 +172,7 @@ describe("GraphQL Build.branchApprovedDiffs", () => {
     expectNoGraphQLError(result);
     expect(result.status).toBe(200);
     const [first, , last] = await fixture.secondBuild
-      .$relatedQuery("screenshotDiffs")
+      .$relatedQuery("artifactDiffs")
       .select("id");
     expect(result.body.data.project.build.branchApprovedDiffs.sort()).toEqual(
       [first, last].map((diff) => diff!.id).sort(),

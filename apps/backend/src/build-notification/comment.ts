@@ -33,9 +33,9 @@ export async function getCommentBody(props: {
 }): Promise<string> {
   const builds = await Build.query()
     .distinctOn("builds.name", "builds.projectId")
-    .joinRelated("compareScreenshotBucket")
+    .joinRelated("headArtifactBucket")
     .withGraphFetched("project")
-    .where("compareScreenshotBucket.commit", props.commit)
+    .where("headArtifactBucket.commit", props.commit)
     .orderBy([
       { column: "builds.name", order: "desc" },
       { column: "builds.projectId", order: "desc" },

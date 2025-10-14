@@ -6,7 +6,7 @@ import { BuildStrategy, GetBaseResult } from "../../types";
 
 async function getBase(build: Build): GetBaseResult {
   const lastApprovedBuild = await Build.query()
-    .withGraphFetched("compareScreenshotBucket")
+    .withGraphFetched("headArtifactBucket")
     .where("projectId", build.projectId)
     .where("name", build.name)
     .where("mode", "monitoring")
@@ -18,19 +18,19 @@ async function getBase(build: Build): GetBaseResult {
 
   if (!lastApprovedBuild) {
     return {
-      baseScreenshotBucket: null,
+      baseArtifactBucket: null,
       baseBranch: null,
       baseBranchResolvedFrom: null,
     };
   }
 
   invariant(
-    lastApprovedBuild.compareScreenshotBucket,
-    "No compareScreenshotBucket found",
+    lastApprovedBuild.headArtifactBucket,
+    "No headArtifactBucket found",
   );
 
   return {
-    baseScreenshotBucket: lastApprovedBuild.compareScreenshotBucket,
+    baseArtifactBucket: lastApprovedBuild.headArtifactBucket,
     baseBranch: null,
     baseBranchResolvedFrom: null,
   };
@@ -41,7 +41,7 @@ export const MonitoringStrategy: BuildStrategy<null> = {
   getContext: () => null,
   getBase,
   getBuildType: (input) => {
-    if (!input.baseScreenshotBucket) {
+    if (!input.baseArtifactBucket) {
       return "orphan";
     }
     return "check";

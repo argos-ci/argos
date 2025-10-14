@@ -488,7 +488,7 @@ export async function seed() {
   ]);
 
   const screenshotDiffs = await ArtifactDiff.query()
-    .withGraphFetched("compareArtifact.test")
+    .withGraphFetched("headArtifact.test")
     .insertAndFetch(
       Object.keys(buildArtifactDiffs).flatMap((buildId) =>
         buildArtifactDiffs[buildId]!.map((screenshotDiff) => {

@@ -5,7 +5,7 @@ import { match } from "path-to-regexp";
 
 import { getBuildLabel } from "@/build/label.js";
 import { getStatsMessage } from "@/build/stats.js";
-import { Build, ScreenshotDiff } from "@/database/models";
+import { ArtifactDiff, Build } from "@/database/models";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
 
 type BuildMatchParams = {
@@ -37,29 +37,28 @@ export async function unfurlBuild(
 
   const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
 
-  const [[status], screenshotDiff] = await Promise.all([
+  const [[status], diff] = await Promise.all([
     Build.getAggregatedBuildStatuses([build]),
     params.diffId
-      ? ScreenshotDiff.query()
+      ? ArtifactDiff.query()
           .findById(params.diffId)
           .where("buildId", build.id)
-          .withGraphFetched("[baseScreenshot.file, compareScreenshot.file]")
+          .withGraphFetched("[baseArtifact.file, headArtifact.file]")
       : null,
   ]);
   invariant(status, "Status should be loaded");
   invariant(build.project, "Project should be loaded");
   invariant(build.project.account, "Account should be loaded");
 
-  const screenshot =
-    screenshotDiff?.compareScreenshot || screenshotDiff?.baseScreenshot;
+  const artifact = diff?.headArtifact || diff?.baseArtifact;
   const imageUrl = await (() => {
-    if (!screenshot) {
+    if (!artifact) {
       return null;
     }
-    if (!screenshot.file) {
-      return getTwicPicsUrl(screenshot.s3Id);
+    if (!artifact.file) {
+      return getTwicPicsUrl(artifact.s3Id);
     }
-    return getPublicImageFileUrl(screenshot.file);
+    return getPublicImageFileUrl(artifact.file);
   })();
 
   const attachment: Bolt.types.MessageAttachment = {

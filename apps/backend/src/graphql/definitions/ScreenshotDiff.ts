@@ -29,8 +29,8 @@ export const typeDefs = gql`
     id: ID!
     createdAt: DateTime!
     build: Build!
-    base: Screenshot
-    head: Screenshot
+    base: Artifact
+    head: Artifact
     url: String
     "Name of the diff (either base or compare screenshot name)"
     name: String!
@@ -74,7 +74,7 @@ const statusResolver: IArtifactDiffResolvers["status"] = async (
 ) => {
   const diffStatus = await diff.$getDiffStatus(async (id) => {
     const artifact = await ctx.loaders.Artifact.load(id);
-    invariant(artifact, "Screenshot not found");
+    invariant(artifact, "Artifact not found");
     return artifact;
   });
 
@@ -102,13 +102,13 @@ export const resolvers: IResolvers = {
       invariant(build, "ArtifactDiff without build");
       return build;
     },
-    baseArtifact: async (diff, _args, ctx) => {
+    base: async (diff, _args, ctx) => {
       if (!diff.baseArtifactId) {
         return null;
       }
       return ctx.loaders.Artifact.load(diff.baseArtifactId);
     },
-    headArtifact: async (diff, _args, ctx) => {
+    head: async (diff, _args, ctx) => {
       if (!diff.headArtifactId) {
         return null;
       }
@@ -151,9 +151,7 @@ export const resolvers: IResolvers = {
       if (!diff.headArtifactId) {
         return null;
       }
-      const headArtifact = await ctx.loaders.Screenshot.load(
-        diff.headArtifactId,
-      );
+      const headArtifact = await ctx.loaders.Artifact.load(diff.headArtifactId);
       return headArtifact?.threshold ?? null;
     },
     test: async (diff, _args, ctx) => {

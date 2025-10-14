@@ -19,7 +19,7 @@ describe("buildSlackMessage", () => {
         accountId: account.id,
         githubRepositoryId: repo.id,
       });
-      const bucket = await factory.ScreenshotBucket.create({
+      const bucket = await factory.ArtifactBucket.create({
         projectId: project.id,
         commit: "a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a",
         screenshotCount: 12,
@@ -29,7 +29,7 @@ describe("buildSlackMessage", () => {
         projectId: project.id,
         type: "check",
         githubPullRequestId: pr.id,
-        compareScreenshotBucketId: bucket.id,
+        headArtifactBucketId: bucket.id,
       });
 
       const slackMessage = await buildSlackMessage({
@@ -105,7 +105,7 @@ describe("buildSlackMessage", () => {
         accountId: account.id,
         githubRepositoryId: repo.id,
       });
-      const bucket = await factory.ScreenshotBucket.create({
+      const bucket = await factory.ArtifactBucket.create({
         projectId: project.id,
         commit: "a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a",
         screenshotCount: 12,
@@ -115,7 +115,7 @@ describe("buildSlackMessage", () => {
         projectId: project.id,
         type: "check",
         githubPullRequestId: pr.id,
-        compareScreenshotBucketId: bucket.id,
+        headArtifactBucketId: bucket.id,
       });
       const buildReview = await factory.BuildReview.create({
         buildId: build.id,

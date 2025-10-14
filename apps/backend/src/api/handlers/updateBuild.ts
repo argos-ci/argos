@@ -7,7 +7,7 @@ import { job as buildJob } from "@/build/index.js";
 import { raw, transaction } from "@/database/index.js";
 import { Build, BuildShard, Project } from "@/database/models/index.js";
 import { BuildMetadataSchema } from "@/database/schemas/BuildMetadata.js";
-import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
+import { insertFilesAndArtifacts } from "@/database/services/screenshots.js";
 import { redisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
@@ -159,7 +159,7 @@ async function handleUpdateParallel(ctx: Context) {
             .select("batchCount"),
         ]);
 
-        await insertFilesAndScreenshots({
+        await insertFilesAndArtifacts({
           artifacts: body.screenshots,
           build,
           shard,
@@ -194,12 +194,12 @@ async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
   const metadata = ctx.body.metadata ?? null;
   await transaction(async (trx) => {
-    const screenshots = await insertFilesAndScreenshots({
-      screenshots: body.screenshots,
+    const artifacts = await insertFilesAndArtifacts({
+      artifacts: body.screenshots,
       build,
       trx,
     });
-    await finalizeBuild({ trx, build, single: { metadata, screenshots } });
+    await finalizeBuild({ trx, build, single: { metadata, artifacts } });
   });
   await buildJob.push(build.id);
 }

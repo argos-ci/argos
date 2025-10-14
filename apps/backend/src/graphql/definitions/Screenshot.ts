@@ -80,7 +80,7 @@ export const typeDefs = gql`
     sdk: ScreenshotMetadataSDK!
   }
 
-  type Screenshot implements Node {
+  type Artifact implements Node {
     id: ID!
     url: String!
     originalUrl: String!
@@ -92,7 +92,7 @@ export const typeDefs = gql`
 `;
 
 export const resolvers: IResolvers = {
-  Screenshot: {
+  Artifact: {
     url: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) {
         return getPublicUrl(screenshot.s3Id);
