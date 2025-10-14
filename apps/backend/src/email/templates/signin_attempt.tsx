@@ -46,7 +46,7 @@ export const handler = defineEmailTemplate({
           <H1>You attempted to sign in on Argos, but do not have an account</H1>
           <Paragraph>Hello,</Paragraph>
           <Paragraph>
-            We have received a sign-up attempt
+            We have received a sign-in attempt
             <FromLocation location={location} />, however, we couldn't find an
             account associated with this email address.
           </Paragraph>
