@@ -69,7 +69,7 @@ export class Account extends Model {
           forcedPlanId: { type: ["string", "null"] },
           stripeCustomerId: { type: ["string", "null"] },
           teamId: { type: ["string", "null"] },
-          name: { type: ["string", "null"], maxLength: 40, minLength: 1 },
+          name: { type: ["string", "null"], maxLength: 255, minLength: 1 },
           slug: slugJsonSchema,
           githubAccountId: { type: ["string", "null"] },
           gitlabBaseUrl: { type: ["string", "null"] },
