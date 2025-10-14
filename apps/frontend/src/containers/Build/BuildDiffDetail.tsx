@@ -65,7 +65,7 @@ const _BuildFragment = graphql(`
     branch
     type
     baseBranch
-    baseScreenshotBucket {
+    baseBucket {
       id
       createdAt
     }
@@ -77,7 +77,7 @@ const _BuildFragment = graphql(`
 `);
 
 const _DiffFragment = graphql(`
-  fragment BuildDiffDetail_ScreenshotDiff on ScreenshotDiff {
+  fragment BuildDiffDetail_ArtifactDiff on ArtifactDiff {
     id
     status
     url
@@ -101,7 +101,7 @@ const _DiffFragment = graphql(`
         }
       }
     }
-    baseScreenshot {
+    base {
       id
       url
       originalUrl
@@ -153,7 +153,7 @@ const _DiffFragment = graphql(`
         }
       }
     }
-    compareScreenshot {
+    head {
       id
       url
       originalUrl

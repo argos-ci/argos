@@ -60,7 +60,7 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
     const { parallelNonce } = req.body;
 
     const builds = await Build.query()
-      .withGraphFetched("compareScreenshotBucket")
+      .withGraphFetched("headArtifactBucket")
       .where("builds.projectId", req.authProject.id)
       .where("builds.externalId", parallelNonce)
       .where("builds.totalBatch", -1);
@@ -68,8 +68,8 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
     const finalized = await transaction(async (trx) => {
       return Promise.all(
         builds.map(async (build) => {
-          invariant(build.compareScreenshotBucket);
-          const willFinalize = !build.compareScreenshotBucket.complete;
+          invariant(build.headArtifactBucket);
+          const willFinalize = build.headArtifactBucket.complete;
 
           await Promise.all([
             willFinalize ? finalizeBuildService({ build, trx }) : null,

@@ -473,13 +473,13 @@ const _ChangesFragment = graphql(`
         width
         height
         url
-        compareScreenshot {
+        head {
           id
           width
           height
           url
         }
-        baseScreenshot {
+        base {
           id
           width
           height
@@ -490,7 +490,7 @@ const _ChangesFragment = graphql(`
           number
           ...BuildDiffDetail_Build
         }
-        ...BuildDiffState_ScreenshotDiff
+        ...BuildDiffState_ArtifactDiff
       }
       firstSeenDiff {
         id

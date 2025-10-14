@@ -94,7 +94,7 @@ describe("api v2", () => {
           .expect(201);
 
         const build = await Build.query()
-          .withGraphFetched("compareScreenshotBucket")
+          .withGraphFetched("headArtifactBucket")
           .first()
           .throwIfNotFound();
 
@@ -103,13 +103,13 @@ describe("api v2", () => {
         expect(build.projectId).toBe(project.id);
         expect(build.externalId).toBe(null);
         expect(build.batchCount).toBe(null);
-        expect(build.compareScreenshotBucket!.complete).toBe(false);
-        expect(build.compareScreenshotBucket!.name).toBe("current");
-        expect(build.compareScreenshotBucket!.commit).toBe(
+        expect(build.headArtifactBucket!.complete).toBe(false);
+        expect(build.headArtifactBucket!.name).toBe("current");
+        expect(build.headArtifactBucket!.commit).toBe(
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
-        expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
+        expect(build.headArtifactBucket!.branch).toBe("main");
+        expect(build.headArtifactBucket!.projectId).toBe(project.id);
 
         expect(res.body).toMatchObject({
           build: {
@@ -124,7 +124,7 @@ describe("api v2", () => {
               gitlab: { state: "pending" },
             },
           },
-          screenshots: [
+          artifacts: [
             {
               key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
               putUrl: expect.any(String),
@@ -154,7 +154,7 @@ describe("api v2", () => {
       });
 
       it("create a complete build", async () => {
-        const screenshots = [
+        const artifacts = [
           {
             key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
             name: "first",
@@ -190,18 +190,18 @@ describe("api v2", () => {
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
             screenshotKeys: Array.from(
-              new Set(screenshots.map((screenshot) => screenshot.key)),
+              new Set(artifacts.map((screenshot) => screenshot.key)),
             ),
             branch: "main",
             name: "current",
           })
           .expect(201);
 
-        // Upload screenshots
+        // Upload artifacts
         await Promise.all(
-          createResult.body.screenshots.map(
+          createResult.body.artifacts.map(
             async (resScreenshot: { key: string; putUrl: string }) => {
-              const path = screenshots.find(
+              const path = artifacts.find(
                 (s) => s.key === resScreenshot.key,
               )!.path;
               const file = await readFile(path);
@@ -225,7 +225,7 @@ describe("api v2", () => {
           .set("Host", "api.argos-ci.dev")
           .set("Authorization", "Bearer awesome-token")
           .send({
-            screenshots: screenshots.map((screenshot) => ({
+            artifacts: artifacts.map((screenshot) => ({
               key: screenshot.key,
               name: screenshot.name,
               metadata: screenshot.metadata,
@@ -237,16 +237,16 @@ describe("api v2", () => {
         expect(updateResult.statusCode).toBe(200);
 
         const build = await Build.query()
-          .withGraphFetched("compareScreenshotBucket.screenshots.file")
+          .withGraphFetched("headArtifactBucket.artifacts.file")
           .first()
           .throwIfNotFound();
 
-        const firstScreenshot = build.compareScreenshotBucket!.screenshots![0]!;
+        const firstScreenshot = build.headArtifactBucket!.artifacts![0]!;
         expect(firstScreenshot.threshold).toBe(0.3);
         expect(firstScreenshot.baseName).toBe("first-base");
 
         const screenshotWithMetadata =
-          build.compareScreenshotBucket!.screenshots!.find(
+          build.headArtifactBucket!.artifacts!.find(
             (screenshot) => screenshot.name === "second",
           );
         expect(screenshotWithMetadata!.metadata).toEqual({
@@ -267,23 +267,23 @@ describe("api v2", () => {
         expect(build.batchCount).toBe(null);
         expect(build.mode).toBe("ci");
         expect(
-          build.compareScreenshotBucket!.screenshots!.map((s) => ({
+          build.headArtifactBucket!.artifacts!.map((s) => ({
             s3Id: s.s3Id,
             name: s.name,
           })),
         ).toEqual(
-          screenshots.map((screenshot) => ({
+          artifacts.map((screenshot) => ({
             s3Id: screenshot.key,
             name: screenshot.name,
           })),
         );
-        expect(build.compareScreenshotBucket!.complete).toBe(true);
-        expect(build.compareScreenshotBucket!.name).toBe("current");
-        expect(build.compareScreenshotBucket!.commit).toBe(
+        expect(build.headArtifactBucket!.complete).toBe(true);
+        expect(build.headArtifactBucket!.name).toBe("current");
+        expect(build.headArtifactBucket!.commit).toBe(
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
-        expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
+        expect(build.headArtifactBucket!.branch).toBe("main");
+        expect(build.headArtifactBucket!.projectId).toBe(project.id);
 
         expect(updateResult.body).toEqual({
           build: {
@@ -302,7 +302,7 @@ describe("api v2", () => {
       });
 
       it("create a complete monitoring build", async () => {
-        const screenshots = [
+        const artifacts = [
           {
             key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
             name: "first",
@@ -316,7 +316,7 @@ describe("api v2", () => {
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
             screenshotKeys: Array.from(
-              new Set(screenshots.map((screenshot) => screenshot.key)),
+              new Set(artifacts.map((screenshot) => screenshot.key)),
             ),
             branch: "main",
             name: "current",
@@ -324,11 +324,11 @@ describe("api v2", () => {
           })
           .expect(201);
 
-        // Upload screenshots
+        // Upload artifacts
         await Promise.all(
-          createResult.body.screenshots.map(
+          createResult.body.artifacts.map(
             async (resScreenshot: { key: string; putUrl: string }) => {
-              const path = screenshots.find(
+              const path = artifacts.find(
                 (s) => s.key === resScreenshot.key,
               )!.path;
               const file = await readFile(path);
@@ -352,7 +352,7 @@ describe("api v2", () => {
           .set("Host", "api.argos-ci.dev")
           .set("Authorization", "Bearer awesome-token")
           .send({
-            screenshots: screenshots.map((screenshot) => ({
+            artifacts: artifacts.map((screenshot) => ({
               key: screenshot.key,
               name: screenshot.name,
             })),
@@ -360,7 +360,7 @@ describe("api v2", () => {
           .expect(200);
 
         const build = await Build.query()
-          .withGraphFetched("compareScreenshotBucket.screenshots.file")
+          .withGraphFetched("headArtifactBucket.artifacts.file")
           .first()
           .throwIfNotFound();
 
@@ -371,23 +371,23 @@ describe("api v2", () => {
         expect(build.batchCount).toBe(null);
         expect(build.mode).toBe("monitoring");
         expect(
-          build.compareScreenshotBucket!.screenshots!.map((s) => ({
+          build.headArtifactBucket!.artifacts!.map((s) => ({
             s3Id: s.s3Id,
             name: s.name,
           })),
         ).toEqual(
-          screenshots.map((screenshot) => ({
+          artifacts.map((screenshot) => ({
             s3Id: screenshot.key,
             name: screenshot.name,
           })),
         );
-        expect(build.compareScreenshotBucket!.complete).toBe(true);
-        expect(build.compareScreenshotBucket!.name).toBe("current");
-        expect(build.compareScreenshotBucket!.commit).toBe(
+        expect(build.headArtifactBucket!.complete).toBe(true);
+        expect(build.headArtifactBucket!.name).toBe("current");
+        expect(build.headArtifactBucket!.commit).toBe(
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
-        expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
+        expect(build.headArtifactBucket!.branch).toBe("main");
+        expect(build.headArtifactBucket!.projectId).toBe(project.id);
 
         expect(updateResult.body).toEqual({
           build: {
@@ -440,14 +440,14 @@ describe("api v2", () => {
 
       it("create a complete build", async () => {
         const updateResults = await Promise.all(
-          screenshotGroups.map(async (screenshots) => {
+          screenshotGroups.map(async (artifacts) => {
             const createResult = await request(app)
               .post("/v2/builds")
               .set("Host", "api.argos-ci.dev")
               .set("Authorization", "Bearer awesome-token")
               .send({
                 commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
+                screenshotKeys: artifacts.map((screenshot) => screenshot.key),
                 branch: "main",
                 name: "current",
                 parallel: true,
@@ -455,11 +455,11 @@ describe("api v2", () => {
               })
               .expect(201);
 
-            // Upload screenshots
+            // Upload artifacts
             await Promise.all(
-              createResult.body.screenshots.map(
+              createResult.body.artifacts.map(
                 async (resScreenshot: { key: string; putUrl: string }) => {
-                  const path = screenshots.find(
+                  const path = artifacts.find(
                     (s) => s.key === resScreenshot.key,
                   )!.path;
                   const file = await readFile(path);
@@ -483,7 +483,7 @@ describe("api v2", () => {
               .set("Host", "api.argos-ci.dev")
               .set("Authorization", "Bearer awesome-token")
               .send({
-                screenshots: screenshots.map((screenshot) => ({
+                artifacts: artifacts.map((screenshot) => ({
                   key: screenshot.key,
                   name: screenshot.name,
                 })),
@@ -501,7 +501,7 @@ describe("api v2", () => {
         );
 
         const build = await Build.query()
-          .withGraphFetched("compareScreenshotBucket.screenshots.file")
+          .withGraphFetched("headArtifactBucket.artifacts.file")
           .first()
           .throwIfNotFound();
 
@@ -513,7 +513,7 @@ describe("api v2", () => {
         expect(build.totalBatch).toBe(2);
 
         expect(
-          build.compareScreenshotBucket!.screenshots!.map((s) => ({
+          build.headArtifactBucket!.artifacts!.map((s) => ({
             s3Id: s.s3Id,
             name: s.name,
           })),
@@ -525,13 +525,13 @@ describe("api v2", () => {
             })),
           ),
         );
-        expect(build.compareScreenshotBucket!.complete).toBe(true);
-        expect(build.compareScreenshotBucket!.name).toBe("current");
-        expect(build.compareScreenshotBucket!.commit).toBe(
+        expect(build.headArtifactBucket!.complete).toBe(true);
+        expect(build.headArtifactBucket!.name).toBe("current");
+        expect(build.headArtifactBucket!.commit).toBe(
           "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
         );
-        expect(build.compareScreenshotBucket!.branch).toBe("main");
-        expect(build.compareScreenshotBucket!.projectId).toBe(project.id);
+        expect(build.headArtifactBucket!.branch).toBe("main");
+        expect(build.headArtifactBucket!.projectId).toBe(project.id);
 
         updateBodies.forEach((body) => {
           expect(body).toEqual({
@@ -553,14 +553,14 @@ describe("api v2", () => {
 
       it("inconsistent parallel count return an error", async () => {
         const updateResults = await Promise.all(
-          screenshotGroups.map(async (screenshots, groupIndex) => {
+          screenshotGroups.map(async (artifacts, groupIndex) => {
             const createResult = await request(app)
               .post("/v2/builds")
               .set("Host", "api.argos-ci.dev")
               .set("Authorization", "Bearer awesome-token")
               .send({
                 commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
+                screenshotKeys: artifacts.map((screenshot) => screenshot.key),
                 branch: "main",
                 name: "current",
                 parallel: true,
@@ -568,11 +568,11 @@ describe("api v2", () => {
               })
               .expect(201);
 
-            // Upload screenshots
+            // Upload artifacts
             await Promise.all(
-              createResult.body.screenshots.map(
+              createResult.body.artifacts.map(
                 async (resScreenshot: { key: string; putUrl: string }) => {
-                  const path = screenshots.find(
+                  const path = artifacts.find(
                     (s) => s.key === resScreenshot.key,
                   )!.path;
                   const file = await readFile(path);
@@ -596,7 +596,7 @@ describe("api v2", () => {
               .set("Host", "api.argos-ci.dev")
               .set("Authorization", "Bearer awesome-token")
               .send({
-                screenshots: screenshots.map((screenshot) => ({
+                artifacts: artifacts.map((screenshot) => ({
                   key: screenshot.key,
                   name: screenshot.name,
                 })),

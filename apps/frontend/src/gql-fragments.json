@@ -5,6 +5,7 @@
       "User"
     ],
     "Connection": [
+      "ArtifactDiffConnection",
       "AutomationRuleConnection",
       "BuildConnection",
       "GhApiInstallationConnection",
@@ -13,7 +14,6 @@
       "GlApiProjectConnection",
       "ProjectConnection",
       "ProjectContributorConnection",
-      "ScreenshotDiffConnection",
       "TeamGithubMemberConnection",
       "TeamInviteConnection",
       "TeamMemberConnection",
@@ -22,6 +22,8 @@
     ],
     "Node": [
       "AccountSubscription",
+      "ArtifactBucket",
+      "ArtifactDiff",
       "AutomationActionRun",
       "AutomationRule",
       "AutomationRun",
@@ -43,8 +45,6 @@
       "Project",
       "ProjectContributor",
       "Screenshot",
-      "ScreenshotBucket",
-      "ScreenshotDiff",
       "SlackInstallation",
       "Team",
       "TeamGithubMember",

@@ -2,6 +2,10 @@ import { invariant } from "@argos/util/invariant";
 import { TransactionOrKnex } from "objection";
 
 import {
+  Artifact,
+  ArtifactBucket,
+  ArtifactDiff,
+  ArtifactDiffReview,
   AutomationActionRun,
   AutomationRule,
   AutomationRun,
@@ -10,10 +14,6 @@ import {
   BuildReview,
   BuildShard,
   Project,
-  Screenshot,
-  ScreenshotBucket,
-  ScreenshotDiff,
-  ScreenshotDiffReview,
   Test,
   User,
 } from "@/database/models/index.js";
@@ -60,7 +60,7 @@ export async function unsafe_deleteProject(args: {
   trx?: TransactionOrKnex;
 }) {
   await transaction(args.trx, async (trx) => {
-    await ScreenshotDiffReview.query(trx)
+    await ArtifactDiffReview.query(trx)
       .whereIn(
         "buildReviewId",
         BuildReview.query(trx)
@@ -69,13 +69,13 @@ export async function unsafe_deleteProject(args: {
           .where("build.projectId", args.projectId),
       )
       .delete();
-    await ScreenshotDiff.query(trx)
+    await ArtifactDiff.query(trx)
       .joinRelated("build")
       .where("build.projectId", args.projectId)
       .delete();
-    await Screenshot.query(trx)
-      .joinRelated("screenshotBucket")
-      .where("screenshotBucket.projectId", args.projectId)
+    await Artifact.query(trx)
+      .joinRelated("artifactBucket")
+      .where("artifactBucket.projectId", args.projectId)
       .delete();
     await BuildNotification.query(trx)
       .joinRelated("build")
@@ -102,9 +102,7 @@ export async function unsafe_deleteProject(args: {
       .where("build.projectId", args.projectId)
       .delete();
     await Build.query(trx).where("projectId", args.projectId).delete();
-    await ScreenshotBucket.query(trx)
-      .where("projectId", args.projectId)
-      .delete();
+    await ArtifactBucket.query(trx).where("projectId", args.projectId).delete();
     await trx("test_stats_builds")
       .join("tests", "test_stats_builds.testId", "tests.id")
       .where("tests.projectId", args.projectId)

@@ -49,7 +49,7 @@ describe("spent limit", () => {
     project = await factory.Project.create({
       accountId: account.id,
     });
-    await factory.ScreenshotBucket.createMany(2, [
+    await factory.ArtifactBucket.createMany(2, [
       {
         createdAt: new Date(now.getTime() - 5000).toISOString(),
         projectId: project.id,
@@ -69,7 +69,7 @@ describe("spent limit", () => {
     describe("checkIsBlockedBySpendLimit", () => {
       describe("with limit reached", () => {
         beforeEach(async () => {
-          await factory.ScreenshotBucket.createMany(2, [
+          await factory.ArtifactBucket.createMany(2, [
             {
               createdAt: new Date(now.getTime() - 3000).toISOString(),
               projectId: project.id,
@@ -191,7 +191,7 @@ describe("spent limit", () => {
 
     describe("with two thresholds reached", () => {
       beforeEach(async () => {
-        await factory.ScreenshotBucket.createMany(2, [
+        await factory.ArtifactBucket.createMany(2, [
           {
             createdAt: new Date(now.getTime() - 3000).toISOString(),
             projectId: project.id,

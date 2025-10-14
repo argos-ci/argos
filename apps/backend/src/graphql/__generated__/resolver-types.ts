@@ -1,5 +1,5 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, Artifact, ArtifactBucket, ArtifactDiff, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
 import type { ScreenshotMetadataSDK } from '../../database/schemas/ScreenshotMetadata.js';
@@ -174,6 +174,64 @@ export type IAddContributorToProjectInput = {
   userAccountId: Scalars['ID']['input'];
 };
 
+export type IArtifactBucket = INode & {
+  __typename?: 'ArtifactBucket';
+  branch?: Maybe<Scalars['String']['output']>;
+  commit: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+};
+
+export type IArtifactDiff = INode & {
+  __typename?: 'ArtifactDiff';
+  base?: Maybe<IScreenshot>;
+  build: IBuild;
+  /** Change ID of the screenshot diff. Used to be indefied in a test. */
+  change?: Maybe<ITestChange>;
+  createdAt: Scalars['DateTime']['output'];
+  group?: Maybe<Scalars['String']['output']>;
+  head?: Maybe<IScreenshot>;
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  /** Name of the diff (either base or compare screenshot name) */
+  name: Scalars['String']['output'];
+  occurrences: Scalars['Int']['output'];
+  status: IArtifactDiffStatus;
+  test?: Maybe<ITest>;
+  threshold?: Maybe<Scalars['Float']['output']>;
+  url?: Maybe<Scalars['String']['output']>;
+  /** Unique key to identify screenshot variant (browser, resolution, retries) */
+  variantKey: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+
+export type IArtifactDiffOccurrencesArgs = {
+  period: IMetricsPeriod;
+};
+
+export type IArtifactDiffConnection = IConnection & {
+  __typename?: 'ArtifactDiffConnection';
+  edges: Array<IArtifactDiff>;
+  pageInfo: IPageInfo;
+};
+
+export type IArtifactDiffReviewInput = {
+  artifactDiffId: Scalars['ID']['input'];
+  state: IReviewState;
+};
+
+export enum IArtifactDiffStatus {
+  Added = 'added',
+  Changed = 'changed',
+  Failure = 'failure',
+  Ignored = 'ignored',
+  Pending = 'pending',
+  Removed = 'removed',
+  RetryFailure = 'retryFailure',
+  Unchanged = 'unchanged'
+}
+
 export type IAuthFromEmailInput = {
   code: Scalars['String']['input'];
   email: Scalars['String']['input'];
@@ -284,10 +342,10 @@ export type IBuild = INode & {
   baseBranch?: Maybe<Scalars['String']['output']>;
   /** Base branch resolved from */
   baseBranchResolvedFrom?: Maybe<IBaseBranchResolution>;
-  /** The base build that contains the base screenshot bucket */
+  /** The artifact bucket that serves as base for comparison */
+  baseBucket?: Maybe<IArtifactBucket>;
+  /** The base build that contains the base artifact bucket */
   baseBuild?: Maybe<IBuild>;
-  /** The screenshot bucket that serves as base for comparison */
-  baseScreenshotBucket?: Maybe<IScreenshotBucket>;
   /** Branch */
   branch?: Maybe<Scalars['String']['output']>;
   /** Previous approved diffs from a build with the same branch */
@@ -298,6 +356,8 @@ export type IBuild = INode & {
   concludedAt?: Maybe<Scalars['DateTime']['output']>;
   /** Creation date of the build */
   createdAt: Scalars['DateTime']['output'];
+  /** The artifact diffs between the base artifact bucket of the compare artifact bucket */
+  diffs: IArtifactDiffConnection;
   /** Date when the build is finalized (all batches received) */
   finalizedAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
@@ -319,8 +379,6 @@ export type IBuild = INode & {
   pullRequest?: Maybe<IPullRequest>;
   /** Effective build reviews */
   reviews: Array<IBuildReview>;
-  /** The screenshot diffs between the base screenshot bucket of the compare screenshot bucket */
-  screenshotDiffs: IScreenshotDiffConnection;
   /** Build stats */
   stats?: Maybe<IBuildStats>;
   /** Review status, conclusion or job status */
@@ -330,7 +388,7 @@ export type IBuild = INode & {
 };
 
 
-export type IBuildScreenshotDiffsArgs = {
+export type IBuildDiffsArgs = {
   after: Scalars['Int']['input'];
   first: Scalars['Int']['input'];
 };
@@ -1290,7 +1348,7 @@ export type IResetInviteLinkInput = {
 
 export type IReviewBuildInput = {
   buildId: Scalars['ID']['input'];
-  screenshotDiffReviews: Array<IScreenshotDiffReviewInput>;
+  diffReviews: Array<IArtifactDiffReviewInput>;
   state: IReviewState;
 };
 
@@ -1309,64 +1367,6 @@ export type IScreenshot = INode & {
   url: Scalars['String']['output'];
   width?: Maybe<Scalars['Int']['output']>;
 };
-
-export type IScreenshotBucket = INode & {
-  __typename?: 'ScreenshotBucket';
-  branch?: Maybe<Scalars['String']['output']>;
-  commit: Scalars['String']['output'];
-  createdAt: Scalars['DateTime']['output'];
-  id: Scalars['ID']['output'];
-};
-
-export type IScreenshotDiff = INode & {
-  __typename?: 'ScreenshotDiff';
-  baseScreenshot?: Maybe<IScreenshot>;
-  build: IBuild;
-  /** Change ID of the screenshot diff. Used to be indefied in a test. */
-  change?: Maybe<ITestChange>;
-  compareScreenshot?: Maybe<IScreenshot>;
-  createdAt: Scalars['DateTime']['output'];
-  group?: Maybe<Scalars['String']['output']>;
-  height?: Maybe<Scalars['Int']['output']>;
-  id: Scalars['ID']['output'];
-  /** Name of the diff (either base or compare screenshot name) */
-  name: Scalars['String']['output'];
-  occurrences: Scalars['Int']['output'];
-  status: IScreenshotDiffStatus;
-  test?: Maybe<ITest>;
-  threshold?: Maybe<Scalars['Float']['output']>;
-  url?: Maybe<Scalars['String']['output']>;
-  /** Unique key to identify screenshot variant (browser, resolution, retries) */
-  variantKey: Scalars['String']['output'];
-  width?: Maybe<Scalars['Int']['output']>;
-};
-
-
-export type IScreenshotDiffOccurrencesArgs = {
-  period: IMetricsPeriod;
-};
-
-export type IScreenshotDiffConnection = IConnection & {
-  __typename?: 'ScreenshotDiffConnection';
-  edges: Array<IScreenshotDiff>;
-  pageInfo: IPageInfo;
-};
-
-export type IScreenshotDiffReviewInput = {
-  screenshotDiffId: Scalars['ID']['input'];
-  state: IReviewState;
-};
-
-export enum IScreenshotDiffStatus {
-  Added = 'added',
-  Changed = 'changed',
-  Failure = 'failure',
-  Ignored = 'ignored',
-  Pending = 'pending',
-  Removed = 'removed',
-  RetryFailure = 'retryFailure',
-  Unchanged = 'unchanged'
-}
 
 export type IScreenshotMetadata = {
   __typename?: 'ScreenshotMetadata';
@@ -1615,9 +1615,9 @@ export enum ITeamUserLevel {
 export type ITest = INode & {
   __typename?: 'Test';
   changes: ITestChangesConnection;
-  firstSeenDiff?: Maybe<IScreenshotDiff>;
+  firstSeenDiff?: Maybe<IArtifactDiff>;
   id: Scalars['ID']['output'];
-  lastSeenDiff?: Maybe<IScreenshotDiff>;
+  lastSeenDiff?: Maybe<IArtifactDiff>;
   metrics: ITestMetrics;
   name: Scalars['String']['output'];
   status: ITestStatus;
@@ -1655,8 +1655,8 @@ export type ITestChangeStatsArgs = {
 
 export type ITestChangeStats = {
   __typename?: 'TestChangeStats';
-  firstSeenDiff: IScreenshotDiff;
-  lastSeenDiff: IScreenshotDiff;
+  firstSeenDiff: IArtifactDiff;
+  lastSeenDiff: IArtifactDiff;
   totalOccurences: Scalars['Int']['output'];
 };
 
@@ -1932,6 +1932,7 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
     | ( Account )
   ;
   Connection:
+    | ( Omit<IArtifactDiffConnection, 'edges'> & { edges: Array<_RefType['ArtifactDiff']> } )
     | ( Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<_RefType['AutomationRule']> } )
     | ( Omit<IBuildConnection, 'edges'> & { edges: Array<_RefType['Build']> } )
     | ( Omit<IGhApiInstallationConnection, 'edges'> & { edges: Array<_RefType['GhApiInstallation']> } )
@@ -1940,7 +1941,6 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
     | ( Omit<IGlApiProjectConnection, 'edges'> & { edges: Array<_RefType['GlApiProject']> } )
     | ( Omit<IProjectConnection, 'edges'> & { edges: Array<_RefType['Project']> } )
     | ( Omit<IProjectContributorConnection, 'edges'> & { edges: Array<_RefType['ProjectContributor']> } )
-    | ( Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<_RefType['ScreenshotDiff']> } )
     | ( Omit<ITeamGithubMemberConnection, 'edges'> & { edges: Array<_RefType['TeamGithubMember']> } )
     | ( Omit<ITeamInviteConnection, 'edges'> & { edges: Array<_RefType['TeamInvite']> } )
     | ( Omit<ITeamMemberConnection, 'edges'> & { edges: Array<_RefType['TeamMember']> } )
@@ -1949,6 +1949,8 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
   ;
   Node:
     | ( Subscription )
+    | ( ArtifactBucket )
+    | ( ArtifactDiff )
     | ( AutomationActionRun )
     | ( AutomationRule )
     | ( AutomationRun )
@@ -1969,9 +1971,7 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
     | ( Plan )
     | ( Project )
     | ( ProjectUser )
-    | ( Screenshot )
-    | ( ScreenshotBucket )
-    | ( ScreenshotDiff )
+    | ( Omit<IScreenshot, 'metadata'> & { metadata?: Maybe<_RefType['ScreenshotMetadata']> } )
     | ( SlackInstallation )
     | ( Account )
     | ( GithubAccountMember )
@@ -2004,6 +2004,11 @@ export type IResolversTypes = ResolversObject<{
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  ArtifactBucket: ResolverTypeWrapper<ArtifactBucket>;
+  ArtifactDiff: ResolverTypeWrapper<ArtifactDiff>;
+  ArtifactDiffConnection: ResolverTypeWrapper<Omit<IArtifactDiffConnection, 'edges'> & { edges: Array<IResolversTypes['ArtifactDiff']> }>;
+  ArtifactDiffReviewInput: IArtifactDiffReviewInput;
+  ArtifactDiffStatus: IArtifactDiffStatus;
   AuthFromEmailInput: IAuthFromEmailInput;
   AuthPayload: ResolverTypeWrapper<IAuthPayload>;
   AutomationAction: ResolverTypeWrapper<IAutomationAction>;
@@ -2096,12 +2101,7 @@ export type IResolversTypes = ResolversObject<{
   ResetInviteLinkInput: IResetInviteLinkInput;
   ReviewBuildInput: IReviewBuildInput;
   ReviewState: IReviewState;
-  Screenshot: ResolverTypeWrapper<Screenshot>;
-  ScreenshotBucket: ResolverTypeWrapper<ScreenshotBucket>;
-  ScreenshotDiff: ResolverTypeWrapper<ScreenshotDiff>;
-  ScreenshotDiffConnection: ResolverTypeWrapper<Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversTypes['ScreenshotDiff']> }>;
-  ScreenshotDiffReviewInput: IScreenshotDiffReviewInput;
-  ScreenshotDiffStatus: IScreenshotDiffStatus;
+  Screenshot: ResolverTypeWrapper<Omit<IScreenshot, 'metadata'> & { metadata?: Maybe<IResolversTypes['ScreenshotMetadata']> }>;
   ScreenshotMetadata: ResolverTypeWrapper<Omit<IScreenshotMetadata, 'sdk'> & { sdk: IResolversTypes['ScreenshotMetadataSDK'] }>;
   ScreenshotMetadataAutomationLibrary: ResolverTypeWrapper<IScreenshotMetadataAutomationLibrary>;
   ScreenshotMetadataBrowser: ResolverTypeWrapper<IScreenshotMetadataBrowser>;
@@ -2131,7 +2131,7 @@ export type IResolversTypes = ResolversObject<{
   Test: ResolverTypeWrapper<Test>;
   TestAutomationRuleInput: ITestAutomationRuleInput;
   TestChange: ResolverTypeWrapper<TestChangeObject>;
-  TestChangeStats: ResolverTypeWrapper<Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversTypes['ScreenshotDiff'], lastSeenDiff: IResolversTypes['ScreenshotDiff'] }>;
+  TestChangeStats: ResolverTypeWrapper<Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversTypes['ArtifactDiff'], lastSeenDiff: IResolversTypes['ArtifactDiff'] }>;
   TestChangesConnection: ResolverTypeWrapper<Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversTypes['TestChange']> }>;
   TestMetricData: ResolverTypeWrapper<ITestMetricData>;
   TestMetricDataPoint: ResolverTypeWrapper<ITestMetricDataPoint>;
@@ -2171,6 +2171,10 @@ export type IResolversParentTypes = ResolversObject<{
   AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'all' | 'projects'> & { all: IResolversParentTypes['AccountMetricData'], projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  ArtifactBucket: ArtifactBucket;
+  ArtifactDiff: ArtifactDiff;
+  ArtifactDiffConnection: Omit<IArtifactDiffConnection, 'edges'> & { edges: Array<IResolversParentTypes['ArtifactDiff']> };
+  ArtifactDiffReviewInput: IArtifactDiffReviewInput;
   AuthFromEmailInput: IAuthFromEmailInput;
   AuthPayload: IAuthPayload;
   AutomationAction: IAutomationAction;
@@ -2249,11 +2253,7 @@ export type IResolversParentTypes = ResolversObject<{
   Repository: IResolversInterfaceTypes<IResolversParentTypes>['Repository'];
   ResetInviteLinkInput: IResetInviteLinkInput;
   ReviewBuildInput: IReviewBuildInput;
-  Screenshot: Screenshot;
-  ScreenshotBucket: ScreenshotBucket;
-  ScreenshotDiff: ScreenshotDiff;
-  ScreenshotDiffConnection: Omit<IScreenshotDiffConnection, 'edges'> & { edges: Array<IResolversParentTypes['ScreenshotDiff']> };
-  ScreenshotDiffReviewInput: IScreenshotDiffReviewInput;
+  Screenshot: Omit<IScreenshot, 'metadata'> & { metadata?: Maybe<IResolversParentTypes['ScreenshotMetadata']> };
   ScreenshotMetadata: Omit<IScreenshotMetadata, 'sdk'> & { sdk: IResolversParentTypes['ScreenshotMetadataSDK'] };
   ScreenshotMetadataAutomationLibrary: IScreenshotMetadataAutomationLibrary;
   ScreenshotMetadataBrowser: IScreenshotMetadataBrowser;
@@ -2277,7 +2277,7 @@ export type IResolversParentTypes = ResolversObject<{
   Test: Test;
   TestAutomationRuleInput: ITestAutomationRuleInput;
   TestChange: TestChangeObject;
-  TestChangeStats: Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversParentTypes['ScreenshotDiff'], lastSeenDiff: IResolversParentTypes['ScreenshotDiff'] };
+  TestChangeStats: Omit<ITestChangeStats, 'firstSeenDiff' | 'lastSeenDiff'> & { firstSeenDiff: IResolversParentTypes['ArtifactDiff'], lastSeenDiff: IResolversParentTypes['ArtifactDiff'] };
   TestChangesConnection: Omit<ITestChangesConnection, 'edges'> & { edges: Array<IResolversParentTypes['TestChange']> };
   TestMetricData: ITestMetricData;
   TestMetricDataPoint: ITestMetricDataPoint;
@@ -2354,6 +2354,40 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type IArtifactBucketResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ArtifactBucket'] = IResolversParentTypes['ArtifactBucket']> = ResolversObject<{
+  branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IArtifactDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ArtifactDiff'] = IResolversParentTypes['ArtifactDiff']> = ResolversObject<{
+  base?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
+  build?: Resolver<IResolversTypes['Build'], ParentType, ContextType>;
+  change?: Resolver<Maybe<IResolversTypes['TestChange']>, ParentType, ContextType>;
+  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  head?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
+  height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  occurrences?: Resolver<IResolversTypes['Int'], ParentType, ContextType, RequireFields<IArtifactDiffOccurrencesArgs, 'period'>>;
+  status?: Resolver<IResolversTypes['ArtifactDiffStatus'], ParentType, ContextType>;
+  test?: Resolver<Maybe<IResolversTypes['Test']>, ParentType, ContextType>;
+  threshold?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
+  url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
+  variantKey?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IArtifactDiffConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ArtifactDiffConnection'] = IResolversParentTypes['ArtifactDiffConnection']> = ResolversObject<{
+  edges?: Resolver<Array<IResolversTypes['ArtifactDiff']>, ParentType, ContextType>;
+  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type IAuthPayloadResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AuthPayload'] = IResolversParentTypes['AuthPayload']> = ResolversObject<{
   creation?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   jwt?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
@@ -2418,13 +2452,14 @@ export type IAutomationRunResolvers<ContextType = Context, ParentType extends IR
 export type IBuildResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Build'] = IResolversParentTypes['Build']> = ResolversObject<{
   baseBranch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   baseBranchResolvedFrom?: Resolver<Maybe<IResolversTypes['BaseBranchResolution']>, ParentType, ContextType>;
+  baseBucket?: Resolver<Maybe<IResolversTypes['ArtifactBucket']>, ParentType, ContextType>;
   baseBuild?: Resolver<Maybe<IResolversTypes['Build']>, ParentType, ContextType>;
-  baseScreenshotBucket?: Resolver<Maybe<IResolversTypes['ScreenshotBucket']>, ParentType, ContextType>;
   branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   branchApprovedDiffs?: Resolver<Array<IResolversTypes['ID']>, ParentType, ContextType>;
   commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   concludedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  diffs?: Resolver<IResolversTypes['ArtifactDiffConnection'], ParentType, ContextType, RequireFields<IBuildDiffsArgs, 'after' | 'first'>>;
   finalizedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<IResolversTypes['BuildMetadata']>, ParentType, ContextType>;
@@ -2436,7 +2471,6 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   prNumber?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   pullRequest?: Resolver<Maybe<IResolversTypes['PullRequest']>, ParentType, ContextType>;
   reviews?: Resolver<Array<IResolversTypes['BuildReview']>, ParentType, ContextType>;
-  screenshotDiffs?: Resolver<IResolversTypes['ScreenshotDiffConnection'], ParentType, ContextType, RequireFields<IBuildScreenshotDiffsArgs, 'after' | 'first'>>;
   stats?: Resolver<Maybe<IResolversTypes['BuildStats']>, ParentType, ContextType>;
   status?: Resolver<IResolversTypes['BuildStatus'], ParentType, ContextType>;
   type?: Resolver<Maybe<IResolversTypes['BuildType']>, ParentType, ContextType>;
@@ -2479,7 +2513,7 @@ export type IBuildStatsResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Connection'] = IResolversParentTypes['Connection']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AutomationRuleConnection' | 'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'ScreenshotDiffConnection' | 'TeamGithubMemberConnection' | 'TeamInviteConnection' | 'TeamMemberConnection' | 'TestChangesConnection' | 'UserConnection', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArtifactDiffConnection' | 'AutomationRuleConnection' | 'BuildConnection' | 'GhApiInstallationConnection' | 'GhApiRepositoryConnection' | 'GlApiNamespaceConnection' | 'GlApiProjectConnection' | 'ProjectConnection' | 'ProjectContributorConnection' | 'TeamGithubMemberConnection' | 'TeamInviteConnection' | 'TeamMemberConnection' | 'TestChangesConnection' | 'UserConnection', ParentType, ContextType>;
 }>;
 
 export type ICreateTeamResultResolvers<ContextType = Context, ParentType extends IResolversParentTypes['CreateTeamResult'] = IResolversParentTypes['CreateTeamResult']> = ResolversObject<{
@@ -2688,7 +2722,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamInvite' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'ArtifactBucket' | 'ArtifactDiff' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamInvite' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
 }>;
 
 export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PageInfo'] = IResolversParentTypes['PageInfo']> = ResolversObject<{
@@ -2794,40 +2828,6 @@ export type IScreenshotResolvers<ContextType = Context, ParentType extends IReso
   playwrightTraceUrl?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   url?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IScreenshotBucketResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotBucket'] = IResolversParentTypes['ScreenshotBucket']> = ResolversObject<{
-  branch?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  commit?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiff'] = IResolversParentTypes['ScreenshotDiff']> = ResolversObject<{
-  baseScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
-  build?: Resolver<IResolversTypes['Build'], ParentType, ContextType>;
-  change?: Resolver<Maybe<IResolversTypes['TestChange']>, ParentType, ContextType>;
-  compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
-  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
-  group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  occurrences?: Resolver<IResolversTypes['Int'], ParentType, ContextType, RequireFields<IScreenshotDiffOccurrencesArgs, 'period'>>;
-  status?: Resolver<IResolversTypes['ScreenshotDiffStatus'], ParentType, ContextType>;
-  test?: Resolver<Maybe<IResolversTypes['Test']>, ParentType, ContextType>;
-  threshold?: Resolver<Maybe<IResolversTypes['Float']>, ParentType, ContextType>;
-  url?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
-  variantKey?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  width?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type IScreenshotDiffConnectionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['ScreenshotDiffConnection'] = IResolversParentTypes['ScreenshotDiffConnection']> = ResolversObject<{
-  edges?: Resolver<Array<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
-  pageInfo?: Resolver<IResolversTypes['PageInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2987,9 +2987,9 @@ export type ITeamMemberConnectionResolvers<ContextType = Context, ParentType ext
 
 export type ITestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Test'] = IResolversParentTypes['Test']> = ResolversObject<{
   changes?: Resolver<IResolversTypes['TestChangesConnection'], ParentType, ContextType, RequireFields<ITestChangesArgs, 'after' | 'first' | 'period'>>;
-  firstSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
+  firstSeenDiff?: Resolver<Maybe<IResolversTypes['ArtifactDiff']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
-  lastSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
+  lastSeenDiff?: Resolver<Maybe<IResolversTypes['ArtifactDiff']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['TestMetrics'], ParentType, ContextType, Partial<ITestMetricsArgs>>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['TestStatus'], ParentType, ContextType>;
@@ -3004,8 +3004,8 @@ export type ITestChangeResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type ITestChangeStatsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['TestChangeStats'] = IResolversParentTypes['TestChangeStats']> = ResolversObject<{
-  firstSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
-  lastSeenDiff?: Resolver<IResolversTypes['ScreenshotDiff'], ParentType, ContextType>;
+  firstSeenDiff?: Resolver<IResolversTypes['ArtifactDiff'], ParentType, ContextType>;
+  lastSeenDiff?: Resolver<IResolversTypes['ArtifactDiff'], ParentType, ContextType>;
   totalOccurences?: Resolver<IResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
@@ -3116,6 +3116,9 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountMetrics?: IAccountMetricsResolvers<ContextType>;
   AccountScreenshotMetrics?: IAccountScreenshotMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
+  ArtifactBucket?: IArtifactBucketResolvers<ContextType>;
+  ArtifactDiff?: IArtifactDiffResolvers<ContextType>;
+  ArtifactDiffConnection?: IArtifactDiffConnectionResolvers<ContextType>;
   AuthPayload?: IAuthPayloadResolvers<ContextType>;
   AutomationAction?: IAutomationActionResolvers<ContextType>;
   AutomationActionRun?: IAutomationActionRunResolvers<ContextType>;
@@ -3166,9 +3169,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   RemoveUserFromTeamPayload?: IRemoveUserFromTeamPayloadResolvers<ContextType>;
   Repository?: IRepositoryResolvers<ContextType>;
   Screenshot?: IScreenshotResolvers<ContextType>;
-  ScreenshotBucket?: IScreenshotBucketResolvers<ContextType>;
-  ScreenshotDiff?: IScreenshotDiffResolvers<ContextType>;
-  ScreenshotDiffConnection?: IScreenshotDiffConnectionResolvers<ContextType>;
   ScreenshotMetadata?: IScreenshotMetadataResolvers<ContextType>;
   ScreenshotMetadataAutomationLibrary?: IScreenshotMetadataAutomationLibraryResolvers<ContextType>;
   ScreenshotMetadataBrowser?: IScreenshotMetadataBrowserResolvers<ContextType>;

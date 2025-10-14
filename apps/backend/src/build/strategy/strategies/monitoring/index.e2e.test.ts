@@ -81,12 +81,10 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
 
   it("picks the latest approved builds of the same name", async () => {
     const ctx = await MonitoringStrategy.getContext(sourceBuild);
-    const { baseScreenshotBucket } = await MonitoringStrategy.getBase(
+    const { baseArtifactBucket } = await MonitoringStrategy.getBase(
       sourceBuild,
       ctx,
     );
-    expect(baseScreenshotBucket!.id).toBe(
-      matchedBuild.compareScreenshotBucketId,
-    );
+    expect(baseArtifactBucket!.id).toBe(matchedBuild.headArtifactBucketId);
   });
 });

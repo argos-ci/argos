@@ -83,17 +83,17 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
 
     const build = await Build.query()
       .findById(buildId)
-      .withGraphFetched("compareScreenshotBucket");
+      .withGraphFetched("headArtifactBucket");
 
     if (!build) {
       throw boom(404, "Build not found");
     }
 
-    if (!build.compareScreenshotBucket) {
-      throw boom(500, "Could not find compareScreenshotBucket for build");
+    if (!build.headArtifactBucket) {
+      throw boom(500, "Could not find headArtifactBucket for build");
     }
 
-    if (build.compareScreenshotBucket.complete) {
+    if (build.headArtifactBucket.complete) {
       throw boom(409, "Build is already finalized");
     }
 
@@ -160,7 +160,7 @@ async function handleUpdateParallel(ctx: Context) {
         ]);
 
         await insertFilesAndScreenshots({
-          screenshots: body.screenshots,
+          artifacts: body.screenshots,
           build,
           shard,
           trx,

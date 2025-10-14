@@ -5,9 +5,9 @@ import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
 import type {
+  ArtifactBucket,
   Build,
   Project,
-  ScreenshotBucket,
 } from "@/database/models/index.js";
 import { factory, setupDatabase } from "@/database/testing/index.js";
 
@@ -18,7 +18,7 @@ const app = createTestHandlerApp(finalizeBuilds);
 
 describe("finalizeBuilds", () => {
   let project: Project;
-  let compareScreenshotBucket: ScreenshotBucket;
+  let headArtifactBucket: ArtifactBucket;
   let build: Build;
 
   beforeAll(() => {
@@ -34,13 +34,13 @@ describe("finalizeBuilds", () => {
       token: "the-awesome-token",
       accountId: account.id,
     });
-    compareScreenshotBucket = await factory.ScreenshotBucket.create({
+    headArtifactBucket = await factory.ArtifactBucket.create({
       projectId: project.id,
       complete: false,
     });
     build = await factory.Build.create({
       projectId: project.id,
-      compareScreenshotBucketId: compareScreenshotBucket.id,
+      headArtifactBucketId: headArtifactBucket.id,
       externalId: "123",
       totalBatch: -1,
     });
@@ -63,7 +63,7 @@ describe("finalizeBuilds", () => {
 
   describe("with a bucket already complete", () => {
     beforeEach(async () => {
-      await compareScreenshotBucket.$query().patch({ complete: true });
+      await headArtifactBucket.$query().patch({ complete: true });
       await concludeBuild({ build, notify: false });
     });
 
@@ -121,9 +121,9 @@ describe("finalizeBuilds", () => {
         .expect(async (res) => {
           const freshBuild = await build
             .$query()
-            .withGraphFetched("compareScreenshotBucket");
-          invariant(freshBuild.compareScreenshotBucket);
-          expect(freshBuild.compareScreenshotBucket.complete).toBe(true);
+            .withGraphFetched("headArtifactBucket");
+          invariant(freshBuild.headArtifactBucket);
+          expect(freshBuild.headArtifactBucket.complete).toBe(true);
 
           expect(res.body).toEqual({
             builds: [

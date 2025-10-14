@@ -128,6 +128,61 @@ input AddContributorToProjectInput {
   userAccountId: ID!
 }
 
+type ArtifactBucket implements Node {
+  branch: String
+  commit: String!
+  createdAt: DateTime!
+  id: ID!
+}
+
+type ArtifactDiff implements Node {
+  base: Screenshot
+  build: Build!
+
+  """Change ID of the screenshot diff. Used to be indefied in a test."""
+  change: TestChange
+  createdAt: DateTime!
+  group: String
+  head: Screenshot
+  height: Int
+  id: ID!
+
+  """Name of the diff (either base or compare screenshot name)"""
+  name: String!
+  occurrences(period: MetricsPeriod!): Int!
+  status: ArtifactDiffStatus!
+  test: Test
+  threshold: Float
+  url: String
+
+  """
+  Unique key to identify screenshot variant (browser, resolution, retries)
+  """
+  variantKey: String!
+  width: Int
+}
+
+type ArtifactDiffConnection implements Connection {
+  edges: [ArtifactDiff!]!
+  pageInfo: PageInfo!
+}
+
+input ArtifactDiffReviewInput {
+  artifactDiffId: ID!
+  state: ReviewState!
+}
+
+enum ArtifactDiffStatus {
+  added
+  changed
+  failure
+  ignored
+  pending
+  removed
+  retryFailure
+  unchanged
+}
+
 input AuthFromEmailInput {
   code: String!
   email: String!
@@ -233,11 +288,11 @@ type Build implements Node {
   """Base branch resolved from"""
   baseBranchResolvedFrom: BaseBranchResolution
 
-  """The base build that contains the base screenshot bucket"""
-  baseBuild: Build
+  """The artifact bucket that serves as base for comparison"""
+  baseBucket: ArtifactBucket
 
-  """The screenshot bucket that serves as base for comparison"""
-  baseScreenshotBucket: ScreenshotBucket
+  """The base build that contains the base artifact bucket"""
+  baseBuild: Build
 
   """Branch"""
   branch: String
@@ -253,6 +308,11 @@ type Build implements Node {
 
   """Creation date of the build"""
   createdAt: DateTime!
+
+  """
+  The artifact diffs between the base artifact bucket of the compare artifact bucket
+  """
+  diffs(after: Int!, first: Int!): ArtifactDiffConnection!
 
   """Date when the build is finalized (all batches received)"""
   finalizedAt: DateTime
@@ -284,11 +344,6 @@ type Build implements Node {
 
   """Effective build reviews"""
   reviews: [BuildReview!]!
-
-  """
-  The screenshot diffs between the base screenshot bucket of the compare screenshot bucket
-  """
-  screenshotDiffs(after: Int!, first: Int!): ScreenshotDiffConnection!
 
   """Build stats"""
   stats: BuildStats
@@ -980,7 +1035,7 @@ input ResetInviteLinkInput {
 
 input ReviewBuildInput {
   buildId: ID!
-  screenshotDiffReviews: [ScreenshotDiffReviewInput!]!
+  diffReviews: [ArtifactDiffReviewInput!]!
   state: ReviewState!
 }
 
@@ -997,61 +1052,6 @@ type Screenshot implements Node {
   playwrightTraceUrl: String
   url: String!
   width: Int
-}
-
-type ScreenshotBucket implements Node {
-  branch: String
-  commit: String!
-  createdAt: DateTime!
-  id: ID!
-}
-
-type ScreenshotDiff implements Node {
-  baseScreenshot: Screenshot
-  build: Build!
-
-  """Change ID of the screenshot diff. Used to be indefied in a test."""
-  change: TestChange
-  compareScreenshot: Screenshot
-  createdAt: DateTime!
-  group: String
-  height: Int
-  id: ID!
-
-  """Name of the diff (either base or compare screenshot name)"""
-  name: String!
-  occurrences(period: MetricsPeriod!): Int!
-  status: ScreenshotDiffStatus!
-  test: Test
-  threshold: Float
-  url: String
-
-  """
-  Unique key to identify screenshot variant (browser, resolution, retries)
-  """
-  variantKey: String!
-  width: Int
-}
-
-type ScreenshotDiffConnection implements Connection {
-  edges: [ScreenshotDiff!]!
-  pageInfo: PageInfo!
-}
-
-input ScreenshotDiffReviewInput {
-  screenshotDiffId: ID!
-  state: ReviewState!
-}
-
-enum ScreenshotDiffStatus {
-  added
-  changed
-  failure
-  ignored
-  pending
-  removed
-  retryFailure
-  unchanged
 }
 
 type ScreenshotMetadata {
@@ -1281,9 +1281,9 @@ enum TeamUserLevel {
 
 type Test implements Node {
   changes(after: Int!, first: Int!, period: MetricsPeriod!): TestChangesConnection!
-  firstSeenDiff: ScreenshotDiff
+  firstSeenDiff: ArtifactDiff
   id: ID!
-  lastSeenDiff: ScreenshotDiff
+  lastSeenDiff: ArtifactDiff
   metrics(period: MetricsPeriod): TestMetrics!
   name: String!
   status: TestStatus!
@@ -1302,8 +1302,8 @@ type TestChange implements Node {
 }
 
 type TestChangeStats {
-  firstSeenDiff: ScreenshotDiff!
-  lastSeenDiff: ScreenshotDiff!
+  firstSeenDiff: ArtifactDiff!
+  lastSeenDiff: ArtifactDiff!
   totalOccurences: Int!
 }
 

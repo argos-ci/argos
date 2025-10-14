@@ -282,8 +282,8 @@ async function handleCreateParallel(ctx: BuildContext): Promise<CreateResult> {
       }
 
       if (existingBuild) {
-        invariant(existingBuild.compareScreenshotBucket, "Bucket should exist");
-        if (existingBuild.compareScreenshotBucket.complete) {
+        invariant(existingBuild.headArtifactBucket, "Bucket should exist");
+        if (existingBuild.headArtifactBucket.complete) {
           throw boom(409, `Build already finalized`);
         }
 

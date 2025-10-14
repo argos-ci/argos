@@ -83,13 +83,13 @@ describe("getAuthProjectBuilds", () => {
       invariant(withPrHeadCommit && withCompareScreenshotBucket);
       await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
 
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+      const headArtifactBucket = await factory.ArtifactBucket.create({
         projectId: project.id,
         name: withCompareScreenshotBucket.name,
         commit,
       });
       await withCompareScreenshotBucket.$query().patch({
-        compareScreenshotBucketId: compareScreenshotBucket.id,
+        headArtifactBucketId: headArtifactBucket.id,
       });
       await request(app)
         .get(`/project/builds?commit=${commit}`)
@@ -115,13 +115,13 @@ describe("getAuthProjectBuilds", () => {
       invariant(withPrHeadCommit && withCompareScreenshotBucket);
       await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
 
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+      const headArtifactBucket = await factory.ArtifactBucket.create({
         projectId: project.id,
         name: withCompareScreenshotBucket.name,
         commit,
       });
       await withCompareScreenshotBucket.$query().patch({
-        compareScreenshotBucketId: compareScreenshotBucket.id,
+        headArtifactBucketId: headArtifactBucket.id,
       });
       await request(app)
         .get(`/project/builds?commit=${commit}&distinctName=true`)

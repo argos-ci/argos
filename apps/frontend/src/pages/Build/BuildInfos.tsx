@@ -28,7 +28,7 @@ const _BuildFragment = graphql(`
     stats {
       total
     }
-    baseScreenshotBucket {
+    baseBucket {
       id
       commit
       branch

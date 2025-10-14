@@ -42,7 +42,7 @@ describe("GraphQL", () => {
         projectId: project.id,
         createdAt: "2017-02-05T17:14:28.167Z",
       });
-      await factory.ScreenshotDiff.create({
+      await factory.ArtifactDiff.create({
         buildId: build.id,
       });
       const app = await createApolloServerApp(

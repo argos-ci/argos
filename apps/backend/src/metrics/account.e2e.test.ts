@@ -20,7 +20,7 @@ describe("getAccountScreenshotMetrics", () => {
       id: "1000000",
       githubRepositoryId: null,
     });
-    await factory.ScreenshotBucket.createMany(3, [
+    await factory.ArtifactBucket.createMany(3, [
       {
         createdAt: new Date("2021-01-01").toISOString(),
         projectId: project.id,

@@ -24,7 +24,7 @@ import { getBuildURL, type BuildParams } from "./BuildParams";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
-  fragment BuildDiffState_ScreenshotDiff on ScreenshotDiff {
+  fragment BuildDiffState_ArtifactDiff on ArtifactDiff {
     id
     status
     url
@@ -34,7 +34,7 @@ const ScreenshotDiffFragment = graphql(`
     height
     group
     threshold
-    baseScreenshot {
+    base {
       id
       url
       originalUrl
@@ -86,7 +86,7 @@ const ScreenshotDiffFragment = graphql(`
         }
       }
     }
-    compareScreenshot {
+    head {
       id
       url
       originalUrl
@@ -139,7 +139,7 @@ const ScreenshotDiffFragment = graphql(`
       }
       playwrightTraceUrl
     }
-    ...BuildDiffDetail_ScreenshotDiff
+    ...BuildDiffDetail_ArtifactDiff
   }
 `);
 
@@ -357,7 +357,7 @@ const ProjectQuery = graphql(`
             hasNextPage
           }
           edges {
-            ...BuildDiffState_ScreenshotDiff
+            ...BuildDiffState_ArtifactDiff
           }
         }
       }
