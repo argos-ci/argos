@@ -8,7 +8,7 @@ import {
   GithubRepository,
   TeamUser,
 } from "@/database/models/index.js";
-import { getTokenOctokit, Octokit } from "@/github/index.js";
+import { checkErrorStatus, getTokenOctokit, Octokit } from "@/github/index.js";
 
 import { notFound } from "../util";
 
@@ -200,7 +200,13 @@ export async function getOrCreateGithubRepository(args: {
       owner: args.owner,
       repo: args.repo,
     })
-    .then((res) => res.data);
+    .then((res) => res.data)
+    .catch((error: unknown) => {
+      if (checkErrorStatus(404, error)) {
+        return null;
+      }
+      throw error;
+    });
 
   if (!ghApiRepo) {
     throw notFound(`GitHub repository not found: ${args.owner}/${args.repo}`);
