@@ -48,11 +48,11 @@ export async function notifySubscriptionStatusUpdate(args: {
     }
   })();
 
-  const teamLink = `[View Team](https://app.argos-ci.com/${account.slug})`;
+  const teamLink = `[View Team](<https://app.argos-ci.com/${account.slug}>)`;
 
   const externalLink =
     provider === "stripe"
-      ? `[View in Stripe](https://dashboard.stripe.com/customers/${account.stripeCustomerId})`
+      ? `[View in Stripe](<https://dashboard.stripe.com/customers/${account.stripeCustomerId}>)`
       : null;
 
   try {
