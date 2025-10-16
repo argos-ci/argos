@@ -142,18 +142,6 @@ export async function deleteAccount(args: {
                   emails: null,
                 })
             : null,
-
-          account.user.gitlabUserId
-            ? GitlabUser.query(trx)
-                .where("id", account.user.gitlabUserId)
-                .delete()
-            : null,
-
-          account.user.googleUserId
-            ? GoogleUser.query(trx)
-                .where("id", account.user.googleUserId)
-                .delete()
-            : null,
         ]);
 
         await Promise.all([
@@ -173,6 +161,20 @@ export async function deleteAccount(args: {
               gitlabAccessToken: null,
               gitlabBaseUrl: null,
             }),
+        ]);
+
+        await Promise.all([
+          account.user.gitlabUserId
+            ? GitlabUser.query(trx)
+                .where("id", account.user.gitlabUserId)
+                .delete()
+            : null,
+
+          account.user.googleUserId
+            ? GoogleUser.query(trx)
+                .where("id", account.user.googleUserId)
+                .delete()
+            : null,
         ]);
 
         break;
