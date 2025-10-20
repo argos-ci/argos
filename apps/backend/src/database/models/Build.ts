@@ -380,6 +380,7 @@ export class Build extends Model {
     const data = (await ScreenshotDiff.query()
       .whereIn("buildId", buildIds)
       .leftJoinRelated("compareScreenshot")
+      .whereNull("compareScreenshot.parentName")
       .select("buildId", raw(`(${ScreenshotDiff.selectDiffStatus}) as status`))
       .count("*")
       .groupBy("status", "buildId")) as unknown as {

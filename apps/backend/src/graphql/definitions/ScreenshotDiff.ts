@@ -36,8 +36,9 @@ export const typeDefs = gql`
     name: String!
     "Unique key to identify screenshot variant (browser, resolution, retries)"
     variantKey: String!
-    "Change ID of the screenshot diff. Used to be indefied in a test."
+    "Represents the test change associated with this screenshot diff, if any"
     change: TestChange
+    parentName: String
     width: Int
     height: Int
     status: ScreenshotDiffStatus!
@@ -45,6 +46,7 @@ export const typeDefs = gql`
     threshold: Float
     test: Test
     occurrences(period: MetricsPeriod!): Int!
+    contentType: String!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -118,6 +120,16 @@ export const resolvers: IResolvers = {
       }
       return ctx.loaders.Screenshot.load(screenshotDiff.compareScreenshotId);
     },
+    parentName: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.compareScreenshotId) {
+        return null;
+      }
+      const screenshot = await ctx.loaders.Screenshot.load(
+        screenshotDiff.compareScreenshotId,
+      );
+      invariant(screenshot);
+      return screenshot.parentName;
+    },
     url: async (screenshotDiff, _args, ctx) => {
       if (!screenshotDiff.fileId) {
         if (!screenshotDiff.s3Id) {
@@ -128,6 +140,14 @@ export const resolvers: IResolvers = {
       const file = await ctx.loaders.File.load(screenshotDiff.fileId);
       invariant(file, "File not found");
       return getPublicImageFileUrl(file);
+    },
+    contentType: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
+        return "image/png";
+      }
+      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      invariant(file, "File not found");
+      return file.contentType ?? "image/png";
     },
     name: nameResolver,
     variantKey: async (...args) => {

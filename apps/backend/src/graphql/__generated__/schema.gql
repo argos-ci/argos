@@ -990,6 +990,7 @@ enum ReviewState {
 }
 
 type Screenshot implements Node {
+  contentType: String!
   height: Int
   id: ID!
   metadata: ScreenshotMetadata
@@ -1010,9 +1011,12 @@ type ScreenshotDiff implements Node {
   baseScreenshot: Screenshot
   build: Build!
 
-  """Change ID of the screenshot diff. Used to be indefied in a test."""
+  """
+  Represents the test change associated with this screenshot diff, if any
+  """
   change: TestChange
   compareScreenshot: Screenshot
+  contentType: String!
   createdAt: DateTime!
   group: String
   height: Int
@@ -1021,6 +1025,7 @@ type ScreenshotDiff implements Node {
   """Name of the diff (either base or compare screenshot name)"""
   name: String!
   occurrences(period: MetricsPeriod!): Int!
+  parentName: String
   status: ScreenshotDiffStatus!
   test: Test
   threshold: Float

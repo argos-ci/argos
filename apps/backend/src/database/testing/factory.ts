@@ -192,6 +192,7 @@ export const File = defineFactory(models.File, () => ({
   key: FactoryGirl.sequence("file.key", (n) => `key-${n}`),
   width: 10,
   height: 10,
+  contentType: "image/png",
 }));
 
 export const Plan = defineFactory(models.Plan, () => ({

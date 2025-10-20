@@ -9,7 +9,7 @@ export class File extends Model {
       timestampsSchema,
       {
         type: "object",
-        required: ["key", "type"],
+        required: ["key", "type", "contentType"],
         properties: {
           key: { type: ["string"] },
           width: { type: ["number", "null"], minimum: 0 },
@@ -18,6 +18,7 @@ export class File extends Model {
             type: "string",
             enum: ["screenshot", "screenshotDiff", "playwrightTrace"],
           },
+          contentType: { type: "string" },
         },
       },
     ],
@@ -27,4 +28,22 @@ export class File extends Model {
   width!: number | null;
   height!: number | null;
   type!: "screenshot" | "screenshotDiff" | "playwrightTrace";
+  contentType!: string | null;
+
+  /**
+   * Check if the file is an image.
+   */
+  isImage() {
+    return (
+      (this.type === "screenshot" || this.type === "screenshotDiff") &&
+      (!this.contentType || this.contentType.startsWith("image/"))
+    );
+  }
+
+  /**
+   * Check if the file is a sized image.
+   */
+  isSizedImage(): this is File & { width: number; height: number } {
+    return this.isImage() && this.width != null && this.height != null;
+  }
 }

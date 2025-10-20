@@ -1,7 +1,10 @@
 import { get } from "./get.js";
 import type { GetParams } from "./get.js";
 
-export const checkIfExists = async ({ s3, ...other }: GetParams) => {
+/**
+ * Check if an object exists in S3.
+ */
+export async function checkIfExists({ s3, ...other }: GetParams) {
   try {
     await get({ s3, ...other });
     return true;
@@ -15,4 +18,4 @@ export const checkIfExists = async ({ s3, ...other }: GetParams) => {
     }
     throw error;
   }
-};
+}

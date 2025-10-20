@@ -10,7 +10,7 @@ import { Build } from "@/database/models/Build.js";
 import { Project } from "@/database/models/Project.js";
 import { getUnknownFileKeys } from "@/database/services/file.js";
 import { getS3Client } from "@/storage/s3.js";
-import { getSignedPutObjectUrl } from "@/storage/signed-url.js";
+import { getSignedObjectUrl } from "@/storage/signed-url.js";
 import { redisLock } from "@/util/redis/index.js";
 import { repoAuth } from "@/web/middlewares/repoAuth.js";
 import { boom } from "@/web/util.js";
@@ -172,11 +172,12 @@ async function getUploads(keys: string[]): Promise<Upload[]> {
   const screenshotsBucket = config.get("s3.screenshotsBucket");
   const putUrls = await Promise.all(
     unknownKeys.map((key) =>
-      getSignedPutObjectUrl({
+      getSignedObjectUrl({
         s3,
         Key: key,
         Bucket: screenshotsBucket,
         expiresIn: 1800, // 30 minutes
+        method: "PUT",
       }),
     ),
   );

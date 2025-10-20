@@ -6,6 +6,7 @@ import { ButtonGroup } from "@/ui/ButtonGroup";
 import { Separator } from "@/ui/Separator";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
+import { AriaSnapshotToggle } from "./toolbar/AriaSnapshotToggle";
 import { FitToggle } from "./toolbar/FitToggle";
 import { HighlightButton } from "./toolbar/HighlightButton";
 import {
@@ -33,6 +34,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       <ViewToggle />
       <SplitViewToggle />
       <FitToggle />
+      <AriaSnapshotToggle />
       {isChanged && (
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />

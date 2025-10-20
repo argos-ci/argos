@@ -29,17 +29,20 @@ const ScreenshotDiffFragment = graphql(`
     status
     url
     name
+    parentName
     variantKey
     width
     height
     group
     threshold
+    contentType
     baseScreenshot {
       id
       url
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -92,6 +95,7 @@ const ScreenshotDiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -177,6 +181,10 @@ type BuildDiffContextValue = {
    * This can be used to navigate between diffs that are similar.
    */
   siblingDiffs: Diff[];
+  /**
+   * Aria version of the diff.
+   */
+  ariaDiff: Diff | null;
 };
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
@@ -539,7 +547,8 @@ export function BuildDiffProvider(props: {
   const { expanded, toggleGroup } = searchMode
     ? searchExpandedState
     : expandedState;
-  const screenshotDiffs = useDataState(params);
+  const allDiffs = useDataState(params);
+  const screenshotDiffs = allDiffs.filter((diff) => !diff.parentName);
   const complete = Boolean(stats && screenshotDiffs.length === stats?.total);
   const firstDiff = screenshotDiffs[0] ?? null;
   const firstDiffId = firstDiff?.id ?? null;
@@ -583,27 +592,52 @@ export function BuildDiffProvider(props: {
     }
   }, [params, firstDiffId, navigate]);
 
-  // Get the initial diff from the screenshot diffs
+  const indices = useMemo(() => {
+    return allDiffs.reduce<{
+      byId: Record<string, Diff>;
+      byVariantKey: Record<string, Diff[]>;
+      byParentName: Record<string, Diff[]>;
+    }>(
+      (indices, diff) => {
+        if (diff.parentName) {
+          const byParentName = indices.byParentName[diff.parentName] ?? [];
+          indices.byParentName[diff.parentName] = byParentName;
+          byParentName.push(diff);
+        } else {
+          indices.byId[diff.id] = diff;
+          const byVariantKey = indices.byVariantKey[diff.variantKey] ?? [];
+          indices.byVariantKey[diff.variantKey] = byVariantKey;
+          byVariantKey.push(diff);
+        }
+        return indices;
+      },
+      { byId: {}, byVariantKey: {}, byParentName: {} },
+    );
+  }, [allDiffs]);
+
   const initialDiff = useMemo(
-    () => screenshotDiffs.find((diff) => diff.id === initialDiffId) ?? null,
-    [initialDiffId, screenshotDiffs],
+    () => (initialDiffId ? (indices.byId[initialDiffId] ?? null) : null),
+    [initialDiffId, indices],
   );
 
-  // Get the active diff from the screenshot diffs
   const activeDiff = useMemo(
-    () => screenshotDiffs.find((diff) => diff.id === params.diffId) ?? null,
-    [params.diffId, screenshotDiffs],
+    () => (params.diffId ? (indices.byId[params.diffId] ?? null) : null),
+    [params.diffId, indices],
   );
 
   const siblingDiffs = useMemo(
     () =>
-      activeDiff
-        ? screenshotDiffs.filter(
-            (diff) => diff.variantKey === activeDiff.variantKey,
-          )
-        : [],
-    [activeDiff, screenshotDiffs],
+      activeDiff ? (indices.byVariantKey[activeDiff.variantKey] ?? []) : [],
+    [activeDiff, indices],
   );
+
+  const ariaDiff = useMemo(() => {
+    if (!activeDiff) {
+      return null;
+    }
+    const children = indices.byParentName[activeDiff.name] ?? [];
+    return children.length === 1 && children[0] ? children[0] : null;
+  }, [activeDiff, indices]);
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
@@ -696,6 +730,7 @@ export function BuildDiffProvider(props: {
       results,
       hasNoResults,
       siblingDiffs,
+      ariaDiff,
     }),
     [
       groups,
@@ -712,6 +747,7 @@ export function BuildDiffProvider(props: {
       results,
       hasNoResults,
       siblingDiffs,
+      ariaDiff,
     ],
   );
   return (
