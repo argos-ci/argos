@@ -55,6 +55,7 @@ type InsertFilesAndScreenshotsParams = {
     pwTraceKey?: string | null | undefined;
     threshold?: number | null | undefined;
     baseName?: string | null | undefined;
+    contentType: string;
   }[];
   build: Build;
   shard?: BuildShard | null | undefined;
@@ -76,7 +77,14 @@ export async function insertFilesAndScreenshots(
     return { all: 0, storybook: 0 };
   }
 
-  const screenshotKeys = screenshots.map((screenshot) => screenshot.key);
+  const screenshotByKey = screenshots.reduce<
+    Record<string, InsertFilesAndScreenshotsParams["screenshots"][number]>
+  >((acc, screenshot) => {
+    acc[screenshot.key] = screenshot;
+    return acc;
+  }, {});
+
+  const screenshotKeys = Object.keys(screenshotByKey);
   const pwTraceKeys = screenshots
     .map((screenshot) => screenshot.pwTraceKey)
     .filter(checkIsNonNullable);
@@ -95,12 +103,19 @@ export async function insertFilesAndScreenshots(
       await File.query(trx)
         .insert(
           unknownKeys.map((key) => {
-            const isPwTrace = pwTraceKeys.includes(key);
+            if (pwTraceKeys.includes(key)) {
+              return {
+                key,
+                type: "playwrightTrace" as const,
+                contentType: "application/zip",
+              };
+            }
+            const screenshot = screenshotByKey[key];
+            invariant(screenshot, `Screenshot not found for key ${key}`);
             return {
               key,
-              type: isPwTrace
-                ? ("playwrightTrace" as const)
-                : ("screenshot" as const),
+              type: "screenshot" as const,
+              contentType: screenshot.contentType,
             };
           }),
         )

@@ -36,7 +36,7 @@ export const typeDefs = gql`
     name: String!
     "Unique key to identify screenshot variant (browser, resolution, retries)"
     variantKey: String!
-    "Change ID of the screenshot diff. Used to be indefied in a test."
+    "Represents the test change associated with this screenshot diff, if any"
     change: TestChange
     width: Int
     height: Int
