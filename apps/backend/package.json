@@ -57,6 +57,7 @@
     "cookies": "^0.9.1",
     "cors": "^2.8.5",
     "dataloader": "^2.2.3",
+    "diff": "^8.0.2",
     "discord.js": "^14.23.2",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
