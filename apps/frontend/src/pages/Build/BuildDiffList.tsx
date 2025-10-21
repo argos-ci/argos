@@ -241,7 +241,7 @@ function ListHeader(props: {
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle focus:outline-hidden z-10 flex w-full cursor-default select-none items-center border-t pr-2 text-left",
+        "group/list-header bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default items-center border-t pr-2 text-left select-none focus:outline-hidden",
       )}
       style={style}
       onPress={onClick}

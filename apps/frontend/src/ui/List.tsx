@@ -78,7 +78,7 @@ export function ListRowLoader(props: ListRowProps & ListLoaderProps) {
       {...rest}
       className={clsx(
         rest.className,
-        "text-low flex select-none items-center justify-center gap-2",
+        "text-low flex items-center justify-center gap-2 select-none",
       )}
     >
       <ListLoader delay={delay}>{children}</ListLoader>

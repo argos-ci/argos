@@ -113,7 +113,7 @@ export function Component() {
                       Before accepting the invite you have to create a new Argos
                       Account or login to an existing one.
                     </Text>
-                    <div className="mt-15 gap-15 flex self-stretch text-left">
+                    <div className="mt-15 flex gap-15 self-stretch text-left">
                       <div className="flex flex-1 flex-col gap-4">
                         <div className="text-low text-xs font-medium uppercase">
                           I don’t have an Argos account
@@ -131,7 +131,7 @@ export function Component() {
                         <Chip
                           scale="sm"
                           color="neutral"
-                          className="-translate-1/2 absolute top-1/2"
+                          className="absolute top-1/2 -translate-1/2"
                         >
                           OR
                         </Chip>

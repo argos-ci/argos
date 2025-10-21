@@ -258,7 +258,7 @@ const BuildScreenshotHeader = memo(
     return (
       <div className="text-low flex shrink-0 flex-col items-center gap-0.5">
         <div className="flex max-w-full items-center gap-1">
-          <div className="shrink-0 select-none text-xs font-medium leading-6">
+          <div className="shrink-0 text-xs leading-6 font-medium select-none">
             {label}
             {branch ? " from" : null}
           </div>
@@ -291,7 +291,7 @@ const MissingScreenshotInfo = memo(
             <div className="*:size-10">{icon}</div>
             <div className="text-base font-medium">{title}</div>
           </div>
-          <p className="text-low text-balance text-sm">{description}</p>
+          <p className="text-low text-sm text-balance">{description}</p>
         </div>
       </div>
     );
@@ -557,7 +557,7 @@ function BaseScreenshot({
               height={diff.height}
             />
             <ScreenshotPicture
-              className="absolute left-0 top-0 w-full"
+              className="absolute top-0 left-0 w-full"
               alt="Baseline screenshot"
               {...getScreenshotPictureProps(diff.baseScreenshot!)}
             />
@@ -734,7 +734,7 @@ function CompareScreenshotChanged(props: {
   const jpgUrl = useMemo(() => imgkit(url, ["f-jpg"]), [url]);
   return (
     <>
-      <div className="relative flex min-h-0 flex-1 select-none overflow-hidden rounded">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden rounded select-none">
         <ZoomPane
           ref={paneRef}
           dimensions={dimensions}
@@ -745,7 +745,7 @@ function CompareScreenshotChanged(props: {
           <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
               className={clsx(
-                "absolute left-0 top-0",
+                "absolute top-0 left-0",
                 diffVisible && "opacity-disabled",
               )}
               {...getScreenshotPictureProps(diff.compareScreenshot!)}

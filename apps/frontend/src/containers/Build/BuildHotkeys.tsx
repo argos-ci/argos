@@ -351,7 +351,7 @@ const BuildHotkeysDialogWithState = memo(
             <IconButton
               slot="close"
               aria-label="Close"
-              className="absolute right-3 top-3 z-10"
+              className="absolute top-3 right-3 z-10"
             >
               <XIcon />
             </IconButton>

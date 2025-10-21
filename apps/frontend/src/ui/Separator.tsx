@@ -11,7 +11,7 @@ export function Separator(
     <div
       {...separatorProps}
       className={clsx(
-        "bg-(--border-color-default) shrink-0",
+        "shrink-0 bg-(--border-color-default)",
         props.orientation === "vertical" ? "w-px" : "h-px w-full",
         props.className,
       )}

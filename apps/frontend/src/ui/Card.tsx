@@ -11,7 +11,7 @@ export function Card(
     <div
       {...rest}
       className={clsx(
-        "bg-app border-(--card-border) shadow-xs w-full overflow-hidden rounded-sm border",
+        "bg-app w-full overflow-hidden rounded-sm border border-(--card-border) shadow-xs",
         intent === "danger"
           ? "[--card-border:var(--border-color-danger-hover)] [--card-footer-bg:var(--background-color-danger-ui)]"
           : "[--card-border:var(--border-color-default)]",
@@ -30,7 +30,7 @@ export function CardFooter(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "border-(--card-border) bg-(--card-footer-bg,var(--background-color-app)) border-t p-4 text-sm",
+        "border-t border-(--card-border) bg-(--card-footer-bg,var(--background-color-app)) p-4 text-sm",
         props.className,
       )}
     />

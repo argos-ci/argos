@@ -202,7 +202,7 @@ const BuildRow = memo(function BuildRow({
         </div>
       </div>
       <div
-        className="text-low w-24 shrink-0 overflow-hidden truncate whitespace-nowrap text-right text-xs"
+        className="text-low w-24 shrink-0 truncate overflow-hidden text-right text-xs whitespace-nowrap"
         data-visual-test="transparent"
       >
         <Time date={build.createdAt} />

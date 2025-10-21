@@ -43,7 +43,7 @@ export function Checkbox(props: CheckboxProps) {
             className={clsx(
               "border-primary flex size-4 shrink-0 items-center justify-center rounded-sm border",
               /* Focus Visible */
-              "group-data-[focus-visible]/checkbox:ring-primary group-data-[focus-visible]/checkbox:outline-hidden group-data-[focus-visible]/checkbox:ring-4 group-data-[focus-visible]/checkbox:ring-offset-2",
+              "group-data-[focus-visible]/checkbox:ring-primary group-data-[focus-visible]/checkbox:ring-4 group-data-[focus-visible]/checkbox:ring-offset-2 group-data-[focus-visible]/checkbox:outline-hidden",
               /* Selected */
               "group-data-[indeterminate]/checkbox:bg-primary-active group-data-[selected]/checkbox:bg-primary-active group-data-[indeterminate]/checkbox:text-primary group-data-[selected]/checkbox:text-primary",
               /* Disabled */

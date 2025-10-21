@@ -203,7 +203,7 @@ export const BuildHeader = memo(
                 mode={build ? build.mode : BuildMode.Ci}
                 scale="sm"
               />
-              <div className="text-sm font-medium leading-none">
+              <div className="text-sm leading-none font-medium">
                 Build {props.buildNumber}
                 {build && build.name !== "default" ? ` • ${build.name}` : ""}
               </div>

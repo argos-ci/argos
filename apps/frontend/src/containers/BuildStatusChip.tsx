@@ -38,7 +38,7 @@ export function BuildStatusChip(props: {
       <Chip icon={descriptor.icon} color={descriptor.color} scale={props.scale}>
         <span
           aria-label={getChipLabel(build) ?? undefined}
-          className="gap-(--chip-gap) flex items-center"
+          className="flex items-center gap-(--chip-gap)"
         >
           {descriptor.label}
           <BuildReviewUsers reviews={reviewWithUsers} />

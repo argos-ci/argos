@@ -34,7 +34,7 @@ export function InviteContainer(props: { children: React.ReactNode }) {
 export function InviteAccountAvatar(props: {
   avatar: ComponentProps<typeof AccountAvatar>["avatar"];
 }) {
-  return <AccountAvatar avatar={props.avatar} className="size-18 mb-8" />;
+  return <AccountAvatar avatar={props.avatar} className="mb-8 size-18" />;
 }
 
 export function AlreadyJoined(props: {

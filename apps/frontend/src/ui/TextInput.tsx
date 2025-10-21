@@ -68,7 +68,7 @@ export function TextInputIcon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "peer/icon text-placeholder pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 [&>svg]:size-4",
+        "peer/icon text-placeholder pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 [&>svg]:size-4",
         props.className,
       )}
     />
@@ -80,7 +80,7 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "peer/addon bg-ui text-low flex select-none items-center border p-2 text-sm",
+        "peer/addon bg-ui text-low flex items-center border p-2 text-sm select-none",
         "first:rounded-l first:border-r-0 last:rounded-r last:border-l-0",
         props.className,
       )}

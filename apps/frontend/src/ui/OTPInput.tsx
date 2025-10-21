@@ -59,7 +59,7 @@ function Slot(props: SlotProps) {
 function FakeCaret() {
   return (
     <div className="animate-caret-blink pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div className="bg-(--text-color-default) h-8 w-px" />
+      <div className="h-8 w-px bg-(--text-color-default)" />
     </div>
   );
 }

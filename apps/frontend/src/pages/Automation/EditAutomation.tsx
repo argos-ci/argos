@@ -322,7 +322,7 @@ function ActionRunHistory(props: { automationRule: AutomationRule }) {
                         <span className="text-low">—</span>
                       )}
                     </td>
-                    <td className="max-w-xs whitespace-pre-line py-2">
+                    <td className="max-w-xs py-2 whitespace-pre-line">
                       {run.failureReason ? (
                         <span className="text-danger-low">
                           {run.failureReason}
