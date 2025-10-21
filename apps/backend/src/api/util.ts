@@ -42,6 +42,11 @@ type RequestCtx<TOperation extends ZodOpenApiOperationObject> = {
   query: TOperation["requestParams"] extends { query: any }
     ? z.output<TOperation["requestParams"]["query"]>
     : null;
+  body: TOperation["requestBody"] extends { content: any }
+    ? z.output<
+        TOperation["requestBody"]["content"]["application/json"]["schema"]
+      >
+    : null;
 };
 
 type OperationRequestHandler<TOperation extends ZodOpenApiOperationObject> = (
@@ -161,6 +166,7 @@ function handler<TMethod extends "get" | "post" | "put">(
         const ctx: RequestCtx<ZodOpenApiOperationObject> = {
           params: null,
           query: null,
+          body: null,
         };
         (req as Request & { ctx: RequestCtx<ZodOpenApiOperationObject> }).ctx =
           ctx;
@@ -186,9 +192,11 @@ function handler<TMethod extends "get" | "post" | "put">(
             operation.requestBody.content["application/json"].schema instanceof
               ZodType
           ) {
-            operation.requestBody.content["application/json"].schema.parse(
+            ctx.body = operation.requestBody.content[
+              "application/json"
+            ].schema.parse(
               req.body,
-            );
+            ) as RequestCtx<ZodOpenApiOperationObject>["body"];
           }
         } catch (error) {
           if (error instanceof ZodError) {
