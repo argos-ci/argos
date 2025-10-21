@@ -57,6 +57,6 @@ describe("#diffImages", () => {
       await copyFile(result.file.path, diffPath);
     }
 
-    expect(Boolean(result)).toBe(hasDiff);
+    expect(result.score > 0).toBe(hasDiff);
   });
 });
