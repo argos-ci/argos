@@ -1301,6 +1301,7 @@ export enum IReviewState {
 
 export type IScreenshot = INode & {
   __typename?: 'Screenshot';
+  contentType: Scalars['String']['output'];
   height?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   metadata?: Maybe<IScreenshotMetadata>;
@@ -1322,9 +1323,10 @@ export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<IScreenshot>;
   build: IBuild;
-  /** Change ID of the screenshot diff. Used to be indefied in a test. */
+  /** Represents the test change associated with this screenshot diff, if any */
   change?: Maybe<ITestChange>;
   compareScreenshot?: Maybe<IScreenshot>;
+  contentType: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   group?: Maybe<Scalars['String']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
@@ -2787,6 +2789,7 @@ export type IRepositoryResolvers<ContextType = Context, ParentType extends IReso
 }>;
 
 export type IScreenshotResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Screenshot'] = IResolversParentTypes['Screenshot']> = ResolversObject<{
+  contentType?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<IResolversTypes['ScreenshotMetadata']>, ParentType, ContextType>;
@@ -2810,6 +2813,7 @@ export type IScreenshotDiffResolvers<ContextType = Context, ParentType extends I
   build?: Resolver<IResolversTypes['Build'], ParentType, ContextType>;
   change?: Resolver<Maybe<IResolversTypes['TestChange']>, ParentType, ContextType>;
   compareScreenshot?: Resolver<Maybe<IResolversTypes['Screenshot']>, ParentType, ContextType>;
+  contentType?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   group?: Resolver<Maybe<IResolversTypes['String']>, ParentType, ContextType>;
   height?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;

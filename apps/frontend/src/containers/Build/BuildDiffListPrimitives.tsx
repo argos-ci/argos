@@ -1,5 +1,6 @@
-import { ComponentPropsWithRef, memo } from "react";
+import { ComponentPropsWithRef, memo, Suspense } from "react";
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
   AriaButtonProps,
@@ -12,8 +13,10 @@ import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
+import { checkIsImageContentType } from "@/util/content-type";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
+import { RemoteMinimap } from "./RemoteMinimap";
 
 interface DiffImageProps {
   diff: BuildDiffDetailDocument;
@@ -29,59 +32,35 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
     case ScreenshotDiffStatus.Unchanged:
     case ScreenshotDiffStatus.Failure:
     case ScreenshotDiffStatus.RetryFailure: {
-      const { key, ...attrs } = getImgAttributes(
-        diff.compareScreenshot!.url,
-        dimensions,
-      );
+      invariant(diff.compareScreenshot);
       return (
-        <ImageKitPicture
-          key={key}
-          {...attrs}
-          className="max-h-full max-w-full object-contain"
+        <SingleImage
+          contentType={diff.compareScreenshot.contentType}
+          url={diff.compareScreenshot.url}
+          dimensions={dimensions}
         />
       );
     }
     case ScreenshotDiffStatus.Removed: {
-      const { key, ...attrs } = getImgAttributes(
-        diff.baseScreenshot!.url,
-        dimensions,
-      );
+      invariant(diff.baseScreenshot);
       return (
-        <ImageKitPicture
-          key={key}
-          {...attrs}
-          className="max-h-full max-w-full object-contain"
+        <SingleImage
+          contentType={diff.baseScreenshot.contentType}
+          url={diff.baseScreenshot.url}
+          dimensions={dimensions}
         />
       );
     }
     case ScreenshotDiffStatus.Ignored:
     case ScreenshotDiffStatus.Changed: {
-      const dimensions = getDiffDimensions(diff, config);
-      const { key: compareKey, ...compareAttrs } = getImgAttributes(
-        diff.compareScreenshot!.url,
-      );
-      const { key: diffKey, ...diffAttrs } = getImgAttributes(
-        diff.url!,
-        dimensions,
-      );
+      invariant(diff.compareScreenshot);
       return (
-        <div className="flex h-full items-center justify-center">
-          <div
-            className="relative"
-            style={{ width: dimensions.width, height: dimensions.height }}
-          >
-            <ImageKitPicture
-              key={compareKey}
-              {...compareAttrs}
-              className="opacity-disabled absolute top-0 w-full"
-            />
-            <DiffPicture
-              key={diffKey}
-              {...diffAttrs}
-              className="relative z-10 max-h-full w-full"
-            />
-          </div>
-        </div>
+        <OverlayImage
+          headURL={diff.compareScreenshot.url}
+          contentType={diff.compareScreenshot.contentType}
+          diffURL={diff.url ?? null}
+          dimensions={dimensions}
+        />
       );
     }
     case ScreenshotDiffStatus.Pending:
@@ -90,6 +69,72 @@ export const DiffImage = memo(function DiffImage(props: DiffImageProps) {
       assertNever(diff.status);
   }
 });
+
+/**
+ * Renders an overlay of two images: the "head" image with the "diff" image on top.
+ */
+function OverlayImage(props: {
+  contentType: string;
+  headURL: string;
+  diffURL: string | null;
+  dimensions: Dimensions;
+}) {
+  const { headURL, diffURL, contentType, dimensions } = props;
+  if (checkIsImageContentType(contentType) && diffURL) {
+    const { key: compareKey, ...compareAttrs } = getImgAttributes(headURL);
+    const { key: diffKey, ...diffAttrs } = getImgAttributes(
+      diffURL,
+      dimensions,
+    );
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div
+          className="relative"
+          style={{ width: dimensions.width, height: dimensions.height }}
+        >
+          <ImageKitPicture
+            key={compareKey}
+            {...compareAttrs}
+            className="opacity-disabled absolute top-0 w-full"
+          />
+          <DiffPicture
+            key={diffKey}
+            {...diffAttrs}
+            className="relative z-10 max-h-full w-full"
+          />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <SingleImage
+      contentType={contentType}
+      url={headURL}
+      dimensions={dimensions}
+    />
+  );
+}
+
+/**
+ * Renders a single image without any diff overlay.
+ */
+function SingleImage(props: {
+  contentType: string;
+  url: string;
+  dimensions: Dimensions;
+}) {
+  const { contentType, url, dimensions } = props;
+  const className = "max-h-full max-w-full object-contain";
+  if (checkIsImageContentType(contentType)) {
+    const { key, ...attrs } = getImgAttributes(url, dimensions);
+    return <ImageKitPicture key={key} {...attrs} className={className} />;
+  }
+  return (
+    <Suspense fallback={null}>
+      <RemoteMinimap {...dimensions} url={url} className={className} />
+    </Suspense>
+  );
+}
 
 function DiffPicture(props: ImageKitPictureProps) {
   const style = useOverlayStyle({ src: props.src });

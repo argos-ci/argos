@@ -1,7 +1,8 @@
 import { compare } from "odiff-bin";
 
-import { tmpName } from "@/storage/index.js";
-import type { ImageFile } from "@/storage/index.js";
+import { tmpName, type ImageHandle } from "@/storage";
+
+import type { DiffOptions, DiffResult } from "../types";
 
 // Generate an image diff result.
 //
@@ -54,11 +55,11 @@ function getConfiguration(threshold: number) {
  */
 async function computeDiff(args: {
   basePath: string;
-  comparePath: string;
+  headPath: string;
   diffPath: string;
   threshold: number;
 }): Promise<number> {
-  const result = await compare(args.basePath, args.comparePath, args.diffPath, {
+  const result = await compare(args.basePath, args.headPath, args.diffPath, {
     outputDiffMask: true,
     threshold: args.threshold,
     antialiasing: true,
@@ -83,7 +84,7 @@ async function computeDiff(args: {
 /**
  * Get the maximum dimensions of a list of images.
  */
-async function getMaxDimensions(...images: ImageFile[]) {
+async function getMaxDimensions(...images: ImageHandle[]) {
   const imagesDimensions = await Promise.all(
     images.map(async (image) => image.getDimensions()),
   );
@@ -97,49 +98,40 @@ async function getMaxDimensions(...images: ImageFile[]) {
 /**
  * The default threshold for the diff.
  */
-export const DEFAULT_THRESHOLD = 0.5;
+const DEFAULT_THRESHOLD = 0.5;
 
 /**
  * Compute the difference between two images.
- * Returns null if the difference is not significant.
- * Returns the diff image path and the score otherwise.
  */
 export async function diffImages(
-  baseImage: ImageFile,
-  compareImage: ImageFile,
-  /**
-   * A threshold between 0 and 1 to adjust the sensitivity of the diff.
-   */
-  threshold: number,
-): Promise<null | {
-  filepath: string;
-  score: number;
-  width: number;
-  height: number;
-}> {
+  base: ImageHandle,
+  head: ImageHandle,
+  options: DiffOptions,
+): Promise<DiffResult> {
+  const { threshold = DEFAULT_THRESHOLD } = options;
   // Get dimensions and diff paths
   const [maxDimensions, baseDiffPath, colorDiffPath] = await Promise.all([
-    getMaxDimensions(baseImage, compareImage),
+    getMaxDimensions(base, head),
     tmpName({ postfix: ".png" }),
     tmpName({ postfix: ".png" }),
   ]);
 
   // Resize images to the maximum dimensions (sequentially to avoid memory issues)
-  const basePath = await baseImage.enlarge(maxDimensions);
-  const comparePath = await compareImage.enlarge(maxDimensions);
+  const basePath = await base.enlarge(maxDimensions);
+  const headPath = await head.enlarge(maxDimensions);
 
   const diffConfig = getConfiguration(threshold);
 
   // Compute diffs (sequentially to avoid memory issues)
   const baseScore = await computeDiff({
     basePath,
-    comparePath,
+    headPath,
     diffPath: baseDiffPath,
     threshold: diffConfig.baseThreshold,
   });
   const colorSensitiveScore = await computeDiff({
     basePath,
-    comparePath,
+    headPath,
     diffPath: colorDiffPath,
     threshold: diffConfig.colorSensitiveThreshold,
   });
@@ -158,9 +150,12 @@ export async function diffImages(
 
   if (adjustedBaseScore > 0 && adjustedBaseScore >= adjustedSensitiveScore) {
     return {
-      ...maxDimensions,
-      filepath: baseDiffPath,
       score: adjustedBaseScore,
+      file: {
+        path: baseDiffPath,
+        contentType: "image/png",
+        ...maxDimensions,
+      },
     };
   }
 
@@ -169,11 +164,14 @@ export async function diffImages(
     adjustedSensitiveScore > adjustedBaseScore
   ) {
     return {
-      ...maxDimensions,
-      filepath: colorDiffPath,
       score: adjustedSensitiveScore,
+      file: {
+        path: colorDiffPath,
+        contentType: "image/png",
+        ...maxDimensions,
+      },
     };
   }
 
-  return null;
+  return { score: 0 };
 }

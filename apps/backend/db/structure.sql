@@ -499,6 +499,7 @@ CREATE TABLE public.files (
     width integer,
     height integer,
     type text NOT NULL,
+    "contentType" character varying(255),
     CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'screenshotDiff'::text, 'playwrightTrace'::text])))
 );
 
@@ -3752,3 +3753,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025091
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250915191132_team_invites.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20250929110439_build_skipped.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20251009205806_unique_account_githubAccountId.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20251019194629_snapshot.js', 1, NOW());

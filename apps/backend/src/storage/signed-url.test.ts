@@ -7,11 +7,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config/index.js";
 
-import { getSignedPutObjectUrl } from "./signed-url.js";
+import { getSignedObjectUrl } from "./signed-url.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-describe("#getSignedPutObjectUrl", () => {
+describe("#getSignedObjectUrl", () => {
   let s3: S3Client;
 
   beforeEach(() => {
@@ -19,11 +19,12 @@ describe("#getSignedPutObjectUrl", () => {
   });
 
   it("generate a signed URL used to upload", async () => {
-    const url = await getSignedPutObjectUrl({
+    const url = await getSignedObjectUrl({
       s3,
       Bucket: config.get("s3.screenshotsBucket"),
       Key: "test2.png",
       expiresIn: 60,
+      method: "PUT",
     });
 
     const inputPath = join(__dirname, "__fixtures__", "screenshot_test.jpg");

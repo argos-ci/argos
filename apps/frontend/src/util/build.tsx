@@ -109,6 +109,9 @@ export function getBuildDescriptor(
   type: BuildType | null | undefined,
   status: BuildStatus,
 ) {
+  if (status === BuildStatus.Expired || status === BuildStatus.Error) {
+    return buildStatusDescriptors[status];
+  }
   switch (type) {
     case BuildType.Skipped:
     case BuildType.Reference:
@@ -124,9 +127,6 @@ export function getBuildDescriptor(
     }
     case null:
     case undefined: {
-      if (status === BuildStatus.Expired || status === BuildStatus.Error) {
-        return buildStatusDescriptors[status];
-      }
       return buildStatusDescriptors.PENDING;
     }
     default:

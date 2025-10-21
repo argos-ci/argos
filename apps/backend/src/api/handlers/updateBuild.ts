@@ -79,7 +79,9 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
       throw boom(401, "Unauthorized");
     }
 
-    const buildId = req.ctx.params["buildId"];
+    const { body, params } = req.ctx;
+
+    const buildId = params["buildId"];
 
     const build = await Build.query()
       .findById(buildId)
@@ -104,9 +106,9 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     const ctx = {
       project: req.authProject,
       build,
-      body: req.body,
+      body,
     } satisfies Context;
-    if (req.body.parallel) {
+    if (body.parallel) {
       await handleUpdateParallel(ctx);
     } else {
       await handleUpdateSingle(ctx);
