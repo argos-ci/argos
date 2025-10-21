@@ -14,7 +14,7 @@ export function FormRadio({
   return (
     <div className={clsx(className, "flex gap-2")}>
       <input type="radio" id={id} {...props} />
-      <label htmlFor={id} className="inline-block select-none font-medium">
+      <label htmlFor={id} className="inline-block font-medium select-none">
         {label}
       </label>
     </div>

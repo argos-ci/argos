@@ -35,7 +35,7 @@ export function Menu<T extends object>(
     <RACMenu<T>
       {...props}
       className={clsx(
-        "outline-hidden select-none overflow-auto",
+        "overflow-auto outline-hidden select-none",
         props.className,
       )}
     />
@@ -60,7 +60,7 @@ export function MenuItem(
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
-        "aria-disabled:opacity-disabled focus:outline-hidden flex items-center rounded-sm px-3 py-1.5 text-sm data-[focused]:data-[disabled]:bg-transparent",
+        "aria-disabled:opacity-disabled flex items-center rounded-sm px-3 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent",
       )}
       {...props}
     >

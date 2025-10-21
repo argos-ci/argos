@@ -85,7 +85,7 @@ export const AccountGitLab = (props: {
           </div>
           {account.gitlabBaseUrl && (
             <div>
-              <h3 className="mb-2 mt-4 font-semibold">
+              <h3 className="mt-4 mb-2 font-semibold">
                 On-premise configuration
               </h3>
               <FormTextInput

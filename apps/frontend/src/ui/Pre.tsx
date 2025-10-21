@@ -15,11 +15,11 @@ export function Pre({ code, copyRef, ...rest }: PreProps) {
       {...rest}
       className={clsx(
         rest.className,
-        "bg-ui relative whitespace-pre-wrap rounded-sm p-4",
+        "bg-ui relative rounded-sm p-4 whitespace-pre-wrap",
       )}
     >
       <CopyButton
-        className="absolute right-2 top-4 text-lg"
+        className="absolute top-4 right-2 text-lg"
         text={code}
         copyRef={copyRef}
       />

@@ -29,7 +29,7 @@ export function FormCheckbox<
         <CheckboxField id={id} {...props} />
         <label
           htmlFor={id}
-          className="peer-data-[disabled]:opacity-disabled inline-block select-none text-sm"
+          className="peer-data-[disabled]:opacity-disabled inline-block text-sm select-none"
         >
           {label}
           {description && (

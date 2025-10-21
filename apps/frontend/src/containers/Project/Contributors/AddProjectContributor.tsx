@@ -130,7 +130,7 @@ function TeamContributorsList(props: {
           onChange={(e) => setSearch(e.target.value)}
         />
         {result.loading && (
-          <Loader delay={0} className="absolute right-2.5 top-2.5 size-4" />
+          <Loader delay={0} className="absolute top-2.5 right-2.5 size-4" />
         )}
       </div>
       <div className="flex-1 overflow-auto">

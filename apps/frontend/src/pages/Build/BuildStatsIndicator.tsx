@@ -176,7 +176,7 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
             tooltip={tooltip ? getGroupLabel(group) : null}
           />
         )}
-        <span className="text-(--mauve-7) select-none text-xs last:hidden">
+        <span className="text-xs text-(--mauve-7) select-none last:hidden">
           •
         </span>
       </Fragment>

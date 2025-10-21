@@ -6,8 +6,8 @@ catalog:
   '@types/express': ^5.0.3
   '@types/express-serve-static-core': ^5.0.7
   '@types/react': ^19.2.2
-  '@types/react-dom': ^19.2.1
-  eslint: ^9.37.0
+  '@types/react-dom': ^19.2.2
+  eslint: ^9.38.0
   express: ^5.1.0
   react: ^19.2.0
   react-dom: ^19.2.0

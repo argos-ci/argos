@@ -44,14 +44,14 @@ export function BuildNameFilter(props: {
           <SearchField className="relative">
             <SearchIcon
               aria-hidden
-              className="text-low pointer-events-none absolute left-2 top-2 size-4"
+              className="text-low pointer-events-none absolute top-2 left-2 size-4"
             />
             <TextInput
               scale="sm"
               className="!pl-8 [&::-webkit-search-cancel-button]:hidden"
               placeholder="Find build name…"
             />
-            <Button className="text-low data-[hovered]:text-default absolute right-2 top-2">
+            <Button className="text-low data-[hovered]:text-default absolute top-2 right-2">
               <XIcon className="size-4" />
             </Button>
           </SearchField>

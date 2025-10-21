@@ -59,7 +59,7 @@ export function BuildOrphanDialog(props: {
             for the first builds.
           </DialogText>
 
-          <h3 className="mb-1 mt-4 text-base font-medium">Next Steps?</h3>
+          <h3 className="mt-4 mb-1 text-base font-medium">Next Steps?</h3>
           {(() => {
             switch (build.mode) {
               case BuildMode.Ci: {
@@ -70,7 +70,7 @@ export function BuildOrphanDialog(props: {
                       of this build: <Code>{build.baseBranch}</Code>.
                     </p>
 
-                    <h3 className="mb-1 mt-4 text-base font-medium">
+                    <h3 className="mt-4 mb-1 text-base font-medium">
                       Create baseline for future builds
                     </h3>
                     <p>

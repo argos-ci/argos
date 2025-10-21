@@ -6,7 +6,7 @@ export function Badge(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "text-xxs bg-app text-low rounded-md border px-2 py-0.5 font-semibold tabular-nums leading-none",
+        "text-xxs bg-app text-low rounded-md border px-2 py-0.5 leading-none font-semibold tabular-nums",
         props.className,
       )}
     />

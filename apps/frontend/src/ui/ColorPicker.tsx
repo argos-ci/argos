@@ -30,7 +30,7 @@ export function ColorSwatchPickerItem(
     <RACColorSwatchPickerItem
       {...props}
       className={clsx(
-        "rac-focus outline-hidden relative w-fit rounded-sm forced-color-adjust-none",
+        "rac-focus relative w-fit rounded-sm outline-hidden forced-color-adjust-none",
         "data-[selected]:ring-primary-active data-[selected]:ring-1 data-[selected]:ring-offset-1",
         props.className,
       )}

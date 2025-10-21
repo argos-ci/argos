@@ -125,7 +125,7 @@ export function StandalonePage(props: ContainerProps) {
       <Container
         {...props}
         className={clsx(
-          "flex min-h-0 flex-1 flex-col items-center pb-4 pt-16",
+          "flex min-h-0 flex-1 flex-col items-center pt-16 pb-4",
           props.className,
         )}
       />

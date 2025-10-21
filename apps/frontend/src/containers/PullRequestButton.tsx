@@ -103,7 +103,7 @@ function PullRequestInfo(props: {
             }}
             className="hover:bg-hover inline-flex items-center gap-2 rounded-sm px-1"
           >
-            <span className="flex min-w-0 max-w-prose items-center gap-2">
+            <span className="flex max-w-prose min-w-0 items-center gap-2">
               <span className="min-w-0 flex-1 truncate">
                 {pullRequest.title}
               </span>
@@ -232,7 +232,7 @@ export function PullRequestButton(props: {
         >
           <PullRequestStatusIcon pullRequest={pullRequest} />
           {pullRequest.title ? (
-            <span className="flex min-w-0 max-w-prose items-center gap-2">
+            <span className="flex max-w-prose min-w-0 items-center gap-2">
               <span className="min-w-0 flex-1 truncate">
                 {pullRequest.title}
               </span>

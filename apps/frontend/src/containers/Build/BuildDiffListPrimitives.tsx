@@ -151,7 +151,7 @@ export function DiffCard(props: DiffCardProps) {
       <div
         className={clsx(
           "pointer-events-none absolute inset-0 z-20 rounded-lg",
-          isActive && "ring-(--violet-12) ring-1 ring-inset",
+          isActive && "ring-1 ring-(--violet-12) ring-inset",
         )}
       />
     </div>
@@ -177,7 +177,7 @@ export function ListItemButton(
     <div
       ref={ref}
       className={clsx(
-        "group/item focus:outline-hidden relative cursor-default text-left",
+        "group/item relative cursor-default text-left focus:outline-hidden",
         className,
       )}
       {...rest}
@@ -211,7 +211,7 @@ export function DiffCardFooterText(props: TruncableProps) {
     <Truncable
       {...props}
       className={clsx(
-        "bg-app text-xxs flex-1 pb-1.5 pt-1 font-medium",
+        "bg-app text-xxs flex-1 pt-1 pb-1.5 font-medium",
         props.className,
       )}
     />

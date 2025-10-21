@@ -50,7 +50,7 @@ export function Hi(props: { name: string | null }) {
 
 export function H1(props: { children: React.ReactNode }) {
   return (
-    <Heading className="mb-5 mt-3 p-0 text-2xl font-medium">
+    <Heading className="mt-3 mb-5 p-0 text-2xl font-medium">
       {props.children}
     </Heading>
   );

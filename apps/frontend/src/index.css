@@ -259,7 +259,7 @@
   }
 
   &[data-focus-visible] {
-    @apply outline-(--violet-10) outline-1 outline-offset-1;
+    @apply outline-1 outline-offset-1 outline-(--violet-10);
   }
 }
 
@@ -269,7 +269,7 @@
   }
 
   .group[data-focus-visible] & {
-    @apply outline-(--violet-10) outline-1 outline-offset-1;
+    @apply outline-1 outline-offset-1 outline-(--violet-10);
   }
 }
 
@@ -330,7 +330,7 @@
 
   html,
   body {
-    @apply bg-app text-default scheme-only-light h-full font-sans antialiased;
+    @apply bg-app text-default h-full font-sans antialiased scheme-only-light;
   }
 
   html.dark body {
@@ -342,7 +342,7 @@
   }
 
   [data-backdrop]::after {
-    @apply bg-app backdrop-blur-xs absolute inset-0 opacity-60 content-[''];
+    @apply bg-app absolute inset-0 opacity-60 backdrop-blur-xs content-[''];
   }
 
   button,

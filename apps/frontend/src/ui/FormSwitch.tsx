@@ -38,7 +38,7 @@ export function FormSwitch<TFieldValues extends FieldValues>({
         <label
           aria-hidden
           htmlFor={id}
-          className="peer-data-[disabled]:opacity-disabled inline-block select-none text-sm font-medium"
+          className="peer-data-[disabled]:opacity-disabled inline-block text-sm font-medium select-none"
         >
           {value ? "Enabled" : "Disabled"}
         </label>

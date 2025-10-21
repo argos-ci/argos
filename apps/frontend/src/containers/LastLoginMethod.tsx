@@ -19,7 +19,7 @@ export function LastUsedIndicator(props: {
       {props.children}
       <Chip
         scale="xs"
-        className="absolute -right-2 top-0 inline-block -translate-y-1/2"
+        className="absolute top-0 -right-2 inline-block -translate-y-1/2"
       >
         Last used
       </Chip>

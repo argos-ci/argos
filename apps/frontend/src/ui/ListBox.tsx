@@ -15,7 +15,7 @@ export function ListBox<T extends object>({
 }: ListBoxProps<T>) {
   return (
     <RACListBox<T>
-      className={clsx("outline-hidden overflow-auto", className)}
+      className={clsx("overflow-auto outline-hidden", className)}
       {...props}
     />
   );
@@ -38,11 +38,11 @@ export function ListBoxItem(
       className={clsx(
         className,
         "group/item",
-        "text-default data-[focused]:bg-active data-[pressed]:bg-active data-[disabled]:opacity-disabled focus:outline-hidden flex select-none flex-wrap items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition",
+        "text-default data-[focused]:bg-active data-[pressed]:bg-active data-[disabled]:opacity-disabled flex flex-wrap items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition select-none focus:outline-hidden",
       )}
       {...restProps}
     >
-      <CheckIcon className="not-in-[[role=listbox]]:hidden size-4 opacity-0 group-aria-selected/item:opacity-100" />
+      <CheckIcon className="size-4 opacity-0 not-in-[[role=listbox]]:hidden group-aria-selected/item:opacity-100" />
       <div className="flex items-center whitespace-nowrap has-[[slot=description]]:flex-wrap">
         {children}
       </div>

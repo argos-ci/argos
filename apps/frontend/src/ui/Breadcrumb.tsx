@@ -28,7 +28,7 @@ export function BreadcrumbItemIcon(props: { children: React.ReactNode }) {
 export function BreadcrumbSeparator() {
   return (
     <span
-      className="text-(--mauve-7) select-none text-2xl leading-none"
+      className="text-2xl leading-none text-(--mauve-7) select-none"
       role="separator"
       aria-orientation="vertical"
     >

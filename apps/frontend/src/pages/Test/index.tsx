@@ -343,7 +343,7 @@ export function Component() {
                     </Counter>
                   </div>
                   <ChangesChart
-                    className="h-22 max-w- min-w-0 flex-1"
+                    className="max-w- h-22 min-w-0 flex-1"
                     series={test.metrics.series}
                     from={period.from}
                   />
@@ -421,7 +421,7 @@ function Counter(props: ComponentProps<"div">) {
   return (
     <div
       {...props}
-      className="text-primary flex select-none flex-col items-center gap-0.5 px-2"
+      className="text-primary flex flex-col items-center gap-0.5 px-2 select-none"
     />
   );
 }
@@ -443,7 +443,7 @@ function CounterValue(props: ComponentProps<"div">) {
   return (
     <div
       {...props}
-      className={clsx("text-lg font-medium leading-5", props.className)}
+      className={clsx("text-lg leading-5 font-medium", props.className)}
     />
   );
 }
@@ -452,7 +452,7 @@ function CounterValueUnit(props: ComponentProps<"span">) {
   return (
     <span
       {...props}
-      className={clsx("leading-0 ml-0.5 text-xs", props.className)}
+      className={clsx("ml-0.5 text-xs leading-0", props.className)}
     />
   );
 }

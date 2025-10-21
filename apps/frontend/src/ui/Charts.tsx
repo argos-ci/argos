@@ -64,7 +64,7 @@ export function ChartContainer({
         data-chart={chartId}
         ref={ref}
         className={clsx(
-          "[&_.recharts-cartesian-axis-tick_text]:fill-text-low [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-sector[stroke='#fff']]:stroke-transparent",
+          "[&_.recharts-cartesian-axis-tick_text]:fill-text-low [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-low [&_.recharts-curve.recharts-tooltip-cursor]:stroke-low [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-low [&_.recharts-radial-bar-background-sector]:fill-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-low flex justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
           className,
         )}
         {...props}
@@ -216,7 +216,7 @@ export function ChartTooltipContent({
                     !hideIndicator && (
                       <div
                         className={clsx(
-                          "border-(--color-border) bg-(--color-bg) shrink-0 rounded-[2px]",
+                          "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
                           {
                             "h-2.5 w-2.5": indicator === "dot",
                             "w-1": indicator === "line",

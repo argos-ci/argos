@@ -22,7 +22,7 @@ export function Component() {
         <Helmet>
           <title>Verify Email</title>
         </Helmet>
-        <div className="flex max-w-xl flex-col gap-4 text-balance text-center">
+        <div className="flex max-w-xl flex-col gap-4 text-center text-balance">
           {!email || !token ? (
             <InvalidLink />
           ) : (

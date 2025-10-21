@@ -87,7 +87,7 @@ function LastTriggerStatusIcon({
             return (
               <div
                 key={actionRun.id}
-                className="flex items-center gap-6 whitespace-nowrap border-t pt-2 text-sm"
+                className="flex items-center gap-6 border-t pt-2 text-sm whitespace-nowrap"
               >
                 <div>{action?.label}</div>
                 <div className="flex items-center gap-1 text-xs">
@@ -121,14 +121,14 @@ function AutomationRow(props: {
       <div className="w-44 shrink-0 py-2 md:w-auto md:grow">
         <div className="truncate">{automationRule.name}</div>
       </div>
-      <div className="text-low flex w-32 shrink-0 flex-col overflow-hidden truncate whitespace-nowrap py-2 text-sm">
+      <div className="text-low flex w-32 shrink-0 flex-col truncate overflow-hidden py-2 text-sm whitespace-nowrap">
         {automationRule.on.map((rawEvent) => {
           const event = AutomationEventSchema.parse(rawEvent);
           return <div key={event}>{getAutomationEventLabel(event)}</div>;
         })}
       </div>
       <div
-        className="text-low w-36 shrink-0 overflow-hidden truncate whitespace-nowrap py-2"
+        className="text-low w-36 shrink-0 truncate overflow-hidden py-2 whitespace-nowrap"
         data-visual-test="transparent"
       >
         {automationRule.lastAutomationRun ? (
@@ -143,7 +143,7 @@ function AutomationRow(props: {
         )}
       </div>
       <div
-        className="w-28 shrink-0 overflow-hidden truncate whitespace-nowrap py-2"
+        className="w-28 shrink-0 truncate overflow-hidden py-2 whitespace-nowrap"
         data-visual-test="transparent"
       >
         <Time date={automationRule.createdAt} className="text-low" />

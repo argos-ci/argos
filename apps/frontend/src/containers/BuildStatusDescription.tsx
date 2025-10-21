@@ -77,7 +77,7 @@ export function BuildStatusDescription(props: {
                   was found.
                   <div className="my-4">
                     It may happens because:
-                    <ul className="ml-8 mt-2 list-disc space-y-1">
+                    <ul className="mt-2 ml-8 list-disc space-y-1">
                       <li>
                         No Argos build has been performed on the base branch
                         {build.baseBranch ? (
