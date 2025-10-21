@@ -4,6 +4,7 @@ import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
+import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
 
@@ -95,8 +96,21 @@ export function BuildWorkspace(props: {
           case BuildStatus.Error:
           case BuildStatus.Expired:
             return (
-              <div className="min-h-0 flex-1 p-10 text-center text-xl">
-                <BuildStatusDescription build={build} />
+              <div className="min-h-0 flex-1 p-6 text-xl">
+                <Alert className="mx-auto max-w-xl rounded-sm border p-4">
+                  <AlertTitle>
+                    {
+                      {
+                        [BuildStatus.Error]: "Build failed",
+                        [BuildStatus.Expired]: "Build expired",
+                        [BuildStatus.Aborted]: "Build aborted",
+                      }[build.status]
+                    }
+                  </AlertTitle>
+                  <AlertText>
+                    <BuildStatusDescription build={build} />
+                  </AlertText>
+                </Alert>
               </div>
             );
           case BuildStatus.Pending:
