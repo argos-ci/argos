@@ -990,6 +990,7 @@ enum ReviewState {
 }
 
 type Screenshot implements Node {
+  contentType: String!
   height: Int
   id: ID!
   metadata: ScreenshotMetadata
@@ -1015,6 +1016,7 @@ type ScreenshotDiff implements Node {
   """
   change: TestChange
   compareScreenshot: Screenshot
+  contentType: String!
   createdAt: DateTime!
   group: String
   height: Int

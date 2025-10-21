@@ -45,6 +45,7 @@ export const typeDefs = gql`
     threshold: Float
     test: Test
     occurrences(period: MetricsPeriod!): Int!
+    contentType: String!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -128,6 +129,14 @@ export const resolvers: IResolvers = {
       const file = await ctx.loaders.File.load(screenshotDiff.fileId);
       invariant(file, "File not found");
       return getPublicImageFileUrl(file);
+    },
+    contentType: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
+        return "image/png";
+      }
+      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      invariant(file, "File not found");
+      return file.contentType ?? "image/png";
     },
     name: nameResolver,
     variantKey: async (...args) => {

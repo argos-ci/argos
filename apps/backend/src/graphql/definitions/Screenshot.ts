@@ -88,6 +88,7 @@ export const typeDefs = gql`
     height: Int
     metadata: ScreenshotMetadata
     playwrightTraceUrl: String
+    contentType: String!
   }
 `;
 
@@ -137,6 +138,14 @@ export const resolvers: IResolvers = {
       const searchParams = new URLSearchParams();
       searchParams.set("trace", url);
       return `https://trace.playwright.dev/?${searchParams}`;
+    },
+    contentType: async (screenshot, _args, ctx) => {
+      if (!screenshot.fileId) {
+        return "image/png";
+      }
+      const file = await ctx.loaders.File.load(screenshot.fileId);
+      invariant(file, "File not found");
+      return file.contentType ?? "image/png";
     },
   },
   ScreenshotMetadataSDK: {

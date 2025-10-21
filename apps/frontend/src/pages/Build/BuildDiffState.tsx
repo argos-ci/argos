@@ -34,12 +34,14 @@ const ScreenshotDiffFragment = graphql(`
     height
     group
     threshold
+    contentType
     baseScreenshot {
       id
       url
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -92,6 +94,7 @@ const ScreenshotDiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
