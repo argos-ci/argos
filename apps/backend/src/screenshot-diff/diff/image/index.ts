@@ -55,11 +55,11 @@ function getConfiguration(threshold: number) {
  */
 async function computeDiff(args: {
   basePath: string;
-  comparePath: string;
+  headPath: string;
   diffPath: string;
   threshold: number;
 }): Promise<number> {
-  const result = await compare(args.basePath, args.comparePath, args.diffPath, {
+  const result = await compare(args.basePath, args.headPath, args.diffPath, {
     outputDiffMask: true,
     threshold: args.threshold,
     antialiasing: true,
@@ -118,20 +118,20 @@ export async function diffImages(
 
   // Resize images to the maximum dimensions (sequentially to avoid memory issues)
   const basePath = await base.enlarge(maxDimensions);
-  const comparePath = await head.enlarge(maxDimensions);
+  const headPath = await head.enlarge(maxDimensions);
 
   const diffConfig = getConfiguration(threshold);
 
   // Compute diffs (sequentially to avoid memory issues)
   const baseScore = await computeDiff({
     basePath,
-    comparePath,
+    headPath,
     diffPath: baseDiffPath,
     threshold: diffConfig.baseThreshold,
   });
   const colorSensitiveScore = await computeDiff({
     basePath,
-    comparePath,
+    headPath,
     diffPath: colorDiffPath,
     threshold: diffConfig.colorSensitiveThreshold,
   });

@@ -130,11 +130,17 @@ describe("#computeScreenshotDiff", () => {
         s3Id: "penelope.png",
         screenshotBucketId: baseBucket.id,
       });
+      const test = await factory.Test.create({
+        name: compareScreenshot.name,
+        projectId: project.id,
+        buildName: "default",
+      });
       screenshotDiff = await factory.ScreenshotDiff.create({
         buildId: build.id,
         baseScreenshotId: baseScreenshot.id,
         compareScreenshotId: compareScreenshot.id,
         jobStatus: "pending",
+        testId: test.id,
       });
     });
 

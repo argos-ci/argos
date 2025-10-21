@@ -35,7 +35,10 @@ export class ImageHandle {
     if (this.#dimensions) {
       return Promise.resolve(this.#dimensions);
     }
-    this.#measurePromise = this.#measurePromise ?? this.measure();
+    if (this.#measurePromise) {
+      return this.#measurePromise;
+    }
+    this.#measurePromise = this.measure();
     return this.#measurePromise;
   }
 

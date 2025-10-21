@@ -242,7 +242,13 @@ async function hashFile(filepath: string): Promise<string> {
  * Get or create a file record in the database.
  */
 async function getOrCreateFile(
-  values: Pick<File, "width" | "height" | "type" | "key">,
+  values: {
+    key: string;
+    type: File["type"];
+    contentType: string;
+    width?: number | null;
+    height?: number | null;
+  },
   trx: TransactionOrKnex,
 ) {
   const file = await File.query(trx).findOne({ key: values.key });
@@ -274,7 +280,12 @@ async function ensureImageDimensions(args: {
 
   await transaction(async (trx) => {
     const file = await getOrCreateFile(
-      { ...dimensions, type: "screenshot", key: screenshot.s3Id },
+      {
+        key: screenshot.s3Id,
+        type: "screenshot",
+        contentType: "image/png",
+        ...dimensions,
+      },
       trx,
     );
     await Screenshot.query(trx)

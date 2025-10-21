@@ -1322,7 +1322,7 @@ export type IScreenshotDiff = INode & {
   __typename?: 'ScreenshotDiff';
   baseScreenshot?: Maybe<IScreenshot>;
   build: IBuild;
-  /** Change ID of the screenshot diff. Used to be indefied in a test. */
+  /** Represents the test change associated with this screenshot diff, if any */
   change?: Maybe<ITestChange>;
   compareScreenshot?: Maybe<IScreenshot>;
   createdAt: Scalars['DateTime']['output'];

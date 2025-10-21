@@ -1010,7 +1010,9 @@ type ScreenshotDiff implements Node {
   baseScreenshot: Screenshot
   build: Build!
 
-  """Change ID of the screenshot diff. Used to be indefied in a test."""
+  """
+  Represents the test change associated with this screenshot diff, if any
+  """
   change: TestChange
   compareScreenshot: Screenshot
   createdAt: DateTime!
