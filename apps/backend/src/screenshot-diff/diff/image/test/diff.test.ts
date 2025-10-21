@@ -1,12 +1,12 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { invariant } from "@argos/util/invariant";
 import { rimraf } from "rimraf";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { LocalImageFile } from "@/storage/index.js";
+import { ImageHandle, LocalFileHandle } from "@/storage";
 
-import { diffImages } from "../index.js";
+import { diffImages } from "..";
+import type { DiffResult } from "../../types";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -15,14 +15,27 @@ async function compareLocalImages(params: {
   compareFilepath: string;
 }) {
   return diffImages(
-    new LocalImageFile({
-      filepath: params.baseFilepath,
+    new ImageHandle({
+      fileHandle: new LocalFileHandle({
+        filepath: params.baseFilepath,
+      }),
     }),
-    new LocalImageFile({
-      filepath: params.compareFilepath,
+    new ImageHandle({
+      fileHandle: new LocalFileHandle({
+        filepath: params.compareFilepath,
+      }),
     }),
-    0.5,
+    { threshold: 0.5 },
   );
+}
+
+function snapshotResult(result: DiffResult) {
+  return {
+    score: result.score,
+    width: result.file?.width,
+    height: result.file?.height,
+    contentType: result.file?.contentType,
+  };
 }
 
 describe("diff E2E", () => {
@@ -40,10 +53,7 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    invariant(result, "result should be defined");
-    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
-
-    expect(scoreAndDimensions).toMatchSnapshot();
+    expect(snapshotResult(result)).toMatchSnapshot();
   });
 
   it("generates the same image", async () => {
@@ -55,7 +65,7 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    expect(result).toBe(null);
+    expect(result.score).toBe(0);
   });
 
   it("generates different sizes images", async () => {
@@ -67,10 +77,7 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    invariant(result, "result should be defined");
-    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
-
-    expect(scoreAndDimensions).toMatchSnapshot();
+    expect(snapshotResult(result)).toMatchSnapshot();
   });
 
   it("generates the same image where 1 has a transparent background", async () => {
@@ -81,10 +88,8 @@ describe("diff E2E", () => {
       baseFilepath: join(__dirname, "/test-files", baseFilename),
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
-    invariant(result, "result should be defined");
-    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
 
-    expect(scoreAndDimensions).toMatchSnapshot();
+    expect(snapshotResult(result)).toMatchSnapshot();
   });
 
   it("generates images with big diff", async () => {
@@ -96,10 +101,7 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    invariant(result, "result should be defined");
-    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
-
-    expect(scoreAndDimensions).toMatchSnapshot();
+    expect(snapshotResult(result)).toMatchSnapshot();
   });
 
   it("works with large size image", async () => {
@@ -111,10 +113,7 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    invariant(result, "result should be defined");
-    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
-
-    expect(scoreAndDimensions).toMatchSnapshot();
+    expect(snapshotResult(result)).toMatchSnapshot();
   }, 10000);
 
   it("takes into account colors in comparison", async () => {
@@ -126,9 +125,6 @@ describe("diff E2E", () => {
       compareFilepath: join(__dirname, "/test-files", compareFilename),
     });
 
-    invariant(result, "result should be defined");
-    const { filepath: _diffFilepath, ...scoreAndDimensions } = result;
-
-    expect(scoreAndDimensions).toMatchSnapshot();
+    expect(snapshotResult(result)).toMatchSnapshot();
   });
 });
