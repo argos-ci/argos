@@ -71,7 +71,7 @@ export class S3FileHandle implements FileHandle {
           `Unable to determine file extension for ${result.ContentType}`,
         );
       }
-      const outputPath = await tmpName({ postfix: ext });
+      const outputPath = await tmpName({ postfix: `.${ext}` });
       await s3Download(result, outputPath);
       this.#filepath = outputPath;
       return this.#filepath;
