@@ -41,13 +41,15 @@ export function queryBaseBucket(
   build: Build,
   options?: QueryBaseBucketOptions,
 ) {
-  const query = ScreenshotBucket.query().where({
-    projectId: build.projectId,
-    name: build.name,
-    complete: true,
-    valid: true,
-    mode: build.mode,
-  });
+  const query = ScreenshotBucket.query()
+    .where({
+      projectId: build.projectId,
+      name: build.name,
+      complete: true,
+      valid: true,
+      mode: build.mode,
+    })
+    .orderBy("id", "desc");
 
   if (options?.approved) {
     query.whereIn(
