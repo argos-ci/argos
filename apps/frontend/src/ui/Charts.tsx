@@ -183,6 +183,10 @@ export function ChartTooltipContent({
 
   const nestLabel = payload.length === 1 && indicator !== "dot";
 
+  const sum = payload
+    .map((item) => (typeof item.value === "number" ? item.value : 0))
+    .reduce((a, b) => a + b, 0);
+
   return (
     <div
       ref={ref}
@@ -257,6 +261,12 @@ export function ChartTooltipContent({
             </div>
           );
         })}
+        {payload.length > 1 && (
+          <div className="mt-1 flex w-full justify-between border-t pt-1 font-bold">
+            <span>Total</span>
+            <span>{sum.toLocaleString()}</span>
+          </div>
+        )}
       </div>
     </div>
   );
