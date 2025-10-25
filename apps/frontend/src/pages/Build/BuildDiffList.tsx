@@ -95,6 +95,7 @@ interface ListItemRow {
   last: boolean;
   diff: Diff | null;
   result: DiffResult | null;
+  parent: ListGroupItemRow | null;
 }
 
 interface ListGroupItemRow {
@@ -128,14 +129,16 @@ function createListItemRow(input: {
   diff: Diff | null;
   first: boolean;
   last: boolean;
-  result: DiffResult | null;
+  result?: DiffResult | null;
+  parent?: ListGroupItemRow | null;
 }): ListItemRow {
   return {
     type: "item",
     diff: input.diff,
     first: input.first,
     last: input.last,
-    result: input.result,
+    result: input.result ?? null,
+    parent: input.parent ?? null,
   };
 }
 
@@ -185,45 +188,71 @@ function getRows(
           return initialRows;
         }
 
+        let currentGroupItem: ListGroupItemRow | null = null;
+
         return group.diffs.reduce((acc, diff, index, diffs) => {
           const first = index === 0;
           const last = index === diffs.length - 1;
-          const result = results.find((r) => r.item === diff) ?? null;
 
-          // If the diff is not part of a group, return a single item row
-          if (searchMode || !diff?.group || Boolean(result)) {
-            return [...acc, createListItemRow({ diff, first, last, result })];
-          }
-
-          const previousGroupItem = acc.findLast(
-            (row) => row.type === "group-item",
-          ) as ListGroupItemRow | undefined;
-
-          const isSameGroup =
-            previousGroupItem && diff.group === previousGroupItem.diff?.group;
-
-          const expanded = expandedGroups.includes(diff.group);
-
-          // If the diff is part the last group
-          if (isSameGroup) {
-            // update the group count
-            previousGroupItem.group.push(diff);
-
-            // If the group is expanded, add an item row
-            if (expanded) {
+          // In search mode, we don't show groups.
+          if (searchMode) {
+            const result = results.find((r) => r.item === diff) ?? null;
+            if (result) {
               return [...acc, createListItemRow({ diff, first, last, result })];
             }
-
-            // If the diff is collapsed, update the last flag
-            previousGroupItem.last = last;
             return acc;
           }
 
-          // Otherwise, create a new group item row
-          return [
-            ...acc,
-            createGroupItemRow({ diff, first, last, expanded, result }),
-          ];
+          // If there is no group, we create an item row.
+          if (!diff?.group) {
+            return [...acc, createListItemRow({ diff, first, last })];
+          }
+
+          // Else we have a group.
+          const otherDiffInGroup = diffs.some(
+            (d) => d && d !== diff && d.group === diff.group,
+          );
+
+          // If it's the only diff of the group, we don't group it.
+          if (!otherDiffInGroup) {
+            return [...acc, createListItemRow({ diff, first, last })];
+          }
+
+          const expanded = expandedGroups.includes(diff.group);
+
+          // If the diff is part the last group.
+          if (currentGroupItem && diff.group === currentGroupItem.diff?.group) {
+            // Update the group count.
+            currentGroupItem.group.push(diff);
+
+            // If the group is expanded, add an item row.
+            if (expanded) {
+              return [
+                ...acc,
+                createListItemRow({
+                  diff,
+                  first,
+                  last,
+                  parent: currentGroupItem,
+                }),
+              ];
+            }
+
+            // If the diff is collapsed, update the last flag.
+            currentGroupItem.last = last;
+            return acc;
+          }
+
+          currentGroupItem = createGroupItemRow({
+            diff,
+            first,
+            last,
+            expanded,
+            result: null,
+          });
+
+          // Otherwise, create a new group item row.
+          return [...acc, currentGroupItem];
         }, initialRows as ListRow[]);
       })
   );
@@ -449,7 +478,7 @@ function ListItem(props: {
   const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
   const groupStatus = getDiffGroupStatus?.(item.diff?.group ?? null) ?? null;
   const isGroupItem = item.type === "group-item" && item.group.length > 1;
-  const isSubItem = !searchMode && item.type === "item" && item.diff?.group;
+  const isSubItem = item.type === "item" && item.parent;
   const { hoverProps } = useDelayedHover({
     onHoverChange,
     delay: 1000,
@@ -571,7 +600,7 @@ function DiffTooltip(props: {
       offset={8}
       className={(props) =>
         clsx(
-          "z-hover-card pointer-events-none w-60",
+          "z-hover-card! pointer-events-none w-60",
           getTooltipAnimationClassName(props),
         )
       }

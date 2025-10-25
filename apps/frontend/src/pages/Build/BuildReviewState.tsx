@@ -323,7 +323,10 @@ export function useBuildDiffStatusState(args: {
     }
 
     const diffIds = diffState.diffs
-      .filter((diff) => diff.group === diffGroup)
+      .filter(
+        (diff) =>
+          diff.group === diffGroup && checkDiffCanBeReviewed(diff.status),
+      )
       .map((diff) => diff.id);
 
     setDiffStatuses((diffStatuses) => {
