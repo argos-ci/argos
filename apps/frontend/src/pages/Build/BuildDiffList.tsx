@@ -600,7 +600,7 @@ function DiffTooltip(props: {
       offset={8}
       className={(props) =>
         clsx(
-          "z-hover-card pointer-events-none w-60",
+          "z-hover-card! pointer-events-none w-60",
           getTooltipAnimationClassName(props),
         )
       }
