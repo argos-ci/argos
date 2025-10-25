@@ -5,6 +5,7 @@ import gqlTag from "graphql-tag";
 import {
   Build,
   BuildReview,
+  IgnoredFile,
   ScreenshotDiff,
   ScreenshotDiffReview,
 } from "@/database/models/index.js";
@@ -322,6 +323,12 @@ export const resolvers: IResolvers = {
         .select("screenshot_diffs.id")
         .joinRelated("compareScreenshot")
         .where("screenshot_diffs.buildId", build.id)
+        .whereNotExists(
+          IgnoredFile.query()
+            .where("projectId", build.projectId)
+            .whereRaw('ignored_files."testId" = screenshot_diffs."testId"')
+            .whereRaw('ignored_files."fileId" = screenshot_diffs."fileId"'),
+        )
         .whereIn(
           "compareScreenshot.fileId",
           ScreenshotDiff.query()
