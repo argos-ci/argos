@@ -1,4 +1,4 @@
-import { Build, ScreenshotBucket } from "@/database/models/index.js";
+import { Build, GithubPullRequest, ScreenshotBucket } from "@/database/models";
 
 /**
  * Get the base bucket for a build and a commit.
@@ -51,30 +51,42 @@ export function queryBaseBucket(
     })
     .orderBy("id", "desc");
 
+  const buildQuery = Build.query()
+    .select("compareScreenshotBucketId")
+    .where("projectId", build.projectId)
+    .where("name", build.name)
+    .where("mode", build.mode)
+    .where("jobStatus", "complete")
+    .whereNot("id", build.id)
+    .whereNot("type", "skipped");
+
   if (options?.approved) {
-    query.whereIn(
-      "id",
-      // List approved builds
-      Build.query()
-        .select("compareScreenshotBucketId")
-        .where("projectId", build.projectId)
-        .where("name", build.name)
-        .where("mode", build.mode)
-        .where("jobStatus", "complete")
-        .whereNot("id", build.id)
-        .where((qb) => {
-          // We consider as approved:
-          // - reference buckets
-          // - orphan buckets
-          // - check buckets that have an approved review
-          qb.whereIn("type", ["reference", "orphan"]).orWhere((qb) => {
-            qb.where("type", "check").whereExists(
+    buildQuery.where((qb) => {
+      // We consider as approved:
+      // - reference (auto-approved)
+      // - orphans
+      // - checks that have an approved review or a merged pull request
+      qb.whereIn("type", ["reference", "orphan"]).orWhere((qb) => {
+        qb.where("type", "check").where((qb) =>
+          qb
+            // An approved review exists
+            .whereExists(
               Build.submittedReviewQuery().where("state", "approved"),
-            );
-          });
-        }),
-    );
+            )
+            // Or the associated pull request is merged
+            .orWhereExists(
+              GithubPullRequest.query()
+                .whereRaw(
+                  'builds."githubPullRequestId" = github_pull_requests."id"',
+                )
+                .where("merged", true),
+            ),
+        );
+      });
+    });
   }
+
+  query.whereIn("id", buildQuery);
 
   return query;
 }
