@@ -664,15 +664,18 @@ export async function handleStripeEvent({
       return;
     }
     case "customer.subscription.updated": {
-      const stripeSubscription = data.object;
+      const eventStripeSubscription = data.object;
       invariant(
-        stripeSubscription.object === "subscription",
+        eventStripeSubscription.object === "subscription",
         "not a subscription",
       );
-      const argosSubscription =
-        await getArgosSubscriptionFromStripeSubscriptionId(
-          stripeSubscription.id,
-        );
+      // Get a fresh subscription to be sure it's not the cached one.
+      const [argosSubscription, stripeSubscription] = await Promise.all([
+        getArgosSubscriptionFromStripeSubscriptionId(
+          eventStripeSubscription.id,
+        ),
+        stripe.subscriptions.retrieve(eventStripeSubscription.id),
+      ]);
       invariant(
         argosSubscription,
         `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
