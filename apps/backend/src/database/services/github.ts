@@ -87,6 +87,42 @@ export async function getOrCreateGhAccount(
       props.emails = props.emails.map(sanitizeEmail);
     }
 
+    // If the login is new, we need to be sure it's not existing.
+    await (async () => {
+      // If there is no login to update, no problem.
+      if (!props.login) {
+        return;
+      }
+
+      // If the existing user login matches the new one, no problem.
+      if (existing && existing.login === props.login) {
+        return;
+      }
+
+      // Find an existing user with the same login.
+      const query = GithubAccount.query().first().where("login", props.login);
+      // If there is an existing user, we ensure it's not the same account.
+      if (existing) {
+        query.whereNot("id", existing.id);
+      }
+
+      const accountWithLogin = await query;
+
+      // Login is not used, all good.
+      if (!accountWithLogin) {
+        return;
+      }
+
+      // If we end up here, it means we have an account in database that
+      // is outdated and that has the same login as the account we want to
+      // sync or create.
+      // In this case, we will update the outdated account to avoid conflicts.
+      // If this user is active, it will be synced at some point and get its correct login.
+      await accountWithLogin.$query().patch({
+        login: `${accountWithLogin.login}__outdated-${Date.now()}`,
+      });
+    })();
+
     if (existing) {
       const toUpdate = getPartialModelUpdate(existing, props);
       if (toUpdate) {
