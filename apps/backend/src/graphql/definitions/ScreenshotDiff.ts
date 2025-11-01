@@ -36,7 +36,7 @@ export const typeDefs = gql`
     name: String!
     "Unique key to identify screenshot variant (browser, resolution, retries)"
     variantKey: String!
-    "Change ID of the screenshot diff. Used to be indefied in a test."
+    "Represents the test change associated with this screenshot diff, if any"
     change: TestChange
     width: Int
     height: Int
@@ -45,6 +45,7 @@ export const typeDefs = gql`
     threshold: Float
     test: Test
     occurrences(period: MetricsPeriod!): Int!
+    contentType: String!
   }
 
   type ScreenshotDiffConnection implements Connection {
@@ -128,6 +129,14 @@ export const resolvers: IResolvers = {
       const file = await ctx.loaders.File.load(screenshotDiff.fileId);
       invariant(file, "File not found");
       return getPublicImageFileUrl(file);
+    },
+    contentType: async (screenshotDiff, _args, ctx) => {
+      if (!screenshotDiff.fileId) {
+        return "image/png";
+      }
+      const file = await ctx.loaders.File.load(screenshotDiff.fileId);
+      invariant(file, "File not found");
+      return file.contentType ?? "image/png";
     },
     name: nameResolver,
     variantKey: async (...args) => {

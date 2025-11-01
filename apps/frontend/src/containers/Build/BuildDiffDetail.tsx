@@ -1,6 +1,7 @@
 import {
   memo,
   startTransition,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -28,7 +29,9 @@ import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
+import { checkIsImageContentType } from "@/util/content-type";
 import { fetchImage } from "@/util/image";
+import { useTextContent } from "@/util/text";
 
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getGroupIcon } from "./BuildDiffGroup";
@@ -42,6 +45,7 @@ import {
   SkippedBuildEmptyState,
 } from "./BuildEmptyStates";
 import { buildViewModeAtom } from "./BuildViewMode";
+import { DiffEditor, Editor, getLanguageFromContentType } from "./DiffEditor";
 import {
   overlayColorAtom,
   overlayVisibleAtom,
@@ -85,6 +89,7 @@ const _DiffFragment = graphql(`
     variantKey
     width
     height
+    contentType
     group
     threshold
     last7daysOccurences: occurrences(period: LAST_7_DAYS)
@@ -107,6 +112,7 @@ const _DiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -159,6 +165,7 @@ const _DiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -1037,9 +1044,27 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 
 const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
+    const { diff, build } = props;
     const viewMode = useAtomValue(buildViewModeAtom);
     const showBaseline = viewMode === "split" || viewMode === "baseline";
     const showChanges = viewMode === "split" || viewMode === "changes";
+
+    if (diff.status === ScreenshotDiffStatus.Changed) {
+      invariant(diff.compareScreenshot);
+      invariant(diff.baseScreenshot);
+      if (!checkIsImageContentType(diff.compareScreenshot.contentType)) {
+        return (
+          <Suspense fallback={<div>Loading diff editor...</div>}>
+            <RemoteDiffEditor
+              base={diff.baseScreenshot.url}
+              head={diff.compareScreenshot.url}
+              baseContentType={diff.baseScreenshot.contentType}
+              headContentType={diff.compareScreenshot.contentType}
+            />
+          </Suspense>
+        );
+      }
+    }
 
     return (
       <div className={clsx("min-h-0 flex-1", "flex gap-4 px-4")}>
@@ -1047,18 +1072,18 @@ const BuildScreenshots = memo(
           className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
           hidden={!showBaseline}
         >
-          {props.build.baseScreenshotBucket ? (
+          {build.baseScreenshotBucket ? (
             <BuildScreenshotHeader
               label="Baseline"
-              branch={props.build.baseBranch}
-              date={props.build.baseScreenshotBucket.createdAt}
+              branch={build.baseBranch}
+              date={build.baseScreenshotBucket.createdAt}
             />
           ) : (
             <div className="h-[2.625rem]" />
           )}
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
-              <BaseScreenshot diff={props.diff} buildId={props.build.id} />
+              <BaseScreenshot diff={diff} buildId={build.id} />
             </ScaleProvider>
           </div>
         </div>
@@ -1068,12 +1093,12 @@ const BuildScreenshots = memo(
         >
           <BuildScreenshotHeader
             label="Changes"
-            branch={props.build.branch}
-            date={props.build.createdAt}
+            branch={build.branch}
+            date={build.createdAt}
           />
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
-              <CompareScreenshot diff={props.diff} buildId={props.build.id} />
+              <CompareScreenshot diff={diff} buildId={build.id} />
             </ScaleProvider>
           </div>
         </div>
@@ -1081,6 +1106,49 @@ const BuildScreenshots = memo(
     );
   },
 );
+
+function RemoteDiffEditor(props: {
+  base: string;
+  baseContentType: string;
+  head: string;
+  headContentType: string;
+}) {
+  const isDiffOverlayVisible = useAtomValue(overlayVisibleAtom);
+  const viewMode = useAtomValue(buildViewModeAtom);
+  const [headText, baseText] = useTextContent([props.base, props.head]);
+  switch (viewMode) {
+    case "baseline": {
+      return (
+        <Editor
+          value={baseText}
+          language={getLanguageFromContentType(props.baseContentType)}
+        />
+      );
+    }
+    case "split":
+    case "changes": {
+      if (viewMode === "changes" && !isDiffOverlayVisible) {
+        return (
+          <Editor
+            value={baseText}
+            language={getLanguageFromContentType(props.baseContentType)}
+          />
+        );
+      }
+      return (
+        <DiffEditor
+          original={baseText}
+          originalLanguage={getLanguageFromContentType(props.baseContentType)}
+          modified={headText}
+          modifiedLanguage={getLanguageFromContentType(props.headContentType)}
+          renderSideBySide={viewMode === "split"}
+        />
+      );
+    }
+    default:
+      assertNever(viewMode);
+  }
+}
 
 const useScrollToTop = (
   ref: React.RefObject<HTMLElement | null>,
