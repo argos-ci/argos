@@ -17,7 +17,7 @@ export function ImageKitPicture(props: ImageKitPictureProps) {
     return <img ref={ref} src={imgkit(src, ["orig-true"])} {...rest} />;
   }
   return (
-    <picture>
+    <picture className="contents">
       <source
         srcSet={imgkit(src, [...transformations, "f-avif", "q-90"])}
         type="image/avif"
