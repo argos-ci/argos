@@ -5,6 +5,7 @@ import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
 import { BuildFlakyIndicator } from "@/containers/Build/BuildFlakyIndicator";
+import { AriaSnapshotToggle } from "@/containers/Build/toolbar/AriaSnapshotToggle";
 import { IgnoreButton } from "@/containers/Build/toolbar/IgnoreButton";
 import {
   NextButton,
@@ -173,7 +174,10 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             </div>
           )}
         </div>
-        <BuildDiffDetailToolbar diff={diff}>
+        <BuildDiffDetailToolbar
+          diff={diff}
+          fitControls={<AriaSnapshotToggle />}
+        >
           <BuildDetailIgnoreButton diff={diff} />
           <TrackButtons diff={diff} disabled={!canBeReviewed} />
         </BuildDiffDetailToolbar>
