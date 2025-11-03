@@ -888,35 +888,33 @@ const InternalBuildDiffList = memo(() => {
     });
   }, [estimateSize, resizeItem, rowsRef, watchItemReview]);
 
-  const { scrollToIndex } = rowVirtualizer;
-  const scrollToIndexRef = useRef(scrollToIndex);
-  scrollToIndexRef.current = scrollToIndex;
+  const rowVirtualizerRef = useLiveRef(rowVirtualizer);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     // Don't scroll to the first diff if the user has already scrolled
     if (firstDiff === initialDiff) {
       return;
     }
     const index = getDiffIndex(initialDiff);
     if (index !== -1) {
-      scrollToIndexRef.current(index, {
+      rowVirtualizerRef.current.scrollToIndex(index, {
         align: "start",
         behavior: "smooth",
       });
     }
-  }, [initialDiff, firstDiff, getDiffIndex]);
+  }, [initialDiff, firstDiff, getDiffIndex, rowVirtualizerRef]);
 
   const { observer, getIndicesInViewport } = useInViewportIndices(containerRef);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const index = getDiffIndex(scrolledDiff);
     if (index !== -1 && !getIndicesInViewport().has(index)) {
-      scrollToIndexRef.current(index, {
+      rowVirtualizerRef.current.scrollToIndex(index, {
         align: "start",
         behavior: "smooth",
       });
     }
-  }, [scrolledDiff, getDiffIndex, getIndicesInViewport]);
+  }, [scrolledDiff, getDiffIndex, getIndicesInViewport, rowVirtualizerRef]);
 
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
