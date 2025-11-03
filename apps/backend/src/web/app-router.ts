@@ -197,6 +197,7 @@ export const installAppRouter = async (app: express.Application) => {
             "https://gitlab.com",
             "https://secure.gravatar.com",
           ],
+          "worker-src": ["'self'", "https://app.argos-ci.com"],
           "script-src": [
             "'self'",
             // Monaco editor
