@@ -12,7 +12,7 @@ export function AccountSelector(props: {
   disabledTooltip?: string;
 }) {
   if (!props.accounts) {
-    return <SelectButton isDisabled>Loading...</SelectButton>;
+    return <SelectButton isDisabled>Loading…</SelectButton>;
   }
 
   const activeAccount =

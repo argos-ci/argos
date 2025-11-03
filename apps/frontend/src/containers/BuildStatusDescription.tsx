@@ -35,6 +35,10 @@ export function BuildStatusDescription(props: {
 }) {
   const { build } = props;
 
+  if (build.status === BuildStatus.Error) {
+    return <>An error occurred while processing the build.</>;
+  }
+
   if (build.status === BuildStatus.Expired) {
     if (build.parallel) {
       if (build.parallel.total === -1) {
@@ -137,9 +141,6 @@ export function BuildStatusDescription(props: {
           return <>This build is stable: no changes found.</>;
         }
 
-        case BuildStatus.Error:
-          return <>The build has failed to be processed.</>;
-
         case BuildStatus.Aborted:
           return <>This build has been voluntarily aborted.</>;
 
@@ -171,8 +172,6 @@ export function BuildStatusDescription(props: {
     case undefined:
     case null: {
       switch (build.status) {
-        case BuildStatus.Error:
-          return <>The build has failed to be processed.</>;
         case BuildStatus.Pending:
           return <>This build is scheduled to be processed.</>;
       }

@@ -47,6 +47,7 @@ export class Screenshot extends Model {
 
   name!: string;
   baseName!: string | null;
+  parentName!: string | null;
   s3Id!: string;
   screenshotBucketId!: string;
   fileId!: string | null;

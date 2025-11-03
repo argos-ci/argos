@@ -3,7 +3,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
-import { LocalImageFile } from "@/storage/index.js";
+import { LocalFileHandle } from "@/storage/FileHandle.js";
+import { ImageHandle } from "@/storage/ImageHandle.js";
 
 import { diffImages } from "./index.js";
 
@@ -34,24 +35,28 @@ const tests = [
 describe("#diffImages", () => {
   test.each(tests)("diffImages %s", async (name, threshold, hasDiff) => {
     const dir = resolve(__dirname, `__fixtures__/${name}`);
-
-    const result = await diffImages(
-      new LocalImageFile({
-        filepath: resolve(dir, "compare.png"),
-      }),
-      new LocalImageFile({
+    const baseImage = new ImageHandle({
+      fileHandle: new LocalFileHandle({
         filepath: resolve(dir, "base.png"),
       }),
-      Number(threshold),
-    );
+    });
+    const compareImage = new ImageHandle({
+      fileHandle: new LocalFileHandle({
+        filepath: resolve(dir, "compare.png"),
+      }),
+    });
+
+    const result = await diffImages(baseImage, compareImage, {
+      threshold: Number(threshold),
+    });
 
     const diffPath = resolve(dir, "diff_tmp.png");
     await unlink(diffPath).catch(() => {});
 
-    if (result) {
-      await copyFile(result.filepath, diffPath);
+    if (result?.file) {
+      await copyFile(result.file.path, diffPath);
     }
 
-    expect(Boolean(result)).toBe(hasDiff);
+    expect(result.score > 0).toBe(hasDiff);
   });
 });

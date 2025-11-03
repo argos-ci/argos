@@ -296,12 +296,14 @@ export async function seed() {
       width,
       height,
       key: `dummy-${width}x${height}.png`,
+      contentType: "image/png",
     })),
     ...bearFilesDimensions.map(({ width, height }) => ({
       type: "screenshot" as const,
       width,
       height,
       key: `bear-${width}x${height}.jpg`,
+      contentType: "image/jpeg",
     })),
   ]);
 
@@ -311,12 +313,14 @@ export async function seed() {
       width: 375,
       height: 1024,
       key: "diff-1024-to-720.png",
+      contentType: "image/png",
     },
     {
       type: "screenshotDiff" as const,
       width: 375,
       height: 1440,
       key: "diff-1024-to-1440.png",
+      contentType: "image/png",
     },
   ]);
 

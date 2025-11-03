@@ -150,7 +150,7 @@ export function MenuTitle(props: { children: React.ReactNode }) {
 export function MenuLoader() {
   return (
     <RACMenuItem isDisabled className="text-low px-2 py-1.5 text-xs">
-      Loading...
+      Loading…
     </RACMenuItem>
   );
 }

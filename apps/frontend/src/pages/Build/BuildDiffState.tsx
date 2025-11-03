@@ -19,6 +19,7 @@ import { DIFF_GROUPS, type DiffGroup } from "@/containers/Build/BuildDiffGroup";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { useLiveRef } from "@/ui/useLiveRef";
 
 import { getBuildURL, type BuildParams } from "./BuildParams";
 
@@ -29,17 +30,20 @@ const ScreenshotDiffFragment = graphql(`
     status
     url
     name
+    parentName
     variantKey
     width
     height
     group
     threshold
+    contentType
     baseScreenshot {
       id
       url
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -92,6 +96,7 @@ const ScreenshotDiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -177,6 +182,10 @@ type BuildDiffContextValue = {
    * This can be used to navigate between diffs that are similar.
    */
   siblingDiffs: Diff[];
+  /**
+   * Aria version of the diff.
+   */
+  ariaDiff: Diff | null;
 };
 
 const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
@@ -539,7 +548,36 @@ export function BuildDiffProvider(props: {
   const { expanded, toggleGroup } = searchMode
     ? searchExpandedState
     : expandedState;
-  const screenshotDiffs = useDataState(params);
+
+  const allDiffs = useDataState(params);
+
+  // Build all indices to reduce the number of iterations.
+  const indices = useMemo(() => {
+    return allDiffs.reduce<{
+      byId: Record<string, Diff>;
+      byVariantKey: Record<string, Diff[]>;
+      byParentName: Record<string, Diff[]>;
+      noParentName: Diff[];
+    }>(
+      (indices, diff) => {
+        if (diff.parentName) {
+          const byParentName = indices.byParentName[diff.parentName] ?? [];
+          indices.byParentName[diff.parentName] = byParentName;
+          byParentName.push(diff);
+        } else {
+          indices.byId[diff.id] = diff;
+          const byVariantKey = indices.byVariantKey[diff.variantKey] ?? [];
+          indices.byVariantKey[diff.variantKey] = byVariantKey;
+          byVariantKey.push(diff);
+          indices.noParentName.push(diff);
+        }
+        return indices;
+      },
+      { byId: {}, byVariantKey: {}, byParentName: {}, noParentName: [] },
+    );
+  }, [allDiffs]);
+
+  const screenshotDiffs = indices.noParentName;
   const complete = Boolean(stats && screenshotDiffs.length === stats?.total);
   const firstDiff = screenshotDiffs[0] ?? null;
   const firstDiffId = firstDiff?.id ?? null;
@@ -553,57 +591,45 @@ export function BuildDiffProvider(props: {
     });
   }, [screenshotDiffs]);
 
-  const results = useMemo(() => {
-    if (!searchMode) {
-      return [];
-    }
-    return searcher.search(deferredSearch);
-  }, [searchMode, searcher, deferredSearch]);
+  const results = useMemo(
+    () => (searchMode ? searcher.search(deferredSearch) : []),
+    [searchMode, searcher, deferredSearch],
+  );
 
-  const filteredDiffs = useMemo(() => {
-    if (!searchMode) {
-      return screenshotDiffs;
-    }
-    return results.map((result) => {
-      return result.item;
-    });
-  }, [screenshotDiffs, results, searchMode]);
+  const filteredDiffs = useMemo(
+    () => (searchMode ? results.map((result) => result.item) : screenshotDiffs),
+    [screenshotDiffs, results, searchMode],
+  );
 
-  // Initial diff from the URL params or the first diff
-  const [initialDiffId, setInitialDiffId] = useState(params.diffId);
+  const [initialDiffIdParam] = useState(params.diffId);
+  const initialDiffId = initialDiffIdParam ?? firstDiffId;
+  const paramsRef = useLiveRef(params);
 
-  // Set the initial diff id to the first diff id if it's not set
+  // Navigate to the initial diff if not already the case.
   useEffect(() => {
-    if (!params.diffId && firstDiffId) {
-      navigate(getBuildURL({ ...params, diffId: firstDiffId }), {
+    if (!initialDiffIdParam && initialDiffId) {
+      navigate(getBuildURL({ ...paramsRef.current, diffId: initialDiffId }), {
         replace: true,
       });
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setInitialDiffId(firstDiffId);
     }
-  }, [params, firstDiffId, navigate]);
+  }, [initialDiffId, initialDiffIdParam, paramsRef, navigate]);
 
-  // Get the initial diff from the screenshot diffs
-  const initialDiff = useMemo(
-    () => screenshotDiffs.find((diff) => diff.id === initialDiffId) ?? null,
-    [initialDiffId, screenshotDiffs],
-  );
-
-  // Get the active diff from the screenshot diffs
-  const activeDiff = useMemo(
-    () => screenshotDiffs.find((diff) => diff.id === params.diffId) ?? null,
-    [params.diffId, screenshotDiffs],
-  );
-
+  const initialDiff =
+    (initialDiffId ? indices.byId[initialDiffId] : null) ?? null;
+  const activeDiff =
+    (params.diffId ? indices.byId[params.diffId] : null) ?? null;
   const siblingDiffs = useMemo(
     () =>
-      activeDiff
-        ? screenshotDiffs.filter(
-            (diff) => diff.variantKey === activeDiff.variantKey,
-          )
-        : [],
-    [activeDiff, screenshotDiffs],
+      activeDiff ? (indices.byVariantKey[activeDiff.variantKey] ?? []) : [],
+    [activeDiff, indices],
   );
+  const ariaDiff = useMemo(() => {
+    if (!activeDiff) {
+      return null;
+    }
+    const children = indices.byParentName[activeDiff.name] ?? [];
+    return children.length === 1 && children[0] ? children[0] : null;
+  }, [activeDiff, indices]);
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
@@ -661,7 +687,7 @@ export function BuildDiffProvider(props: {
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup, toggleGroup, initialDiff]);
+  }, [complete, initialDiffGroup, toggleGroup]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({ search, setSearch }),
@@ -676,7 +702,7 @@ export function BuildDiffProvider(props: {
   const hasNoResults = Boolean(
     searchMode &&
       deferredSearch &&
-      !results.length &&
+      results.length === 0 &&
       screenshotDiffs.length > 0,
   );
 
@@ -696,6 +722,7 @@ export function BuildDiffProvider(props: {
       results,
       hasNoResults,
       siblingDiffs,
+      ariaDiff,
     }),
     [
       groups,
@@ -712,6 +739,7 @@ export function BuildDiffProvider(props: {
       results,
       hasNoResults,
       siblingDiffs,
+      ariaDiff,
     ],
   );
   return (

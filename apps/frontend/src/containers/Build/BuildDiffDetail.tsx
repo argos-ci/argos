@@ -1,12 +1,14 @@
 import {
   memo,
   startTransition,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -28,7 +30,9 @@ import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
+import { checkIsImageContentType } from "@/util/content-type";
 import { fetchImage } from "@/util/image";
+import { useTextContent } from "@/util/text";
 
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getGroupIcon } from "./BuildDiffGroup";
@@ -42,12 +46,14 @@ import {
   SkippedBuildEmptyState,
 } from "./BuildEmptyStates";
 import { buildViewModeAtom } from "./BuildViewMode";
+import { DiffEditor, Editor, getLanguageFromContentType } from "./DiffEditor";
 import {
   overlayColorAtom,
   overlayVisibleAtom,
   useOverlayStyle,
 } from "./OverlayStyle";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
+import { SnapshotLoader } from "./SnapshotLoader";
 import {
   useZoomerSyncContext,
   useZoomTransform,
@@ -85,6 +91,7 @@ const _DiffFragment = graphql(`
     variantKey
     width
     height
+    contentType
     group
     threshold
     last7daysOccurences: occurrences(period: LAST_7_DAYS)
@@ -107,6 +114,7 @@ const _DiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -159,6 +167,7 @@ const _DiffFragment = graphql(`
       originalUrl
       width
       height
+      contentType
       metadata {
         url
         previewUrl
@@ -244,6 +253,10 @@ const DownloadScreenshotButton = memo(
     );
   },
 );
+
+function BuildScreenshotHeaderPlaceholder() {
+  return <div className="h-10.5" />;
+}
 
 const BuildScreenshotHeader = memo(
   ({
@@ -520,22 +533,30 @@ function BaseScreenshot({
         diff.baseScreenshot,
         "baseScreenshot is defined for removed screenshots",
       );
-      const dimensions = extractDimensions(diff.baseScreenshot);
+      if (checkIsImageContentType(diff.baseScreenshot.contentType)) {
+        const dimensions = extractDimensions(diff.baseScreenshot);
+        return (
+          <ZoomPane
+            dimensions={dimensions}
+            controls={
+              <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
+            }
+          >
+            <ScreenshotContainer dimensions={dimensions} contained={contained}>
+              <ScreenshotPicture
+                className={clsx(contained && "max-h-full")}
+                alt="Baseline screenshot"
+                {...getScreenshotPictureProps(diff.baseScreenshot)}
+              />
+            </ScreenshotContainer>
+          </ZoomPane>
+        );
+      }
       return (
-        <ZoomPane
-          dimensions={dimensions}
-          controls={
-            <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
-          }
-        >
-          <ScreenshotContainer dimensions={dimensions} contained={contained}>
-            <ScreenshotPicture
-              className={clsx(contained && "max-h-full")}
-              alt="Baseline screenshot"
-              {...getScreenshotPictureProps(diff.baseScreenshot)}
-            />
-          </ScreenshotContainer>
-        </ZoomPane>
+        <Snapshot
+          url={diff.baseScreenshot.url}
+          contentType={diff.baseScreenshot.contentType}
+        />
       );
     }
     case ScreenshotDiffStatus.Ignored:
@@ -599,22 +620,32 @@ function CompareScreenshot(props: {
   switch (diff.status) {
     case ScreenshotDiffStatus.Added: {
       invariant(diff.compareScreenshot);
-      const dimensions = extractDimensions(diff.compareScreenshot);
+
+      if (checkIsImageContentType(diff.compareScreenshot.contentType)) {
+        const dimensions = extractDimensions(diff.compareScreenshot);
+        return (
+          <ZoomPane
+            dimensions={dimensions}
+            controls={
+              <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+            }
+          >
+            <ScreenshotContainer dimensions={dimensions} contained={contained}>
+              <ScreenshotPicture
+                className={clsx(contained && "max-h-full max-w-full")}
+                alt="Changes screenshot"
+                {...getScreenshotPictureProps(diff.compareScreenshot)}
+              />
+            </ScreenshotContainer>
+          </ZoomPane>
+        );
+      }
+
       return (
-        <ZoomPane
-          dimensions={dimensions}
-          controls={
-            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
-          }
-        >
-          <ScreenshotContainer dimensions={dimensions} contained={contained}>
-            <ScreenshotPicture
-              className={clsx(contained && "max-h-full max-w-full")}
-              alt="Changes screenshot"
-              {...getScreenshotPictureProps(diff.compareScreenshot)}
-            />
-          </ScreenshotContainer>
-        </ZoomPane>
+        <Snapshot
+          url={diff.compareScreenshot.url}
+          contentType={diff.compareScreenshot.contentType}
+        />
       );
     }
     case ScreenshotDiffStatus.Failure: {
@@ -659,22 +690,30 @@ function CompareScreenshot(props: {
     }
     case ScreenshotDiffStatus.Unchanged: {
       invariant(diff.compareScreenshot);
-      const dimensions = extractDimensions(diff.compareScreenshot);
+      if (checkIsImageContentType(diff.compareScreenshot.contentType)) {
+        const dimensions = extractDimensions(diff.compareScreenshot);
+        return (
+          <ZoomPane
+            dimensions={dimensions}
+            controls={
+              <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+            }
+          >
+            <ScreenshotContainer dimensions={dimensions} contained={contained}>
+              <ScreenshotPicture
+                className={clsx(contained && "max-h-full max-w-full")}
+                alt="Baseline screenshot"
+                {...getScreenshotPictureProps(diff.compareScreenshot)}
+              />
+            </ScreenshotContainer>
+          </ZoomPane>
+        );
+      }
       return (
-        <ZoomPane
-          dimensions={dimensions}
-          controls={
-            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
-          }
-        >
-          <ScreenshotContainer dimensions={dimensions} contained={contained}>
-            <ScreenshotPicture
-              className={clsx(contained && "max-h-full max-w-full")}
-              alt="Baseline screenshot"
-              {...getScreenshotPictureProps(diff.compareScreenshot)}
-            />
-          </ScreenshotContainer>
-        </ZoomPane>
+        <Snapshot
+          url={diff.compareScreenshot.url}
+          contentType={diff.compareScreenshot.contentType}
+        />
       );
     }
     case ScreenshotDiffStatus.Removed: {
@@ -1037,28 +1076,69 @@ const OutOfScreenDiffIndicator = memo(function OutOfScreenDiffIndicator(props: {
 
 const BuildScreenshots = memo(
   (props: { diff: BuildDiffDetailDocument; build: BuildFragmentDocument }) => {
+    const { diff, build } = props;
     const viewMode = useAtomValue(buildViewModeAtom);
     const showBaseline = viewMode === "split" || viewMode === "baseline";
     const showChanges = viewMode === "split" || viewMode === "changes";
 
+    if (
+      diff.status === ScreenshotDiffStatus.Changed ||
+      diff.status === ScreenshotDiffStatus.Ignored
+    ) {
+      invariant(diff.compareScreenshot);
+      invariant(diff.baseScreenshot);
+      if (!checkIsImageContentType(diff.compareScreenshot.contentType)) {
+        return (
+          <div className="flex min-h-0 flex-1 flex-col gap-2 px-4">
+            <BuildSnapshotsDiff
+              base={{
+                url: diff.baseScreenshot.url,
+                contentType: diff.baseScreenshot.contentType,
+                header: build.baseScreenshotBucket ? (
+                  <BuildScreenshotHeader
+                    label="Baseline"
+                    branch={build.baseBranch}
+                    date={build.baseScreenshotBucket.createdAt}
+                  />
+                ) : (
+                  <BuildScreenshotHeaderPlaceholder />
+                ),
+              }}
+              head={{
+                url: diff.compareScreenshot.url,
+                contentType: diff.compareScreenshot.contentType,
+                header: (
+                  <BuildScreenshotHeader
+                    label="Changes"
+                    branch={build.branch}
+                    date={build.createdAt}
+                  />
+                ),
+              }}
+            />
+          </div>
+        );
+      }
+    }
+
     return (
-      <div className={clsx("min-h-0 flex-1", "flex gap-4 px-4")}>
+      <div className="flex min-h-0 flex-1 gap-4 px-4">
         <div
           className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
           hidden={!showBaseline}
         >
-          {props.build.baseScreenshotBucket ? (
+          {build.baseScreenshotBucket ? (
             <BuildScreenshotHeader
               label="Baseline"
-              branch={props.build.baseBranch}
-              date={props.build.baseScreenshotBucket.createdAt}
+              branch={build.baseBranch}
+              date={build.baseScreenshotBucket.createdAt}
             />
           ) : (
-            <div className="h-[2.625rem]" />
+            <BuildScreenshotHeaderPlaceholder />
           )}
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
-              <BaseScreenshot diff={props.diff} buildId={props.build.id} />
+              <BaseScreenshot diff={diff} buildId={build.id} />
             </ScaleProvider>
           </div>
         </div>
@@ -1068,12 +1148,12 @@ const BuildScreenshots = memo(
         >
           <BuildScreenshotHeader
             label="Changes"
-            branch={props.build.branch}
-            date={props.build.createdAt}
+            branch={build.branch}
+            date={build.createdAt}
           />
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
-              <CompareScreenshot diff={props.diff} buildId={props.build.id} />
+              <CompareScreenshot diff={diff} buildId={build.id} />
             </ScaleProvider>
           </div>
         </div>
@@ -1081,6 +1161,101 @@ const BuildScreenshots = memo(
     );
   },
 );
+
+function Snapshot(props: SnapshotProps) {
+  return (
+    <Suspense fallback={<SnapshotLoader />}>
+      <SuspendedSnapshot {...props} />
+    </Suspense>
+  );
+}
+
+type SnapshotProps = { url: string; contentType: string };
+
+function SuspendedSnapshot(props: SnapshotProps) {
+  const [text] = useTextContent([props.url]);
+  return (
+    <Editor
+      value={text}
+      language={getLanguageFromContentType(props.contentType)}
+    />
+  );
+}
+
+function DiffSnapshots(props: {
+  base: { url: string; contentType: string };
+  head: { url: string; contentType: string };
+  renderSideBySide: boolean;
+}) {
+  const { base, head, renderSideBySide } = props;
+  const [baseText, headText] = useTextContent([base.url, head.url]);
+  return (
+    <DiffEditor
+      original={baseText}
+      originalLanguage={getLanguageFromContentType(base.contentType)}
+      modified={headText}
+      modifiedLanguage={getLanguageFromContentType(head.contentType)}
+      renderSideBySide={renderSideBySide}
+    />
+  );
+}
+
+type DiffSnapshotEntry = {
+  url: string;
+  contentType: string;
+  header: ReactNode;
+};
+
+function BuildSnapshotsDiff(props: {
+  base: DiffSnapshotEntry;
+  head: DiffSnapshotEntry;
+}) {
+  const { base, head } = props;
+  const isDiffOverlayVisible = useAtomValue(overlayVisibleAtom);
+  const viewMode = useAtomValue(buildViewModeAtom);
+  // const [headText, baseText] = useTextContent([props.base, props.head]);
+  switch (viewMode) {
+    case "baseline": {
+      return (
+        <>
+          <div className="flex shrink-0 justify-center">{base.header}</div>
+          <Snapshot url={base.url} contentType={base.contentType} />
+        </>
+      );
+    }
+    case "split":
+    case "changes": {
+      if (viewMode === "changes" && !isDiffOverlayVisible) {
+        return (
+          <>
+            <div className="flex shrink-0 justify-center">{base.header}</div>
+            <Snapshot url={base.url} contentType={base.contentType} />
+          </>
+        );
+      }
+      const isSplit = viewMode === "split";
+      return (
+        <>
+          <div className="flex shrink-0 gap-4">
+            {isSplit ? <div className="flex-1">{base.header}</div> : null}
+            <div className="flex-1">{head.header}</div>
+          </div>
+          <Suspense
+            fallback={
+              <div className="flex flex-1 items-center justify-center">
+                <SnapshotLoader />
+              </div>
+            }
+          >
+            <DiffSnapshots base={base} head={head} renderSideBySide={isSplit} />
+          </Suspense>
+        </>
+      );
+    }
+    default:
+      assertNever(viewMode);
+  }
+}
 
 const useScrollToTop = (
   ref: React.RefObject<HTMLElement | null>,

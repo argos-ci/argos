@@ -186,6 +186,12 @@ const hotkeyGroups = [
         description: "Fit view into screen",
         envs: ["test", "build"],
       },
+      toggleSnapshotType: {
+        keys: ["KeyL"],
+        displayKeys: ["L"],
+        description: "Switch between screenshot and aria view",
+        envs: ["build"],
+      },
     },
   },
   {
@@ -269,10 +275,13 @@ export function useBuildHotkey(
         return;
       }
 
-      // Ignore key events from menu & menuitem elements
+      // Ignore key events from menu, menuitem, textbox or monaco editor
       if (
         event.target instanceof HTMLElement &&
-        (event.target.role === "menu" || event.target.role === "menuitem")
+        (event.target.role === "menu" ||
+          event.target.role === "menuitem" ||
+          event.target.role === "textbox" ||
+          event.target.classList.contains("native-edit-context"))
       ) {
         return;
       }
