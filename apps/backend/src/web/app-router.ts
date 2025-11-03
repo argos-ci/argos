@@ -199,6 +199,8 @@ export const installAppRouter = async (app: express.Application) => {
           ],
           "script-src": [
             "'self'",
+            // Monaco editor
+            "https://cdn.jsdelivr.net",
             // Script to update color classes
             "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
             ...config.get("csp.scriptSrc"),
