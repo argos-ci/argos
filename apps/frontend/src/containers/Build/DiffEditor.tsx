@@ -43,6 +43,9 @@ export function DiffEditor(
         renderSideBySide: renderSideBySide,
       }}
       className="overflow-hidden rounded border"
+      // @see https://github.com/suren-atoyan/monaco-react/issues/647#issuecomment-2897027817
+      keepCurrentModifiedModel
+      keepCurrentOriginalModel
     />
   );
 }
@@ -54,6 +57,8 @@ export function Editor(props: Pick<EditorProps, "value" | "language">) {
       options={OPTIONS}
       loading={<SnapshotLoader />}
       className="overflow-hidden rounded border"
+      // @see https://github.com/suren-atoyan/monaco-react/issues/647#issuecomment-2897027817
+      keepCurrentModel
     />
   );
 }
