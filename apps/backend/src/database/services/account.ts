@@ -299,7 +299,9 @@ async function getOrCreateUserAccountFromThirdParty<
     new Set([email, ...potentialEmails].filter((x) => x !== null)),
   );
   const existingUsers = await (() => {
-    const query = User.query().withGraphFetched("[account, emails]");
+    const query = User.query()
+      .withGraphFetched("[account, emails]")
+      .whereNull("deletedAt");
 
     if (allEmails.length) {
       query.whereExists(
