@@ -12,6 +12,7 @@ import {
   Team,
   TeamUser,
   User,
+  UserEmail,
 } from "@/database/models/index.js";
 import { resolveAccountSlug } from "@/database/services/account.js";
 import { transaction } from "@/database/transaction.js";
@@ -122,6 +123,9 @@ export async function deleteAccount(args: {
         await Promise.all([
           // Remove user from all of its teams
           TeamUser.query(trx).where("userId", userId).delete(),
+
+          // Remove all user emails
+          UserEmail.query(trx).where("userId", userId).delete(),
 
           // Remove user from all its subscriptions
           Subscription.query(trx)
