@@ -3,7 +3,7 @@ import express, { RequestHandler } from "express";
 
 import type { Account, User } from "@/database/models/index.js";
 
-let started = false;
+let startPromise: Promise<void> | null = null;
 
 export async function createApolloServerApp<Context extends BaseContext>(
   apolloServer: ApolloServer<Context>,
@@ -16,10 +16,9 @@ export async function createApolloServerApp<Context extends BaseContext>(
     next();
   }) as express.RequestHandler);
 
-  if (!started) {
-    await apolloServer.start();
-  }
-  started = true;
+  startPromise ??= apolloServer.start();
+  await startPromise;
+
   app.use("/graphql", express.json(), getMiddleware());
 
   return app;
