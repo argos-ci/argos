@@ -298,33 +298,33 @@ async function getOrCreateUserAccountFromThirdParty<
   const allEmails = Array.from(
     new Set([email, ...potentialEmails].filter((x) => x !== null)),
   );
-  const existingUsers = await (() => {
-    const query = User.query()
-      .withGraphFetched("[account, emails]")
-      .whereNull("deletedAt");
+  const existingUsers = await User.query()
+    .withGraphFetched("[account, emails]")
+    .whereNull("deletedAt")
+    .where((qb) => {
+      if (allEmails.length) {
+        qb.orWhereExists(
+          UserEmail.query().where((qb) => {
+            qb.whereRaw('user_emails."userId" = users.id').whereIn(
+              "email",
+              allEmails,
+            );
+          }),
+        );
+      }
 
-    if (allEmails.length) {
-      query.whereExists(
-        UserEmail.query()
-          .whereRaw('user_emails."userId" = users.id')
-          .whereIn("email", allEmails),
-      );
-    }
-
-    if ("user" in thirdPartyKey) {
-      return query.orWhere(thirdPartyKey.user, model.id);
-    }
-
-    if ("account" in thirdPartyKey) {
-      return query.orWhereExists(
-        Account.query()
-          .whereRaw('accounts."userId" = users.id')
-          .where(`accounts.${thirdPartyKey.account}`, model.id),
-      );
-    }
-
-    assertNever(thirdPartyKey);
-  })();
+      if ("user" in thirdPartyKey) {
+        qb.orWhere(thirdPartyKey.user, model.id);
+      } else if ("account" in thirdPartyKey) {
+        qb.orWhereExists(
+          Account.query()
+            .whereRaw('accounts."userId" = users.id')
+            .where(`accounts.${thirdPartyKey.account}`, model.id),
+        );
+      } else {
+        assertNever(thirdPartyKey);
+      }
+    });
 
   const existingUser = (() => {
     // If we match multiple accounts, it means that another
