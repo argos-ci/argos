@@ -120,7 +120,6 @@
     "formidable": ">=3.5.3",
     "moment": "^2.30.1",
     "openapi3-ts": "^4.5.0",
-    "rimraf": "^6.1.0",
     "supertest": "^7.1.4"
   }
 }

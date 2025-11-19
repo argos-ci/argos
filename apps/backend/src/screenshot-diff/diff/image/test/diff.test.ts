@@ -1,6 +1,6 @@
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { rimraf } from "rimraf";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { ImageHandle, LocalFileHandle } from "@/storage";
@@ -41,7 +41,10 @@ function snapshotResult(result: DiffResult) {
 describe("diff E2E", () => {
   beforeAll(async () => {
     // Clean up actual-files
-    await rimraf.sync(join(__dirname, "/actual-files"));
+    await rm(join(__dirname, "/actual-files"), {
+      recursive: true,
+      force: true,
+    });
   });
 
   it("generates different images", async () => {
