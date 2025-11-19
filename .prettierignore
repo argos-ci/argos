@@ -1,3 +1,4 @@
 package.json
 *.dump
 pnpm-lock.yaml
+pnpm-workspace.yaml
