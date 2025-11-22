@@ -139,10 +139,10 @@ export async function getInstallationOctokit(
     } catch (error) {
       const status = (error as { status: number }).status;
       // 404 means the installation has been deleted
-      // 403 means the installation has been suspended
-      if (status === 404 || status === 403) {
+      if (status === 404) {
         return null;
       }
+      // At this point, we can receive a 403. In this case it requires some investigation from us.
       throw error;
     }
   })();
