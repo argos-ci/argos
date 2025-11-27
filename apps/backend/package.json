@@ -45,7 +45,7 @@
     "@octokit/webhooks-types": "^7.6.1",
     "@react-email/components": "^1.0.1",
     "@react-email/render": "^2.0.0",
-    "@sentry/node": "^10.25.0",
+    "@sentry/node": "^10.27.0",
     "@sindresorhus/slugify": "^3.0.0",
     "@slack/bolt": "^4.6.0",
     "ajv": "^8.17.1",
