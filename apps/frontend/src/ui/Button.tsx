@@ -74,7 +74,8 @@ function getButtonProps(options: ButtonOptions) {
 }
 
 export interface ButtonProps
-  extends RACButtonProps,
+  extends
+    RACButtonProps,
     ButtonOptions,
     React.RefAttributes<HTMLButtonElement> {
   /**
@@ -145,9 +146,7 @@ export function Button({
 }
 
 export interface LinkButtonProps
-  extends RACLinkProps,
-    ButtonOptions,
-    React.RefAttributes<HTMLAnchorElement> {}
+  extends RACLinkProps, ButtonOptions, React.RefAttributes<HTMLAnchorElement> {}
 
 export function LinkButton({
   ref,

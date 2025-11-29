@@ -59,8 +59,8 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
   const build = project?.build ?? null;
   const buildStatusProgress = Boolean(
     build?.status &&
-      (build.status === BuildStatus.Pending ||
-        build.status === BuildStatus.Progress),
+    (build.status === BuildStatus.Pending ||
+      build.status === BuildStatus.Progress),
   );
 
   useEffect(() => {

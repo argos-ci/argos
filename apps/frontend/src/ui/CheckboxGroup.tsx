@@ -15,8 +15,7 @@ import {
 import { mergeRefs } from "@/util/merge-refs";
 
 interface CheckboxGroupProps
-  extends AriaCheckboxGroupProps,
-    React.RefAttributes<HTMLDivElement> {
+  extends AriaCheckboxGroupProps, React.RefAttributes<HTMLDivElement> {
   label?: string;
   description?: string;
 }

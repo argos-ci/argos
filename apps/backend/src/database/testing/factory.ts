@@ -6,9 +6,10 @@ import type { Model, ModelClass, PartialModelObject } from "objection";
 
 import * as models from "../models/index.js";
 
-class ObjectionAdapter<TEntity extends Model, T extends ModelClass<TEntity>>
-  implements ModelAdapter<T, Model>
-{
+class ObjectionAdapter<
+  TEntity extends Model,
+  T extends ModelClass<TEntity>,
+> implements ModelAdapter<T, Model> {
   get<K extends keyof Model>(model: Model, key: K): Model[K] {
     return model[key];
   }

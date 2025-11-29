@@ -6,8 +6,10 @@ import { Chip, type ChipProps } from "@/ui/Chip";
 import { Truncable } from "@/ui/Truncable";
 import type { UIColor } from "@/util/colors";
 
-interface AnnotationIndicatorProps
-  extends Omit<ChipProps, "children" | "scale" | "icon"> {
+interface AnnotationIndicatorProps extends Omit<
+  ChipProps,
+  "children" | "scale" | "icon"
+> {
   annotation: ScreenshotMetadataTestAnnotation;
   repoUrl: string | null | undefined;
 }
