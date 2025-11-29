@@ -23,6 +23,7 @@ describe("ScreenshotBucket", () => {
         if (!(error instanceof Error)) {
           throw error;
         }
+        // eslint-disable-next-line vitest/no-conditional-expect
         expect(error.message).toBe(
           'commit: must match pattern "^[0-9a-f]{40}$"',
         );
