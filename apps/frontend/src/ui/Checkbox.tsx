@@ -15,8 +15,7 @@ import {
 import { mergeRefs } from "@/util/merge-refs";
 
 interface CheckboxProps
-  extends AriaCheckboxProps,
-    React.RefAttributes<HTMLLabelElement> {}
+  extends AriaCheckboxProps, React.RefAttributes<HTMLLabelElement> {}
 
 export function Checkbox(props: CheckboxProps) {
   const { ref, className, children, ...rest } = props;

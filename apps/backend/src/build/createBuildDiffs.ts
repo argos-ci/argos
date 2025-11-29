@@ -110,7 +110,7 @@ export async function createBuildDiffs(build: Build) {
 
   const sameBucket = Boolean(
     baseScreenshotBucket &&
-      baseScreenshotBucket.id === compareScreenshotBucket.id,
+    baseScreenshotBucket.id === compareScreenshotBucket.id,
   );
 
   const inserts = compareScreenshots.map((compareScreenshot) => {
@@ -143,8 +143,8 @@ export async function createBuildDiffs(build: Build) {
 
     const sameFileId = Boolean(
       baseScreenshot?.fileId &&
-        compareScreenshot.fileId &&
-        baseScreenshot.fileId === compareScreenshot.fileId,
+      compareScreenshot.fileId &&
+      baseScreenshot.fileId === compareScreenshot.fileId,
     );
 
     return {

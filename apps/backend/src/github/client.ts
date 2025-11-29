@@ -69,8 +69,7 @@ function getOctokit(options: GetOctokitOptions): Octokit {
 }
 
 interface GetAppOctokitOptions
-  extends Pick<GetOctokitOptions, "proxy">,
-    Pick<GithubInstallation, "app"> {}
+  extends Pick<GetOctokitOptions, "proxy">, Pick<GithubInstallation, "app"> {}
 
 /**
  * Get an Octokit instance for a GitHub App.

@@ -2,8 +2,10 @@ import type { ScreenshotMetadataLocation } from "@/gql/graphql";
 import { Chip, ChipLink, type ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-export interface LocationChipProps
-  extends Pick<ChipProps, "icon" | "scale" | "className" | "children"> {
+export interface LocationChipProps extends Pick<
+  ChipProps,
+  "icon" | "scale" | "className" | "children"
+> {
   location: ScreenshotMetadataLocation | null | undefined;
   repoUrl: string | null | undefined;
   branch: string | null | undefined;

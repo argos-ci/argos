@@ -73,7 +73,7 @@ describe("AutomationRule", () => {
           ],
         }),
       ).rejects.toThrow(
-        "then.0.action: must be equal to constant, then.0: must match a schema in anyOf",
+        "then.0.action: must be equal to constant, then.0: must match exactly one schema in oneOf",
       );
     });
   });

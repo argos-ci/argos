@@ -5,8 +5,7 @@ import { Input, InputProps } from "react-aria-components";
 type TextInputScale = "sm" | "md" | "lg";
 
 export interface TextInputProps
-  extends InputProps,
-    RefAttributes<HTMLInputElement> {
+  extends InputProps, RefAttributes<HTMLInputElement> {
   scale?: TextInputScale;
 }
 

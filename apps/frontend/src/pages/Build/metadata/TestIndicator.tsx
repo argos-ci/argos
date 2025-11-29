@@ -4,8 +4,10 @@ import type { ScreenshotMetadataTest } from "@/gql/graphql";
 
 import { LocationChip, type LocationChipProps } from "./LocationChip";
 
-interface TestIndicatorProps
-  extends Omit<LocationChipProps, "location" | "children" | "tooltip"> {
+interface TestIndicatorProps extends Omit<
+  LocationChipProps,
+  "location" | "children" | "tooltip"
+> {
   test: ScreenshotMetadataTest;
 }
 

@@ -701,9 +701,9 @@ export function BuildDiffProvider(props: {
 
   const hasNoResults = Boolean(
     searchMode &&
-      deferredSearch &&
-      results.length === 0 &&
-      screenshotDiffs.length > 0,
+    deferredSearch &&
+    results.length === 0 &&
+    screenshotDiffs.length > 0,
   );
 
   const value = useMemo(

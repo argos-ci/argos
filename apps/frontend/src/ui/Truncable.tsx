@@ -5,8 +5,10 @@ import { useObjectRef } from "react-aria";
 
 import { Tooltip, type TooltipProps } from "./Tooltip";
 
-export interface TruncableProps
-  extends Omit<React.ComponentPropsWithRef<"div">, "children"> {
+export interface TruncableProps extends Omit<
+  React.ComponentPropsWithRef<"div">,
+  "children"
+> {
   children: React.ReactNode;
   tooltipProps?: Omit<TooltipProps, "content" | "children">;
 }

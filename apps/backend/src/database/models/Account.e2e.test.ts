@@ -103,13 +103,19 @@ describe("Account", () => {
         const startDate = await manager.getCurrentPeriodStartDate();
         expect(startDate.getDate()).toEqual(subscriptionDay);
         if (now.getDate() >= subscriptionDay) {
+          // eslint-disable-next-line vitest/no-conditional-expect
           expect(startDate.getMonth()).toEqual(now.getMonth());
+          // eslint-disable-next-line vitest/no-conditional-expect
           expect(startDate.getFullYear()).toEqual(now.getFullYear());
         } else if (now.getMonth() === 0) {
+          // eslint-disable-next-line vitest/no-conditional-expect
           expect(startDate.getMonth()).toEqual(11);
+          // eslint-disable-next-line vitest/no-conditional-expect
           expect(startDate.getFullYear()).toEqual(now.getFullYear() - 1);
         } else {
+          // eslint-disable-next-line vitest/no-conditional-expect
           expect(startDate.getMonth()).toEqual(now.getMonth() - 1);
+          // eslint-disable-next-line vitest/no-conditional-expect
           expect(startDate.getFullYear()).toEqual(now.getFullYear());
         }
       });
