@@ -1,4 +1,4 @@
-import { ref, TransactionOrKnex, type PartialModelObject } from "objection";
+import { ref, TransactionOrKnex } from "objection";
 
 import { transaction } from "@/database";
 import { Build, BuildShard, Screenshot } from "@/database/models/index.js";
@@ -110,12 +110,7 @@ export async function finalizeBuild(input: {
     ],
   );
 
-  const valid =
-    !single && shards.length > 0
-      ? shards.every((shard) => checkIsBucketValidFromMetadata(shard.metadata))
-      : checkIsBucketValidFromMetadata(build.metadata);
-
-  const buildData: PartialModelObject<Build> = {
+  const buildData: Partial<Pick<Build, "metadata" | "finalizedAt">> = {
     finalizedAt: new Date().toISOString(),
   };
 
@@ -126,6 +121,10 @@ export async function finalizeBuild(input: {
       shards.map((shard) => shard.metadata),
     );
   }
+
+  const valid = checkIsBucketValidFromMetadata(
+    buildData.metadata ?? build.metadata,
+  );
 
   await transaction(trx, async (trx) => {
     await Promise.all([
