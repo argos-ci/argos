@@ -4,5 +4,5 @@
   "files.associations": {
     "*.css": "tailwindcss"
   },
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "prettier.prettier-vscode"
 }
