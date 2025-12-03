@@ -1,10 +1,14 @@
 import { useQuery } from "@apollo/client/react";
+import { FolderCodeIcon } from "lucide-react";
+import { Heading, Text } from "react-aria-components";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
+import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
 import { List, ListRow } from "@/ui/List";
 import { Loader } from "@/ui/Loader";
 import { Time } from "@/ui/Time";
+import { Truncable } from "@/ui/Truncable";
 
 const ProjectsQuery = graphql(`
   query GitlabProjectList_glApiProjects(
@@ -73,18 +77,30 @@ export function GitlabProjectList(props: GitlabProjectListProps) {
   const { glApiProjects } = data;
 
   if (glApiProjects.edges.length === 0) {
-    return <div className="text-center">No projects in this namespace</div>;
+    return (
+      <EmptyState>
+        <EmptyStateIcon>
+          <FolderCodeIcon strokeWidth={1} />
+        </EmptyStateIcon>
+        <Heading>No projects in this namespace</Heading>
+        <Text slot="description">
+          Your project may not be authorized yet on Argos or on another
+          namespace.
+        </Text>
+      </EmptyState>
+    );
   }
   return (
     <List>
       {glApiProjects.edges.map((project) => (
-        <ListRow
-          key={project.id}
-          className="flex items-center justify-between gap-4 p-4"
-        >
-          <div>
-            {project.name} •{" "}
-            <Time date={project.last_activity_at} className="text-low" />
+        <ListRow key={project.id} className="flex items-center gap-4 p-4">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
+            <Truncable>{project.name}</Truncable>
+            <span className="text-low text-sm">•</span>
+            <Time
+              date={project.last_activity_at}
+              className="text-low shrink-0 text-sm whitespace-nowrap"
+            />
           </div>
           <Button
             onPress={() => {

@@ -21,7 +21,7 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
   );
 }
 
-const listRowClassName = "bg-app min-w-max border-b last:border-b-0";
+const listRowClassName = "bg-app min-w-0 border-b last:border-b-0";
 
 export function ListRowLink(props: RACLinkProps) {
   return (

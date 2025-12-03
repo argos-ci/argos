@@ -56,7 +56,7 @@ export const resolvers: IResolvers = {
           const options = {
             pagination: "offset" as const,
             perPage: 100,
-            maxPages: 1,
+            maxPages: 10,
             page: args.page,
             showExpanded: true as const,
             ...(args.search &&
