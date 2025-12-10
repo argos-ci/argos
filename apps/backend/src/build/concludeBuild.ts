@@ -5,7 +5,8 @@ import { triggerAndRunAutomation } from "@/automation";
 import { AutomationEvents } from "@/automation/types/events";
 import { job as buildNotificationJob } from "@/build-notification/job.js";
 import { transaction } from "@/database/index.js";
-import { Build, BuildConclusion, BuildNotification } from "@/database/models";
+import { Build, BuildNotification } from "@/database/models";
+import type { BuildConclusion } from "@/database/schemas/BuildStatus";
 import { redisLock } from "@/util/redis";
 
 /**

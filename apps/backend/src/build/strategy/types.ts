@@ -1,4 +1,5 @@
-import type { Build, BuildType, ScreenshotBucket } from "@/database/models";
+import type { Build, ScreenshotBucket } from "@/database/models";
+import type { BuildType } from "@/database/schemas/BuildType";
 
 export type GetBaseResult = Promise<{
   baseScreenshotBucket: ScreenshotBucket | null;

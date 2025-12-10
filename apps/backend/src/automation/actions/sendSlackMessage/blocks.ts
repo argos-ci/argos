@@ -6,12 +6,12 @@ import { getStatsMessage } from "@/build/stats";
 import {
   Build,
   type Account,
-  type BuildAggregatedStatus,
   type BuildReview,
   type GithubPullRequest,
   type Project,
   type ScreenshotBucket,
 } from "@/database/models";
+import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
 import { UnretryableError } from "@/job-core";
 import type { SlackMessageBlock } from "@/slack/channel";
 
