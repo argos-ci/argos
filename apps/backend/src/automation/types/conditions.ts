@@ -1,14 +1,16 @@
 import { z } from "zod";
 
+import { BuildConclusionSchema, BuildTypeSchema } from "@/database/models";
+
 const BuildTypeConditionSchema = z.object({
   type: z.literal("build-type"),
-  value: z.enum(["reference", "check"]),
+  value: BuildTypeSchema,
 });
 export type BuildTypeCondition = z.infer<typeof BuildTypeConditionSchema>;
 
 const BuildConclusionConditionSchema = z.object({
   type: z.literal("build-conclusion"),
-  value: z.enum(["no-changes", "changes-detected"]),
+  value: BuildConclusionSchema,
 });
 export type BuildConclusionCondition = z.infer<
   typeof BuildConclusionConditionSchema

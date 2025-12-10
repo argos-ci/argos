@@ -33,7 +33,13 @@ import { User } from "./User.js";
 
 export const BUILD_EXPIRATION_DELAY_MS = 2 * 3600 * 1000; // 2 hours
 
-export type BuildType = "reference" | "check" | "orphan" | "skipped";
+export const BuildTypeSchema = z.enum([
+  "reference",
+  "check",
+  "orphan",
+  "skipped",
+]);
+export type BuildType = z.infer<typeof BuildTypeSchema>;
 
 const BuildStatusSchema = z.enum([
   "expired",
@@ -45,7 +51,7 @@ const BuildStatusSchema = z.enum([
 ]);
 type BuildStatus = z.infer<typeof BuildStatusSchema>;
 
-const BuildConclusionSchema = z.enum(["no-changes", "changes-detected"]);
+export const BuildConclusionSchema = z.enum(["no-changes", "changes-detected"]);
 export type BuildConclusion = z.infer<typeof BuildConclusionSchema>;
 
 const BuildReviewStatusSchema = z.enum(["accepted", "rejected"]);
