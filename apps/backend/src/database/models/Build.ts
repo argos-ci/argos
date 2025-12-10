@@ -8,61 +8,32 @@ import type {
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
-import { z } from "zod";
 
-import config from "@/config/index.js";
+import config from "@/config";
 import { SHA1_REGEX } from "@/util/validation";
 
 import {
   BuildMetadata,
   BuildMetadataJsonSchema,
-} from "../schemas/BuildMetadata.js";
-import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
-import { BuildReview } from "./BuildReview.js";
-import { BuildShard } from "./BuildShard.js";
-import { GithubPullRequest } from "./GithubPullRequest.js";
-import { Project } from "./Project.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
-import { User } from "./User.js";
+} from "../schemas/BuildMetadata";
+import type {
+  BuildAggregatedStatus,
+  BuildConclusion,
+  BuildReviewStatus,
+  BuildStatus,
+} from "../schemas/BuildStatus";
+import type { BuildType } from "../schemas/BuildType";
+import { Model } from "../util/model";
+import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { BuildReview } from "./BuildReview";
+import { BuildShard } from "./BuildShard";
+import { GithubPullRequest } from "./GithubPullRequest";
+import { Project } from "./Project";
+import { ScreenshotBucket } from "./ScreenshotBucket";
+import { ScreenshotDiff } from "./ScreenshotDiff";
+import { User } from "./User";
 
 export const BUILD_EXPIRATION_DELAY_MS = 2 * 3600 * 1000; // 2 hours
-
-export const BuildTypeSchema = z.enum([
-  "reference",
-  "check",
-  "orphan",
-  "skipped",
-]);
-export type BuildType = z.infer<typeof BuildTypeSchema>;
-
-const BuildStatusSchema = z.enum([
-  "expired",
-  "pending",
-  "progress",
-  "complete",
-  "error",
-  "aborted",
-]);
-type BuildStatus = z.infer<typeof BuildStatusSchema>;
-
-export const BuildConclusionSchema = z.enum(["no-changes", "changes-detected"]);
-export type BuildConclusion = z.infer<typeof BuildConclusionSchema>;
-
-const BuildReviewStatusSchema = z.enum(["accepted", "rejected"]);
-type BuildReviewStatus = z.infer<typeof BuildReviewStatusSchema>;
-
-export const BuildAggregatedStatusSchema = z.union([
-  BuildReviewStatusSchema,
-  BuildConclusionSchema,
-  BuildStatusSchema.exclude(["complete"]),
-]);
-export type BuildAggregatedStatus = z.infer<typeof BuildAggregatedStatusSchema>;
 
 export type BuildMode = "ci" | "monitoring";
 

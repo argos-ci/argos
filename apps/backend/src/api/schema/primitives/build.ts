@@ -5,12 +5,11 @@ import {
   getNotificationPayload,
   NotificationPayloadSchema,
 } from "@/build-notification/index.js";
+import { Build, BuildNotification } from "@/database/models/index.js";
 import {
-  Build,
-  BuildAggregatedStatus,
   BuildAggregatedStatusSchema,
-  BuildNotification,
-} from "@/database/models/index.js";
+  type BuildAggregatedStatus,
+} from "@/database/schemas/BuildStatus";
 
 export const BuildIdSchema = z.string().meta({
   description: "A unique identifier for the build",

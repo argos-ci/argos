@@ -9,7 +9,6 @@ import {
   AutomationActionRun,
   AutomationRun,
   Build,
-  BuildAggregatedStatus,
   BuildReview,
   File,
   GithubAccount,
@@ -31,6 +30,7 @@ import {
   Test,
   User,
 } from "@/database/models/index.js";
+import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
 import {
   checkErrorStatus,
   getAppOctokit,

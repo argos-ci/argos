@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { BuildConclusionSchema, BuildTypeSchema } from "@/database/models";
+import { BuildConclusionSchema } from "@/database/schemas/BuildStatus";
+import { BuildTypeSchema } from "@/database/schemas/BuildType";
 
 const BuildTypeConditionSchema = z.object({
   type: z.literal("build-type"),
