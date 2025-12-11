@@ -1,20 +1,20 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
-import { pushBuildNotification } from "@/build-notification/index.js";
-import { checkIsPartialBuild } from "@/build/partial.js";
-import { transaction } from "@/database/index.js";
+import { pushBuildNotification } from "@/build-notification";
+import { checkIsPartialBuild } from "@/build/partial";
+import { transaction } from "@/database";
 import {
   Build,
   BuildMode,
   GithubPullRequest,
   Project,
   ScreenshotBucket,
-} from "@/database/models/index.js";
+} from "@/database/models";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
-import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
-import { redisLock } from "@/util/redis/index.js";
-import { boom } from "@/web/util.js";
+import { job as githubPullRequestJob } from "@/github-pull-request/job";
+import { boom } from "@/util/error";
+import { redisLock } from "@/util/redis";
 
 async function getOrCreatePullRequest({
   githubRepositoryId,

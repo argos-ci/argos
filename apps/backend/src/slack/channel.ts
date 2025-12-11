@@ -3,7 +3,7 @@ import type * as Bolt from "@slack/bolt";
 import { z } from "zod";
 
 import { SlackInstallation } from "@/database/models";
-import { boom } from "@/web/util";
+import { boom } from "@/util/error";
 
 import { boltApp } from "./app";
 

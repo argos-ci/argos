@@ -1,12 +1,12 @@
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { GithubRepository } from "@/database/models/GithubRepository.js";
-import { repoAuth } from "@/web/middlewares/repoAuth.js";
-import { boom } from "@/web/util.js";
+import { GithubRepository } from "@/database/models/GithubRepository";
+import { boom } from "@/util/error";
+import { repoAuth } from "@/web/middlewares/repoAuth";
 
-import { ProjectSchema } from "../schema/primitives/project.js";
-import { serverError, unauthorized } from "../schema/util/error.js";
-import { CreateAPIHandler } from "../util.js";
+import { ProjectSchema } from "../schema/primitives/project";
+import { serverError, unauthorized } from "../schema/util/error";
+import { CreateAPIHandler } from "../util";
 
 export const getAuthProjectOperation = {
   operationId: "getAuthProject",

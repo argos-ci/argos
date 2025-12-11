@@ -1,13 +1,13 @@
 import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import type { PartialModelObject } from "objection";
 
-import type { RestEndpointMethodTypes } from "@/github/index.js";
-import { sanitizeEmail } from "@/util/email.js";
-import { redisLock } from "@/util/redis/index.js";
+import type { RestEndpointMethodTypes } from "@/github";
+import { sanitizeEmail } from "@/util/email";
+import { redisLock } from "@/util/redis";
 
-import { GithubAccount } from "../models/GithubAccount.js";
-import { GithubAccountMember } from "../models/GithubAccountMember.js";
-import { getPartialModelUpdate } from "../util/update.js";
+import { GithubAccount } from "../models/GithubAccount";
+import { GithubAccountMember } from "../models/GithubAccountMember";
+import { getPartialModelUpdate } from "../util/update";
 
 /**
  * Get or create a GitHub account member.

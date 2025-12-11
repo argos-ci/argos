@@ -14,9 +14,10 @@ import {
   ZodOpenApiPathItemObject,
 } from "zod-openapi";
 
-import { asyncHandler, boom, HTTPError } from "@/web/util.js";
+import { boom, HTTPError } from "@/util/error";
+import { asyncHandler } from "@/web/util";
 
-import { zodSchema } from "./schema.js";
+import { zodSchema } from "./schema";
 
 type paths = typeof zodSchema.paths;
 

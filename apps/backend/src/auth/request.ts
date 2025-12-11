@@ -2,10 +2,10 @@ import { invariant } from "@argos/util/invariant";
 import * as authorization from "auth-header";
 import type { Request } from "express";
 
-import { Account, User } from "@/database/models/index.js";
-import { boom } from "@/web/util.js";
+import { Account, User } from "@/database/models/index";
+import { boom } from "@/util/error";
 
-import { verifyJWT } from "./jwt.js";
+import { verifyJWT } from "./jwt";
 
 const getTokenFromAuthHeader = (authHeader: string) => {
   try {

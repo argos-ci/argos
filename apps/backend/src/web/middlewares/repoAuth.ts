@@ -2,11 +2,12 @@
 
 import type { RequestHandler } from "express";
 
-import { Project } from "@/database/models/index.js";
+import { Project } from "@/database/models";
+import { boom } from "@/util/error";
 
-import { asyncHandler, boom } from "../util.js";
-import { bearerAuth } from "./bearerAuth.js";
-import githubActions from "./tokenless-strategies/github-actions.js";
+import { asyncHandler } from "../util";
+import { bearerAuth } from "./bearerAuth";
+import githubActions from "./tokenless-strategies/github-actions";
 
 declare global {
   namespace Express {

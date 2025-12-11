@@ -1,11 +1,14 @@
+import { assertNever } from "@argos/util/assertNever";
 import { createAppAuth } from "@octokit/auth-app";
 import type { OctokitOptions } from "@octokit/core";
 import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
+import z from "zod";
 
-import config from "@/config/index.js";
-import { GithubInstallation } from "@/database/models/index.js";
+import config from "@/config";
+import { GithubInstallation } from "@/database/models";
+import { boom } from "@/util/error";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
 
@@ -128,37 +131,86 @@ export async function getInstallationOctokit(
       return getTokenOctokit({ token, proxy: installation.proxy });
     }
   }
-  const result = await (async () => {
-    try {
-      const result = (await appOctokit.auth({
-        type: "installation",
-        installationId: installation.githubId,
-      })) as { token: string; expiresAt: string };
-      return result;
-    } catch (error) {
-      const status = (error as { status: number }).status;
-      // 404 means the installation has been deleted
-      if (status === 404) {
-        return null;
-      }
-      // At this point, we can receive a 403. In this case it requires some investigation from us.
-      throw error;
-    }
-  })();
-  if (!result) {
-    await GithubInstallation.query().findById(installation.id).patch({
-      deleted: true,
-      githubToken: null,
-      githubTokenExpiresAt: null,
-    });
-    return null;
-  }
-  await GithubInstallation.query().findById(installation.id).patch({
-    deleted: false,
-    githubToken: result.token,
-    githubTokenExpiresAt: result.expiresAt,
+  const result = await authInstallation({
+    octokit: appOctokit,
+    installationId: installation.githubId,
   });
-  return getTokenOctokit({ token: result.token, proxy: installation.proxy });
+  switch (result.status) {
+    case "deleted": {
+      await GithubInstallation.query().findById(installation.id).patch({
+        deleted: true,
+        githubToken: null,
+        githubTokenExpiresAt: null,
+      });
+      return null;
+    }
+    case "authenticated": {
+      await GithubInstallation.query().findById(installation.id).patch({
+        deleted: false,
+        githubToken: result.token,
+        githubTokenExpiresAt: result.expiresAt,
+      });
+      return getTokenOctokit({
+        token: result.token,
+        proxy: installation.proxy,
+      });
+    }
+    default:
+      assertNever(result);
+  }
+}
+
+const AuthInstallationResultSchema = z.object({
+  token: z.string(),
+  expiresAt: z.string(),
+});
+
+/**
+ * Authenticate an installation.
+ */
+async function authInstallation(args: {
+  octokit: Octokit;
+  installationId: number;
+}): Promise<
+  | { status: "deleted" }
+  | { status: "authenticated"; token: string; expiresAt: string }
+> {
+  const { octokit, installationId } = args;
+  try {
+    const result = await octokit.auth({
+      type: "installation",
+      installationId,
+    });
+    const parsed = AuthInstallationResultSchema.parse(result);
+    return { status: "authenticated", ...parsed };
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "status" in error &&
+      typeof error.status === "number"
+    ) {
+      switch (error.status) {
+        case 404:
+          return { status: "deleted" };
+        case 403: {
+          // If error is a 403 and the error message is not about a suspended
+          // installation, we want to know what is it.
+          if (error.message.includes("This installation has been suspended")) {
+            throw boom(
+              403,
+              "Installation suspended. Please unsuspend it in GitHub settings.",
+              {
+                cause: error,
+                code: "GITHUB_INSTALLATION_SUSPENDED",
+                retryable: false,
+              },
+            );
+          }
+        }
+      }
+    }
+    throw error;
+  }
 }
 
 /**

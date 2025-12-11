@@ -3,44 +3,39 @@ import { GitbeakerRequestError } from "@gitbeaker/rest";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
-import { disconnectGitHubAuth } from "@/auth/github.js";
-import { disconnectGitLabAuth } from "@/auth/gitlab.js";
-import { disconnectGoogleAuth } from "@/auth/google.js";
-import {
-  Account,
-  Project,
-  ProjectUser,
-  TeamUser,
-} from "@/database/models/index.js";
+import { disconnectGitHubAuth } from "@/auth/github";
+import { disconnectGitLabAuth } from "@/auth/gitlab";
+import { disconnectGoogleAuth } from "@/auth/google";
+import { Account, Project, ProjectUser, TeamUser } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
   createJWTFromAccount,
   requestEmailSignin,
   requestEmailSignup,
-} from "@/database/services/account.js";
-import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
-import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab/index.js";
+} from "@/database/services/account";
+import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
 import {
   getAccountBuildMetrics,
   getAccountScreenshotMetrics,
-} from "@/metrics/account.js";
-import { sendNotification } from "@/notification/index.js";
-import { boltApp } from "@/slack/app.js";
+} from "@/metrics/account";
+import { sendNotification } from "@/notification";
+import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
-import { encodeStripeClientReferenceId } from "@/stripe/index.js";
-import { HTTPError } from "@/web/util.js";
+import { encodeStripeClientReferenceId } from "@/stripe";
+import { HTTPError } from "@/util/error";
 
 import {
   IAccountPermission,
   IAccountSubscriptionStatus,
   IResolvers,
-} from "../__generated__/resolver-types.js";
-import type { Context } from "../context.js";
-import { getAdminAccount } from "../services/account.js";
-import { getAccountAvatar } from "../services/avatar.js";
-import { badUserInput, unauthenticated } from "../util.js";
-import { paginateResult } from "./PageInfo.js";
+} from "../__generated__/resolver-types";
+import type { Context } from "../context";
+import { getAdminAccount } from "../services/account";
+import { getAccountAvatar } from "../services/avatar";
+import { badUserInput, unauthenticated } from "../util";
+import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 

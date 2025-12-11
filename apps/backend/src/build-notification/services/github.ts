@@ -1,20 +1,17 @@
 import { invariant } from "@argos/util/invariant";
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
 
-import {
-  GithubPullRequest,
-  GithubRepository,
-} from "@/database/models/index.js";
+import { GithubPullRequest, GithubRepository } from "@/database/models";
 import {
   checkErrorStatus,
   commentGithubPr,
   getInstallationOctokit,
-} from "@/github/index.js";
-import { UnretryableError } from "@/job-core/index.js";
-import { redisLock } from "@/util/redis/index.js";
+} from "@/github";
+import { UnretryableError } from "@/job-core";
+import { redisLock } from "@/util/redis";
 
-import { getCommentBody } from "../comment.js";
-import type { SendNotificationContext } from "../context.js";
+import { getCommentBody } from "../comment";
+import type { SendNotificationContext } from "../context";
 
 /**
  * Create a GitHub commit status.

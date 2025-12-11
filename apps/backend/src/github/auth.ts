@@ -3,7 +3,7 @@ import axios from "axios";
 import { z } from "zod";
 
 import logger from "@/logger";
-import { boom } from "@/web/util";
+import { boom } from "@/util/error";
 
 const RetrieveTokenErrorSchema = z.enum([
   "incorrect_client_credentials",

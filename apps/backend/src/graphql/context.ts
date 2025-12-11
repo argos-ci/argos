@@ -2,14 +2,14 @@ import type { BaseContext } from "@apollo/server";
 import type { Request } from "express";
 import { GraphQLError } from "graphql";
 
-import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request.js";
+import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request";
+import { HTTPError } from "@/util/error";
 import {
   extractLocationFromRequest,
   type RequestLocation,
-} from "@/util/request-location.js";
-import { HTTPError } from "@/web/util.js";
+} from "@/util/request-location";
 
-import { createLoaders } from "./loaders.js";
+import { createLoaders } from "./loaders";
 
 export type Context = BaseContext & {
   auth: AuthPayload | null;

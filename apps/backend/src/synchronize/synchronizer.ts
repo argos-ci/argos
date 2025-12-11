@@ -251,6 +251,7 @@ export async function synchronizeInstallation(installationId: string) {
     app: installation.app,
     proxy: installation.proxy,
   });
+
   const octokit = await getInstallationOctokit(installation, appOctokit);
 
   // If we don't get an octokit, then the installation has been removed

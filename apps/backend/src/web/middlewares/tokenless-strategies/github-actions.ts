@@ -1,9 +1,9 @@
 import { invariant } from "@argos/util/invariant";
 import pRetry from "p-retry";
 
-import { GithubRepository, Project } from "@/database/models/index.js";
-import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
-import { boom } from "@/web/util.js";
+import { GithubRepository, Project } from "@/database/models";
+import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import { boom } from "@/util/error";
 
 const marker = "tokenless-github-";
 

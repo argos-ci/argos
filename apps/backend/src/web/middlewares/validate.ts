@@ -1,7 +1,9 @@
 import Ajv, { AnySchema, ValidateFunction } from "ajv";
 import type { RequestHandler } from "express";
 
-import { asyncHandler, boom } from "../util.js";
+import { boom } from "@/util/error";
+
+import { asyncHandler } from "../util";
 
 /**
  * Returns a middleware with compiled ajv validators

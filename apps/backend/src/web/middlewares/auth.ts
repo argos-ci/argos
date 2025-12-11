@@ -2,9 +2,10 @@
 
 import type { RequestHandler } from "express";
 
-import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request.js";
+import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request";
+import { HTTPError } from "@/util/error";
 
-import { asyncHandler, HTTPError } from "../util.js";
+import { asyncHandler } from "../util";
 
 declare global {
   namespace Express {
