@@ -1,6 +1,8 @@
 import { Router } from "express";
 
-import { asyncHandler, boom } from "../util.js";
+import { boom } from "@/util/error";
+
+import { asyncHandler } from "../util";
 
 const router: Router = Router();
 

@@ -2,31 +2,31 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { createBuild as createBuildService } from "@/build/createBuild.js";
-import { finalizeBuild } from "@/build/finalizeBuild.js";
-import { job as buildJob } from "@/build/index.js";
-import config from "@/config/index.js";
-import { Build } from "@/database/models/Build.js";
-import { Project } from "@/database/models/Project.js";
-import { getUnknownFileKeys } from "@/database/services/file.js";
-import { getS3Client } from "@/storage/s3.js";
-import { getSignedObjectUrl } from "@/storage/signed-url.js";
-import { redisLock } from "@/util/redis/index.js";
-import { repoAuth } from "@/web/middlewares/repoAuth.js";
-import { boom } from "@/web/util.js";
+import { job as buildJob } from "@/build";
+import { createBuild as createBuildService } from "@/build/createBuild";
+import { finalizeBuild } from "@/build/finalizeBuild";
+import config from "@/config";
+import { Build } from "@/database/models/Build";
+import { Project } from "@/database/models/Project";
+import { getUnknownFileKeys } from "@/database/services/file";
+import { getS3Client } from "@/storage/s3";
+import { getSignedObjectUrl } from "@/storage/signed-url";
+import { boom } from "@/util/error";
+import { redisLock } from "@/util/redis";
+import { repoAuth } from "@/web/middlewares/repoAuth";
 
-import { BuildSchema, serializeBuilds } from "../schema/primitives/build.js";
+import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
 import {
   Sha1HashSchema,
   UniqueSha256HashArraySchema,
-} from "../schema/primitives/sha.js";
+} from "../schema/primitives/sha";
 import {
   conflict,
   invalidParameters,
   serverError,
   unauthorized,
-} from "../schema/util/error.js";
-import { CreateAPIHandler } from "../util.js";
+} from "../schema/util/error";
+import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
   commit: Sha1HashSchema.meta({

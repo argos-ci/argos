@@ -2,21 +2,22 @@ import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import express from "express";
 
-import config from "@/config/index.js";
-import { getAdminAccount } from "@/graphql/services/account.js";
-import logger from "@/logger/index.js";
+import config from "@/config";
+import { getAdminAccount } from "@/graphql/services/account";
+import logger from "@/logger";
 import {
   createStripeCheckoutSession,
   getStripeProPlanOrThrow,
   handleStripeEvent,
   stripe,
-} from "@/stripe/index.js";
-import type { Stripe } from "@/stripe/index.js";
+} from "@/stripe";
+import type { Stripe } from "@/stripe";
+import { boom } from "@/util/error";
 
-import { auth } from "../middlewares/auth.js";
-import { allowApp } from "../middlewares/cors.js";
-import { allowOnlyPost } from "../middlewares/methods.js";
-import { asyncHandler, boom } from "../util.js";
+import { auth } from "../middlewares/auth";
+import { allowApp } from "../middlewares/cors";
+import { allowOnlyPost } from "../middlewares/methods";
+import { asyncHandler } from "../util";
 
 const router: express.Router = express.Router();
 

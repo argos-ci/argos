@@ -2,22 +2,22 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { finalizeBuild } from "@/build/finalizeBuild.js";
-import { job as buildJob } from "@/build/index.js";
-import { raw, transaction } from "@/database/index.js";
-import { Build, BuildShard, Project } from "@/database/models/index.js";
-import { BuildMetadataSchema } from "@/database/schemas/BuildMetadata.js";
-import { insertFilesAndScreenshots } from "@/database/services/screenshots.js";
+import { finalizeBuild } from "@/build/finalizeBuild";
+import { job as buildJob } from "@/build/index";
+import { raw, transaction } from "@/database/index";
+import { Build, BuildShard, Project } from "@/database/models/index";
+import { BuildMetadataSchema } from "@/database/schemas/BuildMetadata";
+import { insertFilesAndScreenshots } from "@/database/services/screenshots";
+import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
-import { repoAuth } from "@/web/middlewares/repoAuth.js";
-import { boom } from "@/web/util.js";
+import { repoAuth } from "@/web/middlewares/repoAuth";
 
 import {
   BuildIdSchema,
   BuildSchema,
   serializeBuilds,
-} from "../schema/primitives/build.js";
-import { ScreenshotInputSchema } from "../schema/primitives/screenshot.js";
+} from "../schema/primitives/build";
+import { ScreenshotInputSchema } from "../schema/primitives/screenshot";
 import {
   conflict,
   forbidden,
@@ -25,8 +25,8 @@ import {
   notFound,
   serverError,
   unauthorized,
-} from "../schema/util/error.js";
-import { CreateAPIHandler } from "../util.js";
+} from "../schema/util/error";
+import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
   screenshots: z.array(ScreenshotInputSchema),

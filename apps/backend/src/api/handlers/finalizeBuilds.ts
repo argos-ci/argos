@@ -2,14 +2,14 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild.js";
-import { job as buildJob } from "@/build/index.js";
-import { Build } from "@/database/models/index.js";
-import { transaction } from "@/database/transaction.js";
-import { repoAuth } from "@/web/middlewares/repoAuth.js";
-import { boom } from "@/web/util.js";
+import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
+import { job as buildJob } from "@/build/index";
+import { Build } from "@/database/models/index";
+import { transaction } from "@/database/transaction";
+import { boom } from "@/util/error";
+import { repoAuth } from "@/web/middlewares/repoAuth";
 
-import { BuildSchema, serializeBuilds } from "../schema/primitives/build.js";
+import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
 import {
   conflict,
   forbidden,
@@ -17,8 +17,8 @@ import {
   notFound,
   serverError,
   unauthorized,
-} from "../schema/util/error.js";
-import { CreateAPIHandler } from "../util.js";
+} from "../schema/util/error";
+import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({ parallelNonce: z.string().min(1) });
 

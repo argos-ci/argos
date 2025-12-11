@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 
-import config from "@/config/index.js";
-import { HTTPError } from "@/web/util";
+import config from "@/config";
+import { HTTPError } from "@/util/error";
 
 export function setup() {
   Sentry.init({

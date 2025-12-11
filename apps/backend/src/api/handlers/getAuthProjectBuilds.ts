@@ -1,22 +1,19 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { Build } from "@/database/models/Build.js";
-import { repoAuth } from "@/web/middlewares/repoAuth.js";
-import { boom } from "@/web/util.js";
+import { Build } from "@/database/models/Build";
+import { boom } from "@/util/error";
+import { repoAuth } from "@/web/middlewares/repoAuth";
 
-import { BuildSchema, serializeBuilds } from "../schema/primitives/build.js";
-import {
-  PageParamsSchema,
-  paginated,
-} from "../schema/primitives/pagination.js";
-import { Sha1HashSchema } from "../schema/primitives/sha.js";
+import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
+import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
+import { Sha1HashSchema } from "../schema/primitives/sha";
 import {
   invalidParameters,
   serverError,
   unauthorized,
-} from "../schema/util/error.js";
-import { CreateAPIHandler } from "../util.js";
+} from "../schema/util/error";
+import { CreateAPIHandler } from "../util";
 
 const GetAuthProjectBuildsParams = PageParamsSchema.extend({
   commit: Sha1HashSchema.optional(),

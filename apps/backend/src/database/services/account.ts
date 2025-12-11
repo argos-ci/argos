@@ -3,27 +3,27 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
 
-import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email.js";
-import { createJWT, JWT_VERSION } from "@/auth/jwt.js";
-import { sendEmailTemplate } from "@/email/send-email-template.js";
-import { sendNotification } from "@/notification/index.js";
-import { getSlugFromEmail, sanitizeEmail } from "@/util/email.js";
-import type { RequestLocation } from "@/util/request-location.js";
-import { slugify } from "@/util/slug.js";
-import { boom } from "@/web/util.js";
+import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email";
+import { createJWT, JWT_VERSION } from "@/auth/jwt";
+import { sendEmailTemplate } from "@/email/send-email-template";
+import { sendNotification } from "@/notification/index";
+import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
+import { boom } from "@/util/error";
+import type { RequestLocation } from "@/util/request-location";
+import { slugify } from "@/util/slug";
 
-import { Account } from "../models/Account.js";
-import { GithubAccount } from "../models/GithubAccount.js";
-import type { GitlabUser } from "../models/GitlabUser.js";
-import { GoogleUser } from "../models/GoogleUser.js";
-import { Team } from "../models/Team.js";
-import { TeamInvite } from "../models/TeamInvite.js";
-import { TeamUser } from "../models/TeamUser.js";
-import { User } from "../models/User.js";
-import { UserEmail } from "../models/UserEmail.js";
-import { transaction } from "../transaction.js";
-import { Model } from "../util/model.js";
-import { getPartialModelUpdate } from "../util/update.js";
+import { Account } from "../models/Account";
+import { GithubAccount } from "../models/GithubAccount";
+import type { GitlabUser } from "../models/GitlabUser";
+import { GoogleUser } from "../models/GoogleUser";
+import { Team } from "../models/Team";
+import { TeamInvite } from "../models/TeamInvite";
+import { TeamUser } from "../models/TeamUser";
+import { User } from "../models/User";
+import { UserEmail } from "../models/UserEmail";
+import { transaction } from "../transaction";
+import { Model } from "../util/model";
+import { getPartialModelUpdate } from "../util/update";
 
 const RESERVED_SLUGS = [
   "auth",

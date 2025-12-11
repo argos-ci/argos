@@ -5,16 +5,17 @@ import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import { z } from "zod";
 
-import config from "@/config/index.js";
-import { getGoogleAuthUrl } from "@/google/index.js";
-import { apolloServer, createApolloMiddleware } from "@/graphql/index.js";
-import { getSlackMiddleware } from "@/slack/index.js";
-import { createRedisStore } from "@/util/rate-limit.js";
+import config from "@/config";
+import { getGoogleAuthUrl } from "@/google";
+import { apolloServer, createApolloMiddleware } from "@/graphql";
+import { getSlackMiddleware } from "@/slack";
+import { boom } from "@/util/error";
+import { createRedisStore } from "@/util/rate-limit";
 
-import { getEmailPreviewMiddleware } from "../email/express.js";
-import { getNotificationPreviewMiddleware } from "../notification/express.js";
-import { auth } from "./middlewares/auth.js";
-import { boom, subdomain } from "./util.js";
+import { getEmailPreviewMiddleware } from "../email/express";
+import { getNotificationPreviewMiddleware } from "../notification/express";
+import { auth } from "./middlewares/auth";
+import { subdomain } from "./util";
 
 export const installAppRouter = async (app: express.Application) => {
   const router = Router();

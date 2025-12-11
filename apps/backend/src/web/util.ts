@@ -1,5 +1,3 @@
-import { STATUS_CODES } from "node:http";
-import type { ErrorCode } from "@argos/error-types";
 import type { RequestHandler } from "express";
 
 import config from "@/config/index.js";
@@ -45,42 +43,3 @@ export const subdomain =
 
     next();
   };
-
-type HttpErrorOptions = ErrorOptions & {
-  details?: {
-    message: string;
-  }[];
-  code?: ErrorCode;
-};
-
-/**
- * HTTPError is a subclass of Error that includes an HTTP status code.
- */
-export class HTTPError extends Error {
-  public statusCode: number;
-  public code: ErrorCode | null;
-  public details:
-    | {
-        message: string;
-      }[]
-    | undefined;
-
-  constructor(
-    statusCode: number,
-    message?: string,
-    options?: HttpErrorOptions,
-  ) {
-    super(message || STATUS_CODES[statusCode], options);
-    this.statusCode = statusCode;
-    this.details = options?.details;
-    this.code = options?.code || null;
-  }
-}
-
-export function boom(
-  statusCode: number,
-  message?: string,
-  options?: HttpErrorOptions,
-) {
-  return new HTTPError(statusCode, message, options);
-}

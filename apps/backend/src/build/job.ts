@@ -1,18 +1,18 @@
 import { invariant } from "@argos/util/invariant";
 
-import { pushBuildNotification } from "@/build-notification/index.js";
-import { Build, Project, ScreenshotDiff } from "@/database/models/index.js";
-import { getSpendLimitThreshold } from "@/database/services/spend-limit.js";
-import { job as githubPullRequestJob } from "@/github-pull-request/job.js";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
-import { createModelJob, UnretryableError } from "@/job-core/index.js";
-import { sendNotification } from "@/notification/index.js";
-import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
-import { updateStripeUsage } from "@/stripe/index.js";
-import { redisLock } from "@/util/redis/index.js";
+import { pushBuildNotification } from "@/build-notification";
+import { Build, Project, ScreenshotDiff } from "@/database/models";
+import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import { job as githubPullRequestJob } from "@/github-pull-request/job";
+import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
+import { createModelJob, UnretryableError } from "@/job-core";
+import { sendNotification } from "@/notification";
+import { job as screenshotDiffJob } from "@/screenshot-diff";
+import { updateStripeUsage } from "@/stripe";
+import { redisLock } from "@/util/redis";
 
-import { concludeBuild } from "./concludeBuild.js";
-import { createBuildDiffs } from "./createBuildDiffs.js";
+import { concludeBuild } from "./concludeBuild";
+import { createBuildDiffs } from "./createBuildDiffs";
 
 /**
  * Pushes the diffs to the screenshot-diff job queue.

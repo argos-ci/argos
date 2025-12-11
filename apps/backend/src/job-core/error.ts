@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-const retryableSymbol = Symbol("retryable");
+import { retryableSymbol } from "@/util/error";
 
 export class UnretryableError extends Error {
   [retryableSymbol] = false;
@@ -12,7 +12,3 @@ export function unretryable(
 ): asserts condition {
   invariant(condition, message, UnretryableError);
 }
-
-export const checkIsRetryable = (error: any): boolean => {
-  return error[retryableSymbol] !== false;
-};

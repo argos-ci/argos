@@ -1,10 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
-import { BuildNotification } from "@/database/models/index.js";
-import { createModelJob } from "@/job-core/index.js";
-import { redisLock } from "@/util/redis/index.js";
+import { BuildNotification } from "@/database/models";
+import { createModelJob } from "@/job-core";
+import { redisLock } from "@/util/redis";
 
-import { processBuildNotification } from "./notifications.js";
+import { processBuildNotification } from "./notifications";
 
 export const job = createModelJob(
   "buildNotification",

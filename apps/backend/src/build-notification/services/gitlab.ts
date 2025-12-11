@@ -1,15 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import { GitbeakerRequestError } from "@gitbeaker/rest";
 
-import {
-  getGitlabClientFromAccount,
-  type GitlabClient,
-} from "@/gitlab/index.js";
-import { UnretryableError } from "@/job-core/index.js";
-import { redisLock } from "@/util/redis/index.js";
+import { getGitlabClientFromAccount, type GitlabClient } from "@/gitlab";
+import { UnretryableError } from "@/job-core";
+import { redisLock } from "@/util/redis";
 
-import type { SendNotificationContext } from "../context.js";
-import { NotificationPayload } from "../notification.js";
+import type { SendNotificationContext } from "../context";
+import { NotificationPayload } from "../notification";
 
 /**
  * Set the commit status on GitLab.

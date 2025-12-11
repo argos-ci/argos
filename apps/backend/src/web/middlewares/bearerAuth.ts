@@ -2,7 +2,7 @@
 import * as authorization from "auth-header";
 import type { RequestHandler } from "express";
 
-import { boom } from "../util.js";
+import { boom } from "@/util/error";
 
 declare global {
   namespace Express {

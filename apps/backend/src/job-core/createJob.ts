@@ -2,11 +2,11 @@ import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import { memoize } from "lodash-es";
 
-import logger from "@/logger/index.js";
-import { redisLock } from "@/util/redis/index.js";
+import logger from "@/logger";
+import { checkIsRetryable } from "@/util/error";
+import { redisLock } from "@/util/redis";
 
 import { connect } from "./amqp.js";
-import { checkIsRetryable } from "./error.js";
 
 interface Payload<TValue> {
   args: [TValue];
