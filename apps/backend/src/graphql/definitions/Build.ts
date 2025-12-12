@@ -2,13 +2,8 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import {
-  Build,
-  BuildReview,
-  IgnoredFile,
-  ScreenshotDiff,
-  ScreenshotDiffReview,
-} from "@/database/models/index.js";
+import { getPreviousDiffApprovalIds } from "@/build/approval.js";
+import { Build, ScreenshotDiff } from "@/database/models/index.js";
 
 import {
   IBaseBranchResolution,
@@ -319,55 +314,11 @@ export const resolvers: IResolvers = {
         return [];
       }
 
-      const previousApprovals = await ScreenshotDiff.query()
-        .select("screenshot_diffs.id")
-        .joinRelated("compareScreenshot")
-        .where("screenshot_diffs.buildId", build.id)
-        .whereNotExists(
-          IgnoredFile.query()
-            .where("projectId", build.projectId)
-            .whereRaw('ignored_files."testId" = screenshot_diffs."testId"')
-            .whereRaw('ignored_files."fileId" = screenshot_diffs."fileId"'),
-        )
-        .whereIn(
-          "compareScreenshot.fileId",
-          ScreenshotDiff.query()
-            .joinRelated("compareScreenshot")
-            .select("compareScreenshot.fileId")
-            .whereIn(
-              "screenshot_diffs.id",
-              ScreenshotDiffReview.query()
-                .select("screenshot_diff_reviews.screenshotDiffId")
-                .where("screenshot_diff_reviews.state", "approved")
-                .whereIn(
-                  "screenshot_diff_reviews.buildReviewId",
-                  BuildReview.query()
-                    .select("build_reviews.id")
-                    .where("build_reviews.userId", ctx.auth.user.id)
-                    .whereIn(
-                      "build_reviews.buildId",
-                      Build.query()
-                        .select("builds.id")
-                        .joinRelated("compareScreenshotBucket")
-                        .where("builds.createdAt", "<", build.createdAt)
-                        .where("builds.mode", build.mode)
-                        .where("builds.conclusion", "changes-detected")
-                        .where(
-                          "compareScreenshotBucket.name",
-                          compareBucket.name,
-                        )
-                        .where(
-                          "compareScreenshotBucket.branch",
-                          compareBucket.branch,
-                        ),
-                    )
-                    .orderBy("build_reviews.createdAt", "desc")
-                    .limit(1),
-                ),
-            ),
-        );
-
-      return previousApprovals.map((diff) => diff.id);
+      return getPreviousDiffApprovalIds({
+        build,
+        compareBucket,
+        userId: ctx.auth.user.id,
+      });
     },
   },
 };

@@ -1,10 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 
-import { transaction } from "@/database/index.js";
-import { Build, Screenshot, ScreenshotDiff } from "@/database/models/index.js";
-import type { ScreenshotBucket } from "@/database/models/index.js";
+import { transaction } from "@/database";
+import { Build, Screenshot, ScreenshotDiff } from "@/database/models";
+import type { ScreenshotBucket } from "@/database/models";
 
-import { BuildStrategy, getBuildStrategy } from "./strategy/index.js";
+import { getPreviousDiffApprovals } from "./approval";
+import { BuildStrategy, getBuildStrategy } from "./strategy";
 
 /**
  * Get the base screenshot bucket for a build, or retrieve it if it doesn't exist.
@@ -73,6 +74,9 @@ function getJobStatus({
   return "pending" as const;
 }
 
+/**
+ * Create the diffs for the build.
+ */
 export async function createBuildDiffs(build: Build) {
   // If the build already has a type, it means the diffs have already been created.
   if (build.type) {
@@ -102,16 +106,26 @@ export async function createBuildDiffs(build: Build) {
   invariant(compareScreenshots, "no compare screenshots found for build");
 
   const ctx = await strategy.getContext(richBuild);
-  const baseScreenshotBucket = await getOrRetrieveBaseScreenshotBucket({
-    build: richBuild,
-    strategy,
-    ctx,
-  });
+  const [baseScreenshotBucket, previousDiffApprovals] = await Promise.all([
+    getOrRetrieveBaseScreenshotBucket({
+      build: richBuild,
+      strategy,
+      ctx,
+    }),
+    richBuild.mergeQueue
+      ? getPreviousDiffApprovals({
+          build: richBuild,
+          compareBucket: compareScreenshotBucket,
+        })
+      : null,
+  ]);
 
   const sameBucket = Boolean(
     baseScreenshotBucket &&
     baseScreenshotBucket.id === compareScreenshotBucket.id,
   );
+
+  let noReviewNeededCount = 0;
 
   const inserts = compareScreenshots.map((compareScreenshot) => {
     const baseScreenshot = (() => {
@@ -147,6 +161,14 @@ export async function createBuildDiffs(build: Build) {
       baseScreenshot.fileId === compareScreenshot.fileId,
     );
 
+    if (
+      sameFileId ||
+      !compareScreenshot.fileId ||
+      previousDiffApprovals?.compareFileIds.has(compareScreenshot.fileId)
+    ) {
+      noReviewNeededCount++;
+    }
+
     return {
       buildId: richBuild.id,
       baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
@@ -171,33 +193,48 @@ export async function createBuildDiffs(build: Build) {
           // Don't mark failure screenshots as removed
           !ScreenshotDiff.screenshotFailureRegexp.test(name),
       )
-      .map((baseScreenshot) => ({
-        buildId: richBuild.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: null,
-        jobStatus: "complete" as const,
-        score: null,
-        testId: baseScreenshot.testId,
-      })) ?? [];
+      .map((baseScreenshot) => {
+        if (
+          !baseScreenshot.fileId ||
+          previousDiffApprovals?.baseFileIds.has(baseScreenshot.fileId)
+        ) {
+          noReviewNeededCount++;
+        }
+        return {
+          buildId: richBuild.id,
+          baseScreenshotId: baseScreenshot.id,
+          compareScreenshotId: null,
+          jobStatus: "complete" as const,
+          score: null,
+          testId: baseScreenshot.testId,
+        };
+      }) ?? [];
 
   const allInserts = [...inserts, ...removedScreenshots];
 
-  const buildType = strategy.getBuildType(
-    {
-      baseScreenshotBucket,
-      compareScreenshotBucket,
-    },
-    ctx,
-  );
+  const buildType = (() => {
+    // If all are previously approved in a merge queue context, we create a reference build.
+    if (build.mergeQueue && noReviewNeededCount === allInserts.length) {
+      return "reference";
+    }
+
+    return strategy.getBuildType(
+      {
+        baseScreenshotBucket,
+        compareScreenshotBucket,
+      },
+      ctx,
+    );
+  })();
 
   return transaction(async (trx) => {
-    const [screenshots] = await Promise.all([
+    const [diffs] = await Promise.all([
       allInserts.length > 0
         ? ScreenshotDiff.query(trx).insertAndFetch(allInserts)
         : [],
       Build.query(trx).findById(build.id).patch({ type: buildType }),
     ]);
 
-    return screenshots;
+    return diffs;
   });
 }

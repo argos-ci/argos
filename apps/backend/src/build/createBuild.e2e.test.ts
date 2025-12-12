@@ -46,6 +46,7 @@ describe("build", () => {
           "42c96859db7b13177b0d70e4e42d10c8470de30e",
         ],
         skipped: null,
+        mergeQueue: false,
       });
 
       expect(build.baseBranch).toBe("develop");

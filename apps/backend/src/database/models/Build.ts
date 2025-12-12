@@ -148,6 +148,7 @@ export class Build extends Model {
           },
           finalizedAt: { type: ["string", "null"] },
           concludedAt: { type: ["string", "null"] },
+          mergeQueue: { type: "boolean" },
         },
       },
     ],
@@ -181,6 +182,11 @@ export class Build extends Model {
   stats!: BuildStats | null;
   finalizedAt!: string | null;
   concludedAt!: string | null;
+  /**
+   * Build has been created in a merge queue.
+   * @see https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue
+   */
+  mergeQueue!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {
