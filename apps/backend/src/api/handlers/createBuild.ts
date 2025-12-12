@@ -86,6 +86,9 @@ const RequestBodySchema = z.object({
     description:
       "Whether the build was skipped, not comparing anything and always succeeding",
   }),
+  mergeQueue: z.boolean().nullable().optional().meta({
+    description: "Whether the build has been created in a merge queue",
+  }),
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
@@ -324,5 +327,6 @@ async function createBuildFromRequest(ctx: BuildContext) {
     ciProvider: body.ciProvider ?? null,
     argosSdk: body.argosSdk ?? null,
     skipped: body.skipped ?? false,
+    mergeQueue: body.mergeQueue ?? false,
   });
 }

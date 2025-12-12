@@ -61,6 +61,7 @@ export async function createBuild(params: {
   baseBranch: string | null;
   mode: BuildMode | null;
   ciProvider: string | null;
+  mergeQueue: boolean | null;
   argosSdk: string | null;
   runId: string | null;
   runAttempt: number | null;
@@ -184,6 +185,7 @@ export async function createBuild(params: {
           compareScreenshotBucketId: bucket.id,
           mode,
           ciProvider: params.ciProvider,
+          mergeQueue: params.mergeQueue ?? false,
           argosSdk: params.argosSdk,
           runId: params.runId,
           runAttempt: params.runAttempt,
