@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@eslint/js": "^9.39.1",
-    "@vitest/eslint-plugin": "^1.5.0",
+    "@vitest/eslint-plugin": "^1.5.2",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "typescript-eslint": "^8.48.0"
+    "typescript-eslint": "^8.49.0"
   }
 }
