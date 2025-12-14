@@ -19,7 +19,7 @@ import { useObjectRef } from "react-aria";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
-import { BuildPreviousReviewDialog } from "@/pages/Build/BuildPreviousReviewDialog";
+import { BuildDialogs } from "@/pages/Build/BuildDialogs";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
@@ -78,7 +78,7 @@ const _BuildFragment = graphql(`
     pullRequest {
       merged
     }
-    ...BuildPreviousReviewDialog_Build
+    ...BuildDialogs_Build
   }
 `);
 
@@ -1307,7 +1307,7 @@ export function BuildDiffDetail(props: {
               {header}
             </div>
             <BuildScreenshots build={build} diff={diff} />
-            <BuildPreviousReviewDialog build={build} />
+            <BuildDialogs build={build} />
           </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>
       ) : build.type === BuildType.Skipped ? (

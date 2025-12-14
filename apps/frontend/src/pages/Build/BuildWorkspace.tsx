@@ -12,7 +12,6 @@ import { Progress } from "@/ui/Progress";
 
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
-import { BuildOrphanDialog } from "./BuildOrphanDialog";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
 
@@ -21,7 +20,6 @@ const _BuildFragment = graphql(`
     ...BuildSidebar_Build
     ...BuildStatusDescription_Build
     ...BuildDiffDetail_Build
-    ...BuildOrphanDialog_Build
     status
     parallel {
       total
@@ -119,14 +117,7 @@ export function BuildWorkspace(props: {
           case BuildStatus.Progress:
             return <BuildProgress parallel={build.parallel} />;
           default:
-            return (
-              build && (
-                <>
-                  <BuildDetail build={build} repoUrl={repoUrl} />
-                  <BuildOrphanDialog params={params} build={build} />
-                </>
-              )
-            );
+            return build && <BuildDetail build={build} repoUrl={repoUrl} />;
         }
       })()}
     </div>
