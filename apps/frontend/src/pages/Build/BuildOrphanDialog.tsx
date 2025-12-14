@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/ui/Dialog";
 import { Link } from "@/ui/Link";
-import { Modal } from "@/ui/Modal";
 import * as sessionStorage from "@/util/session-storage";
 
 import { getProjectURL } from "../Project/ProjectParams";
@@ -27,11 +26,10 @@ const _BuildFragment = graphql(`
   }
 `);
 
-export function BuildOrphanDialog(props: {
+export function useBuildOrphanDialogState(props: {
   build: DocumentType<typeof _BuildFragment>;
-  params: BuildParams;
 }) {
-  const { build, params } = props;
+  const { build } = props;
 
   if (sessionStorage.getItem("buildOrphanDialogDismissed") === "true") {
     return null;
@@ -41,74 +39,80 @@ export function BuildOrphanDialog(props: {
     return null;
   }
 
+  return {
+    defaultOpen: true,
+    onOpenChange: (isOpen: boolean) => {
+      if (!isOpen) {
+        sessionStorage.setItem("buildOrphanDialogDismissed", "true");
+      }
+    },
+  };
+}
+
+export function BuildOrphanDialog(props: {
+  build: DocumentType<typeof _BuildFragment>;
+  params: BuildParams;
+}) {
+  const { build, params } = props;
+
   return (
-    <Modal
-      defaultOpen
-      onOpenChange={(open) => {
-        if (!open) {
-          sessionStorage.setItem("buildOrphanDialogDismissed", "true");
-        }
-      }}
-    >
-      <Dialog size="medium">
-        <DialogBody>
-          <DialogTitle>Welcome to an orphan build!</DialogTitle>
-          <DialogText>
-            An <strong>orphan build</strong> means Argos doesn't have a prior
-            set of screenshots to compare with this build. It's totally normal
-            for the first builds.
-          </DialogText>
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>Welcome to an orphan build!</DialogTitle>
+        <DialogText>
+          An <strong>orphan build</strong> means Argos doesn't have a prior set
+          of screenshots to compare with this build. It's totally normal for the
+          first builds.
+        </DialogText>
 
-          <h3 className="mt-4 mb-1 text-base font-medium">Next Steps?</h3>
-          {(() => {
-            switch (build.mode) {
-              case BuildMode.Ci: {
-                return (
-                  <>
-                    <p>
-                      To begin visual comparisons, run Argos on the base branch
-                      of this build: <Code>{build.baseBranch}</Code>.
-                    </p>
-
-                    <h3 className="mt-4 mb-1 text-base font-medium">
-                      Create baseline for future builds
-                    </h3>
-                    <p>
-                      Set your CI pipeline to run Argos on push, on a branch
-                      that matches <Code>{build.baseBranch}</Code>. This creates
-                      a <strong>baseline</strong> to compare with future builds.
-                    </p>
-
-                    <p className="text-low mt-2">
-                      <LightBulbIcon className="inline" /> You can configure
-                      auto-approved branches in{" "}
-                      <Link href={`${getProjectURL(params)}/settings`}>
-                        project's settings
-                      </Link>
-                      .
-                    </p>
-                  </>
-                );
-              }
-              case BuildMode.Monitoring: {
-                return (
+        <h3 className="mt-4 mb-1 text-base font-medium">Next Steps?</h3>
+        {(() => {
+          switch (build.mode) {
+            case BuildMode.Ci: {
+              return (
+                <>
                   <p>
-                    To begin visual comparisons, approve this build. This will
-                    be used as a{" "}
-                    <strong className="font-semibold">baseline</strong> to
-                    compare with future builds.
+                    To begin visual comparisons, run Argos on the base branch of
+                    this build: <Code>{build.baseBranch}</Code>.
                   </p>
-                );
-              }
-              default:
-                assertNever(build.mode);
+
+                  <h3 className="mt-4 mb-1 text-base font-medium">
+                    Create baseline for future builds
+                  </h3>
+                  <p>
+                    Set your CI pipeline to run Argos on push, on a branch that
+                    matches <Code>{build.baseBranch}</Code>. This creates a{" "}
+                    <strong>baseline</strong> to compare with future builds.
+                  </p>
+
+                  <p className="text-low mt-2">
+                    <LightBulbIcon className="inline" /> You can configure
+                    auto-approved branches in{" "}
+                    <Link href={`${getProjectURL(params)}/settings`}>
+                      project's settings
+                    </Link>
+                    .
+                  </p>
+                </>
+              );
             }
-          })()}
-        </DialogBody>
-        <DialogFooter>
-          <DialogDismiss>I got it!</DialogDismiss>
-        </DialogFooter>
-      </Dialog>
-    </Modal>
+            case BuildMode.Monitoring: {
+              return (
+                <p>
+                  To begin visual comparisons, approve this build. This will be
+                  used as a <strong className="font-semibold">baseline</strong>{" "}
+                  to compare with future builds.
+                </p>
+              );
+            }
+            default:
+              assertNever(build.mode);
+          }
+        })()}
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss>I got it!</DialogDismiss>
+      </DialogFooter>
+    </Dialog>
   );
 }

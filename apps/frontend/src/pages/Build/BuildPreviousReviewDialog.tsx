@@ -11,7 +11,6 @@ import {
   DialogTitle,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
-import { Modal } from "@/ui/Modal";
 
 import {
   EvaluationStatus,
@@ -26,7 +25,7 @@ const _BuildFragment = graphql(`
   }
 `);
 
-export function BuildPreviousReviewDialog(props: {
+export function useBuildPreviousReviewDialogState(props: {
   build: DocumentType<typeof _BuildFragment>;
 }) {
   const { build } = props;
@@ -43,24 +42,30 @@ export function BuildPreviousReviewDialog(props: {
     return null;
   }
 
+  return { defaultOpen: true };
+}
+
+export function BuildPreviousReviewDialog(props: {
+  build: DocumentType<typeof _BuildFragment>;
+}) {
+  const { build } = props;
+
   return (
-    <Modal defaultOpen>
-      <Dialog size="medium">
-        <DialogBody>
-          <DialogTitle>Previous approvals detected</DialogTitle>
-          <DialogText>
-            We found approved diffs from a previous build on the same branch. Do
-            you want to reapply those approvals?
-          </DialogText>
-        </DialogBody>
-        <DialogFooter>
-          <DialogDismiss>Cancel</DialogDismiss>
-          <ReapplyPreviousApprovalsButton
-            branchApprovedDiffs={build.branchApprovedDiffs}
-          />
-        </DialogFooter>
-      </Dialog>
-    </Modal>
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>Previous approvals detected</DialogTitle>
+        <DialogText>
+          We found approved diffs from a previous build on the same branch. Do
+          you want to reapply those approvals?
+        </DialogText>
+      </DialogBody>
+      <DialogFooter>
+        <DialogDismiss>Cancel</DialogDismiss>
+        <ReapplyPreviousApprovalsButton
+          branchApprovedDiffs={build.branchApprovedDiffs}
+        />
+      </DialogFooter>
+    </Dialog>
   );
 }
 
