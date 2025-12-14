@@ -18,6 +18,13 @@ export async function getPreviousDiffApprovalIds(
 ) {
   const previousApprovals = await getPreviousDiffApprovals(args);
 
+  if (
+    previousApprovals.compareFileIds.size === 0 &&
+    previousApprovals.baseFileIds.size === 0
+  ) {
+    return [];
+  }
+
   const diffs = await ScreenshotDiff.query()
     .select("screenshot_diffs.id")
     .leftJoinRelated("[compareScreenshot,baseScreenshot]")
@@ -76,12 +83,13 @@ export async function getPreviousDiffApprovals(
   const buildReviewQuery = BuildReview.query()
     .select("build_reviews.id")
     .whereIn("build_reviews.buildId", buildQuery)
+    .where((qb) => {
+      if (userId) {
+        qb.where("build_reviews.userId", userId);
+      }
+    })
     .orderBy("build_reviews.createdAt", "desc")
     .limit(1);
-
-  if (userId) {
-    buildReviewQuery.where("build_reviews.userId", userId);
-  }
 
   const diffs = await ScreenshotDiff.query()
     .withGraphFetched("[compareScreenshot,baseScreenshot]")
