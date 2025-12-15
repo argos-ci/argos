@@ -60,7 +60,7 @@ type GetPreviousFilesApprovalQueryArgs = {
  * Get the previously approved file ids.
  * Optionally specify a specific user.
  */
-export async function getPreviousDiffApprovals(
+async function getPreviousDiffApprovals(
   args: GetPreviousFilesApprovalQueryArgs,
 ) {
   const { build, compareBucket, userId } = args;

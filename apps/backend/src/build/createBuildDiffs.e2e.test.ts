@@ -256,63 +256,6 @@ describe("#createBuildDiffs", () => {
         expect(updatedBuild?.type).toBe("check");
       });
     });
-
-    describe("with a merge queue and previously approved builds", () => {
-      beforeEach(async () => {
-        await Build.query().findById(build.id).patch({ mergeQueue: true });
-        build.mergeQueue = true;
-        const previousCompareBucket = await factory.ScreenshotBucket.create({
-          projectId: project.id,
-          branch: compareBucket.branch,
-          name: compareBucket.name,
-        });
-        const previousBaseBucket = await factory.ScreenshotBucket.create({
-          projectId: project.id,
-          branch: "masterx",
-          name: compareBucket.name,
-        });
-        const previousBuild = await factory.Build.create({
-          createdAt: "2020-01-01",
-          compareScreenshotBucketId: previousCompareBucket.id,
-          baseScreenshotBucketId: previousBaseBucket.id,
-          conclusion: "changes-detected",
-        });
-        const allScreenshots = [
-          newScreenshot,
-          newScreenshotWithoutFile,
-          ...screenshots,
-        ].filter((x) => x !== undefined);
-        await factory.Screenshot.createMany(
-          allScreenshots.length,
-          allScreenshots.map((screenshot) => ({
-            fileId: screenshot.fileId,
-            screenshotBucketId:
-              screenshot.screenshotBucketId === compareBucket.id
-                ? previousCompareBucket.id
-                : previousBaseBucket.id,
-          })),
-        );
-        const previousDiffs = await createBuildDiffs(previousBuild);
-        const buildReview = await factory.BuildReview.create({
-          buildId: previousBuild.id,
-          state: "approved",
-        });
-        await factory.ScreenshotDiffReview.createMany(
-          previousDiffs.length,
-          previousDiffs.map((diff) => ({
-            buildReviewId: buildReview.id,
-            screenshotDiffId: diff.id,
-            state: "approved",
-          })),
-        );
-      });
-
-      it("should return the diffs", async () => {
-        await createBuildDiffs(build);
-        const updatedBuild = await Build.query().findById(build.id);
-        expect(updatedBuild!.type).toBe("reference");
-      });
-    });
   });
 
   describe("without base bucket", () => {

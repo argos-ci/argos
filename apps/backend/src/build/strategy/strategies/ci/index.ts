@@ -53,6 +53,39 @@ async function getBase(
   );
   invariant(project, "no project found", UnretryableError);
 
+  if (build.mergeQueue) {
+    const lastApprovedBuild = await Build.query()
+      .withGraphFetched("compareScreenshotBucket")
+      .joinRelated("compareScreenshotBucket")
+      .where("projectId", build.projectId)
+      .where("name", build.name)
+      .where("mode", "ci")
+      .where("jobStatus", "complete")
+      .whereNot("id", build.id)
+      .where("compareScreenshotBucket.branch", compareScreenshotBucket.branch)
+      .where((qb) => {
+        if (build.githubPullRequestId) {
+          qb.where("githubPullRequestId", build.githubPullRequestId);
+        }
+      })
+      .whereExists(Build.submittedReviewQuery().where("state", "approved"))
+      .orderBy("id", "desc")
+      .first();
+
+    if (lastApprovedBuild) {
+      invariant(
+        lastApprovedBuild.compareScreenshotBucket,
+        "No compareScreenshotBucket found",
+      );
+
+      return {
+        baseScreenshotBucket: lastApprovedBuild.compareScreenshotBucket,
+        baseBranch: null,
+        baseBranchResolvedFrom: null,
+      };
+    }
+  }
+
   const gitProvider = gitProviders.find((s) => s.detect(project));
 
   const { baseBranch, baseBranchResolvedFrom } = await (async () => {
