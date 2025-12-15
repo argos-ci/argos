@@ -307,6 +307,10 @@ export const resolvers: IResolvers = {
         return [];
       }
 
+      if (build.conclusion !== "changes-detected") {
+        return [];
+      }
+
       const compareBucket = await getCompareScreenshotBucket(ctx, build);
 
       // If branch is not set, we cannot find previous approvals

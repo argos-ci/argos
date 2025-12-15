@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { invariant } from "@argos/util/invariant";
 
 import { DocumentType, graphql } from "@/gql";
 import { Modal } from "@/ui/Modal";
@@ -26,7 +25,6 @@ export function BuildDialogs(props: {
 }) {
   const { build } = props;
   const params = useBuildParams();
-  invariant(params, "Only in build");
 
   const previousReviewDialogState = useBuildPreviousReviewDialogState({
     build,
@@ -45,7 +43,7 @@ export function BuildDialogs(props: {
     );
   }
 
-  if (initialOrphanDialogState) {
+  if (initialOrphanDialogState && params) {
     return (
       <Modal {...initialOrphanDialogState}>
         <BuildOrphanDialog params={params} build={build} />
