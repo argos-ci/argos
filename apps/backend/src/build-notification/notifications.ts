@@ -45,9 +45,16 @@ export async function processBuildNotification(
     UnretryableError,
   );
 
-  const commit =
-    buildNotification.build.prHeadCommit ??
-    buildNotification.build.compareScreenshotBucket.commit;
+  const commit = (() => {
+    // In merge queue, we never notify the PR head commit but the merge queue itself.
+    if (
+      !buildNotification.build.mergeQueue &&
+      buildNotification.build.prHeadCommit
+    ) {
+      return buildNotification.build.prHeadCommit;
+    }
+    return buildNotification.build.compareScreenshotBucket.commit;
+  })();
 
   const summaryCheckConfig = buildNotification.build.project.summaryCheck;
 
