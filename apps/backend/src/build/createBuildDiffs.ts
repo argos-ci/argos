@@ -4,7 +4,6 @@ import { transaction } from "@/database";
 import { Build, Screenshot, ScreenshotDiff } from "@/database/models";
 import type { ScreenshotBucket } from "@/database/models";
 
-import { getPreviousDiffApprovals } from "./approval";
 import { BuildStrategy, getBuildStrategy } from "./strategy";
 
 /**
@@ -106,26 +105,16 @@ export async function createBuildDiffs(build: Build) {
   invariant(compareScreenshots, "no compare screenshots found for build");
 
   const ctx = await strategy.getContext(richBuild);
-  const [baseScreenshotBucket, previousDiffApprovals] = await Promise.all([
-    getOrRetrieveBaseScreenshotBucket({
-      build: richBuild,
-      strategy,
-      ctx,
-    }),
-    richBuild.mergeQueue
-      ? getPreviousDiffApprovals({
-          build: richBuild,
-          compareBucket: compareScreenshotBucket,
-        })
-      : null,
-  ]);
+  const baseScreenshotBucket = await getOrRetrieveBaseScreenshotBucket({
+    build: richBuild,
+    strategy,
+    ctx,
+  });
 
   const sameBucket = Boolean(
     baseScreenshotBucket &&
     baseScreenshotBucket.id === compareScreenshotBucket.id,
   );
-
-  let noReviewNeededCount = 0;
 
   const inserts = compareScreenshots.map((compareScreenshot) => {
     const baseScreenshot = (() => {
@@ -161,14 +150,6 @@ export async function createBuildDiffs(build: Build) {
       baseScreenshot.fileId === compareScreenshot.fileId,
     );
 
-    if (
-      sameFileId ||
-      !compareScreenshot.fileId ||
-      previousDiffApprovals?.compareFileIds.has(compareScreenshot.fileId)
-    ) {
-      noReviewNeededCount++;
-    }
-
     return {
       buildId: richBuild.id,
       baseScreenshotId: baseScreenshot ? baseScreenshot.id : null,
@@ -194,12 +175,6 @@ export async function createBuildDiffs(build: Build) {
           !ScreenshotDiff.screenshotFailureRegexp.test(name),
       )
       .map((baseScreenshot) => {
-        if (
-          !baseScreenshot.fileId ||
-          previousDiffApprovals?.baseFileIds.has(baseScreenshot.fileId)
-        ) {
-          noReviewNeededCount++;
-        }
         return {
           buildId: richBuild.id,
           baseScreenshotId: baseScreenshot.id,
@@ -213,11 +188,6 @@ export async function createBuildDiffs(build: Build) {
   const allInserts = [...inserts, ...removedScreenshots];
 
   const buildType = (() => {
-    // If all are previously approved in a merge queue context, we create a reference build.
-    if (build.mergeQueue && noReviewNeededCount === allInserts.length) {
-      return "reference";
-    }
-
     return strategy.getBuildType(
       {
         baseScreenshotBucket,
