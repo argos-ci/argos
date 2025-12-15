@@ -539,12 +539,12 @@ export class Build extends Model {
     return BuildReview.query()
       .select(1)
       .whereRaw('build_reviews."buildId" = builds.id')
-      .whereIn("id", (qb) => {
-        qb.select("id")
+      .whereIn("build_reviews.id", (qb) => {
+        qb.select("build_reviews.id")
           .from("build_reviews")
           .whereRaw('build_reviews."buildId" = builds.id')
-          .whereIn("state", ["approved", "rejected"])
-          .orderBy("id", "desc")
+          .whereIn("build_reviews.state", ["approved", "rejected"])
+          .orderBy("build_reviews.id", "desc")
           .limit(1);
       });
   }

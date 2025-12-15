@@ -57,19 +57,21 @@ async function getBase(
     const lastApprovedBuild = await Build.query()
       .withGraphFetched("compareScreenshotBucket")
       .joinRelated("compareScreenshotBucket")
-      .where("projectId", build.projectId)
-      .where("name", build.name)
-      .where("mode", "ci")
-      .where("jobStatus", "complete")
-      .whereNot("id", build.id)
+      .where("builds.projectId", build.projectId)
+      .where("builds.name", build.name)
+      .where("builds.mode", "ci")
+      .where("builds.jobStatus", "complete")
+      .whereNot("builds.id", build.id)
       .where("compareScreenshotBucket.branch", compareScreenshotBucket.branch)
       .where((qb) => {
         if (build.githubPullRequestId) {
-          qb.where("githubPullRequestId", build.githubPullRequestId);
+          qb.where("builds.githubPullRequestId", build.githubPullRequestId);
         }
       })
-      .whereExists(Build.submittedReviewQuery().where("state", "approved"))
-      .orderBy("id", "desc")
+      .whereExists(
+        Build.submittedReviewQuery().where("build_reviews.state", "approved"),
+      )
+      .orderBy("builds.id", "desc")
       .first();
 
     if (lastApprovedBuild) {
