@@ -20,7 +20,11 @@ import {
 
 import { NotFound } from "../NotFound";
 import { useProjectParams } from "../Project/ProjectParams";
-import { AutomationRulesList } from "./AutomationRulesList";
+import {
+  AutomationRulesList,
+  DeleteAutomation,
+  useDeleteAutomationState,
+} from "./AutomationRulesList";
 
 const ProjectQuery = graphql(`
   query ProjectAutomations_project_Automations(
@@ -96,9 +100,21 @@ function PageContent(props: { project: ProjectDocument }) {
     return <NotFound />;
   }
 
-  if (automationRuleConnection.pageInfo.totalCount === 0) {
-    return (
-      <PageContainer>
+  return (
+    <PageContainer>
+      <PageContentFound project={project} />
+    </PageContainer>
+  );
+}
+
+function PageContentFound(props: { project: ProjectDocument }) {
+  const { project } = props;
+
+  const deleteAutomationState = useDeleteAutomationState();
+
+  return (
+    <>
+      {project.automationRules.pageInfo.totalCount === 0 ? (
         <EmptyState>
           <EmptyStateIcon>
             <BoxesIcon strokeWidth={1} />
@@ -111,31 +127,31 @@ function PageContent(props: { project: ProjectDocument }) {
             <AddAutomationButton />
           </EmptyStateActions>
         </EmptyState>
-      </PageContainer>
-    );
-  }
-
-  return (
-    <PageContainer>
-      <PageHeader>
-        <PageHeaderContent>
-          <Heading>Automations Rules</Heading>
-          <Text slot="headline">
-            Set up rules to trigger actions or notifications when specific
-            events happen in your project.
-          </Text>
-        </PageHeaderContent>
-        <PageHeaderActions>
-          <AddAutomationButton variant="secondary" />
-        </PageHeaderActions>
-      </PageHeader>
-      <div className="relative flex-1">
-        <AutomationRulesList
-          automationRules={automationRuleConnection.edges}
-          projectId={project.id}
-        />
-      </div>
-    </PageContainer>
+      ) : (
+        <>
+          <PageHeader>
+            <PageHeaderContent>
+              <Heading>Automations Rules</Heading>
+              <Text slot="headline">
+                Set up rules to trigger actions or notifications when specific
+                events happen in your project.
+              </Text>
+            </PageHeaderContent>
+            <PageHeaderActions>
+              <AddAutomationButton variant="secondary" />
+            </PageHeaderActions>
+          </PageHeader>
+          <div className="relative flex-1">
+            <AutomationRulesList
+              automationRules={project.automationRules.edges}
+              onDelete={deleteAutomationState.setDeletedId}
+            />
+          </div>
+        </>
+      )}
+      {/* When we delete the last automation we want to preserve the animation*/}
+      <DeleteAutomation state={deleteAutomationState} projectId={project.id} />
+    </>
   );
 }
 
