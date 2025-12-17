@@ -18,22 +18,19 @@ async function getOrCreatePullRequestComment({
   octokit: Octokit;
   pullRequest: GithubPullRequest;
 }) {
-  await redisLock.acquire(["create-pr-comment", pullRequest.id], async () => {
-    await pullRequest.$query();
-    if (pullRequest.commentId) {
-      return pullRequest.commentId;
+  return redisLock.acquire(["create-pr-comment", pullRequest.id], async () => {
+    const freshPR = await pullRequest.$query();
+    if (freshPR.commentId) {
+      return freshPR.commentId;
     }
 
     const { data } = await octokit.issues.createComment({
       owner,
       repo,
-      issue_number: pullRequest.number,
+      issue_number: freshPR.number,
       body,
     });
-    await pullRequest
-      .$clone()
-      .$query()
-      .patch({ commentId: String(data.id) });
+    await freshPR.$query().patch({ commentId: String(data.id) });
     return null;
   });
 }
