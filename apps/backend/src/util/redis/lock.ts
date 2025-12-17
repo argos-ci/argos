@@ -15,7 +15,7 @@ async function acquireLock({
 }) {
   return new Promise<string>((resolve, reject) => {
     function tryAcquire() {
-      const rdn = Math.random().toString(36);
+      const rdn = crypto.randomUUID();
       client
         .set(name, rdn, {
           expiration: {
