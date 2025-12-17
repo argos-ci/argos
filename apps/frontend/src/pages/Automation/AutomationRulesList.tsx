@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
@@ -102,10 +102,12 @@ function LastTriggerStatusIcon({
   );
 }
 
-function AutomationRow(props: {
+type AutomationRowProps = {
   automationRule: AutomationRule;
   onDelete: (id: string) => void;
-}) {
+};
+
+function AutomationRow(props: AutomationRowProps) {
   const { automationRule, onDelete } = props;
   const params = useProjectParams();
   invariant(params, "Project params must be defined");
@@ -178,57 +180,81 @@ function AutomationRow(props: {
   );
 }
 
-export function AutomationRulesList(props: {
-  automationRules: AutomationRule[];
-  projectId: string;
-}) {
-  const { automationRules, projectId } = props;
-  const parentRef = useRef<HTMLDivElement>(null);
+type DeleteAutomationState = {
+  deletedId: string | null;
+  setDeletedId: Dispatch<SetStateAction<string | null>>;
+};
+
+export function useDeleteAutomationState(): DeleteAutomationState {
   const [deletedId, setDeletedId] = useState<string | null>(null);
+  return { deletedId, setDeletedId };
+}
+
+export function DeleteAutomation(props: {
+  projectId: string;
+  state: DeleteAutomationState;
+}) {
+  const { projectId, state } = props;
+  const { deletedId, setDeletedId } = state;
   const latestDeletedId = useLatestTruethyValue(deletedId);
 
-  return (
-    <>
-      <List
-        ref={parentRef}
-        className="absolute max-h-full w-full"
-        style={{ display: "block" }}
-      >
-        <div className="relative">
-          <ListHeaderRow>
-            <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>
-            <div className="w-32 shrink-0">Triggers</div>
-            <div className="w-36 shrink-0">Last triggered</div>
-            <div className="w-28 shrink-0">Created</div>
-            <div className="w-8 shrink-0" />
-          </ListHeaderRow>
+  if (!latestDeletedId) {
+    return null;
+  }
 
-          {automationRules.map((automationRule) => (
-            <AutomationRow
-              key={`automation-${automationRule.id}`}
-              automationRule={automationRule}
-              onDelete={setDeletedId}
-            />
-          ))}
-        </div>
-      </List>
-      {latestDeletedId ? (
-        <DialogTrigger
-          isOpen={Boolean(deletedId)}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) {
-              setDeletedId(null);
-            }
+  return (
+    <DialogTrigger
+      isOpen={Boolean(deletedId)}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          setDeletedId(null);
+        }
+      }}
+    >
+      <Modal>
+        <DeleteAutomationDialog
+          projectId={projectId}
+          automationRuleId={latestDeletedId}
+          onCompleted={() => {
+            setDeletedId(null);
           }}
-        >
-          <Modal>
-            <DeleteAutomationDialog
-              projectId={projectId}
-              automationRuleId={latestDeletedId}
-            />
-          </Modal>
-        </DialogTrigger>
-      ) : null}
-    </>
+        />
+      </Modal>
+    </DialogTrigger>
+  );
+}
+
+export function AutomationRulesList(
+  props: Pick<AutomationRowProps, "onDelete"> & {
+    automationRules: AutomationRule[];
+  },
+) {
+  const { automationRules, onDelete } = props;
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <List
+      ref={parentRef}
+      className="absolute max-h-full w-full"
+      style={{ display: "block" }}
+    >
+      <div className="relative">
+        <ListHeaderRow>
+          <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>
+          <div className="w-32 shrink-0">Triggers</div>
+          <div className="w-36 shrink-0">Last triggered</div>
+          <div className="w-28 shrink-0">Created</div>
+          <div className="w-8 shrink-0" />
+        </ListHeaderRow>
+
+        {automationRules.map((automationRule) => (
+          <AutomationRow
+            key={`automation-${automationRule.id}`}
+            automationRule={automationRule}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </List>
   );
 }
