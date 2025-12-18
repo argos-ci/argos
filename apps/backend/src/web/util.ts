@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
 /**
  * Takes a route handling function and returns

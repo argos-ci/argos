@@ -1,19 +1,19 @@
 import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
-import { concludeBuild } from "@/build/concludeBuild.js";
+import { concludeBuild } from "@/build/concludeBuild";
 import {
   Account,
   Build,
   BuildReview,
   Project,
   ScreenshotDiff,
-} from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+} from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo.js";
-import { expectNoGraphQLError } from "../testing.js";
-import { createApolloServerApp } from "./util.js";
+import { apolloServer, createApolloMiddleware } from "../apollo";
+import { expectNoGraphQLError } from "../testing";
+import { createApolloServerApp } from "./util";
 
 type Fixtures = {
   fixture: {

@@ -1,6 +1,6 @@
 import { RedisStore } from "rate-limit-redis";
 
-import { getRedisClient } from "./redis/client.js";
+import { getRedisClient } from "./redis/client";
 
 export function createRedisStore(name: string) {
   return new RedisStore({

@@ -1,10 +1,10 @@
 import { Model, type JSONSchema, type RelationMappings } from "objection";
 import { z } from "zod";
 
-import { TeamUserLevelSchema } from "../schemas/TeamUserLevel.js";
-import { generateRandomHexString } from "../services/crypto.js";
-import { Team } from "./Team.js";
-import { User } from "./User.js";
+import { TeamUserLevelSchema } from "../schemas/TeamUserLevel";
+import { generateRandomHexString } from "../services/crypto";
+import { Team } from "./Team";
+import { User } from "./User";
 
 export class TeamInvite extends Model {
   static override tableName = "team_invites";

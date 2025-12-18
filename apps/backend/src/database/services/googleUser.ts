@@ -1,7 +1,7 @@
-import { GoogleUserProfile } from "@/google/auth.js";
+import { GoogleUserProfile } from "@/google/auth";
 
-import { GoogleUser } from "../models/GoogleUser.js";
-import { getPartialModelUpdate } from "../util/update.js";
+import { GoogleUser } from "../models/GoogleUser";
+import { getPartialModelUpdate } from "../util/update";
 
 export async function getOrCreateGoogleUser(
   profile: GoogleUserProfile,

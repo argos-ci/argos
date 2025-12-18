@@ -2,7 +2,7 @@ import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 import type * as Bolt from "@slack/bolt";
 
-import config from "@/config/index.js";
+import config from "@/config";
 import { SlackChannel } from "@/database/models";
 
 import { deleteInstallation, slackInstallationQuery } from "./helpers";

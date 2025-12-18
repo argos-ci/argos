@@ -1,12 +1,12 @@
 import { assertNever } from "@argos/util/assertNever";
 import type { PartialModelObject } from "objection";
 
-import { slugify } from "@/util/slug.js";
+import { slugify } from "@/util/slug";
 
-import { Account } from "../models/Account.js";
-import { Team } from "../models/Team.js";
-import { TeamUser } from "../models/TeamUser.js";
-import { transaction } from "../transaction.js";
+import { Account } from "../models/Account";
+import { Team } from "../models/Team";
+import { TeamUser } from "../models/TeamUser";
+import { transaction } from "../transaction";
 
 const resolveTeamSlug = async (name: string, index = 0): Promise<string> => {
   const nameSlug = slugify(name);

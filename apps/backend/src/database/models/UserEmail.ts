@@ -1,6 +1,6 @@
 import { Model, type RelationMappings } from "objection";
 
-import { User } from "./User.js";
+import { User } from "./User";
 
 export class UserEmail extends Model {
   static override tableName = "user_emails";

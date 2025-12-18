@@ -1,10 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
-import {
-  NotificationMessage,
-  NotificationWorkflow,
-} from "@/database/models/index.js";
-import { createModelJob } from "@/job-core/index.js";
+import { NotificationMessage, NotificationWorkflow } from "@/database/models";
+import { createModelJob } from "@/job-core";
 
 import { notificationMessageJob } from "./message-job";
 

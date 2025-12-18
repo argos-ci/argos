@@ -7,14 +7,14 @@ import {
   GithubInstallation,
   Plan,
   Subscription,
-} from "@/database/models/index.js";
-import { getOrCreateUserAccountFromGhAccount } from "@/database/services/account.js";
+} from "@/database/models";
+import { getOrCreateUserAccountFromGhAccount } from "@/database/services/account";
 import {
   getGhAccountType,
   getOrCreateGhAccount,
-} from "@/database/services/github.js";
+} from "@/database/services/github";
 import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
-import { createTeamAccount } from "@/database/services/team.js";
+import { createTeamAccount } from "@/database/services/team";
 
 type PartialMarketplacePurchasePurchasedEventPayload = {
   marketplace_purchase: {

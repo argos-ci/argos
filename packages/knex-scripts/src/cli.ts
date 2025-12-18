@@ -3,12 +3,12 @@ import { resolve } from "node:path";
 import { fileURLToPath, URL } from "node:url";
 import { program } from "commander";
 
-import { addCheckStructureCommand } from "./check-structure.js";
-import { addCreateCommand } from "./create.js";
-import { addDropCommand } from "./drop.js";
-import { addDumpCommand } from "./dump.js";
-import { addLoadCommand } from "./load.js";
-import { addTruncateCommand } from "./truncate.js";
+import { addCheckStructureCommand } from "./check-structure";
+import { addCreateCommand } from "./create";
+import { addDropCommand } from "./drop";
+import { addDumpCommand } from "./dump";
+import { addLoadCommand } from "./load";
+import { addTruncateCommand } from "./truncate";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

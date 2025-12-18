@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
+import { ScreenshotBucket } from "./ScreenshotBucket";
 
 const baseData = {
   name: "878",

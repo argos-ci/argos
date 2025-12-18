@@ -132,7 +132,6 @@ function ErrorFallback(props: { error: unknown; provider: AuthProvider }) {
   return <UniversalNavigate to={getLoginUrl(error)} replace />;
 }
 
-/** @route */
 export function Component() {
   const params = useParams();
   const { provider } = params;

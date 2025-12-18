@@ -1,8 +1,8 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 
-import { createTestApp } from "../test-util.js";
-import { validate } from "./validate.js";
+import { createTestApp } from "../test-util";
+import { validate } from "./validate";
 
 describe("validate", () => {
   it("validates query", async () => {

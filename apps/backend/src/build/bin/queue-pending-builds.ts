@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { callbackify } from "node:util";
 
-import { Build } from "@/database/models/index.js";
-import logger from "@/logger/index.js";
+import { Build } from "@/database/models";
+import logger from "@/logger";
 
-import { job } from "../job.js";
+import { job } from "../job";
 
 const main = callbackify(async () => {
   const nodes = await Build.query()

@@ -147,7 +147,6 @@ const PERIODS = {
 
 type TestPeriodState = PeriodState<typeof PERIODS>;
 
-/** @route */
 export function Component() {
   const compactFormatter = useNumberFormatter({
     notation: "compact",

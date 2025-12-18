@@ -111,7 +111,6 @@ function Project(props: ProjectParams) {
   );
 }
 
-/** @route */
 export function Component() {
   const params = useProjectParams();
   invariant(params, "Can't be used outside of a test route");

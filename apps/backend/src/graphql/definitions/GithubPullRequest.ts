@@ -5,7 +5,7 @@ import gqlTag from "graphql-tag";
 import {
   IPullRequestState,
   type IResolvers,
-} from "../__generated__/resolver-types.js";
+} from "../__generated__/resolver-types";
 
 const { gql } = gqlTag;
 

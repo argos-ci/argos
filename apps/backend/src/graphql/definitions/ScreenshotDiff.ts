@@ -1,15 +1,15 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { getStartDateFromPeriod } from "@/metrics/test.js";
-import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage/index.js";
+import { getStartDateFromPeriod } from "@/metrics/test";
+import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
 
 import {
   IResolvers,
   IScreenshotDiffResolvers,
   IScreenshotDiffStatus,
-} from "../__generated__/resolver-types.js";
-import { getVariantKey } from "../services/variant-key.js";
+} from "../__generated__/resolver-types";
+import { getVariantKey } from "../services/variant-key";
 
 const { gql } = gqlTag;
 

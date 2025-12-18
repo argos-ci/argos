@@ -1,10 +1,10 @@
 import gqlTag from "graphql-tag";
 
-import { GithubInstallation } from "@/database/models/GithubInstallation.js";
-import { getInstallationOctokit, getTokenOctokit } from "@/github/index.js";
+import { GithubInstallation } from "@/database/models/GithubInstallation";
+import { getInstallationOctokit, getTokenOctokit } from "@/github";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
-import { forbidden, notFound, unauthenticated } from "../util.js";
+import type { IResolvers } from "../__generated__/resolver-types";
+import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 

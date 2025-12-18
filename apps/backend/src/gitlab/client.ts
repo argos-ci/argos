@@ -1,7 +1,7 @@
 import { Gitlab } from "@gitbeaker/rest";
 
 import config from "@/config";
-import type { Account } from "@/database/models/index.js";
+import type { Account } from "@/database/models";
 import { sendNotification } from "@/notification";
 
 export type { ExpandedUserSchema } from "@gitbeaker/rest";

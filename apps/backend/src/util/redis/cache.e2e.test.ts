@@ -2,9 +2,9 @@ import { setTimeout as delay } from "node:timers/promises";
 import { createClient, RedisClientType } from "redis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { createRedisCacheClient } from "./cache.js";
+import { createRedisCacheClient } from "./cache";
 
 describe("redis-cache", () => {
   let client: RedisClientType;

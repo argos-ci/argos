@@ -231,7 +231,6 @@ function NewAutomationForm(props: { project: ProjectDocument }) {
   );
 }
 
-/** @route */
 export function Component() {
   const { permissions } = useProjectOutletContext();
   const hasAdminPermission = permissions.includes(ProjectPermission.Admin);

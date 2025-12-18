@@ -470,7 +470,6 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
   );
 }
 
-/** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
 

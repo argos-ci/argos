@@ -1,9 +1,9 @@
 import { Router } from "express";
 
 import { knex } from "@/database";
-import { ScreenshotDiff } from "@/database/models/ScreenshotDiff.js";
+import { ScreenshotDiff } from "@/database/models/ScreenshotDiff";
 
-import { asyncHandler } from "../util.js";
+import { asyncHandler } from "../util";
 
 const router: Router = Router();
 

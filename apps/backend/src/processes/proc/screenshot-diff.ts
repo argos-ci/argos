@@ -1,6 +1,6 @@
-import "../setup.js";
+import "../setup";
 
-import { createJobWorker } from "@/job-core/index.js";
-import { job as screenshotDiffJob } from "@/screenshot-diff/index.js";
+import { createJobWorker } from "@/job-core";
+import { job as screenshotDiffJob } from "@/screenshot-diff";
 
 createJobWorker(screenshotDiffJob);

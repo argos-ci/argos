@@ -1,7 +1,7 @@
-import { GithubSynchronization } from "@/database/models/index.js";
-import { createModelJob } from "@/job-core/index.js";
+import { GithubSynchronization } from "@/database/models";
+import { createModelJob } from "@/job-core";
 
-import { synchronizeInstallation } from "./synchronizer.js";
+import { synchronizeInstallation } from "./synchronizer";
 
 export const job = createModelJob(
   "synchronize",

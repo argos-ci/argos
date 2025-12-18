@@ -5,10 +5,10 @@ import semver from "semver";
 import {
   checkIsTrustedNpmPackage,
   getLatestPackageVersion,
-} from "@/npm/version.js";
-import { getPublicImageFileUrl, getPublicUrl } from "@/storage/index.js";
+} from "@/npm/version";
+import { getPublicImageFileUrl, getPublicUrl } from "@/storage";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
+import type { IResolvers } from "../__generated__/resolver-types";
 
 const { gql } = gqlTag;
 

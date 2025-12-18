@@ -1,7 +1,7 @@
-import type { ExpandedUserSchema } from "@/gitlab/index.js";
+import type { ExpandedUserSchema } from "@/gitlab";
 
-import { GitlabUser } from "../models/GitlabUser.js";
-import { getPartialModelUpdate } from "../util/update.js";
+import { GitlabUser } from "../models/GitlabUser";
+import { getPartialModelUpdate } from "../util/update";
 
 export async function getOrCreateGitlabUser(
   apiUser: ExpandedUserSchema,

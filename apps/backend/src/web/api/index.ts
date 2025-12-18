@@ -1,13 +1,13 @@
 import { Application, Router } from "express";
 
-import { apiMiddleware as githubApiMiddleware } from "../middlewares/github.js";
-import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend.js";
-import { subdomain } from "../util.js";
-import auth from "./auth.js";
-import builds from "./builds.js";
-import status from "./status.js";
-import stripe from "./stripe.js";
-import v2 from "./v2.js";
+import { apiMiddleware as githubApiMiddleware } from "../middlewares/github";
+import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend";
+import { subdomain } from "../util";
+import auth from "./auth";
+import builds from "./builds";
+import status from "./status";
+import stripe from "./stripe";
+import v2 from "./v2";
 
 export const installApiRouter = (app: Application) => {
   const router = Router();

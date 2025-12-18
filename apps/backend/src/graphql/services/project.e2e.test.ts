@@ -11,9 +11,9 @@ import {
   ScreenshotDiff,
   Test,
 } from "@/database/models";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { unsafe_deleteProject } from "./project.js";
+import { unsafe_deleteProject } from "./project";
 
 describe("unsafe_deleteProject", () => {
   let project: Project;

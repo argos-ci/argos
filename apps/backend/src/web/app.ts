@@ -4,11 +4,11 @@ import * as Sentry from "@sentry/node";
 import express from "express";
 import morgan from "morgan";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { installApiRouter } from "./api/index.js";
-import { installAppRouter } from "./app-router.js";
-import { jsonErrorHandler } from "./middlewares/errorHandler.js";
+import { installApiRouter } from "./api";
+import { installAppRouter } from "./app-router";
+import { jsonErrorHandler } from "./middlewares/errorHandler";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

@@ -1,7 +1,7 @@
 import amqp from "amqplib";
 
 // import { callbackify } from "node:util";
-import config from "@/config/index.js";
+import config from "@/config";
 
 let connectPromise: ReturnType<typeof amqp.connect> | null = null;
 export async function connect() {

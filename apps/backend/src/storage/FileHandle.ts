@@ -6,10 +6,10 @@ import mime from "mime";
 import { tmpName as cbTmpName } from "tmp";
 import type { TmpNameCallback, TmpNameOptions } from "tmp";
 
-import { download as s3Download } from "./download.js";
-import { get as s3Get } from "./get.js";
-import { ImageHandle } from "./ImageHandle.js";
-import { uploadFromBuffer, uploadFromFilePath } from "./upload.js";
+import { download as s3Download } from "./download";
+import { get as s3Get } from "./get";
+import { ImageHandle } from "./ImageHandle";
+import { uploadFromBuffer, uploadFromFilePath } from "./upload";
 
 export const tmpName = promisify(
   (options: TmpNameOptions, cb: TmpNameCallback) => {

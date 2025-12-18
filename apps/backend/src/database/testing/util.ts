@@ -1,6 +1,6 @@
 import type { Knex } from "knex";
 
-import { knex } from "../knex.js";
+import { knex } from "../knex";
 
 const KNEX_TABLES = ["knex_migrations", "knex_migrations_lock"];
 

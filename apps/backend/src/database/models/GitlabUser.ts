@@ -1,8 +1,8 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { User } from "./User.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { User } from "./User";
 
 export class GitlabUser extends Model {
   static override tableName = "gitlab_users";

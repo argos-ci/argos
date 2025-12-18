@@ -4,7 +4,7 @@ import * as Bolt from "@slack/bolt";
 import Cookies from "cookies";
 import { PartialModelObject } from "objection";
 
-import config from "@/config/index.js";
+import config from "@/config";
 import { Account, SlackInstallation } from "@/database/models";
 import { transaction } from "@/database/transaction";
 

@@ -165,7 +165,6 @@ function JoinButton(
   );
 }
 
-/** @route */
 export function Component() {
   return (
     <StandalonePage>

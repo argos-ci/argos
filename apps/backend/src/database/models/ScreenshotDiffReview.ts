@@ -1,7 +1,7 @@
 import { Model, type RelationMappings } from "objection";
 
-import { BuildReview } from "./BuildReview.js";
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
+import { BuildReview } from "./BuildReview";
+import { ScreenshotDiff } from "./ScreenshotDiff";
 
 export class ScreenshotDiffReview extends Model {
   static override tableName = "screenshot_diff_reviews";

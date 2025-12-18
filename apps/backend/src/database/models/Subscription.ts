@@ -1,10 +1,10 @@
 import { assertNever } from "@argos/util/assertNever";
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Account } from "./Account.js";
-import { Plan } from "./Plan.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Account } from "./Account";
+import { Plan } from "./Plan";
 
 export type SubscriptionInterval = "month" | "year";
 

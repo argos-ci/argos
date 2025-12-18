@@ -1,8 +1,5 @@
-import {
-  getAutomationAction,
-  type AutomationActionType,
-} from "./actions/index.js";
-import { job } from "./job.js";
+import { getAutomationAction, type AutomationActionType } from "./actions";
+import { job } from "./job";
 import { triggerAutomation, TriggerAutomationProps } from "./triggerAutomation";
 import { type AutomationMessage } from "./types/events";
 

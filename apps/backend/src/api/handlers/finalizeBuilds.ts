@@ -2,9 +2,9 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import { job as buildJob } from "@/build";
 import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
-import { job as buildJob } from "@/build/index";
-import { Build } from "@/database/models/index";
+import { Build } from "@/database/models";
 import { transaction } from "@/database/transaction";
 import { boom } from "@/util/error";
 import { repoAuth } from "@/web/middlewares/repoAuth";

@@ -6,7 +6,7 @@ import logger from "@/logger";
 import { checkIsRetryable } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { connect } from "./amqp.js";
+import { connect } from "./amqp";
 
 interface Payload<TValue> {
   args: [TValue];

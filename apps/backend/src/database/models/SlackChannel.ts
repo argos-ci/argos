@@ -1,8 +1,8 @@
 import { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { SlackInstallation } from "./SlackInstallation.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { SlackInstallation } from "./SlackInstallation";
 
 export class SlackChannel extends Model {
   static override tableName = "slack_channels";

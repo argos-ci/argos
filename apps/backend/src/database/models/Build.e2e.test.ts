@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { Build } from "./Build.js";
-import type { Account, User } from "./index.js";
+import type { Account, User } from ".";
+import { Build } from "./Build";
 
 const baseData = {
   projectId: "1",

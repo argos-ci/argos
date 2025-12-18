@@ -16,8 +16,8 @@ import {
   ScreenshotDiffReview,
   Test,
   User,
-} from "@/database/models/index.js";
-import { transaction } from "@/database/transaction.js";
+} from "@/database/models";
+import { transaction } from "@/database/transaction";
 
 /**
  * Get a project by ID, ensuring the user has admin permissions.

@@ -1,10 +1,10 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Project } from "./Project.js";
-import { Screenshot } from "./Screenshot.js";
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Project } from "./Project";
+import { Screenshot } from "./Screenshot";
+import { ScreenshotDiff } from "./ScreenshotDiff";
 
 export class Test extends Model {
   static override tableName = "tests";

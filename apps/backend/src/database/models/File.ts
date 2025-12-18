@@ -1,5 +1,5 @@
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
 
 export class File extends Model {
   static override tableName = "files";

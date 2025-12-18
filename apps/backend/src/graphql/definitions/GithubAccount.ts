@@ -1,7 +1,7 @@
 import gqlTag from "graphql-tag";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
-import { getAvatarColor, getGitHubAvatarFactory } from "../services/avatar.js";
+import type { IResolvers } from "../__generated__/resolver-types";
+import { getAvatarColor, getGitHubAvatarFactory } from "../services/avatar";
 
 const { gql } = gqlTag;
 

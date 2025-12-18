@@ -3,13 +3,13 @@ import type { JSONSchema, RelationMappings } from "objection";
 import {
   ScreenshotMetadata,
   ScreenshotMetadataJSONSchema,
-} from "../schemas/ScreenshotMetadata.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { BuildShard } from "./BuildShard.js";
-import { File } from "./File.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
-import { Test } from "./Test.js";
+} from "../schemas/ScreenshotMetadata";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { BuildShard } from "./BuildShard";
+import { File } from "./File";
+import { ScreenshotBucket } from "./ScreenshotBucket";
+import { Test } from "./Test";
 
 export class Screenshot extends Model {
   static override tableName = "screenshots";

@@ -8,19 +8,19 @@ import type {
   TransactionOrKnex,
 } from "objection";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { generateRandomHexString } from "../services/crypto.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { UserLevel, UserLevelJsonSchema } from "../util/user-level.js";
-import { Account } from "./Account.js";
-import { Build } from "./Build.js";
-import { GithubRepository } from "./GithubRepository.js";
-import { GitlabProject } from "./GitlabProject.js";
-import { ProjectUser } from "./ProjectUser.js";
-import { TeamUser } from "./TeamUser.js";
-import type { User } from "./User.js";
+import { generateRandomHexString } from "../services/crypto";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
+import { Account } from "./Account";
+import { Build } from "./Build";
+import { GithubRepository } from "./GithubRepository";
+import { GitlabProject } from "./GitlabProject";
+import { ProjectUser } from "./ProjectUser";
+import { TeamUser } from "./TeamUser";
+import type { User } from "./User";
 
 type ProjectPermission = "admin" | "review" | "view_settings" | "view";
 

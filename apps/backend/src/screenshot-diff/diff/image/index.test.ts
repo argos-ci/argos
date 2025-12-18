@@ -3,10 +3,10 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
-import { LocalFileHandle } from "@/storage/FileHandle.js";
-import { ImageHandle } from "@/storage/ImageHandle.js";
+import { LocalFileHandle } from "@/storage/FileHandle";
+import { ImageHandle } from "@/storage/ImageHandle";
 
-import { diffImages } from "./index.js";
+import { diffImages } from ".";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

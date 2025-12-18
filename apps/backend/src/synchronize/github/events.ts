@@ -1,8 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 
-import { finalizePartialBuilds } from "@/build/partial.js";
-import { getPendingCommentBody } from "@/database/index.js";
+import { finalizePartialBuilds } from "@/build/partial";
+import { getPendingCommentBody } from "@/database";
 import {
   Account,
   GithubAccountMember,
@@ -12,26 +12,26 @@ import {
   Subscription,
   Team,
   TeamUser,
-} from "@/database/models/index.js";
-import { joinSSOTeams } from "@/database/services/account.js";
+} from "@/database/models";
+import { joinSSOTeams } from "@/database/services/account";
 import {
   getOrCreateGhAccount,
   getOrCreateGithubAccountMember,
-} from "@/database/services/github.js";
-import { notifySubscriptionStatusUpdate } from "@/database/services/subscription.js";
-import { parsePullRequestData } from "@/github-pull-request/pull-request.js";
-import { commentGithubPr, getInstallationOctokit } from "@/github/index.js";
-import logger from "@/logger/index.js";
+} from "@/database/services/github";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
+import { commentGithubPr, getInstallationOctokit } from "@/github";
+import { parsePullRequestData } from "@/github-pull-request/pull-request";
+import logger from "@/logger";
 
-import { synchronizeFromInstallationId } from "../helpers.js";
+import { synchronizeFromInstallationId } from "../helpers";
 import {
   cancelSubscription,
   getAccount,
   getGithubPlan,
   getOrCreateAccountFromEvent,
   getOrCreateInstallation,
-} from "./eventHelpers.js";
-import { updateSubscription } from "./updateSubscription.js";
+} from "./eventHelpers";
+import { updateSubscription } from "./updateSubscription";
 
 export async function handleGitHubEvents(
   app: GithubInstallation["app"],

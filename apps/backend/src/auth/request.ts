@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import * as authorization from "auth-header";
 import type { Request } from "express";
 
-import { Account, User } from "@/database/models/index";
+import { Account, User } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { verifyJWT } from "./jwt";

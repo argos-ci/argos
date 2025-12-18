@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { emailToText, queryStringToObject } from "@/email/util";
-import { asyncHandler } from "@/web/util.js";
+import { asyncHandler } from "@/web/util";
 
 import { notificationHandlers } from "./handlers";
 

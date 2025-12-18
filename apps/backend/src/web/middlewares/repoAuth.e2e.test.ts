@@ -2,11 +2,11 @@ import type { RequestHandler } from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { Project } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Project } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { createTestApp } from "../test-util.js";
-import { repoAuth } from "./repoAuth.js";
+import { createTestApp } from "../test-util";
+import { repoAuth } from "./repoAuth";
 
 const app = createTestApp(repoAuth, ((req, res) => {
   res.send({ authProject: req.authProject });

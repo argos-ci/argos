@@ -94,7 +94,6 @@ function AcceptInviteButton(
   );
 }
 
-/** @route */
 export function Component() {
   const isLoggedIn = useIsLoggedIn();
   const params = useParams();

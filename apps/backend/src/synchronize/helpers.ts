@@ -1,6 +1,6 @@
-import { GithubSynchronization } from "@/database/models/index.js";
+import { GithubSynchronization } from "@/database/models";
 
-import { job } from "./job.js";
+import { job } from "./job";
 
 export const synchronizeFromInstallationId = async (installationId: string) => {
   const synchronization = await GithubSynchronization.query().insert({

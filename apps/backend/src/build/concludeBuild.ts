@@ -3,8 +3,8 @@ import { invariant } from "@argos/util/invariant";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { AutomationEvents } from "@/automation/types/events";
-import { job as buildNotificationJob } from "@/build-notification/job.js";
-import { transaction } from "@/database/index.js";
+import { job as buildNotificationJob } from "@/build-notification/job";
+import { transaction } from "@/database";
 import { Build, BuildNotification } from "@/database/models";
 import type { BuildConclusion } from "@/database/schemas/BuildStatus";
 import { redisLock } from "@/util/redis";

@@ -7,13 +7,13 @@ import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import z from "zod";
 
-import { Build, Project } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
-import { quitAmqp } from "@/job-core/index.js";
-import { getS3Client } from "@/storage/index.js";
-import { closeRedis } from "@/util/redis/client.js";
+import { Build, Project } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
+import { quitAmqp } from "@/job-core";
+import { getS3Client } from "@/storage";
+import { closeRedis } from "@/util/redis/client";
 
-import { createApp } from "./app.js";
+import { createApp } from "./app";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

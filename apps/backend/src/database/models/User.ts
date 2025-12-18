@@ -1,17 +1,13 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import {
-  Account,
-  AccountPermission,
-  ALL_ACCOUNT_PERMISSIONS,
-} from "./Account.js";
-import { GitlabUser } from "./GitlabUser.js";
-import { GoogleUser } from "./GoogleUser.js";
-import { Team } from "./Team.js";
-import { TeamInvite } from "./TeamInvite.js";
-import { UserEmail } from "./UserEmail.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
+import { GitlabUser } from "./GitlabUser";
+import { GoogleUser } from "./GoogleUser";
+import { Team } from "./Team";
+import { TeamInvite } from "./TeamInvite";
+import { UserEmail } from "./UserEmail";
 
 export class User extends Model {
   static override tableName = "users";

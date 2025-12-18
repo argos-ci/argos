@@ -1,11 +1,11 @@
 import { GitbeakerRequestError } from "@gitbeaker/rest";
 import gqlTag from "graphql-tag";
 
-import { getGitlabClientFromAccount } from "@/gitlab/index.js";
+import { getGitlabClientFromAccount } from "@/gitlab";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
-import { getAdminAccount } from "../services/account.js";
-import { badUserInput, notFound, unauthenticated } from "../util.js";
+import type { IResolvers } from "../__generated__/resolver-types";
+import { getAdminAccount } from "../services/account";
+import { badUserInput, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 

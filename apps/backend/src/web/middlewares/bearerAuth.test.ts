@@ -2,8 +2,8 @@ import type { RequestHandler } from "express";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 
-import { createTestApp } from "../test-util.js";
-import { bearerAuth } from "./bearerAuth.js";
+import { createTestApp } from "../test-util";
+import { bearerAuth } from "./bearerAuth";
 
 const app = createTestApp(bearerAuth, ((req, res) => {
   res.send({ bearerToken: req.bearerToken });

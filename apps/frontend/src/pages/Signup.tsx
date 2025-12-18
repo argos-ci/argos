@@ -343,7 +343,6 @@ function SignupCard(props: { title: ReactNode; children: ReactNode }) {
   );
 }
 
-/** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
 

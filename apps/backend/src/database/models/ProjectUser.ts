@@ -1,10 +1,10 @@
 import { RelationMappings, type JSONSchema } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { UserLevel, UserLevelJsonSchema } from "../util/user-level.js";
-import { Project } from "./Project.js";
-import { User } from "./User.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
+import { Project } from "./Project";
+import { User } from "./User";
 
 export class ProjectUser extends Model {
   static override tableName = "project_users";

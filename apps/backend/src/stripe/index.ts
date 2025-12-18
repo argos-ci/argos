@@ -2,8 +2,8 @@ import { invariant } from "@argos/util/invariant";
 import Stripe from "stripe";
 import { z } from "zod";
 
-import config from "@/config/index.js";
-import { Account, Plan, Subscription } from "@/database/models/index.js";
+import config from "@/config";
+import { Account, Plan, Subscription } from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 

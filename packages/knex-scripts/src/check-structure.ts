@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { Command } from "commander";
 import { oraPromise } from "ora";
 
-import { getConfig } from "./config.js";
-import { getInsertsFromMigrations } from "./utils.js";
+import { getConfig } from "./config";
+import { getInsertsFromMigrations } from "./utils";
 
 /**
  * Get inserts from the structure file.

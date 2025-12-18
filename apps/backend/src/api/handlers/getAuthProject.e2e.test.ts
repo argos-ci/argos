@@ -1,8 +1,8 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { Build, Project } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Build, Project } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { getAuthProject } from "./getAuthProject";

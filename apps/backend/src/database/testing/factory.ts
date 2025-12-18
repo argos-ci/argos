@@ -4,7 +4,7 @@ import { FactoryGirl, ModelAdapter } from "factory-girl-ts";
 import moment from "moment";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
-import * as models from "../models/index.js";
+import * as models from "../models";
 
 class ObjectionAdapter<
   TEntity extends Model,

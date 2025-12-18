@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { factory } from "@/database/testing/index.js";
-import { setupDatabase } from "@/database/testing/util.js";
+import { factory } from "@/database/testing";
+import { setupDatabase } from "@/database/testing/util";
 
-import { getAggregatedNotification } from "./aggregated.js";
+import { getAggregatedNotification } from "./aggregated";
 
 describe("#getAggregatedNotification", () => {
   beforeEach(async () => {

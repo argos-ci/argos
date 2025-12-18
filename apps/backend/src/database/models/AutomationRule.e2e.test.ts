@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import { factory, setupDatabase } from "@/database/testing";
 
 import { AutomationRule } from "./AutomationRule";
 import { Project } from "./Project";

@@ -2,7 +2,7 @@ import { getCSPScriptHash } from "@argos-ci/playwright";
 import { createArgosReporterOptions } from "@argos-ci/playwright/reporter";
 import { defineConfig, devices } from "@playwright/test";
 
-import argosConfig from "./apps/backend/src/config/index.js";
+import argosConfig from "./apps/backend/src/config";
 
 /**
  * Read environment variables from file.

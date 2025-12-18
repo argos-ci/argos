@@ -4,7 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import express, { RequestHandler, Router } from "express";
 import { z } from "zod";
 
-import config from "@/config/index.js";
+import config from "@/config";
 import { NotificationMessage } from "@/database/models";
 
 import { asyncHandler } from "../util";

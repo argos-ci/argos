@@ -72,7 +72,6 @@ function JoinTeamButton(props: { secret: string; children: React.ReactNode }) {
   );
 }
 
-/** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
   const params = useParams();

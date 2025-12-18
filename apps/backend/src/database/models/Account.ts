@@ -3,20 +3,20 @@ import { invariant } from "@argos/util/invariant";
 import { memoize } from "lodash-es";
 import type { Pojo, RelationMappings } from "objection";
 
-import { slugJsonSchema } from "@/util/slug.js";
+import { slugJsonSchema } from "@/util/slug";
 
-import { computeAdditionalScreenshots } from "../services/additional-screenshots.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { GithubAccount } from "./GithubAccount.js";
-import { GithubInstallation } from "./GithubInstallation.js";
-import { Plan } from "./Plan.js";
-import { Project } from "./Project.js";
-import { ScreenshotBucket } from "./ScreenshotBucket.js";
-import { SlackInstallation } from "./SlackInstallation.js";
-import { Subscription } from "./Subscription.js";
-import { Team } from "./Team.js";
-import { User } from "./User.js";
+import { computeAdditionalScreenshots } from "../services/additional-screenshots";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { GithubAccount } from "./GithubAccount";
+import { GithubInstallation } from "./GithubInstallation";
+import { Plan } from "./Plan";
+import { Project } from "./Project";
+import { ScreenshotBucket } from "./ScreenshotBucket";
+import { SlackInstallation } from "./SlackInstallation";
+import { Subscription } from "./Subscription";
+import { Team } from "./Team";
+import { User } from "./User";
 
 /** @public */
 export type AccountAvatar = {

@@ -5,7 +5,6 @@ import { AuthGuard } from "@/containers/AuthGuard";
 
 import { getAccountURL } from "./Account/AccountParams";
 
-/** @route */
 export function Component() {
   return (
     <AuthGuard>

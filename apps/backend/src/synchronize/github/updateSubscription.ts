@@ -1,9 +1,9 @@
-import { transaction } from "@/database/index.js";
-import { Subscription } from "@/database/models/index.js";
-import type { Account } from "@/database/models/index.js";
-import { notifySubscriptionStatusUpdate } from "@/database/services/subscription.js";
+import { transaction } from "@/database";
+import { Subscription } from "@/database/models";
+import type { Account } from "@/database/models";
+import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 
-import { getGithubPlan } from "./eventHelpers.js";
+import { getGithubPlan } from "./eventHelpers";
 
 export async function updateSubscription(
   payload: {

@@ -6,7 +6,7 @@ import type { PartialModelObject, TransactionOrKnex } from "objection";
 import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email";
 import { createJWT, JWT_VERSION } from "@/auth/jwt";
 import { sendEmailTemplate } from "@/email/send-email-template";
-import { sendNotification } from "@/notification/index";
+import { sendNotification } from "@/notification";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
 import { boom } from "@/util/error";
 import type { RequestLocation } from "@/util/request-location";

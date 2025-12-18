@@ -1,9 +1,9 @@
 import type { ModelClass } from "objection";
 
-import logger from "@/logger/index.js";
+import logger from "@/logger";
 
-import { createJob } from "./createJob.js";
-import type { JobParams } from "./createJob.js";
+import { createJob } from "./createJob";
+import type { JobParams } from "./createJob";
 
 export const createModelJob = <TModelConstructor extends ModelClass<any>>(
   queue: string,

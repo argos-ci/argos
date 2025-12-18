@@ -2,16 +2,16 @@ import { createNodeMiddleware, Webhooks } from "@octokit/webhooks";
 import { Router } from "express";
 import { z } from "zod";
 
-import config from "@/config/index.js";
-import { Account, GithubInstallation } from "@/database/models/index.js";
-import logger from "@/logger/index.js";
-import { getOrCreateInstallation } from "@/synchronize/github/eventHelpers.js";
+import config from "@/config";
+import { Account, GithubInstallation } from "@/database/models";
+import logger from "@/logger";
 import {
   handleGitHubEvents,
   synchronizeFromInstallationId,
-} from "@/synchronize/index.js";
+} from "@/synchronize";
+import { getOrCreateInstallation } from "@/synchronize/github/eventHelpers";
 
-import { asyncHandler } from "../util.js";
+import { asyncHandler } from "../util";
 
 function createWebhooksHandler(input: {
   app: GithubInstallation["app"];

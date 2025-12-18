@@ -1,15 +1,15 @@
 import { invariant } from "@argos/util/invariant";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
-import { transaction, TransactionOrKnex } from "@/database/index.js";
+import { transaction, TransactionOrKnex } from "@/database";
 import {
   GithubAccount,
   GithubInstallation,
   GithubRepository,
   GithubRepositoryInstallation,
   Project,
-} from "@/database/models/index.js";
-import { getAppOctokit, getInstallationOctokit } from "@/github/index.js";
+} from "@/database/models";
+import { getAppOctokit, getInstallationOctokit } from "@/github";
 
 type ApiRepository =
   RestEndpointMethodTypes["apps"]["listReposAccessibleToInstallation"]["response"]["data"]["repositories"][0];

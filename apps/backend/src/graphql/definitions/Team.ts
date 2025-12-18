@@ -2,8 +2,8 @@ import { invariant } from "@argos/util/invariant";
 import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
-import config from "@/config/index.js";
-import { transaction } from "@/database/index.js";
+import config from "@/config";
+import { transaction } from "@/database";
 import {
   Account,
   GithubAccountMember,
@@ -12,15 +12,15 @@ import {
   TeamInvite,
   TeamUser,
   UserEmail,
-} from "@/database/models/index.js";
+} from "@/database/models";
 import {
   createAccount,
   createJWTFromAccount,
-} from "@/database/services/account.js";
-import { createTeamAccount } from "@/database/services/team.js";
-import { notifyDiscord } from "@/discord/index.js";
-import { sendEmailTemplate } from "@/email/send-email-template.js";
-import { getAppOctokit, getInstallationOctokit } from "@/github/client.js";
+} from "@/database/services/account";
+import { createTeamAccount } from "@/database/services/team";
+import { notifyDiscord } from "@/discord";
+import { sendEmailTemplate } from "@/email/send-email-template";
+import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
   createArgosSubscriptionFromStripe,
   createStripeCheckoutSession,
@@ -29,25 +29,25 @@ import {
   getStripeProPlanOrThrow,
   getSubscriptionData,
   stripe,
-} from "@/stripe/index.js";
-import { getSlugFromEmail, sanitizeEmail } from "@/util/email.js";
+} from "@/stripe";
+import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
 
 import {
   ITeamMembersOrderBy,
   type IResolvers,
   type ITeamDefaultUserLevel,
   type ITeamUserLevel,
-} from "../__generated__/resolver-types.js";
-import { deleteAccount, getAdminAccount } from "../services/account.js";
-import { getAccountAvatar, getAvatarColor } from "../services/avatar.js";
+} from "../__generated__/resolver-types";
+import { deleteAccount, getAdminAccount } from "../services/account";
+import { getAccountAvatar, getAvatarColor } from "../services/avatar";
 import {
   checkUserHasAccessToInstallation,
   getOrCreateGithubAccount,
   importOrgMembers,
-} from "../services/github.js";
-import { badUserInput, forbidden, notFound, unauthenticated } from "../util.js";
-import { commonAccountResolvers } from "./Account.js";
-import { paginateResult } from "./PageInfo.js";
+} from "../services/github";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
+import { commonAccountResolvers } from "./Account";
+import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 

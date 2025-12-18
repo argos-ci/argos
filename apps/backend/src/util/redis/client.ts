@@ -6,8 +6,8 @@ import {
   SocketClosedUnexpectedlyError,
 } from "redis";
 
-import config from "@/config/index.js";
-import logger from "@/logger/index.js";
+import config from "@/config";
+import logger from "@/logger";
 
 const redisURL = new URL(config.get("redis.url"));
 

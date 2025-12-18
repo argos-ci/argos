@@ -6,11 +6,11 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { dirSync } from "tmp";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { download } from "./download.js";
-import { get } from "./get.js";
-import { uploadFromFilePath } from "./upload.js";
+import { download } from "./download";
+import { get } from "./get";
+import { uploadFromFilePath } from "./upload";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

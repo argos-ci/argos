@@ -3,36 +3,33 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { AuthPayload } from "@/auth/request.js";
-import config from "@/config/index.js";
-import type { Account } from "@/database/models/index.js";
+import { AuthPayload } from "@/auth/request";
+import config from "@/config";
+import type { Account } from "@/database/models";
 import {
   createJWTFromAccount,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
   joinSSOTeams,
-} from "@/database/services/account.js";
-import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github.js";
-import { getOrCreateGitlabUser } from "@/database/services/gitlabUser.js";
-import { getOrCreateGoogleUser } from "@/database/services/googleUser.js";
+} from "@/database/services/account";
+import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github";
+import { getOrCreateGitlabUser } from "@/database/services/gitlabUser";
+import { getOrCreateGoogleUser } from "@/database/services/googleUser";
 import {
   getTokenOctokit,
   retrieveOAuthToken as retrieveGithubOAuthToken,
-} from "@/github/index.js";
+} from "@/github";
 import {
   getGitlabClient,
   retrieveOAuthToken as retrieveGitlabOAuthToken,
-} from "@/gitlab/index.js";
-import {
-  getGoogleAuthenticatedClient,
-  getGoogleUserProfile,
-} from "@/google/index.js";
+} from "@/gitlab";
+import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
 
-import { auth } from "../middlewares/auth.js";
-import { allowApp } from "../middlewares/cors.js";
-import { allowOnlyPost } from "../middlewares/methods.js";
-import { asyncHandler } from "../util.js";
+import { auth } from "../middlewares/auth";
+import { allowApp } from "../middlewares/cors";
+import { allowOnlyPost } from "../middlewares/methods";
+import { asyncHandler } from "../util";
 
 const router: Router = Router();
 

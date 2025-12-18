@@ -1,3 +1,3 @@
-export * from "./job.js";
-export * from "./helpers.js";
-export * from "./github/events.js";
+export * from "./job";
+export * from "./helpers";
+export * from "./github/events";

@@ -1,6 +1,6 @@
-import logger from "@/logger/index.js";
+import logger from "@/logger";
 
-import type { Job } from "./createJob.js";
+import type { Job } from "./createJob";
 
 export async function createJobWorker(...jobs: Job<any>[]) {
   try {

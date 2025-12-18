@@ -9,7 +9,6 @@ import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 import { Link } from "@/ui/Link";
 
-/** @route */
 export function Component() {
   const loggedIn = useIsLoggedIn();
   const [searchParams] = useSearchParams();

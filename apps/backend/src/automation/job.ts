@@ -1,5 +1,5 @@
-import { AutomationActionRun } from "@/database/models/index.js";
-import { createModelJob } from "@/job-core/index.js";
+import { AutomationActionRun } from "@/database/models";
+import { createModelJob } from "@/job-core";
 
 import { AutomationActionSchema, getAutomationAction } from "./actions";
 import { AutomationActionFailureError } from "./automationActionError";

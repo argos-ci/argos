@@ -1,6 +1,6 @@
-import { createRedisCacheClient } from "./cache.js";
-import { getRedisClient } from "./client.js";
-import { createRedisLockClient } from "./lock.js";
+import { createRedisCacheClient } from "./cache";
+import { getRedisClient } from "./client";
+import { createRedisLockClient } from "./lock";
 
 export const redisLock = createRedisLockClient({ getRedisClient });
 export const redisCache = createRedisCacheClient({ getRedisClient });

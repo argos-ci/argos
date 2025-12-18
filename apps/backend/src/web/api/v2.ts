@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 
-import { openAPIRouter } from "@/api/index.js";
-import { createRedisStore } from "@/util/rate-limit.js";
+import { openAPIRouter } from "@/api";
+import { createRedisStore } from "@/util/rate-limit";
 
 const router: Router = Router();
 

@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
 
-import { Screenshot } from "./Screenshot.js";
+import { Screenshot } from "./Screenshot";
 
 describe("Screenshot", () => {
   describe("metadata validation", () => {

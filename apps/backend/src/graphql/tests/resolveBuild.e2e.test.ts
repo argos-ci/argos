@@ -1,17 +1,12 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  Account,
-  Build,
-  Project,
-  Screenshot,
-} from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Account, Build, Project, Screenshot } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { apolloServer, createApolloMiddleware } from "../apollo.js";
-import { expectNoGraphQLError } from "../testing.js";
-import { createApolloServerApp } from "./util.js";
+import { apolloServer, createApolloMiddleware } from "../apollo";
+import { expectNoGraphQLError } from "../testing";
+import { createApolloServerApp } from "./util";
 
 describe("GraphQL", () => {
   beforeEach(async () => {

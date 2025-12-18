@@ -3,8 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import type * as Bolt from "@slack/bolt";
 import { match } from "path-to-regexp";
 
-import { getBuildLabel } from "@/build/label.js";
-import { getStatsMessage } from "@/build/stats.js";
+import { getBuildLabel } from "@/build/label";
+import { getStatsMessage } from "@/build/stats";
 import { Build, ScreenshotDiff } from "@/database/models";
 import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
 

@@ -1,14 +1,10 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
-import { Build } from "./Build.js";
-import { GithubAccount } from "./GithubAccount.js";
-import { GithubRepository } from "./GithubRepository.js";
+import { Model } from "../util/model";
+import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { Build } from "./Build";
+import { GithubAccount } from "./GithubAccount";
+import { GithubRepository } from "./GithubRepository";
 
 export class GithubPullRequest extends Model {
   static override tableName = "github_pull_requests";

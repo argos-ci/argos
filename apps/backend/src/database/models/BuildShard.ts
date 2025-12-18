@@ -3,11 +3,11 @@ import type { JSONSchema, RelationMappings } from "objection";
 import {
   BuildMetadata,
   BuildMetadataJsonSchema,
-} from "../schemas/BuildMetadata.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Build } from "./Build.js";
-import { Screenshot } from "./Screenshot.js";
+} from "../schemas/BuildMetadata";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Build } from "./Build";
+import { Screenshot } from "./Screenshot";
 
 export class BuildShard extends Model {
   static override tableName = "build_shards";
