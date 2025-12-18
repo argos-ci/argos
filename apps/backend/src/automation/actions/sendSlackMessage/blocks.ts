@@ -14,6 +14,7 @@ import {
 import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
 import { UnretryableError } from "@/job-core";
 import type { SlackMessageBlock } from "@/slack/channel";
+import { escapeSlackText } from "@/slack/message";
 
 function getRepositoryUrl(project: Project): string | null {
   if (project.githubRepositoryId) {
@@ -68,7 +69,7 @@ export function contextBlock(props: {
     type: "section",
     text: {
       type: "mrkdwn",
-      text: `*<${buildUrl}|Build #${build.number}${build.name !== "default" ? ` (${build.name})` : ""}>*`,
+      text: `*<${buildUrl}|${escapeSlackText(`Build #${build.number}${build.name !== "default" ? ` (${build.name})` : ""}`)}>*`,
     },
   };
 }
@@ -80,7 +81,7 @@ export function projectBlock(props: { project: Project }): SlackMessageBlock {
     elements: [
       {
         type: "mrkdwn",
-        text: `Project: *${project.name}*`,
+        text: `Project: *${escapeSlackText(project.name)}*`,
       },
     ],
   };
@@ -133,6 +134,10 @@ export function detailsBlock(props: {
   const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
   const branch = compareScreenshotBucket?.branch;
   const repositoryURL = getRepositoryUrl(project);
+  const pullRequestUrl =
+    repositoryURL && pullRequest
+      ? `${repositoryURL}/pull/${pullRequest.number}`
+      : undefined;
   const branchUrl =
     branch && repositoryURL ? `${repositoryURL}/tree/${branch}` : undefined;
   const commitUrl =
@@ -147,22 +152,22 @@ export function detailsBlock(props: {
             text: `*Screenshots:* ${statsMessage}`,
           }
         : null,
-      pullRequest?.number != null
+      pullRequestUrl && pullRequest
         ? {
             type: "mrkdwn" as const,
-            text: `*PR:* <${`https://github.com/pull/${pullRequest.number}`}|#${pullRequest.number}> ${pullRequest.title ?? ""}`,
+            text: `*PR:* <${pullRequestUrl}|${escapeSlackText(`#${pullRequest.number}${pullRequest.title ? ` ${pullRequest.title}` : ""}`)}>`,
           }
         : null,
       commitShort
         ? {
             type: "mrkdwn" as const,
-            text: `*Commit:* ${commitUrl ? `<${commitUrl}|${commitShort}>` : commitShort}`,
+            text: `*Commit:* ${commitUrl ? `<${commitUrl}|${escapeSlackText(commitShort)}>` : escapeSlackText(commitShort)}`,
           }
         : null,
       branch
         ? {
             type: "mrkdwn" as const,
-            text: `*Branch:* ${branchUrl ? `<${branchUrl}|${branch}>` : branch}`,
+            text: `*Branch:* ${branchUrl ? `<${branchUrl}|${escapeSlackText(branch)}>` : escapeSlackText(branch)}`,
           }
         : null,
     ].filter((e) => e !== null),
