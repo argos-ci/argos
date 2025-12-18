@@ -71,9 +71,23 @@ function checkIsFailedToFetchError(error: unknown) {
   );
 }
 
+/**
+ * Check if the app is in the reloaded state.
+ * If so, we will notify the error on Sentry.
+ */
 function checkHasReloaded() {
   const url = new URL(window.location.href);
-  return url.searchParams.has("reload");
+  const reloadParam = url.searchParams.get("reload");
+  if (!reloadParam) {
+    return false;
+  }
+  const reloadTimestamp = new Date(reloadParam).getTime();
+  if (Number.isNaN(reloadTimestamp)) {
+    return false;
+  }
+  const elapsed = Date.now() - reloadTimestamp;
+  // We allow a 10s window (time to load) to consider the reload param valid.
+  return elapsed < 10_000;
 }
 
 function RootErrorBoundary() {
@@ -84,7 +98,7 @@ function RootErrorBoundary() {
     console.error(error);
     if (shouldReload) {
       const url = new URL(window.location.href);
-      url.searchParams.set("reload", "true");
+      url.searchParams.set("reload", String(Date.now()));
       window.location.replace(url);
       return;
     }
