@@ -10,6 +10,7 @@ import {
   Project,
 } from "@/database/models";
 import { getAppOctokit, getInstallationOctokit } from "@/github";
+import { HTTPError } from "@/util/error";
 
 type ApiRepository =
   RestEndpointMethodTypes["apps"]["listReposAccessibleToInstallation"]["response"]["data"]["repositories"][0];
@@ -252,7 +253,22 @@ export async function synchronizeInstallation(installationId: string) {
     proxy: installation.proxy,
   });
 
-  const octokit = await getInstallationOctokit(installation, appOctokit);
+  const octokit = await getInstallationOctokit(installation, appOctokit).catch(
+    (error) => {
+      if (
+        error instanceof HTTPError &&
+        error.code === "GITHUB_INSTALLATION_SUSPENDED"
+      ) {
+        return error.code;
+      }
+      throw error;
+    },
+  );
+
+  // If the installation is suspended, skip synchronization.
+  if (octokit === "GITHUB_INSTALLATION_SUSPENDED") {
+    return;
+  }
 
   // If we don't get an octokit, then the installation has been removed
   // we delete the installation
