@@ -24,7 +24,9 @@ describe("buildSlackMessage", () => {
         commit: "a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a",
         screenshotCount: 12,
       });
-      const pr = await factory.PullRequest.create();
+      const pr = await factory.PullRequest.create({
+        title: "Fix bug with weird chars <> and |",
+      });
       const build = await factory.Build.create({
         projectId: project.id,
         type: "check",
@@ -72,7 +74,9 @@ describe("buildSlackMessage", () => {
           fields: [
             {
               type: "mrkdwn",
-              text: "*PR:* <https://github.com/pull/99|#99> Fix bug",
+              text: expect.stringMatching(
+                /\*PR:\* <https:\/\/github\.com\/login-\d+\/repo-\d+\/pull\/99\|#99 Fix bug with weird chars &lt;&gt; and &pipe;>/,
+              ),
             },
             {
               type: "mrkdwn",
@@ -110,7 +114,9 @@ describe("buildSlackMessage", () => {
         commit: "a5028c0b1f4d5e2f3a6b7c8d9e0f1d2a3a4a5a6a",
         screenshotCount: 12,
       });
-      const pr = await factory.PullRequest.create();
+      const pr = await factory.PullRequest.create({
+        title: "Fix bug with weird chars <> and |",
+      });
       const build = await factory.Build.create({
         projectId: project.id,
         type: "check",
@@ -162,7 +168,9 @@ describe("buildSlackMessage", () => {
           fields: [
             {
               type: "mrkdwn",
-              text: "*PR:* <https://github.com/pull/99|#99> Fix bug",
+              text: expect.stringMatching(
+                /\*PR:\* <https:\/\/github\.com\/login-\d+\/repo-\d+\/pull\/99\|#99 Fix bug with weird chars &lt;&gt; and &pipe;>/,
+              ),
             },
             {
               type: "mrkdwn",
