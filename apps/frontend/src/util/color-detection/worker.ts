@@ -1,3 +1,5 @@
+import pRetry from "p-retry";
+
 import { fetchImage } from "../image";
 import type { MessageData, Rect } from "./types";
 
@@ -10,15 +12,13 @@ self.onmessage = (event) => {
   if (typeof blockSize !== "number") {
     throw new Error("Expected blockSize to be a number");
   }
-  detectColoredZones({ url, blockSize })
-    .then((rects) => {
+  pRetry(
+    async () => {
+      const rects = await detectColoredZones({ url, blockSize });
       self.postMessage(rects satisfies MessageData);
-    })
-    .catch((error) => {
-      setTimeout(() => {
-        throw error;
-      });
-    });
+    },
+    { retries: 3 },
+  );
 };
 
 /**
