@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Build } from "@/database/models";
+import { Build, ScreenshotBucket } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { MonitoringStrategy } from ".";
@@ -81,12 +81,10 @@ describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
 
   it("picks the latest approved builds of the same name", async () => {
     const ctx = await MonitoringStrategy.getContext(sourceBuild);
-    const { baseScreenshotBucket } = await MonitoringStrategy.getBase(
-      sourceBuild,
-      ctx,
-    );
-    expect(baseScreenshotBucket!.id).toBe(
-      matchedBuild.compareScreenshotBucketId,
-    );
+    const { baseBucket } = await MonitoringStrategy.getBase(sourceBuild, ctx);
+    expect(
+      baseBucket instanceof ScreenshotBucket &&
+        baseBucket.id === matchedBuild.compareScreenshotBucketId,
+    ).toBe(true);
   });
 });

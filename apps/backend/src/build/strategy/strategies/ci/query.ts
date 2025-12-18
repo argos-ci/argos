@@ -90,3 +90,26 @@ export function queryBaseBucket(
 
   return query;
 }
+
+/**
+ * Get the bucket from a list of commits, ordered by the order of the commits.
+ */
+export async function getBucketFromCommits(args: {
+  shas: string[];
+  build: Build;
+}) {
+  if (args.shas.length === 0) {
+    return null;
+  }
+  const bucket = await queryBaseBucket(args.build)
+    .whereIn("commit", args.shas)
+    .joinRaw(
+      `join (values ${args.shas
+        .map((sha, index) => `('${sha}',${index})`)
+        .join(",")}) as ordering(sha, rank) on commit = ordering.sha`,
+    )
+    .orderBy("ordering.rank")
+    .orderBy("id", "desc")
+    .first();
+  return bucket ?? null;
+}

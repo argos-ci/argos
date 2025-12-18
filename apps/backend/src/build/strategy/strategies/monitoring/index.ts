@@ -18,7 +18,7 @@ async function getBase(build: Build): GetBaseResult {
 
   if (!lastApprovedBuild) {
     return {
-      baseScreenshotBucket: null,
+      baseBucket: null,
       baseBranch: null,
       baseBranchResolvedFrom: null,
     };
@@ -30,7 +30,7 @@ async function getBase(build: Build): GetBaseResult {
   );
 
   return {
-    baseScreenshotBucket: lastApprovedBuild.compareScreenshotBucket,
+    baseBucket: lastApprovedBuild.compareScreenshotBucket,
     baseBranch: null,
     baseBranchResolvedFrom: null,
   };
@@ -41,7 +41,7 @@ export const MonitoringStrategy: BuildStrategy<null> = {
   getContext: () => null,
   getBase,
   getBuildType: (input) => {
-    if (!input.baseScreenshotBucket) {
+    if (!input.baseBucket) {
       return "orphan";
     }
     return "check";
