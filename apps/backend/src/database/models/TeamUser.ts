@@ -1,11 +1,11 @@
 import { RelationMappings, type JSONSchema } from "objection";
 import { z } from "zod";
 
-import { TeamUserLevelSchema } from "../schemas/TeamUserLevel.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Team } from "./Team.js";
-import { User } from "./User.js";
+import { TeamUserLevelSchema } from "../schemas/TeamUserLevel";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Team } from "./Team";
+import { User } from "./User";
 
 export class TeamUser extends Model {
   static override tableName = "team_users";

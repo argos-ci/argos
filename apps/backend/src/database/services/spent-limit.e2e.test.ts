@@ -1,17 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  Account,
-  Plan,
-  Project,
-  Subscription,
-} from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Account, Plan, Project, Subscription } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
 import {
   checkIsBlockedBySpendLimit,
   getSpendLimitThreshold,
-} from "./spend-limit.js";
+} from "./spend-limit";
 
 describe("spent limit", () => {
   beforeEach(async () => {

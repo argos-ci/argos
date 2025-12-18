@@ -5,16 +5,12 @@ import {
   notificationHandlers,
   type NotificationWorkflowProps,
   type NotificationWorkflowType,
-} from "@/notification/handlers/index.js";
+} from "@/notification/handlers";
 
-import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
-import { NotificationMessage } from "./NotificationMessage.js";
-import { NotificationWorkflowRecipient } from "./NotificationWorkflowRecipient.js";
+import { Model } from "../util/model";
+import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { NotificationMessage } from "./NotificationMessage";
+import { NotificationWorkflowRecipient } from "./NotificationWorkflowRecipient";
 
 export class NotificationWorkflow<
   Type extends NotificationWorkflowType = NotificationWorkflowType,

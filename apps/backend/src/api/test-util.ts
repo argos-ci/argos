@@ -1,6 +1,6 @@
 import { Express, Router } from "express";
 
-import { createTestApp } from "@/web/test-util.js";
+import { createTestApp } from "@/web/test-util";
 
 import { CreateAPIHandler, registerHandler } from "./util";
 

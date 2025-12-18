@@ -2,15 +2,15 @@ import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
 
-import { ScreenshotMetadataJSONSchema } from "@/database/schemas/ScreenshotMetadata.js";
+import { ScreenshotMetadataJSONSchema } from "@/database/schemas/ScreenshotMetadata";
 
-import { createBuild } from "./handlers/createBuild.js";
-import { finalizeBuilds } from "./handlers/finalizeBuilds.js";
-import { getAuthProject } from "./handlers/getAuthProject.js";
-import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds.js";
-import { updateBuild } from "./handlers/updateBuild.js";
-import { schema } from "./schema.js";
-import { errorHandler, registerHandler } from "./util.js";
+import { createBuild } from "./handlers/createBuild";
+import { finalizeBuilds } from "./handlers/finalizeBuilds";
+import { getAuthProject } from "./handlers/getAuthProject";
+import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds";
+import { updateBuild } from "./handlers/updateBuild";
+import { schema } from "./schema";
+import { errorHandler, registerHandler } from "./util";
 
 const router: Router = Router();
 

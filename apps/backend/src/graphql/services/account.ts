@@ -13,15 +13,15 @@ import {
   TeamUser,
   User,
   UserEmail,
-} from "@/database/models/index.js";
-import { resolveAccountSlug } from "@/database/services/account.js";
-import { transaction } from "@/database/transaction.js";
-import { boltApp } from "@/slack/app.js";
-import { uninstallSlackInstallation } from "@/slack/helpers.js";
-import { cancelStripeSubscription } from "@/stripe/index.js";
+} from "@/database/models";
+import { resolveAccountSlug } from "@/database/services/account";
+import { transaction } from "@/database/transaction";
+import { boltApp } from "@/slack/app";
+import { uninstallSlackInstallation } from "@/slack/helpers";
+import { cancelStripeSubscription } from "@/stripe";
 
-import { badUserInput, forbidden, unauthenticated } from "../util.js";
-import { unsafe_deleteProject } from "./project.js";
+import { badUserInput, forbidden, unauthenticated } from "../util";
+import { unsafe_deleteProject } from "./project";
 
 /**
  * Get an account by ID, ensuring the user has admin permissions.

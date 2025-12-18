@@ -3,10 +3,10 @@ import { fileURLToPath } from "node:url";
 import { S3Client } from "@aws-sdk/client-s3";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { checkIfExists } from "./checkIfExists.js";
-import { uploadFromFilePath } from "./upload.js";
+import { checkIfExists } from "./checkIfExists";
+import { uploadFromFilePath } from "./upload";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

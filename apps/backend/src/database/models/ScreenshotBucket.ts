@@ -2,11 +2,11 @@ import type { RelationMappings } from "objection";
 
 import { SHA1_REGEX } from "@/util/validation";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import type { BuildMode } from "./Build.js";
-import { Project } from "./Project.js";
-import { Screenshot } from "./Screenshot.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import type { BuildMode } from "./Build";
+import { Project } from "./Project";
+import { Screenshot } from "./Screenshot";
 
 export class ScreenshotBucket extends Model {
   static override tableName = "screenshot_buckets";

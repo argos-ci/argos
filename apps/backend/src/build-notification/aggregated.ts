@@ -1,13 +1,13 @@
 import { assertNever } from "@argos/util/assertNever";
 
-import { Build } from "@/database/models/Build.js";
-import { BuildNotification } from "@/database/models/BuildNotification.js";
-import type { Project } from "@/database/models/Project.js";
+import { Build } from "@/database/models/Build";
+import { BuildNotification } from "@/database/models/BuildNotification";
+import type { Project } from "@/database/models/Project";
 
 import {
   getNotificationStates,
   type NotificationPayload,
-} from "./notification.js";
+} from "./notification";
 
 export async function getAggregatedNotification(args: {
   commit: string;

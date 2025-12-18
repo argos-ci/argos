@@ -1,13 +1,13 @@
 import { Command } from "commander";
 import { oraPromise } from "ora";
 
-import { getConfig } from "./config.js";
+import { getConfig } from "./config";
 import {
   getCommandEnv,
   getPostgresCommand,
   preventRunningInProduction,
   runCommand,
-} from "./utils.js";
+} from "./utils";
 
 /**
  * Load database schema from file.

@@ -2,10 +2,10 @@ import { setTimeout as delay } from "node:timers/promises";
 import { createClient, RedisClientType } from "redis";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { createRedisLockClient } from "./lock.js";
-import { createResolvablePromise } from "./test-util.js";
+import { createRedisLockClient } from "./lock";
+import { createResolvablePromise } from "./test-util";
 
 describe("redis-lock", () => {
   let client: RedisClientType;

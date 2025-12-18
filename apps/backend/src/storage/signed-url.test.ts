@@ -5,9 +5,9 @@ import { S3Client } from "@aws-sdk/client-s3";
 import axios from "axios";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { getSignedObjectUrl } from "./signed-url.js";
+import { getSignedObjectUrl } from "./signed-url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

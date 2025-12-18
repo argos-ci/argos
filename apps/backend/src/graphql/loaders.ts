@@ -29,13 +29,9 @@ import {
   TeamUser,
   Test,
   User,
-} from "@/database/models/index.js";
+} from "@/database/models";
 import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
-import {
-  checkErrorStatus,
-  getAppOctokit,
-  GhApiInstallation,
-} from "@/github/index.js";
+import { checkErrorStatus, getAppOctokit, GhApiInstallation } from "@/github";
 import { getTestAllMetrics } from "@/metrics/test";
 
 function createModelLoader<TModelClass extends ModelClass<Model>>(

@@ -1,9 +1,9 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { NotificationWorkflow } from "./NotificationWorkflow.js";
-import { User } from "./User.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { NotificationWorkflow } from "./NotificationWorkflow";
+import { User } from "./User";
 
 export class NotificationWorkflowRecipient extends Model {
   static override tableName = "notification_workflow_recipients";

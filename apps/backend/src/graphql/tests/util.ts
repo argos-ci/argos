@@ -1,7 +1,7 @@
 import type { ApolloServer, BaseContext } from "@apollo/server";
 import express, { RequestHandler } from "express";
 
-import type { Account, User } from "@/database/models/index.js";
+import type { Account, User } from "@/database/models";
 
 let startPromise: Promise<void> | null = null;
 

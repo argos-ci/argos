@@ -1,3 +1,3 @@
-export * from "./job.js";
-export * from "./notifications.js";
-export * from "./notification.js";
+export * from "./job";
+export * from "./notifications";
+export * from "./notification";

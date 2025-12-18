@@ -1,8 +1,8 @@
 import { firstUpper } from "@argos/util/string";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import type { SubscriptionInterval } from "./Subscription.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import type { SubscriptionInterval } from "./Subscription";
 
 const FREE_PLAN_NAME = "free";
 

@@ -2,11 +2,11 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
-import { getStatsMessage } from "@/build/stats.js";
+import { getStatsMessage } from "@/build/stats";
 import { Project } from "@/database/models";
-import { Build } from "@/database/models/Build.js";
-import type { BuildNotification } from "@/database/models/BuildNotification.js";
-import { UnretryableError } from "@/job-core/error.js";
+import { Build } from "@/database/models/Build";
+import type { BuildNotification } from "@/database/models/BuildNotification";
+import { UnretryableError } from "@/job-core/error";
 
 export const NotificationPayloadSchema = z.object({
   description: z.string(),

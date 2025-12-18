@@ -1,12 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { GithubAccount } from "./GithubAccount.js";
-import { GithubPullRequest } from "./GithubPullRequest.js";
-import { GithubRepositoryInstallation } from "./GithubRepositoryInstallation.js";
-import { Project } from "./Project.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { GithubAccount } from "./GithubAccount";
+import { GithubPullRequest } from "./GithubPullRequest";
+import { GithubRepositoryInstallation } from "./GithubRepositoryInstallation";
+import { Project } from "./Project";
 
 export class GithubRepository extends Model {
   static override tableName = "github_repositories";

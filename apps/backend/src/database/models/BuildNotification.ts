@@ -1,9 +1,9 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { jobModelSchema, timestampsSchema } from "../util/schemas.js";
-import type { JobStatus } from "../util/schemas.js";
-import { Build } from "./Build.js";
+import { Model } from "../util/model";
+import { jobModelSchema, timestampsSchema } from "../util/schemas";
+import type { JobStatus } from "../util/schemas";
+import { Build } from "./Build";
 
 export class BuildNotification extends Model {
   static override tableName = "build_notifications";

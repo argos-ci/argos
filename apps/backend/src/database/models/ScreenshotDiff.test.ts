@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ScreenshotDiff } from "./ScreenshotDiff.js";
+import { ScreenshotDiff } from "./ScreenshotDiff";
 
 const baseData = {
   buildId: "1",

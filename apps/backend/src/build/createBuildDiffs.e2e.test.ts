@@ -6,11 +6,11 @@ import {
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
-} from "@/database/models/index.js";
-import type { File, Project } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+} from "@/database/models";
+import type { File, Project } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { createBuildDiffs } from "./createBuildDiffs.js";
+import { createBuildDiffs } from "./createBuildDiffs";
 
 describe("#createBuildDiffs", () => {
   let build: Build;

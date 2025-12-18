@@ -3,8 +3,8 @@ import { expressMiddleware } from "@as-integrations/express5";
 import * as Sentry from "@sentry/node";
 import { RequestHandler } from "express";
 
-import { getContext, type Context } from "./context.js";
-import { schema } from "./schema.js";
+import { getContext, type Context } from "./context";
+import { schema } from "./schema";
 
 const apolloSentryPlugin: ApolloServerPlugin<Context> = {
   requestDidStart: async () => {

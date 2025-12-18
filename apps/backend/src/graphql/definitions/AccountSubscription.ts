@@ -1,6 +1,6 @@
 import gqlTag from "graphql-tag";
 
-import { ICurrency, type IResolvers } from "../__generated__/resolver-types.js";
+import { ICurrency, type IResolvers } from "../__generated__/resolver-types";
 
 const { gql } = gqlTag;
 

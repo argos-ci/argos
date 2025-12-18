@@ -8,19 +8,19 @@ import {
   TeamInvite,
   User,
   UserEmail,
-} from "@/database/models/index.js";
+} from "@/database/models";
 import {
   markEmailAsVerified,
   sendVerificationEmail,
-} from "@/database/services/user-email.js";
-import { sendEmailTemplate } from "@/email/send-email-template.js";
-import { checkErrorStatus, getTokenOctokit } from "@/github/index.js";
+} from "@/database/services/user-email";
+import { sendEmailTemplate } from "@/email/send-email-template";
+import { checkErrorStatus, getTokenOctokit } from "@/github";
 
-import type { IResolvers } from "../__generated__/resolver-types.js";
-import { deleteAccount } from "../services/account.js";
-import { badUserInput, forbidden, unauthenticated } from "../util.js";
-import { commonAccountResolvers } from "./Account.js";
-import { paginateResult } from "./PageInfo.js";
+import type { IResolvers } from "../__generated__/resolver-types";
+import { deleteAccount } from "../services/account";
+import { badUserInput, forbidden, unauthenticated } from "../util";
+import { commonAccountResolvers } from "./Account";
+import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 

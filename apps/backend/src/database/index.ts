@@ -1,5 +1,5 @@
 export { raw } from "objection";
-export * from "./knex.js";
-export * from "./transaction.js";
-export * from "./services/comment.js";
-export * from "./util/update.js";
+export * from "./knex";
+export * from "./transaction";
+export * from "./services/comment";
+export * from "./util/update";

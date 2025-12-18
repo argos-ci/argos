@@ -1,13 +1,9 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
-import { NotificationWorkflow } from "./NotificationWorkflow.js";
-import { User } from "./User.js";
+import { Model } from "../util/model";
+import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { NotificationWorkflow } from "./NotificationWorkflow";
+import { User } from "./User";
 
 const channels = ["email"] as const;
 

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { knex } from "@/database";
-import type { File, Test } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { File, Test } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { upsertTestStats } from "./test.js";
+import { upsertTestStats } from "./test";
 
 describe("upsertTestStats", () => {
   let test: Test;

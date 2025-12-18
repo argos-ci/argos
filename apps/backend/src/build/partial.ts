@@ -9,12 +9,12 @@ import {
   GithubRepository,
   Project,
   Screenshot,
-} from "@/database/models/index.js";
-import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
-import logger from "@/logger/index.js";
+} from "@/database/models";
+import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import logger from "@/logger";
 
-import { finalizeBuild } from "./finalizeBuild.js";
-import { job as buildJob } from "./job.js";
+import { finalizeBuild } from "./finalizeBuild";
+import { job as buildJob } from "./job";
 
 /**
  * Check if the build is a partial build.

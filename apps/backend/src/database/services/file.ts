@@ -1,6 +1,6 @@
 import type { TransactionOrKnex } from "objection";
 
-import { File } from "@/database/models/index.js";
+import { File } from "@/database/models";
 
 export async function getUnknownFileKeys(
   keys: string[],

@@ -1,14 +1,14 @@
 import { invariant } from "@argos/util/invariant";
 
-import { BuildNotification } from "@/database/models/index.js";
-import { UnretryableError } from "@/job-core/index.js";
+import { BuildNotification } from "@/database/models";
+import { UnretryableError } from "@/job-core";
 
-import { getAggregatedNotification } from "./aggregated.js";
-import type { SendNotificationContext } from "./context.js";
-import { job as buildNotificationJob } from "./job.js";
-import { getNotificationPayload } from "./notification.js";
-import { sendGitHubNotification } from "./services/github.js";
-import { sendGitLabNotification } from "./services/gitlab.js";
+import { getAggregatedNotification } from "./aggregated";
+import type { SendNotificationContext } from "./context";
+import { job as buildNotificationJob } from "./job";
+import { getNotificationPayload } from "./notification";
+import { sendGitHubNotification } from "./services/github";
+import { sendGitLabNotification } from "./services/gitlab";
 
 export async function pushBuildNotification({
   type,

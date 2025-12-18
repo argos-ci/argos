@@ -1,13 +1,10 @@
-import {
-  AutomationEvent,
-  AutomationEvents,
-} from "@/automation/types/events.js";
+import { AutomationEvent, AutomationEvents } from "@/automation/types/events";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { AutomationRule } from "./AutomationRule.js";
-import { Build } from "./Build.js";
-import { BuildReview } from "./BuildReview.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { AutomationRule } from "./AutomationRule";
+import { Build } from "./Build";
+import { BuildReview } from "./BuildReview";
 
 export class AutomationRun extends Model {
   static override tableName = "automation_runs";

@@ -1,10 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Project } from "@/database/models/index.js";
-import { getGitlabClientFromAccount, GitlabClient } from "@/gitlab/index.js";
-import { UnretryableError } from "@/job-core/index.js";
+import { Project } from "@/database/models";
+import { getGitlabClientFromAccount, GitlabClient } from "@/gitlab";
+import { UnretryableError } from "@/job-core";
 
-import { MergeBaseStrategy } from "../types.js";
+import { MergeBaseStrategy } from "../types";
 
 export const GitlabStrategy: MergeBaseStrategy<{
   client: GitlabClient;

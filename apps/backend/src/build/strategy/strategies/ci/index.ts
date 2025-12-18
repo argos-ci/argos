@@ -1,14 +1,14 @@
 import { invariant } from "@argos/util/invariant";
 import { minimatch } from "minimatch";
 
-import { Build } from "@/database/models/index.js";
-import { UnretryableError } from "@/job-core/index.js";
+import { Build } from "@/database/models";
+import { UnretryableError } from "@/job-core";
 
-import { BuildStrategy, GetBaseResult } from "../../types.js";
-import { getBaseBucketForBuildAndCommit, queryBaseBucket } from "./query.js";
-import { GithubStrategy } from "./strategies/github.js";
-import { GitlabStrategy } from "./strategies/gitlab.js";
-import { MergeBaseStrategy } from "./types.js";
+import { BuildStrategy, GetBaseResult } from "../../types";
+import { getBaseBucketForBuildAndCommit, queryBaseBucket } from "./query";
+import { GithubStrategy } from "./strategies/github";
+import { GitlabStrategy } from "./strategies/gitlab";
+import { MergeBaseStrategy } from "./types";
 
 /**
  * Get the bucket from a list of commits, ordered by the order of the commits.

@@ -4,8 +4,8 @@ import { z } from "zod";
 import {
   getNotificationPayload,
   NotificationPayloadSchema,
-} from "@/build-notification/index.js";
-import { Build, BuildNotification } from "@/database/models/index.js";
+} from "@/build-notification";
+import { Build, BuildNotification } from "@/database/models";
 import {
   BuildAggregatedStatusSchema,
   type BuildAggregatedStatus,

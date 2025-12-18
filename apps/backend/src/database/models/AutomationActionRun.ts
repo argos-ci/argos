@@ -1,14 +1,10 @@
 import type { JSONSchema } from "objection";
 
-import { AutomatedActionJSONSchema } from "@/automation/actions/index.js";
+import { AutomatedActionJSONSchema } from "@/automation/actions";
 
-import { Model } from "../util/model.js";
-import {
-  jobModelSchema,
-  JobStatus,
-  timestampsSchema,
-} from "../util/schemas.js";
-import { AutomationRun } from "./AutomationRun.js";
+import { Model } from "../util/model";
+import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { AutomationRun } from "./AutomationRun";
 
 export class AutomationActionRun extends Model {
   static override tableName = "automation_action_runs";

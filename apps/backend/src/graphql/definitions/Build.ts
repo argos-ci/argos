@@ -2,16 +2,16 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { getPreviousDiffApprovalIds } from "@/build/approval.js";
-import { Build, ScreenshotDiff } from "@/database/models/index.js";
+import { getPreviousDiffApprovalIds } from "@/build/approval";
+import { Build, ScreenshotDiff } from "@/database/models";
 
 import {
   IBaseBranchResolution,
   IBuildStatus,
   type IResolvers,
-} from "../__generated__/resolver-types.js";
-import type { Context } from "../context.js";
-import { paginateResult } from "./PageInfo.js";
+} from "../__generated__/resolver-types";
+import type { Context } from "../context";
+import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 

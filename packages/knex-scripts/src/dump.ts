@@ -3,14 +3,14 @@ import { dirname } from "path";
 import { Command } from "commander";
 import { oraPromise } from "ora";
 
-import { getConfig } from "./config.js";
+import { getConfig } from "./config";
 import {
   getCommandEnv,
   getInsertsFromMigrations,
   getPostgresCommand,
   requireEnv,
   runCommand,
-} from "./utils.js";
+} from "./utils";
 
 /**
  * Dump the database schema to a file.

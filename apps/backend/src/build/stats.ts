@@ -1,4 +1,4 @@
-import { Build } from "@/database/models/index.js";
+import { Build } from "@/database/models";
 
 /**
  * Get a message for the build stats.

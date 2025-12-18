@@ -2,13 +2,13 @@ import { invariant } from "@argos/util/invariant";
 import { ValidationError } from "objection";
 import type { Pojo, RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import type { JobStatus } from "../util/schemas.js";
-import { jobModelSchema, timestampsSchema } from "../util/schemas.js";
-import { Build } from "./Build.js";
-import { File } from "./File.js";
-import { Screenshot } from "./Screenshot.js";
-import { Test } from "./Test.js";
+import { Model } from "../util/model";
+import type { JobStatus } from "../util/schemas";
+import { jobModelSchema, timestampsSchema } from "../util/schemas";
+import { Build } from "./Build";
+import { File } from "./File";
+import { Screenshot } from "./Screenshot";
+import { Test } from "./Test";
 
 export class ScreenshotDiff extends Model {
   static override tableName = "screenshot_diffs";

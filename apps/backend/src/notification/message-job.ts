@@ -1,9 +1,9 @@
 import { invariant } from "@argos/util/invariant";
 
-import { NotificationMessage } from "@/database/models/index.js";
+import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
-import { createModelJob } from "@/job-core/index.js";
-import { notificationHandlers } from "@/notification/handlers/index.js";
+import { createModelJob } from "@/job-core";
+import { notificationHandlers } from "@/notification/handlers";
 
 export const notificationMessageJob = createModelJob(
   "notificationMessage",

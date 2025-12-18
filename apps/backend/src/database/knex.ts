@@ -1,9 +1,9 @@
 import Knex from "knex";
 
-import { getKnexConfig } from "@/config/database.js";
-import config from "@/config/index.js";
+import config from "@/config";
+import { getKnexConfig } from "@/config/database";
 
-import { transaction } from "./transaction.js";
+import { transaction } from "./transaction";
 
 export const knex = Knex(getKnexConfig(config));
 transaction.knex(knex);

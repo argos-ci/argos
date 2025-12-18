@@ -2,7 +2,7 @@
 import { Model as ObjectionModel } from "objection";
 import type { ModelOptions, QueryContext, TransactionOrKnex } from "objection";
 
-import { knex } from "../knex.js";
+import { knex } from "../knex";
 
 ObjectionModel.knex(knex);
 

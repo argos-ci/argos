@@ -1,7 +1,7 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import type { DocumentNode } from "graphql";
 
-import { definitions } from "./definitions/index.js";
+import { definitions } from "./definitions";
 
 export const schema = makeExecutableSchema({
   typeDefs: definitions

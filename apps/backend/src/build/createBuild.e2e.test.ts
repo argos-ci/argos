@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { Project } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Project } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { createBuild } from "./createBuild.js";
+import { createBuild } from "./createBuild";
 
 describe("build", () => {
   beforeEach(async () => {

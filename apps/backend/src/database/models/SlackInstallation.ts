@@ -1,10 +1,10 @@
 import type * as Bolt from "@slack/bolt";
 import { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Account } from "./Account.js";
-import { SlackChannel } from "./SlackChannel.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Account } from "./Account";
+import { SlackChannel } from "./SlackChannel";
 
 export class SlackInstallation extends Model {
   static override tableName = "slack_installations";

@@ -1,13 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { concludeBuild } from "@/build/concludeBuild.js";
-import { Build } from "@/database/models/Build.js";
-import { BuildNotification } from "@/database/models/BuildNotification.js";
-import { factory } from "@/database/testing/index.js";
-import { setupDatabase } from "@/database/testing/util.js";
+import { concludeBuild } from "@/build/concludeBuild";
+import { Build } from "@/database/models/Build";
+import { BuildNotification } from "@/database/models/BuildNotification";
+import { factory } from "@/database/testing";
+import { setupDatabase } from "@/database/testing/util";
 
-import { getNotificationPayload } from "./notification.js";
+import { getNotificationPayload } from "./notification";
 
 describe("#getNotificationPayload", () => {
   beforeEach(async () => {

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { callbackify } from "node:util";
 
-import { ScreenshotDiff } from "@/database/models/index.js";
-import logger from "@/logger/index.js";
+import { ScreenshotDiff } from "@/database/models";
+import logger from "@/logger";
 
-import { job as diffJob } from "../job.js";
+import { job as diffJob } from "../job";
 
 const main = callbackify(async () => {
   const diffs = await ScreenshotDiff.query()

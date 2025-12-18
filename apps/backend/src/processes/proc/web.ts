@@ -1,4 +1,4 @@
-import "../setup.js";
+import "../setup";
 
 import { readFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
@@ -7,9 +7,9 @@ import { createServer as createHttpsServer } from "node:https";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import config from "@/config/index.js";
-import logger from "@/logger/index.js";
-import { createApp } from "@/web/index.js";
+import config from "@/config";
+import logger from "@/logger";
+import { createApp } from "@/web";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

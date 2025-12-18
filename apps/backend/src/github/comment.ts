@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest";
 
-import type { GithubPullRequest } from "@/database/models/index.js";
+import type { GithubPullRequest } from "@/database/models";
 import { redisLock } from "@/util/redis";
 
 import { checkErrorStatus } from "./client";

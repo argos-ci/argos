@@ -1,4 +1,4 @@
-import type { Build, Project } from "@/database/models/index.js";
+import type { Build, Project } from "@/database/models";
 
 export type MergeBaseStrategy<TCtx> = {
   detect: (project: Project) => Promise<boolean> | boolean;

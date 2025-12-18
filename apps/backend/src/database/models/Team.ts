@@ -1,19 +1,15 @@
 import { assertNever } from "@argos/util/assertNever";
 import type { RelationMappings } from "objection";
 
-import config from "@/config/index.js";
+import config from "@/config";
 
-import { generateRandomHexString } from "../services/crypto.js";
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import {
-  Account,
-  AccountPermission,
-  ALL_ACCOUNT_PERMISSIONS,
-} from "./Account.js";
-import { GithubAccount } from "./GithubAccount.js";
-import { TeamUser } from "./TeamUser.js";
-import { User } from "./User.js";
+import { generateRandomHexString } from "../services/crypto";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
+import { GithubAccount } from "./GithubAccount";
+import { TeamUser } from "./TeamUser";
+import { User } from "./User";
 
 export class Team extends Model {
   static override tableName = "teams";

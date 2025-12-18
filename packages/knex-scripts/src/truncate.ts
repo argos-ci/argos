@@ -2,8 +2,8 @@ import { Command } from "commander";
 import Knex from "knex";
 import { oraPromise } from "ora";
 
-import { getConfig } from "./config.js";
-import { preventRunningInProduction } from "./utils.js";
+import { getConfig } from "./config";
+import { preventRunningInProduction } from "./utils";
 
 const KNEX_TABLES = ["knex_migrations", "knex_migrations_lock"];
 

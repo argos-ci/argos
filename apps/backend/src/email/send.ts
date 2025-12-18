@@ -1,8 +1,8 @@
 import { render } from "@react-email/render";
 import { Resend } from "resend";
 
-import config from "@/config/index.js";
-import logger from "@/logger/index.js";
+import config from "@/config";
+import logger from "@/logger";
 
 const production = config.get("env") === "production";
 const resendApiKey = config.get("resend.apiKey");

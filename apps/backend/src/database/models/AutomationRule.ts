@@ -1,12 +1,12 @@
 import type { JSONSchema } from "objection";
 import { z } from "zod";
 
-import { AutomationActionSchema } from "@/automation/actions/index.js";
-import { AutomationConditionSchema } from "@/automation/types/conditions.js";
-import { AutomationEventSchema } from "@/automation/types/events.js";
+import { AutomationActionSchema } from "@/automation/actions";
+import { AutomationConditionSchema } from "@/automation/types/conditions";
+import { AutomationEventSchema } from "@/automation/types/events";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
 import { Project } from "./Project";
 
 export class AutomationRule extends Model {

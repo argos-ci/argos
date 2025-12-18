@@ -14,26 +14,26 @@ import {
   ProjectUser,
   Screenshot,
   User,
-} from "@/database/models/index.js";
+} from "@/database/models";
 import {
   checkProjectName,
   resolveProjectName,
-} from "@/database/services/project.js";
-import { notifyDiscord } from "@/discord/index.js";
-import { getInstallationOctokit } from "@/github/client.js";
-import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab/index.js";
-import { getOrCreateGithubRepository } from "@/graphql/services/github.js";
+} from "@/database/services/project";
+import { notifyDiscord } from "@/discord";
+import { getInstallationOctokit } from "@/github/client";
+import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
+import { getOrCreateGithubRepository } from "@/graphql/services/github";
 
 import {
   IBuildStatus,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
-} from "../__generated__/resolver-types.js";
-import { deleteProject, getAdminProject } from "../services/project.js";
-import { parseTestId } from "../services/test.js";
-import { badUserInput, forbidden, unauthenticated } from "../util.js";
-import { paginateResult } from "./PageInfo.js";
+} from "../__generated__/resolver-types";
+import { deleteProject, getAdminProject } from "../services/project";
+import { parseTestId } from "../services/test";
+import { badUserInput, forbidden, unauthenticated } from "../util";
+import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 

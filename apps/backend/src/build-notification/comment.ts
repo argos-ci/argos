@@ -1,9 +1,9 @@
 import { invariant } from "@argos/util/invariant";
 
-import { getBuildLabel } from "@/build/label.js";
-import { getStatsMessage } from "@/build/stats.js";
-import { getCommentHeader } from "@/database/index.js";
-import { Build, Project } from "@/database/models/index.js";
+import { getBuildLabel } from "@/build/label";
+import { getStatsMessage } from "@/build/stats";
+import { getCommentHeader } from "@/database";
+import { Build, Project } from "@/database/models";
 
 const dateFormatter = Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",

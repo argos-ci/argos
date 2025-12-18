@@ -4,12 +4,8 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
-import type {
-  Build,
-  Project,
-  ScreenshotBucket,
-} from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Build, Project, ScreenshotBucket } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { finalizeBuilds } from "./finalizeBuilds";

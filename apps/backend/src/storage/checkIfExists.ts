@@ -1,5 +1,5 @@
-import { get } from "./get.js";
-import type { GetParams } from "./get.js";
+import { get } from "./get";
+import type { GetParams } from "./get";
 
 /**
  * Check if an object exists in S3.

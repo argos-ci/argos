@@ -1,10 +1,10 @@
 import type { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { Build } from "./Build.js";
-import { ScreenshotDiffReview } from "./ScreenshotDiffReview.js";
-import { User } from "./User.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { Build } from "./Build";
+import { ScreenshotDiffReview } from "./ScreenshotDiffReview";
+import { User } from "./User";
 
 export class BuildReview extends Model {
   static override tableName = "build_reviews";

@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { asyncHandler } from "@/web/util.js";
+import { asyncHandler } from "@/web/util";
 
 import { emailTemplates } from "./templates";
 import { emailToText, queryStringToObject } from "./util";

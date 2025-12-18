@@ -1,8 +1,8 @@
 import { RelationMappings } from "objection";
 
-import { Model } from "../util/model.js";
-import { timestampsSchema } from "../util/schemas.js";
-import { GithubAccount } from "./GithubAccount.js";
+import { Model } from "../util/model";
+import { timestampsSchema } from "../util/schemas";
+import { GithubAccount } from "./GithubAccount";
 
 export class GithubAccountMember extends Model {
   static override tableName = "github_account_members";

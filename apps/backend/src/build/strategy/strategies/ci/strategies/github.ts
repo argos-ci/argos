@@ -5,11 +5,11 @@ import {
   GithubInstallation,
   GithubRepository,
   Project,
-} from "@/database/models/index.js";
-import { checkErrorStatus, getInstallationOctokit } from "@/github/index.js";
-import { UnretryableError } from "@/job-core/index.js";
+} from "@/database/models";
+import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import { UnretryableError } from "@/job-core";
 
-import { MergeBaseStrategy } from "../types.js";
+import { MergeBaseStrategy } from "../types";
 
 type Octokit = NonNullable<Awaited<ReturnType<typeof getInstallationOctokit>>>;
 

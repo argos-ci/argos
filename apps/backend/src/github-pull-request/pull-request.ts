@@ -1,20 +1,20 @@
 import { truncate } from "@argos/util/string";
 import { PartialModelObject } from "objection";
 
-import { GithubPullRequest } from "@/database/models/GithubPullRequest.js";
-import { GithubRepository } from "@/database/models/index.js";
+import { GithubRepository } from "@/database/models";
+import { GithubPullRequest } from "@/database/models/GithubPullRequest";
 import {
   getGhAccountType,
   getOrCreateGhAccount,
-} from "@/database/services/github.js";
+} from "@/database/services/github";
 import {
   checkErrorStatus,
   getInstallationOctokit,
   Octokit,
   RestEndpointMethodTypes,
-} from "@/github/client.js";
-import { unretryable } from "@/job-core/error.js";
-import logger from "@/logger/index.js";
+} from "@/github/client";
+import { unretryable } from "@/job-core/error";
+import logger from "@/logger";
 
 type GitHubApiPullRequest =
   RestEndpointMethodTypes["pulls"]["get"]["response"]["data"];

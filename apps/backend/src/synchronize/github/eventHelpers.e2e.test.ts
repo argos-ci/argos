@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { setupDatabase } from "@/database/testing/index.js";
+import { setupDatabase } from "@/database/testing";
 
-import { ORGANIZATION_PURCHASE_EVENT_PAYLOAD } from "../fixtures/purchase-event-payload.js";
-import { getOrCreateAccountFromEvent } from "./eventHelpers.js";
+import { ORGANIZATION_PURCHASE_EVENT_PAYLOAD } from "../fixtures/purchase-event-payload";
+import { getOrCreateAccountFromEvent } from "./eventHelpers";
 
 describe("#getOrCreateAccount", () => {
   beforeEach(async () => {

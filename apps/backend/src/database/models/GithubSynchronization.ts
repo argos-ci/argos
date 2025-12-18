@@ -1,6 +1,6 @@
-import { Model } from "../util/model.js";
-import type { JobStatus } from "../util/schemas.js";
-import { jobModelSchema, timestampsSchema } from "../util/schemas.js";
+import { Model } from "../util/model";
+import type { JobStatus } from "../util/schemas";
+import { jobModelSchema, timestampsSchema } from "../util/schemas";
 
 export class GithubSynchronization extends Model {
   static override tableName = "github_synchronizations";

@@ -2,18 +2,12 @@ import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
 
-import { transaction } from "@/database/index.js";
-import {
-  Build,
-  BuildShard,
-  File,
-  Screenshot,
-  Test,
-} from "@/database/models/index.js";
-import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk.js";
+import { transaction } from "@/database";
+import { Build, BuildShard, File, Screenshot, Test } from "@/database/models";
+import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
-import { ScreenshotMetadata } from "../schemas/ScreenshotMetadata.js";
-import { getUnknownFileKeys } from "./file.js";
+import { ScreenshotMetadata } from "../schemas/ScreenshotMetadata";
+import { getUnknownFileKeys } from "./file";
 
 const getOrCreateTests = async ({
   projectId,

@@ -1,14 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  Build,
-  Project,
-  ScreenshotBucket,
-} from "@/database/models/index.js";
-import { BuildNotification, ScreenshotDiff } from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
+import type { Build, Project, ScreenshotBucket } from "@/database/models";
+import { BuildNotification, ScreenshotDiff } from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
 
-import { performBuild } from "./index.js";
+import { performBuild } from ".";
 
 describe("build", () => {
   beforeEach(async () => {

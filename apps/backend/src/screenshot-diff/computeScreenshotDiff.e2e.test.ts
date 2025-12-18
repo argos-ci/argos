@@ -3,20 +3,20 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import config from "@/config/index.js";
+import config from "@/config";
 import {
   Build,
   Project,
   ScreenshotBucket,
   ScreenshotDiff,
   Test,
-} from "@/database/models/index.js";
-import { factory, setupDatabase } from "@/database/testing/index.js";
-import { quitAmqp } from "@/job-core/index.js";
-import { getS3Client, uploadFromFilePath } from "@/storage/index.js";
-import type { S3Client } from "@/storage/index.js";
+} from "@/database/models";
+import { factory, setupDatabase } from "@/database/testing";
+import { quitAmqp } from "@/job-core";
+import { getS3Client, uploadFromFilePath } from "@/storage";
+import type { S3Client } from "@/storage";
 
-import { computeScreenshotDiff } from "./computeScreenshotDiff.js";
+import { computeScreenshotDiff } from "./computeScreenshotDiff";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 

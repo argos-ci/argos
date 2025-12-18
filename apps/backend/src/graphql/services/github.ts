@@ -7,8 +7,8 @@ import {
   GithubAccountMember,
   GithubRepository,
   TeamUser,
-} from "@/database/models/index.js";
-import { checkErrorStatus, getTokenOctokit, Octokit } from "@/github/index.js";
+} from "@/database/models";
+import { checkErrorStatus, getTokenOctokit, Octokit } from "@/github";
 
 import { notFound } from "../util";
 

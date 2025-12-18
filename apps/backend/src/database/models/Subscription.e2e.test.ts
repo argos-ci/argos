@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { factory, setupDatabase } from "../testing/index.js";
+import { factory, setupDatabase } from "../testing";
 
 describe("Subscription", () => {
   beforeEach(async () => {

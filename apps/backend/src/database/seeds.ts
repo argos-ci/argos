@@ -1,22 +1,22 @@
-import { concludeBuild } from "@/build/concludeBuild.js";
+import { concludeBuild } from "@/build/concludeBuild";
 
-import { Account } from "./models/Account.js";
-import { Build } from "./models/Build.js";
-import { BuildReview } from "./models/BuildReview.js";
-import { File } from "./models/File.js";
-import { GithubAccount } from "./models/GithubAccount.js";
-import { GithubInstallation } from "./models/GithubInstallation.js";
-import { GithubRepository } from "./models/GithubRepository.js";
-import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation.js";
-import { Plan } from "./models/Plan.js";
-import { Project } from "./models/Project.js";
-import { Screenshot } from "./models/Screenshot.js";
-import { ScreenshotBucket } from "./models/ScreenshotBucket.js";
-import { ScreenshotDiff } from "./models/ScreenshotDiff.js";
-import { Team } from "./models/Team.js";
-import { TeamUser } from "./models/TeamUser.js";
-import { Test } from "./models/Test.js";
-import { User } from "./models/User.js";
+import { Account } from "./models/Account";
+import { Build } from "./models/Build";
+import { BuildReview } from "./models/BuildReview";
+import { File } from "./models/File";
+import { GithubAccount } from "./models/GithubAccount";
+import { GithubInstallation } from "./models/GithubInstallation";
+import { GithubRepository } from "./models/GithubRepository";
+import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
+import { Plan } from "./models/Plan";
+import { Project } from "./models/Project";
+import { Screenshot } from "./models/Screenshot";
+import { ScreenshotBucket } from "./models/ScreenshotBucket";
+import { ScreenshotDiff } from "./models/ScreenshotDiff";
+import { Team } from "./models/Team";
+import { TeamUser } from "./models/TeamUser";
+import { Test } from "./models/Test";
+import { User } from "./models/User";
 
 const now = new Date().toISOString();
 

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Build } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { MonitoringStrategy } from "./index.js";
+import { MonitoringStrategy } from ".";
 
 describe("MonitoringStrategy.getBaseScreenshotBucket", () => {
   let sourceBuild: Build;

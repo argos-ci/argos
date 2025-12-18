@@ -2,19 +2,16 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { triggerAndRunAutomation } from "@/automation/index.js";
-import { AutomationEvents } from "@/automation/types/events.js";
-import { pushBuildNotification } from "@/build-notification/notifications.js";
-import { Build } from "@/database/models/Build.js";
-import { BuildReview } from "@/database/models/BuildReview.js";
-import { ScreenshotDiffReview } from "@/database/models/ScreenshotDiffReview.js";
-import { transaction } from "@/database/transaction.js";
+import { triggerAndRunAutomation } from "@/automation";
+import { AutomationEvents } from "@/automation/types/events";
+import { pushBuildNotification } from "@/build-notification/notifications";
+import { Build } from "@/database/models/Build";
+import { BuildReview } from "@/database/models/BuildReview";
+import { ScreenshotDiffReview } from "@/database/models/ScreenshotDiffReview";
+import { transaction } from "@/database/transaction";
 
-import {
-  IReviewState,
-  type IResolvers,
-} from "../__generated__/resolver-types.js";
-import { forbidden, notFound, unauthenticated } from "../util.js";
+import { IReviewState, type IResolvers } from "../__generated__/resolver-types";
+import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 

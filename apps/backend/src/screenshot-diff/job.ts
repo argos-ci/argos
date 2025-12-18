@@ -1,9 +1,9 @@
-import config from "@/config/index.js";
-import { ScreenshotDiff } from "@/database/models/index.js";
-import { createModelJob } from "@/job-core/index.js";
-import { getS3Client } from "@/storage/index.js";
+import config from "@/config";
+import { ScreenshotDiff } from "@/database/models";
+import { createModelJob } from "@/job-core";
+import { getS3Client } from "@/storage";
 
-import { computeScreenshotDiff } from "./computeScreenshotDiff.js";
+import { computeScreenshotDiff } from "./computeScreenshotDiff";
 
 export const job = createModelJob(
   "screenshotDiff",
