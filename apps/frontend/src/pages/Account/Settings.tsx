@@ -73,7 +73,6 @@ const AccountQuery = graphql(`
   }
 `);
 
-/** @route */
 export function Component() {
   const params = useAccountParams();
   invariant(params, "Account params required");

@@ -23,6 +23,7 @@ import {
   getAutomationEventLabel,
 } from "@/util/automation";
 
+import { AutomationRule } from ".";
 import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";
 import { IconButton } from "../../ui/IconButton";
 import { Popover } from "../../ui/Popover";
@@ -32,7 +33,6 @@ import { ACTIONS } from "./AutomationFormActionsStep";
 import { getAutomationURL } from "./AutomationParams";
 import { DeleteAutomationDialog } from "./DeleteAutomation";
 import { AutomationActionRunStatusIcon } from "./EditAutomation";
-import { AutomationRule } from "./index";
 
 const AutomationRunStatusIcon = ({
   status,

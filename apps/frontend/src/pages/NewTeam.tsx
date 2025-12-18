@@ -30,7 +30,6 @@ const AutoCreateTeam = ({ name }: { name: string }) => {
   return <PageLoader />;
 };
 
-/** @route */
 export function Component() {
   const [params] = useSearchParams();
   const name = params.get("name");

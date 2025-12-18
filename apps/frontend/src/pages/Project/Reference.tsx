@@ -64,7 +64,6 @@ function NavigateToLatestAutoApproved({
   );
 }
 
-/** @route */
 export function Component() {
   const { accountSlug, projectName } = useParams();
 

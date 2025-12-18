@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "tags": ["-route", "-utility", "-graphqlType"],
+  "tags": ["-utility", "-graphqlType"],
   "workspaces": {
     "apps/backend": {
       "entry": [
@@ -26,12 +26,9 @@
         "src/util/color-detection/worker.ts"
       ],
       "ignoreDependencies": [
-        "@radix-ui/colors",
         "@vitejs/plugin-react-swc",
         "@sentry/vite-plugin",
-        "@tailwindcss/vite",
-        "tailwindcss",
-        "tailwindcss-animate"
+        "@tailwindcss/vite"
       ],
       "vite": {
         "config": []

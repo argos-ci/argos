@@ -10,7 +10,6 @@ import { Code } from "@/ui/Code";
 import { Container } from "@/ui/Container";
 import { getErrorMessage } from "@/util/error";
 
-/** @route */
 export function Component() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");

@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
-import { SlackChannel, type SlackInstallation } from "@/database/models/index";
+import { SlackChannel, type SlackInstallation } from "@/database/models";
 import { UnretryableError } from "@/job-core";
 import { postMessageToSlackChannel } from "@/slack/channel";
 

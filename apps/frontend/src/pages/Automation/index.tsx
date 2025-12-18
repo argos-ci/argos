@@ -155,7 +155,6 @@ function PageContentFound(props: { project: ProjectDocument }) {
   );
 }
 
-/** @route */
 export function Component() {
   const params = useProjectParams();
   invariant(params, "Project params are required");

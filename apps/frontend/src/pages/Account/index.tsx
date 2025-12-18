@@ -65,7 +65,6 @@ function useAccountParams() {
   return { accountSlug };
 }
 
-/** @route */
 export function Component() {
   const { accountSlug } = useAccountParams();
   useVisitAccount(accountSlug);

@@ -1,6 +1,6 @@
 import { Knex } from "knex";
 
-import type { Config } from "./index";
+import type { Config } from ".";
 
 /**
  * Load the database configuration from a URL.

@@ -52,7 +52,6 @@ const ImportGitlabProjectMutation = graphql(`
   }
 `);
 
-/** @route */
 export function Component() {
   const params = useAccountParams();
   invariant(params, "Cannot create a new project outside of an account");

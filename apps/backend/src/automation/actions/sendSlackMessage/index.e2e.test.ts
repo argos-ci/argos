@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { factory, setupDatabase } from "@/database/testing";
 import { postMessageToSlackChannel } from "@/slack/channel";
 
-import { automationAction } from "./index";
+import { automationAction } from ".";
 
 vi.mock("@/slack/channel", () => ({
   __esModule: true,

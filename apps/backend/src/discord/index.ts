@@ -1,4 +1,4 @@
-import { WebhookClient } from "discord";
+import { WebhookClient } from "discord.js";
 
 import config from "@/config";
 

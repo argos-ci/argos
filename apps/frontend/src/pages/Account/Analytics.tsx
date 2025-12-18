@@ -90,7 +90,6 @@ const AccountQuery = graphql(`
   }
 `);
 
-/** @route */
 export function Component() {
   const { accountSlug } = useParams();
   invariant(accountSlug);
