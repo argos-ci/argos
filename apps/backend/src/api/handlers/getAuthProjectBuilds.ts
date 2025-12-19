@@ -86,7 +86,7 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
 
     const builds = await Build.query()
       .withGraphFetched("project.account")
-      .whereIn("id", filterQuery)
+      .whereIn("builds.id", filterQuery)
       .orderBy("builds.id", "desc")
       .page(page - 1, perPage);
 
