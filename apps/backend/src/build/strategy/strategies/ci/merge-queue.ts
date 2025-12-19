@@ -94,9 +94,9 @@ async function getRecentMergedBucket(args: {
     .where("builds.jobStatus", "complete")
     .whereNot("builds.id", build.id)
     .where("compareScreenshotBucket.branch", compareScreenshotBucket.branch)
-    .where("mergeQueue", true)
-    .where("createdAt", ">", baseBucket.createdAt)
-    .where("conclusion", "no-changes")
+    .where("builds.mergeQueue", true)
+    .where("builds.createdAt", ">", baseBucket.createdAt)
+    .where("builds.conclusion", "no-changes")
     .orderBy("builds.id", "desc")
     .first();
 

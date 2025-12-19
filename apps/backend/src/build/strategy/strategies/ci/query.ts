@@ -37,10 +37,7 @@ type QueryBaseBucketOptions = {
 /**
  * Query the base bucket from a build.
  */
-export function queryBaseBucket(
-  build: Build,
-  options?: QueryBaseBucketOptions,
-) {
+function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
   const query = ScreenshotBucket.query()
     .where({
       projectId: build.projectId,
