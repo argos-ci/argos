@@ -34,6 +34,7 @@ export async function mergeBucketWithBuildDiffs(
   for (const diff of headBuild.screenshotDiffs) {
     const status = await diff.$getDiffStatus();
     switch (status) {
+      case "changed":
       case "added": {
         invariant(
           diff.compareScreenshot,
@@ -49,16 +50,6 @@ export async function mergeBucketWithBuildDiffs(
         delete screenshotsByName[
           diff.baseScreenshot.baseName ?? diff.baseScreenshot.name
         ];
-        break;
-      }
-      case "changed": {
-        invariant(
-          diff.compareScreenshot,
-          "Relation `compareScreenshot` not loaded",
-        );
-        screenshotsByName[
-          diff.compareScreenshot.baseName ?? diff.compareScreenshot.name
-        ] = diff.compareScreenshot;
         break;
       }
       case "unchanged":
