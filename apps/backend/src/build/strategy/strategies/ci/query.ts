@@ -98,12 +98,16 @@ export async function getBucketFromCommits(args: {
   if (args.shas.length === 0) {
     return null;
   }
+  const valuesClause = args.shas.map(() => "(?, ?)").join(",");
+  const bindings: (string | number)[] = [];
+  args.shas.forEach((sha, index) => {
+    bindings.push(sha, index);
+  });
   const bucket = await queryBaseBucket(args.build)
     .whereIn("commit", args.shas)
     .joinRaw(
-      `join (values ${args.shas
-        .map((sha, index) => `('${sha}',${index})`)
-        .join(",")}) as ordering(sha, rank) on commit = ordering.sha`,
+      `join (values ${valuesClause}) as ordering(sha, rank) on commit = ordering.sha`,
+      bindings,
     )
     .orderBy("ordering.rank")
     .orderBy("id", "desc")
