@@ -11,7 +11,8 @@
         "apps/frontend/src/gql/**",
         "apps/frontend/src/gql-fragments.json",
         "apps/backend/src/graphql/__generated__/**"
-      ]
+      ],
+      "inputs": ["apps/frontend/src/**", "apps/backend/src/**", "codegen.ts"]
     },
     "//#lint:root": {
       "outputs": []
