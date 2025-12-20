@@ -1,8 +1,12 @@
-import type { Build, ScreenshotBucket } from "@/database/models";
+import type { Build, Screenshot, ScreenshotBucket } from "@/database/models";
 import type { BuildType } from "@/database/schemas/BuildType";
 
+export type VirtualScreenshotBucket = {
+  screenshots: Screenshot[];
+};
+
 export type GetBaseResult = Promise<{
-  baseScreenshotBucket: ScreenshotBucket | null;
+  baseBucket: ScreenshotBucket | VirtualScreenshotBucket | null;
   baseBranch: Build["baseBranch"];
   baseBranchResolvedFrom: Build["baseBranchResolvedFrom"];
 }>;
@@ -16,7 +20,7 @@ export type BuildStrategy<TCtx> = {
   getBase: (build: Build, ctx: TCtx) => GetBaseResult;
   getBuildType: (
     input: {
-      baseScreenshotBucket: ScreenshotBucket | null;
+      baseBucket: ScreenshotBucket | VirtualScreenshotBucket | null;
       compareScreenshotBucket: ScreenshotBucket;
     },
     ctx: TCtx,

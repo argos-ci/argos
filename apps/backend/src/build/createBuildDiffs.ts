@@ -1,25 +1,30 @@
 import { invariant } from "@argos/util/invariant";
 
 import { transaction } from "@/database";
-import { Build, Screenshot, ScreenshotDiff } from "@/database/models";
-import type { ScreenshotBucket } from "@/database/models";
+import {
+  Build,
+  Screenshot,
+  ScreenshotBucket,
+  ScreenshotDiff,
+} from "@/database/models";
 
 import { BuildStrategy, getBuildStrategy } from "./strategy";
+import type { VirtualScreenshotBucket } from "./strategy/types";
 
 /**
  * Get the base screenshot bucket for a build, or retrieve it if it doesn't exist.
  */
-async function getOrRetrieveBaseScreenshotBucket<T>(input: {
+async function getOrRetrieveBaseBucket<T>(input: {
   build: Build;
   strategy: BuildStrategy<T>;
   ctx: T;
-}): Promise<ScreenshotBucket | null> {
+}): Promise<ScreenshotBucket | VirtualScreenshotBucket | null> {
   const { build, strategy, ctx } = input;
   if (build.baseScreenshotBucket) {
     return build.baseScreenshotBucket;
   }
 
-  const { baseBranch, baseBranchResolvedFrom, baseScreenshotBucket } =
+  const { baseBranch, baseBranchResolvedFrom, baseBucket } =
     await strategy.getBase(build, ctx);
 
   await Promise.all([
@@ -28,12 +33,15 @@ async function getOrRetrieveBaseScreenshotBucket<T>(input: {
       .patch({
         baseBranch,
         baseBranchResolvedFrom,
-        baseScreenshotBucketId: baseScreenshotBucket?.id ?? null,
+        baseScreenshotBucketId:
+          baseBucket instanceof ScreenshotBucket ? baseBucket.id : null,
       }),
-    baseScreenshotBucket?.$fetchGraph("screenshots"),
+    baseBucket instanceof ScreenshotBucket
+      ? baseBucket.$fetchGraph("screenshots")
+      : null,
   ]);
 
-  return baseScreenshotBucket;
+  return baseBucket;
 }
 
 function getJobStatus({
@@ -105,15 +113,15 @@ export async function createBuildDiffs(build: Build) {
   invariant(compareScreenshots, "no compare screenshots found for build");
 
   const ctx = await strategy.getContext(richBuild);
-  const baseScreenshotBucket = await getOrRetrieveBaseScreenshotBucket({
+  const baseBucket = await getOrRetrieveBaseBucket({
     build: richBuild,
     strategy,
     ctx,
   });
 
   const sameBucket = Boolean(
-    baseScreenshotBucket &&
-    baseScreenshotBucket.id === compareScreenshotBucket.id,
+    baseBucket instanceof ScreenshotBucket &&
+    baseBucket.id === compareScreenshotBucket.id,
   );
 
   const inserts = compareScreenshots.map((compareScreenshot) => {
@@ -122,7 +130,7 @@ export async function createBuildDiffs(build: Build) {
         return null;
       }
 
-      if (!baseScreenshotBucket) {
+      if (!baseBucket) {
         return null;
       }
 
@@ -131,12 +139,9 @@ export async function createBuildDiffs(build: Build) {
         return null;
       }
 
-      invariant(
-        baseScreenshotBucket.screenshots,
-        "no base screenshots found for build",
-      );
+      invariant(baseBucket.screenshots, "no base screenshots found for build");
 
-      return baseScreenshotBucket.screenshots.find(({ name }) => {
+      return baseBucket.screenshots.find(({ name }) => {
         if (compareScreenshot.baseName) {
           return name === compareScreenshot.baseName;
         }
@@ -167,7 +172,7 @@ export async function createBuildDiffs(build: Build) {
   const compareScreenshotNames = compareScreenshots.map(({ name }) => name);
 
   const removedScreenshots =
-    baseScreenshotBucket?.screenshots
+    baseBucket?.screenshots
       ?.filter(
         ({ name }) =>
           !compareScreenshotNames.includes(name) &&
@@ -190,7 +195,7 @@ export async function createBuildDiffs(build: Build) {
   const buildType = (() => {
     return strategy.getBuildType(
       {
-        baseScreenshotBucket,
+        baseBucket,
         compareScreenshotBucket,
       },
       ctx,

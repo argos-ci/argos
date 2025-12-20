@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import type { Build, Project } from "@/database/models";
@@ -11,25 +11,60 @@ import { getAuthProjectBuilds } from "./getAuthProjectBuilds";
 
 const app = createTestHandlerApp(getAuthProjectBuilds);
 
-describe("getAuthProjectBuilds", () => {
-  let project: Project;
-  let builds: Build[];
-
-  beforeAll(() => {
-    z.globalRegistry.clear();
-  });
-
-  beforeEach(async () => {
+const it = base.extend<{
+  project: Project;
+  builds: Build[];
+  factory: typeof factory;
+  commit: {
+    sha: string;
+    withPrHeadCommit: Build;
+    withCompareScreenshotBucket: Build;
+  };
+}>({
+  factory: async ({}, use) => {
     await setupDatabase();
-    project = await factory.Project.create({
+    await use(factory);
+  },
+  project: async ({ factory }, use) => {
+    const project = await factory.Project.create({
       token: "the-awesome-token",
     });
-    builds = await factory.Build.createMany(3, {
+    await use(project);
+  },
+  builds: async ({ factory, project }, use) => {
+    const builds = await factory.Build.createMany(3, {
       projectId: project.id,
       name: "default",
     });
     // Sort builds by id desc
-    builds.sort((a: Build, b: Build) => b.id.localeCompare(a.id));
+    builds.sort((a: Build, b: Build) => Number(b.id) - Number(a.id));
+    await use(builds);
+  },
+  commit: async ({ project, builds }, use) => {
+    const sha = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
+    const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
+    invariant(withPrHeadCommit && withCompareScreenshotBucket);
+
+    await Promise.all([
+      withPrHeadCommit.$query().patch({ prHeadCommit: sha }),
+      (async () => {
+        const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+          projectId: project.id,
+          name: withCompareScreenshotBucket.name,
+          commit: sha,
+        });
+        await withCompareScreenshotBucket.$query().patch({
+          compareScreenshotBucketId: compareScreenshotBucket.id,
+        });
+      })(),
+    ]);
+    await use({ sha, withPrHeadCommit, withCompareScreenshotBucket });
+  },
+});
+
+describe("getAuthProjectBuilds", () => {
+  beforeAll(() => {
+    z.globalRegistry.clear();
   });
 
   describe("without a valid token", () => {
@@ -46,7 +81,9 @@ describe("getAuthProjectBuilds", () => {
     });
   });
 
-  it("returns a list of project builds sorted by id desc", async () => {
+  it("returns a list of project builds sorted by id desc", async ({
+    builds,
+  }) => {
     await request(app)
       .get("/project/builds")
       .set("Authorization", "Bearer the-awesome-token")
@@ -63,7 +100,7 @@ describe("getAuthProjectBuilds", () => {
   });
 
   describe('with "page" and "perPage" params', () => {
-    it("returns limited number of builds", async () => {
+    it("returns limited number of builds", async ({ builds }) => {
       await request(app)
         .get("/project/builds?perPage=1&page=2")
         .set("Authorization", "Bearer the-awesome-token")
@@ -77,60 +114,35 @@ describe("getAuthProjectBuilds", () => {
   });
 
   describe('with "commit" params', () => {
-    it("filters builds by `compareScreenshotBucket.commit` or `builds.prHeadCommit`", async () => {
-      const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
-      const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
-      invariant(withPrHeadCommit && withCompareScreenshotBucket);
-      await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
-
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        name: withCompareScreenshotBucket.name,
-        commit,
-      });
-      await withCompareScreenshotBucket.$query().patch({
-        compareScreenshotBucketId: compareScreenshotBucket.id,
-      });
+    it("filters builds by `compareScreenshotBucket.commit` or `builds.prHeadCommit`", async ({
+      commit,
+    }) => {
       await request(app)
-        .get(`/project/builds?commit=${commit}`)
+        .get(`/project/builds?commit=${commit.sha}`)
         .set("Authorization", "Bearer the-awesome-token")
         .expect(200)
         .expect((res) => {
           expect(res.body.results).toHaveLength(2);
           expect(res.body.results.map((b: Build) => b.id)).toEqual([
-            withPrHeadCommit.id,
-            withCompareScreenshotBucket.id,
+            commit.withPrHeadCommit.id,
+            commit.withCompareScreenshotBucket.id,
           ]);
         });
     });
   });
 
   describe('with "distinctName" params', () => {
-    it("returns only the latest builds by `builds.name`", async () => {
-      const commit = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
-      // Sort by id desc to ensure the latest builds are first
-      const [withPrHeadCommit, withCompareScreenshotBucket] = builds.sort(
-        (a: Build, b: Build) => a.id.localeCompare(b.id),
-      );
-      invariant(withPrHeadCommit && withCompareScreenshotBucket);
-      await withPrHeadCommit.$query().patch({ prHeadCommit: commit });
-
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        name: withCompareScreenshotBucket.name,
-        commit,
-      });
-      await withCompareScreenshotBucket.$query().patch({
-        compareScreenshotBucketId: compareScreenshotBucket.id,
-      });
+    it("returns only the latest builds by `builds.name`", async ({
+      commit,
+    }) => {
       await request(app)
-        .get(`/project/builds?commit=${commit}&distinctName=true`)
+        .get(`/project/builds?commit=${commit.sha}&distinctName=true`)
         .set("Authorization", "Bearer the-awesome-token")
         .expect(200)
         .expect((res) => {
           expect(res.body.results).toHaveLength(1);
           expect(res.body.results.map((b: Build) => b.id)).toEqual([
-            withCompareScreenshotBucket.id,
+            commit.withPrHeadCommit.id,
           ]);
         });
     });

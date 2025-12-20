@@ -37,10 +37,7 @@ type QueryBaseBucketOptions = {
 /**
  * Query the base bucket from a build.
  */
-export function queryBaseBucket(
-  build: Build,
-  options?: QueryBaseBucketOptions,
-) {
+function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
   const query = ScreenshotBucket.query()
     .where({
       projectId: build.projectId,
@@ -89,4 +86,31 @@ export function queryBaseBucket(
   query.whereIn("id", buildQuery);
 
   return query;
+}
+
+/**
+ * Get the bucket from a list of commits, ordered by the order of the commits.
+ */
+export async function getBucketFromCommits(args: {
+  shas: string[];
+  build: Build;
+}) {
+  if (args.shas.length === 0) {
+    return null;
+  }
+  const valuesClause = args.shas.map(() => "(?, ?)").join(",");
+  const bindings: (string | number)[] = [];
+  args.shas.forEach((sha, index) => {
+    bindings.push(sha, index);
+  });
+  const bucket = await queryBaseBucket(args.build)
+    .whereIn("commit", args.shas)
+    .joinRaw(
+      `join (values ${valuesClause}) as ordering(sha, rank) on commit = ordering.sha`,
+      bindings,
+    )
+    .orderBy("ordering.rank")
+    .orderBy("id", "desc")
+    .first();
+  return bucket ?? null;
 }
