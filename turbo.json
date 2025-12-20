@@ -4,7 +4,7 @@
     "build": {
       "dependsOn": ["^build", "//#codegen"],
       "outputs": ["dist/**"],
-      "inputs": ["src/**", "package.json"]
+      "inputs": ["src/**", ".swcrc"]
     },
     "//#codegen": {
       "outputs": [

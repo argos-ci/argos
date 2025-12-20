@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "inputs": ["src/**", "package.json", "index.html", "vite.config.mts"],
+      "inputs": ["src/**", "index.html", "vite.config.mts"],
       "env": ["BUILD_MODE", "SENTRY_AUTH_TOKEN"]
     },
     "watch-build": {
