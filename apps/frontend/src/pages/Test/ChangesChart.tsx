@@ -42,7 +42,7 @@ function getTicksFromBoundaries(from: Date, to?: Date) {
   if (diff <= 14 * 24 * 60 * 60 * 1000) {
     return getTimeTicks(from, to, "day", 4);
   }
-  if (diff <= 30 * 24 * 60 * 60 * 1000) {
+  if (diff <= 31 * 24 * 60 * 60 * 1000) {
     return getTimeTicks(from, to, "day", 7);
   }
   return getTimeTicks(from, to, "day", 30);
@@ -116,7 +116,6 @@ export function ChangesChart(props: {
           xAxisId="total"
           type="monotone"
           fill="var(--mauve-7)"
-          // radius={[2, 2, 0, 0]}
           stroke=""
         />
         <Bar
@@ -129,11 +128,9 @@ export function ChangesChart(props: {
           dataKey="nonUniqueChanges"
           xAxisId="changes"
           stackId="changes"
-          // radius={[2, 2, 0, 0]}
           fill="var(--amber-10)"
         />
         <XAxis
-          xAxisId="total"
           dataKey="ts"
           type="number"
           scale="time"
@@ -142,24 +139,6 @@ export function ChangesChart(props: {
           ticks={ticks}
           tickFormatter={(value) => tickFormatter.format(new Date(value))}
           height={14}
-        />
-        <XAxis
-          xAxisId="changes"
-          dataKey="ts"
-          type="number"
-          scale="time"
-          domain={["auto", "auto"]}
-          padding={{ left: 8 }}
-          hide
-        />
-        <XAxis
-          xAxisId="uniqueChanges"
-          dataKey="ts"
-          type="number"
-          scale="time"
-          domain={["auto", "auto"]}
-          padding={{ left: 8 }}
-          hide
         />
         <YAxis
           dataKey="total"

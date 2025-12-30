@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import { useDeferredValue, type ComponentProps } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -134,15 +134,14 @@ const PERIODS = {
     from: moment(now).subtract(7, "days").startOf("day").toDate(),
     label: "Last 7 days",
   },
-  // Deactivate for now, as we don't have enough data to show
-  // [MetricsPeriod.Last_30Days]: {
-  //   from: moment(now).subtract(30, "days").startOf("day").toDate(),
-  //   label: "Last 30 days",
-  // },
-  // [MetricsPeriod.Last_90Days]: {
-  //   from: moment(now).subtract(90, "days").startOf("day").toDate(),
-  //   label: "Last 90 days",
-  // },
+  [MetricsPeriod.Last_30Days]: {
+    from: moment(now).subtract(30, "days").startOf("day").toDate(),
+    label: "Last 30 days",
+  },
+  [MetricsPeriod.Last_90Days]: {
+    from: moment(now).subtract(90, "days").startOf("day").toDate(),
+    label: "Last 90 days",
+  },
 } satisfies PeriodsDefinition;
 
 type TestPeriodState = PeriodState<typeof PERIODS>;
@@ -158,13 +157,15 @@ export function Component() {
     definition: PERIODS,
     paramName: "period" satisfies keyof TestSearchParams,
   });
-  const period = periodState.definition[periodState.value];
+  const deferredPeriodValue = useDeferredValue(periodState.value);
+  const isPending = periodState.value !== deferredPeriodValue;
+  const period = periodState.definition[deferredPeriodValue];
   const { data } = useSuspenseQuery(TestQuery, {
     variables: {
       accountSlug: params.accountSlug,
       projectName: params.projectName,
       testId: params.testId,
-      period: periodState.value,
+      period: deferredPeriodValue,
     },
   });
 
@@ -241,7 +242,12 @@ export function Component() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-start gap-2">
             <PeriodSelect state={periodState} />
-            <div className="bg-app @container flex flex-col gap-2 self-stretch rounded-md border p-2 pr-6">
+            <div
+              className={clsx(
+                "bg-app @container flex flex-col gap-2 self-stretch rounded-md border p-2 pr-6",
+                isPending && "animate-pulse",
+              )}
+            >
               <div className="flex items-center gap-6">
                 <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
                   <Counter>
@@ -375,7 +381,12 @@ export function Component() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
+          <div
+            className={clsx(
+              "flex flex-col gap-2",
+              isPending && "animate-pulse",
+            )}
+          >
             <Heading level={2} className="pl-4 font-medium">
               Changes{" "}
               <span className="text-low">

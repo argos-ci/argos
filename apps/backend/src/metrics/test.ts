@@ -283,24 +283,29 @@ function getTickDistance(from: Date, to: Date) {
   if (diff <= 24 * 60 * 60 * 1000) {
     return "20 minutes";
   }
+
   // 3 days (72 points)
   if (diff <= 3 * 24 * 60 * 60 * 1000) {
     return "1 hour";
   }
+
   // 7 days (84 points)
   if (diff <= 7 * 24 * 60 * 60 * 1000) {
     return "2 hours";
   }
+
   // 14 days (84 points)
   if (diff <= 14 * 24 * 60 * 60 * 1000) {
     return "4 hours";
   }
+
   // 30 days (60 points)
-  if (diff <= 30 * 24 * 60 * 60 * 1000) {
+  if (diff <= 31 * 24 * 60 * 60 * 1000) {
     return "12 hours";
   }
+
   // 90 days (90 points)
-  if (diff <= 90 * 24 * 60 * 60 * 1000) {
+  if (diff <= 91 * 24 * 60 * 60 * 1000) {
     return "1 day";
   }
 
