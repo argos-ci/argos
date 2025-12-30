@@ -26,11 +26,47 @@ const BuildTypeConditionSchema = z.object({
     .refine((val) => val !== null, { message: "Required" }),
 });
 
-export const BuildConditionSchema = z.discriminatedUnion("type", [
+const BuildConditionSchema = z.discriminatedUnion("type", [
   BuildConclusionConditionSchema,
   BuildNameConditionSchema,
   BuildTypeConditionSchema,
 ]);
+
+type BuildCondition = z.infer<typeof BuildConditionSchema>;
+
+const NeqConditionSchema = z.object({ not: BuildConditionSchema });
+
+type NeqCondition = z.infer<typeof NeqConditionSchema>;
+
+export const AutomationConditionSchema = z.union([
+  BuildConditionSchema,
+  NeqConditionSchema,
+]);
+
+type AutomationCondition = z.infer<typeof AutomationConditionSchema>;
+
+/**
+ * Check if the condition is a "neq" one.
+ */
+export function checkIsNeqCondition(
+  condition: AutomationCondition,
+): condition is NeqCondition {
+  return "not" in condition && condition.not !== undefined;
+}
+
+/**
+ * Extract the build condition from an automation condition.
+ * If the condition is a direct build condition, return it.
+ * Otherwise, extract it from the `not` wrapper.
+ */
+export function getBuildCondition(
+  condition: AutomationCondition,
+): BuildCondition {
+  if (checkIsNeqCondition(condition)) {
+    return condition.not;
+  }
+  return condition;
+}
 
 const AutomationSlackActionSchema = z.object({
   type: z.literal("sendSlackMessage"),

@@ -1,5 +1,6 @@
 import { useId, useMemo } from "react";
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { Text } from "react-aria-components";
 import { useFieldArray } from "react-hook-form";
 
@@ -8,20 +9,26 @@ import { FieldError } from "@/ui/FieldError";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
-import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
+import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
+import { checkIsNeqCondition, getBuildCondition } from "@/util/automation";
 import { buildStatusDescriptors, buildTypeDescriptors } from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
 
 import {
   ActionBadge,
-  RemovableTask,
+  RemoveButton,
   StepTitle,
+  Task,
   type AutomationForm,
 } from "./AutomationForm";
 
+type ConditionValueName =
+  | `conditions.${number}.value`
+  | `conditions.${number}.not.value`;
+
 function BuildConclusionCondition(props: {
   form: AutomationForm;
-  name: `conditions.${number}.value`;
+  name: ConditionValueName;
 }) {
   const { form, name } = props;
   const id = useId();
@@ -32,7 +39,8 @@ function BuildConclusionCondition(props: {
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id}>Build conclusion is</label>
+      <label htmlFor={id}>Build conclusion</label>
+      <OperatorSelector form={form} name={name} />
       <SelectField
         id={id}
         control={form.control}
@@ -76,7 +84,7 @@ function BuildConclusionCondition(props: {
 function BuildNameCondition(props: {
   projectBuildNames: string[];
   form: AutomationForm;
-  name: `conditions.${number}.value`;
+  name: ConditionValueName;
 }) {
   const { projectBuildNames, name, form } = props;
   const value = form.watch(name);
@@ -92,7 +100,8 @@ function BuildNameCondition(props: {
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id}>Build name is</label>
+      <label htmlFor={id}>Build name</label>
+      <OperatorSelector form={form} name={name} />
       <SelectField
         control={form.control}
         id={id}
@@ -126,14 +135,15 @@ function BuildNameCondition(props: {
 
 function BuildTypeCondition(props: {
   form: AutomationForm;
-  name: `conditions.${number}.value`;
+  name: ConditionValueName;
 }) {
   const { form, name } = props;
   const id = useId();
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id}>Build type is</label>
+      <label htmlFor={id}>Build type</label>
+      <OperatorSelector form={form} name={name} />
       <SelectField
         id={id}
         control={form.control}
@@ -180,35 +190,89 @@ function ConditionDetail(props: {
   name: `conditions.${number}`;
 }) {
   const { projectBuildNames, form, name } = props;
-  const condition = form.watch(name);
+  const value = form.watch(name);
+  const condition = getBuildCondition(value);
+  const valueName = checkIsNeqCondition(value)
+    ? (`${name}.not.value` as const)
+    : (`${name}.value` as const);
+
   switch (condition.type) {
     case "build-conclusion":
-      return <BuildConclusionCondition form={form} name={`${name}.value`} />;
+      return <BuildConclusionCondition form={form} name={valueName} />;
 
     case "build-name":
       return (
         <BuildNameCondition
           projectBuildNames={projectBuildNames}
           form={form}
-          name={`${name}.value`}
+          name={valueName}
         />
       );
 
     case "build-type":
-      return <BuildTypeCondition form={form} name={`${name}.value`} />;
+      return <BuildTypeCondition form={form} name={valueName} />;
 
     default:
       assertNever(condition, `Unknown condition type: ${condition}`);
   }
 }
 
+function OperatorSelector(props: {
+  form: AutomationForm;
+  name: ConditionValueName;
+}) {
+  const { name, form } = props;
+  const operator = name.endsWith(".not.value") ? "neq" : "eq";
+  const conditionName = name.replace(
+    /(\.not)?\.value/,
+    "",
+  ) as `conditions.${number}`;
+  return (
+    <Select
+      aria-label="Operator"
+      value={operator}
+      onChange={(value) => {
+        const rawCondition = form.getValues(conditionName);
+        const buildCondition = getBuildCondition(rawCondition);
+        invariant(value === "eq" || value === "neq");
+        switch (value) {
+          case "eq": {
+            form.setValue(conditionName, buildCondition);
+            break;
+          }
+          case "neq": {
+            form.setValue(conditionName, { not: buildCondition });
+            break;
+          }
+          default:
+            assertNever(value);
+        }
+      }}
+    >
+      <SelectButton>
+        <SelectValue />
+      </SelectButton>
+      <Popover>
+        <ListBox>
+          <ListBoxItem id="eq" textValue="is">
+            is
+          </ListBoxItem>
+          <ListBoxItem id="neq" textValue="is not">
+            is not
+          </ListBoxItem>
+        </ListBox>
+      </Popover>
+    </Select>
+  );
+}
+
 const CONDITIONS = [
   {
     type: "build-conclusion" as const,
-    label: "Build conclusion is…",
+    label: "Build conclusion",
   },
-  { type: "build-type" as const, label: "Build type is…" },
-  { type: "build-name" as const, label: "Build name is…" },
+  { type: "build-type" as const, label: "Build type" },
+  { type: "build-name" as const, label: "Build name" },
 ];
 
 export function AutomationConditionsStep(props: {
@@ -221,13 +285,12 @@ export function AutomationConditionsStep(props: {
     control: form.control,
     name,
   });
-  const selectedConditionTypes = new Set(fields.map((c) => c.type));
   const conditions = CONDITIONS.filter((condition) => {
     if (condition.type === "build-name" && projectBuildNames.length === 0) {
       return false; // Skip build name condition if no builds are available
     }
     return true;
-  }).filter((condition) => !selectedConditionTypes.has(condition.type));
+  });
 
   return (
     <div>
@@ -237,14 +300,15 @@ export function AutomationConditionsStep(props: {
       </StepTitle>
 
       <div className="flex flex-col gap-2">
-        {fields.map((condition, index) => (
-          <RemovableTask key={condition.type} onRemove={() => remove(index)}>
+        {fields.map((_condition, index) => (
+          <Task key={index}>
             <ConditionDetail
               projectBuildNames={projectBuildNames}
               form={form}
               name={`${name}.${index}`}
             />
-          </RemovableTask>
+            <RemoveButton onPress={() => remove(index)} />
+          </Task>
         ))}
 
         <SelectField

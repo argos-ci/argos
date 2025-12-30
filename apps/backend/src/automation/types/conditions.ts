@@ -23,10 +23,17 @@ const BuildNameConditionSchema = z.object({
 });
 export type BuildNameCondition = z.infer<typeof BuildNameConditionSchema>;
 
-export const AutomationConditionSchema = z.discriminatedUnion("type", [
+const BuildConditionSchema = z.discriminatedUnion("type", [
   BuildTypeConditionSchema,
   BuildConclusionConditionSchema,
   BuildNameConditionSchema,
+]);
+
+const NeqConditionSchema = z.object({ not: BuildConditionSchema });
+
+export const AutomationConditionSchema = z.union([
+  BuildConditionSchema,
+  NeqConditionSchema,
 ]);
 export type AutomationCondition = z.infer<typeof AutomationConditionSchema>;
 

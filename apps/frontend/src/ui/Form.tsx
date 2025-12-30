@@ -62,6 +62,9 @@ export function Form<
           await onSubmit(data, event);
         } catch (error) {
           handleFormError(form, error);
+          if (process.env["NODE_ENV"] === "development") {
+            console.error(error);
+          }
         } finally {
           actionContext?.setIsPending(false);
         }

@@ -32,13 +32,8 @@ import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
-  type AutomationCondition {
-    type: String!
-    value: String!
-  }
-
   type AutomationConditions {
-    all: [AutomationCondition!]!
+    all: [JSONObject!]!
   }
 
   type AutomationAction {
@@ -99,11 +94,6 @@ export const typeDefs = gql`
     edges: [AutomationRule!]!
   }
 
-  input AutomationConditionInput {
-    type: String!
-    value: String!
-  }
-
   input AutomationActionInput {
     type: String!
     payload: JSONObject!
@@ -113,7 +103,7 @@ export const typeDefs = gql`
     projectId: String!
     name: String!
     events: [String!]!
-    conditions: [AutomationConditionInput!]!
+    conditions: [JSONObject!]!
     actions: [AutomationActionInput!]!
   }
 
@@ -121,7 +111,7 @@ export const typeDefs = gql`
     id: String!
     name: String!
     events: [String!]!
-    conditions: [AutomationConditionInput!]!
+    conditions: [JSONObject!]!
     actions: [AutomationActionInput!]!
   }
 

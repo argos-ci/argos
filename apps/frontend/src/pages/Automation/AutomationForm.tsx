@@ -1,4 +1,5 @@
 import { Trash2Icon } from "lucide-react";
+import type { PressEvent } from "react-aria";
 import type { UseFormReturn } from "react-hook-form";
 import { twc } from "react-twc";
 import { z } from "zod/v4";
@@ -8,8 +9,8 @@ import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 import {
   AutomationActionSchema,
+  AutomationConditionSchema,
   AutomationEventSchema,
-  BuildConditionSchema,
 } from "@/util/automation";
 
 export const AutomationFieldValuesSchema = z.object({
@@ -21,7 +22,7 @@ export const AutomationFieldValuesSchema = z.object({
   events: z
     .array(AutomationEventSchema)
     .min(1, "At least one event is required"),
-  conditions: z.array(BuildConditionSchema),
+  conditions: z.array(AutomationConditionSchema),
   actions: z
     .array(AutomationActionSchema)
     .min(1, "At least one action is required"),
@@ -42,20 +43,22 @@ export const ActionBadge = twc.div`bg-primary-active text-primary w-16 inline-fl
 
 export const StepTitle = twc.div`mb-3`;
 
-export function RemovableTask(props: {
-  children: React.ReactNode;
-  onRemove: () => void;
-}) {
-  const { children, onRemove } = props;
+export function Task(props: { children: React.ReactNode }) {
+  const { children } = props;
   return (
     <div className="bg-subtle grid grid-cols-[1fr_auto] items-center gap-4 rounded border px-3 py-1.5 text-sm">
       {children}
-      <Tooltip content="Remove">
-        <IconButton onClick={onRemove} aria-label="Remove">
-          <Trash2Icon />
-        </IconButton>
-      </Tooltip>
     </div>
+  );
+}
+
+export function RemoveButton(props: { onPress: (e: PressEvent) => void }) {
+  return (
+    <Tooltip content="Remove">
+      <IconButton onPress={props.onPress} aria-label="Remove">
+        <Trash2Icon />
+      </IconButton>
+    </Tooltip>
   );
 }
 
@@ -80,14 +83,7 @@ export function formDataToVariables(data: AutomationTransformedValues) {
   return {
     name: data.name,
     events: data.events,
-    conditions: z
-      .array(
-        z.object({
-          type: z.string(),
-          value: z.string(),
-        }),
-      )
-      .parse(data.conditions),
+    conditions: data.conditions,
     actions: data.actions,
   };
 }

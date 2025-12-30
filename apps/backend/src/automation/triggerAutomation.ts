@@ -82,25 +82,36 @@ function evaluateCondition(
   message: AutomationMessage,
 ): boolean {
   AutomationConditionSchema.parse(condition);
-  const conditionType = condition.type;
-
-  switch (conditionType) {
-    case "build-type": {
-      return checkBuildTypeCondition(condition, message);
+  const { negative, rawCondition } = (() => {
+    if ("not" in condition) {
+      return { negative: true, rawCondition: condition.not };
     }
+    return { negative: false, rawCondition: condition };
+  })();
 
-    case "build-conclusion": {
-      return checkBuildConclusionCondition(condition, message);
-    }
+  const conditionType = rawCondition.type;
 
-    case "build-name": {
-      return checkBuildNameCondition(condition, message);
-    }
+  const result = (() => {
+    switch (conditionType) {
+      case "build-type": {
+        return checkBuildTypeCondition(rawCondition, message);
+      }
 
-    default: {
-      assertNever(conditionType);
+      case "build-conclusion": {
+        return checkBuildConclusionCondition(rawCondition, message);
+      }
+
+      case "build-name": {
+        return checkBuildNameCondition(rawCondition, message);
+      }
+
+      default: {
+        assertNever(conditionType);
+      }
     }
-  }
+  })();
+
+  return negative ? !result : result;
 }
 
 /**
