@@ -282,6 +282,37 @@ describe("models/Build", () => {
       const conclusions = await Build.computeConclusions([build.id], statuses);
       expect(conclusions).toEqual(["changes-detected"]);
     });
+
+    it("should ignore diffs for nested screenshots", async () => {
+      const build = await factory.Build.create({
+        jobStatus: "complete",
+        conclusion: null,
+        stats: null,
+      });
+      const compareScreenshot = await factory.Screenshot.create({
+        parentName: "Story",
+        screenshotBucketId: build.compareScreenshotBucketId,
+      });
+      await factory.ScreenshotDiff.create({
+        buildId: build.id,
+        baseScreenshotId: null,
+        compareScreenshotId: compareScreenshot.id,
+      });
+      const statuses = await Build.getStatuses([build]);
+      const [conclusion] = await Build.computeConclusions([build.id], statuses);
+      const [stats] = await Build.computeStats([build.id]);
+      expect(conclusion).toBe("no-changes");
+      expect(stats).toEqual({
+        failure: 0,
+        added: 0,
+        unchanged: 0,
+        changed: 0,
+        removed: 0,
+        total: 0,
+        retryFailure: 0,
+        ignored: 0,
+      });
+    });
   });
 
   describe("#reviewStatuses", () => {

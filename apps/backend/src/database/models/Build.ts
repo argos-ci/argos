@@ -414,6 +414,7 @@ export class Build extends Model {
           .select("buildId")
           .leftJoinRelated("compareScreenshot")
           .count("*")
+          .whereNull("compareScreenshot.parentName")
           .whereIn(raw(ScreenshotDiff.selectDiffStatus), [
             "added",
             "changed",
