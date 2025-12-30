@@ -15,6 +15,7 @@ import {
 } from "react-hook-form";
 import { Navigate, useSearchParams } from "react-router-dom";
 
+import { PRO_PLAN_PRICING } from "@/constants";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { SignupOptions } from "@/containers/SignupOptions";
 import { BrandShield } from "@/ui/BrandShield";
@@ -27,6 +28,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
 import { StandalonePage } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
+import { formatCurrency } from "@/util/intl";
 
 import mermaidImg from "./signup/mermaid.svg";
 import metaImg from "./signup/meta.svg";
@@ -66,7 +68,7 @@ function AccountTypeField<
         </RadioAccordion>
         <RadioAccordion value="pro">
           <div className="flex items-center justify-between gap-4">
-            I’m working on commercial projects
+            I’m working on team projects
             <Chip color="info" scale="sm">
               Pro
             </Chip>
@@ -120,7 +122,8 @@ function ProPlanWarning() {
       <Summary>Continuing will start a 14-day Pro plan trial.</Summary>
       <p>
         Once the trial period ends for your new Argos team, you can continue on
-        the Pro plan starting at $30 per month.
+        the Pro plan starting at {formatCurrency(PRO_PLAN_PRICING, "USD", 0)}{" "}
+        per month.
       </p>
     </Details>
   );
