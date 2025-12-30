@@ -27,6 +27,7 @@ import { Modal } from "@/ui/Modal";
 import { CircleProgress } from "@/ui/Progress";
 import { Separator } from "@/ui/Separator";
 import { SwitchField } from "@/ui/Switch";
+import { formatCurrency } from "@/util/intl";
 
 const _AccountFragment = graphql(`
   fragment TeamSpendManagement_Account on Account {
@@ -75,15 +76,6 @@ export function TeamSpendManagement(props: {
     return null;
   }
   return <SpendManagementForm account={account} />;
-}
-
-function formatCurrency(value: number, currency: string, digits = 2) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(value);
 }
 
 function SpendManagementForm(props: {

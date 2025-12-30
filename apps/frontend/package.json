@@ -53,6 +53,7 @@
     "linkify-react": "^4.3.2",
     "linkifyjs": "^4.3.2",
     "lucide-react": "^0.562.0",
+    "memoize": "^10.2.0",
     "moment": "^2.30.1",
     "p-retry": "^7.1.1",
     "react": "catalog:",
