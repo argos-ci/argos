@@ -10,7 +10,7 @@ import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton, SelectField, SelectValue } from "@/ui/Select";
-import { checkIsNeqCondition, getBuildCondition } from "@/util/automation";
+import { checkIsNotCondition, getBuildCondition } from "@/util/automation";
 import { buildStatusDescriptors, buildTypeDescriptors } from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
 
@@ -192,7 +192,7 @@ function ConditionDetail(props: {
   const { projectBuildNames, form, name } = props;
   const value = form.watch(name);
   const condition = getBuildCondition(value);
-  const valueName = checkIsNeqCondition(value)
+  const valueName = checkIsNotCondition(value)
     ? (`${name}.not.value` as const)
     : (`${name}.value` as const);
 

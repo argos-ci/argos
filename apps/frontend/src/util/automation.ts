@@ -34,13 +34,13 @@ const BuildConditionSchema = z.discriminatedUnion("type", [
 
 type BuildCondition = z.infer<typeof BuildConditionSchema>;
 
-const NeqConditionSchema = z.object({ not: BuildConditionSchema });
+const NotConditionSchema = z.object({ not: BuildConditionSchema });
 
-type NeqCondition = z.infer<typeof NeqConditionSchema>;
+type NotCondition = z.infer<typeof NotConditionSchema>;
 
 export const AutomationConditionSchema = z.union([
   BuildConditionSchema,
-  NeqConditionSchema,
+  NotConditionSchema,
 ]);
 
 type AutomationCondition = z.infer<typeof AutomationConditionSchema>;
@@ -48,9 +48,9 @@ type AutomationCondition = z.infer<typeof AutomationConditionSchema>;
 /**
  * Check if the condition is a "neq" one.
  */
-export function checkIsNeqCondition(
+export function checkIsNotCondition(
   condition: AutomationCondition,
-): condition is NeqCondition {
+): condition is NotCondition {
   return "not" in condition && condition.not !== undefined;
 }
 
@@ -62,7 +62,7 @@ export function checkIsNeqCondition(
 export function getBuildCondition(
   condition: AutomationCondition,
 ): BuildCondition {
-  if (checkIsNeqCondition(condition)) {
+  if (checkIsNotCondition(condition)) {
     return condition.not;
   }
   return condition;

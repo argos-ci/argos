@@ -29,11 +29,11 @@ const BuildConditionSchema = z.discriminatedUnion("type", [
   BuildNameConditionSchema,
 ]);
 
-const NeqConditionSchema = z.object({ not: BuildConditionSchema });
+const NotConditionSchema = z.object({ not: BuildConditionSchema });
 
 export const AutomationConditionSchema = z.union([
   BuildConditionSchema,
-  NeqConditionSchema,
+  NotConditionSchema,
 ]);
 export type AutomationCondition = z.infer<typeof AutomationConditionSchema>;
 
