@@ -29,7 +29,7 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@10.26.1+sha512.664074abc367d2c9324fdc18037097ce0a8f126034160f709928e9e9f95d98714347044e5c3164d65bd5da6c59c6be362b107546292a8eecb7999196e5ce58fa",
+  "packageManager": "pnpm@10.27.0+sha512.72d699da16b1179c14ba9e64dc71c9a40988cbdc65c264cb0e489db7de917f20dcf4d64d8723625f2969ba52d4b7e2a1170682d9ac2a5dcaeaab732b7e16f04a",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.2",
     "@argos-ci/playwright": "^6.3.8",
@@ -44,14 +44,14 @@
     "@parcel/watcher": "^2.5.1",
     "@playwright/test": "^1.57.0",
     "@swc/cli": "^0.7.9",
-    "@swc/core": "^1.15.7",
+    "@swc/core": "^1.15.8",
     "@types/node": "^24.10.4",
     "eslint": "catalog:",
-    "knip": "^5.75.2",
+    "knip": "^5.78.0",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "smee-client": "^5.0.0",
-    "turbo": "^2.6.3",
+    "turbo": "^2.7.2",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^6.0.3",
     "vitest": "^4.0.16"
