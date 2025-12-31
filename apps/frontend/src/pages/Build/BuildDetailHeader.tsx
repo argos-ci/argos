@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
+import { ArrowUpRightIcon } from "lucide-react";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -156,7 +157,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
                     { ...params, testId: diff.test.id },
                     { change: diff.change.id },
                   )}
-                  className="hover:underline"
+                  className="group hover:underline-link"
                 >
                   <span
                     role="heading"
@@ -164,12 +165,13 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
                     className="line-clamp-2 text-sm font-medium"
                   >
                     {diff.name}
+                    <ArrowUpRightIcon className="ml-2 inline size-3 opacity-0 group-hover:opacity-100 group-focus:opacity-100" />
                   </span>
                 </Link>
               </Tooltip>
             </div>
           ) : (
-            <div role="heading" className="line-clamp-2 text-xs font-medium">
+            <div role="heading" className="line-clamp-2 text-sm font-medium">
               {diff.name}
             </div>
           )}
