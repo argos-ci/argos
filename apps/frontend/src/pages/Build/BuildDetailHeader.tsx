@@ -149,13 +149,13 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <BuildNavButtons />
         <div className="min-w-0 flex-1">
-          {diff.test && diff.change ? (
+          {diff.test ? (
             <div className="flex items-center gap-2">
               <Tooltip content="View test details">
                 <Link
                   to={getTestURL(
                     { ...params, testId: diff.test.id },
-                    { change: diff.change.id },
+                    { change: diff.change?.id },
                   )}
                   className="group hover:underline-link"
                 >
