@@ -113,6 +113,96 @@ describe("automation/triggerAutomation", () => {
       expect(automationRuns).toHaveLength(1);
     });
 
+    it("should trigger if rule not conditions match", async () => {
+      const build = await factory.Build.create({
+        projectId: project.id,
+        conclusion: "changes-detected",
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              not: {
+                type: "build-conclusion",
+                value: "no-changes",
+              },
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: {
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
+        },
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(1);
+    });
+
+    it("should not trigger if rule not conditions do not match", async () => {
+      const build = await factory.Build.create({
+        projectId: project.id,
+        conclusion: "no-changes",
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              not: {
+                type: "build-conclusion",
+                value: "no-changes",
+              },
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: {
+          event: AutomationEvents.BuildCompleted,
+          payload: { build },
+        },
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(0);
+    });
+
     it("should not create AutomationRun if rule conditions do not match", async () => {
       const build = await factory.Build.create({
         projectId: project.id,

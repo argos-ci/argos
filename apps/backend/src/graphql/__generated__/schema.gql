@@ -167,18 +167,8 @@ enum AutomationActionRunStatus {
   success
 }
 
-type AutomationCondition {
-  type: String!
-  value: String!
-}
-
-input AutomationConditionInput {
-  type: String!
-  value: String!
-}
-
 type AutomationConditions {
-  all: [AutomationCondition!]!
+  all: [JSONObject!]!
 }
 
 type AutomationRule implements Node {
@@ -397,7 +387,7 @@ interface Connection {
 
 input CreateAutomationRuleInput {
   actions: [AutomationActionInput!]!
-  conditions: [AutomationConditionInput!]!
+  conditions: [JSONObject!]!
   events: [String!]!
   name: String!
   projectId: String!
@@ -1404,7 +1394,7 @@ input UpdateAccountInput {
 
 input UpdateAutomationRuleInput {
   actions: [AutomationActionInput!]!
-  conditions: [AutomationConditionInput!]!
+  conditions: [JSONObject!]!
   events: [String!]!
   id: String!
   name: String!

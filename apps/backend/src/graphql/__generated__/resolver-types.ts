@@ -216,20 +216,9 @@ export enum IAutomationActionRunStatus {
   Success = 'success'
 }
 
-export type IAutomationCondition = {
-  __typename?: 'AutomationCondition';
-  type: Scalars['String']['output'];
-  value: Scalars['String']['output'];
-};
-
-export type IAutomationConditionInput = {
-  type: Scalars['String']['input'];
-  value: Scalars['String']['input'];
-};
-
 export type IAutomationConditions = {
   __typename?: 'AutomationConditions';
-  all: Array<IAutomationCondition>;
+  all: Array<Scalars['JSONObject']['output']>;
 };
 
 export type IAutomationRule = INode & {
@@ -425,7 +414,7 @@ export type IConnection = {
 
 export type ICreateAutomationRuleInput = {
   actions: Array<IAutomationActionInput>;
-  conditions: Array<IAutomationConditionInput>;
+  conditions: Array<Scalars['JSONObject']['input']>;
   events: Array<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   projectId: Scalars['String']['input'];
@@ -1757,7 +1746,7 @@ export type IUpdateAccountInput = {
 
 export type IUpdateAutomationRuleInput = {
   actions: Array<IAutomationActionInput>;
-  conditions: Array<IAutomationConditionInput>;
+  conditions: Array<Scalars['JSONObject']['input']>;
   events: Array<Scalars['String']['input']>;
   id: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -2013,8 +2002,6 @@ export type IResolversTypes = ResolversObject<{
   AutomationActionInput: IAutomationActionInput;
   AutomationActionRun: ResolverTypeWrapper<AutomationActionRun>;
   AutomationActionRunStatus: IAutomationActionRunStatus;
-  AutomationCondition: ResolverTypeWrapper<IAutomationCondition>;
-  AutomationConditionInput: IAutomationConditionInput;
   AutomationConditions: ResolverTypeWrapper<IAutomationConditions>;
   AutomationRule: ResolverTypeWrapper<AutomationRule>;
   AutomationRuleConnection: ResolverTypeWrapper<Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<IResolversTypes['AutomationRule']> }>;
@@ -2179,8 +2166,6 @@ export type IResolversParentTypes = ResolversObject<{
   AutomationAction: IAutomationAction;
   AutomationActionInput: IAutomationActionInput;
   AutomationActionRun: AutomationActionRun;
-  AutomationCondition: IAutomationCondition;
-  AutomationConditionInput: IAutomationConditionInput;
   AutomationConditions: IAutomationConditions;
   AutomationRule: AutomationRule;
   AutomationRuleConnection: Omit<IAutomationRuleConnection, 'edges'> & { edges: Array<IResolversParentTypes['AutomationRule']> };
@@ -2378,13 +2363,8 @@ export type IAutomationActionRunResolvers<ContextType = Context, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type IAutomationConditionResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationCondition'] = IResolversParentTypes['AutomationCondition']> = ResolversObject<{
-  type?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-  value?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
-}>;
-
 export type IAutomationConditionsResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationConditions'] = IResolversParentTypes['AutomationConditions']> = ResolversObject<{
-  all?: Resolver<Array<IResolversTypes['AutomationCondition']>, ParentType, ContextType>;
+  all?: Resolver<Array<IResolversTypes['JSONObject']>, ParentType, ContextType>;
 }>;
 
 export type IAutomationRuleResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AutomationRule'] = IResolversParentTypes['AutomationRule']> = ResolversObject<{
@@ -3125,7 +3105,6 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AuthPayload?: IAuthPayloadResolvers<ContextType>;
   AutomationAction?: IAutomationActionResolvers<ContextType>;
   AutomationActionRun?: IAutomationActionRunResolvers<ContextType>;
-  AutomationCondition?: IAutomationConditionResolvers<ContextType>;
   AutomationConditions?: IAutomationConditionsResolvers<ContextType>;
   AutomationRule?: IAutomationRuleResolvers<ContextType>;
   AutomationRuleConnection?: IAutomationRuleConnectionResolvers<ContextType>;

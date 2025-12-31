@@ -59,7 +59,7 @@ const CreateAutomationMutation = graphql(`
     $projectId: String!
     $name: String!
     $events: [String!]!
-    $conditions: [AutomationConditionInput!]!
+    $conditions: [JSONObject!]!
     $actions: [AutomationActionInput!]!
   ) {
     createAutomationRule(

@@ -20,8 +20,9 @@ import { getSlackAuthURL } from "@/util/slack";
 import { useAccountParams } from "../Account/AccountParams";
 import {
   ActionBadge,
-  RemovableTask,
+  RemoveButton,
   StepTitle,
+  Task,
   type AutomationForm,
 } from "./AutomationForm";
 
@@ -172,11 +173,12 @@ export function AutomationActionsStep(props: { form: AutomationForm }) {
       <div className="flex flex-col gap-2">
         {fields.map((_field, index) => {
           return (
-            <RemovableTask key={index} onRemove={() => remove(index)}>
+            <Task key={index}>
               <Suspense fallback={<div>Loading…</div>}>
                 <ActionDetail form={form} name={`${name}.${index}`} />
               </Suspense>
-            </RemovableTask>
+              <RemoveButton onPress={() => remove(index)} />
+            </Task>
           );
         })}
         <SelectField

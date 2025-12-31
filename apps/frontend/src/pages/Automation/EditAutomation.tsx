@@ -67,10 +67,7 @@ const AutomationRuleQuery = graphql(`
       name
       on
       if {
-        all {
-          type
-          value
-        }
+        all
       }
       then {
         action
@@ -93,7 +90,7 @@ const UpdateAutomationMutation = graphql(`
     $id: String!
     $name: String!
     $events: [String!]!
-    $conditions: [AutomationConditionInput!]!
+    $conditions: [JSONObject!]!
     $actions: [AutomationActionInput!]!
   ) {
     updateAutomationRule(
@@ -109,10 +106,7 @@ const UpdateAutomationMutation = graphql(`
       name
       on
       if {
-        all {
-          type
-          value
-        }
+        all
       }
       then {
         action
