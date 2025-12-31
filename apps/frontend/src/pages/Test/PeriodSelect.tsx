@@ -55,14 +55,14 @@ export function usePeriodState<TDef extends PeriodsDefinition>(input: {
       if (params.has(paramName)) {
         const next = new URLSearchParams(params);
         next.delete(paramName);
-        setParams(next);
+        setParams(next, { flushSync: true });
       }
       return;
     }
     if (String(value) !== params.get(paramName)) {
       const next = new URLSearchParams(params);
       next.set(paramName, String(value));
-      setParams(next);
+      setParams(next, { flushSync: true });
     }
   });
 
