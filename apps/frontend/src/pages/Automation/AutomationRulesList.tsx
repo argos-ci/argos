@@ -1,4 +1,5 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
@@ -18,10 +19,7 @@ import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useLatestTruethyValue } from "@/ui/useLatestTruethyValue";
-import {
-  AutomationEventSchema,
-  getAutomationEventLabel,
-} from "@/util/automation";
+import { getAutomationEventLabel } from "@/util/automation";
 
 import { AutomationRule } from ".";
 import { AutomationRunStatus, ProjectPermission } from "../../gql/graphql";

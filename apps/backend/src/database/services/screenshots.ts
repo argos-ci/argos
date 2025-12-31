@@ -1,3 +1,4 @@
+import { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
@@ -6,7 +7,6 @@ import { transaction } from "@/database";
 import { Build, BuildShard, File, Screenshot, Test } from "@/database/models";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
-import { ScreenshotMetadata } from "../schemas/ScreenshotMetadata";
 import { getUnknownFileKeys } from "./file";
 
 const getOrCreateTests = async ({

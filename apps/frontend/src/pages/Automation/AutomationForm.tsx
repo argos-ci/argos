@@ -1,3 +1,5 @@
+import { AutomationFormConditionSchema } from "@argos/schemas/automation-condition";
+import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import { Trash2Icon } from "lucide-react";
 import type { PressEvent } from "react-aria";
 import type { UseFormReturn } from "react-hook-form";
@@ -7,11 +9,7 @@ import { z } from "zod/v4";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
-import {
-  AutomationActionSchema,
-  AutomationConditionSchema,
-  AutomationEventSchema,
-} from "@/util/automation";
+import { AutomationActionSchema } from "@/util/automation";
 
 export const AutomationFieldValuesSchema = z.object({
   name: z
@@ -22,7 +20,7 @@ export const AutomationFieldValuesSchema = z.object({
   events: z
     .array(AutomationEventSchema)
     .min(1, "At least one event is required"),
-  conditions: z.array(AutomationConditionSchema),
+  conditions: z.array(AutomationFormConditionSchema),
   actions: z
     .array(AutomationActionSchema)
     .min(1, "At least one action is required"),

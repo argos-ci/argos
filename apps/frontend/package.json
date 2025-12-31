@@ -15,6 +15,7 @@
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
     "@argos/eslint-config": "workspace:*",
+    "@argos/schemas": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "@argos/util": "workspace:*",
     "@graphql-typed-document-node/core": "^3.2.0",

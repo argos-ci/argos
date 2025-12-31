@@ -1,8 +1,7 @@
+import { ScreenshotMetadataJSONSchema } from "@argos/schemas/screenshot-metadata";
 import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
-
-import { ScreenshotMetadataJSONSchema } from "@/database/schemas/ScreenshotMetadata";
 
 import { createBuild } from "./handlers/createBuild";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";

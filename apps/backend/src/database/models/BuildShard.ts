@@ -1,9 +1,9 @@
-import type { JSONSchema, RelationMappings } from "objection";
-
 import {
   BuildMetadata,
   BuildMetadataJsonSchema,
-} from "../schemas/BuildMetadata";
+} from "@argos/schemas/build-metadata";
+import type { JSONSchema, RelationMappings } from "objection";
+
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Build } from "./Build";

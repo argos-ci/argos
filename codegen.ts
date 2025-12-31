@@ -23,6 +23,7 @@ const config: CodegenConfig = {
         mappers: {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
+          AuditTrail: "../../database/models/index.js#AuditTrail",
           AutomationRule: "../../database/models/index.js#AutomationRule",
           AutomationRun: "../../database/models/index.js#AutomationRun",
           AutomationActionRun:
@@ -47,7 +48,7 @@ const config: CodegenConfig = {
           ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
           ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",
           ScreenshotMetadataSDK:
-            "../../database/schemas/ScreenshotMetadata.js#ScreenshotMetadataSDK",
+            "../../database/models/index.js#ScreenshotMetadataSDK",
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",

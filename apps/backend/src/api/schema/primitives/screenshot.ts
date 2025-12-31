@@ -1,6 +1,6 @@
+import { ScreenshotMetadataSchema } from "@argos/schemas/screenshot-metadata";
 import { z } from "zod";
 
-import { ScreenshotMetadataSchema } from "@/database/schemas/ScreenshotMetadata";
 import { SHA256_REGEX } from "@/util/validation";
 
 export const ScreenshotInputSchema = z

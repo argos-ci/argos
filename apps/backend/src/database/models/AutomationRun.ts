@@ -1,4 +1,7 @@
-import { AutomationEvent, AutomationEvents } from "@/automation/types/events";
+import {
+  AutomationEvent,
+  AutomationEvents,
+} from "@argos/schemas/automation-event";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";

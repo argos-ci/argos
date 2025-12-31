@@ -1,11 +1,11 @@
+import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import { z } from "zod";
 
 import { testAutomation } from "@/automation";
-import type { AutomationActionType } from "@/automation/actions";
-import { AutomationEventSchema } from "@/automation/types/events";
+import type { AutomationActionTypeDef } from "@/automation/actions";
 import {
   AutomationActionRun,
   AutomationRule,
@@ -161,7 +161,7 @@ async function getActionsFromInput(args: {
         .parse(action.payload),
     );
 
-  const actions: AutomationActionType[] = [];
+  const actions: AutomationActionTypeDef[] = [];
 
   if (slackChannelActionPayloads.length > 0) {
     await project.$fetchGraph("account.slackInstallation");

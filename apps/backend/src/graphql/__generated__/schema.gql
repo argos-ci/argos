@@ -128,6 +128,13 @@ input AddContributorToProjectInput {
   userAccountId: ID!
 }
 
+type AuditTrail implements Node {
+  action: String!
+  date: DateTime!
+  id: ID!
+  user: User!
+}
+
 input AuthFromEmailInput {
   code: String!
   email: String!
@@ -1276,12 +1283,14 @@ enum TeamUserLevel {
 
 type Test implements Node {
   changes(after: Int!, first: Int!, period: MetricsPeriod!): TestChangesConnection!
+  createdAt: DateTime!
   firstSeenDiff: ScreenshotDiff
   id: ID!
   lastSeenDiff: ScreenshotDiff
   metrics(period: MetricsPeriod): TestMetrics!
   name: String!
   status: TestStatus!
+  trails: [AuditTrail!]!
 }
 
 input TestAutomationRuleInput {

@@ -1,4 +1,4 @@
-import { useDeferredValue, type ComponentProps } from "react";
+import { useDeferredValue } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
@@ -29,7 +29,6 @@ import {
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
-import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { graphql, type DocumentType } from "@/gql";
 import { MetricsPeriod, TestStatus } from "@/gql/graphql";
 import {
@@ -49,6 +48,7 @@ import useViewportSize from "@/ui/useViewportSize";
 
 import { getBuildURL } from "../Build/BuildParams";
 import { ChangesChart } from "./ChangesChart";
+import { Counter, CounterLabel, CounterValue } from "./Counter";
 import {
   PeriodSelect,
   usePeriodState,
@@ -56,6 +56,13 @@ import {
   type PeriodState,
 } from "./PeriodSelect";
 import { useTestParams, type TestSearchParams } from "./TestParams";
+import {
+  BuildsCounter,
+  ChangesCounter,
+  ConsistencyCounter,
+  FlakinessGauge,
+  StabilityCounter,
+} from "./Widgets";
 
 const TestQuery = graphql(`
   query TestPage_Project(
@@ -147,9 +154,6 @@ const PERIODS = {
 type TestPeriodState = PeriodState<typeof PERIODS>;
 
 export function Component() {
-  const compactFormatter = useNumberFormatter({
-    notation: "compact",
-  });
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
   const periodState = usePeriodState({
@@ -176,6 +180,9 @@ export function Component() {
     // @TODO implement a 404 page
     return <Navigate to="/" />;
   }
+
+  const periodLabel =
+    periodState.definition[periodState.value].label.toLowerCase();
 
   return (
     <Page>
@@ -209,35 +216,6 @@ export function Component() {
               })()}
             </div>
           </PageHeaderContent>
-          <div className="flex items-center gap-1">
-            <Counter>
-              <Tooltip
-                content={
-                  <>
-                    The total number of <strong>auto-approved builds</strong>{" "}
-                    this test has been part of.
-                  </>
-                }
-              >
-                <CounterLabel>Builds</CounterLabel>
-              </Tooltip>
-              <CounterValue>
-                {compactFormatter.format(test.metrics.all.total)}
-              </CounterValue>
-            </Counter>
-            <Counter>
-              <Tooltip
-                content={
-                  <>The total number of changes detected in this test.</>
-                }
-              >
-                <CounterLabel>Changes</CounterLabel>
-              </Tooltip>
-              <CounterValue>
-                {compactFormatter.format(test.metrics.all.changes)}
-              </CounterValue>
-            </Counter>
-          </div>
         </PageHeader>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-start gap-2">
@@ -250,102 +228,20 @@ export function Component() {
             >
               <div className="flex items-center gap-6">
                 <div className="flex flex-1 flex-wrap items-center gap-3 gap-y-6 py-2">
-                  <Counter>
-                    <Tooltip content="Indicates how flaky this test is by analyzing its stability and its consistency.">
-                      <CounterLabel>Flakiness</CounterLabel>
-                    </Tooltip>
-                    <FlakinessCircleIndicator
-                      value={test.metrics.all.flakiness}
-                      className="size-[4.375rem]"
-                    />
-                  </Counter>
+                  <FlakinessGauge value={test.metrics.all.flakiness} />
                   <div className="flex flex-col justify-between self-stretch">
-                    <Counter>
-                      <Tooltip
-                        content={
-                          <>
-                            The total number of{" "}
-                            <strong>auto-approved builds</strong> this test has
-                            been part of over the{" "}
-                            <strong>
-                              {periodState.definition[
-                                periodState.value
-                              ].label.toLowerCase()}
-                            </strong>
-                            .
-                          </>
-                        }
-                      >
-                        <CounterLabel>Builds</CounterLabel>
-                      </Tooltip>
-                      <CounterValue>
-                        {compactFormatter.format(test.metrics.all.total)}
-                      </CounterValue>
-                    </Counter>
-                    <Counter>
-                      <Tooltip
-                        content={
-                          <>
-                            The number of changes detected in this test over the{" "}
-                            <strong>
-                              {periodState.definition[
-                                periodState.value
-                              ].label.toLowerCase()}
-                            </strong>
-                            .
-                          </>
-                        }
-                      >
-                        <CounterLabel>Changes</CounterLabel>
-                      </Tooltip>
-                      <CounterValue>
-                        {compactFormatter.format(test.metrics.all.changes)}
-                      </CounterValue>
-                    </Counter>
+                    <BuildsCounter
+                      value={test.metrics.all.total}
+                      periodLabel={periodLabel}
+                    />
+                    <ChangesCounter
+                      value={test.metrics.all.changes}
+                      periodLabel={periodLabel}
+                    />
                   </div>
                   <div className="flex flex-col justify-between self-stretch">
-                    <Counter>
-                      <Tooltip
-                        content={
-                          <>
-                            Indicates how stable this test is by comparing the
-                            number of changes to the total number of reference
-                            builds. A <strong>lower stability rate</strong>{" "}
-                            means the test is more likely to be{" "}
-                            <strong>flaky</strong>.
-                          </>
-                        }
-                      >
-                        <CounterLabel>Stability</CounterLabel>
-                      </Tooltip>
-                      <CounterValue>
-                        {compactFormatter.format(
-                          test.metrics.all.stability * 100,
-                        )}
-                        <CounterValueUnit>%</CounterValueUnit>
-                      </CounterValue>
-                    </Counter>
-                    <Counter>
-                      <Tooltip
-                        content={
-                          <>
-                            Indicates how consistent is this test by comparing
-                            the number of one-off changes to the total number of
-                            changes. A <strong>lower consistency rate</strong>{" "}
-                            means the test is more likely to be{" "}
-                            <strong>flaky</strong>.
-                          </>
-                        }
-                      >
-                        <CounterLabel>Consistency</CounterLabel>
-                      </Tooltip>
-                      <CounterValue>
-                        {compactFormatter.format(
-                          test.metrics.all.consistency * 100,
-                        )}
-                        <CounterValueUnit>%</CounterValueUnit>
-                      </CounterValue>
-                    </Counter>
+                    <StabilityCounter value={test.metrics.all.stability} />
+                    <ConsistencyCounter value={test.metrics.all.consistency} />
                   </div>
                   <ChangesChart
                     className="max-w- h-22 min-w-0 flex-1"
@@ -424,46 +320,6 @@ function Seen(props: {
         </HeadlessLink>
       </div>
     </div>
-  );
-}
-
-function Counter(props: ComponentProps<"div">) {
-  return (
-    <div
-      {...props}
-      className="text-primary flex flex-col items-center gap-0.5 px-2 select-none"
-    />
-  );
-}
-
-function CounterLabel(props: ComponentProps<"div">) {
-  return (
-    <div
-      {...props}
-      className={clsx(
-        "text-low text-xs font-medium",
-        "underline-emphasis",
-        props.className,
-      )}
-    />
-  );
-}
-
-function CounterValue(props: ComponentProps<"div">) {
-  return (
-    <div
-      {...props}
-      className={clsx("text-lg leading-5 font-medium", props.className)}
-    />
-  );
-}
-
-function CounterValueUnit(props: ComponentProps<"span">) {
-  return (
-    <span
-      {...props}
-      className={clsx("ml-0.5 text-xs leading-0", props.className)}
-    />
   );
 }
 

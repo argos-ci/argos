@@ -1,8 +1,7 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, AuditTrail, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, ScreenshotMetadataSDK, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
-import type { ScreenshotMetadataSDK } from '../../database/schemas/ScreenshotMetadata.js';
 import type { TestMetrics, TestChangeObject } from '../../graphql/definitions/Test.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
@@ -172,6 +171,14 @@ export type IAddContributorToProjectInput = {
   level: IProjectUserLevel;
   projectId: Scalars['ID']['input'];
   userAccountId: Scalars['ID']['input'];
+};
+
+export type IAuditTrail = INode & {
+  __typename?: 'AuditTrail';
+  action: Scalars['String']['output'];
+  date: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  user: IUser;
 };
 
 export type IAuthFromEmailInput = {
@@ -1607,12 +1614,14 @@ export enum ITeamUserLevel {
 export type ITest = INode & {
   __typename?: 'Test';
   changes: ITestChangesConnection;
+  createdAt: Scalars['DateTime']['output'];
   firstSeenDiff?: Maybe<IScreenshotDiff>;
   id: Scalars['ID']['output'];
   lastSeenDiff?: Maybe<IScreenshotDiff>;
   metrics: ITestMetrics;
   name: Scalars['String']['output'];
   status: ITestStatus;
+  trails: Array<IAuditTrail>;
 };
 
 
@@ -1941,6 +1950,7 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
   ;
   Node:
     | ( Subscription )
+    | ( AuditTrail )
     | ( AutomationActionRun )
     | ( AutomationRule )
     | ( AutomationRun )
@@ -1996,6 +2006,7 @@ export type IResolversTypes = ResolversObject<{
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  AuditTrail: ResolverTypeWrapper<AuditTrail>;
   AuthFromEmailInput: IAuthFromEmailInput;
   AuthPayload: ResolverTypeWrapper<IAuthPayload>;
   AutomationAction: ResolverTypeWrapper<IAutomationAction>;
@@ -2161,6 +2172,7 @@ export type IResolversParentTypes = ResolversObject<{
   AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'all' | 'projects'> & { all: IResolversParentTypes['AccountMetricData'], projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
+  AuditTrail: AuditTrail;
   AuthFromEmailInput: IAuthFromEmailInput;
   AuthPayload: IAuthPayload;
   AutomationAction: IAutomationAction;
@@ -2339,6 +2351,14 @@ export type IAccountSubscriptionResolvers<ContextType = Context, ParentType exte
   provider?: Resolver<IResolversTypes['AccountSubscriptionProvider'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['AccountSubscriptionStatus'], ParentType, ContextType>;
   trialDaysRemaining?: Resolver<Maybe<IResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type IAuditTrailResolvers<ContextType = Context, ParentType extends IResolversParentTypes['AuditTrail'] = IResolversParentTypes['AuditTrail']> = ResolversObject<{
+  action?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
+  date?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  user?: Resolver<IResolversTypes['User'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2671,7 +2691,7 @@ export type IMutationResolvers<ContextType = Context, ParentType extends IResolv
 }>;
 
 export type INodeResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Node'] = IResolversParentTypes['Node']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AccountSubscription' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamInvite' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AccountSubscription' | 'AuditTrail' | 'AutomationActionRun' | 'AutomationRule' | 'AutomationRun' | 'Build' | 'BuildReview' | 'GhApiInstallation' | 'GhApiInstallationAccount' | 'GhApiRepository' | 'GithubAccount' | 'GithubInstallation' | 'GithubPullRequest' | 'GithubRepository' | 'GitlabProject' | 'GitlabUser' | 'GlApiNamespace' | 'GlApiProject' | 'GoogleUser' | 'Plan' | 'Project' | 'ProjectContributor' | 'Screenshot' | 'ScreenshotBucket' | 'ScreenshotDiff' | 'SlackInstallation' | 'Team' | 'TeamGithubMember' | 'TeamInvite' | 'TeamMember' | 'Test' | 'TestChange' | 'User', ParentType, ContextType>;
 }>;
 
 export type IPageInfoResolvers<ContextType = Context, ParentType extends IResolversParentTypes['PageInfo'] = IResolversParentTypes['PageInfo']> = ResolversObject<{
@@ -2973,12 +2993,14 @@ export type ITeamMemberConnectionResolvers<ContextType = Context, ParentType ext
 
 export type ITestResolvers<ContextType = Context, ParentType extends IResolversParentTypes['Test'] = IResolversParentTypes['Test']> = ResolversObject<{
   changes?: Resolver<IResolversTypes['TestChangesConnection'], ParentType, ContextType, RequireFields<ITestChangesArgs, 'after' | 'first' | 'period'>>;
+  createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   firstSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
   lastSeenDiff?: Resolver<Maybe<IResolversTypes['ScreenshotDiff']>, ParentType, ContextType>;
   metrics?: Resolver<IResolversTypes['TestMetrics'], ParentType, ContextType, Partial<ITestMetricsArgs>>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;
   status?: Resolver<IResolversTypes['TestStatus'], ParentType, ContextType>;
+  trails?: Resolver<Array<IResolversTypes['AuditTrail']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3102,6 +3124,7 @@ export type IResolvers<ContextType = Context> = ResolversObject<{
   AccountMetrics?: IAccountMetricsResolvers<ContextType>;
   AccountScreenshotMetrics?: IAccountScreenshotMetricsResolvers<ContextType>;
   AccountSubscription?: IAccountSubscriptionResolvers<ContextType>;
+  AuditTrail?: IAuditTrailResolvers<ContextType>;
   AuthPayload?: IAuthPayloadResolvers<ContextType>;
   AutomationAction?: IAutomationActionResolvers<ContextType>;
   AutomationActionRun?: IAutomationActionRunResolvers<ContextType>;

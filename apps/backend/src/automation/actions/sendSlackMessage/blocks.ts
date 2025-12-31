@@ -1,3 +1,4 @@
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
@@ -11,7 +12,6 @@ import {
   type Project,
   type ScreenshotBucket,
 } from "@/database/models";
-import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
 import { UnretryableError } from "@/job-core";
 import type { SlackMessageBlock } from "@/slack/channel";
 import { escapeSlackText } from "@/slack/message";

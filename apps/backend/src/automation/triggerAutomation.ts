@@ -1,3 +1,12 @@
+import {
+  AutomationFormConditionSchema,
+  type AllAutomationCondition,
+  type AutomationCondition,
+  type BuildConclusionCondition,
+  type BuildNameCondition,
+  type BuildTypeCondition,
+} from "@argos/schemas/automation-condition";
+import { AutomationEvents } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
@@ -10,15 +19,7 @@ import {
 } from "@/database/models";
 
 import { getAutomationAction } from "./actions";
-import {
-  AllCondition,
-  AutomationCondition,
-  AutomationConditionSchema,
-  BuildConclusionCondition,
-  BuildNameCondition,
-  BuildTypeCondition,
-} from "./types/conditions";
-import { AutomationEvents, type AutomationMessage } from "./types/events";
+import type { AutomationMessage } from "./types/events";
 
 function getBuildFromPayload(message: AutomationMessage): Build {
   const { event, payload } = message;
@@ -81,7 +82,7 @@ function evaluateCondition(
   condition: AutomationCondition,
   message: AutomationMessage,
 ): boolean {
-  AutomationConditionSchema.parse(condition);
+  AutomationFormConditionSchema.parse(condition);
   const { negative, rawCondition } = (() => {
     if ("not" in condition) {
       return { negative: true, rawCondition: condition.not };
@@ -118,7 +119,7 @@ function evaluateCondition(
  * Evaluates an "all" condition (all sub-conditions must be true).
  */
 function evaluateAllCondition(
-  allCondition: AllCondition,
+  allCondition: AllAutomationCondition,
   message: AutomationMessage,
 ): boolean {
   if (!allCondition.all.length) {

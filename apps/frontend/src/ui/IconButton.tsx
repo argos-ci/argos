@@ -47,9 +47,9 @@ function getIconButtonClassName(options: IconButtonOptions) {
       medium: "p-[calc(0.5rem-1px)] *:size-4 rounded-lg leading-4 text-sm",
     }[size],
     /* Base */
-    "data-[disabled]:opacity-disabled flex cursor-default border border-transparent text-sm",
+    "data-disabled:opacity-disabled flex cursor-default border border-transparent text-sm",
     /* Focus */
-    "focus:outline-hidden data-[focus-visible]:ring-4",
+    "focus:outline-hidden data-focus-visible:ring-4",
   );
 }
 

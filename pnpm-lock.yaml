@@ -112,6 +112,9 @@ importers:
       '@argos/knex-scripts':
         specifier: workspace:*
         version: link:../../packages/knex-scripts
+      '@argos/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@argos/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -392,6 +395,9 @@ importers:
       '@argos/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
+      '@argos/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@argos/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -606,6 +612,22 @@ importers:
       ora:
         specifier: ^9.0.0
         version: 9.0.0
+    devDependencies:
+      '@argos/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@argos/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+
+  packages/schemas:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.2.1
     devDependencies:
       '@argos/eslint-config':
         specifier: workspace:*

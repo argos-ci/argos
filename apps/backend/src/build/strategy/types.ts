@@ -1,5 +1,6 @@
+import type { BuildType } from "@argos/schemas/build-type";
+
 import type { Build, Screenshot, ScreenshotBucket } from "@/database/models";
-import type { BuildType } from "@/database/schemas/BuildType";
 
 export type VirtualScreenshotBucket = {
   screenshots: Screenshot[];

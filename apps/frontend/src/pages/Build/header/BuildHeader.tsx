@@ -191,8 +191,8 @@ export const BuildHeader = memo(
   }) => {
     const { build, project } = props;
     return (
-      <div className="flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 border-b p-4">
-        <div className="flex h-[calc(2rem+2px)] items-center gap-4">
+      <div className="flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 border-b-[0.5px] p-4">
+        <div className="flex h-8 items-center gap-4">
           <BrandLink
             accountSlug={props.accountSlug}
             projectName={props.projectName}

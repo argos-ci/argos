@@ -270,14 +270,14 @@ function ListHeader(props: {
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header bg-app data-[hovered]:bg-subtle data-[focus-visible]:bg-subtle z-10 flex w-full cursor-default items-center border-t pr-2 text-left select-none focus:outline-hidden",
+        "group/list-header bg-app data-hovered:bg-subtle data-focus-visible:bg-subtle z-10 flex w-full cursor-default items-center border-t pr-2 text-left select-none focus:outline-hidden",
       )}
       style={style}
       onPress={onClick}
     >
       <ChevronDownIcon
         className={clsx(
-          "text-low m-[0.1875rem] size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-[focus-visible]/list-header:opacity-100",
+          "text-low m-0.75 size-2.5 shrink-0 opacity-0 transition group-hover/sidebar:opacity-100 group-data-focus-visible/list-header:opacity-100",
           !item.expanded && "-rotate-90",
         )}
       />

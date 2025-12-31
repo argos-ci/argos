@@ -1,3 +1,14 @@
+import {
+  BuildMetadata,
+  BuildMetadataJsonSchema,
+} from "@argos/schemas/build-metadata";
+import type {
+  BuildAggregatedStatus,
+  BuildConclusion,
+  BuildReviewStatus,
+  BuildStatus,
+} from "@argos/schemas/build-status";
+import type { BuildType } from "@argos/schemas/build-type";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { raw, ValidationError } from "objection";
@@ -12,17 +23,6 @@ import type {
 import config from "@/config";
 import { SHA1_REGEX } from "@/util/validation";
 
-import {
-  BuildMetadata,
-  BuildMetadataJsonSchema,
-} from "../schemas/BuildMetadata";
-import type {
-  BuildAggregatedStatus,
-  BuildConclusion,
-  BuildReviewStatus,
-  BuildStatus,
-} from "../schemas/BuildStatus";
-import type { BuildType } from "../schemas/BuildType";
 import { Model } from "../util/model";
 import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
 import { BuildReview } from "./BuildReview";

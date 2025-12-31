@@ -1,9 +1,9 @@
+import { AutomationConditionSchema } from "@argos/schemas/automation-condition";
+import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import type { JSONSchema } from "objection";
 import { z } from "zod";
 
 import { AutomationActionSchema } from "@/automation/actions";
-import { AutomationConditionSchema } from "@/automation/types/conditions";
-import { AutomationEventSchema } from "@/automation/types/events";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";

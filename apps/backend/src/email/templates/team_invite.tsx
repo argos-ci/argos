@@ -1,8 +1,8 @@
 import * as React from "react";
+import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { Column, Row, Section } from "@react-email/components";
 import { z } from "zod";
 
-import { TeamUserLevelSchema } from "@/database/schemas/TeamUserLevel";
 import { getTeamUserLevelLabel } from "@/database/services/team";
 import { getAvatarColor } from "@/graphql/services/avatar";
 

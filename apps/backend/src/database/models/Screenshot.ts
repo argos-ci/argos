@@ -1,9 +1,9 @@
-import type { JSONSchema, RelationMappings } from "objection";
-
 import {
   ScreenshotMetadata,
   ScreenshotMetadataJSONSchema,
-} from "../schemas/ScreenshotMetadata";
+} from "@argos/schemas/screenshot-metadata";
+import type { JSONSchema, RelationMappings } from "objection";
+
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { BuildShard } from "./BuildShard";
