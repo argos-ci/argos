@@ -1,7 +1,9 @@
+import { AutomationEvents } from "@argos/schemas/automation-event";
+
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import { FieldError } from "@/ui/FieldError";
-import { AutomationEvents, getAutomationEventLabel } from "@/util/automation";
+import { getAutomationEventLabel } from "@/util/automation";
 
 import { ActionBadge, StepTitle, type AutomationForm } from "./AutomationForm";
 
@@ -20,7 +22,7 @@ export function AutomationWhenStep(props: { form: AutomationForm }) {
         aria-label="Automation events"
         className="text-sm"
       >
-        {AutomationEvents.map((event) => (
+        {Object.values(AutomationEvents).map((event) => (
           <Checkbox key={event} value={event}>
             {getAutomationEventLabel(event)}
           </Checkbox>

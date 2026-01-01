@@ -1,3 +1,4 @@
+import { AutomationEvents } from "@argos/schemas/automation-event";
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -11,7 +12,6 @@ import {
 import { factory, setupDatabase } from "@/database/testing";
 
 import { triggerAutomation } from "./triggerAutomation";
-import { AutomationEvents } from "./types/events";
 
 describe("automation/triggerAutomation", () => {
   let project: Project;

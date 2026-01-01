@@ -1,3 +1,4 @@
+import { BuildMetadataSchema } from "@argos/schemas/build-metadata";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -6,7 +7,6 @@ import { job as buildJob } from "@/build";
 import { finalizeBuild } from "@/build/finalizeBuild";
 import { raw, transaction } from "@/database";
 import { Build, BuildShard, Project } from "@/database/models";
-import { BuildMetadataSchema } from "@/database/schemas/BuildMetadata";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import { useAtomValue } from "jotai";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
@@ -11,9 +12,11 @@ import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetailHeader } from "./BuildDetailHeader";
-import { useBuildDiffState } from "./BuildDiffState";
+import { useBuildDiffState, type Diff } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
+import { TestDetails } from "./TestDetails";
+import { testSidebarAtom } from "./TestSidebar";
 
 const _BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
@@ -133,24 +136,42 @@ function BuildDetail(props: {
   const snapshotType = useAtomValue(snapshotTypeAtom);
   const shownDiff = snapshotType === "aria" && ariaDiff ? ariaDiff : activeDiff;
   return (
-    <BuildDiffDetail
-      build={build}
-      diff={shownDiff}
-      repoUrl={repoUrl}
-      className="bg-subtle"
-      header={
-        activeDiff ? (
-          <BuildDetailHeader
-            diff={activeDiff}
-            siblingDiffs={siblingDiffs}
-            repoUrl={props.repoUrl}
-            baseBranch={build.baseBranch ?? null}
-            compareBranch={build.branch}
-            prMerged={build.pullRequest?.merged ?? false}
-            buildType={build.type ?? null}
-          />
-        ) : null
-      }
-    />
+    <div className="flex min-h-0 min-w-0 flex-1">
+      <BuildDiffDetail
+        build={build}
+        diff={shownDiff}
+        repoUrl={repoUrl}
+        className="bg-subtle"
+        header={
+          activeDiff ? (
+            <BuildDetailHeader
+              diff={activeDiff}
+              siblingDiffs={siblingDiffs}
+              repoUrl={props.repoUrl}
+              baseBranch={build.baseBranch ?? null}
+              compareBranch={build.branch}
+              prMerged={build.pullRequest?.merged ?? false}
+              buildType={build.type ?? null}
+            />
+          ) : null
+        }
+        sidebar={
+          activeDiff?.test ? <TestSidebar test={activeDiff.test} /> : null
+        }
+      />
+    </div>
   );
+}
+
+function TestSidebar(props: { test: NonNullable<Diff["test"]> }) {
+  const { test } = props;
+  const sidebar = useAtomValue(testSidebarAtom);
+  switch (sidebar) {
+    case "details":
+      return <TestDetails test={test} />;
+    case null:
+      return null;
+    default:
+      assertNever(sidebar);
+  }
 }

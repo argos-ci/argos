@@ -100,7 +100,7 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
   return (
     <Tabs
       defaultSelectedKey={!build.stats?.total ? "info" : "screenshots"}
-      className="group/sidebar flex w-[295px] shrink-0 flex-col border-r"
+      className="group/sidebar flex w-73.75 shrink-0 flex-col border-r-[0.5px]"
     >
       {build.type !== BuildType.Skipped ? (
         <div className="flex shrink-0 items-center border-b px-2">

@@ -27,7 +27,6 @@ import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useResizeObserver } from "@/ui/useResizeObserver";
-import { useScrollListener } from "@/ui/useScrollListener";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
 import { checkIsImageContentType } from "@/util/content-type";
@@ -105,6 +104,8 @@ const _DiffFragment = graphql(`
         all {
           total
           flakiness
+          stability
+          consistency
         }
       }
     }
@@ -214,6 +215,10 @@ const _DiffFragment = graphql(`
         }
       }
       playwrightTraceUrl
+    }
+    test {
+      id
+      ...TestDetails_Test
     }
   }
 `);
@@ -1089,7 +1094,7 @@ const BuildScreenshots = memo(
       invariant(diff.baseScreenshot);
       if (!checkIsImageContentType(diff.compareScreenshot.contentType)) {
         return (
-          <div className="flex min-h-0 flex-1 flex-col gap-2 px-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-4">
             <BuildSnapshotsDiff
               base={{
                 url: diff.baseScreenshot.url,
@@ -1122,7 +1127,7 @@ const BuildScreenshots = memo(
     }
 
     return (
-      <div className="flex min-h-0 flex-1 gap-4 px-4">
+      <div className="flex min-h-0 min-w-0 flex-1 gap-4 p-4">
         <div
           className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
           hidden={!showBaseline}
@@ -1276,22 +1281,17 @@ export function BuildDiffDetail(props: {
   repoUrl: string | null;
   className?: string;
   header?: React.ReactNode;
+  sidebar?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { build, diff, header, className, ref } = props;
+  const { build, diff, header, sidebar, className, ref } = props;
   const containerRef = useObjectRef(ref);
   useScrollToTop(containerRef, diff);
-  const [scrolled, setScrolled] = useState(false);
-  useScrollListener((event) => {
-    setScrolled(
-      event.target ? (event.target as HTMLDivElement).scrollTop > 0 : false,
-    );
-  }, containerRef);
   return (
     <div
       ref={containerRef}
       className={clsx(
-        "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4",
+        "flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto",
         className,
       )}
     >
@@ -1300,13 +1300,15 @@ export function BuildDiffDetail(props: {
           <BuildDiffHighlighterProvider>
             <div
               className={clsx(
-                "sticky top-0 z-20 shrink-0 border-b p-4 transition-colors",
-                !scrolled && "border-b-transparent",
+                "sticky top-0 z-20 shrink-0 border-b-[0.5px] p-4 transition-colors",
               )}
             >
               {header}
             </div>
-            <BuildScreenshots build={build} diff={diff} />
+            <div className="flex min-h-0 min-w-0 flex-1">
+              <BuildScreenshots build={build} diff={diff} />
+              {sidebar}
+            </div>
             <BuildDialogs build={build} />
           </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>

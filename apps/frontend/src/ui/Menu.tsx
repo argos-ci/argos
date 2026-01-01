@@ -60,7 +60,7 @@ export function MenuItem(
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
-        "aria-disabled:opacity-disabled flex items-center rounded-sm px-3 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent",
+        "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent",
       )}
       {...props}
     >
@@ -172,7 +172,7 @@ export function UpDownMenuButton({
   return (
     <Button
       className={clsx(
-        "border-default text-low data-[hovered]:border-hover data-[hovered]:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus cursor-default rounded-md border p-0.5",
+        "border-default text-low data-hovered:border-hover data-hovered:text-default aria-expanded:bg-active aria-expanded:text-default rac-focus cursor-default rounded-md border p-0.5",
         className,
       )}
       {...props}

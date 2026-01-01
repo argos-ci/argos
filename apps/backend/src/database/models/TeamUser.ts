@@ -1,7 +1,7 @@
+import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { RelationMappings, type JSONSchema } from "objection";
 import { z } from "zod";
 
-import { TeamUserLevelSchema } from "../schemas/TeamUserLevel";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Team } from "./Team";

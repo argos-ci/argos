@@ -1,7 +1,6 @@
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
+import type { BuildType } from "@argos/schemas/build-type";
 import { assertNever } from "@argos/util/assertNever";
-
-import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
-import type { BuildType } from "@/database/schemas/BuildType";
 
 export function getApprovalEmoji(state: "approved" | "rejected") {
   switch (state) {

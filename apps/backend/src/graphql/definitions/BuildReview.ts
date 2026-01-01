@@ -1,9 +1,9 @@
+import { AutomationEvents } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { triggerAndRunAutomation } from "@/automation";
-import { AutomationEvents } from "@/automation/types/events";
 import { pushBuildNotification } from "@/build-notification/notifications";
 import { Build } from "@/database/models/Build";
 import { BuildReview } from "@/database/models/BuildReview";

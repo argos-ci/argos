@@ -192,6 +192,12 @@ const hotkeyGroups = [
         description: "Switch between screenshot and aria view",
         envs: ["build"],
       },
+      showDetails: {
+        keys: ["["],
+        displayKeys: ["["],
+        description: "Show details",
+        envs: ["build"],
+      },
     },
   },
   {
@@ -296,6 +302,12 @@ export function useBuildHotkey(
       }
 
       const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
+      const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
+      const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
+
+      if (hasDigits && altShouldBePressed !== event.altKey) {
+        return;
+      }
 
       if (modifierShouldBePressed !== checkIsModifiedPressed(event)) {
         return;

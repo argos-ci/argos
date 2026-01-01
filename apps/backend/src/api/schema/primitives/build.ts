@@ -1,3 +1,7 @@
+import {
+  BuildAggregatedStatusSchema,
+  type BuildAggregatedStatus,
+} from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
@@ -6,10 +10,6 @@ import {
   NotificationPayloadSchema,
 } from "@/build-notification";
 import { Build, BuildNotification } from "@/database/models";
-import {
-  BuildAggregatedStatusSchema,
-  type BuildAggregatedStatus,
-} from "@/database/schemas/BuildStatus";
 
 export const BuildIdSchema = z.string().meta({
   description: "A unique identifier for the build",

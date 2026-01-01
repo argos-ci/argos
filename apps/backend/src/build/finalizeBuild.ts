@@ -1,8 +1,8 @@
+import { BuildMetadata } from "@argos/schemas/build-metadata";
 import { ref, TransactionOrKnex } from "objection";
 
 import { transaction } from "@/database";
 import { Build, BuildShard, Screenshot } from "@/database/models";
-import { BuildMetadata } from "@/database/schemas/BuildMetadata";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
 
 /**

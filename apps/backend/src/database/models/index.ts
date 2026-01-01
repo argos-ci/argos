@@ -39,3 +39,5 @@ export * from "./Test";
 export * from "./User";
 export * from "./UserEmail";
 export type { Model } from "../util/model";
+/** @graphqlType */
+export type { ScreenshotMetadataSDK } from "@argos/schemas/screenshot-metadata";

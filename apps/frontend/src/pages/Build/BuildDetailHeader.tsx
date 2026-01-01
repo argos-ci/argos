@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { ArrowUpRightIcon } from "lucide-react";
 import { generatePath, Link, useMatch } from "react-router-dom";
 
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -18,6 +17,7 @@ import {
   ScreenshotMetadataColorScheme,
 } from "@/gql/graphql";
 import { ButtonGroup } from "@/ui/ButtonGroup";
+import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { canParseURL } from "@/util/url";
@@ -59,6 +59,7 @@ import {
   ViewportIndicator,
   ViewportIndicatorLink,
 } from "./metadata/ViewportIndicator";
+import { TestDetailsButton } from "./TestDetails";
 import { TrackButtons } from "./TrackButtons";
 
 export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
@@ -150,26 +151,23 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         <BuildNavButtons />
         <div className="min-w-0 flex-1">
           {diff.test ? (
-            <div className="flex items-center gap-2">
-              <Tooltip content="View test details">
-                <Link
-                  to={getTestURL(
-                    { ...params, testId: diff.test.id },
-                    { change: diff.change?.id },
-                  )}
-                  className="group hover:underline-link"
+            <Tooltip content="View test details">
+              <Link
+                to={getTestURL(
+                  { ...params, testId: diff.test.id },
+                  { change: diff.change?.id },
+                )}
+                className="group hover:underline-link"
+              >
+                <span
+                  role="heading"
+                  aria-level={1}
+                  className="line-clamp-2 text-sm font-medium"
                 >
-                  <span
-                    role="heading"
-                    aria-level={1}
-                    className="line-clamp-2 text-sm font-medium"
-                  >
-                    {diff.name}
-                    <ArrowUpRightIcon className="ml-2 inline size-3 opacity-0 group-hover:opacity-100 group-focus:opacity-100" />
-                  </span>
-                </Link>
-              </Tooltip>
-            </div>
+                  {diff.name}
+                </span>
+              </Link>
+            </Tooltip>
           ) : (
             <div role="heading" className="line-clamp-2 text-sm font-medium">
               {diff.name}
@@ -182,6 +180,8 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         >
           <BuildDetailIgnoreButton diff={diff} />
           <TrackButtons diff={diff} disabled={!canBeReviewed} />
+          <Separator orientation="vertical" className="mx-1 h-6" />
+          <TestDetailsButton />
         </BuildDiffDetailToolbar>
       </div>
       <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 empty:hidden">

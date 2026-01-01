@@ -1,7 +1,7 @@
+import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { Model, type JSONSchema, type RelationMappings } from "objection";
 import { z } from "zod";
 
-import { TeamUserLevelSchema } from "../schemas/TeamUserLevel";
 import { generateRandomHexString } from "../services/crypto";
 import { Team } from "./Team";
 import { User } from "./User";

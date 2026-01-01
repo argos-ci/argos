@@ -1,3 +1,4 @@
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
 import DataLoader from "dataloader";
 import { memoize } from "lodash-es";
@@ -6,6 +7,7 @@ import type { ModelClass } from "objection";
 import { knex } from "@/database";
 import {
   Account,
+  AuditTrail,
   AutomationActionRun,
   AutomationRun,
   Build,
@@ -30,7 +32,6 @@ import {
   Test,
   User,
 } from "@/database/models";
-import type { BuildAggregatedStatus } from "@/database/schemas/BuildStatus";
 import { checkErrorStatus, getAppOctokit, GhApiInstallation } from "@/github";
 import { getTestAllMetrics } from "@/metrics/test";
 
@@ -569,6 +570,33 @@ function createIgnoredChangeLoader() {
   );
 }
 
+function createTestAuditTrailLoader() {
+  return new DataLoader<
+    {
+      projectId: string;
+      testId: string;
+    },
+    AuditTrail[],
+    string
+  >(
+    async (pairs) => {
+      const rows = await AuditTrail.query()
+        .whereIn(
+          ["projectId", "testId"],
+          pairs.map(({ projectId, testId }) => [projectId, testId]),
+        )
+        .orderBy("id", "asc");
+
+      return pairs.map(({ projectId, testId }) => {
+        return rows.filter(
+          (row) => row.projectId === projectId && row.testId === testId,
+        );
+      });
+    },
+    { cacheKeyFn: (input) => JSON.stringify(input) },
+  );
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -602,4 +630,5 @@ export const createLoaders = () => ({
   getChangeStatsLoader: createTestChangeStatsLoader(),
   TestAllMetrics: createTestAllMetricsLoader(),
   User: createModelLoader(User),
+  TestAuditTrailLoader: createTestAuditTrailLoader(),
 });

@@ -1,3 +1,4 @@
+import type { AutomationActionType } from "@argos/schemas/automation-action";
 import { z } from "zod";
 
 import type { AutomationAction } from "../defineAutomationAction";
@@ -19,18 +20,16 @@ export const AutomatedActionJSONSchema = z.toJSONSchema(
   { io: "input" },
 );
 
-export type AutomationActionType = z.infer<typeof AutomationActionSchema>;
+export type AutomationActionTypeDef = z.infer<typeof AutomationActionSchema>;
 
-type AutomationActionsType = (typeof AUTOMATION_ACTIONS)[number];
+type AutomationActionsTypeDef = (typeof AUTOMATION_ACTIONS)[number];
 
-type AutomationActionsName = AutomationActionsType["name"];
-
-export function getAutomationAction<T extends AutomationActionsName>(
+export function getAutomationAction<T extends AutomationActionType>(
   name: T,
-): Extract<AutomationActionsType, { name: T }> {
+): Extract<AutomationActionsTypeDef, { name: T }> {
   const handler = AUTOMATION_ACTIONS.find((action) => action.name === name);
   if (!handler) {
     throw new Error(`AutomationAction not found: ${name}`);
   }
-  return handler as Extract<AutomationActionsType, { name: T }>;
+  return handler as Extract<AutomationActionsTypeDef, { name: T }>;
 }

@@ -1,4 +1,4 @@
-import { getAutomationAction, type AutomationActionType } from "./actions";
+import { getAutomationAction, type AutomationActionTypeDef } from "./actions";
 import { job } from "./job";
 import { triggerAutomation, TriggerAutomationProps } from "./triggerAutomation";
 import { type AutomationMessage } from "./types/events";
@@ -22,7 +22,7 @@ export async function triggerAndRunAutomation(
  */
 export async function testAutomation(args: {
   message: AutomationMessage;
-  actions: AutomationActionType[];
+  actions: AutomationActionTypeDef[];
 }): Promise<void> {
   for (const action of args.actions) {
     const actionDefinition = getAutomationAction(action.action);

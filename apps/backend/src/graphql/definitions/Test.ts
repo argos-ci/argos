@@ -74,6 +74,7 @@ export const typeDefs = gql`
 
   type Test implements Node {
     id: ID!
+    createdAt: DateTime!
     name: String!
     status: TestStatus!
     firstSeenDiff: ScreenshotDiff
@@ -84,6 +85,14 @@ export const typeDefs = gql`
       first: Int!
     ): TestChangesConnection!
     metrics(period: MetricsPeriod): TestMetrics!
+    trails: [AuditTrail!]!
+  }
+
+  type AuditTrail implements Node {
+    id: ID!
+    date: DateTime!
+    action: String!
+    user: User!
   }
 
   input IgnoreChangeInput {
@@ -212,6 +221,12 @@ export const resolvers: IResolvers = {
         },
       };
     },
+    trails: async (test, _args, ctx) => {
+      return ctx.loaders.TestAuditTrailLoader.load({
+        projectId: test.projectId,
+        testId: test.id,
+      });
+    },
   },
   TestChange: {
     id: (testChange) =>
@@ -235,6 +250,15 @@ export const resolvers: IResolvers = {
         testId: testChange.testId,
         fileId: testChange.fileId,
       });
+    },
+  },
+  AuditTrail: {
+    user: async (auditTrail, _args, ctx) => {
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: auditTrail.userId,
+      });
+      invariant(account, "Account should exist");
+      return account;
     },
   },
   Mutation: {
