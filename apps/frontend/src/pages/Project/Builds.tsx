@@ -8,6 +8,7 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useParams, useResolvedPath, useSearchParams } from "react-router-dom";
 
+import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { BuildTestStatusChip } from "@/containers/BuildTestStatusChip";
@@ -82,6 +83,7 @@ const ProjectBuildsQuery = graphql(`
           branch
           commit
           mode
+          mergeQueue
           stats {
             ...BuildStatsIndicator_BuildStats
           }
@@ -148,11 +150,11 @@ const BuildRow = memo(function BuildRow({
           {build.name !== "default" ? build.name : ""}
         </Truncable>
       </div>
-      <div className="flex w-[11rem] shrink-0 flex-col items-start gap-1">
-        <BuildStatusChip build={build} />
+      <div className="flex w-38 shrink-0 flex-col items-start gap-1">
+        <BuildStatusChip build={build} scale="sm" />
       </div>
-      <div className="hidden w-[9rem] shrink-0 items-start lg:flex">
-        <BuildTestStatusChip build={build} />
+      <div className="hidden w-28 shrink-0 items-start lg:flex">
+        <BuildTestStatusChip build={build} scale="sm" />
       </div>
       <div className="flex grow">
         <div className="hidden lg:flex">
@@ -161,9 +163,13 @@ const BuildRow = memo(function BuildRow({
           ) : null}
         </div>
       </div>
-      <div className="hidden xl:block xl:w-56 2xl:w-96">
+      <div className="hidden gap-2 xl:flex xl:w-56 2xl:w-96">
+        <div className="w-6.5">
+          {build.mergeQueue ? <BuildMergeQueueIndicator /> : null}
+        </div>
         {build.pullRequest && (
           <PullRequestButton
+            size="small"
             pullRequest={build.pullRequest}
             className="max-w-full"
             target="_blank"

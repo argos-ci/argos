@@ -2,6 +2,7 @@ import { ComponentProps, memo } from "react";
 import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { useIsLoggedIn } from "@/containers/Auth";
+import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
 import { BuildTestStatusChip } from "@/containers/BuildTestStatusChip";
@@ -32,6 +33,7 @@ const _BuildFragment = graphql(`
     status
     type
     mode
+    mergeQueue
     pullRequest {
       id
       ...PullRequestButton_PullRequest
@@ -109,6 +111,11 @@ function LoggedReviewButton(props: {
   build: DocumentType<typeof _BuildFragment>;
 }) {
   const progression = useBuildReviewProgression();
+  if (props.build.mergeQueue) {
+    return (
+      <DisabledBuildReviewButton tooltip="This build was triggered in a merge queue." />
+    );
+  }
   if (props.build.type === BuildType.Reference) {
     return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
   }
@@ -219,9 +226,12 @@ export const BuildHeader = memo(
           {build ? <BuildTestStatusChip build={build} /> : null}
         </div>
         <div className="flex min-w-0 items-center gap-4">
-          {build?.pullRequest ? (
-            <PullRequestButton pullRequest={build.pullRequest} size="small" />
-          ) : null}
+          <div className="flex items-center gap-2 empty:hidden">
+            {build?.mergeQueue ? <BuildMergeQueueIndicator /> : null}
+            {build?.pullRequest ? (
+              <PullRequestButton pullRequest={build.pullRequest} size="small" />
+            ) : null}
+          </div>
           {build && project && (
             <ConditionalBuildReviewButton build={build} project={project} />
           )}
