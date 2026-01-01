@@ -79,7 +79,11 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
   }
 
   const createGhComment = async () => {
-    if (!project.prCommentEnabled || !build.githubPullRequestId) {
+    if (
+      !ctx.comment ||
+      !project.prCommentEnabled ||
+      !build.githubPullRequestId
+    ) {
       return;
     }
 

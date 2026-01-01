@@ -13,4 +13,8 @@ export type SendNotificationContext = {
   projectUrl: string;
   notification: NotificationPayload;
   aggregatedNotification: NotificationPayload | null;
+  /**
+   * Add a comment on the pull request.
+   */
+  comment: boolean;
 };
