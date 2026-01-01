@@ -149,7 +149,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <BuildNavButtons />
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1">
           {diff.test ? (
             <Tooltip content="View test details">
               <Link
