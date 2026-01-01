@@ -255,6 +255,9 @@ type Build implements Node {
   finalizedAt: DateTime
   id: ID!
 
+  """Build is triggered in a merge queue"""
+  mergeQueue: Boolean!
+
   """Aggregated metadata"""
   metadata: BuildMetadata
 

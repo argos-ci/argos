@@ -297,6 +297,8 @@ export type IBuild = INode & {
   /** Date when the build is finalized (all batches received) */
   finalizedAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
+  /** Build is triggered in a merge queue */
+  mergeQueue: Scalars['Boolean']['output'];
   /** Aggregated metadata */
   metadata?: Maybe<IBuildMetadata>;
   /** Mode */
@@ -2430,6 +2432,7 @@ export type IBuildResolvers<ContextType = Context, ParentType extends IResolvers
   createdAt?: Resolver<IResolversTypes['DateTime'], ParentType, ContextType>;
   finalizedAt?: Resolver<Maybe<IResolversTypes['DateTime']>, ParentType, ContextType>;
   id?: Resolver<IResolversTypes['ID'], ParentType, ContextType>;
+  mergeQueue?: Resolver<IResolversTypes['Boolean'], ParentType, ContextType>;
   metadata?: Resolver<Maybe<IResolversTypes['BuildMetadata']>, ParentType, ContextType>;
   mode?: Resolver<IResolversTypes['BuildMode'], ParentType, ContextType>;
   name?: Resolver<IResolversTypes['String'], ParentType, ContextType>;

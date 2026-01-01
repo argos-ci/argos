@@ -22,6 +22,7 @@ import {
 const _BuildFragment = graphql(`
   fragment BuildPreviousReviewDialog_Build on Build {
     branchApprovedDiffs
+    mergeQueue
   }
 `);
 
@@ -35,6 +36,7 @@ export function useBuildPreviousReviewDialogState(props: {
   const api = useBuildReviewAPI();
 
   if (
+    build.mergeQueue ||
     build.branchApprovedDiffs.length === 0 ||
     !api ||
     Object.keys(api.getDiffStatuses()).length !== 0

@@ -25,6 +25,7 @@ const _BuildFragment = graphql(`
     commit
     branch
     mode
+    mergeQueue
     stats {
       total
     }
@@ -197,6 +198,19 @@ export function BuildInfos(props: {
           <BuildModeDescription mode={build.mode} />
         </Description>
       </Dd>
+
+      {build.mergeQueue ? (
+        <>
+          <Dt>Git environment</Dt>
+          <Dd>
+            Merge queue
+            <Description>
+              This build was triggered in a merge queue and has been compared
+              with a previously approved build.
+            </Description>
+          </Dd>
+        </>
+      ) : null}
 
       {build.pullRequest ? (
         <>

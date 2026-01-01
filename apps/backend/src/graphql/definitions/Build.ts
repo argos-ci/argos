@@ -123,6 +123,8 @@ export const typeDefs = gql`
     reviews: [BuildReview!]!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
+    "Build is triggered in a merge queue"
+    mergeQueue: Boolean!
   }
 
   type BuildMetadata {

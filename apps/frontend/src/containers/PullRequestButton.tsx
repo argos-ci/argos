@@ -214,7 +214,7 @@ export function PullRequestButton(props: {
         <ButtonComponent
           variant="secondary"
           size={props.size}
-          className={clsx("!bg-app min-w-0 cursor-pointer", props.className)}
+          className={clsx("bg-app! min-w-0 cursor-pointer", props.className)}
           onPress={
             props.emulateLink
               ? (event) => {
