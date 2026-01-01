@@ -73,7 +73,7 @@ export function BuildFlakyIndicator(props: {
     );
   }
 
-  if (diff.test.last7daysMetrics.all.flakiness === 0) {
+  if (diff.test.last7daysMetrics.all.flakiness > 0) {
     const color = getFlakinessUIColor(diff.test.last7daysMetrics.all.flakiness);
     return (
       <Tooltip
