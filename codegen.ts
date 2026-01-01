@@ -48,7 +48,7 @@ const config: CodegenConfig = {
           ScreenshotBucket: "../../database/models/index.js#ScreenshotBucket",
           ScreenshotDiff: "../../database/models/index.js#ScreenshotDiff",
           ScreenshotMetadataSDK:
-            "../../database/models/index.js#ScreenshotMetadataSDK",
+            "@argos/schemas/screenshot-metadata#ScreenshotMetadataSDK",
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",
