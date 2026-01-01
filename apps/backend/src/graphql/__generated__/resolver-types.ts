@@ -1,7 +1,8 @@
 import type { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import type { AccountAvatar, Subscription, AuditTrail, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, ScreenshotMetadataSDK, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
+import type { AccountAvatar, Subscription, AutomationRule, AutomationRun, AutomationActionRun, Build, BuildReview, GithubAccount, GithubInstallation, GithubPullRequest, GithubRepository, GitlabProject, GitlabUser, GoogleUser, Plan, ProjectUser, Screenshot, ScreenshotBucket, ScreenshotDiff, SlackInstallation, Project, Account, TeamInvite, TeamUser, GithubAccountMember, Test } from '../../database/models/index.js';
 import type { GhApiInstallation, GhApiRepository } from '../../github/index.js';
 import type { GlApiNamespace, GlApiProject } from '../../gitlab/index.js';
+import type { ScreenshotMetadataSDK } from '../../database/schemas/ScreenshotMetadata.js';
 import type { TestMetrics, TestChangeObject } from '../../graphql/definitions/Test.js';
 import type { Context } from '../context.js';
 export type Maybe<T> = T | null;
@@ -1952,7 +1953,7 @@ export type IResolversInterfaceTypes<_RefType extends Record<string, unknown>> =
   ;
   Node:
     | ( Subscription )
-    | ( AuditTrail )
+    | ( Omit<IAuditTrail, 'user'> & { user: _RefType['User'] } )
     | ( AutomationActionRun )
     | ( AutomationRule )
     | ( AutomationRun )
@@ -2008,7 +2009,7 @@ export type IResolversTypes = ResolversObject<{
   AccountSubscriptionProvider: IAccountSubscriptionProvider;
   AccountSubscriptionStatus: IAccountSubscriptionStatus;
   AddContributorToProjectInput: IAddContributorToProjectInput;
-  AuditTrail: ResolverTypeWrapper<AuditTrail>;
+  AuditTrail: ResolverTypeWrapper<Omit<IAuditTrail, 'user'> & { user: IResolversTypes['User'] }>;
   AuthFromEmailInput: IAuthFromEmailInput;
   AuthPayload: ResolverTypeWrapper<IAuthPayload>;
   AutomationAction: ResolverTypeWrapper<IAutomationAction>;
@@ -2174,7 +2175,7 @@ export type IResolversParentTypes = ResolversObject<{
   AccountScreenshotMetrics: Omit<IAccountScreenshotMetrics, 'all' | 'projects'> & { all: IResolversParentTypes['AccountMetricData'], projects: Array<IResolversParentTypes['Project']> };
   AccountSubscription: Subscription;
   AddContributorToProjectInput: IAddContributorToProjectInput;
-  AuditTrail: AuditTrail;
+  AuditTrail: Omit<IAuditTrail, 'user'> & { user: IResolversParentTypes['User'] };
   AuthFromEmailInput: IAuthFromEmailInput;
   AuthPayload: IAuthPayload;
   AutomationAction: IAutomationAction;

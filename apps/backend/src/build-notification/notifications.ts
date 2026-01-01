@@ -81,6 +81,7 @@ export async function processBuildNotification(
     projectUrl,
     notification,
     aggregatedNotification,
+    comment: !buildNotification.build.mergeQueue,
   };
 
   await Promise.all([sendGitHubNotification(ctx), sendGitLabNotification(ctx)]);
