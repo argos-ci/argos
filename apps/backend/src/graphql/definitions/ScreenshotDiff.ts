@@ -194,7 +194,7 @@ export const resolvers: IResolvers = {
       }
       const from = getStartDateFromPeriod(args.period);
       const count = await ctx.loaders
-        .getChangesOccurencesLoader(from.toISOString())
+        .getChangesOccurrencesLoader(from.toISOString())
         .load({
           fileId: screenshotDiff.fileId,
           testId: screenshotDiff.testId,

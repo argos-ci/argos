@@ -12,10 +12,10 @@ import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
 
 import { BuildDetailHeader } from "./BuildDetailHeader";
-import { useBuildDiffState, type Diff } from "./BuildDiffState";
+import { useBuildDiffState } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { BuildSidebar } from "./BuildSidebar";
-import { TestDetails } from "./TestDetails";
+import { TestDetails, type TestDetailsProps } from "./TestDetails";
 import { testSidebarAtom } from "./TestSidebar";
 
 const _BuildFragment = graphql(`
@@ -156,19 +156,24 @@ function BuildDetail(props: {
           ) : null
         }
         sidebar={
-          activeDiff?.test ? <TestSidebar test={activeDiff.test} /> : null
+          activeDiff?.test ? (
+            <TestSidebar
+              test={activeDiff.test}
+              change={activeDiff.change ?? null}
+              occurrences={activeDiff.last7daysOccurrences}
+            />
+          ) : null
         }
       />
     </div>
   );
 }
 
-function TestSidebar(props: { test: NonNullable<Diff["test"]> }) {
-  const { test } = props;
+function TestSidebar(props: TestDetailsProps) {
   const sidebar = useAtomValue(testSidebarAtom);
   switch (sidebar) {
     case "details":
-      return <TestDetails test={test} />;
+      return <TestDetails {...props} />;
     case null:
       return null;
     default:
