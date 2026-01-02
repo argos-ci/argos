@@ -325,7 +325,7 @@ function createBuildUniqueReviewsLoader() {
   });
 }
 
-function createChangeOccurencesLoader(): (
+function createChangeOccurrencesLoader(): (
   from: string,
 ) => DataLoader<{ testId: string; fileId: string }, number, string> {
   return memoize(
@@ -447,7 +447,7 @@ function createTestChangeStatsLoader(): (
 ) => DataLoader<
   { fileId: string },
   {
-    totalOccurences: number;
+    totalOccurrences: number;
     lastSeenDiff: ScreenshotDiff;
     firstSeenDiff: ScreenshotDiff;
   },
@@ -459,7 +459,7 @@ function createTestChangeStatsLoader(): (
         fileId: string;
       },
       {
-        totalOccurences: number;
+        totalOccurrences: number;
         lastSeenDiff: ScreenshotDiff;
         firstSeenDiff: ScreenshotDiff;
       },
@@ -468,7 +468,7 @@ function createTestChangeStatsLoader(): (
       async (pairs) => {
         const fileIds = [...new Set(pairs.map((p) => p.fileId))];
 
-        const totalOccurencesQuery = knex.raw<{
+        const totalOccurrencesQuery = knex.raw<{
           rows: { fileId: string; total: number }[];
         }>(
           `
@@ -501,15 +501,15 @@ function createTestChangeStatsLoader(): (
           .clone()
           .orderBy("screenshot_diffs.createdAt", "asc");
 
-        const [lastSeenRows, firstSeenRows, totalOccurencesRows] =
+        const [lastSeenRows, firstSeenRows, totalOccurrencesRows] =
           await Promise.all([
             lastSeenQuery,
             firstSeenQuery,
-            totalOccurencesQuery,
+            totalOccurrencesQuery,
           ]);
 
-        const totalOccurencesMap = new Map(
-          totalOccurencesRows.rows.map((row) => [
+        const totalOccurrencesMap = new Map(
+          totalOccurrencesRows.rows.map((row) => [
             row.fileId,
             Number(row.total),
           ]),
@@ -521,13 +521,13 @@ function createTestChangeStatsLoader(): (
           firstSeenRows.map((diff) => [diff.fileId, diff]),
         );
         return pairs.map((pair) => {
-          const totalOccurences = totalOccurencesMap.get(pair.fileId) ?? 0;
+          const totalOccurrences = totalOccurrencesMap.get(pair.fileId) ?? 0;
           const lastSeenDiff = lastSeenMap.get(pair.fileId) ?? null;
           const firstSeenDiff = firstSeenMap.get(pair.fileId) ?? null;
           invariant(lastSeenDiff, "Last seen diff should not be null");
           invariant(firstSeenDiff, "First seen diff should not be null");
           return {
-            totalOccurences,
+            totalOccurrences,
             lastSeenDiff,
             firstSeenDiff,
           };
@@ -606,7 +606,7 @@ export const createLoaders = () => ({
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
-  getChangesOccurencesLoader: createChangeOccurencesLoader(),
+  getChangesOccurrencesLoader: createChangeOccurrencesLoader(),
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),
   GithubAccount: createModelLoader(GithubAccount),

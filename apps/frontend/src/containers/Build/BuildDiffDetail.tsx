@@ -93,22 +93,6 @@ const _DiffFragment = graphql(`
     contentType
     group
     threshold
-    last7daysOccurences: occurrences(period: LAST_7_DAYS)
-    change {
-      id
-      ignored
-    }
-    test {
-      id
-      last7daysMetrics: metrics(period: LAST_7_DAYS) {
-        all {
-          total
-          flakiness
-          stability
-          consistency
-        }
-      }
-    }
     baseScreenshot {
       id
       url
@@ -218,7 +202,21 @@ const _DiffFragment = graphql(`
     }
     test {
       id
+      last7daysMetrics: metrics(period: LAST_7_DAYS) {
+        all {
+          total
+          flakiness
+          stability
+          consistency
+        }
+      }
       ...TestDetails_Test
+    }
+    last7daysOccurrences: occurrences(period: LAST_7_DAYS)
+    change {
+      id
+      ignored
+      ...TestDetails_TestChange
     }
   }
 `);

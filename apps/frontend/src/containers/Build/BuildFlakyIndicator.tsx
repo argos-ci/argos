@@ -37,7 +37,7 @@ export function BuildFlakyIndicator(props: {
     </Link>
   );
 
-  if (diff.last7daysOccurences > 1) {
+  if (diff.last7daysOccurrences > 1) {
     return (
       <Tooltip
         disableHoverableContent={false}
@@ -51,10 +51,10 @@ export function BuildFlakyIndicator(props: {
             </TooltipHeader>
             <p>
               <strong>
-                {diff.last7daysOccurences} /{" "}
+                {diff.last7daysOccurrences} /{" "}
                 {diff.test.last7daysMetrics.all.total} auto-approved builds
               </strong>{" "}
-              showed exactly the same change in the last 7 days.
+              shown exactly the same change in the last 7 days.
             </p>
             <p>{testLink}</p>
           </TooltipContainer>
@@ -67,7 +67,7 @@ export function BuildFlakyIndicator(props: {
           scale="xs"
           {...props}
         >
-          {diff.last7daysOccurences} / {diff.test.last7daysMetrics.all.total}
+          {diff.last7daysOccurrences} / {diff.test.last7daysMetrics.all.total}
         </ChipLink>
       </Tooltip>
     );

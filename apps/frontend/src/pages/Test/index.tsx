@@ -331,7 +331,7 @@ const _ChangesFragment = graphql(`
   fragment TestChangeFragment on TestChange {
     id
     stats(period: $period) {
-      totalOccurences
+      totalOccurrences
       lastSeenDiff {
         id
         createdAt
@@ -492,17 +492,17 @@ function BuildHeader(props: {
               </>
             }
           >
-            <CounterLabel>Occurences</CounterLabel>
+            <CounterLabel>Occurrences</CounterLabel>
           </Tooltip>
           <CounterValue
             className={clsx(
               "tabular-nums",
-              change.stats.totalOccurences > 1
+              change.stats.totalOccurrences > 1
                 ? "text-danger-low"
                 : "text-success-low",
             )}
           >
-            {compactFormatter.format(change.stats.totalOccurences)}{" "}
+            {compactFormatter.format(change.stats.totalOccurrences)}{" "}
             <small>/ {compactFormatter.format(test.metrics.all.total)}</small>
           </CounterValue>
         </Counter>
@@ -568,11 +568,11 @@ function ChangesList(props: {
               />
               <DiffCardFooter>
                 <DiffCardFooterText>
-                  {change.stats.totalOccurences > 1 ? (
+                  {change.stats.totalOccurrences > 1 ? (
                     <>
                       <TriangleAlertIcon className="text-danger-low mr-1 inline size-3" />
                       Recurring -{" "}
-                      {compactFormatter.format(change.stats.totalOccurences)}
+                      {compactFormatter.format(change.stats.totalOccurrences)}
                       <small>x</small>
                     </>
                   ) : (

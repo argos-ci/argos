@@ -57,7 +57,7 @@ export const typeDefs = gql`
   }
 
   type TestChangeStats {
-    totalOccurences: Int!
+    totalOccurrences: Int!
     firstSeenDiff: ScreenshotDiff!
     lastSeenDiff: ScreenshotDiff!
   }
@@ -159,7 +159,7 @@ export const resolvers: IResolvers = {
       const { period, after, first } = args;
       const from = getStartDateFromPeriod(period);
 
-      const totalOccurencesQuery = `
+      const totalOccurrencesQuery = `
         SELECT sum(tsc.value) FROM test_stats_changes tsc
           WHERE tsc."testId" = screenshot_diffs."testId"
           AND tsc."fileId" = screenshot_diffs."fileId"
@@ -180,7 +180,7 @@ export const resolvers: IResolvers = {
       const query = ScreenshotDiff.query()
         .select("screenshot_diffs.fileId")
         .whereIn("id", diffQuery.clone())
-        .orderByRaw(`(${totalOccurencesQuery}) DESC`, { from })
+        .orderByRaw(`(${totalOccurrencesQuery}) DESC`, { from })
         .range(after, after + first - 1);
 
       const [project, result] = await Promise.all([
