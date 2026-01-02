@@ -288,6 +288,9 @@ describe("api v2", () => {
         expect(updateResult.body).toEqual({
           build: {
             id: build.id,
+            metadata: null,
+            stats: null,
+            conclusion: null,
             url: "http://localhost:3000/argos-ci/argos/builds/1",
             number: 1,
             status: "pending",
@@ -392,6 +395,9 @@ describe("api v2", () => {
         expect(updateResult.body).toEqual({
           build: {
             id: build.id,
+            metadata: null,
+            stats: null,
+            conclusion: null,
             url: "http://localhost:3000/argos-ci/argos/builds/1",
             number: 1,
             status: "pending",
@@ -537,6 +543,9 @@ describe("api v2", () => {
           expect(body).toEqual({
             build: {
               id: build.id,
+              metadata: null,
+              stats: null,
+              conclusion: null,
               url: "http://localhost:3000/argos-ci/argos/builds/1",
               number: 1,
               status: "pending",
