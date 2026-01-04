@@ -2,6 +2,7 @@ import {
   BuildMetadata,
   BuildMetadataJsonSchema,
 } from "@argos/schemas/build-metadata";
+import { BuildStats, BuildStatsSchema } from "@argos/schemas/build-stats";
 import type {
   BuildAggregatedStatus,
   BuildConclusion,
@@ -19,6 +20,7 @@ import type {
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
+import z from "zod";
 
 import config from "@/config";
 import { SHA1_REGEX } from "@/util/validation";
@@ -36,17 +38,6 @@ import { User } from "./User";
 export const BUILD_EXPIRATION_DELAY_MS = 2 * 3600 * 1000; // 2 hours
 
 export type BuildMode = "ci" | "monitoring";
-
-type BuildStats = {
-  failure: number;
-  added: number;
-  unchanged: number;
-  changed: number;
-  removed: number;
-  total: number;
-  retryFailure: number;
-  ignored: number;
-};
 
 export class Build extends Model {
   static override tableName = "builds";
@@ -123,27 +114,7 @@ export class Build extends Model {
           stats: {
             anyOf: [
               { type: "null" },
-              {
-                type: "object",
-                properties: {
-                  failure: { type: "integer" },
-                  added: { type: "integer" },
-                  unchanged: { type: "integer" },
-                  changed: { type: "integer" },
-                  removed: { type: "integer" },
-                  total: { type: "integer" },
-                  retryFailure: { type: "integer" },
-                },
-                required: [
-                  "failure",
-                  "added",
-                  "unchanged",
-                  "changed",
-                  "removed",
-                  "total",
-                  "retryFailure",
-                ],
-              },
+              z.toJSONSchema(BuildStatsSchema) as JSONSchema,
             ],
           },
           finalizedAt: { type: ["string", "null"] },
@@ -496,10 +467,12 @@ export class Build extends Model {
   }
 
   async getUrl({ trx }: { trx?: TransactionOrKnex } = {}) {
-    await this.$fetchGraph(
-      "project.account",
-      trx ? { transaction: trx, skipFetched: true } : { skipFetched: true },
-    );
+    if (!this.project?.account) {
+      await this.$fetchGraph(
+        "project.account",
+        trx ? { transaction: trx } : undefined,
+      );
+    }
     invariant(this.project?.account, "account not found");
 
     const pathname = `/${this.project.account.slug}/${this.project.name}/builds/${this.number}`;
@@ -548,5 +521,26 @@ export class Build extends Model {
           .orderBy("build_reviews.id", "desc")
           .limit(1);
       });
+  }
+
+  /**
+   * Get stats.
+   * We ensure all values are present and the type is correct.
+   */
+  getStats() {
+    const { stats } = this;
+    if (!stats) {
+      return null;
+    }
+    return {
+      total: stats.total ?? 0,
+      failure: stats.failure ?? 0,
+      changed: stats.changed ?? 0,
+      added: stats.added ?? 0,
+      removed: stats.removed ?? 0,
+      unchanged: stats.unchanged ?? 0,
+      retryFailure: stats.retryFailure ?? 0,
+      ignored: stats.ignored ?? 0,
+    };
   }
 }

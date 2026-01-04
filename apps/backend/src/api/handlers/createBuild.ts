@@ -15,7 +15,7 @@ import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 import { repoAuth } from "@/web/middlewares/repoAuth";
 
-import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
+import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import {
   Sha1HashSchema,
   UniqueSha256HashArraySchema,
@@ -150,11 +150,8 @@ export const createBuild: CreateAPIHandler = ({ post }) => {
       }
     })();
 
-    const [buildResponse] = await serializeBuilds([build]);
-    invariant(buildResponse);
-
     res.status(201).send({
-      build: buildResponse,
+      build: await serializeBuild(build),
       screenshots,
       pwTraces,
     });

@@ -1,5 +1,8 @@
+import { BuildMetadataSchema } from "@argos/schemas/build-metadata";
+import { BuildStatsSchema } from "@argos/schemas/build-stats";
 import {
   BuildAggregatedStatusSchema,
+  BuildConclusionSchema,
   type BuildAggregatedStatus,
 } from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
@@ -26,6 +29,13 @@ export const BuildSchema = z
     status: BuildAggregatedStatusSchema.meta({
       description: "The status of the build",
     }),
+    conclusion: BuildConclusionSchema.nullable().meta({
+      description: "The conclusion of the build",
+    }),
+    stats: BuildStatsSchema.nullable().meta({
+      description: "Stats of the diffs present in the build",
+    }),
+    metadata: BuildMetadataSchema.nullable(),
     url: z.url().meta({
       description: "The URL of the build",
     }),
@@ -67,7 +77,7 @@ export async function serializeBuilds(
 ): Promise<z.infer<typeof BuildSchema>[]> {
   const [statuses, urls] = await Promise.all([
     Build.getAggregatedBuildStatuses(builds),
-    Promise.all(builds.map((build) => build.getUrl())),
+    Promise.all(builds.map(async (build) => build.getUrl())),
   ]);
 
   const notificationPayloads = await Promise.all(
@@ -99,9 +109,23 @@ export async function serializeBuilds(
     return {
       id: build.id,
       number: build.number,
+      metadata: build.metadata,
+      stats: build.getStats(),
       status,
+      conclusion: build.conclusion,
       url,
       notification: notificationPayload,
     };
   });
+}
+
+/**
+ * Serialize a build for API response.
+ */
+export async function serializeBuild(
+  build: Build,
+): Promise<z.infer<typeof BuildSchema>> {
+  const [response] = await serializeBuilds([build]);
+  invariant(response);
+  return response;
 }

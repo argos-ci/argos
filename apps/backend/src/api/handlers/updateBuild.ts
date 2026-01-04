@@ -1,5 +1,4 @@
 import { BuildMetadataSchema } from "@argos/schemas/build-metadata";
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -15,7 +14,7 @@ import { repoAuth } from "@/web/middlewares/repoAuth";
 import {
   BuildIdSchema,
   BuildSchema,
-  serializeBuilds,
+  serializeBuild,
 } from "../schema/primitives/build";
 import { ScreenshotInputSchema } from "../schema/primitives/screenshot";
 import {
@@ -114,10 +113,9 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
       await handleUpdateSingle(ctx);
     }
 
-    const [buildResponse] = await serializeBuilds([build]);
-    invariant(buildResponse);
-
-    res.send({ build: buildResponse });
+    res.send({
+      build: await serializeBuild(build),
+    });
   });
 };
 

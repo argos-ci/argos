@@ -7,6 +7,8 @@ import { createBuild } from "./handlers/createBuild";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds";
+import { getBuild } from "./handlers/getBuild";
+import { getBuildDiffs } from "./handlers/getBuildDiffs";
 import { updateBuild } from "./handlers/updateBuild";
 import { schema } from "./schema";
 import { errorHandler, registerHandler } from "./util";
@@ -37,6 +39,8 @@ router.get("/openapi.yaml", (_req, res) => {
 // Register the handlers.
 registerHandler(router, getAuthProject);
 registerHandler(router, getAuthProjectBuilds);
+registerHandler(router, getBuild);
+registerHandler(router, getBuildDiffs);
 registerHandler(router, createBuild);
 registerHandler(router, updateBuild);
 registerHandler(router, finalizeBuilds);
