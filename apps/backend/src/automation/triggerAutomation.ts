@@ -1,5 +1,5 @@
 import {
-  AutomationFormConditionSchema,
+  AutomationConditionSchema,
   type AllAutomationCondition,
   type AutomationCondition,
   type BuildConclusionCondition,
@@ -82,7 +82,7 @@ function evaluateCondition(
   condition: AutomationCondition,
   message: AutomationMessage,
 ): boolean {
-  AutomationFormConditionSchema.parse(condition);
+  AutomationConditionSchema.parse(condition);
   const { negative, rawCondition } = (() => {
     if ("not" in condition) {
       return { negative: true, rawCondition: condition.not };
