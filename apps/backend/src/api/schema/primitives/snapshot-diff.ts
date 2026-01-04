@@ -42,9 +42,6 @@ const Snapshot = z
     url: z.url().meta({
       description: "Public URL of the snapshot",
     }),
-    originalUrl: z.url().meta({
-      description: "Public URL of the original snapshot file",
-    }),
     contentType: z.string().meta({
       description: "Content type of the snapshot file",
     }),
@@ -92,10 +89,9 @@ async function serializeSnapshot(
   }
 
   const file = screenshot.file as FileModel | null | undefined;
-  const [imageUrl, originalUrl] = await Promise.all([
-    file ? getPublicImageFileUrl(file) : getPublicUrl(screenshot.s3Id),
-    file ? getPublicUrl(file.key) : getPublicUrl(screenshot.s3Id),
-  ]);
+  const imageUrl = file
+    ? await getPublicImageFileUrl(file)
+    : await getPublicUrl(screenshot.s3Id);
 
   return {
     id: screenshot.id,
@@ -104,7 +100,6 @@ async function serializeSnapshot(
     width: file?.width ?? null,
     height: file?.height ?? null,
     url: imageUrl,
-    originalUrl,
     contentType: file?.contentType ?? "image/png",
   };
 }

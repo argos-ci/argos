@@ -201,9 +201,7 @@ describe("getBuildDiffs", () => {
         metadata: screenshotMetadata,
       });
       expect(diff.base.url).toContain(files.base.key);
-      expect(diff.base.originalUrl).toContain(files.base.key);
       expect(diff.head.url).toContain(files.compare.key);
-      expect(diff.head.originalUrl).toContain(files.compare.key);
     });
   });
 });
