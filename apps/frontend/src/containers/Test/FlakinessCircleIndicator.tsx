@@ -3,30 +3,20 @@ import clsx from "clsx";
 import { useNumberFormatter } from "react-aria";
 
 import { CircleProgress } from "@/ui/Progress";
-import { bgSolidColors } from "@/util/colors";
+import { bgSolidColors, lowTextColors } from "@/util/colors";
 
 import { getFlakinessUIColor } from "./Flakiness";
 
 interface FlakinessCircleIndicatorProps extends ComponentPropsWithRef<"div"> {
   value: number;
   label?: string;
-  color?: string;
-}
-
-function getColor(value: number) {
-  const uiColor = getFlakinessUIColor(value);
-  return bgSolidColors[uiColor];
 }
 
 export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
-  const {
-    ref,
-    value,
-    label,
-    className,
-    color = getColor(value),
-    ...domProps
-  } = props;
+  const { ref, value, label, className, ...domProps } = props;
+  const uiColor = getFlakinessUIColor(value);
+  const bgColor = bgSolidColors[uiColor];
+  const textColor = lowTextColors[uiColor];
   const compactFormatter = useNumberFormatter({ notation: "compact" });
   return (
     <div
@@ -40,7 +30,7 @@ export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
         value={value}
         min={0}
         max={1}
-        color={color}
+        color={bgColor}
       />
       <svg
         className="absolute inset-0"
@@ -54,7 +44,7 @@ export function FlakinessCircleIndicator(props: FlakinessCircleIndicatorProps) {
           dominantBaseline="middle"
           fontSize="28"
           fontWeight="bold"
-          fill={color}
+          fill={textColor}
           fontFamily="inherit"
         >
           {label ?? compactFormatter.format(value * 100)}

@@ -37,7 +37,7 @@ export function Progress({
       )}
     >
       <div
-        className="from-progress-from to-progress-to h-2 bg-gradient-to-r transition-[width]"
+        className="from-progress-from to-progress-to h-2 bg-linear-to-r transition-[width]"
         style={{
           width: `${percent * 100}%`,
           background: color,
