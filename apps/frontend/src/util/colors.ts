@@ -36,3 +36,13 @@ export const bgSolidColors: Record<UIColor, string> = {
   danger: "var(--background-color-danger-solid)",
   warning: "var(--background-color-warning-solid)",
 };
+
+export const lowTextColors: Record<UIColor, string> = {
+  primary: "var(--text-color-primary-low)",
+  info: "var(--text-color-info-low)",
+  success: "var(--text-color-success-low)",
+  neutral: "var(--text-color-low)",
+  pending: "var(--text-color-pending-low)",
+  danger: "var(--text-color-danger-low)",
+  warning: "var(--text-color-warning-low)",
+};

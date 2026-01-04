@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
 import { DialogTrigger } from "react-aria-components";
 
+import { useAuthTokenPayload } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
@@ -23,6 +24,7 @@ import { Modal } from "@/ui/Modal";
 import * as sessionStorage from "@/util/session-storage";
 
 import type { BuildDiffDetailDocument } from "../BuildDiffDetail";
+import { addAuditTrailEntry } from "../TestTrail";
 
 const IgnoreChangeMutation = graphql(`
   mutation IgnoreButton_ignoreChange($accountSlug: String!, $changeId: ID!) {
@@ -62,6 +64,8 @@ function EnabledIgnoreButton(props: {
   invariant(diff.change, "IgnoreButton requires a change in the diff");
   const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
+  const authPayload = useAuthTokenPayload();
+  invariant(authPayload);
   const [mutateIgnoreChange] = useMutation(IgnoreChangeMutation, {
     variables: {
       accountSlug: params.accountSlug,
@@ -74,10 +78,24 @@ function EnabledIgnoreButton(props: {
         ignored: true,
       },
     },
+    update: (cache) => {
+      if (diff.test) {
+        addAuditTrailEntry({
+          cache,
+          action: "files.ignored",
+          authPayload,
+          testId: diff.test.id,
+        });
+      }
+    },
   });
 
   const ignoreChange = () => {
-    mutateIgnoreChange().catch(() => {
+    const auditTrailId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `local-audit-trail-${Date.now()}`;
+    mutateIgnoreChange({ context: { auditTrailId } }).catch(() => {
       // Optimistic response will handle this
     });
     onIgnoreChange?.();
@@ -96,9 +114,23 @@ function EnabledIgnoreButton(props: {
         ignored: false,
       },
     },
+    update: (cache) => {
+      if (diff.test) {
+        addAuditTrailEntry({
+          cache,
+          action: "files.unignored",
+          authPayload,
+          testId: diff.test.id,
+        });
+      }
+    },
   });
   const unignoreChange = () => {
-    mutateUnignoreChange();
+    const auditTrailId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `local-audit-trail-${Date.now()}`;
+    mutateUnignoreChange({ context: { auditTrailId } });
     setDialog(null);
   };
   const toggle = () => {

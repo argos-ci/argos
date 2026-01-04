@@ -1,7 +1,13 @@
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { useAtom } from "jotai";
-import { FileUpIcon, PanelRightIcon } from "lucide-react";
+import {
+  CircleCheckIcon,
+  FileUpIcon,
+  FlagOffIcon,
+  PanelRightIcon,
+  WavesIcon,
+} from "lucide-react";
 import { useNumberFormatter } from "react-aria";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -31,17 +37,7 @@ const _TestFragment = graphql(`
     id
     createdAt
     trails {
-      id
-      date
-      action
-      user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
-      }
+      ...Test_AuditTrail
     }
     last7daysMetrics: metrics(period: LAST_7_DAYS) {
       all {
@@ -90,34 +86,46 @@ export function TestDetails(props: TestDetailsProps) {
                 See details
               </HeadlessLink>
             </SidebarHeader>
-            <div className="flex flex-col gap-3 px-4">
-              <InsightRow>
-                <InsightTitle
-                  title="Occurrences"
-                  tooltip={
-                    <>
-                      The number of auto-approved builds that have shown exactly
-                      the same change in the last 7 days.
-                    </>
-                  }
-                />
-                <InsightValue>
-                  {compactFormatter.format(occurrences)} /{" "}
-                  {compactFormatter.format(test.last7daysMetrics.all.total)}
-                </InsightValue>
-              </InsightRow>
-              <InsightRow>
-                <InsightTitle
-                  title="Ignored"
-                  tooltip={
-                    <>
-                      If ignored and the exact same change is detected, you will
-                      not be notified about it.
-                    </>
-                  }
-                />
-                <InsightValue>{change.ignored ? "Yes" : "No"}</InsightValue>
-              </InsightRow>
+            <div className="shrink-0 px-4">
+              <InsightTitle
+                className="mb-2"
+                title="Occurrences"
+                tooltip={
+                  <>
+                    The number of auto-approved builds that have shown exactly
+                    the same change in the last 7 days.
+                  </>
+                }
+              />
+              <div
+                className={clsx(
+                  "text-xl font-bold",
+                  occurrences > 1 ? "text-danger-low" : "text-success-low",
+                )}
+              >
+                {compactFormatter.format(occurrences)} /{" "}
+                {compactFormatter.format(test.last7daysMetrics.all.total)}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-1.5 px-4 text-xs">
+              {occurrences > 1 ? (
+                change.ignored ? (
+                  <>
+                    <FlagOffIcon className="text-low size-3" />
+                    Change ignored.
+                  </>
+                ) : (
+                  <>
+                    <WavesIcon className="text-danger-low size-3" />
+                    This change is flaky, safe to be ignored.
+                  </>
+                )
+              ) : (
+                <>
+                  <CircleCheckIcon className="text-success-low size-3" />
+                  Not seen in the last seven days.
+                </>
+              )}
             </div>
           </SidebarSection>
         ) : null}
@@ -262,8 +270,15 @@ function InsightRow(props: { children: React.ReactNode }) {
   return <div className="flex justify-between text-xs">{props.children}</div>;
 }
 
-function InsightValue(props: { children: React.ReactNode }) {
-  return <div className="font-semibold">{props.children}</div>;
+function InsightValue(props: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={clsx("font-semibold", props.className)}>
+      {props.children}
+    </div>
+  );
 }
 
 function InsightUnit(props: { children: React.ReactNode }) {
