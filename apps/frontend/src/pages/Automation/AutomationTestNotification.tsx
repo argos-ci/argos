@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { CheckIcon } from "lucide-react";
-import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { handleFormError } from "@/ui/Form";
 
-import type { AutomationTransformedValues } from "./AutomationForm";
+import type { AutomationForm } from "./AutomationForm";
 
 const TestAutomationMutation = graphql(`
   mutation EditAutomation_testAutomation(
@@ -24,7 +23,7 @@ const TestAutomationMutation = graphql(`
 
 interface UseTestAutomationProps {
   projectId: string;
-  form: UseFormReturn<AutomationTransformedValues>;
+  form: AutomationForm;
 }
 
 function useTestAutomation(props: UseTestAutomationProps) {

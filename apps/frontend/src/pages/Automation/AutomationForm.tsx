@@ -1,4 +1,4 @@
-import { AutomationFormConditionSchema } from "@argos/schemas/automation-condition";
+import { AutomationConditionSchema } from "@argos/schemas/automation-condition";
 import { AutomationEventSchema } from "@argos/schemas/automation-event";
 import { Trash2Icon } from "lucide-react";
 import type { PressEvent } from "react-aria";
@@ -20,7 +20,7 @@ export const AutomationFieldValuesSchema = z.object({
   events: z
     .array(AutomationEventSchema)
     .min(1, "At least one event is required"),
-  conditions: z.array(AutomationFormConditionSchema),
+  conditions: z.array(AutomationConditionSchema),
   actions: z
     .array(AutomationActionSchema)
     .min(1, "At least one action is required"),

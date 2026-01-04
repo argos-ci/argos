@@ -1,8 +1,8 @@
 import { AutomationSlackActionTypeSchema } from "@argos/schemas/automation-action";
 import {
-  type AutomationFormBuildCondition,
-  type AutomationFormCondition,
-  type AutomationFormNotCondition,
+  type AutomationInputBuildCondition,
+  type AutomationInputCondition,
+  type AutomationInputNotCondition,
 } from "@argos/schemas/automation-condition";
 import { AutomationEvent } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
@@ -12,8 +12,8 @@ import { z } from "zod/v4";
  * Check if the condition is a "neq" one.
  */
 export function checkIsNotCondition(
-  condition: AutomationFormCondition,
-): condition is AutomationFormNotCondition {
+  condition: AutomationInputCondition,
+): condition is AutomationInputNotCondition {
   return "not" in condition && condition.not !== undefined;
 }
 
@@ -23,8 +23,8 @@ export function checkIsNotCondition(
  * Otherwise, extract it from the `not` wrapper.
  */
 export function getBuildCondition(
-  condition: AutomationFormCondition,
-): AutomationFormBuildCondition {
+  condition: AutomationInputCondition,
+): AutomationInputBuildCondition {
   if (checkIsNotCondition(condition)) {
     return condition.not;
   }
