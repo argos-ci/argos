@@ -525,7 +525,7 @@ export class Build extends Model {
 
   /**
    * Get stats.
-   * We ensure all values are presents and the type is correct.
+   * We ensure all values are present and the type is correct.
    */
   getStats() {
     const { stats } = this;

@@ -10,7 +10,12 @@ import {
   BuildSchema,
   serializeBuild,
 } from "../schema/primitives/build";
-import { notFound, serverError, unauthorized } from "../schema/util/error";
+import {
+  invalidParameters,
+  notFound,
+  serverError,
+  unauthorized,
+} from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
 
 export const getBuildOperation = {
@@ -29,8 +34,9 @@ export const getBuildOperation = {
         },
       },
     },
-    "404": notFound,
+    "400": invalidParameters,
     "401": unauthorized,
+    "404": notFound,
     "500": serverError,
   },
 } satisfies ZodOpenApiOperationObject;

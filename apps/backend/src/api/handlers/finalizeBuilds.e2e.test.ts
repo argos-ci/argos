@@ -82,6 +82,18 @@ describe("finalizeBuilds", () => {
                   github: { state: "success" },
                   gitlab: { state: "success" },
                 },
+                conclusion: "no-changes",
+                metadata: null,
+                stats: {
+                  added: 0,
+                  changed: 0,
+                  failure: 0,
+                  ignored: 0,
+                  removed: 0,
+                  retryFailure: 0,
+                  total: 0,
+                  unchanged: 0,
+                },
               },
             ],
           });
@@ -110,35 +122,45 @@ describe("finalizeBuilds", () => {
   describe("with a valid build", () => {
     it("returns 200 status code", async () => {
       await concludeBuild({ build, notify: false });
-      await request(app)
+      const res = await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")
-        .send({ parallelNonce: "123" })
-        .expect(async (res) => {
-          const freshBuild = await build
-            .$query()
-            .withGraphFetched("compareScreenshotBucket");
-          invariant(freshBuild.compareScreenshotBucket);
-          expect(freshBuild.compareScreenshotBucket.complete).toBe(true);
+        .send({ parallelNonce: "123" });
 
-          expect(res.body).toEqual({
-            builds: [
-              {
-                id: build.id,
-                number: 1,
-                status: "no-changes",
-                url: "http://localhost:3000/awesome-team/awesome-project/builds/1",
-                notification: {
-                  description: "Everything's good!",
-                  context: "argos",
-                  github: { state: "success" },
-                  gitlab: { state: "success" },
-                },
-              },
-            ],
-          });
-        })
-        .expect(200);
+      const freshBuild = await build
+        .$query()
+        .withGraphFetched("compareScreenshotBucket");
+      invariant(freshBuild.compareScreenshotBucket);
+      expect(freshBuild.compareScreenshotBucket.complete).toBe(true);
+
+      expect(res.body).toEqual({
+        builds: [
+          {
+            id: build.id,
+            number: 1,
+            status: "no-changes",
+            url: "http://localhost:3000/awesome-team/awesome-project/builds/1",
+            notification: {
+              description: "Everything's good!",
+              context: "argos",
+              github: { state: "success" },
+              gitlab: { state: "success" },
+            },
+            conclusion: "no-changes",
+            metadata: null,
+            stats: {
+              added: 0,
+              changed: 0,
+              failure: 0,
+              ignored: 0,
+              removed: 0,
+              retryFailure: 0,
+              total: 0,
+              unchanged: 0,
+            },
+          },
+        ],
+      });
     });
   });
 });

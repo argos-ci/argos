@@ -7,13 +7,9 @@ import {
   ScreenshotDiff,
   type File as FileModel,
 } from "@/database/models";
-import {
-  getPublicImageFileUrl,
-  getPublicUrl,
-  getTwicPicsUrl,
-} from "@/storage";
+import { getPublicImageFileUrl, getPublicUrl, getTwicPicsUrl } from "@/storage";
 
-export const SnapshotDiffStatusSchema = z
+const SnapshotDiffStatusSchema = z
   .enum([
     "pending",
     "removed",
