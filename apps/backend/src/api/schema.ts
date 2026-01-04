@@ -8,6 +8,7 @@ import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getAuthProjectBuildsOperation } from "./handlers/getAuthProjectBuilds";
 import { getBuildOperation } from "./handlers/getBuild";
+import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
 import { updateBuildOperation } from "./handlers/updateBuild";
 
 export const zodSchema = {
@@ -43,6 +44,9 @@ export const zodSchema = {
     "/builds/{buildId}": {
       get: getBuildOperation,
       put: updateBuildOperation,
+    },
+    "/builds/{buildId}/diffs": {
+      get: getBuildDiffsOperation,
     },
     "/project": {
       get: getAuthProjectOperation,
