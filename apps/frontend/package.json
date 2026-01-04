@@ -28,7 +28,7 @@
     "@sentry/react": "^10.32.1",
     "@sentry/vite-plugin": "^4.6.1",
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/react-virtual": "^3.13.13",
+    "@tanstack/react-virtual": "^3.13.14",
     "@types/d3-interpolate": "^3.0.4",
     "@types/d3-selection": "^3.0.11",
     "@types/d3-transition": "^3.0.9",
