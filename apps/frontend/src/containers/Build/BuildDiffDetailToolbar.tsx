@@ -24,7 +24,9 @@ interface BuildDiffDetailToolbarProps {
 
 export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   const { diff, children, fitControls } = props;
-  const isChanged = diff.status === ScreenshotDiffStatus.Changed;
+  const shouldShowToolbarControls =
+    diff.status === ScreenshotDiffStatus.Changed ||
+    diff.status === ScreenshotDiffStatus.Ignored;
 
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
@@ -35,7 +37,7 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
       <SplitViewToggle />
       <FitToggle />
       {fitControls}
-      {isChanged && (
+      {shouldShowToolbarControls && (
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />
           <OverlayToggle />
