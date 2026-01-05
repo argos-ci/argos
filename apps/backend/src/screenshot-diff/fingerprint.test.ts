@@ -26,20 +26,29 @@ describe("diff fingerprint", () => {
 
     const generateFingerprintFromFilename = (name: string) => {
       const diffPath = path.join(fixturesDir, name);
+      console.time(name);
       const diff = readPngRgba(diffPath);
-      return fingerprintDiffForEquality(diff.rgba, diff.width, diff.height, {
-        gridSize: 16,
-        dilateRadius: 1,
-        // tweak these if needed
-        densityThresholds: [0.002, 0.02, 0.08],
-        padToSquare: true,
-      });
+      const res = fingerprintDiffForEquality(
+        diff.rgba,
+        diff.width,
+        diff.height,
+        {
+          gridSize: 16,
+          dilateRadius: 1,
+          // tweak these if needed
+          densityThresholds: [0.002, 0.02, 0.08],
+          padToSquare: true,
+        },
+      );
+      console.timeEnd(name);
+      return res;
     };
 
     const fA1 = generateFingerprintFromFilename("diff-A1.png");
     const fA2 = generateFingerprintFromFilename("diff-A2.png");
     const fA3 = generateFingerprintFromFilename("diff-A3.png");
     const fB1 = generateFingerprintFromFilename("diff-B1.png");
+    const fLong = generateFingerprintFromFilename("long-diff.png");
 
     expect(fA1).toBe(fA2);
     expect(fA1).toBe(fA3);
