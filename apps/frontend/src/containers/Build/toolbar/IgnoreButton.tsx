@@ -65,7 +65,6 @@ function EnabledIgnoreButton(props: {
   const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
   const authPayload = useAuthTokenPayload();
-  invariant(authPayload);
   const [mutateIgnoreChange] = useMutation(IgnoreChangeMutation, {
     variables: {
       accountSlug: params.accountSlug,
@@ -80,6 +79,7 @@ function EnabledIgnoreButton(props: {
     },
     update: (cache) => {
       if (diff.test) {
+        invariant(authPayload, "User should be logged in");
         addAuditTrailEntry({
           cache,
           action: "files.ignored",
@@ -116,6 +116,7 @@ function EnabledIgnoreButton(props: {
     },
     update: (cache) => {
       if (diff.test) {
+        invariant(authPayload, "User should be logged in");
         addAuditTrailEntry({
           cache,
           action: "files.unignored",
