@@ -47,11 +47,11 @@
     "@swc/core": "^1.15.8",
     "@types/node": "^24.10.4",
     "eslint": "catalog:",
-    "knip": "^5.79.0",
+    "knip": "^5.80.0",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "smee-client": "^5.0.0",
-    "turbo": "^2.7.2",
+    "turbo": "^2.7.3",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^6.0.3",
     "vitest": "^4.0.16"
