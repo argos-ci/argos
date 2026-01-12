@@ -26,6 +26,7 @@ export class ScreenshotDiff extends Model {
           compareScreenshotId: { type: ["string", "null"] },
           s3Id: { type: ["string", "null"] },
           fileId: { type: ["string", "null"] },
+          fingerprint: { type: ["string", "null"] },
           score: { type: ["number", "null"], minimum: 0, maximum: 1 },
           testId: { type: ["string", "null"] },
           group: { type: ["string", "null"] },
@@ -40,6 +41,11 @@ export class ScreenshotDiff extends Model {
   compareScreenshotId!: string | null;
   s3Id!: string | null;
   fileId!: string | null;
+  /**
+   * Fingerprint of the diff mask, like a "blurred" hash.
+   * Only filled if a "fileId" is present.
+   */
+  fingerprint!: string | null;
   score!: number | null;
   jobStatus!: JobStatus;
   testId!: string | null;
