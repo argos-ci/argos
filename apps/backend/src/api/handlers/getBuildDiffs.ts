@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { Build, ScreenshotDiff } from "@/database/models";
+import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { boom } from "@/util/error";
 import { repoAuth } from "@/web/middlewares/repoAuth";
 
@@ -65,18 +66,15 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
       throw boom(404, "Not found");
     }
 
-    const diffs = await ScreenshotDiff.query()
-      .where("screenshot_diffs.buildId", build.id)
-      .select("screenshot_diffs.*")
-      .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-      .withGraphFetched("[baseScreenshot.file, compareScreenshot.file, file]")
-      .orderByRaw(ScreenshotDiff.sortDiffByStatus)
-      .orderBy("screenshot_diffs.score", "desc", "last")
-      .orderBy("screenshot_diffs.group", "asc", "last")
-      .orderBy("compareScreenshot.name", "asc")
-      .orderBy("baseScreenshot.name", "asc")
-      .orderBy("screenshot_diffs.id", "asc")
-      .page(page - 1, perPage);
+    const diffs = await sortScreenshotDiffsForBuild(
+      ScreenshotDiff.query()
+        .where("screenshot_diffs.buildId", build.id)
+        .select("screenshot_diffs.*")
+        .leftJoinRelated("[baseScreenshot, compareScreenshot]")
+        .withGraphFetched(
+          "[baseScreenshot.file, compareScreenshot.file, file]",
+        ),
+    ).page(page - 1, perPage);
 
     const results = await serializeSnapshotDiffs(diffs.results);
 

@@ -25,7 +25,7 @@ export function useOverlayStyle(props: { src: string }) {
     maskSize: "100%",
     maskRepeat: "no-repeat",
     maskPosition: "center",
-    display: "inline-block",
+    display: "block",
     opacity,
   };
 }
