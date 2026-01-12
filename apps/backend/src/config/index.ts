@@ -271,7 +271,7 @@ export function createConfig() {
       url: {
         doc: "Redis url",
         format: String,
-        default: "redis://localhost:6379/1",
+        default: "redis://localhost:6380/1",
         env: "REDIS_URL",
       },
     },

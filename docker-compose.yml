@@ -35,7 +35,7 @@ services:
     # Last time I have checked, production is running 6.2.14
     image: redis:6-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
