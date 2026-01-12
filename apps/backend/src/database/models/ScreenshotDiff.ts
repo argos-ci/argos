@@ -41,6 +41,10 @@ export class ScreenshotDiff extends Model {
   compareScreenshotId!: string | null;
   s3Id!: string | null;
   fileId!: string | null;
+  /**
+   * Fingerprint of the diff mask, like a "blurred" hash.
+   * Only filled if a "fileId" is present.
+   */
   fingerprint!: string | null;
   score!: number | null;
   jobStatus!: JobStatus;

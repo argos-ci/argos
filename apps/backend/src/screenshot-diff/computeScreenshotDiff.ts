@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { fingerprintDiff } from "@argos-ci/mask-fingerprint";
 import { invariant } from "@argos/util/invariant";
 import type { S3Client } from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
@@ -120,6 +121,7 @@ export async function computeScreenshotDiff(
       ignored: Boolean(ignoredFile),
       s3Id: diffFile ? diffFile.file.key : null,
       fileId: diffFile ? diffFile.file.id : null,
+      fingerprint: diffFile ? diffFile.fingerprint : null,
       jobStatus: "complete",
     });
 
@@ -130,7 +132,10 @@ export async function computeScreenshotDiff(
     (async () => {
       if (diffFile) {
         await redisLock.acquire(["diff-group", diffFile.file.key], async () => {
-          await groupSimilarDiffs({ diffFileKey: diffFile.file.key, buildId });
+          await groupSimilarDiffs({
+            fingerprint: diffFile.fingerprint,
+            buildId,
+          });
         });
       }
     })(),
@@ -183,23 +188,30 @@ async function diffFiles(
 async function processDiffResultFile(
   resultFile: NonNullable<DiffResult["file"]>,
   context: ComputeDiffContext,
-) {
-  const key = await hashFile(resultFile.path);
-  return getOrCreateDiffFile(key, resultFile, context);
+): Promise<{ file: File; isCreated: boolean; fingerprint: string }> {
+  const buffer = await readFile(resultFile.path);
+  const key = await hashBuffer(buffer);
+  const { file, isCreated, fingerprint } = await getOrCreateDiffFile({
+    key,
+    resultFile,
+    context,
+    buffer,
+  });
+  return { file, isCreated, fingerprint };
 }
 
 /**
  * Group similar diffs by file key.
  */
 async function groupSimilarDiffs(input: {
-  diffFileKey: string;
+  fingerprint: string;
   buildId: string;
 }) {
-  const { diffFileKey, buildId } = input;
+  const { fingerprint, buildId } = input;
   const similarDiffs = await ScreenshotDiff.query().where({
     buildId,
-    s3Id: diffFileKey,
     group: null,
+    fingerprint,
   });
 
   // Patch group on screenshot diffs
@@ -214,28 +226,20 @@ async function groupSimilarDiffs(input: {
       // Having `s3Id` in the where clause causes a deadlock
       await ScreenshotDiff.query()
         .whereIn("id", diffIdsChunk)
-        .patch({ group: diffFileKey });
+        .patch({ group: fingerprint });
     }
 
-    return diffFileKey;
+    return fingerprint;
   }
 
   return null;
 }
 
 /**
- * Hash the file at the given filepath using SHA-256.
+ * Hash the buffer using SHA-256.
  */
-async function hashFile(filepath: string): Promise<string> {
-  const fileStream = createReadStream(filepath);
-  const hash = createHash("sha256");
-  await new Promise((resolve, reject) => {
-    fileStream.on("error", reject);
-    hash.on("error", reject);
-    hash.on("finish", resolve);
-    fileStream.pipe(hash);
-  });
-  return hash.digest("hex");
+async function hashBuffer(buffer: Buffer): Promise<string> {
+  return createHash("sha256").update(buffer).digest("hex");
 }
 
 /**
@@ -303,6 +307,7 @@ async function lockAndUploadDiffFile(args: {
   contentType: string;
   width: number | undefined;
   height: number | undefined;
+  fingerprint: string;
 }) {
   return redisLock.acquire(["diff-upload", args.key], async () => {
     // Check if the diff file has been uploaded by another process
@@ -320,6 +325,7 @@ async function lockAndUploadDiffFile(args: {
         height: args.height ?? null,
         contentType: args.contentType,
         type: "screenshotDiff",
+        fingerprint: args.fingerprint,
       })
       .returning("*");
   });
@@ -329,11 +335,13 @@ async function lockAndUploadDiffFile(args: {
  * Processes the diff result. Returns the existing file if found.
  * If not, uploads the new diff using a lock to avoid concurrency issues.
  */
-async function getOrCreateDiffFile(
-  key: string,
-  resultFile: NonNullable<DiffResult["file"]>,
-  context: ComputeDiffContext,
-) {
+async function getOrCreateDiffFile(args: {
+  key: string;
+  buffer: Buffer;
+  resultFile: NonNullable<DiffResult["file"]>;
+  context: ComputeDiffContext;
+}): Promise<{ isCreated: boolean; file: File; fingerprint: string }> {
+  const { key, buffer, resultFile, context } = args;
   const fileHandle = new S3FileHandle({
     ...context,
     key,
@@ -341,17 +349,31 @@ async function getOrCreateDiffFile(
     contentType: resultFile.contentType,
   });
   const existing = await File.query().findOne({ key });
+  const isCreated = !existing;
   if (!existing) {
+    const fingerprint = await fingerprintDiff(buffer);
     const file = await lockAndUploadDiffFile({
       fileHandle,
       key,
       contentType: resultFile.contentType,
       width: resultFile.width,
       height: resultFile.height,
+      fingerprint,
     });
     await fileHandle.unlink();
-    return { file, isCreated: true };
+    return { file, fingerprint, isCreated };
+  }
+  if (!existing.fingerprint) {
+    const fingerprint = await fingerprintDiff(buffer);
+    await File.query().findById(existing.id).patch({ fingerprint });
+    existing.fingerprint = fingerprint;
+    await fileHandle.unlink();
+    return { file: existing, fingerprint, isCreated };
   }
   await fileHandle.unlink();
-  return { file: existing, isCreated: false };
+  return {
+    file: existing,
+    fingerprint: existing.fingerprint,
+    isCreated,
+  };
 }

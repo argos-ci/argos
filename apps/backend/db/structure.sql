@@ -501,6 +501,7 @@ CREATE TABLE public.files (
     height integer,
     type text NOT NULL,
     "contentType" character varying(255),
+    fingerprint character varying(80),
     CONSTRAINT files_type_check CHECK ((type = ANY (ARRAY['screenshot'::text, 'screenshotDiff'::text, 'playwrightTrace'::text])))
 );
 
@@ -3760,3 +3761,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025101
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20251101104030_parent-screenshot.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20251212130537_merge-queue.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112163920_fingerprint-screenshot-diffs.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112165048_fingerprint-files.js', 1, NOW());

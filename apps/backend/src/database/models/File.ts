@@ -19,6 +19,7 @@ export class File extends Model {
             enum: ["screenshot", "screenshotDiff", "playwrightTrace"],
           },
           contentType: { type: "string" },
+          fingerprint: { type: ["string", "null"] },
         },
       },
     ],
@@ -29,6 +30,11 @@ export class File extends Model {
   height!: number | null;
   type!: "screenshot" | "screenshotDiff" | "playwrightTrace";
   contentType!: string | null;
+  /**
+   * Fingerprint of the diff mask, like a "blurred" hash.
+   * Only filled for type "screenshotDiff"
+   */
+  fingerprint!: string | null;
 
   /**
    * Check if the file is an image.
