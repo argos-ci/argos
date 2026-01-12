@@ -11,9 +11,9 @@ describe("diff fingerprint", () => {
     const generateFingerprintFromFilename = async (name: string) => {
       const diffPath = path.join(fixturesDir, name);
       const buffer = await fs.readFile(diffPath);
-      console.time(name);
+      // console.time(name);
       const res = fingerprintDiff(buffer);
-      console.timeEnd(name);
+      // console.timeEnd(name);
       return res;
     };
 
