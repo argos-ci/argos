@@ -3,7 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import { Build, ScreenshotDiff } from "@/database/models";
+import { Build } from "@/database/models";
+import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 
 import {
   IBaseBranchResolution,
@@ -179,16 +180,11 @@ export const resolvers: IResolvers = {
           after,
         });
       }
-      const result = await build
-        .$relatedQuery("screenshotDiffs")
-        .leftJoinRelated("[baseScreenshot, compareScreenshot]")
-        .orderByRaw(ScreenshotDiff.sortDiffByStatus)
-        .orderBy("screenshot_diffs.group", "asc", "last")
-        .orderBy("screenshot_diffs.score", "desc", "last")
-        .orderBy("compareScreenshot.name", "asc")
-        .orderBy("baseScreenshot.name", "asc")
-        .orderBy("screenshot_diffs.id", "asc")
-        .range(after, after + first - 1);
+      const result = await sortScreenshotDiffsForBuild(
+        build
+          .$relatedQuery("screenshotDiffs")
+          .leftJoinRelated("[baseScreenshot, compareScreenshot]"),
+      ).range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },
