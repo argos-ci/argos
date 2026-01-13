@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { fingerprintDiff } from "@argos-ci/mask-fingerprint";
 import { invariant } from "@argos/util/invariant";
 import type { S3Client } from "@aws-sdk/client-s3";
@@ -16,6 +14,7 @@ import {
 import { upsertTestStats } from "@/metrics/test";
 import { S3FileHandle, type ImageHandle } from "@/storage";
 import { chunk } from "@/util/chunk";
+import { hashFileSha256 } from "@/util/hash";
 import { redisLock } from "@/util/redis";
 
 import { diffImages } from "./diff/image";
@@ -189,13 +188,11 @@ async function processDiffResultFile(
   resultFile: NonNullable<DiffResult["file"]>,
   context: ComputeDiffContext,
 ): Promise<{ file: File; isCreated: boolean; fingerprint: string }> {
-  const buffer = await readFile(resultFile.path);
-  const key = await hashBuffer(buffer);
+  const key = await hashFileSha256(resultFile.path);
   const { file, isCreated, fingerprint } = await getOrCreateDiffFile({
     key,
     resultFile,
     context,
-    buffer,
   });
   return { file, isCreated, fingerprint };
 }
@@ -233,13 +230,6 @@ async function groupSimilarDiffs(input: {
   }
 
   return null;
-}
-
-/**
- * Hash the buffer using SHA-256.
- */
-async function hashBuffer(buffer: Buffer): Promise<string> {
-  return createHash("sha256").update(buffer).digest("hex");
 }
 
 /**
@@ -337,11 +327,10 @@ async function lockAndUploadDiffFile(args: {
  */
 async function getOrCreateDiffFile(args: {
   key: string;
-  buffer: Buffer;
   resultFile: NonNullable<DiffResult["file"]>;
   context: ComputeDiffContext;
 }): Promise<{ isCreated: boolean; file: File; fingerprint: string }> {
-  const { key, buffer, resultFile, context } = args;
+  const { key, resultFile, context } = args;
   const fileHandle = new S3FileHandle({
     ...context,
     key,
@@ -349,31 +338,29 @@ async function getOrCreateDiffFile(args: {
     contentType: resultFile.contentType,
   });
   const existing = await File.query().findOne({ key });
-  const isCreated = !existing;
-  if (!existing) {
-    const fingerprint = await fingerprintDiff(buffer);
-    const file = await lockAndUploadDiffFile({
-      fileHandle,
-      key,
-      contentType: resultFile.contentType,
-      width: resultFile.width,
-      height: resultFile.height,
-      fingerprint,
-    });
-    await fileHandle.unlink();
-    return { file, fingerprint, isCreated };
-  }
-  if (!existing.fingerprint) {
-    const fingerprint = await fingerprintDiff(buffer);
-    await File.query().findById(existing.id).patch({ fingerprint });
-    existing.fingerprint = fingerprint;
-    await fileHandle.unlink();
-    return { file: existing, fingerprint, isCreated };
-  }
+  const fingerprint =
+    existing?.fingerprint ?? (await fingerprintDiff(resultFile.path));
+  const { file, isCreated } = await (async () => {
+    if (!existing) {
+      const file = await lockAndUploadDiffFile({
+        fileHandle,
+        key,
+        contentType: resultFile.contentType,
+        width: resultFile.width,
+        height: resultFile.height,
+        fingerprint,
+      });
+      return { file, fingerprint, isCreated: true };
+    }
+
+    if (!existing.fingerprint) {
+      await File.query().findById(existing.id).patch({ fingerprint });
+      existing.fingerprint = fingerprint;
+    }
+
+    return { file: existing, fingerprint, isCreated: false };
+  })();
+
   await fileHandle.unlink();
-  return {
-    file: existing,
-    fingerprint: existing.fingerprint,
-    isCreated,
-  };
+  return { file, fingerprint, isCreated };
 }

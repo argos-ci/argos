@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@apollo/server": "^5.2.0",
-    "@argos-ci/mask-fingerprint": "^0.0.1",
+    "@argos-ci/mask-fingerprint": "^0.1.1",
     "@argos/knex-scripts": "workspace:*",
     "@argos/schemas": "workspace:*",
     "@argos/util": "workspace:*",
