@@ -14,4 +14,4 @@ catalog:
   undici: ^7.18.2
   zod: ^4.3.5
 
-minimumReleaseAge: 1440
+# minimumReleaseAge: 1440
