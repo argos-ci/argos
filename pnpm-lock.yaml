@@ -110,8 +110,8 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0(graphql@16.12.0)
       '@argos-ci/mask-fingerprint':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.1.2
+        version: 0.1.2
       '@argos/knex-scripts':
         specifier: workspace:*
         version: link:../../packages/knex-scripts
@@ -805,38 +805,38 @@ packages:
     resolution: {integrity: sha512-s/QmAowgfauJqn4v2dfTdNDkyMl5Cy2lv4AshdeQ3IRVUxaHBVQnIR45RkB/JIYsuDXiiYilxM7qzUmjr2WfhQ==}
     engines: {node: '>=20.0.0'}
 
-  '@argos-ci/mask-fingerprint-darwin-arm64@0.1.1':
-    resolution: {integrity: sha512-5jDoV3tNVIcOQeFiAN0sp8g5ocJHOsk/6l/42iUDWQ+MZE0Xj3oOmlQmdFdKwZgOnCFcvGbGpzCsjivALseiKg==}
+  '@argos-ci/mask-fingerprint-darwin-arm64@0.1.2':
+    resolution: {integrity: sha512-8phDAms67i0y4HF3U115pt044bFA8QabRuYsHnNe7kAF2gOxrm2X+MFoVqc+l9fWotosjE+m+DomCb7zuNHeQw==}
     engines: {node: '>24.0.0'}
     cpu: [arm64]
     os: [darwin]
 
-  '@argos-ci/mask-fingerprint-darwin-x64@0.1.1':
-    resolution: {integrity: sha512-SwlxnvwXZyItLYtOfW4KHUwuOvv9tolKf4UdZffP3peekHiCG2MILqbUG/RQrhtLUq16sj8Zzh/mIiyKNhQ39Q==}
+  '@argos-ci/mask-fingerprint-darwin-x64@0.1.2':
+    resolution: {integrity: sha512-COHCyQGfMDN5+/wweTBxAD4tn++f1OAHqIatiaQu8jEhLHZh21O/9Al1QTzSKjXLAKM7fYw2KHuSkmWaqnF6HA==}
     engines: {node: '>24.0.0'}
     cpu: [x64]
     os: [darwin]
 
-  '@argos-ci/mask-fingerprint-linux-arm64-gnu@0.1.1':
-    resolution: {integrity: sha512-f831eXXhODUnPvBWaThbq0x1qDecYNn/hn8w21XiaOudbjcsz0KxgtuHk4rnntGRRqee2U1Yc22U2khmSDpGlQ==}
+  '@argos-ci/mask-fingerprint-linux-arm64-gnu@0.1.2':
+    resolution: {integrity: sha512-xlZn6hKcbc+znwtZeNGfXgklW3YvxGhngvXp05DchMzgkoIcS7SxjE4pzwseygT8uxkhT3cd1Esy0Hg0a6wdmg==}
     engines: {node: '>24.0.0'}
     cpu: [arm64]
     os: [linux]
 
-  '@argos-ci/mask-fingerprint-linux-x64-gnu@0.1.1':
-    resolution: {integrity: sha512-Oa/Zn4p+eXbrn4Gt5hjGCvPzjUW9kd6kzyrBOlgCMRGt5Cd+XEptoGktSFkBXuLxFBhAdPxPAbWwFwPfnWQ5QQ==}
+  '@argos-ci/mask-fingerprint-linux-x64-gnu@0.1.2':
+    resolution: {integrity: sha512-R+QYNgZYoSAIFrph/ezwItYuhs0UnCBzApYvI4fZVCnttP4FxICYGOYzPqtC6qHMrlGEVMgqSgLAyZq8cf74zQ==}
     engines: {node: '>24.0.0'}
     cpu: [x64]
     os: [linux]
 
-  '@argos-ci/mask-fingerprint-win32-x64-msvc@0.1.1':
-    resolution: {integrity: sha512-ChVhC1cCOLZ9OEFPFmhyBUr1hGBcwANei29hZl3Q8rerBh/A15eSYaK8bpMimpixcs+6+VTYOSCqugXVkpodng==}
+  '@argos-ci/mask-fingerprint-win32-x64-msvc@0.1.2':
+    resolution: {integrity: sha512-/qRJUFwLimDnquPrTm7myJZTjfWObLF8umopRUvUXZNVR/nN1yRq1Rph1no3pWxv50/A1tpq2Lmw0V3osdCr9A==}
     engines: {node: '>24.0.0'}
     cpu: [x64]
     os: [win32]
 
-  '@argos-ci/mask-fingerprint@0.1.1':
-    resolution: {integrity: sha512-CeDan81rfkRdpdNQv7M89HLZTLCjfKYT3TLoYaRKlcTEGQdB9+VpwZ3t5H0P4W9a4Rx0lqSxvEfX9Ti6ZLuH8g==}
+  '@argos-ci/mask-fingerprint@0.1.2':
+    resolution: {integrity: sha512-Pf3JzHlsZbyD6B6kRXnqK8rxdokdAllU94aUwDTzOBx31oq9YzJ9LBcNe72eOqYbFTOT21zYo63wMcYTWWtgdQ==}
     engines: {node: '>24.0.0'}
 
   '@argos-ci/playwright@6.3.8':
@@ -8108,28 +8108,28 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@argos-ci/mask-fingerprint-darwin-arm64@0.1.1':
+  '@argos-ci/mask-fingerprint-darwin-arm64@0.1.2':
     optional: true
 
-  '@argos-ci/mask-fingerprint-darwin-x64@0.1.1':
+  '@argos-ci/mask-fingerprint-darwin-x64@0.1.2':
     optional: true
 
-  '@argos-ci/mask-fingerprint-linux-arm64-gnu@0.1.1':
+  '@argos-ci/mask-fingerprint-linux-arm64-gnu@0.1.2':
     optional: true
 
-  '@argos-ci/mask-fingerprint-linux-x64-gnu@0.1.1':
+  '@argos-ci/mask-fingerprint-linux-x64-gnu@0.1.2':
     optional: true
 
-  '@argos-ci/mask-fingerprint-win32-x64-msvc@0.1.1':
+  '@argos-ci/mask-fingerprint-win32-x64-msvc@0.1.2':
     optional: true
 
-  '@argos-ci/mask-fingerprint@0.1.1':
+  '@argos-ci/mask-fingerprint@0.1.2':
     optionalDependencies:
-      '@argos-ci/mask-fingerprint-darwin-arm64': 0.1.1
-      '@argos-ci/mask-fingerprint-darwin-x64': 0.1.1
-      '@argos-ci/mask-fingerprint-linux-arm64-gnu': 0.1.1
-      '@argos-ci/mask-fingerprint-linux-x64-gnu': 0.1.1
-      '@argos-ci/mask-fingerprint-win32-x64-msvc': 0.1.1
+      '@argos-ci/mask-fingerprint-darwin-arm64': 0.1.2
+      '@argos-ci/mask-fingerprint-darwin-x64': 0.1.2
+      '@argos-ci/mask-fingerprint-linux-arm64-gnu': 0.1.2
+      '@argos-ci/mask-fingerprint-linux-x64-gnu': 0.1.2
+      '@argos-ci/mask-fingerprint-win32-x64-msvc': 0.1.2
 
   '@argos-ci/playwright@6.3.8':
     dependencies:
