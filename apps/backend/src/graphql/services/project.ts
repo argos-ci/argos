@@ -9,6 +9,7 @@ import {
   BuildNotification,
   BuildReview,
   BuildShard,
+  IgnoredFile,
   Project,
   Screenshot,
   ScreenshotBucket,
@@ -113,6 +114,7 @@ export async function unsafe_deleteProject(args: {
       .join("tests", "test_stats_changes.testId", "tests.id")
       .where("tests.projectId", args.projectId)
       .delete();
+    await IgnoredFile.query(trx).where("projectId", args.projectId).delete();
     await Test.query(trx).where("projectId", args.projectId).delete();
     await Project.query(trx).findById(args.projectId).delete();
   });
