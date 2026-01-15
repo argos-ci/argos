@@ -188,4 +188,61 @@ describe("#getCIMergeQueueBase", () => {
     expect(result.baseBranch).toBeNull();
     expect(result.baseBranchResolvedFrom).toBeNull();
   });
+
+  it("returns the CI base when it is more recent than the last approved build", async () => {
+    const project = await factory.Project.create();
+    const branch = "feature/newer-base";
+    const compareBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      branch,
+    });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareBucket.id,
+      name: "default",
+      mode: "ci",
+      mergeQueue: true,
+    });
+
+    const lastApprovedBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      branch,
+      createdAt: new Date("2024-01-01").toISOString(),
+    });
+    const lastApprovedBuild = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: lastApprovedBucket.id,
+      name: build.name,
+      mode: "ci",
+      mergeQueue: true,
+    });
+    await factory.BuildReview.create({
+      buildId: lastApprovedBuild.id,
+      state: "approved",
+    });
+
+    const baseBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      branch: "main",
+      createdAt: new Date("2024-02-01").toISOString(),
+    });
+
+    const ciBaseResult = {
+      baseBucket,
+      baseBranch: "main",
+      baseBranchResolvedFrom: "project" as const,
+    };
+    mockGetCIBase.mockResolvedValue(ciBaseResult);
+
+    const result = await getCIMergeQueueBase({
+      build,
+      compareScreenshotBucket: compareBucket,
+      project,
+      pullRequest: null,
+      context: { checkIsAutoApproved: () => false },
+    });
+
+    expect(result).toEqual(ciBaseResult);
+    expect(mockMergeBucketWithBuildDiffs).not.toHaveBeenCalled();
+  });
 });

@@ -46,6 +46,19 @@ export async function getCIMergeQueueBase(
   // we will see if there is more recent one from merge queue,
   // and merge the two buckets.
   if (ciBase.baseBucket instanceof ScreenshotBucket) {
+    invariant(
+      lastApprovedBuild.compareScreenshotBucket,
+      'Relation "compareScreenshotBucket" should be loaded',
+    );
+
+    // If the base bucket is more recent than the latest approved build, then use it.
+    if (
+      new Date(ciBase.baseBucket.createdAt).getTime() >
+      new Date(lastApprovedBuild.compareScreenshotBucket.createdAt).getTime()
+    ) {
+      return ciBase;
+    }
+
     const recentlyMergedBucket = await getRecentMergedBucket({
       build,
       compareScreenshotBucket,
