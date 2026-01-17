@@ -89,7 +89,7 @@ export function createConfig() {
         doc: "RabbitMQ url",
         format: String,
         default: "amqp://localhost",
-        env: "CLOUDAMQP_URL",
+        env: "AMQP_URL",
       },
     },
     resend: {

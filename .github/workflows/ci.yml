@@ -176,4 +176,4 @@ jobs:
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
-          CLOUDAMQP_URL: amqp://rabbitmq
+          AMQP_URL: amqp://rabbitmq
