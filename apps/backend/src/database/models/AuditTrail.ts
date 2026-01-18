@@ -5,19 +5,17 @@ import { Project } from "./Project";
 import { Test } from "./Test";
 import { User } from "./User";
 
-const ActionSchema = z.enum(["files.ignored", "files.unignored"]);
+const ActionSchema = z.enum([
+  "files.ignored",
+  "files.unignored",
+  "changes.ignored",
+  "changes.unignored",
+]);
 
 type Action = z.infer<typeof ActionSchema>;
 
 export class AuditTrail extends Model {
   static override tableName = "audit_trails";
-
-  id!: string;
-  date!: string;
-  projectId!: string;
-  testId!: string;
-  userId!: string;
-  action!: Action;
 
   static override get jsonSchema() {
     return {
@@ -29,10 +27,19 @@ export class AuditTrail extends Model {
         projectId: { type: "string" },
         testId: { type: "string" },
         userId: { type: "string" },
+        fingerprint: { type: ["string", "null"] },
         action: z.toJSONSchema(ActionSchema) as JSONSchema,
       },
     };
   }
+
+  id!: string;
+  date!: string;
+  projectId!: string;
+  testId!: string;
+  userId!: string;
+  action!: Action;
+  fingerprint!: string | null;
 
   static override relationMappings = {
     project: {

@@ -5,6 +5,8 @@ import { transaction } from "@/database";
 import {
   AuditTrail,
   Build,
+  File,
+  IgnoredChange,
   IgnoredFile,
   Project,
   ScreenshotDiff,
@@ -279,17 +281,31 @@ export const resolvers: IResolvers = {
           );
           if (!isIgnored) {
             await transaction(async (trx) => {
+              const file = await File.query(trx).findById(
+                changeIdPayload.fileId,
+              );
+
+              if (!file?.fingerprint) {
+                throw new Error(`Can't ignore a file that has no fingerprint`);
+              }
+
               await Promise.all([
+                IgnoredChange.query(trx).insert({
+                  projectId: project.id,
+                  testId: changeIdPayload.testId,
+                  fingerprint: file.fingerprint,
+                }),
                 IgnoredFile.query(trx).insert({
                   projectId: project.id,
-                  fileId: changeIdPayload.fileId,
                   testId: changeIdPayload.testId,
+                  fileId: changeIdPayload.fileId,
                 }),
                 AuditTrail.query(trx).insert({
                   date: new Date().toISOString(),
                   projectId: project.id,
                   testId: changeIdPayload.testId,
                   userId: user.id,
+                  fingerprint: file.fingerprint,
                   action: "files.ignored",
                 }),
               ]);
@@ -315,12 +331,27 @@ export const resolvers: IResolvers = {
           );
           if (isIgnored) {
             await transaction(async (trx) => {
+              const file = await File.query(trx).findById(
+                changeIdPayload.fileId,
+              );
+
               await Promise.all([
+                ...(file?.fingerprint
+                  ? [
+                      IgnoredChange.query(trx)
+                        .where({
+                          projectId: project.id,
+                          testId: changeIdPayload.testId,
+                          fingerprint: file.fingerprint,
+                        })
+                        .delete(),
+                    ]
+                  : []),
                 IgnoredFile.query(trx)
                   .where({
                     projectId: project.id,
-                    fileId: changeIdPayload.fileId,
                     testId: changeIdPayload.testId,
+                    fileId: changeIdPayload.fileId,
                   })
                   .delete(),
                 AuditTrail.query(trx).insert({
@@ -328,6 +359,7 @@ export const resolvers: IResolvers = {
                   projectId: project.id,
                   testId: changeIdPayload.testId,
                   userId: user.id,
+                  fingerprint: file?.fingerprint ?? null,
                   action: "files.unignored",
                 }),
               ]);
