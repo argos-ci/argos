@@ -7,7 +7,7 @@ import { concludeBuild } from "@/build/concludeBuild";
 import { transaction } from "@/database";
 import {
   File,
-  IgnoredFile,
+  IgnoredChange,
   Screenshot,
   ScreenshotDiff,
 } from "@/database/models";
@@ -98,12 +98,12 @@ export async function computeScreenshotDiff(
     ? await processDiffResultFile(result.file, context)
     : null;
 
-  const ignoredFile =
+  const ignoredChange =
     diffFile && !diffFile.isCreated
-      ? await IgnoredFile.query().select("fileId").findOne({
-          fileId: diffFile.file.id,
+      ? await IgnoredChange.query().select("fingerprint").findOne({
           projectId: build.projectId,
           testId: screenshotDiff.testId,
+          fingerprint: diffFile.fingerprint,
         })
       : null;
 
@@ -117,7 +117,7 @@ export async function computeScreenshotDiff(
     .findById(screenshotDiff.id)
     .patch({
       score: result?.score ?? null,
-      ignored: Boolean(ignoredFile),
+      ignored: Boolean(ignoredChange),
       s3Id: diffFile ? diffFile.file.key : null,
       fileId: diffFile ? diffFile.file.id : null,
       fingerprint: diffFile ? diffFile.fingerprint : null,

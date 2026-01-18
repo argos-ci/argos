@@ -90,7 +90,7 @@ const statusResolver: IScreenshotDiffResolvers["status"] = async (
 export const resolvers: IResolvers = {
   ScreenshotDiff: {
     change: async (screenshotDiff, _args, ctx) => {
-      if (!screenshotDiff.fileId || !screenshotDiff.testId) {
+      if (!screenshotDiff.fingerprint || !screenshotDiff.testId) {
         return null;
       }
       const build = await ctx.loaders.Build.load(screenshotDiff.buildId);
@@ -99,7 +99,7 @@ export const resolvers: IResolvers = {
       invariant(project, "Build without project");
       return {
         project,
-        fileId: screenshotDiff.fileId,
+        fingerprint: screenshotDiff.fingerprint,
         testId: screenshotDiff.testId,
       };
     },
@@ -189,14 +189,14 @@ export const resolvers: IResolvers = {
       return test;
     },
     occurrences: async (screenshotDiff, args, ctx) => {
-      if (!screenshotDiff.fileId || !screenshotDiff.testId) {
+      if (!screenshotDiff.fingerprint || !screenshotDiff.testId) {
         return 0;
       }
       const from = getStartDateFromPeriod(args.period);
       const count = await ctx.loaders
         .getChangesOccurrencesLoader(from.toISOString())
         .load({
-          fileId: screenshotDiff.fileId,
+          fingerprint: screenshotDiff.fingerprint,
           testId: screenshotDiff.testId,
         });
       return count;

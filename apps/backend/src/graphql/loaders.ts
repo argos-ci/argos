@@ -19,7 +19,7 @@ import {
   GithubPullRequest,
   GithubRepository,
   GitlabProject,
-  IgnoredFile,
+  IgnoredChange,
   Model,
   Plan,
   Project,
@@ -327,48 +327,48 @@ function createBuildUniqueReviewsLoader() {
 
 function createChangeOccurrencesLoader(): (
   from: string,
-) => DataLoader<{ testId: string; fileId: string }, number, string> {
+) => DataLoader<{ testId: string; fingerprint: string }, number, string> {
   return memoize(
     (
       from: string,
-    ): DataLoader<{ testId: string; fileId: string }, number, string> =>
-      new DataLoader<{ testId: string; fileId: string }, number, string>(
+    ): DataLoader<{ testId: string; fingerprint: string }, number, string> =>
+      new DataLoader<{ testId: string; fingerprint: string }, number, string>(
         async (pairs) => {
-          // Extract all testIds and fileIds for the WHERE clause
+          // Extract all testIds and fingerprints for the WHERE clause
           const testIds = [...new Set(pairs.map((p) => p.testId))];
-          const fileIds = [...new Set(pairs.map((p) => p.fileId))];
+          const fingerprints = [...new Set(pairs.map((p) => p.fingerprint))];
 
           const rows = await knex.raw<{
-            rows: { testId: string; fileId: string; count: number }[];
+            rows: { testId: string; fingerprint: string; count: number }[];
           }>(
             `
             select
-              tsc."testId",
-              tsc."fileId",
-              sum(tsc.value) as count
-            from test_stats_changes tsc
-            where tsc."testId" = any(:testIds)
-              and tsc."fileId" = any(:fileIds)
-              and tsc."date" >= :from::timestamp
-            group by tsc."testId", tsc."fileId"
+              tsf."testId",
+              tsf."fingerprint",
+              sum(tsf.value) as count
+            from test_stats_fingerprints tsf
+            where tsf."testId" = any(:testIds)
+              and tsf."fingerprint" = any(:fingerprints)
+              and tsf."date" >= :from::timestamp
+            group by tsf."testId", tsf."fingerprint"
           `,
-            { fileIds, testIds, from },
+            { fingerprints, testIds, from },
           );
 
           // Index results for O(1) lookup
           const map = new Map(
             rows.rows.map((row) => [
-              `${row.testId}-${row.fileId}`,
+              `${row.testId}-${row.fingerprint}`,
               Number(row.count),
             ]),
           );
 
           // Return counts in the order of input keys
           return pairs.map(
-            (pair) => map.get(`${pair.testId}-${pair.fileId}`) ?? 0,
+            (pair) => map.get(`${pair.testId}-${pair.fingerprint}`) ?? 0,
           );
         },
-        { cacheKeyFn: (input) => `${input.testId}-${input.fileId}` },
+        { cacheKeyFn: (input) => `${input.testId}-${input.fingerprint}` },
       ),
   );
 }
@@ -445,7 +445,7 @@ function createTestChangeStatsLoader(): (
   from: string,
   testId: string,
 ) => DataLoader<
-  { fileId: string },
+  { fingerprint: string },
   {
     totalOccurrences: number;
     lastSeenDiff: ScreenshotDiff;
@@ -456,7 +456,7 @@ function createTestChangeStatsLoader(): (
   return memoize((from: string, testId: string) => {
     return new DataLoader<
       {
-        fileId: string;
+        fingerprint: string;
       },
       {
         totalOccurrences: number;
@@ -466,32 +466,32 @@ function createTestChangeStatsLoader(): (
       string
     >(
       async (pairs) => {
-        const fileIds = [...new Set(pairs.map((p) => p.fileId))];
+        const fingerprints = [...new Set(pairs.map((p) => p.fingerprint))];
 
         const totalOccurrencesQuery = knex.raw<{
-          rows: { fileId: string; total: number }[];
+          rows: { fingerprint: string; total: number }[];
         }>(
           `
-            SELECT tsc."fileId", sum(tsc.value) as total FROM test_stats_changes tsc
-                WHERE tsc."testId" = :testId
-                AND tsc."fileId" = any(:fileIds)
-                AND tsc."date" >= :from
-                GROUP BY tsc."fileId"
+            SELECT tsf."fingerprint", sum(tsf.value) as total FROM test_stats_fingerprints tsf
+                WHERE tsf."testId" = :testId
+                AND tsf."fingerprint" = any(:fingerprints)
+                AND tsf."date" >= :from
+                GROUP BY tsf."fingerprint"
           `,
-          { testId, fileIds, from },
+          { testId, fingerprints, from },
         );
 
         const diffQuery = ScreenshotDiff.query()
           .select("screenshot_diffs.*")
-          .distinctOn("screenshot_diffs.fileId")
+          .distinctOn("screenshot_diffs.fingerprint")
           .joinRelated("build")
           .where("screenshot_diffs.testId", testId)
-          .whereIn("screenshot_diffs.fileId", fileIds)
+          .whereIn("screenshot_diffs.fingerprint", fingerprints)
           .where("screenshot_diffs.score", ">", 0)
           .where("build.type", "reference")
           .where("build.createdAt", ">=", from)
-          .whereNotNull("screenshot_diffs.fileId")
-          .orderBy("screenshot_diffs.fileId");
+          .whereNotNull("screenshot_diffs.fingerprint")
+          .orderBy("screenshot_diffs.fingerprint");
 
         const lastSeenQuery = diffQuery
           .clone()
@@ -510,20 +510,21 @@ function createTestChangeStatsLoader(): (
 
         const totalOccurrencesMap = new Map(
           totalOccurrencesRows.rows.map((row) => [
-            row.fileId,
+            row.fingerprint,
             Number(row.total),
           ]),
         );
         const lastSeenMap = new Map(
-          lastSeenRows.map((diff) => [diff.fileId, diff]),
+          lastSeenRows.map((diff) => [diff.fingerprint, diff]),
         );
         const firstSeenMap = new Map(
-          firstSeenRows.map((diff) => [diff.fileId, diff]),
+          firstSeenRows.map((diff) => [diff.fingerprint, diff]),
         );
         return pairs.map((pair) => {
-          const totalOccurrences = totalOccurrencesMap.get(pair.fileId) ?? 0;
-          const lastSeenDiff = lastSeenMap.get(pair.fileId) ?? null;
-          const firstSeenDiff = firstSeenMap.get(pair.fileId) ?? null;
+          const totalOccurrences =
+            totalOccurrencesMap.get(pair.fingerprint) ?? 0;
+          const lastSeenDiff = lastSeenMap.get(pair.fingerprint) ?? null;
+          const firstSeenDiff = firstSeenMap.get(pair.fingerprint) ?? null;
           invariant(lastSeenDiff, "Last seen diff should not be null");
           invariant(firstSeenDiff, "First seen diff should not be null");
           return {
@@ -543,27 +544,27 @@ function createIgnoredChangeLoader() {
     {
       projectId: string;
       testId: string;
-      fileId: string;
+      fingerprint: string;
     },
     boolean,
     string
   >(
     async (pairs) => {
-      const rows = await IgnoredFile.query().whereIn(
-        ["projectId", "testId", "fileId"],
-        pairs.map(({ projectId, testId, fileId }) => [
+      const rows = await IgnoredChange.query().whereIn(
+        ["projectId", "testId", "fingerprint"],
+        pairs.map(({ projectId, testId, fingerprint }) => [
           projectId,
           testId,
-          fileId,
+          fingerprint,
         ]),
       );
 
       const rowSet = new Set(
-        rows.map((r) => `${r.projectId}|${r.testId}|${r.fileId}`),
+        rows.map((r) => `${r.projectId}|${r.testId}|${r.fingerprint}`),
       );
 
-      return pairs.map(({ projectId, testId, fileId }) =>
-        rowSet.has(`${projectId}|${testId}|${fileId}`),
+      return pairs.map(({ projectId, testId, fingerprint }) =>
+        rowSet.has(`${projectId}|${testId}|${fingerprint}`),
       );
     },
     { cacheKeyFn: (input) => JSON.stringify(input) },
