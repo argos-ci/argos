@@ -45,13 +45,16 @@ export async function processFileFingerprint(
     ]);
 
     if (ignoredFiles.length > 0) {
-      await IgnoredChange.query(trx).insert(
-        ignoredFiles.map((ignoredFile) => ({
-          projectId: ignoredFile.projectId,
-          testId: ignoredFile.testId,
-          fingerprint,
-        })),
-      );
+      await IgnoredChange.query(trx)
+        .insert(
+          ignoredFiles.map((ignoredFile) => ({
+            projectId: ignoredFile.projectId,
+            testId: ignoredFile.testId,
+            fingerprint,
+          })),
+        )
+        .onConflict()
+        .ignore();
     }
   });
 }
