@@ -1,7 +1,7 @@
 import {
   Build,
   BuildReview,
-  IgnoredFile,
+  IgnoredChange,
   ScreenshotDiff,
   ScreenshotDiffReview,
   type ScreenshotBucket,
@@ -19,6 +19,7 @@ export async function getPreviousDiffApprovalIds(
   const previousApprovals = await getPreviousDiffApprovals(args);
 
   if (
+    previousApprovals.fingerprints.size === 0 &&
     previousApprovals.compareFileIds.size === 0 &&
     previousApprovals.baseFileIds.size === 0
   ) {
@@ -30,6 +31,12 @@ export async function getPreviousDiffApprovalIds(
     .leftJoinRelated("[compareScreenshot,baseScreenshot]")
     .where("screenshot_diffs.buildId", args.build.id)
     .where((qb) => {
+      if (previousApprovals.fingerprints.size > 0) {
+        qb.orWhereIn(
+          "screenshot_diffs.fingerprint",
+          Array.from(previousApprovals.fingerprints),
+        );
+      }
       if (previousApprovals.compareFileIds.size > 0) {
         qb.orWhereIn(
           "compareScreenshot.fileId",
@@ -94,10 +101,10 @@ async function getPreviousDiffApprovals(
   const diffs = await ScreenshotDiff.query()
     .withGraphFetched("[compareScreenshot,baseScreenshot]")
     .whereNotExists(
-      IgnoredFile.query()
+      IgnoredChange.query()
         .where("projectId", args.build.projectId)
-        .whereRaw('ignored_files."testId" = screenshot_diffs."testId"')
-        .whereRaw('ignored_files."fileId" = screenshot_diffs."fileId"'),
+        .whereRaw('ignored_changes."testId" = screenshot_diffs."testId"')
+        .whereRaw("ignored_changes.fingerprint = screenshot_diffs.fingerprint"),
     )
     .whereIn(
       "screenshot_diffs.id",
@@ -108,21 +115,22 @@ async function getPreviousDiffApprovals(
     );
 
   return diffs.reduce<{
-    compareScreenshotIds: Set<string>;
+    fingerprints: Set<string>;
     compareFileIds: Set<string>;
-    baseScreenshotIds: Set<string>;
     baseFileIds: Set<string>;
   }>(
     (indices, diff) => {
+      if (diff.fingerprint) {
+        indices.fingerprints.add(diff.fingerprint);
+        return indices;
+      }
       if (diff.compareScreenshot) {
-        indices.compareScreenshotIds.add(diff.compareScreenshot.id);
         if (diff.compareScreenshot.fileId) {
           indices.compareFileIds.add(diff.compareScreenshot.fileId);
         }
         return indices;
       }
       if (diff.baseScreenshot) {
-        indices.baseScreenshotIds.add(diff.baseScreenshot.id);
         if (diff.baseScreenshot.fileId) {
           indices.baseFileIds.add(diff.baseScreenshot.fileId);
         }
@@ -131,9 +139,8 @@ async function getPreviousDiffApprovals(
       return indices;
     },
     {
-      compareScreenshotIds: new Set(),
+      fingerprints: new Set(),
       compareFileIds: new Set(),
-      baseScreenshotIds: new Set(),
       baseFileIds: new Set(),
     },
   );

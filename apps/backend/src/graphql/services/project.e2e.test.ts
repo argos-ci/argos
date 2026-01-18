@@ -5,6 +5,7 @@ import {
   AutomationRule,
   AutomationRun,
   Build,
+  IgnoredChange,
   IgnoredFile,
   Project,
   Screenshot,
@@ -77,6 +78,11 @@ const test = base.extend<{
       { projectId: project.id, testId: createdTest.id, fileId: fileB.id },
     ]);
 
+    await IgnoredChange.query().insert([
+      { projectId: project.id, testId: createdTest.id, fingerprint: "x" },
+      { projectId: project.id, testId: createdTest.id, fingerprint: "y" },
+    ]);
+
     const automationRule = await factory.AutomationRule.create({
       projectId: project.id,
       on: ["build.completed"],
@@ -118,6 +124,7 @@ describe("unsafe_deleteProject", () => {
       screenshots,
       diffs,
       ignoredFiles,
+      ignoredChanges,
       tests,
       projects,
     ] = await Promise.all([
@@ -131,6 +138,7 @@ describe("unsafe_deleteProject", () => {
       Screenshot.query().where({ screenshotBucketId: project.id }),
       ScreenshotDiff.query().where({ buildId: project.id }),
       IgnoredFile.query().where({ projectId: project.id }),
+      IgnoredChange.query().where({ projectId: project.id }),
       Test.query().where({ projectId: project.id }),
       Project.query().where({ id: project.id }),
     ]);
@@ -143,6 +151,7 @@ describe("unsafe_deleteProject", () => {
     expect(screenshots).toHaveLength(0);
     expect(diffs).toHaveLength(0);
     expect(ignoredFiles).toHaveLength(0);
+    expect(ignoredChanges).toHaveLength(0);
     expect(tests).toHaveLength(0);
     expect(projects).toHaveLength(0);
   });

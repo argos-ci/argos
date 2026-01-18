@@ -5,9 +5,7 @@ import { transaction } from "@/database";
 import {
   AuditTrail,
   Build,
-  File,
   IgnoredChange,
-  IgnoredFile,
   Project,
   ScreenshotDiff,
   type User,
@@ -162,25 +160,25 @@ export const resolvers: IResolvers = {
       const from = getStartDateFromPeriod(period);
 
       const totalOccurrencesQuery = `
-        SELECT sum(tsc.value) FROM test_stats_changes tsc
-          WHERE tsc."testId" = screenshot_diffs."testId"
-          AND tsc."fileId" = screenshot_diffs."fileId"
-          AND tsc."date" >= :from
+        SELECT sum(tsf.value) FROM test_stats_fingerprints tsf
+          WHERE tsf."testId" = screenshot_diffs."testId"
+          AND tsf.fingerprint = screenshot_diffs.fingerprint
+          AND tsf.date >= :from
       `;
 
       const diffQuery = ScreenshotDiff.query()
         .select("screenshot_diffs.id")
-        .distinctOn("screenshot_diffs.fileId")
+        .distinctOn("screenshot_diffs.fingerprint")
         .joinRelated("build")
         .where("screenshot_diffs.testId", test.id)
         .where("screenshot_diffs.score", ">", 0)
         .where("build.type", "reference")
         .where("build.createdAt", ">", from)
-        .whereNotNull("screenshot_diffs.fileId")
-        .orderBy("screenshot_diffs.fileId");
+        .whereNotNull("screenshot_diffs.fingerprint")
+        .orderBy("screenshot_diffs.fingerprint");
 
       const query = ScreenshotDiff.query()
-        .select("screenshot_diffs.fileId")
+        .select("screenshot_diffs.fingerprint")
         .whereIn("id", diffQuery.clone())
         .orderByRaw(`(${totalOccurrencesQuery}) DESC`, { from })
         .range(after, after + first - 1);
@@ -199,7 +197,7 @@ export const resolvers: IResolvers = {
             return {
               project,
               testId: test.id,
-              fileId: screenshotDiff.fileId,
+              fingerprint: screenshotDiff.fingerprint,
             };
           }),
         },
@@ -235,7 +233,7 @@ export const resolvers: IResolvers = {
       formatTestChangeId({
         projectName: testChange.project.name,
         testId: testChange.testId,
-        fileId: testChange.fileId,
+        fingerprint: testChange.fingerprint,
       }),
     stats: async (testChange, args, ctx) => {
       const { period } = args;
@@ -244,13 +242,13 @@ export const resolvers: IResolvers = {
         from.toISOString(),
         testChange.testId,
       );
-      return ChangeStatsLoader.load({ fileId: testChange.fileId });
+      return ChangeStatsLoader.load({ fingerprint: testChange.fingerprint });
     },
     ignored: async (testChange, _args, ctx) => {
       return ctx.loaders.IgnoredChangeLoader.load({
         projectId: testChange.project.id,
         testId: testChange.testId,
-        fileId: testChange.fileId,
+        fingerprint: testChange.fingerprint,
       });
     },
   },
@@ -273,39 +271,26 @@ export const resolvers: IResolvers = {
         },
         async ({ changeIdPayload, project, user }) => {
           const isIgnored = Boolean(
-            await IgnoredFile.query().findOne({
+            await IgnoredChange.query().findOne({
               projectId: project.id,
-              fileId: changeIdPayload.fileId,
+              fingerprint: changeIdPayload.fingerprint,
               testId: changeIdPayload.testId,
             }),
           );
           if (!isIgnored) {
             await transaction(async (trx) => {
-              const file = await File.query(trx).findById(
-                changeIdPayload.fileId,
-              );
-
-              if (!file?.fingerprint) {
-                throw new Error(`Can't ignore a file that has no fingerprint`);
-              }
-
               await Promise.all([
                 IgnoredChange.query(trx).insert({
                   projectId: project.id,
                   testId: changeIdPayload.testId,
-                  fingerprint: file.fingerprint,
-                }),
-                IgnoredFile.query(trx).insert({
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  fileId: changeIdPayload.fileId,
+                  fingerprint: changeIdPayload.fingerprint,
                 }),
                 AuditTrail.query(trx).insert({
                   date: new Date().toISOString(),
                   projectId: project.id,
                   testId: changeIdPayload.testId,
                   userId: user.id,
-                  fingerprint: file.fingerprint,
+                  fingerprint: changeIdPayload.fingerprint,
                   action: "files.ignored",
                 }),
               ]);
@@ -323,35 +308,20 @@ export const resolvers: IResolvers = {
         },
         async ({ changeIdPayload, project, user }) => {
           const isIgnored = Boolean(
-            await IgnoredFile.query().findOne({
+            await IgnoredChange.query().findOne({
               projectId: project.id,
-              fileId: changeIdPayload.fileId,
               testId: changeIdPayload.testId,
+              fingerprint: changeIdPayload.fingerprint,
             }),
           );
           if (isIgnored) {
             await transaction(async (trx) => {
-              const file = await File.query(trx).findById(
-                changeIdPayload.fileId,
-              );
-
               await Promise.all([
-                ...(file?.fingerprint
-                  ? [
-                      IgnoredChange.query(trx)
-                        .where({
-                          projectId: project.id,
-                          testId: changeIdPayload.testId,
-                          fingerprint: file.fingerprint,
-                        })
-                        .delete(),
-                    ]
-                  : []),
-                IgnoredFile.query(trx)
+                IgnoredChange.query(trx)
                   .where({
                     projectId: project.id,
                     testId: changeIdPayload.testId,
-                    fileId: changeIdPayload.fileId,
+                    fingerprint: changeIdPayload.fingerprint,
                   })
                   .delete(),
                 AuditTrail.query(trx).insert({
@@ -359,7 +329,7 @@ export const resolvers: IResolvers = {
                   projectId: project.id,
                   testId: changeIdPayload.testId,
                   userId: user.id,
-                  fingerprint: file?.fingerprint ?? null,
+                  fingerprint: changeIdPayload.fingerprint,
                   action: "files.unignored",
                 }),
               ]);
@@ -374,7 +344,7 @@ export const resolvers: IResolvers = {
 export type TestChangeObject = {
   project: Project;
   testId: string;
-  fileId: string;
+  fingerprint: string;
 };
 
 export type TestMetrics = {
@@ -425,7 +395,7 @@ async function runChangeMutaton(
 
   return {
     project,
-    fileId: changeIdPayload.fileId,
+    fingerprint: changeIdPayload.fingerprint,
     testId: changeIdPayload.testId,
   };
 }

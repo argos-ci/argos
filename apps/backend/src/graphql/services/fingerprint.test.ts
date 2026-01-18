@@ -7,26 +7,22 @@ const FULL = "v1:g16:d1:t0.002,0.02,0.08:3fa1c2e9a4b8d210";
 
 describe("fingerprint encoding", () => {
   it("strips the prefix from a fingerprint", () => {
-    expect(encodeFingerprint(FULL)).toBe(HASH);
+    expect(encodeFingerprint(FULL)).toBe(`f-${HASH}`);
   });
 
   it("adds the prefix to a token", () => {
-    expect(decodeFingerprint(HASH)).toBe(FULL);
+    expect(decodeFingerprint(`f-${HASH}`)).toBe(FULL);
   });
 
   it("returns the full fingerprint when already prefixed", () => {
     expect(decodeFingerprint(FULL)).toBe(FULL);
   });
 
-  it("rejects invalid fingerprints", () => {
-    expect(() => encodeFingerprint(`v2:${HASH}`)).toThrow(
-      "Invalid fingerprint format",
-    );
+  it("do not encode invalid fingerprints", () => {
+    expect(encodeFingerprint(`v2:${HASH}`)).toBe(`v2:${HASH}`);
   });
 
-  it("rejects invalid tokens", () => {
-    expect(() => decodeFingerprint("v2:deadbeef")).toThrow(
-      "Invalid fingerprint token",
-    );
+  it("do not decode invalid fingerprints", () => {
+    expect(decodeFingerprint(`v2:${HASH}`)).toBe(`v2:${HASH}`);
   });
 });

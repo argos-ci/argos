@@ -1,5 +1,7 @@
 import { sqids } from "@/util/sqids";
 
+import { decodeFingerprint, encodeFingerprint } from "./fingerprint";
+
 interface TestIdPayload {
   projectName: string;
   testId: string;
@@ -34,14 +36,14 @@ export function parseTestId(input: string): TestIdPayload {
 }
 
 export interface TestChangeIdPayload extends TestIdPayload {
-  fileId: string;
+  fingerprint: string;
 }
 
 /**
  * Encodes a test change ID string into a format that includes the project name.
  */
 export function formatTestChangeId(input: TestChangeIdPayload): string {
-  return `${formatTestId(input)}-${sqids.encode([Number(input.fileId)])}`;
+  return `${formatTestId(input)}-${encodeFingerprint(input.fingerprint)}`;
 }
 
 /**
@@ -49,19 +51,16 @@ export function formatTestChangeId(input: TestChangeIdPayload): string {
  */
 function parseTestChangeId(input: string): TestChangeIdPayload {
   const parts = input.split("-");
-  const fileId = parts.pop();
+  const fingerprint = parts.pop();
   const testId = parts.join("-");
-  if (!testId || !fileId) {
+  if (!testId || !fingerprint) {
     throw new Error("Invalid test change ID format");
   }
   const testIdPayload = parseTestId(testId);
-  const decodedFileId = sqids.decode(fileId)[0];
-  if (decodedFileId === undefined) {
-    throw new Error("Invalid test change ID format");
-  }
+  const decodedFingerprint = decodeFingerprint(fingerprint);
   return {
     ...testIdPayload,
-    fileId: String(decodedFileId),
+    fingerprint: decodedFingerprint,
   };
 }
 

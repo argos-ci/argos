@@ -1,26 +1,22 @@
-const FINGERPRINT_PREFIX = "v1:g16:d1:t0.002,0.02,0.08";
+const FINGERPRINT_PREFIX = "v1:g16:d1:t0.002,0.02,0.08:";
+const SHORT_PREFIX = "f-";
 
 /**
  * Encode a fingerprint for URL by removing the version prefix.
  */
 export function encodeFingerprint(fingerprint: string): string {
-  const prefix = `${FINGERPRINT_PREFIX}:`;
-  if (!fingerprint.startsWith(prefix)) {
-    throw new Error("Invalid fingerprint format");
+  if (!fingerprint.startsWith(FINGERPRINT_PREFIX)) {
+    return fingerprint;
   }
-  return fingerprint.slice(prefix.length);
+  return `${SHORT_PREFIX}${fingerprint.slice(FINGERPRINT_PREFIX.length)}`;
 }
 
 /**
  * Decode a fingerprint from URL by adding the version prefix.
  */
 export function decodeFingerprint(token: string): string {
-  const prefix = `${FINGERPRINT_PREFIX}:`;
-  if (token.startsWith(prefix)) {
-    return token;
+  if (token.startsWith(SHORT_PREFIX)) {
+    return `${FINGERPRINT_PREFIX}${token.slice(SHORT_PREFIX.length)}`;
   }
-  if (token.includes(":")) {
-    throw new Error("Invalid fingerprint token");
-  }
-  return `${prefix}${token}`;
+  return token;
 }
