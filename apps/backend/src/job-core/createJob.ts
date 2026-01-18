@@ -141,6 +141,13 @@ export const createJob = <TValue extends string | number>(
                 await this.run(payload.args[0]);
               } catch (error) {
                 if (checkIsRetryable(error) && payload.attempts < 2) {
+                  logger.info(
+                    `Error while processing job (attempt ${payload.attempts}):`,
+                    error instanceof Error ? error.message : "Unknown",
+                  );
+                  if (error instanceof Error) {
+                    logger.info(error.stack);
+                  }
                   channel.ack(msg);
                   channel.sendToQueue(
                     queue,
