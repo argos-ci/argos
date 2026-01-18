@@ -120,6 +120,11 @@ export function TestDetails(props: TestDetailsProps) {
                     This change is flaky, safe to be ignored.
                   </>
                 )
+              ) : occurrences === 1 ? (
+                <>
+                  <CircleCheckIcon className="text-success-low size-3" />
+                  Seen once in the last seven days.
+                </>
               ) : (
                 <>
                   <CircleCheckIcon className="text-success-low size-3" />
