@@ -1,5 +1,5 @@
 const FINGERPRINT_PREFIX = "v1:g16:d1:t0.002,0.02,0.08:";
-const SHORT_PREFIX = "f-";
+const SHORT_PREFIX = "v1";
 
 /**
  * Encode a fingerprint for URL by removing the version prefix.
