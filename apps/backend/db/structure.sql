@@ -963,6 +963,13 @@ COMMENT ON COLUMN public.ignored_changes."testId" IS 'Test to which the file is 
 
 
 --
+-- Name: COLUMN ignored_changes.fingerprint; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ignored_changes.fingerprint IS 'Fingerprint of the change to ignore';
+
+
+--
 -- Name: ignored_files; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -3815,3 +3822,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025121
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112163920_fingerprint-screenshot-diffs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112165048_fingerprint-files.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118053630_fingerprint-ignore.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118080430_comment-fingerprint.js', 1, NOW());

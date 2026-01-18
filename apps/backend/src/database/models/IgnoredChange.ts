@@ -31,7 +31,7 @@ export class IgnoredChange extends Model {
       relation: Model.BelongsToOneRelation,
       modelClass: Project,
       join: {
-        from: "ignored_files.projectId",
+        from: "ignored_changes.projectId",
         to: "projects.id",
       },
     },
@@ -39,7 +39,7 @@ export class IgnoredChange extends Model {
       relation: Model.BelongsToOneRelation,
       modelClass: Test,
       join: {
-        from: "ignored_files.testId",
+        from: "ignored_changes.testId",
         to: "tests.id",
       },
     },
