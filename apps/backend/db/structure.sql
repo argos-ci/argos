@@ -1737,6 +1737,20 @@ CREATE TABLE public.test_stats_changes (
 ALTER TABLE public.test_stats_changes OWNER TO postgres;
 
 --
+-- Name: test_stats_fingerprints; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test_stats_fingerprints (
+    "testId" bigint NOT NULL,
+    fingerprint character varying(80) NOT NULL,
+    date timestamp with time zone NOT NULL,
+    value integer NOT NULL
+);
+
+
+ALTER TABLE public.test_stats_fingerprints OWNER TO postgres;
+
+--
 -- Name: tests; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2561,6 +2575,14 @@ ALTER TABLE ONLY public.test_stats_builds
 
 ALTER TABLE ONLY public.test_stats_changes
     ADD CONSTRAINT test_stats_changes_pkey PRIMARY KEY ("testId", "fileId", date);
+
+
+--
+-- Name: test_stats_fingerprints test_stats_fingerprints_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_fingerprints
+    ADD CONSTRAINT test_stats_fingerprints_pkey PRIMARY KEY ("testId", fingerprint, date);
 
 
 --
@@ -3616,6 +3638,14 @@ ALTER TABLE ONLY public.test_stats_changes
 
 
 --
+-- Name: test_stats_fingerprints test_stats_fingerprints_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_stats_fingerprints
+    ADD CONSTRAINT test_stats_fingerprints_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
 -- Name: tests tests_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3823,3 +3853,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112165048_fingerprint-files.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118053630_fingerprint-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118080430_comment-fingerprint.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118195213_test-stats-fingerprints.js', 1, NOW());

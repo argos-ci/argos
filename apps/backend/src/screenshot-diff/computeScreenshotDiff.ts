@@ -144,7 +144,12 @@ export async function computeScreenshotDiff(
         await upsertTestStats({
           testId: screenshotDiff.testId,
           date: new Date(screenshotDiff.createdAt),
-          fileId: diffFile ? diffFile.file.id : null,
+          change: diffFile
+            ? {
+                fileId: diffFile.file.id,
+                fingerprint: diffFile.fingerprint,
+              }
+            : null,
         });
       }
     })(),
