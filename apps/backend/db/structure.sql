@@ -133,7 +133,8 @@ CREATE TABLE public.audit_trails (
     "projectId" bigint NOT NULL,
     "testId" bigint NOT NULL,
     "userId" bigint NOT NULL,
-    action character varying(255) NOT NULL
+    action character varying(255) NOT NULL,
+    fingerprint character varying(80)
 );
 
 
@@ -932,6 +933,33 @@ ALTER SEQUENCE public.google_users_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.google_users_id_seq OWNED BY public.google_users.id;
+
+
+--
+-- Name: ignored_changes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ignored_changes (
+    "projectId" bigint NOT NULL,
+    "testId" bigint NOT NULL,
+    fingerprint character varying(80) NOT NULL
+);
+
+
+ALTER TABLE public.ignored_changes OWNER TO postgres;
+
+--
+-- Name: COLUMN ignored_changes."projectId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ignored_changes."projectId" IS 'Project to which the file is ignored in. Files are global, so we need to scope by project';
+
+
+--
+-- Name: COLUMN ignored_changes."testId"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.ignored_changes."testId" IS 'Test to which the file is ignored in. Files are global, so we need to scope by test';
 
 
 --
@@ -2305,6 +2333,14 @@ ALTER TABLE ONLY public.google_users
 
 
 --
+-- Name: ignored_changes ignored_changes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_changes
+    ADD CONSTRAINT ignored_changes_pkey PRIMARY KEY ("projectId", "testId", fingerprint);
+
+
+--
 -- Name: ignored_files ignored_files_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3261,6 +3297,22 @@ ALTER TABLE ONLY public.github_synchronizations
 
 
 --
+-- Name: ignored_changes ignored_changes_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_changes
+    ADD CONSTRAINT ignored_changes_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: ignored_changes ignored_changes_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ignored_changes
+    ADD CONSTRAINT ignored_changes_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
+
+
+--
 -- Name: ignored_files ignored_files_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3762,3 +3814,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2025110
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20251212130537_merge-queue.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112163920_fingerprint-screenshot-diffs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260112165048_fingerprint-files.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118053630_fingerprint-ignore.js', 1, NOW());
