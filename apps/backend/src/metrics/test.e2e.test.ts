@@ -17,7 +17,7 @@ describe("upsertTestStats", () => {
   beforeEach(async () => {
     [test, file] = await Promise.all([
       factory.Test.create(),
-      factory.File.create({ type: "screenshotDiff" }),
+      factory.File.create({ type: "screenshotDiff", fingerprint: "xx" }),
     ]);
 
     const builds = await factory.Build.createMany(3, {
@@ -49,12 +49,12 @@ describe("upsertTestStats", () => {
     ]);
   });
 
-  describe('without "fileId"', () => {
+  describe('without "change"', () => {
     it("upsert stats into test_stats_builds", async () => {
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
-        fileId: null,
+        change: null,
       });
 
       const buildsStats = await knex("test_stats_builds");
@@ -67,17 +67,21 @@ describe("upsertTestStats", () => {
     });
   });
 
-  describe('with "fileId"', () => {
-    it("upsert stats into test_stats_changes and test_stats_builds", async () => {
+  describe('with "change"', () => {
+    it("upsert stats into test_stats_changes, test_stats_fingerprints and test_stats_builds", async () => {
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
-        fileId: file.id,
+        change: {
+          fileId: file.id,
+          fingerprint: "xx",
+        },
       });
 
-      const [buildsStats, changesStats] = await Promise.all([
+      const [buildsStats, changesStats, fingerprintStats] = await Promise.all([
         knex("test_stats_builds"),
         knex("test_stats_changes"),
+        knex("test_stats_fingerprints"),
       ]);
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
@@ -93,24 +97,39 @@ describe("upsertTestStats", () => {
         date: new Date("2025-06-02T00:00:00.000Z"),
         value: 1,
       });
+
+      expect(fingerprintStats).toHaveLength(1);
+      expect(fingerprintStats[0]).toEqual({
+        testId: test.id,
+        fingerprint: "xx",
+        date: new Date("2025-06-02T00:00:00.000Z"),
+        value: 1,
+      });
     });
 
     it("supports if already present in database", async () => {
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
-        fileId: file.id,
+        change: {
+          fileId: file.id,
+          fingerprint: "xx",
+        },
       });
 
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
-        fileId: file.id,
+        change: {
+          fileId: file.id,
+          fingerprint: "xx",
+        },
       });
 
-      const [buildsStats, changesStats] = await Promise.all([
+      const [buildsStats, changesStats, fingerprintStats] = await Promise.all([
         knex("test_stats_builds"),
         knex("test_stats_changes"),
+        knex("test_stats_fingerprints"),
       ]);
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
@@ -123,6 +142,14 @@ describe("upsertTestStats", () => {
       expect(changesStats[0]).toEqual({
         testId: test.id,
         fileId: file.id,
+        date: new Date("2025-06-02T00:00:00.000Z"),
+        value: 2,
+      });
+
+      expect(fingerprintStats).toHaveLength(1);
+      expect(fingerprintStats[0]).toEqual({
+        testId: test.id,
+        fingerprint: "xx",
         date: new Date("2025-06-02T00:00:00.000Z"),
         value: 2,
       });

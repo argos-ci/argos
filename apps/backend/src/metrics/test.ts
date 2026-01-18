@@ -16,16 +16,27 @@ export async function upsertTestStats(input: {
    * Date to use (usually the screenshot diff created date).
    */
   date: Date;
+
   /**
-   * File id to process (if the diff is a change).
+   * Change (if diff is a change)
    */
-  fileId: string | null;
+  change: {
+    /**
+     * File id to process.
+     */
+    fileId: string;
+
+    /**
+     * Fingerprint of file.
+     */
+    fingerprint: string;
+  } | null;
 }) {
-  const { date, fileId, testId } = input;
+  const { date, change, testId } = input;
   const promises: Promise<void>[] = [];
   const dayISODate = moment(date).startOf("day").toDate().toISOString();
 
-  if (fileId) {
+  if (change) {
     promises.push(
       (async () => {
         await knex.raw(
@@ -36,7 +47,24 @@ export async function upsertTestStats(input: {
             UPDATE SET value = test_stats_changes.value + 1`,
           {
             testId,
-            fileId,
+            fileId: change.fileId,
+            date: dayISODate,
+          },
+        );
+      })(),
+    );
+
+    promises.push(
+      (async () => {
+        await knex.raw(
+          `
+            INSERT INTO test_stats_fingerprints ("testId", "fingerprint", "date", "value")
+            VALUES (:testId, :fingerprint, :date, 1)
+            ON CONFLICT ("testId", "fingerprint", "date") DO
+            UPDATE SET value = test_stats_fingerprints.value + 1`,
+          {
+            testId,
+            fingerprint: change.fingerprint,
             date: dayISODate,
           },
         );
