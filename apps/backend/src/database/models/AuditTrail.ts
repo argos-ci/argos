@@ -5,12 +5,7 @@ import { Project } from "./Project";
 import { Test } from "./Test";
 import { User } from "./User";
 
-const ActionSchema = z.enum([
-  "files.ignored",
-  "files.unignored",
-  "changes.ignored",
-  "changes.unignored",
-]);
+const ActionSchema = z.enum(["files.ignored", "files.unignored"]);
 
 type Action = z.infer<typeof ActionSchema>;
 

@@ -36,9 +36,6 @@ const _TestFragment = graphql(`
   fragment TestDetails_Test on Test {
     id
     createdAt
-    trails {
-      ...Test_AuditTrail
-    }
     last7daysMetrics: metrics(period: LAST_7_DAYS) {
       all {
         total
@@ -55,6 +52,9 @@ const _TestChangeFragment = graphql(`
   fragment TestDetails_TestChange on TestChange {
     id
     ignored
+    trails {
+      ...Test_AuditTrail
+    }
   }
 `);
 
@@ -69,6 +69,9 @@ export function TestDetails(props: TestDetailsProps) {
   const compactFormatter = useNumberFormatter({ notation: "compact" });
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
+  const lastTrail = change?.trails.at(-1) ?? null;
+  const lastIgnoredTrail =
+    lastTrail?.action === "files.ignored" ? lastTrail : null;
   return (
     <div className="bg-subtle flex min-h-0 max-w-80 flex-1 flex-col overflow-y-auto border-l-[0.5px]">
       <div className="flex min-h-0 max-w-3xl flex-1 flex-col divide-y-[0.5px]">
@@ -112,7 +115,19 @@ export function TestDetails(props: TestDetailsProps) {
                 change.ignored ? (
                   <>
                     <FlagOffIcon className="text-low size-3" />
-                    Change ignored.
+                    Change ignored{" "}
+                    {lastIgnoredTrail ? (
+                      <>
+                        by{" "}
+                        <AccountAvatar
+                          avatar={lastIgnoredTrail.user.avatar}
+                          className="size-3.5 border"
+                        />
+                        {lastIgnoredTrail.user.name ||
+                          lastIgnoredTrail.user.slug}
+                      </>
+                    ) : null}
+                    .
                   </>
                 ) : (
                   <>
@@ -209,7 +224,7 @@ export function TestDetails(props: TestDetailsProps) {
         </SidebarSection>
         <SidebarSection>
           <SidebarHeader>
-            <SidebarHeading>Test Activity</SidebarHeading>
+            <SidebarHeading>Activity</SidebarHeading>
           </SidebarHeader>
           <div className="px-3 pb-8">
             <div className="relative px-1">
@@ -223,7 +238,7 @@ export function TestDetails(props: TestDetailsProps) {
                   <span className="w-3 text-center">·</span>
                   <Time date={test.createdAt} />
                 </li>
-                {test.trails.map((trail) => {
+                {change?.trails.map((trail) => {
                   return (
                     <li key={trail.id} className="text-low flex items-center">
                       <div className="bg-subtle mr-2 py-1">

@@ -54,6 +54,7 @@ export const typeDefs = gql`
     id: ID!
     stats(period: MetricsPeriod!): TestChangeStats!
     ignored: Boolean!
+    trails: [AuditTrail!]!
   }
 
   type TestChangeStats {
@@ -250,6 +251,15 @@ export const resolvers: IResolvers = {
         testId: testChange.testId,
         fingerprint: testChange.fingerprint,
       });
+    },
+    trails: async (testChange, _args, ctx) => {
+      const trails = await ctx.loaders.TestAuditTrailLoader.load({
+        projectId: testChange.project.id,
+        testId: testChange.testId,
+      });
+      return trails.filter(
+        (trail) => trail.fingerprint === testChange.fingerprint,
+      );
     },
   },
   AuditTrail: {
