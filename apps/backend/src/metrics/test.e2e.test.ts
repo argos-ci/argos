@@ -68,7 +68,7 @@ describe("upsertTestStats", () => {
   });
 
   describe('with "change"', () => {
-    it("upsert stats into test_stats_changes, test_stats_fingerprints and test_stats_builds", async () => {
+    it("upsert stats into test_stats_fingerprints and test_stats_builds", async () => {
       await upsertTestStats({
         testId: test.id,
         date: new Date("2025-06-02T09:18:00.000Z"),
@@ -78,22 +78,13 @@ describe("upsertTestStats", () => {
         },
       });
 
-      const [buildsStats, changesStats, fingerprintStats] = await Promise.all([
+      const [buildsStats, fingerprintStats] = await Promise.all([
         knex("test_stats_builds"),
-        knex("test_stats_changes"),
         knex("test_stats_fingerprints"),
       ]);
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
         testId: test.id,
-        date: new Date("2025-06-02T00:00:00.000Z"),
-        value: 1,
-      });
-
-      expect(changesStats).toHaveLength(1);
-      expect(changesStats[0]).toEqual({
-        testId: test.id,
-        fileId: file.id,
         date: new Date("2025-06-02T00:00:00.000Z"),
         value: 1,
       });
@@ -126,22 +117,13 @@ describe("upsertTestStats", () => {
         },
       });
 
-      const [buildsStats, changesStats, fingerprintStats] = await Promise.all([
+      const [buildsStats, fingerprintStats] = await Promise.all([
         knex("test_stats_builds"),
-        knex("test_stats_changes"),
         knex("test_stats_fingerprints"),
       ]);
       expect(buildsStats).toHaveLength(1);
       expect(buildsStats[0]).toEqual({
         testId: test.id,
-        date: new Date("2025-06-02T00:00:00.000Z"),
-        value: 2,
-      });
-
-      expect(changesStats).toHaveLength(1);
-      expect(changesStats[0]).toEqual({
-        testId: test.id,
-        fileId: file.id,
         date: new Date("2025-06-02T00:00:00.000Z"),
         value: 2,
       });

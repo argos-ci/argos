@@ -41,23 +41,6 @@ export async function upsertTestStats(input: {
       (async () => {
         await knex.raw(
           `
-            INSERT INTO test_stats_changes ("testId", "fileId", "date", "value")
-            VALUES (:testId, :fileId, :date, 1)
-            ON CONFLICT ("testId", "fileId", "date") DO
-            UPDATE SET value = test_stats_changes.value + 1`,
-          {
-            testId,
-            fileId: change.fileId,
-            date: dayISODate,
-          },
-        );
-      })(),
-    );
-
-    promises.push(
-      (async () => {
-        await knex.raw(
-          `
             INSERT INTO test_stats_fingerprints ("testId", "fingerprint", "date", "value")
             VALUES (:testId, :fingerprint, :date, 1)
             ON CONFLICT ("testId", "fingerprint", "date") DO
@@ -122,23 +105,23 @@ export async function getTestAllMetrics(
 
   const changesQuery = `
    select
-      tsc."testId",
-      sum(tsc.value) as changes,
+      tsf."testId",
+      sum(tsf.value) as changes,
       count(*) filter (
         where (
           select count(*) 
-          from test_stats_changes t2
-          where t2."testId" = tsc."testId"
-            and t2."fileId" = tsc."fileId"
+          from test_stats_fingerprints t2
+          where t2."testId" = tsf."testId"
+            and t2."fingerprint" = tsf."fingerprint"
             and t2."date" >= :from::timestamp
             and t2."date" < :to::timestamp
         ) = 1
       ) as "uniqueChanges"
-    from test_stats_changes tsc
-    where tsc."testId" = any(:testIds)
-      and tsc."date" >= :from::timestamp
-      and tsc."date" < :to::timestamp
-    group by tsc."testId"
+    from test_stats_fingerprints tsf
+    where tsf."testId" = any(:testIds)
+      and tsf."date" >= :from::timestamp
+      and tsf."date" < :to::timestamp
+    group by tsf."testId"
   `;
 
   const fromISOString = from.toISOString();
