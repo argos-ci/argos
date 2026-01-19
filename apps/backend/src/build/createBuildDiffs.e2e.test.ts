@@ -146,9 +146,7 @@ describe("#createBuildDiffs", () => {
     it("should return the diffs", async () => {
       const diffs = await createBuildDiffs(build);
       const findByCompareId = (compareScreenshotId: string) =>
-        diffs.find(
-          (diff) => diff.compareScreenshotId === compareScreenshotId,
-        );
+        diffs.find((diff) => diff.compareScreenshotId === compareScreenshotId);
       const findByBaseId = (baseScreenshotId: string) =>
         diffs.find((diff) => diff.baseScreenshotId === baseScreenshotId);
       const addedDiff = findByCompareId(newScreenshot!.id);
