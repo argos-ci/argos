@@ -970,40 +970,6 @@ COMMENT ON COLUMN public.ignored_changes.fingerprint IS 'Fingerprint of the chan
 
 
 --
--- Name: ignored_files; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.ignored_files (
-    "projectId" bigint NOT NULL,
-    "testId" bigint NOT NULL,
-    "fileId" bigint NOT NULL
-);
-
-
-ALTER TABLE public.ignored_files OWNER TO postgres;
-
---
--- Name: COLUMN ignored_files."projectId"; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.ignored_files."projectId" IS 'Project to which the file is ignored in. Files are global, so we need to scope by project';
-
-
---
--- Name: COLUMN ignored_files."testId"; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.ignored_files."testId" IS 'Test to which the file is ignored in. Files are global, so we need to scope by test';
-
-
---
--- Name: COLUMN ignored_files."fileId"; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.ignored_files."fileId" IS 'File that is ignored';
-
-
---
 -- Name: knex_migrations; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1723,20 +1689,6 @@ CREATE TABLE public.test_stats_builds (
 ALTER TABLE public.test_stats_builds OWNER TO postgres;
 
 --
--- Name: test_stats_changes; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.test_stats_changes (
-    "testId" bigint NOT NULL,
-    "fileId" bigint NOT NULL,
-    date timestamp with time zone NOT NULL,
-    value integer NOT NULL
-);
-
-
-ALTER TABLE public.test_stats_changes OWNER TO postgres;
-
---
 -- Name: test_stats_fingerprints; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2362,14 +2314,6 @@ ALTER TABLE ONLY public.ignored_changes
 
 
 --
--- Name: ignored_files ignored_files_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.ignored_files
-    ADD CONSTRAINT ignored_files_pkey PRIMARY KEY ("projectId", "testId", "fileId");
-
-
---
 -- Name: knex_migrations_lock knex_migrations_lock_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2567,14 +2511,6 @@ ALTER TABLE ONLY public.teams
 
 ALTER TABLE ONLY public.test_stats_builds
     ADD CONSTRAINT test_stats_builds_pkey PRIMARY KEY ("testId", date);
-
-
---
--- Name: test_stats_changes test_stats_changes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.test_stats_changes
-    ADD CONSTRAINT test_stats_changes_pkey PRIMARY KEY ("testId", "fileId", date);
 
 
 --
@@ -3342,30 +3278,6 @@ ALTER TABLE ONLY public.ignored_changes
 
 
 --
--- Name: ignored_files ignored_files_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.ignored_files
-    ADD CONSTRAINT ignored_files_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
-
-
---
--- Name: ignored_files ignored_files_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.ignored_files
-    ADD CONSTRAINT ignored_files_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
-
-
---
--- Name: ignored_files ignored_files_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.ignored_files
-    ADD CONSTRAINT ignored_files_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
-
-
---
 -- Name: notification_messages notification_messages_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3622,22 +3534,6 @@ ALTER TABLE ONLY public.test_stats_builds
 
 
 --
--- Name: test_stats_changes test_stats_changes_fileid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.test_stats_changes
-    ADD CONSTRAINT test_stats_changes_fileid_foreign FOREIGN KEY ("fileId") REFERENCES public.files(id);
-
-
---
--- Name: test_stats_changes test_stats_changes_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.test_stats_changes
-    ADD CONSTRAINT test_stats_changes_testid_foreign FOREIGN KEY ("testId") REFERENCES public.tests(id);
-
-
---
 -- Name: test_stats_fingerprints test_stats_fingerprints_testid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3854,3 +3750,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118053630_fingerprint-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118080430_comment-fingerprint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118195213_test-stats-fingerprints.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119154332_delete-unused-tables.js', 1, NOW());
