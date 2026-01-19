@@ -145,15 +145,33 @@ describe("#createBuildDiffs", () => {
 
     it("should return the diffs", async () => {
       const diffs = await createBuildDiffs(build);
-      const [
-        addedDiff,
-        addDiffWithoutFile,
-        updatedDiff,
-        noFileBaseScreenshotDiff,
-        noFileCompareScreenshotDiff,
-        sameFileDiff,
-        removedDiff,
-      ] = diffs;
+      const findByCompareId = (compareScreenshotId: string) =>
+        diffs.find((diff) => diff.compareScreenshotId === compareScreenshotId);
+      const findByBaseId = (baseScreenshotId: string) =>
+        diffs.find((diff) => diff.baseScreenshotId === baseScreenshotId);
+      const addedDiff = findByCompareId(newScreenshot!.id);
+      const addDiffWithoutFile = findByCompareId(newScreenshotWithoutFile!.id);
+      const updatedDiff = diffs.find(
+        (diff) =>
+          diff.baseScreenshotId === classicDiffBaseScreenshot!.id &&
+          diff.compareScreenshotId === classicDiffCompareScreenshot!.id,
+      );
+      const noFileBaseScreenshotDiff = diffs.find(
+        (diff) =>
+          diff.baseScreenshotId === noFileBaseScreenshotBase!.id &&
+          diff.compareScreenshotId === noFileBaseScreenshotCompare!.id,
+      );
+      const noFileCompareScreenshotDiff = diffs.find(
+        (diff) =>
+          diff.baseScreenshotId === noFileCompareScreenshotBase!.id &&
+          diff.compareScreenshotId === noFileCompareScreenshotCompare!.id,
+      );
+      const sameFileDiff = diffs.find(
+        (diff) =>
+          diff.baseScreenshotId === sameFileScreenshotBase!.id &&
+          diff.compareScreenshotId === sameFileScreenshotCompare!.id,
+      );
+      const removedDiff = findByBaseId(removedScreenshot!.id);
 
       expect(diffs.length).toBe(7);
       expect(addedDiff).toMatchObject({
