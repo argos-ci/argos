@@ -6,7 +6,6 @@ import {
   AutomationRun,
   Build,
   IgnoredChange,
-  IgnoredFile,
   Project,
   Screenshot,
   ScreenshotBucket,
@@ -56,8 +55,16 @@ const test = base.extend<{
       factory.BuildNotification.create({ buildId: build.id }),
       factory.BuildReview.create({ buildId: build.id, state: "approved" }),
       factory.ScreenshotDiff.create({ buildId: build.id }),
-      factory.File.create({ key: "diff-file-a", type: "screenshotDiff" }),
-      factory.File.create({ key: "diff-file-b", type: "screenshotDiff" }),
+      factory.File.create({
+        key: "diff-file-a",
+        type: "screenshotDiff",
+        fingerprint: "x",
+      }),
+      factory.File.create({
+        key: "diff-file-b",
+        type: "screenshotDiff",
+        fingerprint: "y",
+      }),
     ]);
 
     const [, createdTest] = await Promise.all([
@@ -73,14 +80,17 @@ const test = base.extend<{
       }),
     ]);
 
-    await IgnoredFile.query().insert([
-      { projectId: project.id, testId: createdTest.id, fileId: fileA.id },
-      { projectId: project.id, testId: createdTest.id, fileId: fileB.id },
-    ]);
-
     await IgnoredChange.query().insert([
-      { projectId: project.id, testId: createdTest.id, fingerprint: "x" },
-      { projectId: project.id, testId: createdTest.id, fingerprint: "y" },
+      {
+        projectId: project.id,
+        testId: createdTest.id,
+        fingerprint: fileA.fingerprint!,
+      },
+      {
+        projectId: project.id,
+        testId: createdTest.id,
+        fingerprint: fileB.fingerprint!,
+      },
     ]);
 
     const automationRule = await factory.AutomationRule.create({
@@ -123,7 +133,6 @@ describe("unsafe_deleteProject", () => {
       buckets,
       screenshots,
       diffs,
-      ignoredFiles,
       ignoredChanges,
       tests,
       projects,
@@ -137,7 +146,6 @@ describe("unsafe_deleteProject", () => {
       ScreenshotBucket.query().where({ projectId: project.id }),
       Screenshot.query().where({ screenshotBucketId: project.id }),
       ScreenshotDiff.query().where({ buildId: project.id }),
-      IgnoredFile.query().where({ projectId: project.id }),
       IgnoredChange.query().where({ projectId: project.id }),
       Test.query().where({ projectId: project.id }),
       Project.query().where({ id: project.id }),
@@ -150,7 +158,6 @@ describe("unsafe_deleteProject", () => {
     expect(buckets).toHaveLength(0);
     expect(screenshots).toHaveLength(0);
     expect(diffs).toHaveLength(0);
-    expect(ignoredFiles).toHaveLength(0);
     expect(ignoredChanges).toHaveLength(0);
     expect(tests).toHaveLength(0);
     expect(projects).toHaveLength(0);
