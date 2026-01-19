@@ -25,6 +25,7 @@ export class User extends Model {
           googleUserId: { type: ["string", "null"] },
           staff: { type: "boolean" },
           deletedAt: { type: ["string", "null"] },
+          type: { type: "string", enum: ["user", "bot"] },
         },
       },
     ],
@@ -35,6 +36,7 @@ export class User extends Model {
   googleUserId!: string | null;
   staff!: boolean;
   deletedAt!: string | null;
+  type!: "user" | "bot";
 
   static override get relationMappings(): RelationMappings {
     return {
