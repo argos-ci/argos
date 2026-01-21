@@ -178,6 +178,10 @@ type BuildDiffContextValue = {
   results: DiffResult[];
   hasNoResults: boolean;
   /**
+   * Some diffs are still loading.
+   */
+  isLoading: boolean;
+  /**
    * Sibling diffs are diffs that have the same base name.
    * This can be used to navigate between diffs that are similar.
    */
@@ -374,20 +378,14 @@ const ProjectQuery = graphql(`
   }
 `);
 
-function useDataState({
-  accountSlug,
-  projectName,
-  buildNumber,
-}: {
+function useDataState(props: {
   accountSlug: string;
   projectName: string;
   buildNumber: number;
 }) {
   const { data, loading, fetchMore, error } = useQuery(ProjectQuery, {
     variables: {
-      accountSlug,
-      projectName,
-      buildNumber,
+      ...props,
       after: 0,
       first: 20,
     },
@@ -433,9 +431,11 @@ function useDataState({
       });
     }
   }, [data, loading, fetchMore]);
-  const screenshotDiffs = (data?.project?.build?.screenshotDiffs.edges ??
-    []) as Diff[];
-  return screenshotDiffs;
+  const diffs = (data?.project?.build?.screenshotDiffs.edges ?? []) as Diff[];
+  const hasMore = Boolean(
+    data?.project?.build?.screenshotDiffs?.pageInfo?.hasNextPage,
+  );
+  return { diffs, hasMore };
 }
 
 function hydrateGroups(groups: DiffGroup[], screenshotDiffs: Diff[]) {
@@ -549,7 +549,7 @@ export function BuildDiffProvider(props: {
     ? searchExpandedState
     : expandedState;
 
-  const allDiffs = useDataState(params);
+  const { diffs: allDiffs, hasMore } = useDataState(params);
 
   // Build all indices to reduce the number of iterations.
   const indices = useMemo(() => {
@@ -680,14 +680,14 @@ export function BuildDiffProvider(props: {
   const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
-    if (initialDiffGroup) {
+    if (initialDiffGroup?.name) {
       toggleGroup(initialDiffGroup.name, true);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
     } else if (complete) {
       setReady(true);
     }
-  }, [complete, initialDiffGroup, toggleGroup]);
+  }, [complete, initialDiffGroup?.name, toggleGroup]);
 
   const searchValue = useMemo(
     (): SearchContextValue => ({ search, setSearch }),
@@ -723,6 +723,7 @@ export function BuildDiffProvider(props: {
       hasNoResults,
       siblingDiffs,
       ariaDiff,
+      isLoading: hasMore,
     }),
     [
       groups,
@@ -740,6 +741,7 @@ export function BuildDiffProvider(props: {
       hasNoResults,
       siblingDiffs,
       ariaDiff,
+      hasMore,
     ],
   );
   return (

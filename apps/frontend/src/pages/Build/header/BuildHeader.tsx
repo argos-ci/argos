@@ -1,5 +1,11 @@
 import { ComponentProps, memo } from "react";
-import { EllipsisIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
+import clsx from "clsx";
+import {
+  EllipsisIcon,
+  RefreshCcwIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+} from "lucide-react";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
@@ -200,10 +206,13 @@ export const BuildHeader = memo(
     return (
       <div className="flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 border-b-[0.5px] p-4">
         <div className="flex h-8 items-center gap-4">
-          <BrandLink
-            accountSlug={props.accountSlug}
-            projectName={props.projectName}
-          />
+          <div className="relative flex">
+            <BrandLink
+              accountSlug={props.accountSlug}
+              projectName={props.projectName}
+            />
+            <SyncingIcon />
+          </div>
           <div className="flex flex-col justify-center">
             <div className="mb-1 flex gap-1">
               <BuildModeIndicator
@@ -241,3 +250,31 @@ export const BuildHeader = memo(
     );
   },
 );
+
+function SyncingIcon() {
+  const { isLoading } = useBuildDiffState();
+  return <SyncingIconMemo isLoading={isLoading} />;
+}
+
+const SyncingIconMemo = memo(function SyncingIconMemo(props: {
+  isLoading: boolean;
+}) {
+  const { isLoading } = props;
+  return (
+    <Tooltip content={isLoading ? "Loading snapshots..." : null}>
+      <div
+        aria-label="Loading snapshots..."
+        aria-busy={isLoading}
+        className={clsx(
+          "bg-app absolute -right-1 -bottom-1 rounded-full border p-1 transition-all transition-discrete",
+          isLoading ? "opacity-100" : "hidden opacity-0",
+        )}
+      >
+        <RefreshCcwIcon
+          strokeWidth={1}
+          className="size-3 animate-spin duration-1500"
+        />
+      </div>
+    </Tooltip>
+  );
+});
