@@ -81,6 +81,7 @@ const DIFF_IMAGE_CONFIG = {
 };
 
 interface ListHeaderRow {
+  key: string;
   type: "header";
   name: DiffGroup["name"];
   count: number;
@@ -90,6 +91,7 @@ interface ListHeaderRow {
 }
 
 interface ListItemRow {
+  key: string;
   type: "item";
   first: boolean;
   last: boolean;
@@ -99,6 +101,7 @@ interface ListItemRow {
 }
 
 interface ListGroupItemRow {
+  key: string;
   type: "group-item";
   first: boolean;
   last: boolean;
@@ -116,6 +119,7 @@ function createHeaderRow(input: {
   borderBottom: boolean;
 }): ListHeaderRow {
   return {
+    key: `header-${input.group.name}`,
     type: "header",
     name: input.group.name,
     count: input.group.diffs.length,
@@ -126,6 +130,7 @@ function createHeaderRow(input: {
 }
 
 function createListItemRow(input: {
+  index: number;
   diff: Diff | null;
   first: boolean;
   last: boolean;
@@ -133,6 +138,7 @@ function createListItemRow(input: {
   parent?: ListGroupItemRow | null;
 }): ListItemRow {
   return {
+    key: `item-${input.diff?.id ?? `idx:${input.index}`}`,
     type: "item",
     diff: input.diff,
     first: input.first,
@@ -150,6 +156,7 @@ function createGroupItemRow(input: {
   result: DiffResult | null;
 }): ListGroupItemRow {
   return {
+    key: `group-item-${input.diff.id}`,
     type: "group-item",
     diff: input.diff,
     first: input.first,
@@ -166,6 +173,7 @@ function getRows(
   results: DiffResult[],
   searchMode: boolean,
 ): ListRow[] {
+  let _uindex = 0;
   return (
     groups
       // Filter out empty groups
@@ -191,6 +199,7 @@ function getRows(
         let currentGroupItem: ListGroupItemRow | null = null;
 
         return group.diffs.reduce((acc, diff, index, diffs) => {
+          const uindex = _uindex++;
           const first = index === 0;
           const last = index === diffs.length - 1;
 
@@ -198,14 +207,20 @@ function getRows(
           if (searchMode) {
             const result = results.find((r) => r.item === diff) ?? null;
             if (result) {
-              return [...acc, createListItemRow({ diff, first, last, result })];
+              return [
+                ...acc,
+                createListItemRow({ index: uindex, diff, first, last, result }),
+              ];
             }
             return acc;
           }
 
           // If there is no group, we create an item row.
           if (!diff?.group) {
-            return [...acc, createListItemRow({ diff, first, last })];
+            return [
+              ...acc,
+              createListItemRow({ index: uindex, diff, first, last }),
+            ];
           }
 
           // Else we have a group.
@@ -215,7 +230,10 @@ function getRows(
 
           // If it's the only diff of the group, we don't group it.
           if (!otherDiffInGroup) {
-            return [...acc, createListItemRow({ diff, first, last })];
+            return [
+              ...acc,
+              createListItemRow({ index: uindex, diff, first, last }),
+            ];
           }
 
           const expanded = expandedGroups.includes(diff.group);
@@ -230,6 +248,7 @@ function getRows(
               return [
                 ...acc,
                 createListItemRow({
+                  index: uindex,
                   diff,
                   first,
                   last,
@@ -844,6 +863,11 @@ const InternalBuildDiffList = memo(() => {
     scrollPaddingStart: 30,
     getScrollElement: () => containerRef.current,
     overscan: 20,
+    getItemKey: (index) => {
+      const row = rows[index];
+      invariant(row, "a row should exist for each index");
+      return row.key;
+    },
     rangeExtractor: useCallback(
       (range: Range) => {
         const activeStickyIndex =
