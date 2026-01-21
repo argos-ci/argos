@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
-import { Helmet } from "react-helmet";
-import { useParams } from "react-router-dom";
 
 import { SettingsPage } from "@/containers/Layout";
 import { ProjectBadge } from "@/containers/Project/Badge";
@@ -27,6 +26,8 @@ import {
 import { PageLoader } from "@/ui/PageLoader";
 
 import { useProjectOutletContext } from "./ProjectOutletContext";
+import { useProjectParams } from "./ProjectParams";
+import { ProjectTitle } from "./ProjectTitle";
 
 const ProjectQuery = graphql(`
   query ProjectSettings_project($accountSlug: String!, $projectName: String!) {
@@ -57,12 +58,10 @@ const ProjectQuery = graphql(`
 `);
 
 export function Component() {
-  const { accountSlug, projectName } = useParams();
+  const params = useProjectParams();
+  invariant(params, "it is a project route");
+  const { accountSlug, projectName } = params;
   const { permissions } = useProjectOutletContext();
-
-  if (!accountSlug || !projectName) {
-    return <NotFound />;
-  }
 
   const hasViewSettingsPermission = permissions.includes(
     ProjectPermission.ViewSettings,
@@ -74,11 +73,7 @@ export function Component() {
 
   return (
     <Page>
-      <Helmet>
-        <title>
-          Settings • {accountSlug}/{projectName}
-        </title>
-      </Helmet>
+      <ProjectTitle params={params}>Settings</ProjectTitle>
       <PageContainer>
         <PageHeader>
           <PageHeaderContent>

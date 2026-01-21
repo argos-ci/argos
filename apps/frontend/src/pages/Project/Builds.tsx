@@ -1,12 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { BoxesIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
-import { Helmet } from "react-helmet";
-import { useParams, useResolvedPath, useSearchParams } from "react-router-dom";
+import { useResolvedPath, useSearchParams } from "react-router-dom";
 
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
@@ -41,6 +41,8 @@ import {
 import { BuildTypeFilter, useBuildTypeFilterState } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
 import { useProjectOutletContext } from "./ProjectOutletContext";
+import { useProjectParams } from "./ProjectParams";
+import { ProjectTitle } from "./ProjectTitle";
 
 const ProjectQuery = graphql(`
   query ProjectBuilds_project($accountSlug: String!, $projectName: String!) {
@@ -477,19 +479,13 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
 }
 
 export function Component() {
-  const { accountSlug, projectName } = useParams();
-
-  if (!accountSlug || !projectName) {
-    return <NotFound />;
-  }
+  const params = useProjectParams();
+  invariant(params, "it is a project route");
+  const { accountSlug, projectName } = params;
 
   return (
     <Page>
-      <Helmet>
-        <title>
-          Builds • {accountSlug}/{projectName}
-        </title>
-      </Helmet>
+      <ProjectTitle params={params}>Settings</ProjectTitle>
       <PageContent accountSlug={accountSlug} projectName={projectName} />
     </Page>
   );

@@ -2,7 +2,6 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { BoxesIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
-import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
@@ -20,6 +19,7 @@ import {
 
 import { NotFound } from "../NotFound";
 import { useProjectParams } from "../Project/ProjectParams";
+import { ProjectTitle } from "../Project/ProjectTitle";
 import {
   AutomationRulesList,
   DeleteAutomation,
@@ -175,11 +175,7 @@ export function Component() {
 
   return (
     <Page>
-      <Helmet>
-        <title>
-          Automations • {params.accountSlug}/{params.projectName}
-        </title>
-      </Helmet>
+      <ProjectTitle params={params}>Automations</ProjectTitle>
       <PageContent project={project} />
     </Page>
   );
