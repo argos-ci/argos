@@ -3,6 +3,7 @@ import {
   ScreenshotMetadataJSONSchema,
 } from "@argos/schemas/screenshot-metadata";
 import type { JSONSchema, RelationMappings } from "objection";
+import type Objection from "objection";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
@@ -56,6 +57,41 @@ export class Screenshot extends Model {
   playwrightTraceFileId!: string | null;
   buildShardId!: string | null;
   threshold!: number | null;
+
+  /**
+   * Create a partial clone of a screenshot model.
+   *
+   * Extracts only the essential properties needed to copy screenshots between buckets,
+   * excluding system fields (id, timestamps), relationships, and bucket/shard references.
+   * This method serves as a type-safe guard: any new properties added to the model
+   * will require explicit consideration here.
+   */
+  static partialClone(
+    model: Screenshot,
+  ): Omit<
+    Objection.ModelObject<Screenshot>,
+    | "id"
+    | "createdAt"
+    | "updatedAt"
+    | "screenshotBucketId"
+    | "buildShardId"
+    | "screenshotBucket"
+    | "file"
+    | "test"
+    | "playwrightTraceFile"
+  > {
+    return {
+      name: model.name,
+      s3Id: model.s3Id,
+      fileId: model.fileId,
+      testId: model.testId,
+      metadata: model.metadata,
+      playwrightTraceFileId: model.playwrightTraceFileId,
+      threshold: model.threshold,
+      baseName: model.baseName,
+      parentName: model.parentName,
+    };
+  }
 
   static override get relationMappings(): RelationMappings {
     return {
