@@ -199,13 +199,8 @@ export async function finalizePartialBuilds(input: {
         invariant(shard.screenshots, "Screenshots should be fetched");
         return shard.screenshots.map((screenshot) => {
           return {
-            name: screenshot.name,
-            s3Id: screenshot.s3Id,
+            ...Screenshot.partialClone(screenshot),
             screenshotBucketId: build.compareScreenshotBucketId,
-            fileId: screenshot.fileId,
-            testId: screenshot.testId,
-            metadata: screenshot.metadata,
-            playwrightTraceFileId: screenshot.playwrightTraceFileId,
             buildShardId: insertedShard.id,
           };
         });
