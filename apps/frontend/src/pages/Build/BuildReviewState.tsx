@@ -1,7 +1,8 @@
 import { createContext, use, useEffect, useMemo, useRef } from "react";
 import { invariant } from "@argos/util/invariant";
+import { atomFamily } from "jotai-family";
 import { useAtom } from "jotai/react";
-import { atomFamily, atomWithStorage } from "jotai/utils";
+import { atomWithStorage } from "jotai/utils";
 
 import { BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";

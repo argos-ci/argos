@@ -1,5 +1,5 @@
 import { atom, useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 
 const textAtomFamily = atomFamily((url: string) =>
   atom(async () => {
