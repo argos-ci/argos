@@ -1,6 +1,5 @@
 import amqp from "amqplib";
 
-// import { callbackify } from "node:util";
 import config from "@/config";
 
 let connectPromise: ReturnType<typeof amqp.connect> | null = null;
@@ -9,7 +8,12 @@ export async function connect() {
     connectPromise = amqp.connect(config.get("amqp.url"));
   }
 
-  return connectPromise;
+  return connectPromise.catch((error) => {
+    // If there is an error avoid caching the connection
+    // to be able to reconnect properly.
+    connectPromise = null;
+    throw error;
+  });
 }
 
 export async function quitAmqp() {
