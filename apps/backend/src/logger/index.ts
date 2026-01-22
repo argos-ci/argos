@@ -18,7 +18,6 @@ const logger = pino({
                   ? "warning"
                   : "info",
           );
-          console.log("LOG SENTRY");
           Sentry.captureException(parsed.error);
         });
       }
