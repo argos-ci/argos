@@ -70,10 +70,13 @@ export async function retrieveOAuthToken(args: {
     try {
       return RetrieveTokenResponseSchema.parse(response.data);
     } catch (error) {
-      logger.info("GitHub OAuth response errored", {
-        status: response.status,
-        data: response.data,
-      });
+      logger.info(
+        {
+          status: response.status,
+          data: response.data,
+        },
+        "GitHub OAuth response errored",
+      );
       throw new Error("Failed to parse GitHub OAuth response", {
         cause: error,
       });

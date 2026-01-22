@@ -1,26 +1,55 @@
 import amqp from "amqplib";
+import pMemoize from "p-memoize";
+import pRetry from "p-retry";
 
 import config from "@/config";
+import parentLogger from "@/logger";
 
-let connectPromise: ReturnType<typeof amqp.connect> | null = null;
-export async function connect() {
-  if (!connectPromise) {
-    connectPromise = amqp.connect(config.get("amqp.url")).catch((error) => {
-      // If there is an error avoid caching the connection
-      // to be able to reconnect properly.
-      connectPromise = null;
-      throw error;
-    });
-  }
+const cache = new Map();
 
-  return connectPromise;
-}
+const logger = parentLogger.child({ module: "amqp" });
+
+export const connect = pMemoize(
+  () => {
+    logger.info("Connecting");
+    return pRetry(
+      () =>
+        amqp.connect(config.get("amqp.url")).then((model) => {
+          model.once("error", (error) => {
+            logger.error({ error }, "Error event");
+          });
+
+          model.once("close", () => {
+            logger.info("Connection closed");
+            cache.clear();
+            setImmediate(() => {
+              connect();
+            });
+          });
+
+          return model;
+        }),
+      {
+        onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
+          logger.info(
+            {
+              error,
+              attemptNumber,
+              retriesLeft,
+            },
+            "Connection attempt failed",
+          );
+        },
+      },
+    );
+  },
+  { cache },
+);
 
 export async function quitAmqp() {
-  if (!connectPromise) {
+  if (cache.size === 0) {
     return;
   }
-  const connection = await connectPromise;
-  connectPromise = null;
+  const connection = await connect();
   await connection.close();
 }

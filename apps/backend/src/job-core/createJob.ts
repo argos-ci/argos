@@ -1,8 +1,7 @@
-import { invariant } from "@argos/util/invariant";
-import * as Sentry from "@sentry/node";
-import { memoize } from "lodash-es";
+import pMemoize from "p-memoize";
+import pRetry from "p-retry";
 
-import logger from "@/logger";
+import parentLogger from "@/logger";
 import { checkIsRetryable } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
@@ -71,16 +70,38 @@ export const createJob = <TValue extends string | number>(
   },
   { prefetch = 1, timeout = 20_000 }: JobParams = {},
 ): Job<TValue> => {
-  const getChannel = memoize(async () => {
-    const amqp = await connect();
-    const channel = await amqp.createChannel();
-    const reset = () => {
-      invariant(getChannel.cache.clear, "No clear method on cache.");
-      getChannel.cache.clear();
-    };
-    channel.once("close", reset);
-    return channel;
-  });
+  const logger = parentLogger.child({ module: "job", queue });
+  const cache = new Map();
+  const getChannel = pMemoize(
+    () =>
+      pRetry(
+        async () => {
+          logger.info("Connecting");
+          const amqp = await connect();
+          logger.info("Creating channel");
+          const channel = await amqp.createChannel();
+          logger.info("Channel created");
+          channel.once("close", () => {
+            logger.info("Channel closed");
+            cache.clear();
+          });
+          return channel;
+        },
+        {
+          onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
+            logger.info(
+              {
+                error,
+                attemptNumber,
+                retriesLeft,
+              },
+              "Channel creation attempt failed",
+            );
+          },
+        },
+      ),
+    { cache },
+  );
   return {
     queue,
     async push(...values) {
@@ -121,69 +142,77 @@ export const createJob = <TValue extends string | number>(
     },
     process() {
       return new Promise((resolve, reject) => {
-        const run = async () => {
-          const channel = await getChannel();
-          channel.once("close", () => {
-            run().then(resolve, reject);
-          });
-          await channel.prefetch(prefetch);
-          await channel.assertQueue(queue, { durable: true });
-          await channel.consume(queue, async (msg) => {
-            if (!msg) {
-              return;
-            }
+        const run = () =>
+          pRetry(
+            async () => {
+              logger.info("Initialize consuming");
+              const channel = await getChannel();
+              channel.once("close", () => {
+                run().then(resolve, reject);
+              });
+              await channel.prefetch(prefetch);
+              await channel.assertQueue(queue, { durable: true });
+              logger.info("Consuming queue");
+              await channel.consume(queue, async (msg) => {
+                if (!msg) {
+                  return;
+                }
 
-            let payload: Payload<TValue>;
+                let payload: Payload<TValue>;
 
-            try {
-              payload = parseMessage<TValue>(msg.content);
-              try {
-                await this.run(payload.args[0]);
-              } catch (error) {
-                if (checkIsRetryable(error) && payload.attempts < 2) {
-                  logger.info(
-                    `Error while processing job (attempt ${payload.attempts}):`,
-                    error instanceof Error ? error.message : "Unknown",
-                  );
-                  if (error instanceof Error) {
-                    logger.info(error.stack);
+                try {
+                  payload = parseMessage<TValue>(msg.content);
+                  const consumeLogger = logger.child({ payload });
+                  try {
+                    await this.run(payload.args[0]);
+                  } catch (error) {
+                    if (checkIsRetryable(error) && payload.attempts < 2) {
+                      consumeLogger.info(
+                        { error },
+                        "Error while processing job",
+                      );
+                      channel.ack(msg);
+                      channel.sendToQueue(
+                        queue,
+                        serializeMessage({
+                          args: payload.args,
+                          attempts: payload.attempts + 1,
+                        }),
+                        { persistent: true },
+                      );
+                      return;
+                    }
+
+                    channel.ack(msg);
+                    consumeLogger.error(
+                      { error },
+                      "Error while processing job",
+                    );
+                    await consumer.error?.(payload.args[0], error);
+                    return;
                   }
+                } catch (error) {
                   channel.ack(msg);
-                  channel.sendToQueue(
-                    queue,
-                    serializeMessage({
-                      args: payload.args,
-                      attempts: payload.attempts + 1,
-                    }),
-                    { persistent: true },
-                  );
+                  logger.error({ error }, "Error while processing job");
                   return;
                 }
 
                 channel.ack(msg);
-                Sentry.withScope((scope) => {
-                  scope.setTag("jobQueue", queue);
-                  scope.setExtra("jobArgs", payload.args);
-                  logger.error(error);
-                });
-                await consumer.error?.(payload.args[0], error);
-                return;
-              }
-            } catch (error) {
-              channel.ack(msg);
-              Sentry.withScope((scope) => {
-                scope.setTag("jobQueue", queue);
-                scope.setExtra("jobArgs", payload.args);
-                logger.error(error);
               });
-              return;
-            }
+            },
+            {
+              onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
+                logger.info(
+                  `[job:${queue}]: Failed processing (attempt ${attemptNumber} (${retriesLeft} retries left)): ${error.message}`,
+                );
+              },
+            },
+          );
 
-            channel.ack(msg);
-          });
-        };
-
-        run().then(resolve, reject);
+        run().then(resolve, (error) => {
+          logger.error({ error }, "Error while trying to process job");
+          reject(error);
+        });
       });
     },
   };

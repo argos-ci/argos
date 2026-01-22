@@ -85,11 +85,14 @@ export async function checkIsPartialBuild(input: {
       );
     } catch (error) {
       if (error instanceof TimeoutError) {
-        logger.error("Timeout while fetching jobs for run attempt", {
-          runId,
-          runAttempt: attempt,
-          error: error.message,
-        });
+        logger.error(
+          {
+            runId,
+            runAttempt: attempt,
+            error,
+          },
+          "Timeout while fetching jobs for run attempt",
+        );
         return null;
       }
       if (checkErrorStatus(404, error)) {

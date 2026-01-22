@@ -7,7 +7,9 @@ import {
 } from "redis";
 
 import config from "@/config";
-import logger from "@/logger";
+import parentLogger from "@/logger";
+
+const logger = parentLogger.child({ module: "redis" });
 
 const redisURL = new URL(config.get("redis.url"));
 
@@ -30,7 +32,7 @@ redisClient.on("error", (error: unknown) => {
   if (error instanceof SocketClosedUnexpectedlyError) {
     return;
   }
-  logger.error(error);
+  logger.error({ error }, "Redis error");
 });
 redisClient.on("connect", () => {
   logger.info("Redis client is connected");

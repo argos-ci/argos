@@ -4,7 +4,7 @@ import express from "express";
 
 import config from "@/config";
 import { getAdminAccount } from "@/graphql/services/account";
-import logger from "@/logger";
+import parentLogger from "@/logger";
 import {
   createStripeCheckoutSession,
   getStripeProPlanOrThrow,
@@ -18,6 +18,8 @@ import { auth } from "../middlewares/auth";
 import { allowApp } from "../middlewares/cors";
 import { allowOnlyPost } from "../middlewares/methods";
 import { asyncHandler } from "../util";
+
+const logger = parentLogger.child({ module: "stripe" });
 
 const router: express.Router = express.Router();
 
@@ -92,10 +94,10 @@ router.use(
       invariant(session.url, "no session url");
 
       res.json({ sessionUrl: session.url });
-    } catch (err) {
+    } catch (error) {
       logger.error(
+        { error },
         "An error occurred while creating Stripe portal session.",
-        err,
       );
       res.redirect(302, "/error");
     }
@@ -132,10 +134,10 @@ router.use(
       invariant(session.url, "no session url");
 
       res.json({ sessionUrl: session.url });
-    } catch (err) {
+    } catch (error) {
       logger.error(
+        { error },
         "An error occurred while creating Stripe checkout session.",
-        err,
       );
       res.redirect(302, "/error");
     }
