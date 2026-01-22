@@ -14,6 +14,7 @@ class ObjectionAdapter<
     return model[key];
   }
 
+  // @ts-expect-error problem in factory types
   build(ModelClass: T, props: PartialModelObject<TEntity>): TEntity {
     return ModelClass.fromJson(props);
   }

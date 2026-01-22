@@ -7,8 +7,8 @@ import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode: argMode }) => {
-  const mode = process.env.BUILD_MODE || argMode;
+export default defineConfig((args) => {
+  const mode = process.env.BUILD_MODE || args.mode;
   return {
     mode,
     plugins: [

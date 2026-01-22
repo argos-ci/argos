@@ -26,7 +26,7 @@ function createWebhooksHandler(input: {
   });
 
   webhooks.onError((error) => {
-    logger.error(error);
+    logger.error({ error }, "GitHub webhook handler error");
   });
 
   return webhooks;

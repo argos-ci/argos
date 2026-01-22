@@ -21,7 +21,7 @@ import {
 import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 import { commentGithubPr, getInstallationOctokit } from "@/github";
 import { parsePullRequestData } from "@/github-pull-request/pull-request";
-import logger from "@/logger";
+import parentLogger from "@/logger";
 
 import { synchronizeFromInstallationId } from "../helpers";
 import {
@@ -37,7 +37,8 @@ export async function handleGitHubEvents(
   app: GithubInstallation["app"],
   { name, payload }: EmitterWebhookEvent,
 ) {
-  logger.info("GitHub event", name);
+  const eventLogger = parentLogger.child({ module: "github-event", name });
+  eventLogger.info("Event received");
   switch (name) {
     case "marketplace_purchase": {
       if (app !== "main") {
@@ -80,7 +81,10 @@ export async function handleGitHubEvents(
         case "changed": {
           const account = await getAccount(payload);
           if (!account) {
-            logger.error("Cannot update purchase, account not found", payload);
+            eventLogger.error(
+              { payload },
+              "Cannot update purchase, account not found",
+            );
             return;
           }
           await updateSubscription(payload, account);
@@ -89,7 +93,10 @@ export async function handleGitHubEvents(
         case "cancelled": {
           const account = await getAccount(payload);
           if (!account) {
-            logger.error("Cannot cancel purchase, account not found", payload);
+            eventLogger.error(
+              { payload },
+              "Cannot cancel purchase, account not found",
+            );
             return;
           }
           await cancelSubscription(payload, account);

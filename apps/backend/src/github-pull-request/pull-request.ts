@@ -92,18 +92,24 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
   );
 
   if (!installation) {
-    logger.info("No active installation found for repository", {
-      githubRepositoryId: pullRequest.githubRepositoryId,
-    });
+    logger.info(
+      {
+        githubRepositoryId: pullRequest.githubRepositoryId,
+      },
+      "No active installation found for repository",
+    );
     return;
   }
 
   const octokit = await getInstallationOctokit(installation);
 
   if (!octokit) {
-    logger.info("Failed to get an Octokit for installation", {
-      installationId: installation.id,
-    });
+    logger.info(
+      {
+        installationId: installation.id,
+      },
+      "Failed to get an Octokit for installation",
+    );
     return;
   }
 

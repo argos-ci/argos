@@ -1,48 +1,57 @@
 import * as Sentry from "@sentry/node";
+import pino from "pino";
 
-const logger = {
-  info: (...args: any[]) => {
-    if (process.env["NODE_ENV"] === "test") {
-      return;
-    }
-
-    console.info(...args);
-  },
-  error: (...args: any[]) => {
-    const firstArg = args[0];
-
-    if (process.env["NODE_ENV"] === "test") {
-      if (firstArg instanceof Error) {
-        throw firstArg;
-      } else {
-        throw new Error("Unknown error: " + firstArg);
+const logger = pino({
+  hooks: {
+    logMethod(inputArgs, method, level) {
+      const parsed = parseArgs(inputArgs);
+      // If warning or more and there is an error
+      if (level >= 40 && parsed.error) {
+        Sentry.withScope((scope) => {
+          scope.setExtras(parsed.obj);
+          scope.setLevel(
+            level >= 60
+              ? "fatal"
+              : level >= 50
+                ? "error"
+                : level >= 40
+                  ? "warning"
+                  : "info",
+          );
+          Sentry.captureException(parsed.error);
+        });
       }
-    }
-
-    if (firstArg instanceof Error) {
-      Sentry.captureException(firstArg, (scope) => {
-        if (firstArg.cause) {
-          scope.setExtra("cause", firstArg.cause);
-        }
-        return scope;
-      });
-    } else {
-      Sentry.captureMessage(
-        typeof firstArg === "string" ? firstArg : "Unknown error",
-        {
-          extra: { args },
-        },
-      );
-    }
-    console.error(...args);
+      if (parsed.error) {
+        return method.apply(this, [
+          {
+            ...parsed.obj,
+            error: {
+              message: parsed.error.message,
+              stack: parsed.error.stack,
+            },
+          },
+          parsed.msg,
+        ]);
+      }
+      return method.apply(this, inputArgs);
+    },
   },
-  success: (...args: any[]) => {
-    if (process.env["NODE_ENV"] === "test") {
-      return;
-    }
+});
 
-    console.log(...args);
-  },
-};
+function parseArgs(
+  inputArgs: [obj: unknown, msg?: string | undefined, ...args: unknown[]],
+) {
+  const [obj, msg] = inputArgs;
+  if (
+    typeof obj === "object" &&
+    obj &&
+    "error" in obj &&
+    obj.error instanceof Error
+  ) {
+    const { error, ...rest } = obj;
+    return { obj: rest, error, msg };
+  }
+  return { obj, error: null, msg };
+}
 
 export default logger;
