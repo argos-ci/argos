@@ -125,7 +125,7 @@ export async function getInstallationOctokit(
     const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
     const now = Date.now();
     const delay = 60 * 5 * 1000; // 5 minutes
-    const expired = expiredAt < now + delay;
+    const expired = expiredAt < now - delay;
     if (!expired) {
       const token = installation.githubToken;
       return getTokenOctokit({ token, proxy: installation.proxy });
