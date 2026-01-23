@@ -339,7 +339,6 @@ function PageContent(props: {
   const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
   const [filters, setFilters] = useQueryStates(filtersSchema);
   const hasFilters = !checkAreDefaultValues(filtersSchema, filters);
-  console.log({ hasFilters });
 
   const [isFetchingMore, startFetchMoreTransition] = useTransition();
   const deferredFilters = useDeferredValue(filters);
