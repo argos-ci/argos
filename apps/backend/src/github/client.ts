@@ -128,7 +128,11 @@ export async function getInstallationOctokit(
     const expired = expiredAt < now + delay;
     if (!expired) {
       const token = installation.githubToken;
-      return getTokenOctokit({ token, proxy: installation.proxy });
+      const octokit = getTokenOctokit({ token, proxy: installation.proxy });
+      const isValid = await checkTokenValidity(octokit);
+      if (isValid) {
+        return octokit;
+      }
     }
   }
   const result = await authInstallation({
@@ -157,6 +161,22 @@ export async function getInstallationOctokit(
     }
     default:
       assertNever(result);
+  }
+}
+
+/**
+ * Check if a token is still valid.
+ */
+async function checkTokenValidity(octokit: Octokit): Promise<boolean> {
+  try {
+    // cheap and doesn’t depend on repo permissions
+    await octokit.rest.rateLimit.get();
+    return true;
+  } catch (error) {
+    if (checkErrorStatus(401, error)) {
+      return false;
+    }
+    throw error;
   }
 }
 
