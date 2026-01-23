@@ -141,79 +141,116 @@ export const createJob = <TValue extends string | number>(
       );
     },
     process() {
-      return new Promise((resolve, reject) => {
-        const run = () =>
-          pRetry(
-            async () => {
-              logger.info("Initialize consuming");
-              const channel = await getChannel();
-              channel.once("close", () => {
-                run().then(resolve, reject);
-              });
-              await channel.prefetch(prefetch);
-              await channel.assertQueue(queue, { durable: true });
-              logger.info("Consuming queue");
-              await channel.consume(queue, async (msg) => {
-                if (!msg) {
-                  return;
-                }
+      return runForever(
+        async (): Promise<void> => {
+          logger.info("Initialize consuming");
 
-                let payload: Payload<TValue>;
+          const channel = await getChannel();
 
-                try {
-                  payload = parseMessage<TValue>(msg.content);
-                  const consumeLogger = logger.child({ payload });
-                  try {
-                    await this.run(payload.args[0]);
-                  } catch (error) {
-                    if (checkIsRetryable(error) && payload.attempts < 2) {
-                      consumeLogger.info(
-                        { error },
-                        "Error while processing job",
-                      );
-                      channel.ack(msg);
-                      channel.sendToQueue(
-                        queue,
-                        serializeMessage({
-                          args: payload.args,
-                          attempts: payload.attempts + 1,
-                        }),
-                        { persistent: true },
-                      );
-                      return;
-                    }
+          let done!: () => void;
+          let fail!: (error: unknown) => void;
 
-                    channel.ack(msg);
-                    consumeLogger.error(
-                      { error },
-                      "Error while processing job",
-                    );
-                    await consumer.error?.(payload.args[0], error);
-                    return;
-                  }
-                } catch (error) {
+          const finished = new Promise<void>((resolve, reject) => {
+            done = resolve;
+            fail = reject;
+          });
+
+          const onClose = () => {
+            logger.info("Channel closed");
+            done();
+          };
+
+          const onError = (error: unknown) => {
+            logger.info({ error }, "Channel error");
+            fail(error);
+          };
+
+          channel.once("close", onClose);
+          channel.once("error", onError);
+
+          await channel.prefetch(prefetch);
+          await channel.assertQueue(queue, { durable: true });
+
+          logger.info("Consuming queue");
+
+          await channel.consume(queue, async (msg) => {
+            if (!msg) {
+              return;
+            }
+
+            try {
+              let payload: Payload<TValue>;
+
+              try {
+                payload = parseMessage<TValue>(msg.content);
+              } catch (error) {
+                channel.ack(msg);
+                logger.error({ error }, "Invalid payload");
+                return;
+              }
+
+              const consumeLogger = logger.child({ payload });
+
+              try {
+                await this.run(payload.args[0]);
+                channel.ack(msg);
+              } catch (error) {
+                if (checkIsRetryable(error) && payload.attempts < 2) {
+                  consumeLogger.info({ error }, "Error while processing job");
+
+                  channel.sendToQueue(
+                    queue,
+                    serializeMessage({
+                      args: payload.args,
+                      attempts: payload.attempts + 1,
+                    }),
+                    { persistent: true },
+                  );
+
                   channel.ack(msg);
-                  logger.error({ error }, "Error while processing job");
                   return;
                 }
 
                 channel.ack(msg);
-              });
-            },
-            {
-              onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
-                logger.info(
-                  `[job:${queue}]: Failed processing (attempt ${attemptNumber} (${retriesLeft} retries left)): ${error.message}`,
-                );
-              },
-            },
-          );
+                consumeLogger.error({ error }, "Error while processing job");
+                await pRetry(() => consumer.error?.(payload.args[0], error));
+              }
+            } catch (error) {
+              logger.info({ error }, "Error when processing message");
 
-        run().then(resolve, (error) => {
-          logger.error({ error }, "Error while trying to process job");
-          reject(error);
-        });
-      });
+              try {
+                await channel.close();
+              } catch (closeError) {
+                logger.info(
+                  { error: closeError },
+                  "Error while trying to close channel following error",
+                );
+              }
+            }
+          });
+
+          await finished;
+        },
+        {
+          onError: (error) => {
+            logger.error({ error }, "Error while trying to consume job");
+          },
+        },
+      );
     },
   };
 };
+
+async function runForever(
+  fn: () => Promise<void>,
+  options: { onError: (error: unknown) => void },
+): Promise<void> {
+  const { onError } = options;
+  for (;;) {
+    try {
+      await pRetry(fn);
+    } catch (error) {
+      onError(error);
+    }
+  }
+}
