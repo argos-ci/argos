@@ -11,7 +11,7 @@ import {
  * A comma-separated list of items.
  * Items are URI-encoded for safety, so they may not look nice in the URL.
  *
- * @param itemParser Parser for each individual item in the array
+ * @param itemParser Parser for each individual item in the set
  * @param separator The character to use to separate items (default ',')
  */
 export function parseAsSetOf<ItemType>(
