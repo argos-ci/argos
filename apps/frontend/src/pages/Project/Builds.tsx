@@ -1,12 +1,26 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { useQuery } from "@apollo/client/react";
+import {
+  memo,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useTransition,
+} from "react";
+import {
+  useBackgroundQuery,
+  useReadQuery,
+  useSuspenseQuery,
+  type QueryRef,
+} from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { BoxesIcon } from "lucide-react";
+import { useQueryStates } from "nuqs";
 import { Heading, Text } from "react-aria-components";
-import { useResolvedPath, useSearchParams } from "react-router-dom";
+import { useResolvedPath } from "react-router-dom";
 
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
@@ -30,15 +44,17 @@ import { List, ListRowLink, ListRowLoader } from "@/ui/List";
 import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
+import { useEventCallback } from "@/ui/useEventCallback";
+import { checkAreDefaultValues } from "@/util/search-params";
 
 import { BuildStatsIndicator } from "../Build/BuildStatsIndicator";
 import { NotFound } from "../NotFound";
-import { BuildNameFilter, useBuildNameFilterState } from "./BuildNameFilter";
+import { BuildNameFilter, BuildNameFilterParser } from "./BuildNameFilter";
 import {
   BuildStatusFilter,
-  useBuildStatusFilterState,
+  BuildStatusFilterParser,
 } from "./BuildStatusFilter";
-import { BuildTypeFilter, useBuildTypeFilterState } from "./BuildTypeFilter";
+import { BuildTypeFilter, BuildTypeFilterParser } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
 import { useProjectOutletContext } from "./ProjectOutletContext";
 import { useProjectParams } from "./ProjectParams";
@@ -219,17 +235,14 @@ const BuildRow = memo(function BuildRow({
   );
 });
 
-const BuildsList = ({
-  builds,
-  project,
-  fetching,
-  fetchNextPage,
-}: {
+function BuildsList(props: {
   builds: Builds;
   project: Project;
-  fetching: boolean;
+  isFetchingMore: boolean;
+  isUpdating: boolean;
   fetchNextPage: () => void;
-}) => {
+}) {
+  const { builds, project, isFetchingMore, isUpdating, fetchNextPage } = props;
   const parentRef = useRef<HTMLDivElement>(null);
   const { hasNextPage } = builds.pageInfo;
   const displayCount = builds.edges.length;
@@ -247,17 +260,20 @@ const BuildsList = ({
     if (
       lastItem &&
       lastItem.index === displayCount &&
-      !fetching &&
+      !isFetchingMore &&
       hasNextPage
     ) {
       fetchNextPage();
     }
-  }, [lastItem, displayCount, fetching, hasNextPage, fetchNextPage]);
+  }, [lastItem, displayCount, isFetchingMore, hasNextPage, fetchNextPage]);
 
   return (
     <List
       ref={parentRef}
-      className="absolute max-h-full w-full"
+      className={clsx(
+        "absolute max-h-full w-full",
+        isUpdating && "animate-pulse",
+      )}
       style={{ display: "block" }}
     >
       <div
@@ -305,99 +321,88 @@ const BuildsList = ({
       </div>
     </List>
   );
+}
+
+const filtersSchema = {
+  name: BuildNameFilterParser,
+  type: BuildTypeFilterParser,
+  status: BuildStatusFilterParser,
 };
 
-function PageContent(props: { accountSlug: string; projectName: string }) {
+function PageContent(props: {
+  projectQueryRef: QueryRef<DocumentType<typeof ProjectQuery>>;
+  accountSlug: string;
+  projectName: string;
+}) {
+  const { projectQueryRef, accountSlug, projectName } = props;
   const { permissions } = useProjectOutletContext();
   const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
-  const [, setSearchParams] = useSearchParams();
-  const clearFilters = () => {
-    setSearchParams({});
-  };
-  const [buildName, setBuildName, isBuildNameDirty] = useBuildNameFilterState();
-  const [buildStatus, setBuildStatus, isBuildStatusDirty] =
-    useBuildStatusFilterState();
-  const [buildType, setBuildType, isBuildTypeDirty] = useBuildTypeFilterState();
-  const hasFilters = isBuildNameDirty || isBuildStatusDirty || isBuildTypeDirty;
-  const projectResult = useQuery(ProjectQuery, {
-    variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
-    },
-  });
-  if (projectResult.error) {
-    throw projectResult.error;
-  }
+  const [filters, setFilters] = useQueryStates(filtersSchema);
+  const hasFilters = !checkAreDefaultValues(filtersSchema, filters);
+  console.log({ hasFilters });
 
-  const filters = useMemo(() => {
+  const [isFetchingMore, startFetchMoreTransition] = useTransition();
+  const deferredFilters = useDeferredValue(filters);
+  const isUpdating = filters !== deferredFilters;
+  const filtersVariable = useMemo(() => {
     return {
-      name: buildName,
-      type: Array.from(buildType),
-      status: Array.from(buildStatus),
+      name: deferredFilters.name,
+      status: Array.from(deferredFilters.status),
+      type: Array.from(deferredFilters.type),
     };
-  }, [buildName, buildType, buildStatus]);
-
-  const buildsResult = useQuery(ProjectBuildsQuery, {
-    variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
-      filters,
-      after: 0,
-      first: 20,
-    },
-  });
-  if (buildsResult.error) {
-    throw buildsResult.error;
-  }
-
-  const { fetchMore } = buildsResult;
-  const buildResultRef = useRef(buildsResult);
-  // @TODO try to fix this
-  // eslint-disable-next-line react-hooks/refs
-  buildResultRef.current = buildsResult;
-
-  const fetchNextPage = useCallback(() => {
-    const displayCount =
-      buildResultRef.current.data?.project?.builds.edges.length;
-    fetchMore({
+  }, [deferredFilters]);
+  const { fetchMore, data: projectBuildsData } = useSuspenseQuery(
+    ProjectBuildsQuery,
+    {
       variables: {
-        after: displayCount,
+        accountSlug,
+        projectName,
+        filters: filtersVariable,
+        after: 0,
+        first: 20,
       },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!prev.project?.builds?.edges || !fetchMoreResult?.project?.builds) {
-          return fetchMoreResult;
-        }
+    },
+  );
 
-        return {
-          ...prev,
-          project: {
-            ...prev.project,
-            builds: {
-              ...prev.project.builds,
-              ...fetchMoreResult.project.builds,
-              edges: [
-                ...prev.project.builds.edges,
-                ...fetchMoreResult.project.builds.edges,
-              ],
+  const {
+    data: { project },
+  } = useReadQuery(projectQueryRef);
+
+  const builds = projectBuildsData.project?.builds;
+
+  const fetchNextPage = useEventCallback(() => {
+    invariant(builds);
+    startFetchMoreTransition(() => {
+      fetchMore({
+        variables: {
+          after: builds.edges.length,
+        },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (
+            !prev.project?.builds?.edges ||
+            !fetchMoreResult?.project?.builds
+          ) {
+            return fetchMoreResult;
+          }
+
+          return {
+            ...prev,
+            project: {
+              ...prev.project,
+              builds: {
+                ...prev.project.builds,
+                ...fetchMoreResult.project.builds,
+                edges: [
+                  ...prev.project.builds.edges,
+                  ...fetchMoreResult.project.builds.edges,
+                ],
+              },
             },
-          },
-        };
-      },
+          };
+        },
+      });
     });
-  }, [fetchMore]);
-
-  if (
-    !(projectResult.data || projectResult.previousData) ||
-    !(buildsResult.data || buildsResult.previousData)
-  ) {
-    return <PageLoader />;
-  }
-
-  const project =
-    projectResult.data?.project || projectResult.previousData?.project;
-  const builds =
-    buildsResult.data?.project?.builds ||
-    buildsResult.previousData?.project?.builds;
+  });
 
   if (!project || !builds) {
     return <NotFound />;
@@ -440,13 +445,19 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
           </Text>
         </PageHeaderContent>
         <PageHeaderActions>
-          <BuildTypeFilter value={buildType} onChange={setBuildType} />
-          <BuildStatusFilter value={buildStatus} onChange={setBuildStatus} />
+          <BuildTypeFilter
+            value={filters.type}
+            onChange={(type) => setFilters({ type })}
+          />
+          <BuildStatusFilter
+            value={filters.status}
+            onChange={(status) => setFilters({ status })}
+          />
           {project.buildNames.length > 1 && (
             <BuildNameFilter
               buildNames={project.buildNames}
-              value={buildName}
-              onChange={setBuildName}
+              value={filters.name}
+              onChange={(name) => setFilters({ name })}
             />
           )}
         </PageHeaderActions>
@@ -462,7 +473,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
               There is no build matching the filters.
             </Text>
             <EmptyStateActions>
-              <Button onPress={() => clearFilters()}>Reset filters</Button>
+              <Button onPress={() => setFilters(null)}>Reset filters</Button>
             </EmptyStateActions>
           </EmptyState>
         ) : (
@@ -470,7 +481,8 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
             project={project}
             builds={builds}
             fetchNextPage={fetchNextPage}
-            fetching={buildsResult.loading}
+            isFetchingMore={isFetchingMore}
+            isUpdating={isUpdating}
           />
         )}
       </div>
@@ -483,10 +495,20 @@ export function Component() {
   invariant(params, "it is a project route");
   const { accountSlug, projectName } = params;
 
+  const [projectQueryRef] = useBackgroundQuery(ProjectQuery, {
+    variables: { accountSlug, projectName },
+  });
+
   return (
     <Page>
       <ProjectTitle params={params}>Settings</ProjectTitle>
-      <PageContent accountSlug={accountSlug} projectName={projectName} />
+      <Suspense fallback={<PageLoader />}>
+        <PageContent
+          projectQueryRef={projectQueryRef}
+          accountSlug={accountSlug}
+          projectName={projectName}
+        />
+      </Suspense>
     </Page>
   );
 }

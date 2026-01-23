@@ -49,6 +49,7 @@ function ProjectTabs(props: {
     >
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
+        <TabLink href="tests">Tests</TabLink>
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
         )}

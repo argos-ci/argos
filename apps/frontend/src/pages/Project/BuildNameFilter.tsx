@@ -1,4 +1,5 @@
 import { SearchIcon, XIcon } from "lucide-react";
+import { parseAsString } from "nuqs";
 import {
   Autocomplete,
   Button,
@@ -10,7 +11,6 @@ import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
-import { useSingleSearchParamState } from "@/util/search-params";
 
 function getBuildNameLabel(buildName: string) {
   if (buildName === "") {
@@ -19,9 +19,7 @@ function getBuildNameLabel(buildName: string) {
   return buildName;
 }
 
-export function useBuildNameFilterState() {
-  return useSingleSearchParamState("name");
-}
+export const BuildNameFilterParser = parseAsString;
 
 export function BuildNameFilter(props: {
   buildNames: string[];

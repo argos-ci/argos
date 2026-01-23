@@ -1,3 +1,4 @@
+import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { Helmet } from "react-helmet";
 import { RouterProvider } from "react-router-dom";
 
@@ -12,14 +13,16 @@ export function App() {
   return (
     <>
       <Helmet defaultTitle="Argos" titleTemplate="%s - Argos" />
-      <ColorModeProvider>
-        <AuthContextProvider>
-          <ApolloInitializer>
-            <RouterProvider router={router} />
-            <Toaster />
-          </ApolloInitializer>
-        </AuthContextProvider>
-      </ColorModeProvider>
+      <NuqsAdapter>
+        <ColorModeProvider>
+          <AuthContextProvider>
+            <ApolloInitializer>
+              <RouterProvider router={router} />
+              <Toaster />
+            </ApolloInitializer>
+          </AuthContextProvider>
+        </ColorModeProvider>
+      </NuqsAdapter>
     </>
   );
 }
