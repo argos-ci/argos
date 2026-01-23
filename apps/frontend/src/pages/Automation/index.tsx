@@ -18,7 +18,7 @@ import {
 } from "@/ui/Layout";
 
 import { NotFound } from "../NotFound";
-import { useProjectParams } from "../Project/ProjectParams";
+import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
 import { ProjectTitle } from "../Project/ProjectTitle";
 import {
   AutomationRulesList,
@@ -89,8 +89,18 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
   );
 }
 
-function PageContent(props: { project: ProjectDocument }) {
-  const { project } = props;
+function PageContent(props: { params: ProjectParams }) {
+  const { params } = props;
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectQuery, {
+    variables: {
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
+      after: 0,
+      first: 50,
+    },
+  });
 
   const automationRuleConnection = project?.automationRules;
   const account = project?.account;
@@ -119,9 +129,9 @@ function PageContentFound(props: { project: ProjectDocument }) {
           <EmptyStateIcon>
             <BoxesIcon strokeWidth={1} />
           </EmptyStateIcon>
-          <Heading>No automation</Heading>
+          <Heading>No automations</Heading>
           <Text slot="description">
-            There is no automation yet on this project.
+            There is no automations yet on this project.
           </Text>
           <EmptyStateActions>
             <AddAutomationButton />
@@ -158,25 +168,11 @@ function PageContentFound(props: { project: ProjectDocument }) {
 export function Component() {
   const params = useProjectParams();
   invariant(params, "Project params are required");
-  const {
-    data: { project },
-  } = useSuspenseQuery(ProjectQuery, {
-    variables: {
-      accountSlug: params.accountSlug,
-      projectName: params.projectName,
-      after: 0,
-      first: 50,
-    },
-  });
-
-  if (project?.account?.__typename !== "Team") {
-    return <NotFound />;
-  }
 
   return (
     <Page>
       <ProjectTitle params={params}>Automations</ProjectTitle>
-      <PageContent project={project} />
+      <PageContent params={params} />
     </Page>
   );
 }

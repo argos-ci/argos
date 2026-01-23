@@ -18,7 +18,7 @@ export function formatTestId(input: TestIdPayload) {
 /**
  * Parses a test ID string into an object containing the project name and test ID.
  */
-export function parseTestId(input: string): TestIdPayload {
+function parseTestId(input: string): TestIdPayload {
   const parts = input.split("-");
   const testId = parts.pop();
   const projectName = parts.join("-");
@@ -33,6 +33,17 @@ export function parseTestId(input: string): TestIdPayload {
     projectName,
     testId: String(decoded),
   };
+}
+
+/**
+ * Parses a test ID string, returns null if it fails.
+ */
+export function safeParseTextId(input: string): TestIdPayload | null {
+  try {
+    return parseTestId(input);
+  } catch {
+    return null;
+  }
 }
 
 export interface TestChangeIdPayload extends TestIdPayload {

@@ -1,6 +1,4 @@
 import {
-  memo,
-  Suspense,
   useDeferredValue,
   useEffect,
   useMemo,
@@ -40,8 +38,8 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Link } from "@/ui/Link";
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
-import { PageLoader } from "@/ui/PageLoader";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -57,7 +55,7 @@ import {
 import { BuildTypeFilter, BuildTypeFilterParser } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
 import { useProjectOutletContext } from "./ProjectOutletContext";
-import { useProjectParams } from "./ProjectParams";
+import { useProjectParams, type ProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
 
 const ProjectQuery = graphql(`
@@ -121,29 +119,7 @@ type ProjectBuildsDocument = DocumentType<typeof ProjectBuildsQuery>;
 type Builds = NonNullable<ProjectBuildsDocument["project"]>["builds"];
 type Build = Builds["edges"][0];
 
-function FakeLink({
-  ref,
-  className,
-  href,
-  ...props
-}: React.ComponentPropsWithRef<"div"> & { href: string | undefined }) {
-  if (!href) {
-    return <div ref={ref} className={className} {...props} />;
-  }
-  return (
-    <div
-      ref={ref}
-      className={clsx("text-low hover:text-default transition", className)}
-      onClick={(event) => {
-        event.preventDefault();
-        window.open(href, "_blank")?.focus();
-      }}
-      {...props}
-    />
-  );
-}
-
-const BuildRow = memo(function BuildRow({
+function BuildRow({
   build,
   project,
   style,
@@ -198,8 +174,10 @@ const BuildRow = memo(function BuildRow({
       <div className="relative hidden w-32 flex-col gap-1 text-xs md:flex">
         {build.branch && (
           <div>
-            <FakeLink
+            <Link
               className="inline-flex max-w-full items-center gap-2"
+              variant="neutral"
+              target="_blank"
               href={
                 project.repository
                   ? `${project.repository.url}/tree/${build.branch}`
@@ -208,12 +186,14 @@ const BuildRow = memo(function BuildRow({
             >
               <GitBranchIcon className="size-3 shrink-0" />
               <Truncable>{build.branch}</Truncable>
-            </FakeLink>
+            </Link>
           </div>
         )}
         <div>
-          <FakeLink
+          <Link
             className="inline-flex max-w-full items-center gap-2"
+            variant="neutral"
+            target="_blank"
             href={
               project.repository
                 ? `${project.repository.url}/commit/${build.commit}`
@@ -222,7 +202,7 @@ const BuildRow = memo(function BuildRow({
           >
             <GitCommitIcon className="size-3 shrink-0" />
             <span className="truncate">{build.commit.slice(0, 7)}</span>
-          </FakeLink>
+          </Link>
         </div>
       </div>
       <div
@@ -233,7 +213,7 @@ const BuildRow = memo(function BuildRow({
       </div>
     </ListRowLink>
   );
-});
+}
 
 function BuildsList(props: {
   builds: Builds;
@@ -331,16 +311,14 @@ const filtersSchema = {
 
 function PageContent(props: {
   projectQueryRef: QueryRef<DocumentType<typeof ProjectQuery>>;
-  accountSlug: string;
-  projectName: string;
+  params: ProjectParams;
 }) {
-  const { projectQueryRef, accountSlug, projectName } = props;
+  const { projectQueryRef, params } = props;
   const { permissions } = useProjectOutletContext();
   const hasReviewerPermission = permissions.includes(ProjectPermission.Review);
   const [filters, setFilters] = useQueryStates(filtersSchema);
   const hasFilters = !checkAreDefaultValues(filtersSchema, filters);
 
-  const [isFetchingMore, startFetchMoreTransition] = useTransition();
   const deferredFilters = useDeferredValue(filters);
   const isUpdating = filters !== deferredFilters;
   const filtersVariable = useMemo(() => {
@@ -354,8 +332,8 @@ function PageContent(props: {
     ProjectBuildsQuery,
     {
       variables: {
-        accountSlug,
-        projectName,
+        accountSlug: params.accountSlug,
+        projectName: params.projectName,
         filters: filtersVariable,
         after: 0,
         first: 20,
@@ -369,6 +347,7 @@ function PageContent(props: {
 
   const builds = projectBuildsData.project?.builds;
 
+  const [isFetchingMore, startFetchMoreTransition] = useTransition();
   const fetchNextPage = useEventCallback(() => {
     invariant(builds);
     startFetchMoreTransition(() => {
@@ -421,9 +400,9 @@ function PageContent(props: {
             <EmptyStateIcon>
               <BoxesIcon strokeWidth={1} />
             </EmptyStateIcon>
-            <Heading>No build</Heading>
+            <Heading>No builds</Heading>
             <Text slot="description">
-              There is no build yet on this project.
+              There is no builds yet on this project.
             </Text>
             <EmptyStateActions>
               <LinkButton href="/">Back to home</LinkButton>
@@ -469,7 +448,7 @@ function PageContent(props: {
             </EmptyStateIcon>
             <Heading>No builds</Heading>
             <Text slot="description">
-              There is no build matching the filters.
+              There is no builds matching the filters.
             </Text>
             <EmptyStateActions>
               <Button onPress={() => setFilters(null)}>Reset filters</Button>
@@ -492,22 +471,18 @@ function PageContent(props: {
 export function Component() {
   const params = useProjectParams();
   invariant(params, "it is a project route");
-  const { accountSlug, projectName } = params;
 
   const [projectQueryRef] = useBackgroundQuery(ProjectQuery, {
-    variables: { accountSlug, projectName },
+    variables: {
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
+    },
   });
 
   return (
     <Page>
       <ProjectTitle params={params}>Settings</ProjectTitle>
-      <Suspense fallback={<PageLoader />}>
-        <PageContent
-          projectQueryRef={projectQueryRef}
-          accountSlug={accountSlug}
-          projectName={projectName}
-        />
-      </Suspense>
+      <PageContent projectQueryRef={projectQueryRef} params={params} />
     </Page>
   );
 }

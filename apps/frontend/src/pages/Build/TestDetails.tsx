@@ -295,7 +295,7 @@ function InsightValue(props: {
   className?: string;
 }) {
   return (
-    <div className={clsx("font-semibold", props.className)}>
+    <div className={clsx("text-default font-semibold", props.className)}>
       {props.children}
     </div>
   );

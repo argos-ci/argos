@@ -1,6 +1,5 @@
 import { useDeferredValue } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
@@ -8,11 +7,10 @@ import {
   PartyPopperIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import moment from "moment";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -28,9 +26,15 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
+import {
+  PeriodSelect,
+  type TestMetricPeriodState,
+} from "@/containers/PeriodSelect";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useTestPeriodState } from "@/containers/Test/Period";
+import { SeenChange } from "@/containers/Test/SeenChange";
+import { TestStatusIndicator } from "@/containers/TestStatusIndicator";
 import { graphql, type DocumentType } from "@/gql";
-import { MetricsPeriod, TestStatus } from "@/gql/graphql";
 import {
   EmptyState,
   EmptyStateIcon,
@@ -39,22 +43,14 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { HeadlessLink } from "@/ui/Link";
 import { Separator } from "@/ui/Separator";
-import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import useViewportSize from "@/ui/useViewportSize";
 
-import { getBuildURL } from "../Build/BuildParams";
+import { NotFound } from "../NotFound";
 import { ChangesChart } from "./ChangesChart";
 import { Counter, CounterLabel, CounterValue } from "./Counter";
-import {
-  PeriodSelect,
-  usePeriodState,
-  type PeriodsDefinition,
-  type PeriodState,
-} from "./PeriodSelect";
 import { useTestParams, type TestSearchParams } from "./TestParams";
 import {
   BuildsCounter,
@@ -79,20 +75,10 @@ const TestQuery = graphql(`
         name
         status
         firstSeenDiff {
-          id
-          createdAt
-          build {
-            id
-            number
-          }
+          ...ScreenChange_ScreenshotDiff
         }
         lastSeenDiff {
-          id
-          createdAt
-          build {
-            id
-            number
-          }
+          ...ScreenChange_ScreenshotDiff
         }
         changes(period: $period, after: 0, first: 30) {
           edges {
@@ -126,41 +112,10 @@ const TestQuery = graphql(`
   }
 `);
 
-const now = new Date();
-
-const PERIODS = {
-  [MetricsPeriod.Last_24Hours]: {
-    from: moment(now).subtract(24, "hours").toDate(),
-    label: "Last 24 hours",
-  },
-  [MetricsPeriod.Last_3Days]: {
-    from: moment(now).subtract(3, "days").startOf("day").toDate(),
-    label: "Last 3 days",
-  },
-  [MetricsPeriod.Last_7Days]: {
-    from: moment(now).subtract(7, "days").startOf("day").toDate(),
-    label: "Last 7 days",
-  },
-  [MetricsPeriod.Last_30Days]: {
-    from: moment(now).subtract(30, "days").startOf("day").toDate(),
-    label: "Last 30 days",
-  },
-  [MetricsPeriod.Last_90Days]: {
-    from: moment(now).subtract(90, "days").startOf("day").toDate(),
-    label: "Last 90 days",
-  },
-} satisfies PeriodsDefinition;
-
-type TestPeriodState = PeriodState<typeof PERIODS>;
-
 export function Component() {
   const params = useTestParams();
   invariant(params, "Can't be used outside of a test route");
-  const periodState = usePeriodState({
-    defaultValue: MetricsPeriod.Last_7Days,
-    definition: PERIODS,
-    paramName: "period" satisfies keyof TestSearchParams,
-  });
+  const periodState = useTestPeriodState();
   const deferredPeriodValue = useDeferredValue(periodState.value);
   const isPending = periodState.value !== deferredPeriodValue;
   const period = periodState.definition[deferredPeriodValue];
@@ -177,8 +132,7 @@ export function Component() {
   const test = project?.test;
 
   if (!test) {
-    // @TODO implement a 404 page
-    return <Navigate to="/" />;
+    return <NotFound />;
   }
 
   const periodLabel =
@@ -196,24 +150,7 @@ export function Component() {
             </Helmet>
             <Heading className="text-lg!">{test.name}</Heading>
             <div className="text-low text-sm">
-              {(() => {
-                switch (test.status) {
-                  case TestStatus.Ongoing:
-                    return (
-                      <Tooltip content="This test is part of the active tests list.">
-                        <span>Ongoing</span>
-                      </Tooltip>
-                    );
-                  case TestStatus.Removed:
-                    return (
-                      <Tooltip content="This test is has been removed from the active tests list.">
-                        <span>Removed</span>
-                      </Tooltip>
-                    );
-                  default:
-                    assertNever(test.status, "Unknown test status");
-                }
-              })()}
+              <TestStatusIndicator status={test.status} />
             </div>
           </PageHeaderContent>
         </PageHeader>
@@ -250,30 +187,18 @@ export function Component() {
                   />
                 </div>
                 <Separator className="self-stretch" orientation="vertical" />
-                {test.firstSeenDiff && test.lastSeenDiff ? (
-                  <div className="flex flex-col gap-2">
-                    <Seen
-                      title="First seen"
-                      date={test.firstSeenDiff.createdAt}
-                      buildNumber={test.firstSeenDiff.build.number}
-                      buildUrl={getBuildURL({
-                        ...params,
-                        buildNumber: test.firstSeenDiff.build.number,
-                        diffId: test.firstSeenDiff.id,
-                      })}
-                    />
-                    <Seen
-                      title="Last seen"
-                      date={test.lastSeenDiff.createdAt}
-                      buildNumber={test.lastSeenDiff.build.number}
-                      buildUrl={getBuildURL({
-                        ...params,
-                        buildNumber: test.lastSeenDiff.build.number,
-                        diffId: test.lastSeenDiff.id,
-                      })}
-                    />
-                  </div>
-                ) : null}
+                <div className="flex flex-col gap-2">
+                  <SeenChange
+                    title="First change"
+                    params={params}
+                    diff={test.firstSeenDiff ?? null}
+                  />
+                  <SeenChange
+                    title="Last change"
+                    params={params}
+                    diff={test.lastSeenDiff ?? null}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -297,29 +222,6 @@ export function Component() {
         </div>
       </PageContainer>
     </Page>
-  );
-}
-
-function Seen(props: {
-  title: string;
-  date: string;
-  buildNumber: number;
-  buildUrl: string;
-}) {
-  const { title, date, buildNumber, buildUrl } = props;
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="text-sm">
-        <span className="font-semibold">{title}</span>{" "}
-        <Time date={date} className="underline-emphasis" />
-      </div>
-      <div className="text-low text-xs">
-        In build{" "}
-        <HeadlessLink className="rac-focus underline" href={buildUrl}>
-          #{buildNumber}
-        </HeadlessLink>
-      </div>
-    </div>
   );
 }
 
@@ -357,14 +259,10 @@ const _ChangesFragment = graphql(`
           ...BuildDiffDetail_Build
         }
         ...BuildDiffState_ScreenshotDiff
+        ...ScreenChange_ScreenshotDiff
       }
       firstSeenDiff {
-        id
-        createdAt
-        build {
-          id
-          number
-        }
+        ...ScreenChange_ScreenshotDiff
       }
     }
   }
@@ -398,7 +296,7 @@ function useActiveChange(props: { test: TestDocument }) {
 
 function ChangesExplorer(props: {
   test: TestDocument;
-  periodState: TestPeriodState;
+  periodState: TestMetricPeriodState;
 }) {
   const { test, periodState } = props;
   const [activeChange, setActiveChangeId] = useActiveChange({ test });
@@ -511,25 +409,15 @@ function BuildHeader(props: {
           orientation="vertical"
         />
         <div className="flex gap-x-6 gap-y-0.5">
-          <Seen
+          <SeenChange
             title="First seen"
-            date={change.stats.firstSeenDiff.createdAt}
-            buildNumber={change.stats.firstSeenDiff.build.number}
-            buildUrl={getBuildURL({
-              ...params,
-              buildNumber: change.stats.firstSeenDiff.build.number,
-              diffId: change.stats.firstSeenDiff.id,
-            })}
+            diff={change.stats.firstSeenDiff}
+            params={params}
           />
-          <Seen
+          <SeenChange
             title="Last seen"
-            date={change.stats.lastSeenDiff.createdAt}
-            buildNumber={change.stats.lastSeenDiff.build.number}
-            buildUrl={getBuildURL({
-              ...params,
-              buildNumber: change.stats.lastSeenDiff.build.number,
-              diffId: change.stats.lastSeenDiff.id,
-            })}
+            diff={change.stats.lastSeenDiff}
+            params={params}
           />
         </div>
       </div>

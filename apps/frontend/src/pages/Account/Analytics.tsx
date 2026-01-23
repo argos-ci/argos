@@ -7,7 +7,7 @@ import { FileDownIcon } from "lucide-react";
 import moment from "moment";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import {
   Area,
   AreaChart,
@@ -44,6 +44,8 @@ import { PageLoader } from "@/ui/PageLoader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { Tooltip } from "@/ui/Tooltip";
+
+import { useAccountParams } from "./AccountParams";
 
 const AccountQuery = graphql(`
   query AccountUsage_account(
@@ -91,14 +93,17 @@ const AccountQuery = graphql(`
 `);
 
 export function Component() {
-  const { accountSlug } = useParams();
-  invariant(accountSlug);
-  const [params, setParams] = useSearchParams({ period: DEFAULT_PERIOD });
-  const period = parsePeriod(params.get("period"));
+  const params = useAccountParams();
+  invariant(params, "must be defined on account");
+  const { accountSlug } = params;
+  const [searchParams, setSearchParams] = useSearchParams({
+    period: DEFAULT_PERIOD,
+  });
+  const period = parsePeriod(searchParams.get("period"));
 
   const setPeriod = useCallback(
     (value: Period) => {
-      setParams((prev) => {
+      setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         if (value === DEFAULT_PERIOD) {
           next.delete("period");
@@ -108,7 +113,7 @@ export function Component() {
         return next;
       });
     },
-    [setParams],
+    [setSearchParams],
   );
 
   useEffect(() => {

@@ -4,7 +4,6 @@ import gqlTag from "graphql-tag";
 import { transaction } from "@/database";
 import {
   AuditTrail,
-  Build,
   IgnoredChange,
   Project,
   ScreenshotDiff,
@@ -13,7 +12,6 @@ import {
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 
 import {
-  ITestStatus,
   type IResolvers,
   type ITestMetrics,
 } from "../__generated__/resolver-types";
@@ -68,6 +66,11 @@ export const typeDefs = gql`
     pageInfo: PageInfo!
   }
 
+  type TestConnection implements Connection {
+    edges: [Test!]!
+    pageInfo: PageInfo!
+  }
+
   enum TestStatus {
     ONGOING
     REMOVED
@@ -77,7 +80,9 @@ export const typeDefs = gql`
     id: ID!
     createdAt: DateTime!
     name: String!
+    buildName: String!
     status: TestStatus!
+    screenshot: Screenshot
     firstSeenDiff: ScreenshotDiff
     lastSeenDiff: ScreenshotDiff
     changes(
@@ -119,42 +124,22 @@ export const resolvers: IResolvers = {
       invariant(project);
       return formatTestId({ projectName: project.name, testId: test.id });
     },
-    status: async (test) => {
-      // Check if the test is part of any of these builds
-      const isActive =
-        (await ScreenshotDiff.query()
-          .where("testId", test.id)
-          .whereIn(
-            "buildId",
-            Build.query()
-              .select("id")
-              .distinctOn("name")
-              .where("type", "reference")
-              .where("projectId", test.projectId)
-              .orderBy("name")
-              .orderBy("createdAt", "desc"),
-          )
-          .resultSize()) > 0;
-
-      return isActive ? ITestStatus.Ongoing : ITestStatus.Removed;
+    status: async (test, _args, ctx) => {
+      return ctx.loaders.TestStatusLoader.load({
+        projectId: test.projectId,
+        testId: test.id,
+      });
     },
-    firstSeenDiff: async (test) => {
-      const result = await ScreenshotDiff.query()
-        .where("testId", test.id)
-        .whereNotNull("fileId")
-        .orderBy("createdAt", "asc")
-        .first();
-
-      return result ?? null;
+    screenshot: async (test, _args, ctx) => {
+      return ctx.loaders.LatestCompareScreenshotLoader.load(test.id);
     },
-    lastSeenDiff: async (test) => {
-      const result = await ScreenshotDiff.query()
-        .where("testId", test.id)
-        .whereNotNull("fileId")
-        .orderBy("createdAt", "desc")
-        .first();
-
-      return result ?? null;
+    firstSeenDiff: async (test, _args, ctx) => {
+      const res = await ctx.loaders.SeenDiffsLoader.load(test.id);
+      return res.first;
+    },
+    lastSeenDiff: async (test, _args, ctx) => {
+      const res = await ctx.loaders.SeenDiffsLoader.load(test.id);
+      return res.last;
     },
     changes: async (test, args, ctx) => {
       const { period, after, first } = args;

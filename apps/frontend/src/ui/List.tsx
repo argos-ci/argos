@@ -1,11 +1,8 @@
 import { ComponentPropsWithRef, memo, ReactNode, useTransition } from "react";
 import { clsx } from "clsx";
-import {
-  Link as RACLink,
-  LinkProps as RACLinkProps,
-} from "react-aria-components";
 
 import { Button } from "./Button";
+import { HeadlessLink, type HeadlessLinkProps } from "./Link";
 import { Loader, useDelayedVisible } from "./Loader";
 
 export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
@@ -23,13 +20,13 @@ export function List(props: Omit<ComponentPropsWithRef<"div">, "role">) {
 
 const listRowClassName = "bg-app min-w-0 border-b last:border-b-0";
 
-export function ListRowLink(props: RACLinkProps) {
+export function ListRowLink(props: Omit<HeadlessLinkProps, "external">) {
   return (
-    <RACLink
+    <HeadlessLink
       {...props}
       className={clsx(
         listRowClassName,
-        "data-[hovered]:bg-hover data-[focus-visible]:bg-hover focus:outline-hidden",
+        "data-hovered:bg-hover data-focus-visible:bg-hover focus:outline-hidden",
         props.className,
       )}
     />
@@ -127,7 +124,7 @@ export function ListHeaderRow(props: ComponentPropsWithRef<"div">) {
       {...props}
       className={clsx(
         listRowClassName,
-        "flex items-center gap-6 p-4 text-sm font-semibold",
+        "text-low flex items-center gap-6 px-4 py-3 text-xs font-semibold",
         props.className,
       )}
     />

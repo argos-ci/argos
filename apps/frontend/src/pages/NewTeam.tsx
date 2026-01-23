@@ -31,9 +31,9 @@ const AutoCreateTeam = ({ name }: { name: string }) => {
 };
 
 export function Component() {
-  const [params] = useSearchParams();
-  const name = params.get("name");
-  const autoSubmit = params.get("autoSubmit") === "true";
+  const [searchParams] = useSearchParams();
+  const name = searchParams.get("name");
+  const autoSubmit = searchParams.get("autoSubmit") === "true";
 
   if (name && autoSubmit) {
     return <AutoCreateTeam name={name} />;

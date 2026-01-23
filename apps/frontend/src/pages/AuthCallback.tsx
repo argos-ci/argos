@@ -48,10 +48,10 @@ function getLoginUrl(error: unknown) {
 
 function AuthCallback(props: { provider: AuthProvider }) {
   const { provider } = props;
-  const [params] = useSearchParams();
-  const code = params.get("code");
-  const state = params.get("state");
-  const errorParam = params.get("error");
+  const [searchParams] = useSearchParams();
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
+  const errorParam = searchParams.get("error");
   const redirectUri = state ? getRedirectFromState({ state, provider }) : null;
   const { setToken, token } = useAuth();
   const [initialToken] = useState(token);
@@ -98,10 +98,10 @@ function AuthCallback(props: { provider: AuthProvider }) {
 function ErrorFallback(props: { error: unknown; provider: AuthProvider }) {
   const { error, provider } = props;
   const isLoggedIn = useIsLoggedIn();
-  const [params] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   if (isLoggedIn) {
-    const state = params.get("state");
+    const state = searchParams.get("state");
     const redirectUri = state
       ? getRedirectFromState({ state, provider })
       : null;

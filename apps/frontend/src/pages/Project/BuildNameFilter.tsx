@@ -14,7 +14,7 @@ import { TextInput } from "@/ui/TextInput";
 
 function getBuildNameLabel(buildName: string) {
   if (buildName === "") {
-    return "All Builds";
+    return "All builds";
   }
   return buildName;
 }
@@ -60,8 +60,8 @@ export function BuildNameFilter(props: {
               </div>
             )}
           >
-            <ListBoxItem id="" textValue="All Builds">
-              All Builds
+            <ListBoxItem id="" textValue="All builds">
+              All builds
             </ListBoxItem>
             {props.buildNames.map((name) => (
               <ListBoxItem

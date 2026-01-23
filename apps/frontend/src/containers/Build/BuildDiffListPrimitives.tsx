@@ -10,16 +10,39 @@ import {
 } from "react-aria";
 
 import { useOverlayStyle } from "@/containers/Build/OverlayStyle";
+import { graphql, type DocumentType } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { ImageKitPicture, ImageKitPictureProps } from "@/ui/ImageKitPicture";
 import { Truncable, type TruncableProps } from "@/ui/Truncable";
 import { checkIsImageContentType } from "@/util/content-type";
 
-import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 import { RemoteMinimap } from "./RemoteMinimap";
 
+const _DiffImageFragment = graphql(`
+  fragment DiffImage_ScreenshotDiff on ScreenshotDiff {
+    width
+    height
+    status
+    url
+    compareScreenshot {
+      id
+      width
+      height
+      contentType
+      url
+    }
+    baseScreenshot {
+      id
+      width
+      height
+      contentType
+      url
+    }
+  }
+`);
+
 interface DiffImageProps {
-  diff: BuildDiffDetailDocument;
+  diff: DocumentType<typeof _DiffImageFragment>;
   config: GetDiffDimensionsConfig;
 }
 
@@ -118,7 +141,7 @@ function OverlayImage(props: {
 /**
  * Renders a single image without any diff overlay.
  */
-function SingleImage(props: {
+export function SingleImage(props: {
   contentType: string;
   url: string;
   dimensions: Dimensions;
@@ -147,7 +170,7 @@ function DiffPicture(props: ImageKitPictureProps) {
 
 export interface DiffCardProps {
   isActive: boolean;
-  variant: "success" | "danger" | "primary";
+  variant: "success" | "danger" | "primary" | "neutral";
   className?: string;
   children: React.ReactNode;
 }
@@ -173,6 +196,12 @@ export function DiffCard(props: DiffCardProps) {
           ? "ring-3 ring-inset ring-primary-active"
           : children
             ? "ring-1 ring-inset ring-primary group-hover/item:ring-primary-hover"
+            : "";
+      case "neutral":
+        return isActive
+          ? "ring-3 ring-inset ring-neutral-active"
+          : children
+            ? "ring-1 ring-inset ring-neutral group-hover/item:ring-neutral-hover"
             : "";
       default:
         assertNever(variant);
@@ -268,7 +297,7 @@ type Dimensions = {
   height: number;
 };
 
-function constraint(size: Dimensions, constraints: Constraints) {
+export function constraintSize(size: Dimensions, constraints: Constraints) {
   const wp = constraints.maxWidth / size.width;
   const hp = constraints.maxHeight / size.height;
   const ratio = Math.min(wp, hp, 1);
@@ -288,11 +317,11 @@ type GetDiffDimensionsConfig = Constraints & {
 };
 
 export function getDiffDimensions(
-  diff: BuildDiffDetailDocument | null,
+  diff: DocumentType<typeof _DiffImageFragment> | null,
   config: GetDiffDimensionsConfig,
 ) {
   if (diff && diff.width != null && diff.height != null) {
-    return constraint(
+    return constraintSize(
       {
         width: diff.width,
         height: diff.height,
@@ -307,7 +336,7 @@ export function getDiffDimensions(
     diff.compareScreenshot.width != null &&
     diff.compareScreenshot.height != null
   ) {
-    return constraint(
+    return constraintSize(
       {
         width: diff.compareScreenshot.width,
         height: diff.compareScreenshot.height,
@@ -322,7 +351,7 @@ export function getDiffDimensions(
     diff.baseScreenshot.width != null &&
     diff.baseScreenshot.height != null
   ) {
-    return constraint(
+    return constraintSize(
       {
         width: diff.baseScreenshot.width,
         height: diff.baseScreenshot.height,
