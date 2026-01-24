@@ -168,7 +168,7 @@ jobs:
         run: pnpm run e2e:setup
 
       - name: Run Playwright tests
-        uses: docker://mcr.microsoft.com/playwright:v1.57.0-jammy
+        uses: docker://mcr.microsoft.com/playwright:v1.58.0-jammy
         with:
           # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500

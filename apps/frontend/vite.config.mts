@@ -37,18 +37,19 @@ export default defineConfig((args) => {
                 "commonjs-dynamic-modules",
                 "__vite-browser-external",
               ],
-              "react-aria": [
-                "node_modules/react-aria",
-                "node_modules/@react-aria",
-                "node_modules/@react-stately",
-              ],
               sentry: ["node_modules/@sentry"],
               icons: ["node_modules/lucide-react", "node_modules/@primer"],
               moment: ["node_modules/moment"],
               d3: ["node_modules/d3-"],
               lodash: ["node_modules/lodash"],
               recharts: ["node_modules/recharts"],
-              react: ["node_modules/react", "node_modules/react-dom"],
+              react: [
+                "node_modules/react-aria",
+                "node_modules/@react-aria",
+                "node_modules/@react-stately",
+                "node_modules/react",
+                "node_modules/react-dom",
+              ],
             };
 
             // https://github.com/vitejs/vite/issues/5189#issuecomment-2175410148
