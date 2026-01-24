@@ -9,6 +9,8 @@ catalog:
   '@types/react-dom': ^19.2.3
   eslint: ^9.39.2
   express: ^5.2.1
+  lodash: ^4.17.23
+  lodash-es: ^4.17.23
   react: ^19.2.3
   react-dom: ^19.2.3
   undici: ^7.19.0
