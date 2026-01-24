@@ -94,7 +94,7 @@
     "sqids": "^0.3.0",
     "stripe": "^17.7.0",
     "tmp": "^0.2.5",
-    "undici": "^7.19.0",
+    "undici": "^7.19.1",
     "yaml": "^2.8.2",
     "zod": "catalog:",
     "zod-openapi": "^5.4.6"
