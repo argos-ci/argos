@@ -9,7 +9,7 @@
     "check-format": "prettier --check ."
   },
   "dependencies": {
-    "@tsconfig/node24": "^24.0.3",
+    "@tsconfig/node24": "^24.0.4",
     "@tsconfig/strictest": "^2.0.8"
   }
 }
