@@ -72,6 +72,8 @@
       "@types/express": "catalog:",
       "@types/express-serve-static-core": "catalog:",
       "express": "catalog:",
+      "lodash": "catalog:",
+      "lodash-es": "catalog:",
       "react": "catalog:",
       "react-dom": "catalog:",
       "undici": "catalog:"
