@@ -1764,7 +1764,9 @@ CREATE TABLE public.users (
     "gitlabUserId" bigint,
     staff boolean DEFAULT false,
     "googleUserId" bigint,
-    "deletedAt" timestamp with time zone
+    "deletedAt" timestamp with time zone,
+    type text DEFAULT 'user'::text NOT NULL,
+    CONSTRAINT users_type_check CHECK ((type = ANY (ARRAY['user'::text, 'bot'::text])))
 );
 
 
@@ -3751,3 +3753,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118080430_comment-fingerprint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118195213_test-stats-fingerprints.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119154332_delete-unused-tables.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119203427_user-type.js', 1, NOW());
