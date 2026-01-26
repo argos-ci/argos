@@ -16,8 +16,7 @@
         "knexfile.js",
         "src/graphql/__generated__/**/*",
         "**/bin/**/*"
-      ],
-      "ignoreDependencies": ["pg", "formidable"]
+      ]
     },
     "apps/frontend": {
       "ignore": [

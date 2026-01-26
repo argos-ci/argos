@@ -113,7 +113,7 @@ export function Link({ ref, className, variant, ...props }: LinkProps) {
   );
 }
 
-export function FakeLink({
+function FakeLink({
   ref,
   href,
   target = "_self",

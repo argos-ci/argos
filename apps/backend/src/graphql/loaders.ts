@@ -717,7 +717,7 @@ function createSeenDiffsLoader() {
 
 type LatestCompareScreenshot = Screenshot | null;
 
-export function createLatestCompareScreenshotLoader() {
+function createLatestCompareScreenshotLoader() {
   return new DataLoader<string, LatestCompareScreenshot>(async (testIds) => {
     if (testIds.length === 0) {
       return [];
