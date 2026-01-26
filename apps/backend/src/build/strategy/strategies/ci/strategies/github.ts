@@ -102,6 +102,10 @@ export const GithubStrategy: MergeBaseStrategy<{
       });
       return response.data.map((commit) => commit.sha);
     } catch (error) {
+      // 409 = Git Repository is empty.
+      if (checkErrorStatus(409, error)) {
+        return [];
+      }
       if (checkErrorStatus(404, error)) {
         const notFoundError = new Error(
           `"${args.sha}" not found on repository "${args.ctx.repo}"`,
