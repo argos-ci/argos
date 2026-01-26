@@ -26,12 +26,12 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
-import {
-  PeriodSelect,
-  type TestMetricPeriodState,
-} from "@/containers/PeriodSelect";
+import { PeriodSelect } from "@/containers/PeriodSelect";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
-import { useTestPeriodState } from "@/containers/Test/Period";
+import {
+  useTestPeriodState,
+  type TestMetricPeriodState,
+} from "@/containers/Test/Period";
 import { SeenChange } from "@/containers/Test/SeenChange";
 import { TestStatusIndicator } from "@/containers/TestStatusIndicator";
 import { graphql, type DocumentType } from "@/gql";

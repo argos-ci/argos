@@ -35,7 +35,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types";
 import { deleteProject, getAdminProject } from "../services/project";
-import { safeParseTextId } from "../services/test";
+import { safeParseTestId } from "../services/test";
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
@@ -561,7 +561,7 @@ export const resolvers: IResolvers = {
       return build;
     },
     test: async (project, args, ctx) => {
-      const parsed = safeParseTextId(args.id);
+      const parsed = safeParseTestId(args.id);
       if (!parsed) {
         return null;
       }

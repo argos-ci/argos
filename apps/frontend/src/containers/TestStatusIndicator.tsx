@@ -14,7 +14,7 @@ export function TestStatusIndicator(props: { status: TestStatus }) {
       );
     case TestStatus.Removed:
       return (
-        <Tooltip content="This test is has been removed from the active tests list.">
+        <Tooltip content="This test has been removed from the active tests list.">
           <span>Removed</span>
         </Tooltip>
       );

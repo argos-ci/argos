@@ -16,7 +16,7 @@ import { createBuildDiffs } from "./createBuildDiffs";
 
 /**
  * Pushes the diffs to the screenshot-diff job queue.
- * If there is no diff to proceed, it pushes a notification.
+ * If there are no diffs to proceed, it pushes a notification.
  */
 async function pushDiffs(input: {
   build: Build;

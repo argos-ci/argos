@@ -38,7 +38,7 @@ function parseTestId(input: string): TestIdPayload {
 /**
  * Parses a test ID string, returns null if it fails.
  */
-export function safeParseTextId(input: string): TestIdPayload | null {
+export function safeParseTestId(input: string): TestIdPayload | null {
   try {
     return parseTestId(input);
   } catch {

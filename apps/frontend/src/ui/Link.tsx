@@ -128,6 +128,8 @@ export function FakeLink({
   return (
     <span
       ref={ref}
+      role="link"
+      tabIndex={0}
       onClick={(event) => {
         event.preventDefault();
         window.open(href, target)?.focus();

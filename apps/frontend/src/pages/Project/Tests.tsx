@@ -199,7 +199,9 @@ function PageContent(props: {
             <FileImageIcon strokeWidth={1} />
           </EmptyStateIcon>
           <Heading>No tests</Heading>
-          <Text slot="description">There is no tests yet on this project.</Text>
+          <Text slot="description">
+            There are no tests yet on this project.
+          </Text>
           <EmptyStateActions>
             <LinkButton href="/">Back to home</LinkButton>
           </EmptyStateActions>

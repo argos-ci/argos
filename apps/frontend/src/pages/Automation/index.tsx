@@ -131,7 +131,7 @@ function PageContentFound(props: { project: ProjectDocument }) {
           </EmptyStateIcon>
           <Heading>No automations</Heading>
           <Text slot="description">
-            There is no automations yet on this project.
+            There are no automations yet on this project.
           </Text>
           <EmptyStateActions>
             <AddAutomationButton />

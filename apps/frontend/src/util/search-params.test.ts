@@ -40,9 +40,9 @@ describe("checkAreDefaultValues", () => {
       tag: parseAsString,
     };
 
-    expect(
-      checkAreDefaultValues(schema, { name: "alice", tag: null }),
-    ).toBe(true);
+    expect(checkAreDefaultValues(schema, { name: "alice", tag: null })).toBe(
+      true,
+    );
   });
 
   it("returns false when a value differs from the default", () => {

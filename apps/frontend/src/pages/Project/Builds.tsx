@@ -402,7 +402,7 @@ function PageContent(props: {
             </EmptyStateIcon>
             <Heading>No builds</Heading>
             <Text slot="description">
-              There is no builds yet on this project.
+              There are no builds yet on this project.
             </Text>
             <EmptyStateActions>
               <LinkButton href="/">Back to home</LinkButton>
@@ -448,7 +448,7 @@ function PageContent(props: {
             </EmptyStateIcon>
             <Heading>No builds</Heading>
             <Text slot="description">
-              There is no builds matching the filters.
+              There are no builds matching the filters.
             </Text>
             <EmptyStateActions>
               <Button onPress={() => setFilters(null)}>Reset filters</Button>
@@ -481,7 +481,7 @@ export function Component() {
 
   return (
     <Page>
-      <ProjectTitle params={params}>Settings</ProjectTitle>
+      <ProjectTitle params={params}>Builds</ProjectTitle>
       <PageContent projectQueryRef={projectQueryRef} params={params} />
     </Page>
   );

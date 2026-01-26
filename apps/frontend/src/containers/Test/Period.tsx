@@ -2,7 +2,11 @@ import moment from "moment";
 
 import { MetricsPeriod } from "@/gql/graphql";
 
-import { usePeriodState, type PeriodsDefinition } from "../PeriodSelect";
+import {
+  usePeriodState,
+  type PeriodsDefinition,
+  type PeriodState,
+} from "../PeriodSelect";
 
 const now = new Date();
 
@@ -28,6 +32,8 @@ const TEST_METRICS_PERIOD = {
     label: "Last 90 days",
   },
 } satisfies PeriodsDefinition;
+
+export type TestMetricPeriodState = PeriodState<typeof TEST_METRICS_PERIOD>;
 
 export function useTestPeriodState() {
   return usePeriodState({
