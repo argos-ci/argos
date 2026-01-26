@@ -29,7 +29,6 @@ import { getStartDateFromPeriod } from "@/metrics/test";
 
 import {
   IBuildStatus,
-  IMetricsPeriod,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
@@ -152,6 +151,7 @@ export const typeDefs = gql`
     tests(
       after: Int = 0
       first: Int = 30
+      period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
   }
@@ -578,7 +578,7 @@ export const resolvers: IResolvers = {
       }
       return test;
     },
-    tests: async (project, { first, after, filters }) => {
+    tests: async (project, { first, after, period, filters }) => {
       const latestRef = Build.query()
         .alias("b")
         .select("b.id", "b.projectId", "b.name")
@@ -661,9 +661,7 @@ export const resolvers: IResolvers = {
     "tests"."id" desc
     `,
           {
-            from: getStartDateFromPeriod(
-              IMetricsPeriod.Last_7Days,
-            ).toISOString(),
+            from: getStartDateFromPeriod(period).toISOString(),
             to: new Date().toISOString(),
           },
         )

@@ -140,9 +140,9 @@ function BuildRow({
           <BuildModeIndicator mode={build.mode} />
           <div className="tabular-nums">{build.number}</div>
         </div>
-        <Truncable className="text-low mt-1 text-xs">
-          {build.name !== "default" ? build.name : ""}
-        </Truncable>
+        {build.name !== "default" ? (
+          <Truncable className="text-low mt-1 text-xs">{build.name}</Truncable>
+        ) : null}
       </div>
       <div className="flex w-38 shrink-0 flex-col items-start gap-1">
         <BuildStatusChip build={build} scale="sm" />

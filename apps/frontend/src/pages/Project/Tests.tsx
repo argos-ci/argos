@@ -29,7 +29,6 @@ import { PeriodSelect } from "@/containers/PeriodSelect";
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { useTestPeriodState } from "@/containers/Test/Period";
 import { SeenChange } from "@/containers/Test/SeenChange";
-import { TestStatusIndicator } from "@/containers/TestStatusIndicator";
 import { graphql, type DocumentType } from "@/gql";
 import { Button, LinkButton } from "@/ui/Button";
 import {
@@ -70,7 +69,7 @@ const ProjectTestsQuery = graphql(`
   ) {
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
-      tests(first: $first, after: $after, filters: $filters) {
+      tests(first: $first, after: $after, period: $period, filters: $filters) {
         pageInfo {
           totalCount
           hasNextPage
@@ -216,7 +215,8 @@ function PageContent(props: {
         <PageHeaderContent>
           <Heading>Tests</Heading>
           <Text slot="headline">
-            View all the tests associated with this project.
+            View all the tests associated with this project sorted by flakiness
+            score.
           </Text>
         </PageHeaderContent>
         <PageHeaderActions>
@@ -423,11 +423,11 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
             />
           </DiffCard>
         ) : null}
-        <div className="truncate">
+        <div className="flex flex-col justify-center truncate">
           <Truncable className="font-medium">{test.name}</Truncable>
-          <div className="text-low">
-            {test.buildName} · <TestStatusIndicator status={test.status} />
-          </div>
+          {test.buildName !== "default" ? (
+            <Truncable className="text-low">{test.buildName}</Truncable>
+          ) : null}
         </div>
       </div>
       <div className="w-30">
