@@ -304,23 +304,23 @@ function TestsList(props: {
     >
       <ListHeaderRow>
         <div className="flex-1 truncate">Test</div>
-        <div className="w-30">Last change</div>
-        <div className="w-20">
+        <div className="w-30 text-right">Last change</div>
+        <div className="w-20 text-center">
           <Tooltip content={<FlakinessTooltip />}>
             <span className="underline-emphasis">Flakiness</span>
           </Tooltip>
         </div>
-        <div className="w-20">
+        <div className="w-20 text-right">
           <Tooltip content={<TestsChangesTooltip />}>
             <span className="underline-emphasis">Changes</span>
           </Tooltip>
         </div>
-        <div className="w-20">
+        <div className="w-20 text-right">
           <Tooltip content={<StabilityTooltip />}>
             <span className="underline-emphasis">Stability</span>
           </Tooltip>
         </div>
-        <div className="w-20">
+        <div className="w-20 text-right">
           <Tooltip content={<ConsistencyTooltip />}>
             <span className="underline-emphasis">Consistency</span>
           </Tooltip>
@@ -430,21 +430,23 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
           ) : null}
         </div>
       </div>
-      <div className="w-30">
+      <div className="w-30 text-right">
         <SeenChange params={params} diff={test.lastSeenDiff ?? null} />
       </div>
-      <div className="w-20">
+      <div className="flex w-20 justify-center">
         <FlakinessCircleIndicator
           value={test.metrics.all.flakiness}
           className="size-12"
         />
       </div>
-      <div className="w-20">{test.metrics.all.changes}</div>
-      <div className="w-20">
+      <div className="w-20 text-right tabular-nums">
+        {test.metrics.all.changes}
+      </div>
+      <div className="w-20 text-right tabular-nums">
         {compactFormatter.format(test.metrics.all.stability * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
-      <div className="w-20">
+      <div className="w-20 text-right tabular-nums">
         {compactFormatter.format(test.metrics.all.consistency * 100)}
         <small className="text-low ml-0.5">%</small>
       </div>
