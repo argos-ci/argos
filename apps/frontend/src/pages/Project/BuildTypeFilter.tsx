@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { parseAsStringEnum } from "nuqs";
 import { MenuTrigger } from "react-aria-components";
 
 import { BuildType } from "@/gql/graphql";
@@ -8,22 +9,18 @@ import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
 import { buildTypeDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
-import { useMultipleSearchParamsState } from "@/util/search-params";
+import { parseAsSetOf } from "@/util/search-params";
 
-const buildTypes = [
+const BuildTypes = [
   BuildType.Check,
   BuildType.Orphan,
   BuildType.Reference,
   BuildType.Skipped,
 ];
 
-const defaultTypes = new Set(buildTypes);
-
-export function useBuildTypeFilterState() {
-  return useMultipleSearchParamsState<BuildType>("type", {
-    defaultValue: defaultTypes,
-  });
-}
+export const BuildTypeFilterParser = parseAsSetOf(
+  parseAsStringEnum<BuildType>(BuildTypes),
+).withDefault(new Set(BuildTypes));
 
 export function BuildTypeFilter(props: {
   value: Set<BuildType>;
@@ -34,7 +31,7 @@ export function BuildTypeFilter(props: {
     <MenuTrigger>
       <SelectButton className="text-sm">
         <div className="flex -space-x-1">
-          {buildTypes.map((type) => {
+          {BuildTypes.map((type) => {
             return (
               <div
                 key={type}
@@ -50,7 +47,7 @@ export function BuildTypeFilter(props: {
         </div>
         Type
         <Badge>
-          {value.size}/{buildTypes.length}
+          {value.size}/{BuildTypes.length}
         </Badge>
       </SelectButton>
       <Popover>
@@ -65,7 +62,7 @@ export function BuildTypeFilter(props: {
             onChange(keys as Set<BuildType>);
           }}
         >
-          {buildTypes.map((status) => {
+          {BuildTypes.map((status) => {
             const descriptor = buildTypeDescriptors[status];
             const Icon = descriptor.icon;
             return (

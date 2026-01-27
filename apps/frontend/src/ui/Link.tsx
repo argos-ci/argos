@@ -1,4 +1,10 @@
-import type { RefAttributes } from "react";
+import {
+  createContext,
+  use,
+  type HTMLAttributeAnchorTarget,
+  type RefAttributes,
+} from "react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ExternalLinkIcon } from "lucide-react";
 import {
@@ -8,12 +14,12 @@ import {
   type ButtonProps,
 } from "react-aria-components";
 
-type LinkProps = RACLinkProps & {
+export type HeadlessLinkProps = RACLinkProps & {
   ref?: React.Ref<HTMLAnchorElement>;
   external?: boolean;
 };
 
-export type HeadlessLinkProps = LinkProps;
+const LinkContext = createContext<boolean>(false);
 
 export function HeadlessLink({
   ref,
@@ -22,7 +28,20 @@ export function HeadlessLink({
   external,
   className,
   ...props
-}: LinkProps) {
+}: HeadlessLinkProps) {
+  const inLink = use(LinkContext);
+  if (inLink) {
+    invariant(typeof children !== "function");
+    return (
+      <FakeLink
+        className={clsx("rac-focus", className)}
+        href={props.href}
+        target={target}
+      >
+        {children}
+      </FakeLink>
+    );
+  }
   const isExternal =
     external !== undefined
       ? external
@@ -34,33 +53,87 @@ export function HeadlessLink({
       target={target}
       {...props}
     >
-      {isExternal
-        ? (props) => (
-            <>
-              {typeof children === "function" ? children(props) : children}
-              <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
-            </>
-          )
-        : children}
+      {(props) => {
+        const content =
+          typeof children === "function" ? children(props) : children;
+        return (
+          <LinkContext value>
+            {isExternal ? (
+              <>
+                {content}
+                <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
+              </>
+            ) : (
+              content
+            )}
+          </LinkContext>
+        );
+      }}
     </RACLink>
   );
 }
 
-const linkClassName =
-  "text-primary-low rac-focus no-underline hover:underline cursor-pointer";
+function getLinkClassName(props: Pick<LinkProps, "variant">) {
+  const { variant = "primary" } = props;
+  return clsx(
+    "rac-focus no-underline hover:underline cursor-pointer",
+    { neutral: "text-low", primary: "text-primary-low" }[variant],
+  );
+}
 
 export function LinkButton({
   className,
+  variant,
   ...props
-}: ButtonProps & RefAttributes<HTMLButtonElement>) {
-  return <Button className={clsx(linkClassName, className)} {...props} />;
+}: ButtonProps &
+  RefAttributes<HTMLButtonElement> &
+  Pick<LinkProps, "variant">) {
+  return (
+    <Button
+      className={clsx(getLinkClassName({ variant }), className)}
+      {...props}
+    />
+  );
 }
 
-export function Link({ ref, className, ...props }: LinkProps) {
+type LinkProps = HeadlessLinkProps & {
+  /**
+   * @default "primary"
+   */
+  variant?: "primary" | "neutral";
+};
+
+export function Link({ ref, className, variant, ...props }: LinkProps) {
   return (
     <HeadlessLink
       ref={ref}
-      className={clsx(linkClassName, className)}
+      className={clsx(getLinkClassName({ variant }), className)}
+      {...props}
+    />
+  );
+}
+
+function FakeLink({
+  ref,
+  href,
+  target = "_self",
+  ...props
+}: React.ComponentPropsWithRef<"span"> & {
+  href: string | undefined;
+  target?: HTMLAttributeAnchorTarget;
+}) {
+  if (!href) {
+    return <span ref={ref} {...props} />;
+  }
+  return (
+    <span
+      ref={ref}
+      role="link"
+      tabIndex={0}
+      onClick={(event) => {
+        event.preventDefault();
+        window.open(href, target)?.focus();
+      }}
       {...props}
     />
   );

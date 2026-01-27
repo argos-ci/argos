@@ -2665,6 +2665,13 @@ CREATE INDEX builds_number_index ON public.builds USING btree (number);
 
 
 --
+-- Name: builds_project_type_name_createdat_id_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_project_type_name_createdat_id_idx ON public.builds USING btree ("projectId", type, name, "createdAt" DESC, id);
+
+
+--
 -- Name: builds_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2875,6 +2882,13 @@ CREATE INDEX screenshot_diffs_buildid_index ON public.screenshot_diffs USING btr
 
 
 --
+-- Name: screenshot_diffs_buildid_notnull_include_testid_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_diffs_buildid_notnull_include_testid_idx ON public.screenshot_diffs USING btree ("buildId") INCLUDE ("testId") WHERE ("testId" IS NOT NULL);
+
+
+--
 -- Name: screenshot_diffs_comparescreenshotid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2903,10 +2917,10 @@ CREATE INDEX screenshot_diffs_test_id_id_desc_idx ON public.screenshot_diffs USI
 
 
 --
--- Name: screenshot_diffs_testid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: screenshot_diffs_testid_createdat_desc_cmp_notnull_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX screenshot_diffs_testid_index ON public.screenshot_diffs USING btree ("testId");
+CREATE INDEX screenshot_diffs_testid_createdat_desc_cmp_notnull_idx ON public.screenshot_diffs USING btree ("testId", "createdAt" DESC) INCLUDE ("compareScreenshotId") WHERE ("compareScreenshotId" IS NOT NULL);
 
 
 --
@@ -3005,6 +3019,13 @@ CREATE INDEX team_users_userid_index ON public.team_users USING btree ("userId")
 --
 
 CREATE INDEX teams_ssogithubaccountid_index ON public.teams USING btree ("ssoGithubAccountId");
+
+
+--
+-- Name: tests_projectid_buildname_createdat_id_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX tests_projectid_buildname_createdat_id_idx ON public.tests USING btree ("projectId", "buildName", "createdAt" DESC, id DESC);
 
 
 --
@@ -3751,3 +3772,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118080430_comment-fingerprint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118195213_test-stats-fingerprints.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119154332_delete-unused-tables.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260125185235_add-indices.js', 1, NOW());

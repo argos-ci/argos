@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { invariant } from "@argos/util/invariant";
 import { useSearchParams } from "react-router-dom";
 
@@ -65,10 +64,6 @@ export function usePeriodState<TDef extends PeriodsDefinition>(input: {
       setParams(next, { flushSync: true });
     }
   });
-
-  useEffect(() => {
-    setValue(value);
-  }, [setValue, value]);
 
   return { value, setValue, definition };
 }

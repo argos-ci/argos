@@ -2,7 +2,6 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { BoxesIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
-import { Helmet } from "react-helmet";
 import { useParams } from "react-router-dom";
 
 import { DocumentType, graphql } from "@/gql";
@@ -19,7 +18,8 @@ import {
 } from "@/ui/Layout";
 
 import { NotFound } from "../NotFound";
-import { useProjectParams } from "../Project/ProjectParams";
+import { useProjectParams, type ProjectParams } from "../Project/ProjectParams";
+import { ProjectTitle } from "../Project/ProjectTitle";
 import {
   AutomationRulesList,
   DeleteAutomation,
@@ -89,8 +89,18 @@ function AddAutomationButton(props: Omit<LinkButtonProps, "children">) {
   );
 }
 
-function PageContent(props: { project: ProjectDocument }) {
-  const { project } = props;
+function PageContent(props: { params: ProjectParams }) {
+  const { params } = props;
+  const {
+    data: { project },
+  } = useSuspenseQuery(ProjectQuery, {
+    variables: {
+      accountSlug: params.accountSlug,
+      projectName: params.projectName,
+      after: 0,
+      first: 50,
+    },
+  });
 
   const automationRuleConnection = project?.automationRules;
   const account = project?.account;
@@ -119,9 +129,9 @@ function PageContentFound(props: { project: ProjectDocument }) {
           <EmptyStateIcon>
             <BoxesIcon strokeWidth={1} />
           </EmptyStateIcon>
-          <Heading>No automation</Heading>
+          <Heading>No automations</Heading>
           <Text slot="description">
-            There is no automation yet on this project.
+            There are no automations yet on this project.
           </Text>
           <EmptyStateActions>
             <AddAutomationButton />
@@ -158,29 +168,11 @@ function PageContentFound(props: { project: ProjectDocument }) {
 export function Component() {
   const params = useProjectParams();
   invariant(params, "Project params are required");
-  const {
-    data: { project },
-  } = useSuspenseQuery(ProjectQuery, {
-    variables: {
-      accountSlug: params.accountSlug,
-      projectName: params.projectName,
-      after: 0,
-      first: 50,
-    },
-  });
-
-  if (project?.account?.__typename !== "Team") {
-    return <NotFound />;
-  }
 
   return (
     <Page>
-      <Helmet>
-        <title>
-          Automations • {params.accountSlug}/{params.projectName}
-        </title>
-      </Helmet>
-      <PageContent project={project} />
+      <ProjectTitle params={params}>Automations</ProjectTitle>
+      <PageContent params={params} />
     </Page>
   );
 }

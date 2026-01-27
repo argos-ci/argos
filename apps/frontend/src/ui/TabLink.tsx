@@ -1,51 +1,39 @@
 import { TabPanel, Tabs } from "react-aria-components";
-import {
-  useHref,
-  useLocation,
-  useMatch,
-  useResolvedPath,
-} from "react-router-dom";
+import { useHref, useLocation, useResolvedPath } from "react-router-dom";
 
 import { Tab } from "./Tab";
 
-/**
- * Allow to compute the selected key for a tab link splat.
- * @example
- * const selectedKey = useTabLinkSplat("automations")
- * <TabLinks selectedKey={selectedKey} />
- * <TabPanel id={selectedKey} />
- */
-export function useTabLinkSplat(href: string) {
-  const resolvedHref = useHref(href);
-  const match = useMatch(`${resolvedHref}/*`);
-  return match ? resolvedHref : undefined;
+function stripAfterFirstSegment(pathname: string): string {
+  const match = pathname.match(/^\/[^/]+/);
+  return match ? match[0] : pathname;
+}
+
+function useSelectedKey() {
+  const location = useLocation();
+  const resolvedPath = useResolvedPath("");
+  const selectedKey = stripAfterFirstSegment(
+    location.pathname.replace(resolvedPath.pathname, ""),
+  );
+  return selectedKey;
 }
 
 export function TabsLink(props: {
   children: React.ReactNode;
   className?: string;
-  selectedKey?: string;
 }) {
-  const { selectedKey, ...rest } = props;
-  const location = useLocation();
   const resolvedPath = useResolvedPath("");
+  const selectedKey = useSelectedKey();
   return (
-    <Tabs
-      key={resolvedPath.pathname}
-      selectedKey={selectedKey ?? location.pathname}
-      {...rest}
-    />
+    <Tabs key={resolvedPath.pathname} selectedKey={selectedKey} {...props} />
   );
 }
 
 export function TabLinkPanel(props: {
   children: React.ReactNode;
   className?: string;
-  id?: string;
 }) {
-  const { id, ...rest } = props;
-  const { pathname } = useLocation();
-  return <TabPanel id={id ?? pathname} {...rest} />;
+  const selectedKey = useSelectedKey();
+  return <TabPanel id={selectedKey} {...props} />;
 }
 
 export function TabLink({
@@ -56,8 +44,8 @@ export function TabLink({
   children: React.ReactNode;
   className?: string;
 }) {
+  const resolvedPath = useResolvedPath("");
   const resolvedHref = useHref(href);
-  return (
-    <Tab key={resolvedHref} id={resolvedHref} href={resolvedHref} {...props} />
-  );
+  const id = resolvedHref.replace(resolvedPath.pathname, "");
+  return <Tab key={id} id={id} href={resolvedHref} {...props} />;
 }

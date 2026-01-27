@@ -35,6 +35,8 @@ import {
 import { checkErrorStatus, getAppOctokit, GhApiInstallation } from "@/github";
 import { getTestAllMetrics } from "@/metrics/test";
 
+import { ITestStatus } from "./__generated__/resolver-types";
+
 function createModelLoader<TModelClass extends ModelClass<Model>>(
   Model: TModelClass,
 ) {
@@ -598,6 +600,163 @@ function createTestAuditTrailLoader() {
   );
 }
 
+function createTestStatusLoader() {
+  return new DataLoader<
+    {
+      projectId: string;
+      testId: string;
+    },
+    ITestStatus,
+    string
+  >(
+    async (pairs) => {
+      if (pairs.length === 0) {
+        return [];
+      }
+      const projectIds = Array.from(new Set(pairs.map((p) => p.projectId)));
+      const testIds = Array.from(new Set(pairs.map((p) => p.testId)));
+
+      const rows = (await ScreenshotDiff.query()
+        .join(
+          Build.query()
+            .select("id", "projectId", "name")
+            .distinctOn(["projectId", "name"])
+            .where("type", "reference")
+            .whereIn("projectId", projectIds)
+            .orderBy("projectId")
+            .orderBy("name")
+            .orderBy("createdAt", "desc")
+            .as("latest_reference_build"),
+          "latest_reference_build.id",
+          "screenshot_diffs.buildId",
+        )
+        .whereIn("testId", testIds)
+        .select("latest_reference_build.projectId", "screenshot_diffs.testId")
+        .distinct()) as unknown as { projectId: string; testId: string }[];
+
+      const activeKeySet = new Set(
+        rows.map((r) => `${r.projectId}:${r.testId}`),
+      );
+
+      return pairs.map(({ projectId, testId }) =>
+        activeKeySet.has(`${projectId}:${testId}`)
+          ? ITestStatus.Ongoing
+          : ITestStatus.Removed,
+      );
+    },
+    { cacheKeyFn: (input) => JSON.stringify(input) },
+  );
+}
+
+type SeenDiffs = {
+  first: ScreenshotDiff | null;
+  last: ScreenshotDiff | null;
+};
+function createSeenDiffsLoader() {
+  return new DataLoader<string, SeenDiffs>(async (testIds) => {
+    if (testIds.length === 0) {
+      return [];
+    }
+
+    const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
+
+    const rows = await ScreenshotDiff.query()
+      .from(ScreenshotDiff.raw(`(values ${valuesSql}) as t("testId")`, testIds))
+      .joinRaw(
+        `
+        join lateral (
+          (
+            select sd.id, 'first' as kind
+            from screenshot_diffs sd
+            where sd."testId" = t."testId"
+              and sd."fileId" is not null
+            order by sd.id asc
+            limit 1
+          )
+          union all
+          (
+            select sd.id, 'last' as kind
+            from screenshot_diffs sd
+            where sd."testId" = t."testId"
+              and sd."fileId" is not null
+            order by sd.id desc
+            limit 1
+          )
+        ) pick on true
+        `,
+      )
+      .join("screenshot_diffs", "screenshot_diffs.id", "pick.id")
+      .select(
+        ScreenshotDiff.raw(`t."testId"::text as "testId"`),
+        "pick.kind",
+        "screenshot_diffs.*",
+      );
+
+    const map = new Map<string, SeenDiffs>();
+    for (const testId of testIds) {
+      map.set(testId, { first: null, last: null });
+    }
+
+    for (const row of rows as any[]) {
+      const entry = map.get(String(row.testId))!;
+      switch (row.kind) {
+        case "first": {
+          entry.first = row;
+          break;
+        }
+        case "last": {
+          entry.last = row;
+          break;
+        }
+      }
+    }
+
+    return testIds.map((id) => map.get(id)!);
+  });
+}
+
+type LatestCompareScreenshot = Screenshot | null;
+
+function createLatestCompareScreenshotLoader() {
+  return new DataLoader<string, LatestCompareScreenshot>(async (testIds) => {
+    if (testIds.length === 0) {
+      return [];
+    }
+
+    const valuesSql = testIds.map(() => "(?::bigint)").join(", ");
+
+    const rows = await Screenshot.query()
+      .select(Screenshot.raw(`t."testId" as "testId"`), "screenshots.*")
+      .from(Screenshot.raw(`(values ${valuesSql}) as t("testId")`, testIds))
+      .joinRaw(
+        `
+    join lateral (
+      select sd."compareScreenshotId"
+      from "screenshot_diffs" sd
+      where sd."testId" = t."testId"
+        and sd."compareScreenshotId" is not null
+      order by sd."createdAt" desc
+      limit 1
+    ) as sd on true
+    `,
+      )
+      .join("screenshots", "screenshots.id", "sd.compareScreenshotId");
+
+    const index = new Map(testIds.map((testId, i) => [testId, i]));
+    const results: LatestCompareScreenshot[] = testIds.map(() => null);
+
+    for (const row of rows as any[]) {
+      const i = index.get(row.testId);
+      if (i === undefined) {
+        continue;
+      }
+      results[i] = row;
+    }
+
+    return results;
+  });
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
@@ -619,17 +778,20 @@ export const createLoaders = () => ({
   IgnoredChangeLoader: createIgnoredChangeLoader(),
   LatestAutomationRun: createLatestAutomationRunLoader(),
   LatestProjectBuild: createLatestProjectBuildLoader(),
+  LatestCompareScreenshotLoader: createLatestCompareScreenshotLoader(),
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),
   SlackInstallation: createModelLoader(SlackInstallation),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
+  SeenDiffsLoader: createSeenDiffsLoader(),
   Team: createModelLoader(Team),
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),
+  TestStatusLoader: createTestStatusLoader(),
   getChangeStatsLoader: createTestChangeStatsLoader(),
   TestAllMetrics: createTestAllMetricsLoader(),
-  User: createModelLoader(User),
   TestAuditTrailLoader: createTestAuditTrailLoader(),
+  User: createModelLoader(User),
 });

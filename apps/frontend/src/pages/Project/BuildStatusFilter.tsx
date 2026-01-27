@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { parseAsStringEnum } from "nuqs";
 import { MenuTrigger } from "react-aria-components";
 
 import { BuildStatus } from "@/gql/graphql";
@@ -8,9 +9,9 @@ import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
 import { buildStatusDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
-import { useMultipleSearchParamsState } from "@/util/search-params";
+import { parseAsSetOf } from "@/util/search-params";
 
-const buildStatuses = [
+const BuildStatuses = [
   BuildStatus.Accepted,
   BuildStatus.Rejected,
   BuildStatus.NoChanges,
@@ -21,21 +22,19 @@ const buildStatuses = [
   BuildStatus.Expired,
 ];
 
-const defaultStatuses = new Set([
-  BuildStatus.Accepted,
-  BuildStatus.Rejected,
-  BuildStatus.NoChanges,
-  BuildStatus.ChangesDetected,
-  BuildStatus.Pending,
-  BuildStatus.Progress,
-  BuildStatus.Error,
-]);
-
-export function useBuildStatusFilterState() {
-  return useMultipleSearchParamsState<BuildStatus>("status", {
-    defaultValue: defaultStatuses,
-  });
-}
+export const BuildStatusFilterParser = parseAsSetOf(
+  parseAsStringEnum<BuildStatus>(BuildStatuses),
+).withDefault(
+  new Set([
+    BuildStatus.Accepted,
+    BuildStatus.Rejected,
+    BuildStatus.NoChanges,
+    BuildStatus.ChangesDetected,
+    BuildStatus.Pending,
+    BuildStatus.Progress,
+    BuildStatus.Error,
+  ]),
+);
 
 export function BuildStatusFilter(props: {
   value: Set<BuildStatus>;
@@ -46,7 +45,7 @@ export function BuildStatusFilter(props: {
     <MenuTrigger>
       <SelectButton className="text-sm">
         <div className="flex -space-x-1">
-          {buildStatuses.map((status) => {
+          {BuildStatuses.map((status) => {
             return (
               <div
                 key={status}
@@ -64,7 +63,7 @@ export function BuildStatusFilter(props: {
         </div>
         Status
         <Badge>
-          {value.size}/{buildStatuses.length}
+          {value.size}/{BuildStatuses.length}
         </Badge>
       </SelectButton>
       <Popover>
@@ -79,7 +78,7 @@ export function BuildStatusFilter(props: {
             onChange(keys as Set<BuildStatus>);
           }}
         >
-          {buildStatuses.map((status) => {
+          {BuildStatuses.map((status) => {
             const descriptor = buildStatusDescriptors[status];
             const Icon = descriptor.icon;
             return (

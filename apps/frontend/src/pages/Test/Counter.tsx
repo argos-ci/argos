@@ -5,7 +5,7 @@ export function Counter(props: ComponentProps<"div">) {
   return (
     <div
       {...props}
-      className="text-primary flex flex-col items-center gap-0.5 px-2 select-none"
+      className="flex flex-col items-center gap-0.5 px-2 select-none"
     />
   );
 }

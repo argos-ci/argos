@@ -231,11 +231,7 @@ export function AutomationRulesList(
   const parentRef = useRef<HTMLDivElement>(null);
 
   return (
-    <List
-      ref={parentRef}
-      className="absolute max-h-full w-full"
-      style={{ display: "block" }}
-    >
+    <List ref={parentRef} className="absolute max-h-full w-full">
       <div className="relative">
         <ListHeaderRow>
           <div className="w-44 shrink-0 md:w-auto md:grow">Name</div>

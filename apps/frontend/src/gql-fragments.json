@@ -18,6 +18,7 @@
       "TeamInviteConnection",
       "TeamMemberConnection",
       "TestChangesConnection",
+      "TestConnection",
       "UserConnection"
     ],
     "Node": [

@@ -176,6 +176,10 @@
   --ring-color-success-hover: var(--grass-8);
   --ring-color-success-active: var(--grass-9);
 
+  --ring-color-neutral: var(--mauve-6);
+  --ring-color-neutral-hover: var(--mauve-8);
+  --ring-color-neutral-active: var(--mauve-9);
+
   --ring-color-google: var(--gray-6);
 
   --outline-color-primary: var(--violet-6);

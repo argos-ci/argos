@@ -1,4 +1,5 @@
 import { SearchIcon, XIcon } from "lucide-react";
+import { parseAsString } from "nuqs";
 import {
   Autocomplete,
   Button,
@@ -10,18 +11,15 @@ import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
-import { useSingleSearchParamState } from "@/util/search-params";
 
 function getBuildNameLabel(buildName: string) {
   if (buildName === "") {
-    return "All Builds";
+    return "All builds";
   }
   return buildName;
 }
 
-export function useBuildNameFilterState() {
-  return useSingleSearchParamState("name");
-}
+export const BuildNameFilterParser = parseAsString;
 
 export function BuildNameFilter(props: {
   buildNames: string[];
@@ -62,8 +60,8 @@ export function BuildNameFilter(props: {
               </div>
             )}
           >
-            <ListBoxItem id="" textValue="All Builds">
-              All Builds
+            <ListBoxItem id="" textValue="All builds">
+              All builds
             </ListBoxItem>
             {props.buildNames.map((name) => (
               <ListBoxItem
