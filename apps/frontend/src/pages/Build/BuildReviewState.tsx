@@ -1,4 +1,11 @@
-import { createContext, use, useEffect, useMemo, useRef } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { invariant } from "@argos/util/invariant";
 import { atomFamily } from "jotai-family";
 import { useAtom } from "jotai/react";
@@ -302,6 +309,23 @@ export function useGetReviewedDiffStatuses() {
 }
 
 /**
+ * State to get a diff evaluation status.
+ */
+export function useGetDiffStatus() {
+  const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
+  return useCallback(
+    (diffId: string | null) => {
+      return getDiffEvaluationStatus
+        ? diffId
+          ? getDiffEvaluationStatus(diffId)
+          : EvaluationStatus.Pending
+        : null;
+    },
+    [getDiffEvaluationStatus],
+  );
+}
+
+/**
  * State hook to manage the review status of one diff or diff group.
  */
 export function useBuildDiffStatusState(args: {
@@ -312,7 +336,6 @@ export function useBuildDiffStatusState(args: {
   const diffState = useBuildDiffState();
   const api = use(BuildReviewAPIContext);
   const setDiffStatuses = api?.setDiffStatuses;
-  const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
   const setGroupStatus = useEventCallback((status: EvaluationStatus) => {
     if (!diffGroup || !setDiffStatuses) {
       return false;
@@ -360,14 +383,8 @@ export function useBuildDiffStatusState(args: {
     }
   });
 
-  return [
-    getDiffEvaluationStatus
-      ? diffId
-        ? getDiffEvaluationStatus(diffId)
-        : EvaluationStatus.Pending
-      : null,
-    setDiffStatus,
-  ] as const;
+  const getDiffStatus = useGetDiffStatus();
+  return [getDiffStatus(diffId), setDiffStatus] as const;
 }
 
 const diffStatusesFamily = atomFamily((params: BuildParams) =>

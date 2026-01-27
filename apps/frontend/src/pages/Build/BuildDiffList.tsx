@@ -24,6 +24,7 @@ import {
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "lucide-react";
+import memoize from "memoize";
 import {
   Heading,
   Button as RACButton,
@@ -66,9 +67,9 @@ import {
 } from "./BuildDiffState";
 import {
   EvaluationStatus,
-  useBuildDiffStatusState,
   useGetDiffEvaluationStatus,
   useGetDiffGroupEvaluationStatus,
+  useGetDiffStatus,
   useWatchItemReview,
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
@@ -148,6 +149,18 @@ function createListItemRow(input: {
   };
 }
 
+const memoCreateListItemRow = memoize(createListItemRow, {
+  cacheKey: ([input]) =>
+    [
+      input.index,
+      input.diff?.id,
+      input.first,
+      input.last,
+      input.result ? JSON.stringify(input.result.match) : null,
+      input.parent?.key,
+    ].join(""),
+});
+
 function createGroupItemRow(input: {
   diff: Diff;
   first: boolean;
@@ -166,6 +179,17 @@ function createGroupItemRow(input: {
     group: [input.diff],
   };
 }
+
+const memoCreateGroupItemRow = memoize(createGroupItemRow, {
+  cacheKey: ([input]) =>
+    [
+      input.diff?.id,
+      input.first,
+      input.last,
+      input.expanded,
+      input.result ? JSON.stringify(input.result.match) : null,
+    ].join(""),
+});
 
 function getRows(
   groups: DiffGroup[],
@@ -209,7 +233,13 @@ function getRows(
             if (result) {
               return [
                 ...acc,
-                createListItemRow({ index: uindex, diff, first, last, result }),
+                memoCreateListItemRow({
+                  index: uindex,
+                  diff,
+                  first,
+                  last,
+                  result,
+                }),
               ];
             }
             return acc;
@@ -219,7 +249,7 @@ function getRows(
           if (!diff?.group) {
             return [
               ...acc,
-              createListItemRow({ index: uindex, diff, first, last }),
+              memoCreateListItemRow({ index: uindex, diff, first, last }),
             ];
           }
 
@@ -232,7 +262,7 @@ function getRows(
           if (!otherDiffInGroup) {
             return [
               ...acc,
-              createListItemRow({ index: uindex, diff, first, last }),
+              memoCreateListItemRow({ index: uindex, diff, first, last }),
             ];
           }
 
@@ -247,7 +277,7 @@ function getRows(
             if (expanded) {
               return [
                 ...acc,
-                createListItemRow({
+                memoCreateListItemRow({
                   index: uindex,
                   diff,
                   first,
@@ -262,7 +292,7 @@ function getRows(
             return acc;
           }
 
-          currentGroupItem = createGroupItemRow({
+          currentGroupItem = memoCreateGroupItemRow({
             diff,
             first,
             last,
@@ -456,27 +486,29 @@ function useDelayedHover(props: {
   };
 }
 
-function ListItem(props: {
-  style: React.HTMLProps<HTMLButtonElement>["style"];
+const ListItem = memo(function ListItem(props: {
   item: ListItemRow | ListGroupItemRow;
   index: number;
+  status: EvaluationStatus | null;
   active: boolean;
   setActiveDiff: (diff: Diff) => void;
   observer: IntersectionObserver | null;
   onToggleGroupItem: (groupId: string | null) => void;
   isHovered: boolean;
-  onHoverChange: (isHovered: boolean) => void;
+  onHoverChange: (isHovered: boolean, index: number) => void;
+  groupStatus: EvaluationStatus | null;
 }) {
   const {
-    style,
     item,
     index,
     active,
+    status,
     setActiveDiff,
     observer,
     onToggleGroupItem,
     isHovered,
     onHoverChange,
+    groupStatus,
   } = props;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -490,16 +522,10 @@ function ListItem(props: {
     return undefined;
   }, [observer]);
   const { searchMode } = useSearchModeState();
-  const [status] = useBuildDiffStatusState({
-    diffId: item.diff?.id ?? null,
-    diffGroup: null,
-  });
-  const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
-  const groupStatus = getDiffGroupStatus?.(item.diff?.group ?? null) ?? null;
   const isGroupItem = item.type === "group-item" && item.group.length > 1;
   const isSubItem = item.type === "item" && item.parent;
   const { hoverProps } = useDelayedHover({
-    onHoverChange,
+    onHoverChange: (isHovered) => onHoverChange(isHovered, index),
     delay: 1000,
     cooldownDelay: 800,
   });
@@ -578,7 +604,7 @@ function ListItem(props: {
   return (
     <div
       className={clsx("relative w-full px-4", isSubItem && "pl-10")}
-      style={{ ...rowStyle, ...style }}
+      style={{ ...rowStyle }}
     >
       {isGroupItem && (
         <CardStack
@@ -604,7 +630,7 @@ function ListItem(props: {
       )}
     </div>
   );
-}
+});
 
 function DiffTooltip(props: {
   diff: Diff;
@@ -862,7 +888,7 @@ const InternalBuildDiffList = memo(() => {
     estimateSize,
     scrollPaddingStart: 30,
     getScrollElement: () => containerRef.current,
-    overscan: 20,
+    overscan: 10,
     getItemKey: (index) => {
       const row = rows[index];
       invariant(row, "a row should exist for each index");
@@ -942,6 +968,22 @@ const InternalBuildDiffList = memo(() => {
 
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const handleToggleGroupItem = useCallback(
+    (groupId: string | null) => {
+      if (groupId) {
+        toggleGroup(groupId);
+      }
+    },
+    [toggleGroup],
+  );
+
+  const handleHoverChange = useCallback((isHovered: boolean, index: number) => {
+    setHoveredIndex(isHovered ? index : null);
+  }, []);
+
+  const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
+  const getDiffStatus = useGetDiffStatus();
+
   return (
     <>
       {stats && !searchMode && (
@@ -992,7 +1034,7 @@ const InternalBuildDiffList = memo(() => {
                 case "header":
                   return (
                     <ListHeader
-                      key={virtualRow.index}
+                      key={virtualRow.key}
                       item={item}
                       activeIndex={item.group.diffs.indexOf(activeDiff)}
                       onClick={() => {
@@ -1018,31 +1060,33 @@ const InternalBuildDiffList = memo(() => {
                 case "item":
                 case "group-item": {
                   preloadListItemRow(item);
+                  const groupStatus =
+                    getDiffGroupStatus?.(item.diff?.group ?? null) ?? null;
                   return (
-                    <ListItem
-                      key={virtualRow.index}
-                      index={virtualRow.index}
+                    <div
+                      key={virtualRow.key}
                       style={{
                         height: virtualRow.size,
+                        width: "100%",
                         top: 0,
                         left: 0,
                         position: "absolute",
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
-                      item={item}
-                      active={activeDiff === item.diff}
-                      setActiveDiff={setActiveDiff}
-                      observer={observer}
-                      onToggleGroupItem={(groupId) => {
-                        if (groupId) {
-                          toggleGroup(groupId);
-                        }
-                      }}
-                      onHoverChange={(isHovered) => {
-                        setHoveredIndex(isHovered ? virtualRow.index : null);
-                      }}
-                      isHovered={hoveredIndex === virtualRow.index}
-                    />
+                    >
+                      <ListItem
+                        index={virtualRow.index}
+                        item={item}
+                        active={activeDiff === item.diff}
+                        setActiveDiff={setActiveDiff}
+                        observer={observer}
+                        onToggleGroupItem={handleToggleGroupItem}
+                        onHoverChange={handleHoverChange}
+                        isHovered={hoveredIndex === virtualRow.index}
+                        groupStatus={groupStatus}
+                        status={getDiffStatus(item.diff?.id ?? null)}
+                      />
+                    </div>
                   );
                 }
                 default:
