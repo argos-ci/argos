@@ -9,7 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
@@ -383,59 +383,62 @@ function useDataState(props: {
   projectName: string;
   buildNumber: number;
 }) {
-  const { data, loading, fetchMore, error } = useQuery(ProjectQuery, {
-    variables: {
-      ...props,
-      after: 0,
-      first: 20,
-    },
-  });
+  const { accountSlug, projectName, buildNumber } = props;
+  const apolloClient = useApolloClient();
+  const [error, setError] = useState<unknown>(null);
   if (error) {
     throw error;
   }
+  const [state, setState] = useState<{ diffs: Diff[]; hasMore: boolean }>({
+    diffs: [],
+    hasMore: true,
+  });
   useEffect(() => {
-    if (
-      !loading &&
-      data?.project?.build?.screenshotDiffs?.pageInfo?.hasNextPage
-    ) {
-      fetchMore({
-        variables: {
-          after: data.project.build.screenshotDiffs.edges.length,
-          first: 100,
-        },
-        updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult?.project?.build?.screenshotDiffs.edges) {
-            return prev;
-          }
-          if (!prev?.project?.build?.screenshotDiffs.edges) {
-            return prev;
-          }
-
-          return {
-            ...prev,
-            project: {
-              ...prev.project,
-              build: {
-                ...prev.project.build,
-                screenshotDiffs: {
-                  ...fetchMoreResult.project.build.screenshotDiffs,
-                  edges: [
-                    ...prev.project.build.screenshotDiffs.edges,
-                    ...fetchMoreResult.project.build.screenshotDiffs.edges,
-                  ],
-                },
-              },
-            },
-          };
-        },
-      });
+    if (!state.hasMore) {
+      return;
     }
-  }, [data, loading, fetchMore]);
-  const diffs = (data?.project?.build?.screenshotDiffs.edges ?? []) as Diff[];
-  const hasMore = Boolean(
-    data?.project?.build?.screenshotDiffs?.pageInfo?.hasNextPage,
-  );
-  return { diffs, hasMore };
+    let outdated = false;
+    apolloClient
+      .query({
+        query: ProjectQuery,
+        fetchPolicy: "no-cache",
+        variables: {
+          accountSlug,
+          projectName,
+          buildNumber,
+          after: state.diffs.length,
+          first: state.diffs.length === 0 ? 20 : 100,
+        },
+      })
+      .then((result) => {
+        if (outdated) {
+          return;
+        }
+        const diffs = result.data?.project?.build?.screenshotDiffs;
+        invariant(diffs);
+        setState((prev) => ({
+          diffs: [...prev.diffs, ...diffs.edges],
+          hasMore: diffs.pageInfo.hasNextPage,
+        }));
+      })
+      .catch((error) => {
+        if (outdated) {
+          return;
+        }
+        setError(error);
+      });
+    return () => {
+      outdated = true;
+    };
+  }, [
+    apolloClient,
+    accountSlug,
+    projectName,
+    buildNumber,
+    state.hasMore,
+    state.diffs.length,
+  ]);
+  return state;
 }
 
 function hydrateGroups(groups: DiffGroup[], screenshotDiffs: Diff[]) {
