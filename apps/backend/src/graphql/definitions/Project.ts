@@ -594,8 +594,8 @@ export const resolvers: IResolvers = {
         .alias("sd")
         .distinct("sd.testId")
         .join(latestRef, "latest_reference_build.id", "sd.buildId")
-        .joinRelated("compareScreenshot")
         .whereNotNull("sd.testId")
+        .joinRelated("compareScreenshot")
         .whereNull("compareScreenshot.parentName")
         .as("active_tests");
 

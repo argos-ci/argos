@@ -402,9 +402,7 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
       style={style}
     >
       <div className="flex flex-1 gap-4 truncate">
-        {test.screenshot &&
-        test.screenshot.width != null &&
-        test.screenshot.height != null ? (
+        {test.screenshot ? (
           <DiffCard
             isActive={false}
             variant="neutral"
@@ -412,13 +410,20 @@ function TestRow(props: { test: Test; style: React.CSSProperties }) {
           >
             <SingleImage
               contentType={test.screenshot.contentType}
-              dimensions={constraintSize(
-                {
-                  width: test.screenshot.width,
-                  height: test.screenshot.height,
-                },
-                DIFF_IMAGE_CONFIG,
-              )}
+              dimensions={
+                test.screenshot.width != null && test.screenshot.height != null
+                  ? constraintSize(
+                      {
+                        width: test.screenshot.width,
+                        height: test.screenshot.height,
+                      },
+                      DIFF_IMAGE_CONFIG,
+                    )
+                  : {
+                      height: DIFF_IMAGE_CONFIG.defaultHeight,
+                      width: DIFF_IMAGE_CONFIG.maxWidth,
+                    }
+              }
               url={test.screenshot.url}
             />
           </DiffCard>
