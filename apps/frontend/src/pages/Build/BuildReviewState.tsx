@@ -11,7 +11,12 @@ import { atomFamily } from "jotai-family";
 import { useAtom } from "jotai/react";
 import { atomWithStorage } from "jotai/utils";
 
-import { BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
+import {
+  BuildStatus,
+  BuildType,
+  ReviewState,
+  ScreenshotDiffStatus,
+} from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { usePrevious } from "@/ui/usePrevious";
@@ -249,7 +254,10 @@ export function useGetDiffGroupEvaluationStatus():
       const diffState = diffStateRef.current;
       const status = diffState.diffs.reduce(
         (groupStatus, diff) => {
-          if (diff.group === diffGroup) {
+          if (
+            diff.group === diffGroup &&
+            diff.status !== ScreenshotDiffStatus.Ignored
+          ) {
             const diffStatus = getDiffEvaluationStatus(diff.id);
             if (groupStatus === undefined) {
               return diffStatus;
@@ -387,11 +395,12 @@ export function useBuildDiffStatusState(args: {
   return [getDiffStatus(diffId), setDiffStatus] as const;
 }
 
-const diffStatusesFamily = atomFamily((params: BuildParams) =>
-  atomWithStorage<Record<string, EvaluationStatus>>(
-    `${params.projectName}#${params.buildNumber}.review.diffStatuses`,
-    {},
-  ),
+const diffStatusesFamily = atomFamily(
+  (params: { projectName: string; buildNumber: number }) =>
+    atomWithStorage<Record<string, EvaluationStatus>>(
+      `${params.projectName}#${params.buildNumber}.review.diffStatuses`,
+      {},
+    ),
 );
 
 /**
@@ -403,9 +412,16 @@ export function BuildReviewStateProvider(props: {
   buildStatus: BuildStatus | null;
   buildType: BuildType | null;
 }) {
-  const { buildStatus, buildType } = props;
+  const { buildStatus, buildType, params } = props;
+  const stableParams = useMemo(
+    () => ({
+      projectName: params.projectName,
+      buildNumber: params.buildNumber,
+    }),
+    [params.projectName, params.buildNumber],
+  );
   const [diffStatuses, setDiffStatuses] = useAtom(
-    diffStatusesFamily(props.params),
+    diffStatusesFamily(stableParams),
   );
   const listenersRef = useRef<Listener[]>([]);
   const previousDiffStatuses = usePrevious(diffStatuses);
@@ -416,6 +432,7 @@ export function BuildReviewStateProvider(props: {
     for (const [id, status] of Object.entries(diffStatuses)) {
       const previousStatus = previousDiffStatuses[id];
       if (status !== previousStatus) {
+        console.log(status, previousStatus);
         listenersRef.current.forEach((callback) => {
           callback({ id, status });
         });
