@@ -11,7 +11,12 @@ import { atomFamily } from "jotai-family";
 import { useAtom } from "jotai/react";
 import { atomWithStorage } from "jotai/utils";
 
-import { BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
+import {
+  BuildStatus,
+  BuildType,
+  ReviewState,
+  ScreenshotDiffStatus,
+} from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { usePrevious } from "@/ui/usePrevious";
@@ -249,7 +254,10 @@ export function useGetDiffGroupEvaluationStatus():
       const diffState = diffStateRef.current;
       const status = diffState.diffs.reduce(
         (groupStatus, diff) => {
-          if (diff.group === diffGroup) {
+          if (
+            diff.group === diffGroup &&
+            diff.status !== ScreenshotDiffStatus.Ignored
+          ) {
             const diffStatus = getDiffEvaluationStatus(diff.id);
             if (groupStatus === undefined) {
               return diffStatus;
