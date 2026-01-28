@@ -415,7 +415,10 @@ function useDataState(props: {
           return;
         }
         const diffs = result.data?.project?.build?.screenshotDiffs;
-        invariant(diffs);
+        if (!diffs) {
+          setState((prev) => ({ ...prev, hasMore: false }));
+          return;
+        }
         setState((prev) => ({
           diffs: [...prev.diffs, ...diffs.edges],
           hasMore: diffs.pageInfo.hasNextPage,
