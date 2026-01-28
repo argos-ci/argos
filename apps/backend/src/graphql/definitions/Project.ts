@@ -91,6 +91,7 @@ export const typeDefs = gql`
 
   input TestsFilterInput {
     buildName: String
+    search: String
   }
 
   type Project implements Node {
@@ -579,6 +580,7 @@ export const resolvers: IResolvers = {
       return test;
     },
     tests: async (project, { first, after, period, filters }) => {
+      const search = filters?.search?.trim();
       const latestRef = Build.query()
         .alias("b")
         .select("b.id", "b.projectId", "b.name")
@@ -597,6 +599,11 @@ export const resolvers: IResolvers = {
         .whereNotNull("sd.testId")
         .joinRelated("compareScreenshot")
         .whereNull("compareScreenshot.parentName")
+        .modify((query) => {
+          if (search) {
+            query.whereILike("compareScreenshot.name", `%${search}%`);
+          }
+        })
         .as("active_tests");
 
       const result = await Test.query()

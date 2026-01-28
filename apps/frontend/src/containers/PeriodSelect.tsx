@@ -1,10 +1,9 @@
 import { invariant } from "@argos/util/invariant";
-import { useSearchParams } from "react-router-dom";
+import { parseAsStringEnum, useQueryState } from "nuqs";
 
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
-import { useEventCallback } from "@/ui/useEventCallback";
 
 export type PeriodsDefinition = Record<string, PeriodEntry>;
 
@@ -21,17 +20,6 @@ export interface PeriodState<TDef extends PeriodsDefinition> {
   definition: TDef;
 }
 
-function parsePeriod<TDef extends PeriodsDefinition>(input: {
-  defaultValue: PeriodKey<TDef>;
-  definition: TDef;
-  value: string | null;
-}): PeriodKey<TDef> {
-  const { defaultValue, definition, value } = input;
-  return value && Object.keys(definition).includes(value)
-    ? value
-    : defaultValue;
-}
-
 /**
  * Hook to manage the period state in the URL search params.
  */
@@ -42,28 +30,13 @@ export function usePeriodState<TDef extends PeriodsDefinition>(input: {
 }): PeriodState<TDef> {
   const { paramName } = input;
   const { defaultValue, definition } = input;
-  const [params, setParams] = useSearchParams();
-  const value = parsePeriod({
-    defaultValue,
-    definition,
-    value: params.get(paramName),
-  });
-
-  const setValue = useEventCallback((value: PeriodKey<TDef>) => {
-    if (value === defaultValue) {
-      if (params.has(paramName)) {
-        const next = new URLSearchParams(params);
-        next.delete(paramName);
-        setParams(next, { flushSync: true });
-      }
-      return;
-    }
-    if (String(value) !== params.get(paramName)) {
-      const next = new URLSearchParams(params);
-      next.set(paramName, String(value));
-      setParams(next, { flushSync: true });
-    }
-  });
+  const [value, setValue] = useQueryState(
+    paramName,
+    // @ts-expect-error don't know how to solve it
+    parseAsStringEnum<PeriodKey<TDef>>(Object.keys(definition)).withDefault(
+      defaultValue,
+    ),
+  );
 
   return { value, setValue, definition };
 }
