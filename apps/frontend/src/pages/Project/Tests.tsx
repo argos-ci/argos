@@ -14,8 +14,8 @@ import {
 import { invariant } from "@argos/util/invariant";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { FileImageIcon } from "lucide-react";
-import { useQueryStates } from "nuqs";
+import { FileImageIcon, SearchIcon } from "lucide-react";
+import { parseAsString, useQueryStates } from "nuqs";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
 import { useResolvedPath } from "react-router-dom";
@@ -42,6 +42,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { List, ListHeaderRow, ListRowLink, ListRowLoader } from "@/ui/List";
+import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -120,6 +121,7 @@ const ProjectQuery = graphql(`
 
 const filtersSchema = {
   name: BuildNameFilterParser,
+  search: parseAsString,
 };
 
 function PageContent(props: {
@@ -135,7 +137,10 @@ function PageContent(props: {
   const isUpdating =
     filters !== deferredFilters || periodState.value !== deferredPeriod;
   const filtersVariable = useMemo(() => {
-    return { buildName: deferredFilters.name };
+    return {
+      buildName: deferredFilters.name,
+      search: deferredFilters.search || undefined,
+    };
   }, [deferredFilters]);
   const { fetchMore, data: projectTestData } = useSuspenseQuery(
     ProjectTestsQuery,
@@ -228,6 +233,20 @@ function PageContent(props: {
               onChange={(name) => setFilters({ name })}
             />
           )}
+          <TextInputGroup className="w-64">
+            <TextInputIcon>
+              <SearchIcon />
+            </TextInputIcon>
+            <TextInput
+              type="search"
+              placeholder="Search tests…"
+              scale="sm"
+              value={filters.search ?? ""}
+              onChange={(event) =>
+                setFilters({ search: event.target.value || null })
+              }
+            />
+          </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
       <div className="relative flex-1">
