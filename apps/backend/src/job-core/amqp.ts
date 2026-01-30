@@ -15,17 +15,22 @@ export const connect = pMemoize(
     return pRetry(
       () =>
         amqp.connect(config.get("amqp.url")).then((model) => {
-          model.once("error", (error) => {
+          const handleError = (error: unknown) => {
             logger.error({ error }, "Error event");
-          });
+          };
 
-          model.once("close", () => {
+          const handleClose = () => {
             logger.info("Connection closed");
             cache.clear();
             setImmediate(() => {
+              model.off("error", handleError);
+              model.off("close", handleClose);
               connect();
             });
-          });
+          };
+
+          model.on("error", handleError);
+          model.on("close", handleClose);
 
           return model;
         }),
