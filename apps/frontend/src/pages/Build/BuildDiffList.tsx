@@ -109,7 +109,7 @@ interface ListGroupItemRow {
   diff: Diff | null;
   result: DiffResult | null;
   expanded: boolean;
-  group: Diff[];
+  group: Set<Diff>;
 }
 
 type ListRow = ListHeaderRow | ListItemRow | ListGroupItemRow;
@@ -176,7 +176,7 @@ function createGroupItemRow(input: {
     last: input.last,
     result: input.result,
     expanded: input.expanded,
-    group: [input.diff],
+    group: new Set([input.diff]),
   };
 }
 
@@ -271,7 +271,7 @@ function getRows(
           // If the diff is part the last group.
           if (currentGroupItem && diff.group === currentGroupItem.diff?.group) {
             // Update the group count.
-            currentGroupItem.group.push(diff);
+            currentGroupItem.group.add(diff);
 
             // If the group is expanded, add an item row.
             if (expanded) {
@@ -410,7 +410,7 @@ function ShowSubItemToggle(
             )}
           </div>
         </ButtonIcon>
-        {props.count} similar
+        {props.count - 1} similar
       </Button>
     </HotkeyTooltip>
   );
@@ -522,7 +522,7 @@ const ListItem = memo(function ListItem(props: {
     return undefined;
   }, [observer]);
   const { searchMode } = useSearchModeState();
-  const isGroupItem = item.type === "group-item" && item.group.length > 1;
+  const isGroupItem = item.type === "group-item" && item.group.size > 1;
   const isSubItem = item.type === "item" && item.parent;
   const { hoverProps } = useDelayedHover({
     onHoverChange: (isHovered) => onHoverChange(isHovered, index),
@@ -584,7 +584,7 @@ const ListItem = memo(function ListItem(props: {
                     onToggleGroupItem={() =>
                       onToggleGroupItem(item.diff?.group ?? null)
                     }
-                    count={item.group.length}
+                    count={item.group.size}
                     open={item.expanded}
                     active={active}
                   />
@@ -930,7 +930,7 @@ const InternalBuildDiffList = memo(() => {
         }
         if (
           row.type === "group-item" &&
-          row.group?.some((diff) => diff.id === value.id)
+          Array.from(row.group)?.some((diff) => diff.id === value.id)
         ) {
           resizeItem(index, estimateSize(index));
         }
