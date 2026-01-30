@@ -15,13 +15,19 @@ import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
 import { useNavigate } from "react-router-dom";
 
-import { DIFF_GROUPS, type DiffGroup } from "@/containers/Build/BuildDiffGroup";
+import {
+  checkIsDiffGroupName,
+  DIFF_GROUPS,
+  type DiffGroup,
+  type DiffGroupName,
+} from "@/containers/Build/BuildDiffGroup";
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
 import { getBuildURL, type BuildParams } from "./BuildParams";
+import { EvaluationStatus, useBuildReviewState } from "./BuildReviewState";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -149,17 +155,6 @@ const ScreenshotDiffFragment = graphql(`
 `);
 
 export type Diff = ResultOf<typeof ScreenshotDiffFragment>;
-
-function createDiffs(count: number): null[] {
-  return Array.from({ length: count }, () => null);
-}
-
-function getGroupsFromStats(stats: NonNullable<BuildStats>): DiffGroup[] {
-  return DIFF_GROUPS.map((group) => ({
-    name: group,
-    diffs: createDiffs(stats[group]),
-  }));
-}
 
 export type DiffResult = MatchData<Diff>;
 
@@ -444,39 +439,30 @@ function useDataState(props: {
   return state;
 }
 
-function hydrateGroups(groups: DiffGroup[], screenshotDiffs: Diff[]) {
-  let index = 0;
-  return groups.map((group) => {
-    return {
-      ...group,
-      diffs: group.diffs.map(() => {
-        const diff = screenshotDiffs[index] ?? null;
-        index++;
-        return diff;
-      }),
-    };
-  });
-}
-
-function checkIsGroupDiffStatus(
-  value: unknown,
-): value is (typeof DIFF_GROUPS)[number] {
-  return DIFF_GROUPS.includes(value as (typeof DIFF_GROUPS)[number]);
-}
-
-function groupDiffs(diffs: Diff[]): DiffGroup[] {
-  return diffs.reduce<DiffGroup[]>((groups, diff) => {
-    const group = groups.find((group) => group.name === diff.status);
-    if (group) {
-      group.diffs.push(diff);
-    } else if (checkIsGroupDiffStatus(diff.status)) {
-      groups.push({
-        name: diff.status,
-        diffs: [diff],
-      });
-    }
-    return groups;
-  }, [] as DiffGroup[]);
+function groupDiffs(
+  diffs: Diff[],
+  reviewStatuses: Record<string, EvaluationStatus>,
+): DiffGroup[] {
+  const diffByGroups = diffs.reduce<Partial<Record<DiffGroupName, DiffGroup>>>(
+    (groups, diff) => {
+      const reviewStatus = reviewStatuses[diff.id] ?? EvaluationStatus.Pending;
+      const diffGroupName =
+        reviewStatus === EvaluationStatus.Pending ? diff.status : reviewStatus;
+      if (checkIsDiffGroupName(diffGroupName)) {
+        const group = groups[diffGroupName] ?? {
+          name: diffGroupName,
+          diffs: [],
+        };
+        groups[diffGroupName] = group;
+        group.diffs.push(diff);
+      }
+      return groups;
+    },
+    {},
+  );
+  return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null).filter(
+    (x) => x !== null,
+  );
 }
 
 type SearchModeContextValue = {
@@ -532,6 +518,7 @@ export function BuildDiffProvider(props: {
   params: BuildParams;
 }) {
   const { children, params, build } = props;
+  const reviewState = useBuildReviewState();
   const stats = build?.stats ?? null;
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
@@ -639,17 +626,9 @@ export function BuildDiffProvider(props: {
 
   const [scrolledDiff, setScrolledDiff] = useState<Diff | null>(null);
 
-  const statsGroups = useMemo(
-    () => (stats ? getGroupsFromStats(stats) : []),
-    [stats],
-  );
-
   const groups = useMemo(() => {
-    if (searchMode) {
-      return groupDiffs(filteredDiffs);
-    }
-    return hydrateGroups(statsGroups, filteredDiffs);
-  }, [statsGroups, filteredDiffs, searchMode]);
+    return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
+  }, [filteredDiffs, reviewState?.diffStatuses]);
 
   const getDiffGroup = useEventCallback((diff: Diff | null) => {
     if (!diff) {

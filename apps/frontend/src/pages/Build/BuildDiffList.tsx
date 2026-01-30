@@ -1,5 +1,4 @@
 import {
-  cloneElement,
   memo,
   useCallback,
   useEffect,
@@ -21,8 +20,6 @@ import {
   CornerDownRightIcon,
   ImagesIcon,
   SquareStackIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
 } from "lucide-react";
 import memoize from "memoize";
 import {
@@ -36,9 +33,10 @@ import {
 } from "react-aria-components";
 
 import {
-  getGroupIcon,
-  getGroupLabel,
+  checkIsDiffGroupName,
+  DiffGroupDefinitions,
   type DiffGroup,
+  type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
 import {
   DiffCard,
@@ -55,7 +53,7 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
-import { getTooltipAnimationClassName } from "@/ui/Tooltip";
+import { getTooltipAnimationClassName, Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
@@ -315,6 +313,7 @@ function ListHeader(props: {
 }) {
   const { style, onClick, item, activeIndex } = props;
   const borderB = item.borderBottom ? "border-b border-b-border" : "";
+  const def = DiffGroupDefinitions[item.name];
   return (
     <RACButton
       className={clsx(
@@ -330,12 +329,8 @@ function ListHeader(props: {
           !item.expanded && "-rotate-90",
         )}
       />
-      {cloneElement(getGroupIcon(item.name), {
-        className: "size-3 mr-1.5 text-low",
-      })}
-      <div className="text-default flex-1 text-sm font-medium">
-        {getGroupLabel(item.name)}
-      </div>
+      <def.icon className="text-low mr-1.5 size-3" />
+      <div className="text-default flex-1 text-sm font-medium">{def.label}</div>
       <Badge className="shrink-0">
         {activeIndex !== -1 ? <>{activeIndex + 1} / </> : null}
         {item.count}
@@ -416,28 +411,13 @@ function ShowSubItemToggle(
   );
 }
 
-function EvaluationStatusIndicator(props: { status: EvaluationStatus | null }) {
-  const value = (() => {
-    switch (props.status) {
-      case EvaluationStatus.Accepted:
-        return { color: "text-success", icon: ThumbsUpIcon };
-      case EvaluationStatus.Rejected:
-        return { color: "text-danger", icon: ThumbsDownIcon };
-      case EvaluationStatus.Pending:
-      case null:
-        return null;
-      default:
-        assertNever(props.status);
-    }
-  })();
-  if (!value) {
-    return null;
-  }
-  const Icon = value.icon;
+function DiffStatusIndicator(props: { group: DiffGroupName }) {
+  const { group } = props;
+  const def = DiffGroupDefinitions[group];
   return (
-    <div className={value.color}>
-      <Icon className="size-3" />
-    </div>
+    <Tooltip content={def.label}>
+      <def.icon className="text-low size-3" />
+    </Tooltip>
   );
 }
 
@@ -552,7 +532,11 @@ const ListItem = memo(function ListItem(props: {
             <DiffCardFooter
               alwaysVisible={searchMode || status !== EvaluationStatus.Pending}
             >
-              <EvaluationStatusIndicator status={status} />
+              {(status === EvaluationStatus.Accepted ||
+                status === EvaluationStatus.Rejected) &&
+              checkIsDiffGroupName(item.diff.status) ? (
+                <DiffStatusIndicator group={item.diff.status} />
+              ) : null}
               <DiffCardFooterText>
                 {item.result ? (
                   <>

@@ -80,12 +80,12 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
 
   return (
     <ProjectPermissionsContext value={data?.project?.permissions ?? null}>
-      <BuildDiffProvider params={params} build={build}>
-        <BuildReviewStateProvider
-          params={params}
-          buildStatus={data?.project?.build?.status ?? null}
-          buildType={data?.project?.build?.type ?? null}
-        >
+      <BuildReviewStateProvider
+        params={params}
+        buildStatus={data?.project?.build?.status ?? null}
+        buildType={data?.project?.build?.type ?? null}
+      >
+        <BuildDiffProvider params={params} build={build}>
           <BuildReviewDialogProvider project={data?.project ?? null}>
             <div className="flex h-screen min-h-0 flex-col">
               {data?.project?.account && (
@@ -113,8 +113,8 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
               ) : null}
             </div>
           </BuildReviewDialogProvider>
-        </BuildReviewStateProvider>
-      </BuildDiffProvider>
+        </BuildDiffProvider>
+      </BuildReviewStateProvider>
     </ProjectPermissionsContext>
   );
 };

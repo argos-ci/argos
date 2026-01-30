@@ -14,7 +14,12 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { useAtomValue } from "jotai/react";
-import { ChevronDownIcon, ChevronUpIcon, DownloadIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DownloadIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { useObjectRef } from "react-aria";
 
 import { DocumentType, graphql } from "@/gql";
@@ -34,7 +39,7 @@ import { fetchImage } from "@/util/image";
 import { useTextContent } from "@/util/text";
 
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
-import { getGroupIcon } from "./BuildDiffGroup";
+import { DiffGroupDefinitions } from "./BuildDiffGroup";
 import {
   BuildDiffHighlighterProvider,
   Highlighter,
@@ -291,20 +296,17 @@ const BuildScreenshotHeader = memo(
 );
 
 const MissingScreenshotInfo = memo(
-  ({
-    title,
-    description,
-    icon,
-  }: {
+  (props: {
     title: React.ReactNode;
     description: React.ReactNode;
-    icon: React.ReactNode;
+    icon: LucideIcon;
   }) => {
+    const { icon: Icon, title, description } = props;
     return (
       <div className="w-full">
         <div className="bg-app flex flex-col items-center gap-4 rounded-sm border p-8 text-center">
           <div className="flex flex-col items-center gap-2">
-            <div className="*:size-10">{icon}</div>
+            <Icon className="size-10" />
             <div className="text-base font-medium">{title}</div>
           </div>
           <p className="text-low text-sm text-balance">{description}</p>
@@ -486,7 +488,7 @@ function BaseScreenshot({
               doesn&quot;t have a baseline to compare with.
             </>
           }
-          icon={getGroupIcon(ScreenshotDiffStatus.Added)}
+          icon={DiffGroupDefinitions[diff.status].icon}
         />
       );
     case ScreenshotDiffStatus.RetryFailure:
@@ -501,7 +503,7 @@ function BaseScreenshot({
               passed afterward, this screenshot is not considered a failure.
             </>
           }
-          icon={getGroupIcon(ScreenshotDiffStatus.Failure)}
+          icon={DiffGroupDefinitions[diff.status].icon}
         />
       );
     case ScreenshotDiffStatus.Failure:
@@ -516,7 +518,7 @@ function BaseScreenshot({
               debugging by providing insights into why the test failed.
             </>
           }
-          icon={getGroupIcon(ScreenshotDiffStatus.Failure)}
+          icon={DiffGroupDefinitions[diff.status].icon}
         />
       );
     case ScreenshotDiffStatus.Unchanged:
@@ -528,7 +530,7 @@ function BaseScreenshot({
               All good! This screenshot is similar to the baseline screenshot.
             </>
           }
-          icon={getGroupIcon(ScreenshotDiffStatus.Unchanged)}
+          icon={DiffGroupDefinitions[diff.status].icon}
         />
       );
     case ScreenshotDiffStatus.Removed: {
@@ -729,7 +731,7 @@ function CompareScreenshot(props: {
               changes to compare with.
             </>
           }
-          icon={getGroupIcon(ScreenshotDiffStatus.Removed)}
+          icon={DiffGroupDefinitions[ScreenshotDiffStatus.Removed].icon}
         />
       );
     }
