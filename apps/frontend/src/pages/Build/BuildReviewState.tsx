@@ -432,7 +432,6 @@ export function BuildReviewStateProvider(props: {
     for (const [id, status] of Object.entries(diffStatuses)) {
       const previousStatus = previousDiffStatuses[id];
       if (status !== previousStatus) {
-        console.log(status, previousStatus);
         listenersRef.current.forEach((callback) => {
           callback({ id, status });
         });

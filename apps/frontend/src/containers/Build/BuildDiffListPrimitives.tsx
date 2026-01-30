@@ -270,7 +270,7 @@ export function DiffCardFooter(props: DiffCardFooterProps) {
     <div
       {...rest}
       className={clsx(
-        "bg-app absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 truncate px-2",
+        "bg-app absolute inset-x-0 bottom-0 z-10 flex items-center gap-1.5 truncate px-2",
         alwaysVisible
           ? null
           : "opacity-0 transition-opacity group-focus-within/item:opacity-100 group-hover/sidebar:opacity-100",

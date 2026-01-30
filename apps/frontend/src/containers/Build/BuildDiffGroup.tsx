@@ -1,4 +1,3 @@
-import { assertNever } from "@argos/util/assertNever";
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
@@ -6,10 +5,14 @@ import {
   MinusCircleIcon,
   PlusCircleIcon,
   RotateCcwIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
   XCircleIcon,
+  type LucideIcon,
 } from "lucide-react";
 
 import { ScreenshotDiffStatus } from "@/gql/graphql";
+import { EvaluationStatus } from "@/pages/Build/BuildReviewState";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 
@@ -18,74 +21,83 @@ export const DIFF_GROUPS = [
   ScreenshotDiffStatus.Changed,
   ScreenshotDiffStatus.Added,
   ScreenshotDiffStatus.Removed,
+  EvaluationStatus.Accepted,
+  EvaluationStatus.Rejected,
   ScreenshotDiffStatus.Unchanged,
   ScreenshotDiffStatus.RetryFailure,
   ScreenshotDiffStatus.Ignored,
 ] as const;
 
+export const DIFF_STATS_GROUPS = DIFF_GROUPS.filter(
+  (group) =>
+    group !== EvaluationStatus.Accepted && group !== EvaluationStatus.Rejected,
+);
+
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
+export type DiffStatusGroupName = (typeof DIFF_STATS_GROUPS)[number];
 
 export interface DiffGroup {
   name: DiffGroupName;
   diffs: (BuildDiffDetailDocument | null)[];
 }
 
-export const getGroupColor = (name: DiffGroupName) => {
-  switch (name) {
-    case ScreenshotDiffStatus.Failure:
-      return "danger" as const;
-    case ScreenshotDiffStatus.Changed:
-    case ScreenshotDiffStatus.Added:
-    case ScreenshotDiffStatus.Removed:
-      return "warning" as const;
-    case ScreenshotDiffStatus.RetryFailure:
-    case ScreenshotDiffStatus.Ignored:
-      return "neutral" as const;
-    case ScreenshotDiffStatus.Unchanged:
-      return "success" as const;
-    default:
-      assertNever(name);
-  }
-};
+export function checkIsDiffGroupName(value: unknown): value is DiffGroupName {
+  return DIFF_GROUPS.includes(value as DiffGroupName);
+}
 
-export const getGroupLabel = (name: DiffGroupName) => {
-  switch (name) {
-    case ScreenshotDiffStatus.Failure:
-      return "Framework test failures";
-    case ScreenshotDiffStatus.Changed:
-      return "Changed";
-    case ScreenshotDiffStatus.Added:
-      return "Added";
-    case ScreenshotDiffStatus.Removed:
-      return "Removed";
-    case ScreenshotDiffStatus.Unchanged:
-      return "Unchanged";
-    case ScreenshotDiffStatus.RetryFailure:
-      return "Framework retried failures";
-    case ScreenshotDiffStatus.Ignored:
-      return "Ignored";
-    default:
-      assertNever(name);
-  }
-};
+export type DiffGroupColor = "danger" | "warning" | "success" | "neutral";
 
-export const getGroupIcon = (name: DiffGroupName) => {
-  switch (name) {
-    case ScreenshotDiffStatus.Added:
-      return <PlusCircleIcon />;
-    case ScreenshotDiffStatus.Removed:
-      return <MinusCircleIcon />;
-    case ScreenshotDiffStatus.Changed:
-      return <AlertCircleIcon />;
-    case ScreenshotDiffStatus.Unchanged:
-      return <CheckCircle2Icon />;
-    case ScreenshotDiffStatus.Failure:
-      return <XCircleIcon />;
-    case ScreenshotDiffStatus.RetryFailure:
-      return <RotateCcwIcon />;
-    case ScreenshotDiffStatus.Ignored:
-      return <FlagOffIcon />;
-    default:
-      assertNever(name);
+export const DiffGroupDefinitions: Record<
+  DiffGroupName,
+  {
+    color: DiffGroupColor;
+    label: string;
+    icon: LucideIcon;
   }
+> = {
+  [ScreenshotDiffStatus.Failure]: {
+    color: "danger",
+    label: "Framework test failures",
+    icon: XCircleIcon,
+  },
+  [ScreenshotDiffStatus.RetryFailure]: {
+    color: "neutral",
+    label: "Framework retried failures",
+    icon: RotateCcwIcon,
+  },
+  [ScreenshotDiffStatus.Changed]: {
+    color: "warning",
+    label: "Changed",
+    icon: AlertCircleIcon,
+  },
+  [ScreenshotDiffStatus.Added]: {
+    color: "warning",
+    label: "Added",
+    icon: PlusCircleIcon,
+  },
+  [ScreenshotDiffStatus.Removed]: {
+    color: "warning",
+    label: "Removed",
+    icon: MinusCircleIcon,
+  },
+  [ScreenshotDiffStatus.Ignored]: {
+    color: "neutral",
+    label: "Ignored",
+    icon: FlagOffIcon,
+  },
+  [ScreenshotDiffStatus.Unchanged]: {
+    color: "success",
+    label: "Unchanged",
+    icon: CheckCircle2Icon,
+  },
+  [EvaluationStatus.Rejected]: {
+    color: "danger",
+    label: "Rejected",
+    icon: ThumbsDownIcon,
+  },
+  [EvaluationStatus.Accepted]: {
+    color: "success",
+    label: "Accepted",
+    icon: ThumbsUpIcon,
+  },
 };

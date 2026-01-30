@@ -1,14 +1,15 @@
 import { Fragment, memo } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { clsx } from "clsx";
+import type { LucideIcon } from "lucide-react";
 import { Button as RACButton } from "react-aria-components";
 
 import {
-  DIFF_GROUPS,
-  getGroupColor,
-  getGroupIcon,
-  getGroupLabel,
+  DIFF_STATS_GROUPS,
+  DiffGroupDefinitions,
+  type DiffGroupColor,
   type DiffGroupName,
+  type DiffStatusGroupName,
 } from "@/containers/Build/BuildDiffGroup";
 import {
   useBuildHotkey,
@@ -19,35 +20,30 @@ import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-type StatCountColor = "danger" | "warning" | "success" | "neutral";
-
 const getStatCountColorClassName = (
-  color: StatCountColor,
+  color: DiffGroupColor,
   interactive: boolean,
 ) => {
   switch (color) {
     case "danger":
-      return clsx(
-        "text-danger-low",
-        interactive && "data-[hovered]:text-danger",
-      );
+      return clsx("text-danger-low", interactive && "data-hovered:text-danger");
     case "warning":
       return clsx(
         "text-warning-low",
-        interactive && "data-[hovered]:text-warning",
+        interactive && "data-hovered:text-warning",
       );
     case "success":
       return clsx(
         "text-success-low",
-        interactive && "data-[hovered]:text-success",
+        interactive && "data-hovered:text-success",
       );
     case "neutral":
     default:
-      return clsx("text-low", interactive && "data-[hovered]:text");
+      return clsx("text-low", interactive && "data-hovered:text");
   }
 };
 
-const getStatHotkeyName = (group: DiffGroupName): HotkeyName => {
+function getStatHotkeyName(group: DiffStatusGroupName): HotkeyName {
   switch (group) {
     case ScreenshotDiffStatus.Failure:
       return "goToFirstFailure";
@@ -66,18 +62,18 @@ const getStatHotkeyName = (group: DiffGroupName): HotkeyName => {
     default:
       assertNever(group);
   }
-};
+}
 
 interface InteractiveStatCountProps {
-  icon: React.ReactNode;
+  icon: LucideIcon;
   count: number;
-  color: StatCountColor;
+  color: DiffGroupColor;
   onActive: () => void;
   hotkeyName: HotkeyName;
 }
 
 function InteractiveStatCount({
-  icon,
+  icon: Icon,
   count,
   color,
   onActive,
@@ -90,12 +86,12 @@ function InteractiveStatCount({
       <RACButton
         className={clsx(
           colorClassName,
-          "data-[disabled]:opacity-disabled rac-focus flex cursor-default items-center gap-1 py-2 transition",
+          "data-disabled:opacity-disabled rac-focus flex cursor-default items-center gap-1 py-2 transition",
         )}
         onPress={onActive}
         isDisabled={count === 0}
       >
-        <span className="*:size-3">{icon}</span>
+        <Icon className="size-3" />
         <span className="text-xs">{count}</span>
       </RACButton>
     </HotkeyTooltip>
@@ -103,13 +99,13 @@ function InteractiveStatCount({
 }
 
 interface StatCountProps {
-  icon: React.ReactNode;
+  icon: LucideIcon;
   count: number;
-  color: StatCountColor;
+  color: DiffGroupColor;
   tooltip: string | null;
 }
 
-function StatCount({ icon, count, color, tooltip }: StatCountProps) {
+function StatCount({ icon: Icon, count, color, tooltip }: StatCountProps) {
   const colorClassName = getStatCountColorClassName(color, false);
   const element = (
     <div
@@ -119,7 +115,7 @@ function StatCount({ icon, count, color, tooltip }: StatCountProps) {
         count === 0 && "opacity-disabled",
       )}
     >
-      <span className="*:size-4">{icon}</span>
+      <Icon className="size-4" />
       <span className="text-xs">{count}</span>
     </div>
   );
@@ -153,27 +149,28 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator({
   className?: string;
   tooltip?: boolean;
 }) {
-  const groups = DIFF_GROUPS.map((group) => {
+  const groups = DIFF_STATS_GROUPS.map((group) => {
     const count = stats[group];
     if (count === 0) {
       return null;
     }
+    const def = DiffGroupDefinitions[group];
     return (
       <Fragment key={group}>
         {onClickGroup ? (
           <InteractiveStatCount
-            icon={getGroupIcon(group)}
+            icon={def.icon}
             count={count}
-            color={getGroupColor(group)}
+            color={def.color}
             onActive={() => onClickGroup(group)}
             hotkeyName={getStatHotkeyName(group)}
           />
         ) : (
           <StatCount
-            icon={getGroupIcon(group)}
+            icon={def.icon}
             count={count}
-            color={getGroupColor(group)}
-            tooltip={tooltip ? getGroupLabel(group) : null}
+            color={def.color}
+            tooltip={tooltip ? def.label : null}
           />
         )}
         <span className="text-xs text-(--mauve-7) select-none last:hidden">
