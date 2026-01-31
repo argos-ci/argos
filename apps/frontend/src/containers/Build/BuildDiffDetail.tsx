@@ -78,6 +78,7 @@ const _BuildFragment = graphql(`
     baseScreenshotBucket {
       id
       createdAt
+      commit
     }
     pullRequest {
       merged
@@ -267,25 +268,22 @@ function BuildScreenshotHeaderPlaceholder() {
 }
 
 const BuildScreenshotHeader = memo(
-  ({
-    label,
-    branch,
-    date,
-  }: {
+  (props: {
     label: string;
-    branch: string | null | undefined;
+    gitRef: string | null | undefined;
     date: string | null;
   }) => {
+    const { label, gitRef, date } = props;
     return (
       <div className="text-low flex shrink-0 flex-col items-center gap-0.5">
         <div className="flex max-w-full items-center gap-1">
           <div className="shrink-0 text-xs leading-6 font-medium select-none">
             {label}
-            {branch ? " from" : null}
+            {gitRef ? " from" : null}
           </div>
-          {branch && (
-            <Code className="truncate" title={branch}>
-              {branch}
+          {gitRef && (
+            <Code className="truncate" title={gitRef}>
+              {gitRef}
             </Code>
           )}
         </div>
@@ -1102,7 +1100,9 @@ const BuildScreenshots = memo(
                 header: build.baseScreenshotBucket ? (
                   <BuildScreenshotHeader
                     label="Baseline"
-                    branch={build.baseBranch}
+                    gitRef={
+                      build.baseBranch ?? build.baseScreenshotBucket.commit
+                    }
                     date={build.baseScreenshotBucket.createdAt}
                   />
                 ) : (
@@ -1115,7 +1115,7 @@ const BuildScreenshots = memo(
                 header: (
                   <BuildScreenshotHeader
                     label="Changes"
-                    branch={build.branch}
+                    gitRef={build.branch}
                     date={build.createdAt}
                   />
                 ),
@@ -1129,13 +1129,13 @@ const BuildScreenshots = memo(
     return (
       <div className="flex min-h-0 min-w-0 flex-1 gap-4 p-4">
         <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
           hidden={!showBaseline}
         >
           {build.baseScreenshotBucket ? (
             <BuildScreenshotHeader
               label="Baseline"
-              branch={build.baseBranch}
+              gitRef={build.baseBranch ?? build.baseScreenshotBucket.commit}
               date={build.baseScreenshotBucket.createdAt}
             />
           ) : (
@@ -1148,12 +1148,12 @@ const BuildScreenshots = memo(
           </div>
         </div>
         <div
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [&[hidden]]:hidden"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 [[hidden]]:hidden"
           hidden={!showChanges}
         >
           <BuildScreenshotHeader
             label="Changes"
-            branch={build.branch}
+            gitRef={build.branch}
             date={build.createdAt}
           />
           <div className="relative flex min-h-0 flex-1 justify-center">

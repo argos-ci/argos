@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import {
   Build,
   type GithubPullRequest,
@@ -36,6 +38,15 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
       return {
         baseBranch: build.baseBranch,
         baseBranchResolvedFrom: build.baseBranchResolvedFrom,
+      };
+    }
+
+    // If we have only a baseCommit set without a baseBranch,
+    // then we return null for baseBranch and let the frontend display the commit.
+    if (build.baseCommit) {
+      return {
+        baseBranch: null,
+        baseBranchResolvedFrom: null,
       };
     }
 
@@ -86,15 +97,22 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
     };
   }
 
-  const mergeBaseCommitSha =
-    build.baseCommit ??
-    (await gitProvider.getMergeBaseCommitSha({
+  const mergeBaseCommitSha = await (() => {
+    if (build.baseCommit) {
+      return build.baseCommit;
+    }
+    invariant(
+      baseBranch,
+      "A branch should be specified always if there is no base commit set",
+    );
+    return gitProvider.getMergeBaseCommitSha({
       project,
       ctx,
       base: baseBranch,
       head,
       build,
-    }));
+    });
+  })();
 
   if (!mergeBaseCommitSha) {
     return {
@@ -104,7 +122,9 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
     };
   }
 
-  const isBaseBranchAutoApproved = context.checkIsAutoApproved(baseBranch);
+  const isBaseBranchAutoApproved = baseBranch
+    ? context.checkIsAutoApproved(baseBranch)
+    : false;
 
   // If the merge base is the same as the head, then we have to found an ancestor
   // It happens when we are on a auto-approved branch.
