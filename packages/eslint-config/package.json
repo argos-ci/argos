@@ -13,6 +13,6 @@
     "@vitest/eslint-plugin": "^1.6.6",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "typescript-eslint": "^8.53.1"
+    "typescript-eslint": "^8.54.0"
   }
 }
