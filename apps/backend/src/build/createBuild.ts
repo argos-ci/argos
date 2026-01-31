@@ -61,11 +61,12 @@ export async function createBuild(params: {
   baseBranch: string | null;
   mode: BuildMode | null;
   ciProvider: string | null;
-  mergeQueue: boolean | null;
+  mergeQueue: boolean;
   argosSdk: string | null;
   runId: string | null;
   runAttempt: number | null;
   skipped: boolean | null;
+  subset: boolean;
 }) {
   const account = await params.project.$relatedQuery("account");
   invariant(account, "Account should be fetched");
@@ -191,6 +192,7 @@ export async function createBuild(params: {
           runAttempt: params.runAttempt,
           partial: isPartial,
           type: params.skipped ? "skipped" : null,
+          subset: params.subset,
         });
 
         return build;

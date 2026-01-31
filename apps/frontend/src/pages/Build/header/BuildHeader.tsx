@@ -96,7 +96,9 @@ function useBuildReviewProgression() {
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
   if (diffState.ready && getDiffEvaluationStatus) {
     const toReview = diffState.diffs.filter((diff) =>
-      checkDiffCanBeReviewed(diff.status),
+      checkDiffCanBeReviewed(diff.status, {
+        isSubsetBuild: diffState.isSubsetBuild,
+      }),
     );
     const reviewed = toReview.filter(
       (diff) => getDiffEvaluationStatus(diff.id) !== EvaluationStatus.Pending,

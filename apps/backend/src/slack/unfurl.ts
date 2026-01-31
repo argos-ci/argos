@@ -35,7 +35,9 @@ export async function unfurlBuild(
     return null;
   }
 
-  const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
+  const statsMessage = build.stats
+    ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
+    : null;
 
   const [[status], screenshotDiff] = await Promise.all([
     Build.getAggregatedBuildStatuses([build]),

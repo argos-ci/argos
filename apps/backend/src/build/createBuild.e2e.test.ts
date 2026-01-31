@@ -47,6 +47,7 @@ describe("build", () => {
         ],
         skipped: null,
         mergeQueue: false,
+        subset: false,
       });
 
       expect(build.baseBranch).toBe("develop");

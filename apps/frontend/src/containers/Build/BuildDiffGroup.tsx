@@ -47,14 +47,13 @@ export function checkIsDiffGroupName(value: unknown): value is DiffGroupName {
 
 export type DiffGroupColor = "danger" | "warning" | "success" | "neutral";
 
-export const DiffGroupDefinitions: Record<
-  DiffGroupName,
-  {
-    color: DiffGroupColor;
-    label: string;
-    icon: LucideIcon;
-  }
-> = {
+type DiffGroupDefinition = {
+  color: DiffGroupColor;
+  label: string;
+  icon: LucideIcon;
+};
+
+const DiffGroupDefinitions: Record<DiffGroupName, DiffGroupDefinition> = {
   [ScreenshotDiffStatus.Failure]: {
     color: "danger",
     label: "Framework test failures",
@@ -101,3 +100,21 @@ export const DiffGroupDefinitions: Record<
     icon: ThumbsUpIcon,
   },
 };
+
+export function getDiffGroupDefinition(
+  diffGroupName: DiffGroupName,
+  options?: {
+    /**
+     * Indicates if the build is marked as subset.
+     */
+    isSubsetBuild?: boolean;
+  },
+): DiffGroupDefinition {
+  const def = DiffGroupDefinitions[diffGroupName];
+  if (options?.isSubsetBuild) {
+    if (diffGroupName === ScreenshotDiffStatus.Removed) {
+      return { ...def, color: "neutral" };
+    }
+  }
+  return def;
+}

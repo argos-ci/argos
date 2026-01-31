@@ -147,6 +147,10 @@ export class Build extends Model {
   argosSdk!: string | null;
   runId!: string | null;
   runAttempt!: number | null;
+  /**
+   * This flag is set to true when a build is submitted from a partial retry in GitHub Actions,
+   * meaning not all test cases were executed.
+   */
   partial!: boolean | null;
   metadata!: BuildMetadata | null;
   conclusion!: BuildConclusion | null;
@@ -158,6 +162,10 @@ export class Build extends Model {
    * @see https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue
    */
   mergeQueue!: boolean;
+  /**
+   * Indicates whether this build contains only a subset of screenshots.
+   */
+  subset!: boolean;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -372,41 +380,23 @@ export class Build extends Model {
   /**
    * Get the conclusion of builds.
    */
-  static async computeConclusions(
-    buildIds: string[],
-    statuses: BuildStatus[],
-  ): Promise<(BuildConclusion | null)[]> {
-    const completeBuildIds = buildIds.filter(
-      (_, index) => statuses[index] === "complete",
-    );
+  static async computeConclusion(build: Build): Promise<BuildConclusion> {
+    const buildsDiffCount = await ScreenshotDiff.query()
+      .leftJoinRelated("compareScreenshot")
+      .whereNull("compareScreenshot.parentName")
+      .whereIn(
+        raw(ScreenshotDiff.selectDiffStatus),
+        // For subset builds, "removed" are ignored.
+        build.subset ? ["added", "changed"] : ["added", "changed", "removed"],
+      )
+      .where("buildId", build.id)
+      .resultSize();
 
-    const buildsDiffCount = (completeBuildIds.length
-      ? await ScreenshotDiff.query()
-          .select("buildId")
-          .leftJoinRelated("compareScreenshot")
-          .count("*")
-          .whereNull("compareScreenshot.parentName")
-          .whereIn(raw(ScreenshotDiff.selectDiffStatus), [
-            "added",
-            "changed",
-            "removed",
-          ])
-          .whereIn("buildId", completeBuildIds)
-          .groupBy("buildId")
-      : []) as unknown as { buildId: string; count: number }[];
+    if (buildsDiffCount > 0) {
+      return "changes-detected";
+    }
 
-    return buildIds.map((buildId, index) => {
-      if (statuses[index] !== "complete") {
-        return null;
-      }
-      const buildDiffCount = buildsDiffCount.find(
-        (diff) => diff.buildId === buildId,
-      );
-      if (buildDiffCount && buildDiffCount.count > 0) {
-        return "changes-detected";
-      }
-      return "no-changes";
-    });
+    return "no-changes";
   }
 
   /**

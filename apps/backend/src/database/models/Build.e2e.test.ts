@@ -235,30 +235,13 @@ describe("models/Build", () => {
     });
   });
 
-  describe("#computeConclusions", () => {
-    it("should return null for uncompleted jobs", async () => {
-      const builds = await factory.Build.createMany(4, [
-        { jobStatus: "pending" },
-        { jobStatus: "progress" },
-        { jobStatus: "error" },
-        { jobStatus: "aborted" },
-      ]);
-
-      const statuses = await Build.getStatuses(builds);
-      const conclusions = await Build.computeConclusions(
-        builds.map((b) => b.id),
-        statuses,
-      );
-      expect(conclusions).toEqual([null, null, null, null]);
-    });
-
+  describe("#computeConclusion", () => {
     it("should return 'no-changes' when empty", async () => {
       const build = await factory.Build.create({
         jobStatus: "complete",
       });
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.computeConclusions([build.id], statuses);
-      expect(conclusions).toEqual(["no-changes"]);
+      const conclusion = await Build.computeConclusion(build);
+      expect(conclusion).toBe("no-changes");
     });
 
     it("should return 'no-changes' when no diff detected", async () => {
@@ -267,9 +250,8 @@ describe("models/Build", () => {
         { buildId: build.id },
         { buildId: build.id },
       ]);
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.computeConclusions([build.id], statuses);
-      expect(conclusions).toEqual(["no-changes"]);
+      const conclusion = await Build.computeConclusion(build);
+      expect(conclusion).toBe("no-changes");
     });
 
     it("should return 'changes-detected' when diff are detected", async () => {
@@ -278,9 +260,8 @@ describe("models/Build", () => {
         { buildId: build.id },
         { buildId: build.id, score: 0.8 },
       ]);
-      const statuses = await Build.getStatuses([build]);
-      const conclusions = await Build.computeConclusions([build.id], statuses);
-      expect(conclusions).toEqual(["changes-detected"]);
+      const conclusion = await Build.computeConclusion(build);
+      expect(conclusion).toBe("changes-detected");
     });
 
     it("should ignore diffs for nested screenshots", async () => {
@@ -298,8 +279,7 @@ describe("models/Build", () => {
         baseScreenshotId: null,
         compareScreenshotId: compareScreenshot.id,
       });
-      const statuses = await Build.getStatuses([build]);
-      const [conclusion] = await Build.computeConclusions([build.id], statuses);
+      const conclusion = await Build.computeConclusion(build);
       const [stats] = await Build.computeStats([build.id]);
       expect(conclusion).toBe("no-changes");
       expect(stats).toEqual({

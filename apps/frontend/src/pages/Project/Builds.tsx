@@ -100,6 +100,7 @@ const ProjectBuildsQuery = graphql(`
           commit
           mode
           mergeQueue
+          subset
           stats {
             ...BuildStatsIndicator_BuildStats
           }
@@ -153,7 +154,11 @@ function BuildRow({
       <div className="flex grow">
         <div className="hidden lg:flex">
           {build.stats ? (
-            <BuildStatsIndicator stats={build.stats} className="flex-wrap" />
+            <BuildStatsIndicator
+              stats={build.stats}
+              className="flex-wrap"
+              isSubsetBuild={build.subset}
+            />
           ) : null}
         </div>
       </div>

@@ -39,7 +39,7 @@ import { fetchImage } from "@/util/image";
 import { useTextContent } from "@/util/text";
 
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
-import { DiffGroupDefinitions } from "./BuildDiffGroup";
+import { getDiffGroupDefinition } from "./BuildDiffGroup";
 import {
   BuildDiffHighlighterProvider,
   Highlighter,
@@ -488,7 +488,7 @@ function BaseScreenshot({
               doesn&quot;t have a baseline to compare with.
             </>
           }
-          icon={DiffGroupDefinitions[diff.status].icon}
+          icon={getDiffGroupDefinition(diff.status).icon}
         />
       );
     case ScreenshotDiffStatus.RetryFailure:
@@ -503,7 +503,7 @@ function BaseScreenshot({
               passed afterward, this screenshot is not considered a failure.
             </>
           }
-          icon={DiffGroupDefinitions[diff.status].icon}
+          icon={getDiffGroupDefinition(diff.status).icon}
         />
       );
     case ScreenshotDiffStatus.Failure:
@@ -518,7 +518,7 @@ function BaseScreenshot({
               debugging by providing insights into why the test failed.
             </>
           }
-          icon={DiffGroupDefinitions[diff.status].icon}
+          icon={getDiffGroupDefinition(diff.status).icon}
         />
       );
     case ScreenshotDiffStatus.Unchanged:
@@ -530,7 +530,7 @@ function BaseScreenshot({
               All good! This screenshot is similar to the baseline screenshot.
             </>
           }
-          icon={DiffGroupDefinitions[diff.status].icon}
+          icon={getDiffGroupDefinition(diff.status).icon}
         />
       );
     case ScreenshotDiffStatus.Removed: {
@@ -731,7 +731,7 @@ function CompareScreenshot(props: {
               changes to compare with.
             </>
           }
-          icon={DiffGroupDefinitions[ScreenshotDiffStatus.Removed].icon}
+          icon={getDiffGroupDefinition(diff.status).icon}
         />
       );
     }

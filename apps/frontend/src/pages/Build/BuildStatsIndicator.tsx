@@ -6,7 +6,7 @@ import { Button as RACButton } from "react-aria-components";
 
 import {
   DIFF_STATS_GROUPS,
-  DiffGroupDefinitions,
+  getDiffGroupDefinition,
   type DiffGroupColor,
   type DiffGroupName,
   type DiffStatusGroupName,
@@ -138,23 +138,33 @@ const _BuildStatsFragment = graphql(`
   }
 `);
 
-export const BuildStatsIndicator = memo(function BuildStatsIndicator({
-  stats,
-  onClickGroup,
-  className,
-  tooltip = true,
-}: {
+export const BuildStatsIndicator = memo(function BuildStatsIndicator(props: {
   stats: DocumentType<typeof _BuildStatsFragment>;
   onClickGroup?: (group: DiffGroupName) => void;
   className?: string;
+  /**
+   * Indicates if the stats comes from a build marked as subset.
+   */
+  isSubsetBuild: boolean;
+  /**
+   * Add tooltips.
+   * @default true
+   */
   tooltip?: boolean;
 }) {
+  const {
+    stats,
+    onClickGroup,
+    className,
+    isSubsetBuild,
+    tooltip = true,
+  } = props;
   const groups = DIFF_STATS_GROUPS.map((group) => {
     const count = stats[group];
     if (count === 0) {
       return null;
     }
-    const def = DiffGroupDefinitions[group];
+    const def = getDiffGroupDefinition(group, { isSubsetBuild });
     return (
       <Fragment key={group}>
         {onClickGroup ? (

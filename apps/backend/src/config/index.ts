@@ -29,6 +29,10 @@ export function createConfig() {
       default: "development",
       env: "NODE_ENV",
     },
+    logLevel: {
+      doc: "Log level",
+      default: "info",
+    },
     contactEmail: {
       doc: "The contact email",
       default: "contact@argos-ci.com",

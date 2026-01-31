@@ -131,7 +131,9 @@ export function detailsBlock(props: {
   const { build, compareScreenshotBucket, project, pullRequest } = props;
   const commit = compareScreenshotBucket?.commit;
   const commitShort = commit ? String(commit).substring(0, 7) : null;
-  const statsMessage = build.stats ? getStatsMessage(build.stats) : null;
+  const statsMessage = build.stats
+    ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
+    : null;
   const branch = compareScreenshotBucket?.branch;
   const repositoryURL = getRepositoryUrl(project);
   const pullRequestUrl =

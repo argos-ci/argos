@@ -18,20 +18,21 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
   const buildId = build.id;
   return redisLock.acquire(["conclude-build", buildId], async () => {
     const existingBuild = await Build.query()
-      .select("conclusion")
       .findById(buildId)
       .throwIfNotFound();
+
     if (existingBuild.conclusion !== null) {
       // If the build is already concluded, we don't want to update it.
       return;
     }
-    const statuses = await Build.getScreenshotDiffsStatuses([buildId]);
-    const [[conclusion], [stats]] = await Promise.all([
-      Build.computeConclusions([buildId], statuses),
+    const [status] = await Build.getScreenshotDiffsStatuses([buildId]);
+    invariant(status !== undefined, "status should exist for build");
+
+    const [conclusion, [stats]] = await Promise.all([
+      status === "complete" ? Build.computeConclusion(existingBuild) : null,
       Build.computeStats([buildId]),
     ]);
-    invariant(stats !== undefined, "No stats found");
-    invariant(conclusion !== undefined, "No conclusion found");
+    invariant(stats !== undefined, "stats should exist for build");
     // If the build is not yet concluded, we don't want to update it.
     if (conclusion === null) {
       return;

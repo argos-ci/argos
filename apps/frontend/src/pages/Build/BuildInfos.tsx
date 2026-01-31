@@ -26,6 +26,7 @@ const _BuildFragment = graphql(`
     branch
     mode
     mergeQueue
+    subset
     stats {
       total
     }
@@ -289,6 +290,19 @@ export function BuildInfos(props: {
 
       <Dt>Total screenshots</Dt>
       <Dd>{build.stats ? build.stats.total : "-"}</Dd>
+
+      {build.subset ? (
+        <>
+          <Dt>Scope</Dt>
+          <Dd>
+            Subset
+            <Description>
+              This build is marked as "subset", meaning only some snapshots were
+              uploaded. Missing snapshots are ignored when computing changes.
+            </Description>
+          </Dd>
+        </>
+      ) : null}
 
       {build.parallel ? (
         <>

@@ -132,7 +132,7 @@ export function getNotificationStates(args: {
 
 function getBuildStatsMessage(build: Build): string {
   invariant(build.stats, "Build should be concluded");
-  return getStatsMessage(build.stats);
+  return getStatsMessage(build.stats, { isSubsetBuild: build.subset });
 }
 
 /**

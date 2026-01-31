@@ -70,6 +70,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   compareBranch: string | null | undefined;
   prMerged: boolean;
   buildType: BuildType | null;
+  isSubsetBuild: boolean;
 }) {
   const {
     diff,
@@ -79,6 +80,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
     repoUrl,
     prMerged,
     buildType,
+    isSubsetBuild,
   } = props;
   const metadata = resolveDiffMetadata(diff);
   const automationLibrary = metadata?.automationLibrary ?? null;
@@ -97,7 +99,8 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
       : compareBranch;
   const pwTraceUrl = diff.compareScreenshot?.playwrightTraceUrl ?? null;
   const canBeReviewed =
-    buildType !== BuildType.Reference && checkDiffCanBeReviewed(diff.status);
+    buildType !== BuildType.Reference &&
+    checkDiffCanBeReviewed(diff.status, { isSubsetBuild });
   // Determine a sibling trace to show if the current trace is missing.
   const siblingTrace = (() => {
     if (pwTraceUrl) {

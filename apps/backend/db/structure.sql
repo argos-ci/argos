@@ -459,6 +459,7 @@ CREATE TABLE public.builds (
     "finalizedAt" timestamp with time zone,
     "concludedAt" timestamp with time zone,
     "mergeQueue" boolean DEFAULT false NOT NULL,
+    subset boolean DEFAULT false NOT NULL,
     CONSTRAINT "builds_baseBranchResolvedFrom_check" CHECK (("baseBranchResolvedFrom" = ANY (ARRAY['user'::text, 'pull-request'::text, 'project'::text]))),
     CONSTRAINT builds_conclusion_check CHECK ((conclusion = ANY (ARRAY['no-changes'::text, 'changes-detected'::text]))),
     CONSTRAINT builds_mode_check CHECK ((mode = ANY (ARRAY['ci'::text, 'monitoring'::text]))),
@@ -3773,3 +3774,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118195213_test-stats-fingerprints.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119154332_delete-unused-tables.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260125185235_add-indices.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260131141626_removed-screenshot-policy.js', 1, NOW());

@@ -126,6 +126,8 @@ export const typeDefs = gql`
     branchApprovedDiffs: [ID!]!
     "Build is triggered in a merge queue"
     mergeQueue: Boolean!
+    "Indicates whether this build contains only a subset of screenshots"
+    subset: Boolean!
   }
 
   type BuildMetadata {
