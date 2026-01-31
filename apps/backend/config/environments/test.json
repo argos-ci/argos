@@ -5,6 +5,7 @@
     "secure": false,
     "port": 3000
   },
+  "logLevel": "silent",
   "s3": {
     "screenshotsBucket": "argos-ci-test",
     "publicImageBaseUrl": "https://files.argos-ci.com/test/"
