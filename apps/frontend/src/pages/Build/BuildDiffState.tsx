@@ -173,6 +173,10 @@ type BuildDiffContextValue = {
   results: DiffResult[];
   hasNoResults: boolean;
   /**
+   * Indicates if the build is marked as "subset".
+   */
+  isSubsetBuild: boolean;
+  /**
    * Some diffs are still loading.
    */
   isLoading: boolean;
@@ -192,11 +196,25 @@ const BuildDiffContext = createContext<BuildDiffContextValue | null>(null);
 /**
  * Check if the diff can be reviewed.
  */
-export function checkDiffCanBeReviewed(diffStatus: ScreenshotDiffStatus) {
+export function checkDiffCanBeReviewed(
+  diffStatus: ScreenshotDiffStatus,
+  context: {
+    /**
+     * Indicates if the build is marked as subset.
+     */
+    isSubsetBuild: boolean;
+  },
+) {
+  if (context.isSubsetBuild) {
+    return (
+      diffStatus === ScreenshotDiffStatus.Changed ||
+      diffStatus === ScreenshotDiffStatus.Added
+    );
+  }
   return (
+    diffStatus === ScreenshotDiffStatus.Changed ||
     diffStatus === ScreenshotDiffStatus.Added ||
-    diffStatus === ScreenshotDiffStatus.Removed ||
-    diffStatus === ScreenshotDiffStatus.Changed
+    diffStatus === ScreenshotDiffStatus.Removed
   );
 }
 
@@ -331,6 +349,9 @@ export function useGoToPreviousDiff() {
 
 function useExpandedState(initial: string[]) {
   const [expanded, setExpanded] = useState<string[]>(initial);
+  useEffect(() => {
+    setExpanded(initial);
+  }, [initial]);
   const toggleGroup = useCallback((name: string, value?: boolean) => {
     setExpanded((expanded) => {
       const included = expanded.includes(name);
@@ -497,6 +518,7 @@ export function useSearchState() {
 const _BuildDiffStateFragment = graphql(`
   fragment BuildDiffState_Build on Build {
     id
+    subset
     stats {
       ...BuildStatsIndicator_BuildStats
       total
@@ -512,6 +534,28 @@ const _BuildDiffStateFragment = graphql(`
 
 type BuildStats = DocumentType<typeof _BuildDiffStateFragment>["stats"];
 
+const INITIAL_SEARCH_EXPANDED = [
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+  ScreenshotDiffStatus.Removed,
+  ScreenshotDiffStatus.Unchanged,
+  ScreenshotDiffStatus.RetryFailure,
+];
+
+const INITIAL_SUBSET_EXPANDED = [
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+];
+
+const INITIAL_EXPANDED = [
+  ScreenshotDiffStatus.Failure,
+  ScreenshotDiffStatus.Changed,
+  ScreenshotDiffStatus.Added,
+  ScreenshotDiffStatus.Removed,
+];
+
 export function BuildDiffProvider(props: {
   children: React.ReactNode;
   build: DocumentType<typeof _BuildDiffStateFragment> | null;
@@ -524,20 +568,10 @@ export function BuildDiffProvider(props: {
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
   const navigate = useNavigate();
-  const expandedState = useExpandedState([
-    ScreenshotDiffStatus.Failure,
-    ScreenshotDiffStatus.Changed,
-    ScreenshotDiffStatus.Added,
-    ScreenshotDiffStatus.Removed,
-  ]);
-  const searchExpandedState = useExpandedState([
-    ScreenshotDiffStatus.Failure,
-    ScreenshotDiffStatus.Changed,
-    ScreenshotDiffStatus.Added,
-    ScreenshotDiffStatus.Removed,
-    ScreenshotDiffStatus.Unchanged,
-    ScreenshotDiffStatus.RetryFailure,
-  ]);
+  const expandedState = useExpandedState(
+    build?.subset ? INITIAL_SUBSET_EXPANDED : INITIAL_EXPANDED,
+  );
+  const searchExpandedState = useExpandedState(INITIAL_SEARCH_EXPANDED);
   const { expanded, toggleGroup } = searchMode
     ? searchExpandedState
     : expandedState;
@@ -691,6 +725,8 @@ export function BuildDiffProvider(props: {
     screenshotDiffs.length > 0,
   );
 
+  const isSubsetBuild = build?.subset ?? false;
+
   const value = useMemo(
     (): BuildDiffContextValue => ({
       groups,
@@ -709,6 +745,7 @@ export function BuildDiffProvider(props: {
       siblingDiffs,
       ariaDiff,
       isLoading: hasMore,
+      isSubsetBuild,
     }),
     [
       groups,
@@ -727,6 +764,7 @@ export function BuildDiffProvider(props: {
       siblingDiffs,
       ariaDiff,
       hasMore,
+      isSubsetBuild,
     ],
   );
   return (

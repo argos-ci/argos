@@ -88,7 +88,7 @@ const BuildReviewAPIContext = createContext<BuildReviewAPI | null>(null);
  * - "complete": All diffs are reviewed.
  */
 function useReviewStatus(): "initializing" | "pending" | "complete" | null {
-  const { stats } = useBuildDiffState();
+  const { stats, isSubsetBuild } = useBuildDiffState();
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
   return useMemo(() => {
@@ -99,12 +99,13 @@ function useReviewStatus(): "initializing" | "pending" | "complete" | null {
     if (!stats) {
       return "initializing";
     }
-    const expected = stats.added + stats.changed + stats.removed;
+    const expected =
+      stats.added + stats.changed + (isSubsetBuild ? 0 : stats.removed);
     const reviewed = Object.values(diffStatuses).filter(
       (status) => status !== EvaluationStatus.Pending,
     ).length;
     return expected === reviewed ? "complete" : "pending";
-  }, [stats, diffStatuses]);
+  }, [stats, diffStatuses, isSubsetBuild]);
 }
 
 /**
@@ -147,7 +148,7 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
     return getDiffStatus(diff.id) === EvaluationStatus.Pending;
   }, options);
   const reviewStatus = useReviewStatus();
-  const { setActiveDiff } = useBuildDiffState();
+  const { setActiveDiff, isSubsetBuild } = useBuildDiffState();
   const reviewDialog = useReviewDialog();
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
@@ -157,7 +158,10 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
     const nextDiff = getNextDiff();
     if (reviewStatus === "complete") {
       reviewDialog.show();
-    } else if (nextDiff && checkDiffCanBeReviewed(nextDiff.status)) {
+    } else if (
+      nextDiff &&
+      checkDiffCanBeReviewed(nextDiff.status, { isSubsetBuild })
+    ) {
       setActiveDiff(nextDiff, true);
     }
   });
@@ -303,7 +307,11 @@ export function useGetReviewedDiffStatuses() {
     const diffStatuses = api.getDiffStatuses();
     return diffState.diffs.reduce<Record<Diff["id"], EvaluationStatus>>(
       (ids, diff) => {
-        if (checkDiffCanBeReviewed(diff.status)) {
+        if (
+          checkDiffCanBeReviewed(diff.status, {
+            isSubsetBuild: diffState.isSubsetBuild,
+          })
+        ) {
           ids[diff.id] = getDiffStatusAfterReview(
             reviewState,
             diffStatuses[diff.id],
@@ -357,7 +365,10 @@ export function useBuildDiffStatusState(args: {
     const diffIds = diffState.diffs
       .filter(
         (diff) =>
-          diff.group === diffGroup && checkDiffCanBeReviewed(diff.status),
+          diff.group === diffGroup &&
+          checkDiffCanBeReviewed(diff.status, {
+            isSubsetBuild: diffState.isSubsetBuild,
+          }),
       )
       .map((diff) => diff.id);
 

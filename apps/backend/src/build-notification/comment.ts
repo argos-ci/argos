@@ -65,7 +65,9 @@ export async function getCommentBody(props: {
       const status = aggregateStatuses[index];
       invariant(status, "missing build status");
 
-      const stats = build.stats ? getStatsMessage(build.stats) : null;
+      const stats = build.stats
+        ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
+        : null;
 
       const label = getBuildLabel(build.type, status);
       const review =

@@ -34,7 +34,7 @@ import {
 
 import {
   checkIsDiffGroupName,
-  DiffGroupDefinitions,
+  getDiffGroupDefinition,
   type DiffGroup,
   type DiffGroupName,
 } from "@/containers/Build/BuildDiffGroup";
@@ -313,7 +313,7 @@ function ListHeader(props: {
 }) {
   const { style, onClick, item, activeIndex } = props;
   const borderB = item.borderBottom ? "border-b border-b-border" : "";
-  const def = DiffGroupDefinitions[item.name];
+  const def = getDiffGroupDefinition(item.name);
   return (
     <RACButton
       className={clsx(
@@ -413,7 +413,7 @@ function ShowSubItemToggle(
 
 function DiffStatusIndicator(props: { group: DiffGroupName }) {
   const { group } = props;
-  const def = DiffGroupDefinitions[group];
+  const def = getDiffGroupDefinition(group);
   return (
     <Tooltip content={def.label}>
       <def.icon className="text-low size-3" />
@@ -805,6 +805,7 @@ const InternalBuildDiffList = memo(() => {
     stats,
     results,
     hasNoResults,
+    isSubsetBuild,
   } = useBuildDiffState();
   const { searchMode } = useSearchModeState();
   const rows = useMemo(
@@ -975,6 +976,7 @@ const InternalBuildDiffList = memo(() => {
           className="shrink-0 border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
+          isSubsetBuild={isSubsetBuild}
         />
       )}
       <div ref={containerRef} className="min-h-0 flex-1 overflow-y-auto">

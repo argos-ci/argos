@@ -24,6 +24,7 @@ const _BuildFragment = graphql(`
     ...BuildStatusDescription_Build
     ...BuildDiffDetail_Build
     status
+    subset
     parallel {
       total
       received
@@ -152,6 +153,7 @@ function BuildDetail(props: {
               compareBranch={build.branch}
               prMerged={build.pullRequest?.merged ?? false}
               buildType={build.type ?? null}
+              isSubsetBuild={build.subset}
             />
           ) : null
         }

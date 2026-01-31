@@ -55,6 +55,7 @@ function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
     .where("mode", build.mode)
     .where("jobStatus", "complete")
     .whereNot("id", build.id)
+    .where("subset", false)
     .whereNot("type", "skipped");
 
   if (options?.approved) {

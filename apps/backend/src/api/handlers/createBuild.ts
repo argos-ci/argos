@@ -89,6 +89,15 @@ const RequestBodySchema = z.object({
   mergeQueue: z.boolean().nullable().optional().meta({
     description: "Whether the build has been created in a merge queue",
   }),
+  subset: z
+    .boolean()
+    .nullable()
+    .optional()
+    .meta({
+      description:
+        "Indicates whether this build contains only a subset of screenshots.\n" +
+        "This is useful when a build is created from an incomplete test suite where some tests are skipped.",
+    }),
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
@@ -325,5 +334,6 @@ async function createBuildFromRequest(ctx: BuildContext) {
     argosSdk: body.argosSdk ?? null,
     skipped: body.skipped ?? false,
     mergeQueue: body.mergeQueue ?? false,
+    subset: body.subset ?? false,
   });
 }
