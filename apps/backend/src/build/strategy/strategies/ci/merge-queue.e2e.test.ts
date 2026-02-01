@@ -39,6 +39,7 @@ describe("#getCIMergeQueueBase", () => {
       name: "default",
       mode: "ci",
       mergeQueue: true,
+      type: "check",
     });
 
     const ciBaseResult = {
@@ -74,6 +75,7 @@ describe("#getCIMergeQueueBase", () => {
       name: "default",
       mode: "ci",
       mergeQueue: true,
+      type: "check",
     });
 
     const approvedBucket = await factory.ScreenshotBucket.create({
@@ -86,6 +88,7 @@ describe("#getCIMergeQueueBase", () => {
       name: build.name,
       mode: "ci",
       mergeQueue: true,
+      type: "check",
     });
     await factory.BuildReview.create({
       buildId: lastApprovedBuild.id,
@@ -127,6 +130,7 @@ describe("#getCIMergeQueueBase", () => {
       name: "default",
       mode: "ci",
       mergeQueue: true,
+      type: "check",
     });
 
     const baseBucket = await factory.ScreenshotBucket.create({
@@ -145,6 +149,7 @@ describe("#getCIMergeQueueBase", () => {
       name: build.name,
       mode: "ci",
       mergeQueue: true,
+      type: "check",
     });
     await factory.BuildReview.create({
       buildId: lastApprovedBuild.id,
@@ -163,6 +168,7 @@ describe("#getCIMergeQueueBase", () => {
       mergeQueue: true,
       createdAt: new Date("2024-02-01").toISOString(),
       conclusion: "no-changes",
+      type: "check",
     });
 
     const virtualBucket = { screenshots: [] };
@@ -208,6 +214,7 @@ describe("#getCIMergeQueueBase", () => {
           name: "default",
           mode: "ci",
           mergeQueue: true,
+          type: "check",
         },
         {
           projectId: project.id,
@@ -216,6 +223,7 @@ describe("#getCIMergeQueueBase", () => {
           mode: "ci",
           mergeQueue: true,
           conclusion: "changes-detected",
+          type: "check",
         },
         {
           projectId: project.id,
@@ -224,6 +232,7 @@ describe("#getCIMergeQueueBase", () => {
           mode: "ci",
           mergeQueue: true,
           conclusion: "no-changes",
+          type: "check",
         },
       ]);
     invariant(build && lastApprovedBuild && noChangesBuild);

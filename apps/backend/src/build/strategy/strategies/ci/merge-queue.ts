@@ -24,6 +24,7 @@ export async function getCIMergeQueueBase(
       .where("builds.name", build.name)
       .where("builds.mode", "ci")
       .where("builds.jobStatus", "complete")
+      .whereNot("builds.type", "skipped")
       .whereNot("builds.id", build.id)
       .where("compareScreenshotBucket.branch", compareScreenshotBucket.branch)
       .where((qb) => {
