@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { factory, setupDatabase } from "@/database/testing";
@@ -189,50 +190,70 @@ describe("#getCIMergeQueueBase", () => {
     expect(result.baseBranchResolvedFrom).toBeNull();
   });
 
-  it("returns the CI base when it is more recent than the last approved build", async () => {
+  it('uses the latest "no-changes" build instead of the latest approved one', async () => {
     const project = await factory.Project.create();
-    const branch = "feature/newer-base";
-    const compareBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      branch,
-    });
-    const build = await factory.Build.create({
-      projectId: project.id,
-      compareScreenshotBucketId: compareBucket.id,
-      name: "default",
-      mode: "ci",
-      mergeQueue: true,
-    });
+    const branch = "feature/no-changes-latest";
+    const [compareBucket, lastApprovedBucket, noChangesBucket] =
+      await factory.ScreenshotBucket.createMany(3, {
+        projectId: project.id,
+        branch,
+      });
+    invariant(compareBucket && lastApprovedBucket && noChangesBucket);
 
-    const lastApprovedBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      branch,
-      createdAt: new Date("2024-01-01").toISOString(),
-    });
-    const lastApprovedBuild = await factory.Build.create({
-      projectId: project.id,
-      compareScreenshotBucketId: lastApprovedBucket.id,
-      name: build.name,
-      mode: "ci",
-      mergeQueue: true,
-    });
-    await factory.BuildReview.create({
-      buildId: lastApprovedBuild.id,
-      state: "approved",
-    });
+    const [build, lastApprovedBuild, noChangesBuild] =
+      await factory.Build.createMany(3, [
+        {
+          projectId: project.id,
+          compareScreenshotBucketId: compareBucket.id,
+          name: "default",
+          mode: "ci",
+          mergeQueue: true,
+        },
+        {
+          projectId: project.id,
+          compareScreenshotBucketId: lastApprovedBucket.id,
+          name: "default",
+          mode: "ci",
+          mergeQueue: true,
+          conclusion: "changes-detected",
+        },
+        {
+          projectId: project.id,
+          compareScreenshotBucketId: noChangesBucket.id,
+          name: "default",
+          mode: "ci",
+          mergeQueue: true,
+          conclusion: "no-changes",
+        },
+      ]);
+    invariant(build && lastApprovedBuild && noChangesBuild);
 
-    const baseBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      branch: "main",
-      createdAt: new Date("2024-02-01").toISOString(),
-    });
+    const [baseBucket] = await Promise.all([
+      factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "main",
+      }),
+      lastApprovedBuild.$query().patch({
+        createdAt: new Date("2024-01-01").toISOString(),
+      }),
+      noChangesBuild.$query().patch({
+        createdAt: new Date("2024-02-01").toISOString(),
+      }),
+      factory.BuildReview.create({
+        buildId: lastApprovedBuild.id,
+        state: "approved",
+      }),
+    ]);
 
-    const ciBaseResult = {
+    invariant(baseBucket);
+
+    const virtualBucket = { screenshots: [] };
+    mockGetCIBase.mockResolvedValue({
       baseBucket,
       baseBranch: "main",
       baseBranchResolvedFrom: "project" as const,
-    };
-    mockGetCIBase.mockResolvedValue(ciBaseResult);
+    });
+    mockMergeBucketWithBuildDiffs.mockResolvedValue(virtualBucket);
 
     const result = await getCIMergeQueueBase({
       build,
@@ -242,7 +263,12 @@ describe("#getCIMergeQueueBase", () => {
       context: { checkIsAutoApproved: () => false },
     });
 
-    expect(result).toEqual(ciBaseResult);
-    expect(mockMergeBucketWithBuildDiffs).not.toHaveBeenCalled();
+    expect(mockMergeBucketWithBuildDiffs).toHaveBeenCalledOnce();
+    const [, buildArg] = mockMergeBucketWithBuildDiffs.mock.calls[0]!;
+    expect(buildArg.id).toBe(noChangesBuild.id);
+    expect(buildArg.id).not.toBe(lastApprovedBuild.id);
+    expect(result.baseBucket).toBe(virtualBucket);
+    expect(result.baseBranch).toBeNull();
+    expect(result.baseBranchResolvedFrom).toBeNull();
   });
 });

@@ -13,8 +13,10 @@ export async function getCIMergeQueueBase(
   args: GetCIBaseArgs,
 ): Promise<GetBaseResult> {
   const { build, compareScreenshotBucket } = args;
-  const [ciBase, lastApprovedBuild] = await Promise.all([
+  const [ciBase, lastApprovedOrNoChangesBuild] = await Promise.all([
     getCIBase(args),
+    // We want to find the latest approved or no-changes build
+    // that has been triggered on the PR.
     Build.query()
       .withGraphFetched("compareScreenshotBucket")
       .joinRelated("compareScreenshotBucket")
@@ -29,16 +31,18 @@ export async function getCIMergeQueueBase(
           qb.where("builds.githubPullRequestId", build.githubPullRequestId);
         }
       })
-      .whereExists(
-        Build.submittedReviewQuery().where("build_reviews.state", "approved"),
-      )
-      .orderBy("builds.id", "desc")
+      .where((qb) => {
+        qb.whereExists(
+          Build.submittedReviewQuery().where("build_reviews.state", "approved"),
+        ).orWhere("builds.conclusion", "no-changes");
+      })
+      .orderBy("builds.createdAt", "desc")
       .first(),
   ]);
 
-  // If there is no last approved build,
-  // fallback to CI base strategy
-  if (!lastApprovedBuild) {
+  // If there is no last approved build or no-changes,
+  // fallback to CI base strategy.
+  if (!lastApprovedOrNoChangesBuild) {
     return ciBase;
   }
 
@@ -46,19 +50,6 @@ export async function getCIMergeQueueBase(
   // we will see if there is more recent one from merge queue,
   // and merge the two buckets.
   if (ciBase.baseBucket instanceof ScreenshotBucket) {
-    invariant(
-      lastApprovedBuild.compareScreenshotBucket,
-      'Relation "compareScreenshotBucket" should be loaded',
-    );
-
-    // If the base bucket is more recent than the latest approved build, then use it.
-    if (
-      new Date(ciBase.baseBucket.createdAt).getTime() >
-      new Date(lastApprovedBuild.compareScreenshotBucket.createdAt).getTime()
-    ) {
-      return ciBase;
-    }
-
     const recentlyMergedBucket = await getRecentMergedBucket({
       build,
       compareScreenshotBucket,
@@ -68,7 +59,7 @@ export async function getCIMergeQueueBase(
     const baseBucket = recentlyMergedBucket ?? ciBase.baseBucket;
     const virtualBaseBucket = await mergeBucketWithBuildDiffs(
       baseBucket,
-      lastApprovedBuild,
+      lastApprovedOrNoChangesBuild,
     );
     return {
       baseBucket: virtualBaseBucket,
@@ -78,12 +69,12 @@ export async function getCIMergeQueueBase(
   }
 
   invariant(
-    lastApprovedBuild.compareScreenshotBucket,
+    lastApprovedOrNoChangesBuild.compareScreenshotBucket,
     "Relation `compareScreenshotBucket` not loaded",
   );
 
   return {
-    baseBucket: lastApprovedBuild.compareScreenshotBucket,
+    baseBucket: lastApprovedOrNoChangesBuild.compareScreenshotBucket,
     baseBranch: null,
     baseBranchResolvedFrom: null,
   };
