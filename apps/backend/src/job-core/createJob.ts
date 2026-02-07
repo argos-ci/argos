@@ -73,30 +73,26 @@ export const createJob = <TValue extends string | number>(
   const logger = parentLogger.child({ module: "job", queue });
   const cache = new Map();
   const getChannel = pMemoize(
-    () =>
-      pRetry(
+    (type: "publisher" | "consumer") => {
+      const channelLogger = logger.child({ channelType: type });
+      return pRetry(
         async () => {
-          logger.info("Connecting");
+          channelLogger.info("Connecting");
           const amqp = await connect();
-          logger.info("Creating channel");
+          channelLogger.info("Creating channel");
           const channel = await amqp.createChannel();
-          logger.info("Channel created");
+          channelLogger.info("Channel created");
           channel.once("close", () => {
-            logger.info("Channel closed");
-            cache.clear();
+            channelLogger.info("Channel closed");
+            cache.delete(type);
           });
-          logger.info("Asserting queue");
-          await channel.assertQueue(queue, {
-            durable: true,
-            arguments: {
-              "x-consumer-timeout": timeout + 10_000,
-            },
-          });
+          channelLogger.info("Asserting queue");
+          await channel.assertQueue(queue, { durable: true });
           return channel;
         },
         {
           onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
-            logger.info(
+            channelLogger.info(
               {
                 error,
                 attemptNumber,
@@ -106,13 +102,20 @@ export const createJob = <TValue extends string | number>(
             );
           },
         },
-      ),
-    { cache },
+      );
+    },
+    {
+      cache,
+      cacheKey: (args) => {
+        const [type] = args;
+        return type;
+      },
+    },
   );
   return {
     queue,
     async push(...values) {
-      const channel = await getChannel();
+      const channel = await getChannel("publisher");
       const valuesSet = new Set(values);
       const sendOne = (value: TValue) => {
         return channel.sendToQueue(
@@ -151,7 +154,7 @@ export const createJob = <TValue extends string | number>(
         async (): Promise<void> => {
           logger.info("Initialize consuming");
 
-          const channel = await getChannel();
+          const channel = await getChannel("consumer");
 
           let done!: () => void;
           let fail!: (error: unknown) => void;
@@ -163,16 +166,20 @@ export const createJob = <TValue extends string | number>(
 
           const onClose = () => {
             logger.info("Channel closed");
+            channel.off("close", onClose);
+            channel.off("error", onError);
             done();
           };
 
           const onError = (error: unknown) => {
             logger.info({ error }, "Channel error");
+            channel.off("close", onClose);
+            channel.off("error", onError);
             fail(error);
           };
 
-          channel.once("close", onClose);
-          channel.once("error", onError);
+          channel.on("close", onClose);
+          channel.on("error", onError);
 
           await channel.prefetch(prefetch);
 
