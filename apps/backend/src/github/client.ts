@@ -236,7 +236,10 @@ async function authInstallation(args: {
 /**
  * Check the error status.
  */
-export function checkErrorStatus(status: number, error: unknown): boolean {
+export function checkErrorStatus(
+  status: number,
+  error: unknown,
+): error is Error {
   if (
     error instanceof Error &&
     "status" in error &&
