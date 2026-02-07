@@ -1,25 +1,10 @@
-import { diffChars } from "diff";
-
 /**
- * Computes the ratio (percentage) of difference between two texts.
+ * Computes a binary difference score between two texts.
+ *
+ * Returns:
+ * - 0 if the texts are identical
+ * - 1 if the texts differ
  */
 export function getDiffScore(base: string, head: string): number {
-  const diff = diffChars(base, head);
-
-  let total = 0;
-  let unchanged = 0;
-
-  for (const part of diff) {
-    total += part.value.length;
-    if (!part.added && !part.removed) {
-      unchanged += part.value.length;
-    }
-  }
-
-  if (total === 0) {
-    return 0;
-  }
-
-  const similarity = unchanged / total;
-  return 1 - similarity;
+  return base === head ? 0 : 1;
 }
