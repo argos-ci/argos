@@ -11,7 +11,7 @@ const logger = pino({
       // If warning or more and there is an error
       if (level >= 40 && parsed.error) {
         Sentry.withScope((scope) => {
-          scope.setExtras(parsed.obj);
+          scope.setExtras({ ...parsed.obj, msg: parsed.msg });
           scope.setLevel(
             level >= 60
               ? "fatal"
