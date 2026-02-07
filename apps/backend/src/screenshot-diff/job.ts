@@ -14,5 +14,5 @@ export const job = createModelJob(
       bucket: config.get("s3.screenshotsBucket"),
     });
   },
-  { timeout: 30_000 },
+  { timeout: 60_000 },
 );
