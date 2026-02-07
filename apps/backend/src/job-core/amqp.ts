@@ -16,7 +16,7 @@ export const connect = pMemoize(
       () =>
         amqp.connect(config.get("amqp.url")).then((model) => {
           const handleError = (error: unknown) => {
-            logger.info({ error }, "Error event");
+            logger.info({ error }, "AMQP error event (non-fatal)");
           };
 
           const handleClose = () => {

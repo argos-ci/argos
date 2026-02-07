@@ -85,6 +85,13 @@ export const createJob = <TValue extends string | number>(
             logger.info("Channel closed");
             cache.clear();
           });
+          logger.info("Asserting queue");
+          await channel.assertQueue(queue, {
+            durable: true,
+            arguments: {
+              "x-consumer-timeout": timeout + 10_000,
+            },
+          });
           return channel;
         },
         {
@@ -106,12 +113,6 @@ export const createJob = <TValue extends string | number>(
     queue,
     async push(...values) {
       const channel = await getChannel();
-      await channel.assertQueue(queue, {
-        durable: true,
-        arguments: {
-          "x-consumer-timeout": timeout + 10_000,
-        },
-      });
       const valuesSet = new Set(values);
       const sendOne = (value: TValue) => {
         return channel.sendToQueue(
@@ -174,7 +175,6 @@ export const createJob = <TValue extends string | number>(
           channel.once("error", onError);
 
           await channel.prefetch(prefetch);
-          await channel.assertQueue(queue, { durable: true });
 
           logger.info("Consuming queue");
 
