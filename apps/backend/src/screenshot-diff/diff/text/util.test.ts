@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { getDiffScore } from "./util";
@@ -25,33 +26,43 @@ describe("getDiffScore", () => {
 
   it("should calculate correct ratio for partial differences", () => {
     const ratio = getDiffScore("hello", "hallo");
-    expect(ratio).toBeGreaterThan(0);
-    expect(ratio).toBeLessThan(1);
+    expect(ratio).toBe(1);
   });
 
   it("should calculate correct ratio for added characters", () => {
     const ratio = getDiffScore("test", "testing");
-    expect(ratio).toBeGreaterThan(0);
-    expect(ratio).toBeLessThan(1);
+    expect(ratio).toBe(1);
   });
 
   it("should calculate correct ratio for removed characters", () => {
     const ratio = getDiffScore("testing", "test");
-    expect(ratio).toBeGreaterThan(0);
-    expect(ratio).toBeLessThan(1);
+    expect(ratio).toBe(1);
   });
 
   it("should handle multiline text", () => {
     const base = "line1\nline2\nline3";
     const head = "line1\nmodified\nline3";
     const ratio = getDiffScore(base, head);
-    expect(ratio).toBeGreaterThan(0);
-    expect(ratio).toBeLessThan(1);
+    expect(ratio).toBe(1);
   });
 
   it("should handle special characters", () => {
     const ratio = getDiffScore("hello@world", "hello#world");
-    expect(ratio).toBeGreaterThan(0);
-    expect(ratio).toBeLessThan(1);
+    expect(ratio).toBe(1);
+  });
+
+  it("should calculate the diff score for fixture files", () => {
+    const base = readFileSync(
+      new URL("__fixtures__/base.txt", import.meta.url),
+      "utf8",
+    );
+    const head = readFileSync(
+      new URL("__fixtures__/compare.txt", import.meta.url),
+      "utf8",
+    );
+
+    const ratio = getDiffScore(base, head);
+
+    expect(ratio).toBe(1);
   });
 });
