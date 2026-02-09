@@ -4,7 +4,7 @@ import sharp from "sharp";
 import type { FileHandle } from "./FileHandle";
 import { tmpName } from "./tmp";
 
-interface Dimensions {
+export interface Dimensions {
   width: number;
   height: number;
 }
@@ -52,10 +52,10 @@ export class ImageHandle {
     ]);
 
     if (
-      dimensions.width > targetDimensions.width ||
-      dimensions.height > targetDimensions.height ||
       (dimensions.height === targetDimensions.height &&
-        dimensions.width === targetDimensions.width)
+        dimensions.width === targetDimensions.width) ||
+      dimensions.width > targetDimensions.width ||
+      dimensions.height > targetDimensions.height
     ) {
       return filepath;
     }

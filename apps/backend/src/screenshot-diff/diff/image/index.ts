@@ -1,6 +1,6 @@
 import { compare } from "odiff-bin";
 
-import { tmpName, type ImageHandle } from "@/storage";
+import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
 
 import type { DiffOptions, DiffResult } from "../types";
 
@@ -82,6 +82,17 @@ async function computeDiff(args: {
 }
 
 /**
+ * Maximum number of pixels allowed in a screenshot.
+ */
+const MAX_PIXELS = 80_000_000;
+
+/**
+ * Default maximum width of a screenshot.
+ * Used when the width or height of the image is not available.
+ */
+const DEFAULT_MAX_WIDTH = 2048;
+
+/**
  * Get the maximum dimensions of a list of images.
  */
 async function getMaxDimensions(...images: ImageHandle[]) {
@@ -89,10 +100,36 @@ async function getMaxDimensions(...images: ImageHandle[]) {
     images.map(async (image) => image.getDimensions()),
   );
 
-  return {
-    width: Math.max(...imagesDimensions.map(({ width }) => width)),
-    height: Math.max(...imagesDimensions.map(({ height }) => height)),
-  };
+  const width = Math.max(...imagesDimensions.map(({ width }) => width));
+  const height = Math.max(...imagesDimensions.map(({ height }) => height));
+
+  const nbPixels = width * height;
+
+  // If the orientation is portrait, we will use the default maximum width.
+  if (nbPixels > MAX_PIXELS && width < height) {
+    return fitIntoMaxPixels({
+      width: DEFAULT_MAX_WIDTH,
+      height: Math.floor(MAX_PIXELS / DEFAULT_MAX_WIDTH),
+    });
+  }
+
+  return fitIntoMaxPixels({ width, height });
+}
+
+/**
+ * Make the image scale into the allowed limit of pixels.
+ */
+function fitIntoMaxPixels(size: Dimensions) {
+  const nbPixels = size.width * size.height;
+  if (nbPixels > MAX_PIXELS) {
+    const scaleFactor = Math.sqrt(MAX_PIXELS / nbPixels);
+    return {
+      width: Math.floor(size.width * scaleFactor),
+      height: Math.floor(size.height * scaleFactor),
+    };
+  }
+  console.log(size);
+  return size;
 }
 
 /**

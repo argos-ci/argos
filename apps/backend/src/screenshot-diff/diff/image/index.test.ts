@@ -30,6 +30,7 @@ const tests = [
   ["minorChange1", 0.5, true],
   ["minorChange2", 0.5, false],
   ["minorChange3", 0, true],
+  ["different-dimensions", 0, true],
 ];
 
 describe("#diffImages", () => {
