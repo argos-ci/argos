@@ -1,9 +1,7 @@
-import { readFile } from "node:fs/promises";
-
 import type { FileHandle } from "@/storage";
+import { hashFileSha256 } from "@/util/hash";
 
 import type { DiffResult } from "../types";
-import { getDiffScore } from "./util";
 
 /**
  * Compute the difference between two texts.
@@ -12,10 +10,9 @@ export async function diffTexts(
   base: FileHandle,
   head: FileHandle,
 ): Promise<DiffResult> {
-  const [baseText, headText] = await Promise.all([
-    base.getFilepath().then((filepath) => readFile(filepath, "utf-8")),
-    head.getFilepath().then((filepath) => readFile(filepath, "utf-8")),
+  const [baseHash, headHash] = await Promise.all([
+    base.getFilepath().then((path) => hashFileSha256(path)),
+    head.getFilepath().then((path) => hashFileSha256(path)),
   ]);
-  const score = getDiffScore(baseText, headText);
-  return { score };
+  return { score: baseHash === headHash ? 0 : 1 };
 }
