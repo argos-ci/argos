@@ -4,7 +4,8 @@ import { useHref, useLocation, useResolvedPath } from "react-router-dom";
 import { Tab } from "./Tab";
 
 function stripAfterFirstSegment(pathname: string): string {
-  const match = pathname.match(/^\/[^/]+/);
+  // Do not consider /~/ as a segment
+  const match = pathname.match(/^\/[^/~]+/);
   return match ? match[0] : pathname;
 }
 
