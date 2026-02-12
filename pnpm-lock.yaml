@@ -187,8 +187,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       axios:
-        specifier: ^1.13.4
-        version: 1.13.4
+        specifier: ^1.13.5
+        version: 1.13.5
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -4768,8 +4768,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.13.4:
-    resolution: {integrity: sha512-1wVkUaAO6WyaYtCkcYCOx12ZgpGf9Zif+qXa4n+oYzK558YryKqiL6UWwd5DqiH3VRW0GYhTZQ/vlgJrCoNQlg==}
+  axios@1.13.5:
+    resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
   b4a@1.7.3:
     resolution: {integrity: sha512-5Q2mfq2WfGuFp3uS//0s6baOJLMoVduPYVeNmDYxu5OUA1/cBfvr2RIS7vi62LdNj/urk1hfmj867I3qt6uZ7Q==}
@@ -12187,7 +12187,7 @@ snapshots:
       '@slack/types': 2.19.0
       '@slack/web-api': 7.13.0
       '@types/express': 5.0.6
-      axios: 1.13.4
+      axios: 1.13.5
       express: 5.2.1
       path-to-regexp: 8.3.0
       raw-body: 3.0.2
@@ -12233,7 +12233,7 @@ snapshots:
       '@slack/types': 2.19.0
       '@types/node': 25.2.0
       '@types/retry': 0.12.0
-      axios: 1.13.4
+      axios: 1.13.5
       eventemitter3: 5.0.4
       form-data: 4.0.5
       is-electron: 2.2.2
@@ -13351,7 +13351,7 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.13.4:
+  axios@1.13.5:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
