@@ -116,6 +116,20 @@ pnpm run --filter @argos/backend db:seed
 pnpm run dev
 ```
 
+## 🧰 Troubleshooting
+
+If you encounter this error:
+
+```txt
+MODULE_NOT_FOUND: @argos-ci/mask-fingerprint
+```
+
+Run:
+
+```sh
+pnpm i --force
+```
+
 ## 📂 Branch Structure
 
 - All stable releases are tagged ([view tags](https://github.com/argos-ci/argos/tags)).
