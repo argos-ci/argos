@@ -217,6 +217,48 @@ function createTeamUserFromGithubAccountMemberLoader() {
   );
 }
 
+function createTeamMembersByTeamIdLoader() {
+  return new DataLoader<string, TeamUser[]>(async (teamIds) => {
+    const members = await TeamUser.query()
+      .withGraphJoined("user.account")
+      .whereIn("team_users.teamId", teamIds as string[]);
+
+    const membersByTeamId = new Map<string, TeamUser[]>();
+    for (const teamId of teamIds) {
+      membersByTeamId.set(teamId, []);
+    }
+
+    for (const member of members) {
+      const teamId = String(member.teamId);
+      const list = membersByTeamId.get(teamId) ?? [];
+      list.push(member);
+      membersByTeamId.set(teamId, list);
+    }
+
+    return teamIds.map((teamId) => membersByTeamId.get(teamId) ?? []);
+  });
+}
+
+function createTeamMembersCountByTeamIdLoader() {
+  return new DataLoader<string, number>(async (teamIds) => {
+    const rows = await TeamUser.query()
+      .select("teamId")
+      .count("* as count")
+      .whereIn("teamId", teamIds as string[])
+      .groupBy("teamId");
+
+    const counts = new Map<string, number>();
+    for (const row of rows as unknown as Array<{
+      teamId: string | number;
+      count: string | number;
+    }>) {
+      counts.set(String(row.teamId), Number(row.count) || 0);
+    }
+
+    return teamIds.map((teamId) => counts.get(String(teamId)) ?? 0);
+  });
+}
+
 function createGitHubAccountMemberLoader() {
   return new DataLoader<
     { githubAccountId: string; githubMemberId: string },
@@ -787,6 +829,8 @@ export const createLoaders = () => ({
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
   SeenDiffsLoader: createSeenDiffsLoader(),
   Team: createModelLoader(Team),
+  TeamMembersCountByTeamId: createTeamMembersCountByTeamIdLoader(),
+  TeamMembersByTeamId: createTeamMembersByTeamIdLoader(),
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),
   TestStatusLoader: createTestStatusLoader(),
