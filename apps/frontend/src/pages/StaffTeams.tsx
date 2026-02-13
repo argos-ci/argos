@@ -42,7 +42,7 @@ const StaffTeamsQuery = graphql(`
 `);
 
 const StaffTeamMembersQuery = graphql(`
-  query StaffTeams_teamMembers(
+  query StaffTeams_teamDetails(
     $teamAccountId: ID!
     $first: Int!
     $after: Int!
@@ -50,6 +50,19 @@ const StaffTeamMembersQuery = graphql(`
     teamById(id: $teamAccountId) {
       id
       ... on Team {
+        subscriptionStatus
+        last30DaysScreenshots
+        projects(first: 100, after: 0) {
+          pageInfo {
+            totalCount
+            hasNextPage
+          }
+          edges {
+            id
+            name
+            buildsCount
+          }
+        }
         members(first: $first, after: $after, orderBy: NAME_ASC) {
           pageInfo {
             totalCount
@@ -81,10 +94,17 @@ type TeamMemberItem = NonNullable<
     { __typename?: "Team" }
   >["members"]
 >["edges"][number];
+type TeamProjectItem = NonNullable<
+  Extract<
+    DocumentType<typeof StaffTeamMembersQuery>["teamById"],
+    { __typename?: "Team" }
+  >["projects"]
+>["edges"][number];
 
 type SortKey = "team" | "createdAt" | "members";
 
 type SortDirection = "asc" | "desc";
+const PAGE_SIZE = 100;
 
 function checkTeamMatchesSearch(team: TeamItem, search: string) {
   if (!search) {
@@ -97,6 +117,10 @@ function checkTeamMatchesSearch(team: TeamItem, search: string) {
     .toLowerCase();
 
   return haystack.includes(search);
+}
+
+function getSubscriptionLabel(status: string | null | undefined) {
+  return status ? status.replaceAll("_", " ") : "none";
 }
 
 function SortHeader(props: {
@@ -156,6 +180,37 @@ function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
   );
 }
 
+function StaffProjectsPanel(props: {
+  projects: TeamProjectItem[];
+  hasMore: boolean;
+}) {
+  if (props.projects.length === 0) {
+    return <div className="text-low text-sm">No projects found.</div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {props.projects.map((project) => (
+        <div
+          key={project.id}
+          className="bg-app grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm border p-2 text-sm"
+        >
+          <div className="truncate font-medium">{project.name}</div>
+          <div className="text-low tabular-nums">
+            {project.buildsCount} builds
+          </div>
+        </div>
+      ))}
+      {props.hasMore ? (
+        <div className="text-low text-xs">
+          Showing first 100 projects. Refine data in the team page for full
+          list.
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StaffTeamRow(props: {
   team: TeamItem;
   index: number;
@@ -168,9 +223,9 @@ function StaffTeamRow(props: {
   const membersSettingsURL = `${teamURL}/settings/members`;
   const analyticsURL = `${teamURL}/~/analytics`;
   const {
-    data: membersData,
-    loading: membersLoading,
-    error: membersError,
+    data: detailsData,
+    loading: detailsLoading,
+    error: detailsError,
   } = useQuery(StaffTeamMembersQuery, {
     variables: {
       teamAccountId: team.id,
@@ -181,9 +236,16 @@ function StaffTeamRow(props: {
   });
 
   const members =
-    membersData?.teamById?.__typename === "Team"
-      ? membersData.teamById.members.edges
+    detailsData?.teamById?.__typename === "Team"
+      ? detailsData.teamById.members.edges
       : [];
+  const details =
+    detailsData?.teamById?.__typename === "Team" ? detailsData.teamById : null;
+  const projects = details?.projects.edges ?? [];
+  const projectsCount = details?.projects.pageInfo.totalCount ?? 0;
+  const hasMoreProjects = Boolean(details?.projects.pageInfo.hasNextPage);
+  const subscriptionStatus = details?.subscriptionStatus ?? null;
+  const last30DaysScreenshots = details?.last30DaysScreenshots ?? 0;
 
   return (
     <>
@@ -220,7 +282,7 @@ function StaffTeamRow(props: {
         </td>
         <td className="p-4 text-right text-sm">
           <Button variant="secondary" size="small" onPress={toggleMembers}>
-            {isOpened ? "Hide members" : "View members"}
+            {isOpened ? "Hide details" : "View details"}
           </Button>
         </td>
       </tr>
@@ -233,20 +295,57 @@ function StaffTeamRow(props: {
           }
         >
           <td colSpan={5} className="border-t px-4 py-3">
-            {membersError ? (
+            {detailsError ? (
               <div className="text-danger-low text-sm">
-                Failed to load members.
+                Failed to load team details.
               </div>
-            ) : membersLoading ? (
-              <div className="text-low text-sm">Loading members…</div>
+            ) : detailsLoading ? (
+              <div className="text-low text-sm">Loading details…</div>
             ) : (
-              <>
-                <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-medium">
-                  <div>Member / Emails</div>
-                  <div>Role</div>
+              <div className="space-y-4">
+                <div className="grid gap-2 text-sm md:grid-cols-3">
+                  <div className="bg-app rounded-sm border p-3">
+                    <div className="text-low text-xs uppercase">
+                      Subscription
+                    </div>
+                    <div className="font-medium">
+                      {getSubscriptionLabel(subscriptionStatus)}
+                    </div>
+                  </div>
+                  <div className="bg-app rounded-sm border p-3">
+                    <div className="text-low text-xs uppercase">Projects</div>
+                    <div className="font-medium tabular-nums">
+                      {projectsCount}
+                    </div>
+                  </div>
+                  <div className="bg-app rounded-sm border p-3">
+                    <div className="text-low text-xs uppercase">
+                      Screenshots (30d)
+                    </div>
+                    <div className="font-medium tabular-nums">
+                      {last30DaysScreenshots}
+                    </div>
+                  </div>
                 </div>
-                <StaffMembersPanel members={members} />
-              </>
+
+                <div>
+                  <div className="mb-2 text-xs font-medium">
+                    Builds by project
+                  </div>
+                  <StaffProjectsPanel
+                    projects={projects}
+                    hasMore={hasMoreProjects}
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs font-medium">
+                    <div>Member / Emails</div>
+                    <div>Role</div>
+                  </div>
+                  <StaffMembersPanel members={members} />
+                </div>
+              </div>
             )}
           </td>
         </tr>
@@ -263,14 +362,8 @@ function StaffTeamsTable(props: {
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
 }) {
-  const {
-    teams,
-    openedTeams,
-    setOpenedTeams,
-    sortKey,
-    sortDirection,
-    onSort,
-  } = props;
+  const { teams, openedTeams, setOpenedTeams, sortKey, sortDirection, onSort } =
+    props;
 
   return (
     <div className="overflow-x-auto rounded-sm border">
@@ -345,17 +438,20 @@ function StaffTeamsList() {
   const [openedTeams, setOpenedTeams] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [sortKey, setSortKey] = useState<SortKey>("team");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [page, setPage] = useState(1);
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) {
+      setPage(1);
       setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
       return;
     }
 
+    setPage(1);
     setSortKey(key);
     setSortDirection(key === "team" || key === "createdAt" ? "asc" : "desc");
   };
@@ -386,12 +482,23 @@ function StaffTeamsList() {
     });
 
     return teams;
-  }, [
-    data?.staffTeams,
-    normalizedSearch,
-    sortDirection,
-    sortKey,
-  ]);
+  }, [data?.staffTeams, normalizedSearch, sortDirection, sortKey]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAndSortedTeams.length / PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, totalPages);
+
+  const paginatedTeams = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredAndSortedTeams.slice(start, start + PAGE_SIZE);
+  }, [currentPage, filteredAndSortedTeams]);
+  const displayFrom =
+    filteredAndSortedTeams.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const displayTo = Math.min(
+    currentPage * PAGE_SIZE,
+    filteredAndSortedTeams.length,
+  );
 
   if (loading) {
     return <PageLoader />;
@@ -440,19 +547,49 @@ function StaffTeamsList() {
               placeholder="Search teams or members…"
               scale="sm"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setPage(1);
+                setSearch(event.target.value);
+              }}
             />
           </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
       <StaffTeamsTable
-        teams={filteredAndSortedTeams}
+        teams={paginatedTeams}
         openedTeams={openedTeams}
         setOpenedTeams={setOpenedTeams}
         sortKey={sortKey}
         sortDirection={sortDirection}
         onSort={onSort}
       />
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <div className="text-low">
+          Showing {displayFrom}-{displayTo} of {filteredAndSortedTeams.length}{" "}
+          teams
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="small"
+            onPress={() => setPage((value) => Math.max(1, value - 1))}
+            isDisabled={currentPage <= 1}
+          >
+            Previous
+          </Button>
+          <div className="text-low px-2 tabular-nums">
+            {currentPage} / {totalPages}
+          </div>
+          <Button
+            variant="secondary"
+            size="small"
+            onPress={() => setPage((value) => Math.min(totalPages, value + 1))}
+            isDisabled={currentPage >= totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </PageContainer>
   );
 }
