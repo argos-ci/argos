@@ -60,6 +60,7 @@ export const typeDefs = gql`
 
   type Team implements Node & Account {
     id: ID!
+    createdAt: DateTime!
     stripeCustomerId: String
     stripeClientReferenceId: String!
     consumptionRatio: Float!
@@ -100,6 +101,9 @@ export const typeDefs = gql`
       "Order members by"
       orderBy: TeamMembersOrderBy = DATE
     ): TeamMemberConnection!
+    membersCount: Int!
+    last30DaysScreenshots: Int!
+    lastBuildDate: DateTime
     githubMembers(
       after: Int = 0
       first: Int = 30
@@ -244,6 +248,8 @@ export const typeDefs = gql`
     invite(secret: String!): TeamInvite
     "Get a team invite (global to team) by its secret"
     teamInvite(secret: String!): Team
+    "List all teams (staff only)"
+    staffTeams: [Team!]!
   }
 
   extend type Mutation {
@@ -428,6 +434,18 @@ export const resolvers: IResolvers = {
 
       return paginateResult({ result, first, after });
     },
+    membersCount: async (account, _args, ctx) => {
+      invariant(account.teamId, "not a team account");
+      return ctx.loaders.TeamMembersCountByTeamId.load(account.teamId);
+    },
+    last30DaysScreenshots: async (account, _args, ctx) => {
+      return ctx.loaders.AccountLast30DaysScreenshotsByAccountId.load(
+        account.id,
+      );
+    },
+    lastBuildDate: async (account, _args, ctx) => {
+      return ctx.loaders.AccountLastBuildDateByAccountId.load(account.id);
+    },
     githubMembers: async (account, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -604,6 +622,20 @@ export const resolvers: IResolvers = {
     },
   },
   Query: {
+    staffTeams: async (_root, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      if (!ctx.auth.user.staff) {
+        throw forbidden();
+      }
+
+      return Account.query()
+        .whereNotNull("teamId")
+        .whereNull("userId")
+        .orderByRaw("coalesce(name, slug) asc");
+    },
     teamInvite: async (_root, args) => {
       const team = await Team.query()
         .withGraphFetched("account")

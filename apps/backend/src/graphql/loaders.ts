@@ -217,6 +217,116 @@ function createTeamUserFromGithubAccountMemberLoader() {
   );
 }
 
+function createTeamMembersByTeamIdLoader() {
+  return new DataLoader<string, TeamUser[]>(async (teamIds) => {
+    const members = await TeamUser.query()
+      .withGraphJoined("user.account")
+      .whereIn("team_users.teamId", teamIds as string[]);
+
+    const membersByTeamId = new Map<string, TeamUser[]>();
+    for (const teamId of teamIds) {
+      membersByTeamId.set(teamId, []);
+    }
+
+    for (const member of members) {
+      const teamId = String(member.teamId);
+      const list = membersByTeamId.get(teamId) ?? [];
+      list.push(member);
+      membersByTeamId.set(teamId, list);
+    }
+
+    return teamIds.map((teamId) => membersByTeamId.get(teamId) ?? []);
+  });
+}
+
+function createTeamMembersCountByTeamIdLoader() {
+  return new DataLoader<string, number>(async (teamIds) => {
+    const rows = await TeamUser.query()
+      .select("teamId")
+      .count("* as count")
+      .whereIn("teamId", teamIds as string[])
+      .groupBy("teamId");
+
+    const counts = new Map<string, number>();
+    for (const row of rows as unknown as Array<{
+      teamId: string | number;
+      count: string | number;
+    }>) {
+      counts.set(String(row.teamId), Number(row.count) || 0);
+    }
+
+    return teamIds.map((teamId) => counts.get(String(teamId)) ?? 0);
+  });
+}
+
+function createProjectBuildsCountByProjectIdLoader() {
+  return new DataLoader<string, number>(async (projectIds) => {
+    const rows = await Build.query()
+      .select("projectId")
+      .count("* as count")
+      .whereIn("projectId", projectIds as string[])
+      .groupBy("projectId");
+
+    const counts = new Map<string, number>();
+    for (const row of rows as unknown as Array<{
+      projectId: string | number;
+      count: string | number;
+    }>) {
+      counts.set(String(row.projectId), Number(row.count) || 0);
+    }
+
+    return projectIds.map((projectId) => counts.get(String(projectId)) ?? 0);
+  });
+}
+
+function createAccountLast30DaysScreenshotsByAccountIdLoader() {
+  return new DataLoader<string, number>(async (accountIds) => {
+    const rows = await Build.query()
+      .join("projects", "projects.id", "builds.projectId")
+      .select("projects.accountId")
+      .select(
+        knex.raw(`sum(coalesce((builds.stats->>'total')::int, 0)) as total`),
+      )
+      .whereIn("projects.accountId", accountIds as string[])
+      .whereRaw(`builds."createdAt" >= now() - interval '30 days'`)
+      .groupBy("projects.accountId");
+
+    const totals = new Map<string, number>();
+    for (const row of rows as unknown as Array<{
+      accountId: string | number;
+      total: string | number | null;
+    }>) {
+      totals.set(String(row.accountId), Number(row.total) || 0);
+    }
+
+    return accountIds.map((accountId) => totals.get(String(accountId)) ?? 0);
+  });
+}
+
+function createAccountLastBuildDateByAccountIdLoader() {
+  return new DataLoader<string, Date | null>(async (accountIds) => {
+    const rows = await Build.query()
+      .join("projects", "projects.id", "builds.projectId")
+      .select("projects.accountId")
+      .select(knex.raw(`max(builds."createdAt") as "lastBuildDate"`))
+      .whereIn("projects.accountId", accountIds as string[])
+      .groupBy("projects.accountId");
+
+    const datesByAccountId = new Map<string, Date | null>();
+    for (const row of rows as unknown as Array<{
+      accountId: string | number;
+      lastBuildDate: string | Date | null;
+    }>) {
+      const raw = row.lastBuildDate;
+      datesByAccountId.set(String(row.accountId), raw ? new Date(raw) : null);
+    }
+
+    return accountIds.map(
+      (accountId) => datesByAccountId.get(String(accountId)) ?? null,
+    );
+  });
+}
+
 function createGitHubAccountMemberLoader() {
   return new DataLoader<
     { githubAccountId: string; githubMemberId: string },
@@ -765,6 +875,11 @@ export const createLoaders = () => ({
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),
   BuildAggregatedStatus: createBuildAggregatedStatusLoader(),
+  ProjectBuildsCountByProjectId: createProjectBuildsCountByProjectIdLoader(),
+  AccountLast30DaysScreenshotsByAccountId:
+    createAccountLast30DaysScreenshotsByAccountIdLoader(),
+  AccountLastBuildDateByAccountId:
+    createAccountLastBuildDateByAccountIdLoader(),
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
   getChangesOccurrencesLoader: createChangeOccurrencesLoader(),
   File: createModelLoader(File),
@@ -787,6 +902,8 @@ export const createLoaders = () => ({
   ScreenshotDiff: createModelLoader(ScreenshotDiff),
   SeenDiffsLoader: createSeenDiffsLoader(),
   Team: createModelLoader(Team),
+  TeamMembersCountByTeamId: createTeamMembersCountByTeamIdLoader(),
+  TeamMembersByTeamId: createTeamMembersByTeamIdLoader(),
   TeamUserFromGithubMember: createTeamUserFromGithubAccountMemberLoader(),
   Test: createModelLoader(Test),
   TestStatusLoader: createTestStatusLoader(),

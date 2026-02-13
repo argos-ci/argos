@@ -98,6 +98,8 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     token: String
+    "Total number of builds for this project"
+    buildsCount: Int!
     "Builds associated to the project"
     builds(
       first: Int = 30
@@ -426,6 +428,9 @@ const importGitlabProject = async (props: {
 
 export const resolvers: IResolvers = {
   Project: {
+    buildsCount: async (project, _args, ctx) => {
+      return ctx.loaders.ProjectBuildsCountByProjectId.load(project.id);
+    },
     token: async (project, _args, ctx) => {
       if (!ctx.auth) {
         return null;
