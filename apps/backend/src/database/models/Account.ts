@@ -25,7 +25,9 @@ export type AccountAvatar = {
   color: string;
 };
 
-type AccountSubscriptionStatus = Subscription["status"] | "trial_expired";
+export type AccountSubscriptionStatus =
+  | Subscription["status"]
+  | "trial_expired";
 
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
@@ -50,6 +52,52 @@ type AccountSubscriptionManager = {
   getSubscriptionStatus(): Promise<AccountSubscriptionStatus | null>;
   checkCanExtendTrial(): Promise<boolean>;
 };
+
+function computeAccountSubscriptionStatus(args: {
+  account: Pick<Account, "forcedPlanId" | "type">;
+  activeSubscription: Subscription | null;
+  previousPaidSubscription: Subscription | null;
+}): AccountSubscriptionStatus | null {
+  const { account, activeSubscription, previousPaidSubscription } = args;
+
+  if (account.forcedPlanId !== null) {
+    return "active";
+  }
+
+  if (account.type === "user") {
+    return null;
+  }
+
+  if (activeSubscription) {
+    // We consider a trialing subscription as active
+    // if the payment method is filled.
+    if (
+      activeSubscription.status === "trialing" &&
+      activeSubscription.paymentMethodFilled
+    ) {
+      return "active";
+    }
+    return activeSubscription.status;
+  }
+
+  if (previousPaidSubscription) {
+    if (
+      previousPaidSubscription.trialEndDate &&
+      new Date(previousPaidSubscription.trialEndDate) < new Date()
+    ) {
+      return "trial_expired";
+    }
+
+    if (
+      previousPaidSubscription.status === "past_due" ||
+      previousPaidSubscription.status === "unpaid"
+    ) {
+      return previousPaidSubscription.status;
+    }
+  }
+
+  return "canceled";
+}
 
 export type AccountPermission = "admin" | "view";
 
@@ -212,6 +260,112 @@ export class Account extends Model {
     return subscriptionCount > 0;
   }
 
+  static async getSubscriptionStatuses(
+    accounts: Account[],
+  ): Promise<Map<string, AccountSubscriptionStatus | null>> {
+    const accountIds = accounts.map((account) => account.id);
+    if (accountIds.length === 0) {
+      return new Map();
+    }
+
+    const result = new Map<string, AccountSubscriptionStatus | null>();
+    const accountsNeedingSubscriptions: Account[] = [];
+
+    // Fast path: resolve statuses that don't require subscription queries.
+    for (const account of accounts) {
+      const status = computeAccountSubscriptionStatus({
+        account,
+        activeSubscription: null,
+        previousPaidSubscription: null,
+      });
+
+      if (status === "canceled") {
+        accountsNeedingSubscriptions.push(account);
+      } else {
+        result.set(account.id, status);
+      }
+    }
+
+    if (accountsNeedingSubscriptions.length === 0) {
+      return result;
+    }
+
+    const accountIdsNeedingSubscriptions = accountsNeedingSubscriptions.map(
+      (account) => account.id,
+    );
+
+    // Phase 1: fetch active subscriptions for all remaining accounts in one query.
+    const activeSubscriptions = await Subscription.query()
+      .select("subscriptions.*")
+      .joinRelated("plan")
+      .whereIn("subscriptions.accountId", accountIdsNeedingSubscriptions)
+      .whereRaw("?? < now()", "subscriptions.startDate")
+      .whereIn("subscriptions.status", ["active", "trialing", "past_due"])
+      .where((query) =>
+        query
+          .whereNull("subscriptions.endDate")
+          .orWhereRaw("?? >= now()", "subscriptions.endDate"),
+      )
+      .distinctOn("subscriptions.accountId")
+      .orderBy("subscriptions.accountId")
+      .orderBy("plan.includedScreenshots", "DESC");
+
+    const activeSubscriptionByAccountId = new Map<string, Subscription>();
+    for (const subscription of activeSubscriptions) {
+      activeSubscriptionByAccountId.set(subscription.accountId, subscription);
+    }
+
+    // Only accounts without an active subscription need the fallback query.
+    const accountsWithoutActiveSubscription =
+      accountsNeedingSubscriptions.filter(
+        (account) => !activeSubscriptionByAccountId.has(account.id),
+      );
+
+    const previousPaidSubscriptionByAccountId = new Map<string, Subscription>();
+    if (accountsWithoutActiveSubscription.length > 0) {
+      // Phase 2: fetch latest previous paid subscription in one query.
+      const previousPaidSubscriptions = await Subscription.query()
+        .joinRelated("plan")
+        .whereIn(
+          "subscriptions.accountId",
+          accountsWithoutActiveSubscription.map((account) => account.id),
+        )
+        .whereNot("plan.name", "free")
+        .where((qb) => {
+          qb.whereNull("subscriptions.endDate").orWhereRaw(
+            "?? >= now()",
+            "subscriptions.endDate",
+          );
+        })
+        .distinctOn("subscriptions.accountId")
+        .orderBy("subscriptions.accountId")
+        .orderBy("subscriptions.startDate", "desc");
+
+      for (const subscription of previousPaidSubscriptions) {
+        previousPaidSubscriptionByAccountId.set(
+          subscription.accountId,
+          subscription,
+        );
+      }
+    }
+
+    // Final phase: compute status for each remaining account using fetched data.
+    for (const account of accountsNeedingSubscriptions) {
+      result.set(
+        account.id,
+        computeAccountSubscriptionStatus({
+          account,
+          activeSubscription:
+            activeSubscriptionByAccountId.get(account.id) ?? null,
+          previousPaidSubscription:
+            previousPaidSubscriptionByAccountId.get(account.id) ?? null,
+        }),
+      );
+    }
+
+    return result;
+  }
+
   $getSubscriptionManager(): AccountSubscriptionManager {
     if (this._cachedSubscriptionManager) {
       return this._cachedSubscriptionManager;
@@ -368,17 +522,12 @@ export class Account extends Model {
       }
 
       const subscription = await getActiveSubscription();
-
       if (subscription) {
-        // We consider a trialing subscription as active
-        // if the payment method is filled.
-        if (
-          subscription.status === "trialing" &&
-          subscription.paymentMethodFilled
-        ) {
-          return "active";
-        }
-        return subscription.status;
+        return computeAccountSubscriptionStatus({
+          account: this,
+          activeSubscription: subscription,
+          previousPaidSubscription: null,
+        });
       }
 
       const previousPaidSubscription = await Subscription.query()
@@ -391,23 +540,11 @@ export class Account extends Model {
         .orderBy("startDate", "desc")
         .first();
 
-      if (previousPaidSubscription) {
-        if (
-          previousPaidSubscription.trialEndDate &&
-          new Date(previousPaidSubscription.trialEndDate) < new Date()
-        ) {
-          return "trial_expired";
-        }
-
-        if (
-          previousPaidSubscription.status === "past_due" ||
-          previousPaidSubscription.status === "unpaid"
-        ) {
-          return previousPaidSubscription.status;
-        }
-      }
-
-      return "canceled";
+      return computeAccountSubscriptionStatus({
+        account: this,
+        activeSubscription: null,
+        previousPaidSubscription: previousPaidSubscription ?? null,
+      });
     });
 
     const checkIsOutOfCapacity = memoize(async () => {

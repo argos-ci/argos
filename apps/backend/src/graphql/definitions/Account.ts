@@ -340,9 +340,10 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     const manager = account.$getSubscriptionManager();
     return manager.getActiveSubscription();
   },
-  subscriptionStatus: async (account) => {
-    const manager = account.$getSubscriptionManager();
-    const status = await manager.getSubscriptionStatus();
+  subscriptionStatus: async (account, _args, ctx) => {
+    const status = await ctx.loaders.AccountSubscriptionStatusByAccountId.load(
+      account.id,
+    );
     return status as IAccountSubscriptionStatus;
   },
   hasForcedPlan: async (account) => {

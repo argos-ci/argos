@@ -7,6 +7,7 @@ import type { ModelClass } from "objection";
 import { knex } from "@/database";
 import {
   Account,
+  AccountSubscriptionStatus,
   AuditTrail,
   AutomationActionRun,
   AutomationRun,
@@ -325,6 +326,26 @@ function createAccountLastBuildDateByAccountIdLoader() {
       (accountId) => datesByAccountId.get(String(accountId)) ?? null,
     );
   });
+}
+
+function createAccountSubscriptionStatusByAccountIdLoader() {
+  return new DataLoader<string, AccountSubscriptionStatus | null>(
+    async (accountIds) => {
+      const uniqueAccountIds = [...new Set(accountIds as string[])];
+      const accounts = await Account.query().findByIds(uniqueAccountIds);
+      const accountById = new Map(
+        accounts.map((account) => [account.id, account]),
+      );
+      const statusesByAccountId =
+        await Account.getSubscriptionStatuses(accounts);
+      return accountIds.map((accountId) => {
+        if (!accountById.has(accountId)) {
+          return null;
+        }
+        return statusesByAccountId.get(accountId) ?? null;
+      });
+    },
+  );
 }
 
 function createGitHubAccountMemberLoader() {
@@ -880,6 +901,8 @@ export const createLoaders = () => ({
     createAccountLast30DaysScreenshotsByAccountIdLoader(),
   AccountLastBuildDateByAccountId:
     createAccountLastBuildDateByAccountIdLoader(),
+  AccountSubscriptionStatusByAccountId:
+    createAccountSubscriptionStatusByAccountIdLoader(),
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
   getChangesOccurrencesLoader: createChangeOccurrencesLoader(),
   File: createModelLoader(File),
