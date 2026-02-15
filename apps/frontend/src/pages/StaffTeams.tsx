@@ -34,6 +34,7 @@ const StaffTeamsQuery = graphql(`
       slug
       name
       membersCount
+      subscriptionStatus
       avatar {
         ...AccountAvatarFragment
       }
@@ -270,6 +271,9 @@ function StaffTeamRow(props: {
         <td className="p-4 text-sm">
           <Time date={team.createdAt} format="ll" tooltip="title" />
         </td>
+        <td className="p-4 text-sm">
+          {getSubscriptionLabel(team.subscriptionStatus)}
+        </td>
         <td className="p-4 text-right text-sm tabular-nums">
           {team.membersCount}
         </td>
@@ -294,7 +298,7 @@ function StaffTeamRow(props: {
               : `bg-app ${isLast ? "" : "border-b"}`
           }
         >
-          <td colSpan={5} className="border-t px-4 py-3">
+          <td colSpan={6} className="border-t px-4 py-3">
             {detailsError ? (
               <div className="text-danger-low text-sm">
                 Failed to load team details.
@@ -369,11 +373,12 @@ function StaffTeamsTable(props: {
     <div className="overflow-x-auto rounded-sm border">
       <table className="w-full min-w-245 table-fixed border-collapse">
         <colgroup>
-          <col style={{ width: "30%" }} />
-          <col style={{ width: "18%" }} />
+          <col style={{ width: "27%" }} />
+          <col style={{ width: "16%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "21%" }} />
           <col style={{ width: "12%" }} />
-          <col style={{ width: "25%" }} />
-          <col style={{ width: "15%" }} />
         </colgroup>
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
@@ -397,6 +402,7 @@ function StaffTeamsTable(props: {
                 className="text-left"
               />
             </th>
+            <th className="px-4 py-3 text-left">Subscription</th>
             <th className="px-4 py-3 text-right">
               <SortHeader
                 label="Members"
