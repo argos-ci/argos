@@ -225,4 +225,135 @@ describe("Account", () => {
       });
     });
   });
+
+  describe("#getSubscriptionStatus", () => {
+    it("returns active for forced plans", async ({ fixture }) => {
+      const manager = fixture.vipAccount.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBe("active");
+    });
+
+    it("returns null for user accounts", async () => {
+      const userAccount = await factory.UserAccount.create();
+      const manager = userAccount.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBeNull();
+    });
+
+    it("returns active for trialing subscription with payment method", async ({
+      fixture,
+    }) => {
+      await factory.Subscription.create({
+        planId: fixture.plans[1]!.id,
+        accountId: fixture.account.id,
+        status: "trialing",
+        paymentMethodFilled: true,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBe("active");
+    });
+
+    it("returns trial_expired when previous paid trial ended", async ({
+      fixture,
+    }) => {
+      await factory.Subscription.create({
+        planId: fixture.plans[1]!.id,
+        accountId: fixture.account.id,
+        status: "canceled",
+        trialEndDate: new Date(2010, 0, 1).toISOString(),
+        endDate: null,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBe("trial_expired");
+    });
+
+    it("returns past_due for previous paid subscription in past_due", async ({
+      fixture,
+    }) => {
+      await Promise.all([
+        factory.Subscription.create({
+          planId: fixture.plans[1]!.id,
+          accountId: fixture.account.id,
+          status: "past_due",
+          startDate: new Date(2010, 0, 1).toISOString(),
+          endDate: new Date(2010, 0, 2).toISOString(),
+        }),
+        factory.Subscription.create({
+          planId: fixture.plans[1]!.id,
+          accountId: fixture.account.id,
+          status: "unpaid",
+          startDate: new Date(2011, 0, 1).toISOString(),
+          endDate: null,
+        }),
+      ]);
+      const manager = fixture.account.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBe("unpaid");
+    });
+
+    it("returns canceled when no qualifying subscription exists", async ({
+      fixture,
+    }) => {
+      const manager = fixture.account.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBe("canceled");
+    });
+  });
+
+  describe("#getSubscriptionStatuses", () => {
+    it("returns statuses for multiple accounts in one call", async ({
+      fixture,
+    }) => {
+      const [
+        userAccount,
+        trialingAccount,
+        pastDueAccount,
+        trialExpiredAccount,
+      ] = await Promise.all([
+        factory.UserAccount.create(),
+        factory.TeamAccount.create(),
+        factory.TeamAccount.create(),
+        factory.TeamAccount.create(),
+      ]);
+
+      await Promise.all([
+        factory.Subscription.create({
+          planId: fixture.plans[1]!.id,
+          accountId: trialingAccount.id,
+          status: "trialing",
+          paymentMethodFilled: true,
+        }),
+        factory.Subscription.create({
+          planId: fixture.plans[1]!.id,
+          accountId: pastDueAccount.id,
+          status: "past_due",
+        }),
+        factory.Subscription.create({
+          planId: fixture.plans[1]!.id,
+          accountId: trialExpiredAccount.id,
+          status: "canceled",
+          trialEndDate: new Date(2010, 0, 1).toISOString(),
+          endDate: null,
+        }),
+      ]);
+
+      const statuses = await Account.getSubscriptionStatuses([
+        fixture.vipAccount,
+        userAccount,
+        trialingAccount,
+        pastDueAccount,
+        trialExpiredAccount,
+        fixture.account,
+      ]);
+
+      expect(statuses.get(fixture.vipAccount.id)).toBe("active");
+      expect(statuses.get(userAccount.id)).toBeNull();
+      expect(statuses.get(trialingAccount.id)).toBe("active");
+      expect(statuses.get(pastDueAccount.id)).toBe("past_due");
+      expect(statuses.get(trialExpiredAccount.id)).toBe("trial_expired");
+      expect(statuses.get(fixture.account.id)).toBe("canceled");
+    });
+  });
 });
