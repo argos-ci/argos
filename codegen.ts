@@ -53,6 +53,7 @@ const config: CodegenConfig = {
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",
           TeamInvite: "../../database/models/index.js#TeamInvite",
+          TeamSamlConfig: "../../database/models/index.js#TeamSamlConfig",
           TeamMember: "../../database/models/index.js#TeamUser",
           TeamGithubMember:
             "../../database/models/index.js#GithubAccountMember",

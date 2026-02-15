@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { CombinedGraphQLErrors } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import { RouterProvider } from "react-aria-components";
@@ -15,10 +16,13 @@ import {
 
 import { Layout } from "@/containers/Layout";
 
+import { AuthenticationError, logout } from "./containers/Auth";
 import { FeatureFlagProvider } from "./containers/FeatureFlag";
 import { ErrorPage } from "./pages/ErrorPage";
 import { NotFound } from "./pages/NotFound";
+import { RequireSAMLLogin } from "./pages/RequireSAMLLogin";
 import { Loader } from "./ui/Loader";
+import { checkIsErrorCode } from "./util/error";
 
 declare module "react-aria-components" {
   interface RouterConfig {
@@ -93,9 +97,13 @@ function checkHasReloaded() {
 function RootErrorBoundary() {
   const error = useRouteError();
   const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
+  const isSAMLRequired = checkIsErrorCode(error, "SAML_SSO_REQUIRED");
 
   useEffect(() => {
-    console.error(error);
+    if (isSAMLRequired) {
+      return;
+    }
+
     if (shouldReload) {
       const url = new URL(window.location.href);
       url.searchParams.set("reload", String(Date.now()));
@@ -103,11 +111,32 @@ function RootErrorBoundary() {
       return;
     }
 
+    if (error instanceof AuthenticationError) {
+      logout();
+      return;
+    }
+
+    if (CombinedGraphQLErrors.is(error)) {
+      // Ignore unauthenticated errors & logout the user
+      if (
+        error.errors.some(
+          (error) => error.extensions?.code === "UNAUTHENTICATED",
+        )
+      ) {
+        logout();
+        return;
+      }
+    }
+
     Sentry.captureException(error, { level: "fatal" });
-  }, [error, shouldReload]);
+  }, [error, shouldReload, isSAMLRequired]);
 
   if (shouldReload) {
     return null;
+  }
+
+  if (isSAMLRequired) {
+    return <RequireSAMLLogin />;
   }
 
   return <ErrorPage />;

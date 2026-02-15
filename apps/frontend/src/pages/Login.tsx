@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
@@ -8,18 +8,23 @@ import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 import { Link } from "@/ui/Link";
+import { redirectToSAMLLogin } from "@/util/saml";
 
 export function Component() {
   const loggedIn = useIsLoggedIn();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get("email") || "");
+  const samlTeamSlug = searchParams.get("saml");
+  const redirect = searchParams.get("r") || null;
+  const error = searchParams.get("error") || null;
+
+  if (samlTeamSlug) {
+    return <RedirectToSAMLLogin teamSlug={samlTeamSlug} redirect={redirect} />;
+  }
 
   if (loggedIn) {
     return <Navigate to="/" replace />;
   }
-
-  const redirect = searchParams.get("r") || null;
-  const error = searchParams.get("error") || null;
 
   return (
     <>
@@ -55,6 +60,9 @@ export function Component() {
           redirect={redirect}
           email={email}
           onEmailChange={setEmail}
+          onSamlLogin={(teamSlug) => {
+            redirectToSAMLLogin({ teamSlug, redirect, replace: false });
+          }}
         />
 
         <p className="mt-8">
@@ -64,6 +72,17 @@ export function Component() {
       </Container>
     </>
   );
+}
+
+function RedirectToSAMLLogin(props: {
+  teamSlug: string;
+  redirect: string | null;
+}) {
+  const { teamSlug, redirect } = props;
+  useEffect(() => {
+    redirectToSAMLLogin({ teamSlug, redirect, replace: true });
+  }, [teamSlug, redirect]);
+  return null;
 }
 
 function getSignupUrl(props: {

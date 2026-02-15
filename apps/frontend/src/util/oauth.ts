@@ -11,12 +11,18 @@ type OAuthState = {
 
 type RawState = string;
 
-export type AuthProvider = "github" | "gitlab" | "google";
+export type AuthProvider = "github" | "gitlab" | "google" | "saml";
+const AUTH_PROVIDERS = [
+  "github",
+  "gitlab",
+  "google",
+  "saml",
+] satisfies AuthProvider[];
 
 export function checkIsAuthProvider(
   provider: string,
 ): provider is AuthProvider {
-  return ["github", "gitlab", "google"].includes(provider);
+  return (AUTH_PROVIDERS as string[]).includes(provider);
 }
 
 function getOAuthNonceKey(provider: AuthProvider): string {
@@ -68,6 +74,8 @@ function getLoginUrl(provider: AuthProvider): string {
       return config.gitlab.loginUrl;
     case "google":
       return new URL("/auth/google/login", window.location.origin).toString();
+    case "saml":
+      throw new Error(`Not applicable to SAML`);
     default:
       assertNever(provider);
   }

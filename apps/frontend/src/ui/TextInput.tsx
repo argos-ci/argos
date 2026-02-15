@@ -35,8 +35,8 @@ export function TextInput(props: TextInputProps) {
         /* Disabled */
         "disabled:opacity-disabled",
         /* Addon  */
-        "peer-first/addon:rounded-l-none",
-        "peer-last/addon:rounded-r-none",
+        "group-has-[.addon:first-child]/text-input-group:rounded-l-none",
+        "group-has-[.addon:last-child]/text-input-group:rounded-r-none",
         /* Icon */
         "peer-first/icon:pl-9",
         /* Scale */
@@ -57,7 +57,10 @@ export function TextInputGroup(props: ComponentPropsWithRef<"div">) {
   return (
     <div
       {...props}
-      className={clsx("relative flex items-stretch", props.className)}
+      className={clsx(
+        "group/text-input-group relative flex items-stretch",
+        props.className,
+      )}
     />
   );
 }
@@ -79,7 +82,7 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "peer/addon bg-ui text-low flex items-center border p-2 text-sm select-none",
+        "addon bg-ui text-low flex items-center justify-center border px-1 text-sm select-none",
         "first:rounded-l first:border-r-0 last:rounded-r last:border-l-0",
         props.className,
       )}

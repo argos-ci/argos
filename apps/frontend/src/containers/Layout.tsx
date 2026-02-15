@@ -1,13 +1,9 @@
 import { ComponentPropsWithRef, Suspense } from "react";
-import { CombinedGraphQLErrors } from "@apollo/client";
-import * as Sentry from "@sentry/react";
 import { clsx } from "clsx";
 import { useMatch } from "react-router-dom";
 
-import { ErrorPage } from "@/pages/ErrorPage";
 import { PageLoader } from "@/ui/PageLoader";
 
-import { AuthenticationError, logout } from "./Auth";
 import { BuildHotkeysDialog } from "./Build/BuildHotkeys";
 import { BuildHotkeysDialogStateProvider } from "./Build/BuildHotkeysDialogState";
 import { Navbar } from "./Navbar";
@@ -19,29 +15,7 @@ function Main(props: {
   const { ref } = props;
   return (
     <main ref={ref} className="contents">
-      <Sentry.ErrorBoundary
-        fallback={<ErrorPage />}
-        onError={(error: unknown) => {
-          console.error(error);
-          if (error instanceof AuthenticationError) {
-            logout();
-            return;
-          }
-          if (CombinedGraphQLErrors.is(error)) {
-            // Ignore unauthenticated errors & logout the user
-            if (
-              error.errors.some(
-                (error) => error.extensions?.code === "UNAUTHENTICATED",
-              )
-            ) {
-              logout();
-              return;
-            }
-          }
-        }}
-      >
-        {props.children}
-      </Sentry.ErrorBoundary>
+      {props.children}
     </main>
   );
 }

@@ -84,6 +84,7 @@ function CompanyAndUserProvider(
   const { data, error } = useQuery(AccountQuery, {
     variables: { slug: props.accountSlug },
   });
+
   if (error) {
     throw error;
   }

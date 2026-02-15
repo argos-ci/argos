@@ -4,14 +4,17 @@ import express, { Router } from "express";
 import { z } from "zod";
 
 import { AuthPayload } from "@/auth/request";
+import { consumeSamlAuthCode } from "@/auth/saml";
 import config from "@/config";
 import type { Account } from "@/database/models";
+import { Account as AccountModel } from "@/database/models";
 import {
   createJWTFromAccount,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
   joinSSOTeams,
+  markUserLastAuthMethod,
 } from "@/database/services/account";
 import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github";
 import { getOrCreateGitlabUser } from "@/database/services/gitlabUser";
@@ -36,6 +39,9 @@ const router: Router = Router();
 export default router;
 
 const OAuthBodySchema = z.object({
+  code: z.string(),
+});
+const SamlBodySchema = z.object({
   code: z.string(),
 });
 
@@ -107,6 +113,12 @@ router.use(
       githubAccountId: ghAccount.id,
       userId: account.userId,
     });
+    if (!auth) {
+      await markUserLastAuthMethod({
+        userId: account.userId,
+        method: "github",
+      });
+    }
     return account;
   }),
 );
@@ -133,6 +145,13 @@ router.use(
       gitlabUser,
       attachToAccount: auth?.account ?? null,
     });
+    invariant(account.userId, "Expected account to have userId");
+    if (!auth) {
+      await markUserLastAuthMethod({
+        userId: account.userId,
+        method: "gitlab",
+      });
+    }
     return account;
   }),
 );
@@ -154,6 +173,39 @@ router.use(
       googleUser,
       attachToAccount: auth?.account ?? null,
     });
+    invariant(account.userId, "Expected account to have userId");
+    if (!auth) {
+      await markUserLastAuthMethod({
+        userId: account.userId,
+        method: "google",
+      });
+    }
     return account;
+  }),
+);
+
+router.use(
+  "/auth/saml",
+  allowApp,
+  allowOnlyPost,
+  express.json(),
+  asyncHandler(async (req, res) => {
+    const parsed = SamlBodySchema.parse(req.body);
+    const payload = await consumeSamlAuthCode(parsed.code);
+    if (!payload) {
+      res.status(401).send({
+        error: {
+          message: "Invalid or expired SAML auth code.",
+        },
+      });
+      return;
+    }
+    const account = await AccountModel.query()
+      .findById(payload.accountId)
+      .throwIfNotFound();
+    res.send({
+      jwt: createJWTFromAccount(account),
+      redirect: payload.redirect,
+    });
   }),
 );

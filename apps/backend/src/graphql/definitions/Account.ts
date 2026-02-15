@@ -206,11 +206,11 @@ export const typeDefs = gql`
   }
 `;
 
-const accountById = async (
+async function accountByIdResolver(
   _root: unknown,
   args: { id: string },
   ctx: Context,
-) => {
+) {
   if (!ctx.auth) {
     return null;
   }
@@ -218,12 +218,14 @@ const accountById = async (
   if (!account) {
     return null;
   }
-  const permissions = await account.$getPermissions(ctx.auth.user);
+  const permissions = await account.$getPermissions(ctx.auth.user, {
+    enforceSSO: true,
+  });
   if (!permissions.includes("view")) {
     return null;
   }
   return account;
-};
+}
 
 export const commonAccountResolvers: IResolvers["Team"] = {
   stripeClientReferenceId: (account, _args, ctx) => {
@@ -438,14 +440,17 @@ export const resolvers: IResolvers = {
       if (!account) {
         return null;
       }
-      const permissions = await account.$getPermissions(ctx.auth?.user ?? null);
+      const permissions = await account.$getPermissions(
+        ctx.auth?.user ?? null,
+        { enforceSSO: true },
+      );
       if (!permissions.includes("view")) {
         return null;
       }
       return account;
     },
-    accountById,
-    teamById: accountById,
+    accountById: accountByIdResolver,
+    teamById: accountByIdResolver,
   },
   Mutation: {
     updateAccount: async (_root, args, ctx) => {

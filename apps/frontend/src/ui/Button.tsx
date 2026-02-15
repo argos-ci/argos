@@ -58,10 +58,10 @@ function getButtonClassName(options: {
     "group/button",
     variantClassName,
     sizeClassName,
-    "focus:outline-hidden data-[focus-visible]:ring-4",
+    "focus:outline-hidden data-focus-visible:ring-4",
     "items-center inline-flex select-none whitespace-nowrap border font-sans font-medium",
-    "aria-disabled:opacity-disabled aria-disabled:cursor-default",
-    "disabled:opacity-disabled disabled:cursor-default",
+    "aria-disabled:opacity-disabled aria-disabled:cursor-not-allowed",
+    "disabled:opacity-disabled disabled:cursor-not-allowed",
   );
 }
 
