@@ -32,6 +32,11 @@ async function createGhCommitStatus(
           return;
         }
 
+        // It happens if the repository is archived and read-only.
+        if (checkErrorStatus(403, error)) {
+          return;
+        }
+
         throw error;
       }
     },
