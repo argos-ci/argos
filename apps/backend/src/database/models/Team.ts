@@ -2,14 +2,24 @@ import { assertNever } from "@argos/util/assertNever";
 import type { RelationMappings } from "objection";
 
 import config from "@/config";
+import { boom } from "@/util/error";
 
 import { generateRandomHexString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
 import { GithubAccount } from "./GithubAccount";
+import { TeamSamlConfig } from "./TeamSamlConfig";
 import { TeamUser } from "./TeamUser";
 import { User } from "./User";
+
+export type GetPermissionsOptions = {
+  /**
+   * Throw if SSO is not enabled.
+   * @boolean
+   */
+  enforceSSO?: boolean;
+};
 
 export class Team extends Model {
   static override tableName = "teams";
@@ -121,6 +131,7 @@ export class Team extends Model {
   static async getPermissions(
     teamId: string,
     user: User | null,
+    options?: GetPermissionsOptions,
   ): Promise<AccountPermission[]> {
     if (!user) {
       return [];
@@ -130,12 +141,32 @@ export class Team extends Model {
       return ALL_ACCOUNT_PERMISSIONS;
     }
 
-    const teamUser = await TeamUser.query()
-      .select("id", "userLevel")
-      .findOne({ userId: user.id, teamId: teamId });
+    const [teamUser, teamSamlConfig] = await Promise.all([
+      TeamUser.query()
+        .select("id", "userLevel", "lastAuthMethod")
+        .findOne({ userId: user.id, teamId: teamId })
+        .withGraphFetched("team"),
+      options?.enforceSSO
+        ? TeamSamlConfig.query()
+            .select("enforced")
+            .joinRelated("account")
+            .where("account.teamId", teamId)
+            .first()
+        : null,
+    ]);
 
     if (!teamUser) {
       return [];
+    }
+
+    if (
+      options?.enforceSSO &&
+      teamSamlConfig?.enforced &&
+      teamUser.lastAuthMethod !== "saml"
+    ) {
+      throw boom(403, "SAML Single Sign-On required", {
+        code: "SAML_SSO_REQUIRED",
+      });
     }
 
     switch (teamUser.userLevel) {

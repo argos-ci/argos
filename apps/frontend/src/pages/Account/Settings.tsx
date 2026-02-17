@@ -22,6 +22,7 @@ import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
+import { TeamSAMLSSO } from "@/containers/Team/SAMLSSO";
 import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";
@@ -63,6 +64,7 @@ const AccountQuery = graphql(`
       ...PlanCard_Account
       ...AccountGitLab_Account
       ...TeamGitHubSSO_Team
+      ...TeamSAMLSSO_Team
       ...TeamAccessRole_Team
       ...TeamGitHubLight_Team
       ...UserAuth_Account
@@ -222,6 +224,13 @@ function PageContent() {
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
         </>
+      ),
+    },
+    {
+      name: "Security and Privacy",
+      slug: "security-and-privacy",
+      element: (
+        <>{isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}</>
       ),
     },
   ];

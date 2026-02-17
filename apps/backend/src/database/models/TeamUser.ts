@@ -10,6 +10,8 @@ import { User } from "./User";
 export class TeamUser extends Model {
   static override tableName = "team_users";
 
+  static authMethods = ["email", "google", "github", "gitlab", "saml"] as const;
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
@@ -20,6 +22,12 @@ export class TeamUser extends Model {
           userId: { type: "string" },
           teamId: { type: "string" },
           userLevel: z.toJSONSchema(TeamUserLevelSchema) as JSONSchema,
+          ssoSubject: { type: ["string", "null"] },
+          ssoVerifiedAt: { type: ["string", "null"] },
+          lastAuthMethod: {
+            type: ["string", "null"],
+            enum: [...TeamUser.authMethods, null],
+          },
         },
       },
     ],
@@ -28,6 +36,9 @@ export class TeamUser extends Model {
   userId!: string;
   teamId!: string;
   userLevel!: z.infer<typeof TeamUserLevelSchema>;
+  ssoSubject!: string | null;
+  ssoVerifiedAt!: string | null;
+  lastAuthMethod!: (typeof TeamUser.authMethods)[number] | null;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -49,4 +60,7 @@ export class TeamUser extends Model {
       },
     };
   }
+
+  user?: User | null;
+  team?: Team | null;
 }

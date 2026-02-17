@@ -131,8 +131,8 @@ export function Dialog({
       ref={ref}
       className={clsx(
         className,
-        "relative max-h-[inherit] focus:outline-hidden",
-        size === "medium" && "w-[36rem]",
+        "relative max-h-[inherit] max-w-full focus:outline-hidden",
+        size === "medium" && "w-xl",
         scrollable === false ? "overflow-hidden" : "overflow-auto",
       )}
       {...rest}

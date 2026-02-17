@@ -16,7 +16,7 @@ export function Label(props: LabelProps) {
       {...rest}
       className={clsx(
         "mb-2 inline-block text-sm font-medium",
-        invalid ? "text-danger-low" : "text-low",
+        invalid && "text-danger-low",
         rest.className,
       )}
     />

@@ -12,7 +12,7 @@ import { GitHubLoginButton } from "@/containers/GitHub";
 import { GitLabLoginButton } from "@/containers/GitLab";
 import { GoogleLoginButton } from "@/containers/Google";
 import { graphql } from "@/gql";
-import { ButtonIcon } from "@/ui/Button";
+import { Button, ButtonIcon } from "@/ui/Button";
 import { Form } from "@/ui/Form";
 import { FormRootToastError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
@@ -22,7 +22,7 @@ import { Separator } from "@/ui/Separator";
 import { AuthWithEmail } from "./AuthWithEmail";
 import { lastLoginMethodAtom, LastUsedIndicator } from "./LastLoginMethod";
 
-type Screen = "providers" | "verifyEmail";
+type Screen = "providers" | "verifyEmail" | "saml";
 
 export function LoginOptions(props: {
   redirect?: string | null;
@@ -30,6 +30,7 @@ export function LoginOptions(props: {
   className?: string;
   email: string;
   onEmailChange: (email: string) => void;
+  onSamlLogin: (teamSlug: string) => void;
 }) {
   const location = useLocation();
   const { email, onEmailChange } = props;
@@ -83,6 +84,15 @@ export function LoginOptions(props: {
                 Continue with GitLab
               </GitLabLoginButton>
             </LastUsedIndicator>
+            <Button
+              variant="secondary"
+              size="large"
+              className="w-full justify-center"
+              isDisabled={props.isDisabled}
+              onPress={() => setScreen("saml")}
+            >
+              Continue with SAML SSO
+            </Button>
           </div>
         </div>
       );
@@ -104,9 +114,76 @@ export function LoginOptions(props: {
         </div>
       );
     }
+    case "saml": {
+      return (
+        <div className="flex w-full flex-col gap-6">
+          <SamlForm
+            onBack={() => setScreen("providers")}
+            onSubmit={(teamSlug) => props.onSamlLogin(teamSlug)}
+          />
+        </div>
+      );
+    }
     default:
       assertNever(screen);
   }
+}
+
+const TeamSlugSchema = z.object({
+  teamSlug: z
+    .string()
+    .trim()
+    .min(1, "Please enter your team slug")
+    .regex(/^[a-z0-9-]+$/i, "Team slug can only include letters, digits and -"),
+});
+
+type SamlFormValues = z.infer<typeof TeamSlugSchema>;
+
+function SamlForm(props: {
+  onSubmit: (teamSlug: string) => void;
+  onBack: () => void;
+}) {
+  const form = useForm<SamlFormValues>({
+    defaultValues: { teamSlug: "" },
+    resolver: zodResolver(TeamSlugSchema),
+  });
+  return (
+    <Form
+      form={form}
+      onSubmit={async (data) => {
+        props.onSubmit(data.teamSlug.trim());
+      }}
+    >
+      <FormRootToastError control={form.control} />
+      <FormTextInput
+        label="Team slug"
+        control={form.control}
+        scale="lg"
+        placeholder="team-slug"
+        className="mb-4"
+        autoFocus
+        {...form.register("teamSlug")}
+        disabled={form.formState.isSubmitting}
+      />
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          className="flex-1 justify-center"
+          onPress={props.onBack}
+          type="button"
+        >
+          Back
+        </Button>
+        <FormSubmit
+          control={form.control}
+          size="large"
+          className="flex-1 justify-center"
+        >
+          Continue
+        </FormSubmit>
+      </div>
+    </Form>
+  );
 }
 
 const RequestLoginFromEmail = graphql(`

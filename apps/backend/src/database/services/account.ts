@@ -34,6 +34,18 @@ const RESERVED_SLUGS = [
   "teams",
 ];
 
+type TeamUserAuthMethod = (typeof TeamUser.authMethods)[number];
+
+export async function markUserLastAuthMethod(args: {
+  userId: string;
+  method: TeamUserAuthMethod;
+  trx?: TransactionOrKnex;
+}) {
+  await TeamUser.query(args.trx)
+    .where("userId", args.userId)
+    .patch({ lastAuthMethod: args.method });
+}
+
 /**
  * Create a JWT token from an account.
  */
@@ -79,6 +91,91 @@ export async function joinSSOTeams(input: {
       })),
     );
   }
+}
+
+export async function getOrCreateUserAccountFromSaml(input: {
+  email: string;
+  teamAccount: Account;
+  ssoSubject: string;
+}): Promise<Account> {
+  const email = sanitizeEmail(input.email);
+  const now = new Date().toISOString();
+  const domain = email.split("@")[1]?.toLowerCase();
+  invariant(domain, `Invalid email domain: ${email}`);
+
+  const teamId = input.teamAccount.teamId;
+  invariant(teamId, "SAML is only available for team accounts");
+
+  const [teamUser, team] = await Promise.all([
+    TeamUser.query()
+      .findOne({
+        teamId: teamId,
+        ssoSubject: input.ssoSubject,
+      })
+      .withGraphFetched("user.account"),
+    Team.query()
+      .select("id", "defaultUserLevel")
+      .findById(teamId)
+      .throwIfNotFound(),
+  ]);
+
+  if (teamUser) {
+    invariant(teamUser.user?.account, "User and account not fetched");
+    await teamUser.$query().patch({
+      ssoVerifiedAt: now,
+      lastAuthMethod: "saml",
+    });
+    return teamUser.user.account;
+  }
+
+  const existingUser = await User.query()
+    .withGraphFetched("account")
+    .whereExists(
+      UserEmail.query()
+        .whereRaw('user_emails."userId" = users.id')
+        .where("email", email),
+    )
+    .first();
+
+  if (existingUser) {
+    invariant(existingUser.account, "Account not fetched");
+    const teamUser = await TeamUser.query().findOne({
+      teamId: team.id,
+      userId: existingUser.id,
+    });
+    if (!teamUser) {
+      await TeamUser.query().insert({
+        teamId: team.id,
+        userId: existingUser.id,
+        userLevel: team.defaultUserLevel,
+        ssoSubject: input.ssoSubject,
+        ssoVerifiedAt: now,
+        lastAuthMethod: "saml",
+      });
+    } else {
+      await teamUser.$query().patch({
+        ssoSubject: input.ssoSubject,
+        ssoVerifiedAt: now,
+        lastAuthMethod: "saml",
+      });
+    }
+    return existingUser.account;
+  }
+
+  const slug = getSlugFromEmail(email);
+  const { account, user } = await createAccount({
+    email,
+    slug,
+  });
+  await TeamUser.query().insert({
+    teamId: team.id,
+    userId: user.id,
+    userLevel: team.defaultUserLevel,
+    ssoSubject: input.ssoSubject,
+    ssoVerifiedAt: now,
+    lastAuthMethod: "saml",
+  });
+  return account;
 }
 
 export async function checkAccountSlug(slug: string) {
@@ -630,6 +727,10 @@ export async function authenticateWithEmail(args: {
 
   if (existingUser) {
     invariant(existingUser.account, "Account not fetched");
+    await markUserLastAuthMethod({
+      userId: existingUser.id,
+      method: "email",
+    });
     return { account: existingUser.account, creation: false };
   }
 
@@ -638,6 +739,12 @@ export async function authenticateWithEmail(args: {
   const { account } = await createAccount({
     email,
     slug,
+  });
+
+  invariant(account.userId, "Expected account to have userId");
+  await markUserLastAuthMethod({
+    userId: account.userId,
+    method: "email",
   });
 
   return { account, creation: true };

@@ -5,6 +5,7 @@ import { PlusCircleIcon } from "lucide-react";
 import moment from "moment";
 
 import { config } from "@/config";
+import { CONTACT_HREF } from "@/constants";
 import { TeamSubscribeDialog } from "@/containers/Team/SubscribeDialog";
 import { DocumentType, graphql } from "@/gql";
 import {
@@ -27,8 +28,6 @@ import { StripePortalLink } from "@/ui/StripeLink";
 import { Time } from "@/ui/Time";
 
 import { AccountPlanChip } from "./AccountPlanChip";
-
-const contactHref = `mailto:${config.contactEmail}`;
 
 const _PlanCardFragment = graphql(`
   fragment PlanCard_Account on Account {
@@ -305,7 +304,11 @@ function ManageSubscriptionButton({
       );
     case AccountSubscriptionProvider.Stripe: {
       if (!account.stripeCustomerId) {
-        return <LinkButton href={contactHref}>{children}</LinkButton>;
+        return (
+          <LinkButton href={CONTACT_HREF} target="_blank">
+            {children}
+          </LinkButton>
+        );
       }
       return (
         <StripePortalLink
@@ -317,7 +320,11 @@ function ManageSubscriptionButton({
       );
     }
     case null: {
-      return <LinkButton href={contactHref}>{children}</LinkButton>;
+      return (
+        <LinkButton href={CONTACT_HREF} target="_blank">
+          {children}
+        </LinkButton>
+      );
     }
     default:
       assertNever(provider);
@@ -342,15 +349,10 @@ function PlanCardFooter(props: {
   if (account.hasForcedPlan) {
     return (
       <CardFooter>
-        Contact Argos support on{" "}
-        <Link href="https://argos-ci.com/discord" target="_blank">
-          Discord
+        <Link href={CONTACT_HREF} target="_blank">
+          Contact Argos support
         </Link>{" "}
-        or{" "}
-        <Link href={contactHref} target="_blank">
-          by email
-        </Link>
-        {"  "}to manage your subscription.
+        to manage your subscription.
       </CardFooter>
     );
   }
@@ -360,7 +362,7 @@ function PlanCardFooter(props: {
         <CardFooter className="flex items-center justify-between gap-4">
           <div>
             Custom needs?{" "}
-            <Link href={contactHref} target="_blank">
+            <Link href={CONTACT_HREF} target="_blank">
               Contact Sales
             </Link>
           </div>
@@ -383,7 +385,7 @@ function PlanCardFooter(props: {
             <CardFooter className="flex items-center justify-between gap-4">
               <div>
                 Custom needs?{" "}
-                <Link href={contactHref} target="_blank">
+                <Link href={CONTACT_HREF} target="_blank">
                   Contact Sales
                 </Link>
               </div>
@@ -404,7 +406,7 @@ function PlanCardFooter(props: {
                 <LinkButton
                   variant="secondary"
                   target="_blank"
-                  href={contactHref}
+                  href={CONTACT_HREF}
                 >
                   Contact Sales
                 </LinkButton>

@@ -15,7 +15,8 @@ import { Project } from "./Project";
 import { ScreenshotBucket } from "./ScreenshotBucket";
 import { SlackInstallation } from "./SlackInstallation";
 import { Subscription } from "./Subscription";
-import { Team } from "./Team";
+import { Team, type GetPermissionsOptions } from "./Team";
+import { TeamSamlConfig } from "./TeamSamlConfig";
 import { User } from "./User";
 
 /** @public */
@@ -215,6 +216,14 @@ export class Account extends Model {
           to: "github_installations.id",
         },
       },
+      teamSamlConfig: {
+        relation: Model.HasOneRelation,
+        modelClass: TeamSamlConfig,
+        join: {
+          from: "accounts.id",
+          to: "team_saml_configs.accountId",
+        },
+      },
     };
   }
 
@@ -225,6 +234,7 @@ export class Account extends Model {
   projects?: Project[];
   slackInstallation?: SlackInstallation | null;
   githubLightInstallation?: GithubInstallation | null;
+  teamSamlConfig?: TeamSamlConfig | null;
 
   _cachedSubscriptionManager?: AccountSubscriptionManager;
 
@@ -686,12 +696,13 @@ export class Account extends Model {
   static async getPermissions(
     account: Account,
     user: User | null,
+    options?: GetPermissionsOptions,
   ): Promise<AccountPermission[]> {
     switch (account.type) {
       case "user":
         return User.getPermissions(account.userId as string, user);
       case "team":
-        return Team.getPermissions(account.teamId as string, user);
+        return Team.getPermissions(account.teamId as string, user, options);
       default:
         assertNever(account.type);
     }
@@ -710,7 +721,10 @@ export class Account extends Model {
     throw new Error("Incoherent account type");
   }
 
-  async $getPermissions(user: User | null): Promise<AccountPermission[]> {
-    return Account.getPermissions(this, user);
+  async $getPermissions(
+    user: User | null,
+    options?: GetPermissionsOptions,
+  ): Promise<AccountPermission[]> {
+    return Account.getPermissions(this, user, options);
   }
 }

@@ -1171,6 +1171,7 @@ CREATE TABLE public.plans (
     "githubSsoIncluded" boolean DEFAULT false NOT NULL,
     "fineGrainedAccessControlIncluded" boolean DEFAULT false NOT NULL,
     "interval" text DEFAULT 'month'::text NOT NULL,
+    "samlIncluded" boolean DEFAULT false NOT NULL,
     CONSTRAINT plans_interval_check CHECK (("interval" = ANY (ARRAY['month'::text, 'year'::text])))
 );
 
@@ -1601,6 +1602,48 @@ CREATE TABLE public.team_invites (
 ALTER TABLE public.team_invites OWNER TO postgres;
 
 --
+-- Name: team_saml_configs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_saml_configs (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "accountId" bigint NOT NULL,
+    "idpEntityId" character varying(255) NOT NULL,
+    "ssoUrl" character varying(255) NOT NULL,
+    "signingCertificate" text NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    enforced boolean DEFAULT false NOT NULL,
+    "enforcedAt" timestamp with time zone,
+    CONSTRAINT team_saml_configs_enforced_requires_enforcedat CHECK (((enforced AND ("enforcedAt" IS NOT NULL)) OR ((NOT enforced) AND ("enforcedAt" IS NULL))))
+);
+
+
+ALTER TABLE public.team_saml_configs OWNER TO postgres;
+
+--
+-- Name: team_saml_configs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.team_saml_configs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.team_saml_configs_id_seq OWNER TO postgres;
+
+--
+-- Name: team_saml_configs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.team_saml_configs_id_seq OWNED BY public.team_saml_configs.id;
+
+
+--
 -- Name: team_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1611,6 +1654,10 @@ CREATE TABLE public.team_users (
     "userId" bigint NOT NULL,
     "teamId" bigint NOT NULL,
     "userLevel" text NOT NULL,
+    "ssoSubject" character varying(255),
+    "ssoVerifiedAt" timestamp with time zone,
+    "lastAuthMethod" text,
+    CONSTRAINT "team_users_lastAuthMethod_check" CHECK (("lastAuthMethod" = ANY (ARRAY['email'::text, 'google'::text, 'github'::text, 'gitlab'::text, 'saml'::text]))),
     CONSTRAINT "team_users_userLevel_check" CHECK (("userLevel" = ANY (ARRAY['owner'::text, 'member'::text, 'contributor'::text])))
 );
 
@@ -2028,6 +2075,13 @@ ALTER TABLE ONLY public.slack_installations ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('public.subscriptions_id_seq'::regclass);
+
+
+--
+-- Name: team_saml_configs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_saml_configs ALTER COLUMN id SET DEFAULT nextval('public.team_saml_configs_id_seq'::regclass);
 
 
 --
@@ -2480,6 +2534,22 @@ ALTER TABLE ONLY public.team_invites
 
 ALTER TABLE ONLY public.team_invites
     ADD CONSTRAINT team_invites_secret_unique UNIQUE (secret);
+
+
+--
+-- Name: team_saml_configs team_saml_configs_accountid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_saml_configs
+    ADD CONSTRAINT team_saml_configs_accountid_unique UNIQUE ("accountId");
+
+
+--
+-- Name: team_saml_configs team_saml_configs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_saml_configs
+    ADD CONSTRAINT team_saml_configs_pkey PRIMARY KEY (id);
 
 
 --
@@ -3524,6 +3594,14 @@ ALTER TABLE ONLY public.team_invites
 
 
 --
+-- Name: team_saml_configs team_saml_configs_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_saml_configs
+    ADD CONSTRAINT team_saml_configs_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: team_users team_users_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3775,3 +3853,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119154332_delete-unused-tables.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260125185235_add-indices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260131141626_removed-screenshot-policy.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260215121000_team_saml_configs.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260216200736_enforce-sso.js', 1, NOW());

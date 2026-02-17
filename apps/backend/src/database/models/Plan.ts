@@ -14,14 +14,7 @@ export class Plan extends Model {
       timestampsSchema,
       {
         type: "object",
-        required: [
-          "name",
-          "includedScreenshots",
-          "usageBased",
-          "githubSsoIncluded",
-          "fineGrainedAccessControlIncluded",
-          "interval",
-        ],
+        required: ["name", "includedScreenshots", "usageBased", "interval"],
         properties: {
           name: { type: "string" },
           includedScreenshots: { type: "number" },
@@ -30,6 +23,7 @@ export class Plan extends Model {
           usageBased: { type: "boolean" },
           githubSsoIncluded: { type: "boolean" },
           fineGrainedAccessControlIncluded: { type: "boolean" },
+          samlIncluded: { type: "boolean" },
           interval: { type: "string", enum: ["month", "year"] },
         },
       },
@@ -43,6 +37,7 @@ export class Plan extends Model {
   usageBased!: boolean;
   githubSsoIncluded!: boolean;
   fineGrainedAccessControlIncluded!: boolean;
+  samlIncluded!: boolean;
   interval!: SubscriptionInterval;
 
   static override virtualAttributes = ["displayName"];

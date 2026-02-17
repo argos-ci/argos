@@ -1,7 +1,13 @@
 import { invariant } from "@argos/util/invariant";
+import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
+import {
+  checkHasAccessToSAML,
+  getTeamSamlPublicValues,
+  parseIdpMetadataXml,
+} from "@/auth/saml";
 import config from "@/config";
 import { transaction } from "@/database";
 import {
@@ -10,6 +16,7 @@ import {
   GithubInstallation,
   Team,
   TeamInvite,
+  TeamSamlConfig,
   TeamUser,
   UserEmail,
 } from "@/database/models";
@@ -120,8 +127,45 @@ export const typeDefs = gql`
     ): TeamInviteConnection
     inviteLink: String
     ssoGithubAccount: GithubAccount
+    samlSso: TeamSamlConfig
+    samlSpEntityId: String!
+    samlAcsUrl: String!
+    samlMetadataUrl: String!
+    samlSsoUrl: String!
     defaultUserLevel: TeamDefaultUserLevel!
     githubLightInstallation: GithubInstallation
+  }
+
+  type TeamSamlConfig {
+    id: ID!
+    idpEntityId: String!
+    ssoUrl: String!
+    signingCertificate: String!
+    enabled: Boolean!
+    enforced: Boolean!
+  }
+
+  input ConfigureTeamSamlInput {
+    teamAccountId: ID!
+    idpEntityId: String
+    ssoUrl: String
+    signingCertificate: String
+    enabled: Boolean
+    enforced: Boolean
+  }
+
+  input ImportTeamSamlMetadataInput {
+    teamAccountId: ID!
+    metadataXml: String!
+  }
+
+  type TeamSamlTestResult {
+    ok: Boolean!
+    message: String!
+  }
+
+  input TestTeamSamlConnectionInput {
+    teamAccountId: ID!
   }
 
   enum TeamDefaultUserLevel {
@@ -145,6 +189,7 @@ export const typeDefs = gql`
     user: User!
     level: TeamUserLevel!
     fromSSO: Boolean!
+    lastAuthMethod: String
   }
 
   type TeamGithubMemberConnection implements Connection {
@@ -243,6 +288,12 @@ export const typeDefs = gql`
     level: TeamUserLevel!
   }
 
+  type ImportTeamSamlMetadataResult {
+    idpEntityId: String!
+    ssoUrl: String!
+    signingCertificate: String!
+  }
+
   extend type Query {
     "Get a invite (specific to a user) by its secret"
     invite(secret: String!): TeamInvite
@@ -285,6 +336,14 @@ export const typeDefs = gql`
     cancelInvite(teamInviteId: ID!): Team!
     "Extend trial period"
     extendTrial(teamAccountId: ID!): ExtendTrialResult!
+    "Create or update team SAML settings"
+    configureTeamSaml(input: ConfigureTeamSamlInput!): TeamSamlConfig!
+    "Create or update team SAML settings"
+    removeTeamSaml(teamAccountId: ID!): Team!
+    "Import IdP metadata xml"
+    importTeamSamlMetadata(
+      input: ImportTeamSamlMetadataInput!
+    ): ImportTeamSamlMetadataResult!
   }
 `;
 
@@ -533,6 +592,39 @@ export const resolvers: IResolvers = {
       }
 
       return ctx.loaders.GithubAccount.load(team.ssoGithubAccountId);
+    },
+    samlSso: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      invariant(account.teamId);
+      const permissions = await Team.getPermissions(
+        account.teamId,
+        ctx.auth.user,
+      );
+      if (!permissions.includes("admin")) {
+        return null;
+      }
+      const samlConfig = await TeamSamlConfig.query().findOne({
+        accountId: account.id,
+      });
+      return samlConfig ?? null;
+    },
+    samlSpEntityId: (account) => {
+      const values = getTeamSamlPublicValues(account.slug);
+      return values.entityId;
+    },
+    samlAcsUrl: (account) => {
+      const values = getTeamSamlPublicValues(account.slug);
+      return values.acsUrl;
+    },
+    samlMetadataUrl: (account) => {
+      const values = getTeamSamlPublicValues(account.slug);
+      return values.metadataUrl;
+    },
+    samlSsoUrl: (account) => {
+      const values = getTeamSamlPublicValues(account.slug);
+      return values.ssoUrl;
     },
     defaultUserLevel: async (account, _args, ctx) => {
       if (!ctx.auth) {
@@ -1431,6 +1523,83 @@ export const resolvers: IResolvers = {
       );
 
       return invites;
+    },
+    configureTeamSaml: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      if (!(await checkHasAccessToSAML(teamAccount))) {
+        throw forbidden("SAML SSO is only available on Enterprise plan.");
+      }
+
+      const existing = await TeamSamlConfig.query().findOne({
+        accountId: teamAccount.id,
+      });
+
+      const enforcedAt =
+        args.input.enforced === undefined
+          ? undefined
+          : args.input.enforced
+            ? (existing?.enforcedAt ?? new Date().toISOString())
+            : null;
+
+      const patchData = omitUndefinedValues({
+        idpEntityId: args.input.idpEntityId ?? undefined,
+        ssoUrl: args.input.ssoUrl ?? undefined,
+        signingCertificate: args.input.signingCertificate ?? undefined,
+        enabled: args.input.enabled ?? undefined,
+        enforced: args.input.enforced ?? undefined,
+        enforcedAt,
+      });
+
+      if (existing) {
+        return existing.$query().patchAndFetch(patchData);
+      }
+
+      return TeamSamlConfig.query().insertAndFetch({
+        accountId: teamAccount.id,
+        ...patchData,
+      });
+    },
+    removeTeamSaml: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      await TeamSamlConfig.query()
+        .where({
+          accountId: teamAccount.id,
+        })
+        .delete();
+
+      return teamAccount.$query();
+    },
+    importTeamSamlMetadata: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      if (!(await checkHasAccessToSAML(teamAccount))) {
+        throw forbidden("SAML SSO is only available on Enterprise plan.");
+      }
+
+      return parseIdpMetadataXml(args.input.metadataXml);
     },
     cancelInvite: async (_root, args, ctx) => {
       if (!ctx.auth) {

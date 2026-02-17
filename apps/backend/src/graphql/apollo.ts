@@ -3,6 +3,8 @@ import { expressMiddleware } from "@as-integrations/express5";
 import * as Sentry from "@sentry/node";
 import { RequestHandler } from "express";
 
+import { HTTPError } from "@/util/error";
+
 import { getContext, type Context } from "./context";
 import { schema } from "./schema";
 
@@ -11,7 +13,20 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
     return {
       didEncounterErrors: async (ctx) => {
         for (const error of ctx.errors) {
+          if (
+            error.originalError instanceof HTTPError &&
+            error.originalError.code
+          ) {
+            error.extensions["argosErrorCode"] = error.originalError.code;
+
+            // Ignore SAML SSO required errors
+            if (error.originalError.code === "SAML_SSO_REQUIRED") {
+              continue;
+            }
+          }
+
           const code = error.extensions?.["code"];
+
           // Ignore some errors
           if (
             code === "FORBIDDEN" ||

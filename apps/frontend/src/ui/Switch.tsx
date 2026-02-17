@@ -9,22 +9,22 @@ type SwitchProps = ComponentPropsWithRef<typeof RACSwitch> & {
   size?: "sm" | "md";
 };
 
-function Switch(props: SwitchProps) {
+export function Switch(props: SwitchProps) {
   const { size = "md", ...rest } = props;
   return (
     <RACSwitch {...rest} className={clsx("group", rest.className)}>
       <div
         className={clsx(
-          "rac-focus-group group-data-[pressed]:bg-primary-active group-data-[selected]:bg-primary-solid group-data-[selected]:group-data-[pressed]:bg-primary-solid-active bg-ui border-low group-data-[disabled]:opacity-disabled box-border flex shrink-0 cursor-default rounded-full border bg-clip-padding shadow-inner transition duration-200 ease-in-out",
-          size === "sm" && "h-[18px] w-[31px] p-[2px]",
-          size === "md" && "h-[26px] w-[44px] p-[3px]",
+          "rac-focus-group group-data-pressed:bg-primary-active group-data-selected:bg-primary-solid group-data-selected:group-data-pressed:bg-primary-solid-active bg-ui border-low group-data-disabled:opacity-disabled box-border flex shrink-0 cursor-default rounded-full border bg-clip-padding shadow-inner transition duration-200 ease-in-out",
+          size === "sm" && "h-4.5 w-7.75 p-0.5",
+          size === "md" && "h-6.5 w-11 p-0.75",
         )}
       >
         <span
           className={clsx(
-            "translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out group-data-[selected]:translate-x-full",
-            size === "sm" && "h-[12px] w-[12px]",
-            size === "md" && "h-[18px] w-[18px]",
+            "translate-x-0 rounded-full bg-[#FDFCFD] shadow-sm transition duration-200 ease-in-out group-data-selected:translate-x-full",
+            size === "sm" && "size-3",
+            size === "md" && "size-4.5",
           )}
         />
       </div>
