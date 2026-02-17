@@ -128,7 +128,6 @@ function fitIntoMaxPixels(size: Dimensions) {
       height: Math.floor(size.height * scaleFactor),
     };
   }
-  console.log(size);
   return size;
 }
 
