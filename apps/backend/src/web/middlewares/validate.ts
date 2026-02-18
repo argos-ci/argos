@@ -43,10 +43,8 @@ export const validate = (routeSchema: {
   // The actual middleware that gets loaded by express
   // has already-compiled validators
   return asyncHandler((req, _res, next) => {
-    let validation = null;
-
     if (validators.params) {
-      validation = validators.params(req.params);
+      const validation = validators.params(req.params);
       if (!validation) {
         throw boom(
           400,
@@ -58,7 +56,7 @@ export const validate = (routeSchema: {
     }
 
     if (validators.query) {
-      validation = validators.query(req.query);
+      const validation = validators.query(req.query);
       if (!validation) {
         throw boom(
           400,
@@ -70,7 +68,7 @@ export const validate = (routeSchema: {
     }
 
     if (validators.body) {
-      validation = validators.body(req.body);
+      const validation = validators.body(req.body);
       if (!validation) {
         throw boom(
           400,
