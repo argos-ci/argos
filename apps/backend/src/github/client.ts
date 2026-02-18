@@ -3,6 +3,7 @@ import { createAppAuth } from "@octokit/auth-app";
 import type { OctokitOptions } from "@octokit/core";
 import { retry } from "@octokit/plugin-retry";
 import { Octokit } from "@octokit/rest";
+import { memoize } from "lodash-es";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
 import z from "zod";
 
@@ -34,18 +35,25 @@ const apps: Record<
 };
 
 /**
+ * Get the proxy agent from what is in the configuration.
+ */
+const getProxyAgent = memoize(() => {
+  const proxyUrl = config.get("github.proxyUrl");
+  if (!proxyUrl) {
+    throw new Error("Proxy URL is not set");
+  }
+  return new ProxyAgent(proxyUrl);
+});
+
+/**
  * Proxy fetch function to use with Octokit.
  * It has the same signature as the fetch function but it uses a proxy
  * to send requests through a static IP address.
  */
 async function proxyFetch(url: string, init: RequestInit): Promise<Response> {
-  const proxyUrl = config.get("github.proxyUrl");
-  if (!proxyUrl) {
-    throw new Error("Proxy URL is not set");
-  }
   const response = await fetch(url, {
     ...init,
-    dispatcher: new ProxyAgent(proxyUrl),
+    dispatcher: getProxyAgent(),
   });
   return response;
 }
@@ -117,26 +125,27 @@ export async function getInstallationOctokit(
   installation: GithubInstallation,
   appOctokit?: Octokit,
 ): Promise<Octokit | null> {
-  appOctokit =
-    appOctokit ??
-    getAppOctokit({ app: installation.app, proxy: installation.proxy });
-
   if (installation.githubToken && installation.githubTokenExpiresAt) {
-    const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
+    const expiredAt = new Date(installation.githubTokenExpiresAt).getTime();
     const now = Date.now();
     const delay = 60 * 5 * 1000; // 5 minutes
-    const expired = expiredAt < now + delay;
-    if (!expired) {
-      const token = installation.githubToken;
-      const octokit = getTokenOctokit({ token, proxy: installation.proxy });
+    const isExpired = expiredAt < now + delay;
+    if (!isExpired) {
+      const octokit = getTokenOctokit({
+        token: installation.githubToken,
+        proxy: installation.proxy,
+      });
       const isValid = await checkTokenValidity(octokit);
       if (isValid) {
         return octokit;
       }
     }
   }
+
   const result = await authInstallation({
-    octokit: appOctokit,
+    octokit:
+      appOctokit ??
+      getAppOctokit({ app: installation.app, proxy: installation.proxy }),
     installationId: installation.githubId,
   });
   switch (result.status) {
