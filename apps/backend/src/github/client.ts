@@ -126,13 +126,15 @@ export async function getInstallationOctokit(
   appOctokit?: Octokit,
 ): Promise<Octokit | null> {
   if (installation.githubToken && installation.githubTokenExpiresAt) {
-    const expiredAt = Number(new Date(installation.githubTokenExpiresAt));
+    const expiredAt = new Date(installation.githubTokenExpiresAt).getTime();
     const now = Date.now();
     const delay = 60 * 5 * 1000; // 5 minutes
-    const expired = expiredAt < now + delay;
-    if (!expired) {
-      const token = installation.githubToken;
-      const octokit = getTokenOctokit({ token, proxy: installation.proxy });
+    const isExpired = expiredAt < now + delay;
+    if (!isExpired) {
+      const octokit = getTokenOctokit({
+        token: installation.githubToken,
+        proxy: installation.proxy,
+      });
       const isValid = await checkTokenValidity(octokit);
       if (isValid) {
         return octokit;
