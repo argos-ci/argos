@@ -9,10 +9,10 @@
     "check-format": "prettier --check ."
   },
   "dependencies": {
-    "@eslint/js": "^9.39.2",
-    "@vitest/eslint-plugin": "^1.6.7",
+    "@eslint/js": "^10.0.1",
+    "@vitest/eslint-plugin": "^1.6.9",
     "eslint": "catalog:",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "typescript-eslint": "^8.55.0"
+    "typescript-eslint": "^8.56.0"
   }
 }
