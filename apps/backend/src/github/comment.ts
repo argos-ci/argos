@@ -72,7 +72,7 @@ export async function commentGithubPr({
     if (checkErrorStatus(404, error)) {
       await pullRequest.$clone().$query().patch({ commentDeleted: true });
     } else if (checkErrorStatus(403, error)) {
-      logger.warn({ error }, "GitHub PR comment update forbidden (403)");
+      logger.info({ error }, "GitHub PR comment update forbidden (403)");
     } else {
       console.error("Error while updating comment", error);
       throw error;
