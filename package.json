@@ -46,6 +46,7 @@
     "@swc/cli": "^0.8.0",
     "@swc/core": "^1.15.11",
     "@types/node": "^24.10.13",
+    "chokidar": "^5.0.0",
     "eslint": "catalog:",
     "knip": "^5.84.0",
     "prettier": "^3.8.1",
