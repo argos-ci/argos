@@ -148,7 +148,7 @@ export async function seed() {
     {
       userId: argosBot!.id,
       name: "Argos Bot",
-      slug: "argos[bot]",
+      slug: "argos-bot",
     },
   ]);
 
