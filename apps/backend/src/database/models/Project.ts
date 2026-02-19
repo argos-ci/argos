@@ -25,7 +25,6 @@ import type { User } from "./User";
 type ProjectPermission = "admin" | "review" | "view_settings" | "view";
 export type ProjectAutoIgnore = {
   changes: number;
-  period: string;
 };
 
 const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
@@ -71,7 +70,6 @@ export class Project extends Model {
                 required: ["changes", "period"],
                 properties: {
                   changes: { type: "integer", minimum: 1 },
-                  period: { type: "string", minLength: 1 },
                 },
               },
             ],

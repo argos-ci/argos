@@ -125,7 +125,6 @@ describe("#computeScreenshotDiff", () => {
       await project.$query().patch({
         autoIgnore: {
           changes: 1,
-          period: "7D",
         },
       });
 
@@ -182,7 +181,6 @@ describe("#computeScreenshotDiff", () => {
       await project.$query().patch({
         autoIgnore: {
           changes: 1,
-          period: "7D",
         },
       });
 

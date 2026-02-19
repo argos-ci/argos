@@ -18,7 +18,6 @@ const UpdateAutoIgnoreMutation = graphql(`
       id
       autoIgnore {
         changes
-        period
       }
     }
   }
@@ -34,12 +33,10 @@ const _ProjectFragment = graphql(`
     id
     autoIgnore {
       changes
-      period
     }
   }
 `);
 
-const DEFAULT_PERIOD = "7D";
 const DEFAULT_CHANGES = "3";
 
 export const ProjectAutoIgnore = (props: {
@@ -78,12 +75,7 @@ export const ProjectAutoIgnore = (props: {
       mutation: UpdateAutoIgnoreMutation,
       variables: {
         id: project.id,
-        autoIgnore: data.enabled
-          ? {
-              changes: Number(data.changes),
-              period: DEFAULT_PERIOD,
-            }
-          : null,
+        autoIgnore: data.enabled ? { changes: Number(data.changes) } : null,
       },
     });
     form.reset(data);
@@ -95,9 +87,8 @@ export const ProjectAutoIgnore = (props: {
         <CardBody>
           <CardTitle>Automatically ignore flaky changes</CardTitle>
           <CardParagraph>
-            Argos detects visual changes that appear inconsistently across
-            builds and automatically ignores them to reduce noise and false
-            positives.
+            Argos helps you to reduce noise by automatically ignoring recurring
+            changes across multiple builds.
           </CardParagraph>
           <FormSwitch
             control={form.control}
@@ -114,7 +105,7 @@ export const ProjectAutoIgnore = (props: {
               min={1}
               step={1}
               inputMode="numeric"
-              description="A change is considered flaky if it appears and disappears at least this many times in auto-approved builds within 7 days."
+              description="A change is considered flaky if it appears at least this many times in auto-approved builds within 7 days."
             />
           )}
         </CardBody>

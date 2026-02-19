@@ -65,12 +65,10 @@ export const typeDefs = gql`
 
   type AutoIgnoreSettings {
     changes: Int!
-    period: String!
   }
 
   input AutoIgnoreSettingsInput {
     changes: Int!
-    period: String!
   }
 
   type ProjectContributor implements Node {

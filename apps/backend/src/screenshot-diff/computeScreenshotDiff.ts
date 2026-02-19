@@ -183,28 +183,16 @@ export async function computeScreenshotDiff(
   ]);
 }
 
-function getAutoIgnoreStartDate(period: string): Date {
-  const match = /^P?(?<days>\d+)D$/i.exec(period);
-  const days = Number(match?.groups?.["days"] ?? 0);
-  if (!Number.isFinite(days) || days <= 0) {
-    throw new Error("Invalid auto ignore period format");
-  }
-  const date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  date.setUTCHours(0, 0, 0, 0);
-  return date;
-}
-
 async function shouldAutoIgnoreChange(args: {
   autoIgnore: ProjectAutoIgnore;
   projectId: string;
   testId: string;
   fingerprint: string;
 }) {
-  const fromDate = getAutoIgnoreStartDate(args.autoIgnore.period);
   const result = await knex("test_stats_fingerprints")
     .where("testId", args.testId)
     .where("fingerprint", args.fingerprint)
-    .where("date", ">=", fromDate.toISOString())
+    .where("date", ">=", knex.raw("now() - interval '7 days'"))
     .sum<{ total: string | number | null }>({ total: "value" })
     .first();
 
