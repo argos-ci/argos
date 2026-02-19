@@ -153,9 +153,10 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
   const diffStatusesRef = useRef<Record<string, EvaluationStatus> | null>(null);
+  const nextDiffRef = useRef<Diff | null>(null);
 
   const acknowledge = useEventCallback(() => {
-    const nextDiff = getNextDiff();
+    const nextDiff = nextDiffRef.current;
     if (reviewStatus === "complete") {
       reviewDialog.show();
     } else if (
@@ -175,6 +176,7 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
 
   const planAck = useEventCallback(() => {
     diffStatusesRef.current = diffStatuses;
+    nextDiffRef.current = getNextDiff();
   });
 
   const checkIsPending = useEventCallback(() => {

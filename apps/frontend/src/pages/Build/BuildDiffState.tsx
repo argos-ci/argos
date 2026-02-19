@@ -664,6 +664,10 @@ export function BuildDiffProvider(props: {
     return groupDiffs(filteredDiffs, reviewState?.diffStatuses ?? {});
   }, [filteredDiffs, reviewState?.diffStatuses]);
 
+  const sortedDiffs = useMemo(() => {
+    return groups.flatMap((group) => group.diffs.filter((x) => x !== null));
+  }, [groups]);
+
   const getDiffGroup = useEventCallback((diff: Diff | null) => {
     if (!diff) {
       return null;
@@ -730,7 +734,7 @@ export function BuildDiffProvider(props: {
   const value = useMemo(
     (): BuildDiffContextValue => ({
       groups,
-      diffs: filteredDiffs,
+      diffs: sortedDiffs,
       expanded,
       toggleGroup,
       activeDiff,
@@ -749,7 +753,7 @@ export function BuildDiffProvider(props: {
     }),
     [
       groups,
-      filteredDiffs,
+      sortedDiffs,
       expanded,
       toggleGroup,
       activeDiff,
