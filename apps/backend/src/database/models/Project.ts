@@ -23,6 +23,10 @@ import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
 
 type ProjectPermission = "admin" | "review" | "view_settings" | "view";
+export type ProjectAutoIgnore = {
+  changes: number;
+  period: string;
+};
 
 const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
   "admin",
@@ -59,6 +63,19 @@ export class Project extends Model {
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
           },
+          autoIgnore: {
+            anyOf: [
+              { type: "null" },
+              {
+                type: "object",
+                required: ["changes", "period"],
+                properties: {
+                  changes: { type: "integer", minimum: 1 },
+                  period: { type: "string", minLength: 1 },
+                },
+              },
+            ],
+          },
         },
       },
     ],
@@ -75,6 +92,7 @@ export class Project extends Model {
   prCommentEnabled!: boolean;
   summaryCheck!: "always" | "never" | "auto";
   defaultUserLevel!: UserLevel | null;
+  autoIgnore!: ProjectAutoIgnore | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

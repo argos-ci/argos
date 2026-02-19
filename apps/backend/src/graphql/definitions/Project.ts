@@ -63,6 +63,16 @@ export const typeDefs = gql`
     edges: [ProjectContributor!]!
   }
 
+  type AutoIgnoreSettings {
+    changes: Int!
+    period: String!
+  }
+
+  input AutoIgnoreSettingsInput {
+    changes: Int!
+    period: String!
+  }
+
   type ProjectContributor implements Node {
     id: ID!
     user: User!
@@ -150,6 +160,8 @@ export const typeDefs = gql`
     automationRules(after: Int = 0, first: Int = 30): AutomationRuleConnection!
     "Default user access level applied to members that are not contributors"
     defaultUserLevel: ProjectUserLevel
+    "Auto ignore configuration for flaky changes"
+    autoIgnore: AutoIgnoreSettings
     "List all tests in a project"
     tests(
       after: Int = 0
@@ -191,6 +203,7 @@ export const typeDefs = gql`
     name: String
     summaryCheck: SummaryCheck
     defaultUserLevel: ProjectUserLevel
+    autoIgnore: AutoIgnoreSettingsInput
   }
 
   input TransferProjectInput {
@@ -889,6 +902,10 @@ export const resolvers: IResolvers = {
 
       if (args.input.defaultUserLevel !== undefined) {
         data.defaultUserLevel = args.input.defaultUserLevel;
+      }
+
+      if (args.input.autoIgnore !== undefined) {
+        data.autoIgnore = args.input.autoIgnore;
       }
 
       if (args.input.name != null && project.name !== args.input.name) {

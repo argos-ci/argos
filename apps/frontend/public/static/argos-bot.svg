@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" role="img" aria-label="Argos bot">
+  <rect x="3" y="5" width="14" height="12" rx="6" fill="#6F4BD8"/>
+  <path d="M6 6c1.2-1 2.6-1.6 4-1.6s2.8.6 4 1.6" stroke="#4A34B7" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>
+  <circle cx="10" cy="11" r="4" fill="#FFFFFF"/>
+  <circle cx="10" cy="11" r="2.25" fill="#23124D"/>
+  <circle cx="9.2" cy="10.2" r=".7" fill="#FFFFFF" opacity=".9"/>
+
+  <path d="M10 5V3.6" stroke="#6F4BD8" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="10" cy="2.9" r="1.1" fill="#6F4BD8"/>
+</svg>

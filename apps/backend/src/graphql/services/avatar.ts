@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
+import config from "@/config";
 import type { Account } from "@/database/models";
 
 import { createLoaders } from "../loaders";
@@ -92,6 +93,16 @@ export async function getAccountAvatar(
   if (account.userId) {
     const user = await loaders.User.load(account.userId);
     invariant(user, "User not found");
+    if (user.type === "bot") {
+      return {
+        url: new URL(
+          "/static/argos-bot.svg?v1",
+          config.get("server.url"),
+        ).toString(),
+        initial,
+        color,
+      };
+    }
     if (user.gitlabUserId && user.email) {
       const email = user.email;
       return {

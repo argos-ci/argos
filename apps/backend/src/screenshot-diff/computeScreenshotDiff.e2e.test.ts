@@ -5,11 +5,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config";
 import {
+  AuditTrail,
   Build,
+  IgnoredChange,
   Project,
   ScreenshotBucket,
   ScreenshotDiff,
   Test,
+  User,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { quitAmqp } from "@/job-core";
@@ -67,6 +70,7 @@ describe("#computeScreenshotDiff", () => {
       baseScreenshotBucketId: baseBucket.id,
       compareScreenshotBucketId: compareBucket.id,
       projectId: project.id,
+      type: "reference",
     });
   });
 
@@ -115,6 +119,95 @@ describe("#computeScreenshotDiff", () => {
       //   buildId: build.id,
       //   type: "diff-detected",
       // });
+    });
+
+    it("should auto-ignore changes when configured threshold is reached", async () => {
+      await project.$query().patch({
+        autoIgnore: {
+          changes: 1,
+          period: "7D",
+        },
+      });
+
+      await computeScreenshotDiff(screenshotDiff, {
+        s3,
+        bucket: config.get("s3.screenshotsBucket"),
+      });
+
+      await screenshotDiff.reload();
+      expect(screenshotDiff.ignored).toBe(true);
+
+      const ignoredChange = await IgnoredChange.query().findOne({
+        projectId: project.id,
+        testId: test.id,
+        fingerprint: screenshotDiff.fingerprint,
+      });
+      expect(ignoredChange).toBeTruthy();
+
+      const auditTrail = await AuditTrail.query()
+        .where({
+          projectId: project.id,
+          testId: test.id,
+          fingerprint: screenshotDiff.fingerprint,
+          action: "files.ignored",
+        })
+        .first();
+      expect(auditTrail).toBeTruthy();
+
+      const actor = auditTrail
+        ? await User.query().findById(auditTrail.userId)
+        : null;
+      expect(actor?.type).toBe("bot");
+    });
+
+    it("should not auto-ignore if latest action is user files.unignored", async () => {
+      const user = await factory.User.create();
+
+      await computeScreenshotDiff(screenshotDiff, {
+        s3,
+        bucket: config.get("s3.screenshotsBucket"),
+      });
+      await screenshotDiff.reload();
+      expect(screenshotDiff.fingerprint).toBeTruthy();
+
+      await AuditTrail.query().insert({
+        date: new Date().toISOString(),
+        projectId: project.id,
+        testId: test.id,
+        userId: user.id,
+        fingerprint: screenshotDiff.fingerprint,
+        action: "files.unignored",
+      });
+
+      await project.$query().patch({
+        autoIgnore: {
+          changes: 1,
+          period: "7D",
+        },
+      });
+
+      const secondScreenshotDiff = await factory.ScreenshotDiff.create({
+        buildId: build.id,
+        baseScreenshotId: screenshotDiff.baseScreenshotId,
+        compareScreenshotId: screenshotDiff.compareScreenshotId,
+        jobStatus: "pending",
+        testId: test.id,
+      });
+
+      await computeScreenshotDiff(secondScreenshotDiff, {
+        s3,
+        bucket: config.get("s3.screenshotsBucket"),
+      });
+      await secondScreenshotDiff.reload();
+
+      expect(secondScreenshotDiff.ignored).toBe(false);
+
+      const ignoredChange = await IgnoredChange.query().findOne({
+        projectId: project.id,
+        testId: test.id,
+        fingerprint: secondScreenshotDiff.fingerprint,
+      });
+      expect(ignoredChange).toBeFalsy();
     });
   });
 

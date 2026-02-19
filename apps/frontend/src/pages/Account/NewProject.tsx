@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
+import { Card } from "@/ui/Card";
 import {
   Page,
   PageContainer,
@@ -116,33 +117,35 @@ export function Component() {
           </PageHeaderContent>
         </PageHeader>
         <div className="relative max-w-2xl flex-1">
-          <ConnectRepository
-            variant="import"
-            disabled={loading}
-            accountSlug={params.accountSlug}
-            onSelectRepository={({ repo, installationId }) => {
-              importGithubProject({
-                variables: {
-                  repo: repo.name,
-                  owner: repo.owner_login,
-                  accountSlug: params.accountSlug,
-                  installationId,
-                },
-              }).catch((error) => {
-                toast.error(getErrorMessage(error));
-              });
-            }}
-            onSelectProject={(glProject) => {
-              importGitLabProject({
-                variables: {
-                  gitlabProjectId: glProject.id,
-                  accountSlug: params.accountSlug,
-                },
-              }).catch((error) => {
-                toast.error(getErrorMessage(error));
-              });
-            }}
-          />
+          <Card>
+            <ConnectRepository
+              variant="import"
+              disabled={loading}
+              accountSlug={params.accountSlug}
+              onSelectRepository={({ repo, installationId }) => {
+                importGithubProject({
+                  variables: {
+                    repo: repo.name,
+                    owner: repo.owner_login,
+                    accountSlug: params.accountSlug,
+                    installationId,
+                  },
+                }).catch((error) => {
+                  toast.error(getErrorMessage(error));
+                });
+              }}
+              onSelectProject={(glProject) => {
+                importGitLabProject({
+                  variables: {
+                    gitlabProjectId: glProject.id,
+                    accountSlug: params.accountSlug,
+                  },
+                }).catch((error) => {
+                  toast.error(getErrorMessage(error));
+                });
+              }}
+            />
+          </Card>
         </div>
       </PageContainer>
     </Page>
