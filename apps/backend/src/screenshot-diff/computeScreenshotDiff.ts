@@ -4,15 +4,18 @@ import type { S3Client } from "@aws-sdk/client-s3";
 import type { TransactionOrKnex } from "objection";
 
 import { concludeBuild } from "@/build/concludeBuild";
-import { transaction } from "@/database";
+import { knex, transaction } from "@/database";
 import {
+  AuditTrail,
   File,
   IgnoredChange,
   Screenshot,
   ScreenshotDiff,
+  type ProjectAutoIgnore,
 } from "@/database/models";
 import { upsertTestStats } from "@/metrics/test";
 import { S3FileHandle, type ImageHandle } from "@/storage";
+import { getArgosBotUserId } from "@/util/argos-bot";
 import { chunk } from "@/util/chunk";
 import { hashFileSha256 } from "@/util/hash";
 import { redisLock } from "@/util/redis";
@@ -40,7 +43,7 @@ export async function computeScreenshotDiff(
   const screenshotDiff = await poorScreenshotDiff
     .$query()
     .withGraphFetched(
-      "[build, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
+      "[build.project, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
     );
 
   const {
@@ -106,6 +109,45 @@ export async function computeScreenshotDiff(
           fingerprint: diffFile.fingerprint,
         })
       : null;
+  let ignored = Boolean(ignoredChange);
+
+  if (screenshotDiff.testId && build.type === "reference") {
+    await upsertTestStats({
+      testId: screenshotDiff.testId,
+      date: new Date(screenshotDiff.createdAt),
+      change: diffFile
+        ? {
+            fileId: diffFile.file.id,
+            fingerprint: diffFile.fingerprint,
+          }
+        : null,
+    });
+
+    if (!ignored && diffFile && build.project?.autoIgnore) {
+      const [shouldIgnore, latestActionIsManualUnignore] = await Promise.all([
+        shouldAutoIgnoreChange({
+          autoIgnore: build.project.autoIgnore,
+          testId: screenshotDiff.testId,
+          projectId: build.projectId,
+          fingerprint: diffFile.fingerprint,
+        }),
+        getLatestActionIsManualUnignore({
+          projectId: build.projectId,
+          testId: screenshotDiff.testId,
+          fingerprint: diffFile.fingerprint,
+        }),
+      ]);
+
+      if (shouldIgnore && !latestActionIsManualUnignore) {
+        await insertAutoIgnoredChange({
+          projectId: build.projectId,
+          testId: screenshotDiff.testId,
+          fingerprint: diffFile.fingerprint,
+        });
+        ignored = true;
+      }
+    }
+  }
 
   // Unlink files
   await Promise.all([baseFileHandle?.unlink(), headFileHandle.unlink()]);
@@ -117,7 +159,7 @@ export async function computeScreenshotDiff(
     .findById(screenshotDiff.id)
     .patch({
       score: result?.score ?? null,
-      ignored: Boolean(ignoredChange),
+      ignored,
       s3Id: diffFile ? diffFile.file.key : null,
       fileId: diffFile ? diffFile.file.id : null,
       fingerprint: diffFile ? diffFile.fingerprint : null,
@@ -138,22 +180,74 @@ export async function computeScreenshotDiff(
         });
       }
     })(),
-    // Insert stats
-    (async () => {
-      if (screenshotDiff.testId && build.type === "reference") {
-        await upsertTestStats({
-          testId: screenshotDiff.testId,
-          date: new Date(screenshotDiff.createdAt),
-          change: diffFile
-            ? {
-                fileId: diffFile.file.id,
-                fingerprint: diffFile.fingerprint,
-              }
-            : null,
-        });
-      }
-    })(),
   ]);
+}
+
+async function shouldAutoIgnoreChange(args: {
+  autoIgnore: ProjectAutoIgnore;
+  projectId: string;
+  testId: string;
+  fingerprint: string;
+}) {
+  const result = await knex("test_stats_fingerprints")
+    .where("testId", args.testId)
+    .where("fingerprint", args.fingerprint)
+    .where("date", ">=", knex.raw("now() - interval '7 days'"))
+    .sum<{ total: string | number | null }>({ total: "value" })
+    .first();
+
+  const totalChanges = Number(result?.total ?? 0);
+  return totalChanges >= args.autoIgnore.changes;
+}
+
+async function getLatestActionIsManualUnignore(args: {
+  projectId: string;
+  testId: string;
+  fingerprint: string;
+}) {
+  const latestAction = await knex("audit_trails")
+    .join("users", "users.id", "audit_trails.userId")
+    .select("audit_trails.action", "users.type as userType")
+    .where("audit_trails.projectId", args.projectId)
+    .where("audit_trails.testId", args.testId)
+    .where("audit_trails.fingerprint", args.fingerprint)
+    .whereIn("audit_trails.action", ["files.ignored", "files.unignored"])
+    .orderBy("audit_trails.date", "desc")
+    .orderBy("audit_trails.id", "desc")
+    .first<{ action: AuditTrail["action"]; userType: "user" | "bot" }>();
+
+  return (
+    latestAction?.action === "files.unignored" &&
+    latestAction.userType === "user"
+  );
+}
+
+async function insertAutoIgnoredChange(args: {
+  projectId: string;
+  testId: string;
+  fingerprint: string;
+}) {
+  const botUserId = await getArgosBotUserId();
+  return transaction(async (trx) => {
+    const existingIgnoredChange = await IgnoredChange.query(trx).findOne(args);
+    if (existingIgnoredChange) {
+      return false;
+    }
+
+    await Promise.all([
+      IgnoredChange.query(trx).insert(args),
+      AuditTrail.query(trx).insert({
+        date: new Date().toISOString(),
+        projectId: args.projectId,
+        testId: args.testId,
+        userId: botUserId,
+        fingerprint: args.fingerprint,
+        action: "files.ignored",
+      }),
+    ]);
+
+    return true;
+  });
 }
 
 /**

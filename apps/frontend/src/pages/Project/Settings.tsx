@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { useFlag } from "@reflag/react-sdk";
 import { Heading, Text } from "react-aria-components";
 
 import { SettingsPage } from "@/containers/Layout";
+import { ProjectAutoIgnore } from "@/containers/Project/AutoIgnore";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
@@ -48,6 +50,7 @@ const ProjectQuery = graphql(`
       ...ProjectToken_Project
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
+      ...ProjectAutoIgnore_Project
       ...ProjectVisibility_Project
       ...ProjectTransfer_Project
       ...ProjectDelete_Project
@@ -99,6 +102,7 @@ export function Component() {
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
   const { permissions } = useProjectOutletContext();
+  const autoIgnoreChangesFlag = useFlag("auto-ignore-changes");
   const {
     data: { account, project },
   } = useSuspenseQuery(ProjectQuery, {
@@ -127,6 +131,9 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       {hasAdminPermission && <ProjectGitRepository project={project} />}
       {hasAdminPermission && <ProjectBranches project={project} />}
       {hasAdminPermission && <ProjectStatusChecks project={project} />}
+      {hasAdminPermission && autoIgnoreChangesFlag.isEnabled && (
+        <ProjectAutoIgnore project={project} />
+      )}
       <ProjectBadge project={project} />
       {hasAdminPermission && <ProjectVisibility project={project} />}
       {fineGrainedAccessControlIncluded && (

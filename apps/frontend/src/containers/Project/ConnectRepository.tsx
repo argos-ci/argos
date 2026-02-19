@@ -20,7 +20,6 @@ import {
   LinkButton,
   LinkButtonProps,
 } from "@/ui/Button";
-import { Card } from "@/ui/Card";
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
@@ -318,9 +317,9 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
 
   if (!result.data) {
     return (
-      <Card className="h-full">
+      <div className="h-full">
         <PageLoader />
-      </Card>
+      </div>
     );
   }
 
@@ -397,7 +396,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
       }
 
       return (
-        <Card className="flex h-full flex-col items-center justify-center gap-4 p-4">
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-4">
           <div
             className="text-center text-lg"
             style={{ textWrap: "balance" } as React.CSSProperties}
@@ -416,7 +415,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
               Use another Git provider
             </LinkButton>
           </div>
-        </Card>
+        </div>
       );
     }
     case null: {
@@ -462,7 +461,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
     }
     case "import": {
       return (
-        <Card className="flex h-full flex-col items-center justify-center gap-4 py-4">
+        <div className="flex h-full flex-col items-center justify-center gap-4 py-4">
           <div className="text-low">
             Select a Git provider to import an existing project from a Git
             Repository.
@@ -489,7 +488,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
           >
             Continue with GitLab
           </GitLabButton>
-        </Card>
+        </div>
       );
     }
     default:

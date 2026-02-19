@@ -1,5 +1,6 @@
 import { concludeBuild } from "@/build/concludeBuild";
 
+import { UserEmail } from "./models";
 import { Account } from "./models/Account";
 import { Build } from "./models/Build";
 import { BuildReview } from "./models/BuildReview";
@@ -82,10 +83,19 @@ export async function seed() {
     { defaultUserLevel: "member" },
   ]);
 
-  const [gregUser, jeremyUser] = await User.query().insertAndFetch([
+  const [gregUser, jeremyUser, argosBot] = await User.query().insertAndFetch([
     { email: "greg@smooth-code.com" },
     { email: "jeremy@smooth-code.com" },
+    { email: "argos-bot@no-reply.argos-ci.com", type: "bot" },
   ]);
+
+  await UserEmail.query().insert(
+    [gregUser, jeremyUser, argosBot].map((user) => ({
+      email: user!.email!,
+      verified: true,
+      userId: user!.id,
+    })),
+  );
 
   const [gregGhAccount, jeremyGhAccount, argosGhAccount] =
     await GithubAccount.query().insertAndFetch([
@@ -134,6 +144,11 @@ export async function seed() {
       name: "Jeremy Sfez",
       slug: "jsfez",
       githubAccountId: jeremyGhAccount!.id,
+    },
+    {
+      userId: argosBot!.id,
+      name: "Argos Bot",
+      slug: "argos-bot",
     },
   ]);
 

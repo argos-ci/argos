@@ -1256,6 +1256,7 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
+    "autoIgnore" jsonb,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
@@ -1812,7 +1813,9 @@ CREATE TABLE public.users (
     "gitlabUserId" bigint,
     staff boolean DEFAULT false,
     "googleUserId" bigint,
-    "deletedAt" timestamp with time zone
+    "deletedAt" timestamp with time zone,
+    type text DEFAULT 'user'::text NOT NULL,
+    CONSTRAINT users_type_check CHECK ((type = ANY (ARRAY['user'::text, 'bot'::text])))
 );
 
 
@@ -3851,7 +3854,9 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026011
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118080430_comment-fingerprint.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260118195213_test-stats-fingerprints.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119154332_delete-unused-tables.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260119203427_user-type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260125185235_add-indices.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260131141626_removed-screenshot-policy.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260215121000_team_saml_configs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260216200736_enforce-sso.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260219170000_project-auto-ignore.js', 1, NOW());
