@@ -95,10 +95,11 @@ export async function getAccountAvatar(
     invariant(user, "User not found");
     if (user.type === "bot") {
       return {
-        url: new URL(
-          "/static/argos-bot.svg?v1",
-          config.get("server.url"),
-        ).toString(),
+        url: () =>
+          new URL(
+            "/static/argos-bot.svg?v1",
+            config.get("server.url"),
+          ).toString(),
         initial,
         color,
       };
