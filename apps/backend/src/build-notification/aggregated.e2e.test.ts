@@ -1,21 +1,33 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { test as base, describe, expect } from "vitest";
 
 import { factory } from "@/database/testing";
 import { setupDatabase } from "@/database/testing/util";
 
 import { getAggregatedNotification } from "./aggregated";
 
-describe("#getAggregatedNotification", () => {
-  beforeEach(async () => {
+const test = base.extend<{
+  projectId: string;
+  commit: string;
+}>({
+  projectId: async ({}, use) => {
     await setupDatabase();
-  });
+    const project = await factory.Project.create();
+    await use(project.id);
+  },
+  commit: async ({}, use) => {
+    await use("58ca89145e1f072e45e112a6158d17a23f54602d");
+  },
+});
 
+describe("#getAggregatedNotification", () => {
   describe("with a single build", () => {
-    beforeEach(async () => {
+    test("returns null", async ({ projectId, commit }) => {
       const compareBucket = await factory.ScreenshotBucket.create({
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
       });
       const build = await factory.Build.create({
+        projectId,
         baseScreenshotBucketId: null,
         compareScreenshotBucketId: compareBucket.id,
         jobStatus: "pending",
@@ -23,20 +35,35 @@ describe("#getAggregatedNotification", () => {
       await factory.BuildNotification.create({
         buildId: build.id,
       });
-    });
-
-    it("returns null", async () => {
       const notification = await getAggregatedNotification({
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
         buildType: "check",
         summaryCheckConfig: "auto",
       });
       expect(notification).toBeNull();
     });
 
-    it("returns a notification if config is `always`", async () => {
+    test("returns a notification if config is `always`", async ({
+      projectId,
+      commit,
+    }) => {
+      const compareBucket = await factory.ScreenshotBucket.create({
+        projectId,
+        commit,
+      });
+      const build = await factory.Build.create({
+        projectId,
+        baseScreenshotBucketId: null,
+        compareScreenshotBucketId: compareBucket.id,
+        jobStatus: "pending",
+      });
+      await factory.BuildNotification.create({
+        buildId: build.id,
+      });
       const notification = await getAggregatedNotification({
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
         buildType: "check",
         summaryCheckConfig: "always",
       });
@@ -50,18 +77,21 @@ describe("#getAggregatedNotification", () => {
   });
 
   describe("with multiple builds", () => {
-    beforeEach(async () => {
+    test("returns a notification", async ({ projectId, commit }) => {
       const buckets = await factory.ScreenshotBucket.createMany(2, {
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
       });
       const builds = await factory.Build.createMany(2, [
         {
+          projectId,
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: buckets[0]!.id,
           jobStatus: "pending",
           name: "a",
         },
         {
+          projectId,
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: buckets[1]!.id,
           jobStatus: "pending",
@@ -78,11 +108,9 @@ describe("#getAggregatedNotification", () => {
           type: "diff-accepted",
         },
       ]);
-    });
-
-    it("returns a notification", async () => {
       const notification = await getAggregatedNotification({
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
         buildType: "check",
         summaryCheckConfig: "auto",
       });
@@ -94,9 +122,40 @@ describe("#getAggregatedNotification", () => {
       });
     });
 
-    it("returns null if config is `never`", async () => {
+    test("returns null if config is `never`", async ({ projectId, commit }) => {
+      const buckets = await factory.ScreenshotBucket.createMany(2, {
+        projectId,
+        commit,
+      });
+      const builds = await factory.Build.createMany(2, [
+        {
+          projectId,
+          baseScreenshotBucketId: null,
+          compareScreenshotBucketId: buckets[0]!.id,
+          jobStatus: "pending",
+          name: "a",
+        },
+        {
+          projectId,
+          baseScreenshotBucketId: null,
+          compareScreenshotBucketId: buckets[1]!.id,
+          jobStatus: "pending",
+          name: "b",
+        },
+      ]);
+      await factory.BuildNotification.createMany(2, [
+        {
+          buildId: builds[0]!.id,
+          type: "diff-detected",
+        },
+        {
+          buildId: builds[1]!.id,
+          type: "diff-accepted",
+        },
+      ]);
       const notification = await getAggregatedNotification({
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
         buildType: "check",
         summaryCheckConfig: "never",
       });
@@ -105,13 +164,15 @@ describe("#getAggregatedNotification", () => {
   });
 
   describe("with multiple builds (2)", () => {
-    beforeEach(async () => {
+    test("ignores old builds", async ({ projectId, commit }) => {
       const buckets = await factory.ScreenshotBucket.createMany(2, {
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
       });
       const builds = await factory.Build.createMany(3, [
         {
           createdAt: new Date("2021-01-01").toISOString(),
+          projectId,
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: buckets[0]!.id,
           jobStatus: "pending",
@@ -119,6 +180,7 @@ describe("#getAggregatedNotification", () => {
         },
         {
           createdAt: new Date("2021-01-02").toISOString(),
+          projectId,
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: buckets[1]!.id,
           jobStatus: "pending",
@@ -126,6 +188,7 @@ describe("#getAggregatedNotification", () => {
         },
         {
           createdAt: new Date("2021-01-02").toISOString(),
+          projectId,
           baseScreenshotBucketId: null,
           compareScreenshotBucketId: buckets[1]!.id,
           jobStatus: "pending",
@@ -146,11 +209,9 @@ describe("#getAggregatedNotification", () => {
           type: "diff-accepted",
         },
       ]);
-    });
-
-    it("ignores old builds", async () => {
       const notification = await getAggregatedNotification({
-        commit: "58ca89145e1f072e45e112a6158d17a23f54602d",
+        projectId,
+        commit,
         buildType: "check",
         summaryCheckConfig: "auto",
       });

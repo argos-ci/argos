@@ -10,23 +10,22 @@ import {
 } from "./notification";
 
 export async function getAggregatedNotification(args: {
+  projectId: string;
   commit: string;
   buildType: Build["type"];
   summaryCheckConfig: Project["summaryCheck"];
 }): Promise<NotificationPayload | null> {
-  const { commit, buildType, summaryCheckConfig } = args;
+  const { commit, projectId, buildType, summaryCheckConfig } = args;
 
   if (summaryCheckConfig === "never") {
     return null;
   }
 
   const siblingBuilds = await Build.query()
-    .join(
-      "screenshot_buckets as sb",
-      "builds.compareScreenshotBucketId",
-      "sb.id",
-    )
-    .where("sb.commit", commit)
+    .select("builds.id")
+    .joinRelated("compareScreenshotBucket")
+    .where("builds.projectId", projectId)
+    .where("compareScreenshotBucket.commit", commit)
     .distinctOn("builds.name")
     .orderBy("builds.name")
     .orderBy("builds.createdAt", "desc");

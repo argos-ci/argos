@@ -67,6 +67,7 @@ export async function processBuildNotification(
         build: buildNotification.build,
       }),
       getAggregatedNotification({
+        projectId: buildNotification.build.projectId,
         commit: buildNotification.build.compareScreenshotBucket.commit,
         buildType: buildNotification.build.type,
         summaryCheckConfig,
