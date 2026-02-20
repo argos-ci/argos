@@ -973,7 +973,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="shrink-0 border-b px-2"
+          className="no-scrollbar shrink-0 overflow-x-auto border-b px-2"
           stats={stats}
           onClickGroup={openGroup}
           isSubsetBuild={isSubsetBuild}
