@@ -285,6 +285,10 @@
   @apply underline decoration-1 underline-offset-2;
 }
 
+@utility no-scrollbar {
+  @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
+}
+
 @layer base {
   :root {
     --chart-1: 12 76% 61%;
