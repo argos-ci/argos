@@ -77,6 +77,56 @@ describe("#getAggregatedNotification", () => {
   });
 
   describe("with multiple builds", () => {
+    test("matches builds by compareScreenshotBucket commit when prHeadCommit differs", async ({
+      projectId,
+      commit,
+    }) => {
+      const buckets = await factory.ScreenshotBucket.createMany(2, {
+        projectId,
+        commit,
+      });
+      const builds = await factory.Build.createMany(2, [
+        {
+          projectId,
+          baseScreenshotBucketId: null,
+          compareScreenshotBucketId: buckets[0]!.id,
+          jobStatus: "pending",
+          name: "a",
+          prHeadCommit: "1111111111111111111111111111111111111111",
+        },
+        {
+          projectId,
+          baseScreenshotBucketId: null,
+          compareScreenshotBucketId: buckets[1]!.id,
+          jobStatus: "pending",
+          name: "b",
+          prHeadCommit: "2222222222222222222222222222222222222222",
+        },
+      ]);
+      await factory.BuildNotification.createMany(2, [
+        {
+          buildId: builds[0]!.id,
+          type: "diff-detected",
+        },
+        {
+          buildId: builds[1]!.id,
+          type: "diff-accepted",
+        },
+      ]);
+      const notification = await getAggregatedNotification({
+        projectId,
+        commit,
+        buildType: "check",
+        summaryCheckConfig: "auto",
+      });
+      expect(notification).toEqual({
+        context: "argos/summary",
+        description: "Diff detected",
+        github: { state: "failure" },
+        gitlab: { state: "failed" },
+      });
+    });
+
     test("returns a notification", async ({ projectId, commit }) => {
       const buckets = await factory.ScreenshotBucket.createMany(2, {
         projectId,

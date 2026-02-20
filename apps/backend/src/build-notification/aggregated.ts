@@ -25,7 +25,12 @@ export async function getAggregatedNotification(args: {
     .select("builds.id")
     .joinRelated("compareScreenshotBucket")
     .where("builds.projectId", projectId)
-    .where("compareScreenshotBucket.commit", commit)
+    .where((qb) => {
+      qb.where("builds.prHeadCommit", commit).orWhere(
+        "compareScreenshotBucket.commit",
+        commit,
+      );
+    })
     .distinctOn("builds.name")
     .orderBy("builds.name")
     .orderBy("builds.createdAt", "desc");
