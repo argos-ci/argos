@@ -29,10 +29,10 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
+  "packageManager": "pnpm@10.30.1+sha512.3590e550d5384caa39bd5c7c739f72270234b2f6059e13018f975c313b1eb9fefcc09714048765d4d9efe961382c312e624572c0420762bdc5d5940cdf9be73a",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.2",
-    "@argos-ci/playwright": "^6.4.1",
+    "@argos-ci/playwright": "^6.4.2",
     "@argos/eslint-config": "workspace:*",
     "@graphql-codegen/cli": "^6.1.1",
     "@graphql-codegen/client-preset": "^5.2.3",
@@ -48,7 +48,7 @@
     "@types/node": "^24.10.13",
     "chokidar": "^5.0.0",
     "eslint": "catalog:",
-    "knip": "^5.84.0",
+    "knip": "^5.84.1",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "smee-client": "^5.0.0",
