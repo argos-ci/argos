@@ -633,8 +633,17 @@ export async function handleStripeEvent({
       return;
     }
     case "customer.updated": {
-      const customer = data.object as Stripe.Customer;
-      await updateSubscriptionsFromCustomer(customer.id);
+      // Only update from customer if the "default_payment_method" changes,
+      // for everything else we will get a "customer.subscription.updated".
+      if (
+        data.previous_attributes &&
+        "invoice_settings" in data.previous_attributes &&
+        data.previous_attributes.invoice_settings &&
+        "default_payment_method" in data.previous_attributes.invoice_settings
+      ) {
+        const customer = data.object as Stripe.Customer;
+        await updateSubscriptionsFromCustomer(customer.id);
+      }
       return;
     }
 
