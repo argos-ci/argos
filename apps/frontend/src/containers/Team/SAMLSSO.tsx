@@ -1,7 +1,7 @@
+/* eslint-disable react-hooks/refs */
 import { useId } from "react";
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import clsx from "clsx";
 import {
   CheckCircle2Icon,
   CircleSlashIcon,
@@ -9,14 +9,15 @@ import {
   MoreVerticalIcon,
 } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
-import { useDropzone, type DropzoneOptions } from "react-dropzone";
 import {
   useController,
   useForm,
+  useFormState,
   type Control,
   type SubmitHandler,
 } from "react-hook-form";
 import { toast } from "sonner";
+import z from "zod";
 
 import { CONTACT_HREF } from "@/constants";
 import { DocumentType, graphql } from "@/gql";
@@ -38,6 +39,8 @@ import {
   DialogTrigger,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
+import { Dropzone, type DropzoneProps } from "@/ui/Dropzone";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
@@ -373,7 +376,7 @@ function ConfigureDialog(props: { team: DocumentType<typeof _TeamFragment> }) {
 
   return (
     <Dialog scrollable={false} className="flex w-3xl max-w-full flex-col">
-      <Form className="contents" form={form} onSubmit={handleSubmit}>
+      <Form noValidate className="contents" form={form} onSubmit={handleSubmit}>
         <DialogBody className="min-h-0 overflow-auto">
           <DialogTitle>Configure SAML Identity Provider</DialogTitle>
           <Separator className="my-8" />
@@ -453,13 +456,24 @@ function ConfigureDialog(props: { team: DocumentType<typeof _TeamFragment> }) {
               control={form.control}
               disabled={form.formState.isSubmitting}
               label="Single Sign On URL"
-              {...form.register("ssoUrl")}
+              type="url"
+              {...form.register("ssoUrl", {
+                required: "Required",
+                validate: (value) => {
+                  if (value && !z.url().safeParse(value).success) {
+                    return "Invalid URL";
+                  }
+                  return undefined;
+                },
+              })}
             />
             <FormTextInput
               control={form.control}
               disabled={form.formState.isSubmitting}
               label="Issuer (Entity ID)"
-              {...form.register("idpEntityId")}
+              {...form.register("idpEntityId", {
+                required: "Required",
+              })}
             />
             <CertificateField control={form.control} />
           </div>
@@ -473,40 +487,41 @@ function ConfigureDialog(props: { team: DocumentType<typeof _TeamFragment> }) {
   );
 }
 
-function MetadataXMLDropzone(props: { onDrop: DropzoneOptions["onDrop"] }) {
-  const { getRootProps, getInputProps, isDragAccept, isDragReject } =
-    useDropzone({
-      onDrop: props.onDrop,
-      multiple: false,
-      accept: {
-        "text/xml": [".xml"],
-      },
-    });
-
+function MetadataXMLDropzone(props: Pick<DropzoneProps, "onDrop">) {
   return (
-    <div
-      {...getRootProps()}
-      className={clsx(
-        "text-low hover:border-active rounded border border-dashed p-4 text-center text-sm select-none",
-        isDragAccept && "border-success text-success-low",
-        isDragReject && "border-danger text-danger-low",
-      )}
+    <Dropzone
+      multiple={false}
+      accept={{
+        "text/xml": [".xml"],
+      }}
+      onDrop={props.onDrop}
     >
-      <input {...getInputProps()} />
-      {isDragAccept ? (
-        <p>Drop the file here</p>
-      ) : isDragReject ? (
-        <p>Only XML files are accepted</p>
-      ) : (
-        <p>Drop metadata XML file here, or click to select</p>
-      )}
-    </div>
+      {({ isDragAccept, isDragReject }) =>
+        isDragAccept ? (
+          <p>Drop the file here</p>
+        ) : isDragReject ? (
+          <p>Only XML files are accepted</p>
+        ) : (
+          <p>Drop metadata XML file here, or click to select</p>
+        )
+      }
+    </Dropzone>
   );
 }
 
 function CertificateField(props: { control: Control<Inputs, any, Inputs> }) {
   const { control } = props;
-  const { field } = useController({ name: "signingCertificate", control });
+  const { isSubmitting } = useFormState({ control });
+  const {
+    field,
+    fieldState: { error },
+  } = useController({
+    name: "signingCertificate",
+    control,
+    rules: {
+      required: "Required",
+    },
+  });
   const handleDrop = useEventCallback(async (files: File[]) => {
     const [file] = files;
     invariant(file, "A file is required");
@@ -517,54 +532,46 @@ function CertificateField(props: { control: Control<Inputs, any, Inputs> }) {
       toast.error(getErrorMessage(error));
     }
   });
-  const { getRootProps, getInputProps, isDragAccept, isDragReject } =
-    useDropzone({
-      onDrop: handleDrop,
-      multiple: false,
-      accept: {
-        "application/x-pem-file": [".pem"],
-        "application/x-x509-ca-cert": [".crt", ".cer"],
-        "application/pkix-cert": [".cer"],
-        "application/x-pkcs12": [".p12", ".pfx"],
-        "application/pkcs12": [".p12", ".pfx"],
-        "application/x-pkcs7-certificates": [".p7b"],
-        "application/octet-stream": [".der"],
-      },
-    });
-
   return (
     <div>
-      <Label>Certificate</Label>
-      <div
-        {...getRootProps({
-          ref: field.ref,
-          onBlur: field.onBlur,
-        })}
-        className={clsx(
-          "group text-low hover:border-active rounded border border-dashed p-4 text-center text-sm select-none",
-          isDragAccept && "border-success text-success-low",
-          isDragReject && "border-danger text-danger-low",
-          field.value && "hover:bg-black/10",
-        )}
+      <Label invalid={Boolean(error)}>Certificate</Label>
+      <Dropzone
+        ref={field.ref}
+        accept={{
+          "application/x-pem-file": [".pem"],
+          "application/x-x509-ca-cert": [".crt", ".cer"],
+          "application/pkix-cert": [".cer"],
+          "application/x-pkcs12": [".p12", ".pfx"],
+          "application/pkcs12": [".p12", ".pfx"],
+          "application/x-pkcs7-certificates": [".p7b"],
+          "application/octet-stream": [".der"],
+        }}
+        multiple={false}
+        onDrop={handleDrop}
+        invalid={Boolean(error)}
+        name={field.name}
+        onBlur={field.onBlur}
+        disabled={isSubmitting}
       >
-        <input {...getInputProps({ name: field.name })} />
-        {isDragAccept ? (
-          <p>Drop the file here</p>
-        ) : isDragReject ? (
-          <p>Only certificate files are accepted</p>
-        ) : field.value ? (
-          <div className="relative">
-            <pre className="text-default text-xs break-all whitespace-pre-wrap">
-              {field.value}
-            </pre>
-            <div className="bg-app absolute top-1/2 left-1/2 -translate-1/2 rounded p-4 text-center opacity-0 shadow transition group-hover:opacity-100">
-              Drop the certificate file here, or click to select
+        {({ isDragAccept, isDragReject }) =>
+          isDragAccept ? (
+            <p>Drop the file here</p>
+          ) : isDragReject ? (
+            <p>Only certificate files are accepted</p>
+          ) : field.value ? (
+            <div className="relative">
+              <pre className="text-default text-xs break-all whitespace-pre-wrap">
+                {field.value}
+              </pre>
             </div>
-          </div>
-        ) : (
-          <p>Drop the certificate file here, or click to select</p>
-        )}
-      </div>
+          ) : (
+            <p>Drop the certificate file here, or click to select</p>
+          )
+        }
+      </Dropzone>
+      {typeof error?.message === "string" && (
+        <ErrorMessage className="mt-2">{error.message}</ErrorMessage>
+      )}
     </div>
   );
 }
