@@ -1,4 +1,4 @@
-import { describe, expect, test as base } from "vitest";
+import { test as base, describe, expect } from "vitest";
 
 import { factory } from "@/database/testing";
 import { setupDatabase } from "@/database/testing/util";
