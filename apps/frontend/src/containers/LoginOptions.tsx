@@ -159,9 +159,10 @@ function SamlForm(props: {
         label="Team slug"
         control={form.control}
         scale="lg"
-        placeholder="team-slug"
+        placeholder="my-team"
         className="mb-4"
         autoFocus
+        description='Your team slug is the identifier in the URLs for your team. e.g. app.argos-ci.com/acme is "acme".'
         {...form.register("teamSlug")}
         disabled={form.formState.isSubmitting}
       />
