@@ -75,6 +75,7 @@
       "express": "catalog:",
       "lodash": "catalog:",
       "lodash-es": "catalog:",
+      "minimatch": "catalog:",
       "react": "catalog:",
       "react-dom": "catalog:",
       "undici": "catalog:"
