@@ -1,4 +1,5 @@
 import * as samlify from "samlify";
+import { X509Certificate } from "node:crypto";
 import z from "zod";
 
 import config from "@/config";
@@ -414,6 +415,42 @@ export function parseIdpMetadataXml(xml: string) {
     ssoUrl,
     signingCertificate,
   };
+}
+
+function formatCertificatePem(certificate: string) {
+  const trimmed = certificate.trim();
+  if (
+    trimmed.includes("-----BEGIN CERTIFICATE-----") &&
+    trimmed.includes("-----END CERTIFICATE-----")
+  ) {
+    return trimmed;
+  }
+
+  const raw = trimmed.replace(/\s+/g, "");
+  if (!raw || !/^[A-Za-z0-9+/=]+$/.test(raw)) {
+    throw boom(400, "Invalid signing certificate.");
+  }
+
+  const lines = raw.match(/.{1,64}/g);
+  if (!lines) {
+    throw boom(400, "Invalid signing certificate.");
+  }
+
+  return `-----BEGIN CERTIFICATE-----\n${lines.join("\n")}\n-----END CERTIFICATE-----`;
+}
+
+export function parseSamlSigningCertificate(certificate: string) {
+  try {
+    const pem = formatCertificatePem(certificate);
+    const x509 = new X509Certificate(pem);
+    const expiresAt = new Date(x509.validTo);
+    if (Number.isNaN(expiresAt.getTime())) {
+      throw boom(400, "Invalid signing certificate.");
+    }
+    return { expiresAt: expiresAt.toISOString() };
+  } catch {
+    throw boom(400, "Invalid signing certificate.");
+  }
 }
 
 function parseCertificates(certificates: unknown) {
