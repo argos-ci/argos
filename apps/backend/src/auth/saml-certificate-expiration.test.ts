@@ -4,8 +4,8 @@ import { TeamSamlConfig } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
 
-import { checkExpiringSamlCertificates } from "./saml-certificate-expiration";
 import { parseSamlSigningCertificate } from "./saml";
+import { checkExpiringSamlCertificates } from "./saml-certificate-expiration";
 
 vi.mock("@/notification", () => ({
   sendNotification: vi.fn(),

@@ -1556,10 +1556,9 @@ export const resolvers: IResolvers = {
         idpEntityId: args.input.idpEntityId ?? undefined,
         ssoUrl: args.input.ssoUrl ?? undefined,
         signingCertificate: args.input.signingCertificate ?? undefined,
-        expirationCheckAt:
-          hasSigningCertificateInput
-            ? new Date().toISOString()
-            : undefined,
+        expirationCheckAt: hasSigningCertificateInput
+          ? new Date().toISOString()
+          : undefined,
         enabled: args.input.enabled ?? undefined,
         enforced: args.input.enforced ?? undefined,
         enforcedAt,

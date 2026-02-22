@@ -11,19 +11,10 @@
         "src/graphql/definitions/*.ts",
         "scripts/*.ts"
       ],
-      "ignore": [
-        "db/**/*",
-        "knexfile.js",
-        "src/graphql/__generated__/**/*",
-        "**/bin/**/*"
-      ]
+      "ignore": ["**/bin/**/*"]
     },
     "apps/frontend": {
-      "ignore": [
-        "src/gql/**/*",
-        "vite.config.mts",
-        "src/util/color-detection/worker.ts"
-      ],
+      "ignore": ["vite.config.mts"],
       "ignoreDependencies": [
         "@vitejs/plugin-react-swc",
         "@sentry/vite-plugin",
