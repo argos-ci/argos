@@ -192,12 +192,12 @@ describe("deleteProject", () => {
       teamContributorReviewer,
       member,
     ] = await Promise.all([
-        factory.User.create(),
-        factory.User.create(),
-        factory.User.create(),
-        factory.User.create(),
-        factory.User.create(),
-      ]);
+      factory.User.create(),
+      factory.User.create(),
+      factory.User.create(),
+      factory.User.create(),
+      factory.User.create(),
+    ]);
     const account = await factory.TeamAccount.create();
     const project = await factory.Project.create({
       accountId: account.id,

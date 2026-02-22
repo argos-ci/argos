@@ -16,8 +16,8 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   ScreenshotDiffReview,
-  Test,
   TeamUser,
+  Test,
   User,
 } from "@/database/models";
 import { transaction } from "@/database/transaction";
@@ -43,7 +43,7 @@ async function getProjectDeleteNotificationRecipients(project: Project) {
       .orderBy("userId", "asc"),
     ProjectUser.query()
       .select("project_users.userId", "project_users.userLevel")
-      .where("project_users.projectId", project.id)
+      .where("project_users.projectId", project.id),
   ]);
 
   const projectContributorsById = new Map(
@@ -52,7 +52,9 @@ async function getProjectDeleteNotificationRecipients(project: Project) {
 
   const projectAdminContributorIds = teamContributors
     .filter((contributor) => {
-      const projectContributor = projectContributorsById.get(contributor.userId);
+      const projectContributor = projectContributorsById.get(
+        contributor.userId,
+      );
       const level = projectContributor?.userLevel ?? project.defaultUserLevel;
       return level === "admin";
     })
