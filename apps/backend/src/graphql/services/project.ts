@@ -11,6 +11,7 @@ import {
   BuildShard,
   IgnoredChange,
   Project,
+  ProjectUser,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -19,6 +20,33 @@ import {
   User,
 } from "@/database/models";
 import { transaction } from "@/database/transaction";
+import { sendNotification } from "@/notification";
+
+async function getProjectDeleteNotificationRecipients(project: Project) {
+  await project.$fetchGraph("account", { skipFetched: true });
+  invariant(project.account, "project.account is undefined");
+
+  if (project.account.type !== "team") {
+    return project.account.$getOwnerIds();
+  }
+
+  const teamId = project.account.teamId;
+  invariant(teamId, "project.account.teamId is undefined");
+
+  const [ownerIds, projectContributors] = await Promise.all([
+    project.account.$getOwnerIds(),
+    ProjectUser.query()
+      .select("project_users.userId", "project_users.userLevel")
+      .where("project_users.projectId", project.id)
+      .where("project_users.userLevel", "admin"),
+  ]);
+
+  const projectAdminContributorIds = projectContributors.map(
+    (contributor) => contributor.userId,
+  );
+
+  return [...new Set([...ownerIds, ...projectAdminContributorIds])];
+}
 
 /**
  * Get a project by ID, ensuring the user has admin permissions.
@@ -49,8 +77,23 @@ export async function deleteProject(args: {
   const project = await getAdminProject({
     id: args.id,
     user: args.user,
+    withGraphFetched: "account",
   });
+  const recipients = await getProjectDeleteNotificationRecipients(project);
+  invariant(project.account, "project.account is undefined");
   await unsafe_deleteProject({ projectId: project.id });
+  if (recipients.length > 0) {
+    await sendNotification({
+      type: "project_deleted",
+      data: {
+        accountType: project.account.type,
+        accountName: project.account.name,
+        accountSlug: project.account.slug,
+        projectName: project.name,
+      },
+      recipients,
+    });
+  }
 }
 
 /**

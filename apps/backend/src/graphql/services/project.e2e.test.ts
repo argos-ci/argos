@@ -1,4 +1,4 @@
-import { test as base, describe, expect } from "vitest";
+import { beforeEach, describe, expect, test as base, vi } from "vitest";
 
 import {
   AutomationActionRun,
@@ -7,20 +7,29 @@ import {
   Build,
   IgnoredChange,
   Project,
+  ProjectUser,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
   Test,
+  TeamUser,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { sendNotification } from "@/notification";
 
-import { unsafe_deleteProject } from "./project";
+import { deleteProject, unsafe_deleteProject } from "./project";
+
+vi.mock("@/notification", () => ({
+  sendNotification: vi.fn(),
+}));
 
 type SeededProject = {
   project: Project;
   automationRule: AutomationRule;
   automationRun: AutomationRun;
 };
+
+const mockSendNotification = vi.mocked(sendNotification);
 
 const test = base.extend<{
   factory: typeof factory;
@@ -121,6 +130,10 @@ const test = base.extend<{
 });
 
 describe("unsafe_deleteProject", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   test("should delete all project-related data", async ({
     seededProject: { project, automationRule, automationRun },
   }) => {
@@ -161,5 +174,93 @@ describe("unsafe_deleteProject", () => {
     expect(ignoredChanges).toHaveLength(0);
     expect(tests).toHaveLength(0);
     expect(projects).toHaveLength(0);
+  });
+});
+
+describe("deleteProject", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+    vi.clearAllMocks();
+  });
+
+  test("sends a notification to team owners and team contributors with admin access", async () => {
+    const [
+      owner,
+      teamContributorAdmin,
+      teamContributorDefaultAdmin,
+      teamContributorReviewer,
+      member,
+    ] = await Promise.all([
+      factory.User.create(),
+      factory.User.create(),
+      factory.User.create(),
+      factory.User.create(),
+      factory.User.create(),
+    ]);
+    const account = await factory.TeamAccount.create();
+    const project = await factory.Project.create({
+      accountId: account.id,
+      defaultUserLevel: "admin",
+    });
+
+    await Promise.all([
+      TeamUser.query().insert({
+        teamId: account.teamId!,
+        userId: owner.id,
+        userLevel: "owner",
+      }),
+      TeamUser.query().insert({
+        teamId: account.teamId!,
+        userId: teamContributorAdmin.id,
+        userLevel: "contributor",
+      }),
+      TeamUser.query().insert({
+        teamId: account.teamId!,
+        userId: teamContributorReviewer.id,
+        userLevel: "contributor",
+      }),
+      TeamUser.query().insert({
+        teamId: account.teamId!,
+        userId: teamContributorDefaultAdmin.id,
+        userLevel: "contributor",
+      }),
+      TeamUser.query().insert({
+        teamId: account.teamId!,
+        userId: member.id,
+        userLevel: "member",
+      }),
+      // contributor with explicit admin access must be notified
+      ProjectUser.query().insert({
+        projectId: project.id,
+        userId: teamContributorAdmin.id,
+        userLevel: "admin",
+      }),
+      // contributor without admin access must not be notified
+      ProjectUser.query().insert({
+        projectId: project.id,
+        userId: teamContributorReviewer.id,
+        userLevel: "reviewer",
+      }),
+    ]);
+
+    await deleteProject({ id: project.id, user: owner });
+
+    expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    expect(mockSendNotification).toHaveBeenCalledWith({
+      type: "project_deleted",
+      data: {
+        accountType: "team",
+        accountName: account.name,
+        accountSlug: account.slug,
+        projectName: project.name,
+      },
+      recipients: expect.arrayContaining([
+        owner.id,
+        teamContributorAdmin.id,
+        teamContributorDefaultAdmin.id,
+      ]),
+    });
+    const recipients = mockSendNotification.mock.calls[0]?.[0].recipients;
+    expect(recipients).toHaveLength(3);
   });
 });
