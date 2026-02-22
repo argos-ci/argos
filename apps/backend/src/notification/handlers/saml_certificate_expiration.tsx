@@ -36,8 +36,10 @@ export const handler = defineNotificationHandler({
   },
   email: (props) => {
     const accountName = props.accountName || props.accountSlug;
-    const settingsHref = new URL(`/${props.accountSlug}/settings`, baseUrl)
-      .href;
+    const settingsHref = new URL(
+      `/${props.accountSlug}/settings/security-and-privacy`,
+      baseUrl,
+    ).href;
     return {
       subject: `SAML certificate expires in ${props.daysBeforeExpiration} day${props.daysBeforeExpiration > 1 ? "s" : ""}`,
       body: (

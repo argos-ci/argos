@@ -46,6 +46,7 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { Label } from "@/ui/Label";
+import { Link } from "@/ui/Link";
 import { Menu, MenuItem } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
@@ -293,9 +294,23 @@ export function TeamSAMLSSO(props: {
           </div>
         )}
       </CardBody>
-      {hasSamlIncluded ? null : (
+      {hasSamlIncluded ? (
+        <CardFooter>
+          Learn more about{" "}
+          <Link href="https://argos-ci.com/docs/saml-sso" target="_blank">
+            SAML SSO
+          </Link>
+          .
+        </CardFooter>
+      ) : (
         <CardFooter className="flex items-center justify-between gap-4">
-          <div>SAML is only available on the Enterprise plan.</div>
+          <div>
+            SAML is only available on the{" "}
+            <Link href="https://argos-ci.com/pricing" target="_blank">
+              Enterprise plan
+            </Link>
+            .
+          </div>
           <LinkButton href={CONTACT_HREF} target="_blank">
             Contact Sales
           </LinkButton>
