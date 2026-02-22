@@ -1617,6 +1617,7 @@ CREATE TABLE public.team_saml_configs (
     enabled boolean DEFAULT false NOT NULL,
     enforced boolean DEFAULT false NOT NULL,
     "enforcedAt" timestamp with time zone,
+    "expirationCheckAt" timestamp with time zone,
     CONSTRAINT team_saml_configs_enforced_requires_enforcedat CHECK (((enforced AND ("enforcedAt" IS NOT NULL)) OR ((NOT enforced) AND ("enforcedAt" IS NULL))))
 );
 
@@ -3860,3 +3861,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026013
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260215121000_team_saml_configs.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260216200736_enforce-sso.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260219170000_project-auto-ignore.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260222100000_team-saml-expiration-check.js', 1, NOW());

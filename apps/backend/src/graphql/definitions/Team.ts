@@ -7,6 +7,7 @@ import {
   checkHasAccessToSAML,
   getTeamSamlPublicValues,
   parseIdpMetadataXml,
+  parseSamlSigningCertificate,
 } from "@/auth/saml";
 import config from "@/config";
 import { transaction } from "@/database";
@@ -1548,15 +1549,35 @@ export const resolvers: IResolvers = {
           : args.input.enforced
             ? (existing?.enforcedAt ?? new Date().toISOString())
             : null;
+      const signingCertificate = args.input.signingCertificate;
+      const hasSigningCertificateInput = signingCertificate != null;
 
       const patchData = omitUndefinedValues({
         idpEntityId: args.input.idpEntityId ?? undefined,
         ssoUrl: args.input.ssoUrl ?? undefined,
         signingCertificate: args.input.signingCertificate ?? undefined,
+        expirationCheckAt: hasSigningCertificateInput
+          ? new Date().toISOString()
+          : undefined,
         enabled: args.input.enabled ?? undefined,
         enforced: args.input.enforced ?? undefined,
         enforcedAt,
       });
+
+      if (signingCertificate != null) {
+        try {
+          parseSamlSigningCertificate(signingCertificate);
+        } catch (error) {
+          if (error instanceof Error) {
+            throw badUserInput(error.message, {
+              field: "signingCertificate",
+            });
+          }
+          throw badUserInput("Invalid signing certificate.", {
+            field: "signingCertificate",
+          });
+        }
+      }
 
       if (existing) {
         return existing.$query().patchAndFetch(patchData);
