@@ -279,7 +279,6 @@ export class Project extends Model {
 
   async $getActiveTestIds(input?: { search?: string | null | undefined }) {
     const search = input?.search?.trim();
-    
     // Build the latest reference build subquery inline
     const latestReferenceBuild = Build.query()
       .alias("b")

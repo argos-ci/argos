@@ -602,7 +602,6 @@ export const resolvers: IResolvers = {
     },
     tests: async (project, { first, after, period, filters }) => {
       const search = filters?.search?.trim();
-      
       // Build the latest reference build subquery inline
       const latestReferenceBuild = Build.query()
         .alias("b")

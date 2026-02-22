@@ -56,7 +56,7 @@ function StaffTeamsList() {
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [page, setPage] = useState(1);
-  
+
   const search = searchParams.get("search") ?? "";
   const normalizedSearch = search.trim().toLowerCase();
 
