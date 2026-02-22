@@ -33,21 +33,27 @@ export const handler = defineNotificationHandler({
     const accountName = props.accountName || props.accountSlug;
     const accountHref = new URL(`/${props.accountSlug}`, baseUrl).href;
     const isPersonal = props.accountType === "user";
-    const fromLabel = isPersonal ? "your personal account" : accountName;
+    const fromLabel = isPersonal ? (
+      <strong>your personal account</strong>
+    ) : (
+      <>
+        <strong>{accountName}</strong> team
+      </>
+    );
     const reviewLabel = isPersonal
       ? "your personal dashboard"
-      : "team dashboard";
+      : `${accountName} dashboard`;
     return {
       subject: `Project deleted: ${props.projectName}`,
       body: (
         <EmailLayout
-          preview={`The project ${props.projectName} was deleted from ${fromLabel}.`}
+          preview={`The project ${props.projectName} was deleted from ${fromLabel} team.`}
         >
           <H1>Project deleted</H1>
           <Hi name={props.ctx.user.name} />
           <Paragraph>
             The project <strong>{props.projectName}</strong> has been deleted
-            from <strong>{fromLabel}</strong>.
+            from {fromLabel}.
           </Paragraph>
           <Paragraph>
             You can access your remaining projects from{" "}
