@@ -157,6 +157,7 @@ export async function unsafe_deleteProject(args: {
       .join("tests", "test_stats_fingerprints.testId", "tests.id")
       .where("tests.projectId", args.projectId)
       .delete();
+    await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
     await Test.query(trx).where("projectId", args.projectId).delete();
     await Project.query(trx).findById(args.projectId).delete();

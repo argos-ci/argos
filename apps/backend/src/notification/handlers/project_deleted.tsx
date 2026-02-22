@@ -36,7 +36,7 @@ export const handler = defineNotificationHandler({
     const fromLabel = isPersonal ? "your personal account" : accountName;
     const reviewLabel = isPersonal
       ? "your personal dashboard"
-      : "account dashboard";
+      : "team dashboard";
     return {
       subject: `Project deleted: ${props.projectName}`,
       body: (
@@ -50,7 +50,7 @@ export const handler = defineNotificationHandler({
             from <strong>{fromLabel}</strong>.
           </Paragraph>
           <Paragraph>
-            You can review your remaining projects from{" "}
+            You can access your remaining projects from{" "}
             <Link href={accountHref}>{reviewLabel}</Link>.
           </Paragraph>
           <Signature />

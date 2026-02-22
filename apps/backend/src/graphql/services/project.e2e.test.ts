@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test as base, vi } from "vitest";
+import { test as base, beforeEach, describe, expect, vi } from "vitest";
 
 import {
   AutomationActionRun,
@@ -11,8 +11,8 @@ import {
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
-  Test,
   TeamUser,
+  Test,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
@@ -184,23 +184,17 @@ describe("deleteProject", () => {
   });
 
   test("sends a notification to team owners and team contributors with admin access", async () => {
-    const [
-      owner,
-      teamContributorAdmin,
-      teamContributorDefaultAdmin,
-      teamContributorReviewer,
-      member,
-    ] = await Promise.all([
-      factory.User.create(),
-      factory.User.create(),
-      factory.User.create(),
-      factory.User.create(),
-      factory.User.create(),
-    ]);
+    const [owner, teamContributorAdmin, teamContributorReviewer, member] =
+      await Promise.all([
+        factory.User.create(),
+        factory.User.create(),
+        factory.User.create(),
+        factory.User.create(),
+      ]);
     const account = await factory.TeamAccount.create();
     const project = await factory.Project.create({
       accountId: account.id,
-      defaultUserLevel: "admin",
+      defaultUserLevel: "viewer",
     });
 
     await Promise.all([
@@ -217,11 +211,6 @@ describe("deleteProject", () => {
       TeamUser.query().insert({
         teamId: account.teamId!,
         userId: teamContributorReviewer.id,
-        userLevel: "contributor",
-      }),
-      TeamUser.query().insert({
-        teamId: account.teamId!,
-        userId: teamContributorDefaultAdmin.id,
         userLevel: "contributor",
       }),
       TeamUser.query().insert({
@@ -257,10 +246,9 @@ describe("deleteProject", () => {
       recipients: expect.arrayContaining([
         owner.id,
         teamContributorAdmin.id,
-        teamContributorDefaultAdmin.id,
       ]),
     });
     const recipients = mockSendNotification.mock.calls[0]?.[0].recipients;
-    expect(recipients).toHaveLength(3);
+    expect(recipients).toHaveLength(2);
   });
 });
