@@ -18,48 +18,48 @@ function getMilestones(expirationDate: Date) {
 
 export async function checkExpiringSamlCertificates(now = new Date()) {
   const nowIso = now.toISOString();
-  const configs = await TeamSamlConfig.query()
+  const samlConfigs = await TeamSamlConfig.query()
     .whereNotNull("expirationCheckAt")
     .where("expirationCheckAt", "<=", nowIso)
     .withGraphFetched("account");
 
-  for (const config of configs) {
+  for (const samlConfig of samlConfigs) {
     try {
-      invariant(config.account, "TeamSamlConfig account should be fetched");
+      invariant(samlConfig.account, "TeamSamlConfig account should be fetched");
       invariant(
-        config.expirationCheckAt,
+        samlConfig.expirationCheckAt,
         "TeamSamlConfig expirationCheckAt should be set",
       );
 
       let expirationDate: Date;
       try {
-        const { expiresAt } = parseSamlSigningCertificate(
-          config.signingCertificate,
+        const { validTo } = parseSamlSigningCertificate(
+          samlConfig.signingCertificate,
         );
-        expirationDate = new Date(expiresAt);
+        expirationDate = validTo;
       } catch (error) {
         logger.warn(
-          { error, teamSamlConfigId: config.id },
+          { error, teamSamlConfigId: samlConfig.id },
           "Invalid SAML signing certificate, disabling expiration checks",
         );
-        await config.$query().patch({ expirationCheckAt: null });
+        await samlConfig.$query().patch({ expirationCheckAt: null });
         continue;
       }
 
-      const lastCheckAt = new Date(config.expirationCheckAt);
+      const lastCheckAt = new Date(samlConfig.expirationCheckAt);
       const milestones = getMilestones(expirationDate);
       const dueMilestones = milestones.filter((milestone) => {
-        return milestone.checkAt > lastCheckAt && milestone.checkAt <= now;
+        return milestone.checkAt >= lastCheckAt && milestone.checkAt <= now;
       });
 
       if (dueMilestones.length > 0) {
-        const recipients = await config.account.$getOwnerIds();
+        const recipients = await samlConfig.account.$getOwnerIds();
         for (const milestone of dueMilestones) {
           await sendNotification({
             type: "saml_certificate_expiration",
             data: {
-              accountName: config.account.name,
-              accountSlug: config.account.slug,
+              accountName: samlConfig.account.name,
+              accountSlug: samlConfig.account.slug,
               daysBeforeExpiration: milestone.daysBeforeExpiration,
               expirationDate: expirationDate.toISOString(),
             },
@@ -72,12 +72,12 @@ export async function checkExpiringSamlCertificates(now = new Date()) {
         milestones.find((milestone) => milestone.checkAt > now)?.checkAt ??
         null;
 
-      await config.$query().patch({
+      await samlConfig.$query().patch({
         expirationCheckAt: nextCheckAt?.toISOString() ?? null,
       });
     } catch (error) {
       logger.error(
-        { error, teamSamlConfigId: config.id },
+        { error, teamSamlConfigId: samlConfig.id },
         "Failed to process SAML certificate expiration checks",
       );
     }

@@ -4,10 +4,53 @@ import {
   extractEmailFromSaml,
   getTeamSamlPublicValues,
   parseIdpMetadataXml,
+  parseSamlSigningCertificate,
   samlTestUtils,
 } from "./saml";
 
 describe("saml", () => {
+  describe("parseSamlSigningCertificate", () => {
+    const certificatePem = `-----BEGIN CERTIFICATE-----
+MIIDCzCCAfOgAwIBAgIUHy2hUrLCQv9m+KulRAqStlhVKxEwDQYJKoZIhvcNAQEL
+BQAwFTETMBEGA1UEAwwKYXJnb3MtdGVzdDAeFw0yNjAyMjIyMTI5MTFaFw0yNzAy
+MjIyMTI5MTFaMBUxEzARBgNVBAMMCmFyZ29zLXRlc3QwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQCkUJUrFDC0Az6VZ+Is4m9OXSY69x/J0ad876c7NXCh
+edbrFWBNzeiGO5T953Jjmxzbsf+1gfaGZxRSuByCb3iDfOpYE71lxSmQRnmZhXOz
+sFc93c74mwPTdmilwvafip8OOIShM4CLor3A776lM7Lrndug55q88K28vJ6/OWTz
+btjurjSBU8oTgclj1YYzmgwmGmZfF7AcwvAtY/I29TztVF9GtZo0O1wRDL3e2iOO
+rwZNFxfP1JLBNKR0K96HAkq2AOOcPrFeRxqKLysL1p7EIC3eLvEBoWrJ8WPsvC7w
+GJLAyutw05FD2xE/XKBifjI7htYUbKMckafjn49MVOdfAgMBAAGjUzBRMB0GA1Ud
+DgQWBBQ2DSE9aknaZF+U6h4v6oGs3GkOpTAfBgNVHSMEGDAWgBQ2DSE9aknaZF+U
+6h4v6oGs3GkOpTAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQBi
+5UeDEoplOx0Q6gkDEwU0LCiZXp2qsICEIVWw4LkNjxFFmm5mqld0o6h9KbBOiHCO
+vja10U1oHmGik+7ue2XnCTuhP1UJC/iAusobSmW7NZKi06l59cQFcwCO4KHH8sK3
+hfbzEkhBBHSvyfRvAMYKxglJsjftVHqb5HUE6H7pWPPqFfwxPeG4J11JEf05LI+8
+SU5PCgkblPIkiQ2wjOdQQswFROGflNnxKvxIz/cRUm1pQsahD8LlSicLt4okSAAE
+EyVdxIQnWw2OnQzi8v2ikUrIsxKvlWUvHFmTIeYEfWF2J7rITon4FZkuGf1LKiIr
+/hfeaix7+0zIf8esyXrL
+-----END CERTIFICATE-----`;
+    const certificateBase64 = certificatePem
+      .replace("-----BEGIN CERTIFICATE-----", "")
+      .replace("-----END CERTIFICATE-----", "")
+      .replace(/\s+/g, "");
+
+    it("parses a PEM certificate and extracts expiration date", () => {
+      const parsed = parseSamlSigningCertificate(certificatePem);
+      expect(parsed.validTo.toISOString()).toBe("2027-02-22T21:29:11.000Z");
+    });
+
+    it("parses a base64 certificate without PEM headers", () => {
+      const parsed = parseSamlSigningCertificate(certificateBase64);
+      expect(parsed.validTo.toISOString()).toBe("2027-02-22T21:29:11.000Z");
+    });
+
+    it("throws on invalid certificate input", () => {
+      expect(() => parseSamlSigningCertificate("not-a-certificate")).toThrow(
+        "Invalid signing certificate.",
+      );
+    });
+  });
+
   describe("extractEmailFromSaml", () => {
     it("extracts email from configured keys", () => {
       const email = extractEmailFromSaml({

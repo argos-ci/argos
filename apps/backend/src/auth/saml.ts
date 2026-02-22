@@ -1,5 +1,5 @@
-import * as samlify from "samlify";
 import { X509Certificate } from "node:crypto";
+import * as samlify from "samlify";
 import z from "zod";
 
 import config from "@/config";
@@ -443,11 +443,11 @@ export function parseSamlSigningCertificate(certificate: string) {
   try {
     const pem = formatCertificatePem(certificate);
     const x509 = new X509Certificate(pem);
-    const expiresAt = new Date(x509.validTo);
-    if (Number.isNaN(expiresAt.getTime())) {
+    const validTo = new Date(x509.validTo);
+    if (Number.isNaN(validTo.getTime())) {
       throw boom(400, "Invalid signing certificate.");
     }
-    return { expiresAt: expiresAt.toISOString() };
+    return { validTo };
   } catch {
     throw boom(400, "Invalid signing certificate.");
   }

@@ -51,7 +51,7 @@ describe("checkExpiringSamlCertificates", () => {
     });
 
     mockParseSamlSigningCertificate.mockReturnValue({
-      expiresAt: expirationDate.toISOString(),
+      validTo: expirationDate,
     });
 
     await checkExpiringSamlCertificates(now);
@@ -99,7 +99,7 @@ describe("checkExpiringSamlCertificates", () => {
     });
 
     mockParseSamlSigningCertificate.mockReturnValue({
-      expiresAt: expirationDate.toISOString(),
+      validTo: expirationDate,
     });
 
     await checkExpiringSamlCertificates(now);
