@@ -82,7 +82,7 @@ function StaffTeamRow(props: {
         <Td padding="md" size="sm">
           {getSubscriptionLabel(team.subscriptionStatus)}
         </Td>
-        <Td padding="md" align="right" size="sm" numeric>
+        <Td padding="md" align="right" size="sm" className="tabular-nums">
           {team.membersCount}
         </Td>
         <Td padding="md" align="right" size="sm">

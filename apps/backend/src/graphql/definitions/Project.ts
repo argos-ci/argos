@@ -601,10 +601,33 @@ export const resolvers: IResolvers = {
     },
     tests: async (project, { first, after, period, filters }) => {
       const search = filters?.search?.trim();
-      const activeTests = Project.getActiveTestsSubquery({
-        projectId: project.id,
-        search,
-      });
+      
+      // Build the latest reference build subquery inline
+      const latestReferenceBuild = Build.query()
+        .alias("b")
+        .select("b.id", "b.projectId", "b.name")
+        .distinctOn(["b.projectId", "b.name"])
+        .where("b.type", "reference")
+        .where("b.projectId", project.id)
+        .orderBy("b.projectId")
+        .orderBy("b.name")
+        .orderBy("b.createdAt", "desc")
+        .as("latest_reference_build");
+
+      // Build the active tests subquery inline
+      const activeTests = ScreenshotDiff.query()
+        .alias("sd")
+        .distinct("sd.testId")
+        .join(latestReferenceBuild, "latest_reference_build.id", "sd.buildId")
+        .whereNotNull("sd.testId")
+        .joinRelated("compareScreenshot")
+        .whereNull("compareScreenshot.parentName")
+        .modify((qb) => {
+          if (search) {
+            qb.whereILike("compareScreenshot.name", `%${search}%`);
+          }
+        })
+        .as("active_tests");
 
       const result = await Test.query()
         .where("tests.projectId", project.id)

@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 
+import { Link } from "@/ui/Link";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@/ui/Table";
 import { formatNumber } from "@/util/intl";
-
-import { Link } from "../../ui/Link";
 import { getProjectURL } from "../Project/ProjectParams";
 import {
   getMemberDisplayName,
@@ -47,10 +46,10 @@ function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
                 </div>
                 <div className="text-low truncate">{member.user.slug}</div>
               </Td>
-              <Td padding="sm" muted>
+              <Td padding="sm" className="text-low">
                 <div className="truncate">{getMemberEmailsLabel(member)}</div>
               </Td>
-              <Td padding="sm" align="right" muted>
+              <Td padding="sm" align="right" className="text-low">
                 {member.level}
               </Td>
             </Tr>
@@ -100,10 +99,10 @@ function StaffProjectsPanel(props: {
                     {project.name}
                   </Link>
                 </Td>
-                <Td padding="sm" align="right" muted numeric>
+                <Td padding="sm" align="right" className="text-low tabular-nums">
                   {formatNumber(project.buildsCount)}
                 </Td>
-                <Td padding="sm" align="right" muted numeric>
+                <Td padding="sm" align="right" className="text-low tabular-nums">
                   {formatNumber(project.unstableTestsCount)}
                 </Td>
               </Tr>

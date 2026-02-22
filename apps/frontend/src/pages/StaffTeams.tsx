@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { SearchIcon } from "lucide-react";
@@ -53,21 +53,12 @@ function StaffTeamsList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data, loading, error } = useQuery(StaffTeamsQuery);
   const [openedTeams, setOpenedTeams] = useState<Record<string, boolean>>({});
-  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
-  const deferredSearch = useDeferredValue(search);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [page, setPage] = useState(1);
-  const searchParamValue = searchParams.get("search") ?? "";
-
-  useEffect(() => {
-    if (search !== searchParamValue) {
-      setPage(1);
-      setSearch(searchParamValue);
-    }
-  }, [search, searchParamValue]);
-
-  const normalizedSearch = deferredSearch.trim().toLowerCase();
+  
+  const search = searchParams.get("search") ?? "";
+  const normalizedSearch = search.trim().toLowerCase();
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -167,7 +158,6 @@ function StaffTeamsList() {
             value={search}
             onChange={(value) => {
               setPage(1);
-              setSearch(value);
               setSearchParams((prev) => {
                 const next = new URLSearchParams(prev);
                 if (value.trim()) {

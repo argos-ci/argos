@@ -1,4 +1,5 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { assertNever } from "@argos/util/assertNever";
 import clsx from "clsx";
 
 type TableProps = {
@@ -43,7 +44,10 @@ function getZebraClass(zebra: SectionProps<"thead">["zebra"]) {
   if (zebra === "app") {
     return "[&>*:nth-child(odd)]:bg-app";
   }
-  return undefined;
+  if (zebra === undefined) {
+    return undefined;
+  }
+  return assertNever(zebra);
 }
 
 export function Thead(props: SectionProps<"thead">) {
@@ -97,20 +101,27 @@ function getAlignClass(align: CellAlign) {
       return "text-center";
     case "right":
       return "text-right";
-    default:
+    case "left":
       return "text-left";
+    default:
+      return assertNever(align);
   }
 }
 
 function getPaddingClass(padding: CellPadding) {
-  return padding === "sm" ? "px-3 py-2" : "px-4 py-3";
+  switch (padding) {
+    case "sm":
+      return "px-3 py-2";
+    case "md":
+      return "px-4 py-3";
+    default:
+      return assertNever(padding);
+  }
 }
 
 type SharedCellVariantProps = {
   align?: CellAlign;
   padding?: CellPadding;
-  muted?: boolean;
-  numeric?: boolean;
 };
 
 type ThProps = SharedCellVariantProps & ComponentPropsWithoutRef<"th">;
@@ -118,8 +129,6 @@ type ThProps = SharedCellVariantProps & ComponentPropsWithoutRef<"th">;
 export function Th({
   align = "left",
   padding = "md",
-  muted = false,
-  numeric = false,
   className,
   ...props
 }: ThProps) {
@@ -129,8 +138,6 @@ export function Th({
       className={clsx(
         getPaddingClass(padding),
         getAlignClass(align),
-        muted && "text-low",
-        numeric && "tabular-nums",
         className,
       )}
     />
@@ -145,8 +152,6 @@ type TdProps = SharedCellVariantProps &
 export function Td({
   align = "left",
   padding = "md",
-  muted = false,
-  numeric = false,
   size = "default",
   className,
   ...props
@@ -157,8 +162,6 @@ export function Td({
       className={clsx(
         getPaddingClass(padding),
         getAlignClass(align),
-        muted && "text-low",
-        numeric && "tabular-nums",
         size === "sm" && "text-sm",
         className,
       )}

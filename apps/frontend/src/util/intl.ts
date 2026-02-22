@@ -1,6 +1,6 @@
 import memoize from "memoize";
 
-export const numberFormatter = new Intl.NumberFormat();
+const numberFormatter = new Intl.NumberFormat();
 
 const getCurrencyFormatter = memoize((currency: string, digits: number) => {
   return new Intl.NumberFormat(undefined, {
@@ -26,6 +26,11 @@ export function formatCurrency(
   return getCurrencyFormatter(currency, digits).format(value);
 }
 
+/**
+ * Formats a number using the Intl API with locale-specific formatting.
+ * @param value - The numeric value to format
+ * @returns The formatted number string with appropriate thousands separators
+ */
 export function formatNumber(value: number) {
   return numberFormatter.format(value);
 }
@@ -35,6 +40,12 @@ const listFormatter = new Intl.ListFormat(undefined, {
   type: "conjunction",
 });
 
+/**
+ * Formats an array of strings into a human-readable list using the Intl API.
+ * For example: ["apple", "banana", "orange"] becomes "apple, banana, and orange"
+ * @param items - Array of strings to format into a list
+ * @returns A formatted string with items joined according to locale conventions
+ */
 export function formatList(items: string[]) {
   return listFormatter.format(items);
 }

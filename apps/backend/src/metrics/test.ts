@@ -207,22 +207,17 @@ export async function countUnstableTestsFromMetrics(input: {
   testIds: string[];
   from?: Date | undefined;
   to?: Date | undefined;
-  flakinessThreshold?: number | undefined;
 }) {
-  const {
-    testIds,
-    from,
-    to,
-    flakinessThreshold = UNSTABLE_TEST_FLAKINESS_THRESHOLD,
-  } = input;
+  const { testIds, from, to } = input;
 
   if (testIds.length === 0) {
     return 0;
   }
 
   const metrics = await getTestAllMetrics(testIds, { from, to });
-  return metrics.filter((metric) => metric.flakiness >= flakinessThreshold)
-    .length;
+  return metrics.filter(
+    (metric) => metric.flakiness >= UNSTABLE_TEST_FLAKINESS_THRESHOLD,
+  ).length;
 }
 
 /**

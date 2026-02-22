@@ -277,54 +277,34 @@ export class Project extends Model {
     return `argos_${token}`;
   }
 
-  static getLatestReferenceBuildSubquery(projectId: string) {
-    return Build.query()
+  async $getActiveTestIds(input?: { search?: string | null | undefined }) {
+    const search = input?.search?.trim();
+    
+    // Build the latest reference build subquery inline
+    const latestReferenceBuild = Build.query()
       .alias("b")
       .select("b.id", "b.projectId", "b.name")
       .distinctOn(["b.projectId", "b.name"])
       .where("b.type", "reference")
-      .where("b.projectId", projectId)
+      .where("b.projectId", this.id)
       .orderBy("b.projectId")
       .orderBy("b.name")
       .orderBy("b.createdAt", "desc")
       .as("latest_reference_build");
-  }
 
-  static getActiveTestsQuery(input: {
-    projectId: string;
-    search?: string | null | undefined;
-  }) {
-    const latestRef = Project.getLatestReferenceBuildSubquery(input.projectId);
-    const search = input.search?.trim();
-
-    return ScreenshotDiff.query()
+    const rows = await ScreenshotDiff.query()
       .alias("sd")
       .distinct("sd.testId")
-      .join(latestRef, "latest_reference_build.id", "sd.buildId")
+      .select("sd.testId")
+      .join(latestReferenceBuild, "latest_reference_build.id", "sd.buildId")
       .whereNotNull("sd.testId")
       .joinRelated("compareScreenshot")
       .whereNull("compareScreenshot.parentName")
-      .modify((query) => {
+      .modify((qb) => {
         if (search) {
-          query.whereILike("compareScreenshot.name", `%${search}%`);
+          qb.whereILike("compareScreenshot.name", `%${search}%`);
         }
       });
-  }
-
-  static getActiveTestsSubquery(input: {
-    projectId: string;
-    search?: string | null | undefined;
-  }) {
-    return Project.getActiveTestsQuery(input).clone().as("active_tests");
-  }
-
-  async $getActiveTestIds(input?: { search?: string | null | undefined }) {
-    const rows = await Project.getActiveTestsQuery({
-      projectId: this.id,
-      search: input?.search,
-    })
-      .clone()
-      .select("sd.testId");
 
     return rows
       .map((row) => row.testId)
