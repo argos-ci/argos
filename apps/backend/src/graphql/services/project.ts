@@ -17,6 +17,7 @@ import {
   ScreenshotDiff,
   ScreenshotDiffReview,
   Test,
+  TeamUser,
   User,
 } from "@/database/models";
 import { transaction } from "@/database/transaction";
@@ -33,17 +34,29 @@ async function getProjectDeleteNotificationRecipients(project: Project) {
   const teamId = project.account.teamId;
   invariant(teamId, "project.account.teamId is undefined");
 
-  const [ownerIds, projectContributors] = await Promise.all([
+  const [ownerIds, teamContributors, projectContributors] = await Promise.all([
     project.account.$getOwnerIds(),
+    TeamUser.query()
+      .select("userId")
+      .where("team_users.teamId", teamId)
+      .where("team_users.userLevel", "contributor")
+      .orderBy("userId", "asc"),
     ProjectUser.query()
       .select("project_users.userId", "project_users.userLevel")
       .where("project_users.projectId", project.id)
-      .where("project_users.userLevel", "admin"),
   ]);
 
-  const projectAdminContributorIds = projectContributors.map(
-    (contributor) => contributor.userId,
+  const projectContributorsById = new Map(
+    projectContributors.map((contributor) => [contributor.userId, contributor]),
   );
+
+  const projectAdminContributorIds = teamContributors
+    .filter((contributor) => {
+      const projectContributor = projectContributorsById.get(contributor.userId);
+      const level = projectContributor?.userLevel ?? project.defaultUserLevel;
+      return level === "admin";
+    })
+    .map((contributor) => contributor.userId);
 
   return [...new Set([...ownerIds, ...projectAdminContributorIds])];
 }

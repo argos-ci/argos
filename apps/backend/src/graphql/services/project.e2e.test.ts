@@ -13,6 +13,7 @@ import {
   ScreenshotDiff,
   TeamUser,
   Test,
+  User,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { sendNotification } from "@/notification";
@@ -184,8 +185,14 @@ describe("deleteProject", () => {
   });
 
   test("sends a notification to team owners and team contributors with admin access", async () => {
-    const [owner, teamContributorAdmin, teamContributorReviewer, member] =
-      await Promise.all([
+    const [
+      owner,
+      teamContributorAdmin,
+      teamContributorDefaultAdmin,
+      teamContributorReviewer,
+      member,
+    ] = await Promise.all([
+        factory.User.create(),
         factory.User.create(),
         factory.User.create(),
         factory.User.create(),
@@ -194,7 +201,7 @@ describe("deleteProject", () => {
     const account = await factory.TeamAccount.create();
     const project = await factory.Project.create({
       accountId: account.id,
-      defaultUserLevel: "viewer",
+      defaultUserLevel: "admin",
     });
 
     await Promise.all([
@@ -211,6 +218,11 @@ describe("deleteProject", () => {
       TeamUser.query().insert({
         teamId: account.teamId!,
         userId: teamContributorReviewer.id,
+        userLevel: "contributor",
+      }),
+      TeamUser.query().insert({
+        teamId: account.teamId!,
+        userId: teamContributorDefaultAdmin.id,
         userLevel: "contributor",
       }),
       TeamUser.query().insert({
@@ -246,9 +258,34 @@ describe("deleteProject", () => {
       recipients: expect.arrayContaining([
         owner.id,
         teamContributorAdmin.id,
+        teamContributorDefaultAdmin.id,
       ]),
     });
     const recipients = mockSendNotification.mock.calls[0]?.[0].recipients;
-    expect(recipients).toHaveLength(2);
+    expect(recipients).toHaveLength(3);
+  });
+
+  test("sends a notification to the personal account owner", async () => {
+    const account = await factory.UserAccount.create();
+    const owner = await User.query().findById(account.userId!);
+    expect(owner).toBeTruthy();
+
+    const project = await factory.Project.create({
+      accountId: account.id,
+    });
+
+    await deleteProject({ id: project.id, user: owner });
+
+    expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    expect(mockSendNotification).toHaveBeenCalledWith({
+      type: "project_deleted",
+      data: {
+        accountType: "user",
+        accountName: account.name,
+        accountSlug: account.slug,
+        projectName: project.name,
+      },
+      recipients: [account.userId!],
+    });
   });
 });
