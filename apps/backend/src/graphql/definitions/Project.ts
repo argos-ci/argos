@@ -13,6 +13,7 @@ import {
   Project,
   ProjectUser,
   Screenshot,
+  ScreenshotDiff,
   Test,
   User,
 } from "@/database/models";
