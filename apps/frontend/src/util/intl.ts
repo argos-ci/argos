@@ -1,5 +1,7 @@
 import memoize from "memoize";
 
+export const numberFormatter = new Intl.NumberFormat();
+
 const getCurrencyFormatter = memoize((currency: string, digits: number) => {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -22,4 +24,17 @@ export function formatCurrency(
   digits = 2,
 ) {
   return getCurrencyFormatter(currency, digits).format(value);
+}
+
+export function formatNumber(value: number) {
+  return numberFormatter.format(value);
+}
+
+const listFormatter = new Intl.ListFormat(undefined, {
+  style: "long",
+  type: "conjunction",
+});
+
+export function formatList(items: string[]) {
+  return listFormatter.format(items);
 }

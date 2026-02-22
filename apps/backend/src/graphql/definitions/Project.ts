@@ -13,7 +13,6 @@ import {
   Project,
   ProjectUser,
   Screenshot,
-  ScreenshotDiff,
   Test,
   User,
 } from "@/database/models";
@@ -25,10 +24,14 @@ import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
-import { getStartDateFromPeriod } from "@/metrics/test";
+import {
+  countUnstableTestsFromMetrics,
+  getStartDateFromPeriod,
+} from "@/metrics/test";
 
 import {
   IBuildStatus,
+  IMetricsPeriod,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
@@ -167,6 +170,7 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
+    unstableTestsCount(period: MetricsPeriod = LAST_30_DAYS): Int!
   }
 
   extend type Query {
@@ -597,30 +601,10 @@ export const resolvers: IResolvers = {
     },
     tests: async (project, { first, after, period, filters }) => {
       const search = filters?.search?.trim();
-      const latestRef = Build.query()
-        .alias("b")
-        .select("b.id", "b.projectId", "b.name")
-        .distinctOn(["b.projectId", "b.name"])
-        .where("b.type", "reference")
-        .where("b.projectId", project.id)
-        .orderBy("b.projectId")
-        .orderBy("b.name")
-        .orderBy("b.createdAt", "desc")
-        .as("latest_reference_build");
-
-      const activeTests = ScreenshotDiff.query()
-        .alias("sd")
-        .distinct("sd.testId")
-        .join(latestRef, "latest_reference_build.id", "sd.buildId")
-        .whereNotNull("sd.testId")
-        .joinRelated("compareScreenshot")
-        .whereNull("compareScreenshot.parentName")
-        .modify((query) => {
-          if (search) {
-            query.whereILike("compareScreenshot.name", `%${search}%`);
-          }
-        })
-        .as("active_tests");
+      const activeTests = Project.getActiveTestsSubquery({
+        projectId: project.id,
+        search,
+      });
 
       const result = await Test.query()
         .where("tests.projectId", project.id)
@@ -693,6 +677,21 @@ export const resolvers: IResolvers = {
         .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
+    },
+    unstableTestsCount: async (
+      project,
+      { period = IMetricsPeriod.Last_30Days },
+    ) => {
+      const testIds = await project.$getActiveTestIds();
+      if (testIds.length === 0) {
+        return 0;
+      }
+
+      return countUnstableTestsFromMetrics({
+        testIds,
+        from: getStartDateFromPeriod(period),
+        to: new Date(),
+      });
     },
     permissions: async (project, _args, ctx) => {
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);

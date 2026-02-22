@@ -4,6 +4,8 @@ import moment from "moment";
 import { knex } from "@/database";
 import { IMetricsPeriod } from "@/graphql/__generated__/resolver-types";
 
+export const UNSTABLE_TEST_FLAKINESS_THRESHOLD = 0.35;
+
 /**
  * Upsert the test stats for a date and a file.
  */
@@ -104,12 +106,12 @@ export async function getTestAllMetrics(
   `;
 
   const changesQuery = `
-   select
+    select
       tsf."testId",
       sum(tsf.value) as changes,
       count(*) filter (
         where (
-          select count(*) 
+          select count(*)
           from test_stats_fingerprints t2
           where t2."testId" = tsf."testId"
             and t2."fingerprint" = tsf."fingerprint"
@@ -199,6 +201,28 @@ export async function getTestAllMetrics(
       flakiness,
     };
   });
+}
+
+export async function countUnstableTestsFromMetrics(input: {
+  testIds: string[];
+  from?: Date | undefined;
+  to?: Date | undefined;
+  flakinessThreshold?: number | undefined;
+}) {
+  const {
+    testIds,
+    from,
+    to,
+    flakinessThreshold = UNSTABLE_TEST_FLAKINESS_THRESHOLD,
+  } = input;
+
+  if (testIds.length === 0) {
+    return 0;
+  }
+
+  const metrics = await getTestAllMetrics(testIds, { from, to });
+  return metrics.filter((metric) => metric.flakiness >= flakinessThreshold)
+    .length;
 }
 
 /**

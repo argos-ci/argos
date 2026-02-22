@@ -19,6 +19,7 @@ import { Build } from "./Build";
 import { GithubRepository } from "./GithubRepository";
 import { GitlabProject } from "./GitlabProject";
 import { ProjectUser } from "./ProjectUser";
+import { ScreenshotDiff } from "./ScreenshotDiff";
 import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
 
@@ -274,6 +275,60 @@ export class Project extends Model {
   static generateToken() {
     const token = generateRandomHexString(34);
     return `argos_${token}`;
+  }
+
+  static getLatestReferenceBuildSubquery(projectId: string) {
+    return Build.query()
+      .alias("b")
+      .select("b.id", "b.projectId", "b.name")
+      .distinctOn(["b.projectId", "b.name"])
+      .where("b.type", "reference")
+      .where("b.projectId", projectId)
+      .orderBy("b.projectId")
+      .orderBy("b.name")
+      .orderBy("b.createdAt", "desc")
+      .as("latest_reference_build");
+  }
+
+  static getActiveTestsQuery(input: {
+    projectId: string;
+    search?: string | null | undefined;
+  }) {
+    const latestRef = Project.getLatestReferenceBuildSubquery(input.projectId);
+    const search = input.search?.trim();
+
+    return ScreenshotDiff.query()
+      .alias("sd")
+      .distinct("sd.testId")
+      .join(latestRef, "latest_reference_build.id", "sd.buildId")
+      .whereNotNull("sd.testId")
+      .joinRelated("compareScreenshot")
+      .whereNull("compareScreenshot.parentName")
+      .modify((query) => {
+        if (search) {
+          query.whereILike("compareScreenshot.name", `%${search}%`);
+        }
+      });
+  }
+
+  static getActiveTestsSubquery(input: {
+    projectId: string;
+    search?: string | null | undefined;
+  }) {
+    return Project.getActiveTestsQuery(input).clone().as("active_tests");
+  }
+
+  async $getActiveTestIds(input?: { search?: string | null | undefined }) {
+    const rows = await Project.getActiveTestsQuery({
+      projectId: this.id,
+      search: input?.search,
+    })
+      .clone()
+      .select("sd.testId");
+
+    return rows
+      .map((row) => row.testId)
+      .filter((testId): testId is string => Boolean(testId));
   }
 
   /**
