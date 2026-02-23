@@ -10,6 +10,7 @@ import {
   GoogleUser,
   Subscription,
   Team,
+  TeamInvite,
   TeamUser,
   User,
   UserEmail,
@@ -89,8 +90,13 @@ export async function deleteAccount(args: {
         const { teamId } = account;
         invariant(teamId, "account.teamId is undefined");
 
-        // Delete all team user relationships
-        await TeamUser.query(trx).where("teamId", teamId).delete();
+        await Promise.all([
+          // Delete all team user relationships
+          TeamUser.query(trx).where("teamId", teamId).delete(),
+
+          // Delete all pending team invites
+          TeamInvite.query(trx).where("teamId", teamId).delete(),
+        ]);
 
         // Delete the team
         await Team.query(trx).where("id", teamId).delete();
