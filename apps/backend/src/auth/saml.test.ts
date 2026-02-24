@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import * as redisClientModule from "@/util/redis/client";
 
 import {
   extractEmailFromSaml,
@@ -119,5 +121,110 @@ EyVdxIQnWw2OnQzi8v2ikUrIsxKvlWUvHFmTIeYEfWF2J7rITon4FZkuGf1LKiIr
         }),
       ).toThrow();
     });
+
+    it("extracts assertion id from saml xml", () => {
+      expect(
+        samlTestUtils.extractAssertionIdFromXml(
+          '<saml:Assertion ID="_assertion-id"></saml:Assertion>',
+        ),
+      ).toBe("_assertion-id");
+    });
+
+    it("rejects missing assertion id", () => {
+      expect(() =>
+        samlTestUtils.extractAssertionIdFromXml(
+          "<saml:Assertion></saml:Assertion>",
+        ),
+      ).toThrow("Invalid SAML assertion.");
+    });
+
+    it("allows idp-initiated response without inResponseTo", () => {
+      expect(() =>
+        samlTestUtils.assertSamlRequestBinding({
+          inResponseTo: null,
+          loginState: null,
+        }),
+      ).not.toThrow();
+    });
+
+    it("rejects inResponseTo when relay state was not initiated by sp", () => {
+      expect(() =>
+        samlTestUtils.assertSamlRequestBinding({
+          inResponseTo: "_request-id",
+          loginState: null,
+        }),
+      ).toThrow("Invalid SAML InResponseTo.");
+    });
+
+    it("rejects mismatched inResponseTo and loginState.requestId", () => {
+      expect(() =>
+        samlTestUtils.assertSamlRequestBinding({
+          inResponseTo: "_wrong-id",
+          loginState: {
+            nonce: "nonce",
+            requestId: "_correct-id",
+            teamSlug: "acme",
+            redirect: "/",
+          },
+        }),
+      ).toThrow("Invalid SAML InResponseTo.");
+    });
+
+    it("rejects replayed assertions and allows reuse after expiry", async () => {
+      const assertionValues = new Map<string, string>();
+      const redisSet = vi.fn(
+        async (
+          key: string,
+          value: string,
+          options: unknown,
+        ): Promise<"OK" | null> => {
+          expect(options).toEqual({
+            expiration: {
+              type: "PX",
+              value: 10 * 60 * 1000,
+            },
+            condition: "NX",
+          });
+          if (assertionValues.has(key)) {
+            return null;
+          }
+          assertionValues.set(key, value);
+          return "OK";
+        },
+      );
+
+      vi.spyOn(redisClientModule, "getRedisClient").mockResolvedValue({
+        set: redisSet,
+      } as unknown as Awaited<
+        ReturnType<typeof redisClientModule.getRedisClient>
+      >);
+
+      await expect(
+        samlTestUtils.assertSamlAssertionNotReplayed({
+          teamSlug: "acme",
+          assertionId: "_assertion-id",
+        }),
+      ).resolves.toBeUndefined();
+
+      await expect(
+        samlTestUtils.assertSamlAssertionNotReplayed({
+          teamSlug: "acme",
+          assertionId: "_assertion-id",
+        }),
+      ).rejects.toThrow("SAML assertion was already used for team acme.");
+
+      assertionValues.clear();
+
+      await expect(
+        samlTestUtils.assertSamlAssertionNotReplayed({
+          teamSlug: "acme",
+          assertionId: "_assertion-id",
+        }),
+      ).resolves.toBeUndefined();
+    });
   });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });

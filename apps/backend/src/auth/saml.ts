@@ -19,6 +19,7 @@ const LOGIN_STATE_TTL_MS = 10 * 60 * 1000;
  * Time allowed to exchange a SAML code for a JWT token.
  */
 const EXCHANGE_CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const ASSERTION_REPLAY_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 type SamlAttributeValue = string | string[];
 type SamlAttributes = Record<string, SamlAttributeValue>;
@@ -75,6 +76,10 @@ function getLoginStateKey(nonce: string) {
 
 function getAuthCodeKey(code: string) {
   return `saml:auth-code:${code}`;
+}
+
+function getAssertionReplayKey(teamSlug: string, assertionId: string) {
+  return `saml:assertion:${teamSlug}:${assertionId}`;
 }
 
 function getTeamSamlUrls(teamSlug: string) {
@@ -284,6 +289,56 @@ function assertSamlRecipientInXml(args: {
   }
 }
 
+function extractAssertionIdFromXml(samlContent: string) {
+  const assertionMatch = samlContent.match(
+    /<(?:\w+:)?Assertion\b[^>]*\bID="([^"]+)"/,
+  );
+  const assertionId = assertionMatch?.[1] ?? null;
+  if (!assertionId) {
+    throw boom(401, "Invalid SAML assertion.");
+  }
+  return assertionId;
+}
+
+async function assertSamlAssertionNotReplayed(args: {
+  teamSlug: string;
+  assertionId: string;
+}) {
+  const redis = await getRedisClient();
+  const result = await redis.set(
+    getAssertionReplayKey(args.teamSlug, args.assertionId),
+    "1",
+    {
+      expiration: {
+        type: "PX",
+        value: ASSERTION_REPLAY_TTL_MS,
+      },
+      condition: "NX",
+    },
+  );
+  if (result !== "OK") {
+    throw boom(
+      401,
+      `SAML assertion was already used for team ${args.teamSlug}.`,
+    );
+  }
+}
+
+function assertSamlRequestBinding(args: {
+  inResponseTo: string | null;
+  loginState: SamlLoginState | null;
+}) {
+  if (!args.inResponseTo) {
+    return;
+  }
+  if (!args.loginState) {
+    throw boom(401, "Invalid SAML InResponseTo.");
+  }
+  if (args.inResponseTo !== args.loginState.requestId) {
+    throw boom(401, "Invalid SAML InResponseTo.");
+  }
+}
+
 export function extractEmailFromSaml(attributes: SamlAttributes) {
   for (const key of DEFAULT_EMAIL_ATTRIBUTE_KEYS) {
     const value = getString(attributes[key]);
@@ -329,30 +384,39 @@ export function getSamlSpMetadata(teamSlug: string) {
   return sp.getMetadata();
 }
 
+/**
+ * Handles SP-initiated logins (with RelayState) and IdP-initiated logins
+ * (without RelayState). Empty RelayState is treated as missing and the
+ * redirect defaults to "/". Assertion replay protection is enforced for both.
+ */
 export async function parseAndValidateSamlLoginResponse(args: {
   teamSlug: string;
   samlConfig: TeamSamlConfig;
   samlResponse: string;
-  relayState: string;
+  relayState: string | null;
 }) {
-  const loginState = await consumeSamlLoginState(args.relayState);
-  if (!loginState || loginState.teamSlug !== args.teamSlug) {
+  const relayState = args.relayState?.trim() || null;
+  const loginState = relayState
+    ? await consumeSamlLoginState(relayState)
+    : null;
+  if (loginState && loginState.teamSlug !== args.teamSlug) {
     throw boom(401, "Invalid or expired SAML RelayState.");
   }
   const sp = createServiceProvider({
     teamSlug: args.teamSlug,
-    relayState: args.relayState,
+    relayState: relayState ?? "",
     requestSigned: false,
   });
   const idp = createIdentityProvider(args.samlConfig);
   const result = await sp.parseLoginResponse(idp, "post", {
     body: {
       SAMLResponse: args.samlResponse,
-      RelayState: args.relayState,
+      RelayState: relayState ?? "",
     },
   });
 
   const extract = readExtract({ extract: result.extract });
+  const assertionId = extractAssertionIdFromXml(result.samlContent);
   assertContainsSignature(result.samlContent);
   assertSamlTiming(extract.conditions);
   assertSamlAudienceAndRecipient({
@@ -364,17 +428,19 @@ export async function parseAndValidateSamlLoginResponse(args: {
     samlContent: result.samlContent,
     acsUrl: getTeamSamlUrls(args.teamSlug).acsUrl,
   });
-  if (
-    extract.response.inResponseTo &&
-    extract.response.inResponseTo !== loginState.requestId
-  ) {
-    throw boom(401, "Invalid SAML InResponseTo.");
-  }
+  assertSamlRequestBinding({
+    inResponseTo: extract.response.inResponseTo,
+    loginState,
+  });
+  await assertSamlAssertionNotReplayed({
+    teamSlug: args.teamSlug,
+    assertionId,
+  });
 
   return {
     attributes: extract.attributes,
     subject: extract.nameId,
-    loginState,
+    redirect: loginState?.redirect ?? "/",
   };
 }
 
@@ -464,4 +530,7 @@ export const samlTestUtils = {
   assertSamlTiming,
   assertSamlAudienceAndRecipient,
   assertSamlRecipientInXml,
+  assertSamlRequestBinding,
+  assertSamlAssertionNotReplayed,
+  extractAssertionIdFromXml,
 };
