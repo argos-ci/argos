@@ -116,8 +116,11 @@ router.post(
       samlResponse: body.SAMLResponse,
       relayState: body.RelayState,
     });
-    const email = extractEmailFromSaml(parsed.attributes);
-    if (!email) {
+
+    // For Okta email is the subject (NameID)
+    const email = extractEmailFromSaml(parsed.attributes) ?? parsed.subject;
+
+    if (!email || !z.email().safeParse(email).success) {
       throw boom(401, "No email attribute found in SAML response.");
     }
 
