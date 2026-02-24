@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
@@ -30,13 +30,17 @@ declare module "react-aria-components" {
   }
 }
 
-function useAbsoluteHref(path: string) {
-  const relative = useHref(path);
-  if (
+function checkIsExternalHref(path: string) {
+  return (
     path.startsWith("https://") ||
     path.startsWith("http://") ||
     path.startsWith("mailto:")
-  ) {
+  );
+}
+
+function useAbsoluteHref(path: string) {
+  const relative = useHref(path);
+  if (checkIsExternalHref(path)) {
     return path;
   }
   return relative;
@@ -44,9 +48,26 @@ function useAbsoluteHref(path: string) {
 
 function Root() {
   const navigate = useNavigate();
+  const navigateWithExternalLinks = useCallback(
+    (to: string, options?: NavigateOptions) => {
+      if (checkIsExternalHref(to)) {
+        if (options?.replace) {
+          window.location.replace(to);
+        } else {
+          window.location.assign(to);
+        }
+        return;
+      }
+      navigate(to, options);
+    },
+    [navigate],
+  );
 
   return (
-    <RouterProvider navigate={navigate} useHref={useAbsoluteHref}>
+    <RouterProvider
+      navigate={navigateWithExternalLinks}
+      useHref={useAbsoluteHref}
+    >
       <FeatureFlagProvider>
         <Outlet />
       </FeatureFlagProvider>
