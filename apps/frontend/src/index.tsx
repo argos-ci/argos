@@ -25,6 +25,12 @@ if (process.env["NODE_ENV"] === "production") {
           event.level = "info";
           return event;
         }
+
+        // Never notify "SAML_SSO_REQUIRED", it's handled
+        if (error.code === "SAML_SSO_REQUIRED") {
+          return null;
+        }
+
         // If the account is already attached, we don't need to report it,
         // as it's a user error.
         if (
