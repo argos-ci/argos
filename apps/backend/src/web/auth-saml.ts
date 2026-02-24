@@ -22,7 +22,7 @@ const LoginQuerySchema = z.object({
 
 const AcsBodySchema = z.object({
   SAMLResponse: z.string(),
-  RelayState: z.string(),
+  RelayState: z.string().optional(),
 });
 
 function getSafeRedirect(redirect: string | undefined) {
@@ -114,7 +114,7 @@ router.post(
       teamSlug,
       samlConfig,
       samlResponse: body.SAMLResponse,
-      relayState: body.RelayState,
+      relayState: body.RelayState ?? null,
     });
 
     // For Okta email is the subject (NameID)
@@ -133,14 +133,14 @@ router.post(
     const code = await createSamlAuthCode({
       accountId: userAccount.id,
       teamSlug,
-      redirect: parsed.loginState.redirect,
+      redirect: parsed.redirect,
     });
     const loginUrl = new URL("/auth/saml/callback", config.get("server.url"));
     loginUrl.searchParams.set("code", code);
     loginUrl.searchParams.set(
       "state",
       Buffer.from(
-        JSON.stringify({ nonce: "none", redirect: parsed.loginState.redirect }),
+        JSON.stringify({ nonce: "none", redirect: parsed.redirect }),
       ).toString("base64"),
     );
     res.redirect(loginUrl.toString());
