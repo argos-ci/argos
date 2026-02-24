@@ -358,7 +358,9 @@ function ConfigureDialog(props: { team: DocumentType<typeof _TeamFragment> }) {
     toast.promise(
       (async () => {
         const [file] = files;
-        invariant(file, "A file is required");
+        if (!file) {
+          return;
+        }
         const metadataXml = await file.text();
         const result = await apolloClient.mutate({
           mutation: ImportTeamSamlMetadataMutation,
@@ -539,7 +541,9 @@ function CertificateField(props: { control: Control<Inputs, any, Inputs> }) {
   });
   const handleDrop = useEventCallback(async (files: File[]) => {
     const [file] = files;
-    invariant(file, "A file is required");
+    if (!file) {
+      return;
+    }
     try {
       const text = await file.text();
       field.onChange(text);
