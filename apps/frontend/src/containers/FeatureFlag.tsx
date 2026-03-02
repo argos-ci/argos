@@ -3,6 +3,7 @@ import {
   ReflagProps,
   ReflagProvider,
   useFlag,
+  type CompanyContext,
   type Flags,
 } from "@reflag/react-sdk";
 import { Navigate, useParams } from "react-router-dom";
@@ -32,7 +33,9 @@ export function FeatureFlagProvider(props: { children: React.ReactNode }) {
   return <UserProvider>{props.children}</UserProvider>;
 }
 
-type UserProviderProps = Omit<ReflagProps, "publishableKey" | "user">;
+type UserProviderProps = Omit<ReflagProps, "publishableKey" | "context"> & {
+  company?: CompanyContext;
+};
 
 /**
  * Slug of users where the Reflag toolbar is enabled.
@@ -43,16 +46,18 @@ const REFLAG_TOOLBAR_ENABLED_FOR = ["gregberge", "jsfez"];
  * Provides the user data to the ReflagProvider.
  */
 function UserProvider(props: UserProviderProps) {
+  const { company, ...rest } = props;
   const payload = useAuthTokenPayload();
   return (
     <ReflagProvider
-      {...props}
+      {...rest}
       publishableKey={config.bucket.publishableKey}
-      user={
-        payload
+      context={{
+        company,
+        user: payload
           ? { id: payload.account.id, name: payload.account.name ?? undefined }
-          : undefined
-      }
+          : undefined,
+      }}
       toolbar={
         process.env["NODE_ENV"] === "development" ||
         (payload?.account.slug
