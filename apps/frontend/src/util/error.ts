@@ -1,7 +1,29 @@
 import { CombinedGraphQLErrors } from "@apollo/client";
 import type { ErrorCode } from "@argos/error-types";
 
+import { APIError } from "./api";
+
 export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
+/**
+ * Get the error code from an error.
+ */
+export function getErrorCode(error: unknown): ErrorCode | null {
+  if (error instanceof APIError && error.code) {
+    return error.code;
+  }
+
+  if (CombinedGraphQLErrors.is(error)) {
+    const errorCode = error.errors.find(
+      (error) => error.extensions?.argosErrorCode,
+    )?.extensions?.argosErrorCode;
+    if (errorCode) {
+      return errorCode as ErrorCode;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Check if the given error is an ApolloError with the specified error code.
