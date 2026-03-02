@@ -69,8 +69,8 @@ function UserProvider(props: UserProviderProps) {
 }
 
 const AccountQuery = graphql(`
-  query FeatureFlagProvider_account($slug: String!) {
-    account(slug: $slug) {
+  query FeatureFlagProvider_account($accountSlug: String!) {
+    account(slug: $accountSlug) {
       id
       name
       slug
@@ -86,8 +86,9 @@ function CompanyAndUserProvider(
     accountSlug: string;
   } & Omit<UserProviderProps, "company">,
 ) {
+  const { accountSlug, ...rest } = props;
   const { data, error } = useQuery(AccountQuery, {
-    variables: { slug: props.accountSlug },
+    variables: { accountSlug },
   });
 
   if (error) {
@@ -100,7 +101,7 @@ function CompanyAndUserProvider(
 
   return (
     <UserProvider
-      {...props}
+      {...rest}
       company={
         data.account
           ? {
