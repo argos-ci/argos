@@ -32,7 +32,7 @@ export const handler = defineNotificationHandler({
     accountName: "Argos",
     accountSlug: "argos",
     daysBeforeExpiration: 7,
-    expirationDate: new Date().toISOString(),
+    expirationDate: new Date("10-30-1985").toISOString(),
   },
   email: (props) => {
     const accountName = props.accountName || props.accountSlug;
