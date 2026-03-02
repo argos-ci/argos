@@ -9,7 +9,7 @@ import "./index.css";
 import { invariant } from "@argos/util/invariant";
 
 import { APIError } from "./util/api";
-import { getErrorCode } from "./util/error";
+import { getSingleErrorCode } from "./util/error";
 
 if (process.env["NODE_ENV"] === "production") {
   Sentry.init({
@@ -27,7 +27,7 @@ if (process.env["NODE_ENV"] === "production") {
         return event;
       }
 
-      const code = getErrorCode(error);
+      const code = getSingleErrorCode(error);
 
       // Never notify "SAML_SSO_REQUIRED", it's handled
       if (code === "SAML_SSO_REQUIRED") {
