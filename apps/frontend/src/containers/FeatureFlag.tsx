@@ -3,6 +3,7 @@ import {
   ReflagProps,
   ReflagProvider,
   useFlag,
+  type CompanyContext,
   type Flags,
 } from "@reflag/react-sdk";
 import { Navigate, useParams } from "react-router-dom";
@@ -32,7 +33,9 @@ export function FeatureFlagProvider(props: { children: React.ReactNode }) {
   return <UserProvider>{props.children}</UserProvider>;
 }
 
-type UserProviderProps = Omit<ReflagProps, "publishableKey" | "user">;
+type UserProviderProps = Omit<ReflagProps, "publishableKey" | "context"> & {
+  company?: CompanyContext;
+};
 
 /**
  * Slug of users where the Reflag toolbar is enabled.
@@ -43,16 +46,18 @@ const REFLAG_TOOLBAR_ENABLED_FOR = ["gregberge", "jsfez"];
  * Provides the user data to the ReflagProvider.
  */
 function UserProvider(props: UserProviderProps) {
+  const { company, ...rest } = props;
   const payload = useAuthTokenPayload();
   return (
     <ReflagProvider
-      {...props}
+      {...rest}
       publishableKey={config.bucket.publishableKey}
-      user={
-        payload
+      context={{
+        company,
+        user: payload
           ? { id: payload.account.id, name: payload.account.name ?? undefined }
-          : undefined
-      }
+          : undefined,
+      }}
       toolbar={
         process.env["NODE_ENV"] === "development" ||
         (payload?.account.slug
@@ -64,8 +69,8 @@ function UserProvider(props: UserProviderProps) {
 }
 
 const AccountQuery = graphql(`
-  query FeatureFlagProvider_account($slug: String!) {
-    account(slug: $slug) {
+  query FeatureFlagProvider_account($accountSlug: String!) {
+    account(slug: $accountSlug) {
       id
       name
       slug
@@ -81,8 +86,9 @@ function CompanyAndUserProvider(
     accountSlug: string;
   } & Omit<UserProviderProps, "company">,
 ) {
+  const { accountSlug, ...rest } = props;
   const { data, error } = useQuery(AccountQuery, {
-    variables: { slug: props.accountSlug },
+    variables: { accountSlug },
   });
 
   if (error) {
@@ -95,7 +101,7 @@ function CompanyAndUserProvider(
 
   return (
     <UserProvider
-      {...props}
+      {...rest}
       company={
         data.account
           ? {
