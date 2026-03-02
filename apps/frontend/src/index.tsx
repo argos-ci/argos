@@ -9,6 +9,7 @@ import "./index.css";
 import { invariant } from "@argos/util/invariant";
 
 import { APIError } from "./util/api";
+import { getSingleErrorCode } from "./util/error";
 
 if (process.env["NODE_ENV"] === "production") {
   Sentry.init({
@@ -18,44 +19,46 @@ if (process.env["NODE_ENV"] === "production") {
     ignoreErrors: [/^Unable to preload CSS/],
     beforeSend(event, hint) {
       const error = hint.originalException;
-      if (error instanceof APIError) {
+
+      if (error instanceof APIError && error.message === "invalid_grant") {
         // Invalid grant errors are not errors that should be reported.
         // See https://stackoverflow.com/a/38433986
-        if (error.message === "invalid_grant") {
-          event.level = "info";
-          return event;
-        }
-
-        // Never notify "SAML_SSO_REQUIRED", it's handled
-        if (error.code === "SAML_SSO_REQUIRED") {
-          return null;
-        }
-
-        // If the account is already attached, we don't need to report it,
-        // as it's a user error.
-        if (
-          // GitHub
-          error.code === "GITHUB_ACCOUNT_ALREADY_ATTACHED" ||
-          error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB" ||
-          error.code === "GITHUB_NO_VERIFIED_EMAIL" ||
-          // GitHub OAuth errors are also user errors.
-          error.code === "GITHUB_AUTH_INCORRECT_CLIENT_CREDENTIALS" ||
-          error.code === "GITHUB_AUTH_REDIRECT_URI_MISMATCH" ||
-          error.code === "GITHUB_AUTH_BAD_VERIFICATION_CODE" ||
-          error.code === "GITHUB_AUTH_UNVERIFIED_USER_EMAIL" ||
-          // GitLab
-          error.code === "GITLAB_ACCOUNT_ALREADY_ATTACHED" ||
-          error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITLAB" ||
-          error.code === "GITLAB_NO_VERIFIED_EMAIL" ||
-          // Google
-          error.code === "GOOGLE_ACCOUNT_ALREADY_ATTACHED" ||
-          error.code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE" ||
-          error.code === "GOOGLE_NO_VERIFIED_EMAIL"
-        ) {
-          event.level = "info";
-          return event;
-        }
+        event.level = "info";
+        return event;
       }
+
+      const code = getSingleErrorCode(error);
+
+      // Never notify "SAML_SSO_REQUIRED", it's handled
+      if (code === "SAML_SSO_REQUIRED") {
+        return null;
+      }
+
+      // If the account is already attached, we don't need to report it,
+      // as it's a user error.
+      if (
+        // GitHub
+        code === "GITHUB_ACCOUNT_ALREADY_ATTACHED" ||
+        code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITHUB" ||
+        code === "GITHUB_NO_VERIFIED_EMAIL" ||
+        // GitHub OAuth errors are also user errors.
+        code === "GITHUB_AUTH_INCORRECT_CLIENT_CREDENTIALS" ||
+        code === "GITHUB_AUTH_REDIRECT_URI_MISMATCH" ||
+        code === "GITHUB_AUTH_BAD_VERIFICATION_CODE" ||
+        code === "GITHUB_AUTH_UNVERIFIED_USER_EMAIL" ||
+        // GitLab
+        code === "GITLAB_ACCOUNT_ALREADY_ATTACHED" ||
+        code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GITLAB" ||
+        code === "GITLAB_NO_VERIFIED_EMAIL" ||
+        // Google
+        code === "GOOGLE_ACCOUNT_ALREADY_ATTACHED" ||
+        code === "ARGOS_ACCOUNT_ALREADY_ATTACHED_TO_GOOGLE" ||
+        code === "GOOGLE_NO_VERIFIED_EMAIL"
+      ) {
+        event.level = "info";
+        return event;
+      }
+
       return event;
     },
   });
