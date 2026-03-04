@@ -58,6 +58,7 @@
       "cache": false,
       "env": [
         "DATABASE_URL",
+        "APP_DATABASE_URL",
         "S3_PUBLIC_IMAGE_BASE_URL",
         "AWS_SCREENSHOTS_BUCKET",
         "SQIDS_ALPHABET"

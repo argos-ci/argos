@@ -442,7 +442,9 @@ export function createConfig() {
     config.get("github.privateKey").replace(/\\n/g, "\n"),
   );
 
-  if (process.env["DATABASE_URL"]) {
+  if (process.env["APP_DATABASE_URL"]) {
+    loadDatabaseConfigFromURL(process.env["APP_DATABASE_URL"], config);
+  } else if (process.env["DATABASE_URL"]) {
     loadDatabaseConfigFromURL(process.env["DATABASE_URL"], config);
   }
 
