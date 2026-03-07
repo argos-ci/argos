@@ -65,14 +65,14 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: aws/tasks/argos-web.json
-          container-name: argos-web
+          task-definition: aws/tasks/argos-app.json
+          container-name: argos-app
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: argos-web
+          service: argos-app
           cluster: argos-production
           wait-for-service-stability: true
