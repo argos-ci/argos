@@ -72,6 +72,7 @@
     "overrides": {
       "@types/express": "catalog:",
       "@types/express-serve-static-core": "catalog:",
+      "dompurify": "^3.3.2",
       "express": "catalog:",
       "lodash": "catalog:",
       "lodash-es": "catalog:",
