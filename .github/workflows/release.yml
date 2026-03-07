@@ -61,8 +61,8 @@ jobs:
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }},mode=max
           build-args: |
-            TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-            TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM=${{ vars.TURBO_TEAM }}
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
