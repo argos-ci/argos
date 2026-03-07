@@ -68,6 +68,8 @@ jobs:
           task-definition: aws/tasks/argos-app.json
           container-name: argos-app
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          environment-variables: |
+            NODE_ENV=production
           secrets: |
             DISCORD_WEBHOOK_URL=parameter/production/discord_webhook_url
             GITHUB_APP_ID=parameter/production/github_app_id
