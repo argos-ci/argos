@@ -73,7 +73,13 @@ jobs:
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           environment-variables: |
             NODE_ENV=production
+            API_BASE_URL=https://api.aws.argos-ci.com
+            SERVER_URL=https://app.aws.argos-ci.com
           secrets: |
+            AMQP_URL=/production/amqp_url
+            AWS_ACCESS_KEY_ID=/production/aws_access_key_id
+            AWS_SECRET_ACCESS_KEY=/production/aws_secret_access_key
+            DATABASE_URL=/production/database_url
             DISCORD_WEBHOOK_URL=/production/discord_webhook_url
             GITHUB_APP_ID=/production/github_app_id
             GITHUB_APP_PRIVATE_KEY=/production/github_app_private_key
