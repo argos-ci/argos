@@ -1,7 +1,7 @@
 {
   "family": "argos-worker-build-and-synchronize",
-  "taskRoleArn": "arn:aws:iam::385220074405:role/ecsArgosTaskRole",
-  "executionRoleArn": "arn:aws:iam::385220074405:role/ecsTaskExecutionRole",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
@@ -13,7 +13,7 @@
   "containerDefinitions": [
     {
       "name": "argos-worker-build-and-synchronize",
-      "image": "385220074405.dkr.ecr.us-east-1.amazonaws.com/argos/app:latest",
+      "image": "__IMAGE__",
       "command": [
         "node",
         "apps/backend/dist/processes/proc/build-and-synchronize.js"

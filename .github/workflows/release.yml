@@ -6,6 +6,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -15,6 +18,8 @@ env:
   ECS_CLUSTER: argos-production
   ECR_REPOSITORY: argos/app
   ECR_CACHE_TAG: buildcache
+  ECS_TASK_ROLE_ARN: ${{ secrets.ECS_TASK_ROLE_ARN }}
+  ECS_TASK_EXECUTION_ROLE_ARN: ${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}
 
 jobs:
   build:
@@ -88,11 +93,22 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Prepare migration task definition
+        id: prepare-task-def
+        run: |
+          set -euo pipefail
+          PREPARED_TASK_DEF="$RUNNER_TEMP/argos-migrate.task-definition.json"
+          sed \
+            -e "s|__TASK_ROLE_ARN__|$ECS_TASK_ROLE_ARN|g" \
+            -e "s|__EXECUTION_ROLE_ARN__|$ECS_TASK_EXECUTION_ROLE_ARN|g" \
+            aws/tasks/argos-migrate.json > "$PREPARED_TASK_DEF"
+          echo "task-definition=$PREPARED_TASK_DEF" >> "$GITHUB_OUTPUT"
+
       - name: Fill in task definition for migration
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: aws/tasks/argos-migrate.json
+          task-definition: ${{ steps.prepare-task-def.outputs.task-definition }}
           container-name: argos-migrate
           image: ${{ needs.build.outputs.image }}
           environment-variables: |
@@ -182,11 +198,22 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Prepare task definition
+        id: prepare-task-def
+        run: |
+          set -euo pipefail
+          PREPARED_TASK_DEF="$RUNNER_TEMP/${{ matrix.container-name }}.task-definition.json"
+          sed \
+            -e "s|__TASK_ROLE_ARN__|$ECS_TASK_ROLE_ARN|g" \
+            -e "s|__EXECUTION_ROLE_ARN__|$ECS_TASK_EXECUTION_ROLE_ARN|g" \
+            "${{ matrix.task-definition }}" > "$PREPARED_TASK_DEF"
+          echo "task-definition=$PREPARED_TASK_DEF" >> "$GITHUB_OUTPUT"
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ matrix.task-definition }}
+          task-definition: ${{ steps.prepare-task-def.outputs.task-definition }}
           container-name: ${{ matrix.container-name }}
           image: ${{ needs.build.outputs.image }}
           environment-variables: |
