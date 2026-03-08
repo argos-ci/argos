@@ -216,8 +216,8 @@ jobs:
           image: ${{ needs.build.outputs.image }}
           environment-variables: |
             NODE_ENV=production
-            API_BASE_URL=https://api.aws.argos-ci.com
-            SERVER_URL=https://app.aws.argos-ci.com
+            API_BASE_URL=https://api.argos-ci.com
+            SERVER_URL=https://app.argos-ci.com
           secrets: |
             AMQP_URL=/production/amqp_url
             AWS_ACCESS_KEY_ID=/production/aws_access_key_id
