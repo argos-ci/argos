@@ -60,6 +60,10 @@ export const createApp = async (): Promise<express.Express> => {
     app.use(redirectToHttps);
   }
 
+  app.get("/health", (_req, res) => {
+    res.sendStatus(200);
+  });
+
   await installAppRouter(app);
   installApiRouter(app);
 
