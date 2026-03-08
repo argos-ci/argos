@@ -8,7 +8,7 @@
       "command": ["node", "apps/backend/dist/processes/proc/web.js"],
       "portMappings": [
         {
-          "name": "4001",
+          "name": "http",
           "containerPort": 4001,
           "hostPort": 4001,
           "protocol": "tcp",
@@ -16,16 +16,6 @@
         }
       ],
       "essential": true,
-      "healthCheck": {
-        "command": [
-          "CMD-SHELL",
-          "curl -f http://localhost:4001/health || exit 1"
-        ],
-        "interval": 30,
-        "timeout": 5,
-        "retries": 3,
-        "startPeriod": 30
-      },
       "environment": [],
       "environmentFiles": [],
       "mountPoints": [],
