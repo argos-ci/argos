@@ -1,0 +1,30 @@
+{
+  "family": "argos-migrate",
+  "taskRoleArn": "arn:aws:iam::385220074405:role/ecsArgosTaskRole",
+  "executionRoleArn": "arn:aws:iam::385220074405:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "argos-migrate",
+      "image": "385220074405.dkr.ecr.us-east-1.amazonaws.com/argos/app:latest",
+      "command": ["scripts/release.sh"],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/argos-migrate",
+          "awslogs-create-group": "true",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

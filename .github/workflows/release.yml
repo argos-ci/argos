@@ -12,6 +12,7 @@ env:
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   AWS_REGION: us-east-1
+  ECS_CLUSTER: argos-production
   ECR_REPOSITORY: argos/app
   ECR_CACHE_TAG: buildcache
 
@@ -20,8 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      id-token: write # Required for OIDC authentication
+      id-token: write
       contents: read
+    outputs:
+      image: ${{ steps.image.outputs.value }}
 
     steps:
       - name: Check out repository code
@@ -49,7 +52,6 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=raw,value=latest
-          #   type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -64,13 +66,129 @@ jobs:
             TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
             TURBO_TEAM=${{ vars.TURBO_TEAM }}
 
+      - name: Export image reference
+        id: image
+        run: echo "value=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fill in task definition for migration
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: aws/tasks/argos-migrate.json
+          container-name: argos-migrate
+          image: ${{ needs.build.outputs.image }}
+          environment-variables: |
+            NODE_ENV=production
+          secrets: |
+            DATABASE_URL=/production/database_url
+
+      - name: Run ECS migration task
+        env:
+          TASK_DEF_FILE: ${{ steps.task-def.outputs.task-definition }}
+        run: |
+          set -euo pipefail
+
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "file://$TASK_DEF_FILE" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          SUBNETS=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services argos-app \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration.subnets' \
+            --output json | jq -r 'join(",")')
+
+          SECURITY_GROUPS=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services argos-app \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration.securityGroups' \
+            --output json | jq -r 'join(",")')
+
+          ASSIGN_PUBLIC_IP=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services argos-app \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration.assignPublicIp' \
+            --output text)
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "$ECS_CLUSTER" \
+            --task-definition "$TASK_DEF_ARN" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=$ASSIGN_PUBLIC_IP}" \
+            --started-by "github-actions-release-${GITHUB_RUN_ID}" \
+            --query 'tasks[0].taskArn' \
+            --output text)
+
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "$ECS_CLUSTER" \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration task failed with exit code: $EXIT_CODE"
+            exit 1
+          fi
+
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build, migrate]
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: argos-app
+            task-definition: aws/tasks/argos-app.json
+            container-name: argos-app
+          - service: argos-worker-build-and-synchronize
+            task-definition: aws/tasks/argos-worker-build-and-synchronize.json
+            container-name: argos-worker-build-and-synchronize
+          - service: argos-worker-screenshot-diff
+            task-definition: aws/tasks/argos-worker-screenshot-diffs.json
+            container-name: argos-worker-screenshot-diff
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: aws/tasks/argos-app.json
-          container-name: argos-app
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          task-definition: ${{ matrix.task-definition }}
+          container-name: ${{ matrix.container-name }}
+          image: ${{ needs.build.outputs.image }}
           environment-variables: |
             NODE_ENV=production
             API_BASE_URL=https://api.aws.argos-ci.com
@@ -119,6 +237,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: argos-app
-          cluster: argos-production
+          service: ${{ matrix.service }}
+          cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
