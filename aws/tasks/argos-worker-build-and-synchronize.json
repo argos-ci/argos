@@ -1,0 +1,33 @@
+{
+  "family": "argos-worker-build-and-synchronize",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "argos-worker-build-and-synchronize",
+      "image": "__IMAGE__",
+      "command": [
+        "node",
+        "apps/backend/dist/processes/proc/build-and-synchronize.js"
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/argos-worker-build-and-synchronize",
+          "awslogs-create-group": "true",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

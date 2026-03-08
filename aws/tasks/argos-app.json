@@ -1,0 +1,38 @@
+{
+  "family": "argos-app",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "3072",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "argos-app",
+      "image": "__IMAGE__",
+      "command": ["node", "apps/backend/dist/processes/proc/web.js"],
+      "essential": true,
+      "portMappings": [
+        {
+          "name": "http",
+          "containerPort": 4001,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/argos-app",
+          "awslogs-create-group": "true",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

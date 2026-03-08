@@ -55,6 +55,10 @@ export const createApp = async (): Promise<express.Express> => {
     app.use(morgan(config.get("server.logFormat")));
   }
 
+  app.get("/health", (_req, res) => {
+    res.sendStatus(200);
+  });
+
   // Redirect from http to https
   if (config.get("server.secure") && config.get("server.httpsRedirect")) {
     app.use(redirectToHttps);

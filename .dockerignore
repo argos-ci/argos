@@ -1,0 +1,13 @@
+.git
+.gitignore
+.DS_Store
+node_modules
+**/node_modules
+**/dist
+.turbo
+playwright-report
+screenshots
+.cache
+.env
+.env.*
+latest.dump

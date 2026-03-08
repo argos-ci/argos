@@ -1,0 +1,30 @@
+{
+  "family": "argos-migrate",
+  "taskRoleArn": "__TASK_ROLE_ARN__",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "argos-migrate",
+      "image": "__IMAGE__",
+      "command": ["scripts/release.sh"],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/argos-migrate",
+          "awslogs-create-group": "true",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

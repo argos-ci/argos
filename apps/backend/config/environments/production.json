@@ -17,9 +17,6 @@
     "url": "https://app.argos-ci.com",
     "httpsRedirect": true
   },
-  "database": {
-    "ssl": true
-  },
   "bucket": {
     "publishableKey": "pub_prod_6wTn7ig9Xc44FccXBc2uc9"
   }

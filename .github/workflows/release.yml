@@ -1,0 +1,267 @@
+name: Release
+permissions: {}
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  AWS_REGION: us-east-1
+  ECS_CLUSTER: argos-production
+  ECR_REPOSITORY: argos/app
+  ECR_CACHE_TAG: buildcache
+  ECS_TASK_ROLE_ARN: ${{ secrets.ECS_TASK_ROLE_ARN }}
+  ECS_TASK_EXECUTION_ROLE_ARN: ${{ secrets.ECS_TASK_EXECUTION_ROLE_ARN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.image.outputs.value }}
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          tags: |
+            type=sha,prefix=,format=long
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }}
+          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.ECR_CACHE_TAG }},mode=max
+          secrets: |
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+          build-args: |
+            TURBO_TEAM=${{ vars.TURBO_TEAM }}
+
+      - name: Export image reference
+        id: image
+        run: echo "value=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Prepare migration task definition
+        id: prepare-task-def
+        run: |
+          set -euo pipefail
+          PREPARED_TASK_DEF="$RUNNER_TEMP/argos-migrate.task-definition.json"
+          sed \
+            -e "s|__TASK_ROLE_ARN__|$ECS_TASK_ROLE_ARN|g" \
+            -e "s|__EXECUTION_ROLE_ARN__|$ECS_TASK_EXECUTION_ROLE_ARN|g" \
+            aws/tasks/argos-migrate.json > "$PREPARED_TASK_DEF"
+          echo "task-definition=$PREPARED_TASK_DEF" >> "$GITHUB_OUTPUT"
+
+      - name: Fill in task definition for migration
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.prepare-task-def.outputs.task-definition }}
+          container-name: argos-migrate
+          image: ${{ needs.build.outputs.image }}
+          environment-variables: |
+            NODE_ENV=production
+          secrets: |
+            DATABASE_URL=/production/database_url
+
+      - name: Run ECS migration task
+        env:
+          TASK_DEF_FILE: ${{ steps.task-def.outputs.task-definition }}
+        run: |
+          set -euo pipefail
+
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "file://$TASK_DEF_FILE" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          SUBNETS=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services argos-app \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration.subnets' \
+            --output json | jq -r 'join(",")')
+
+          SECURITY_GROUPS=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services argos-app \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration.securityGroups' \
+            --output json | jq -r 'join(",")')
+
+          ASSIGN_PUBLIC_IP=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services argos-app \
+            --query 'services[0].networkConfiguration.awsvpcConfiguration.assignPublicIp' \
+            --output text)
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "$ECS_CLUSTER" \
+            --task-definition "$TASK_DEF_ARN" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=$ASSIGN_PUBLIC_IP}" \
+            --started-by "github-actions-release-${GITHUB_RUN_ID}" \
+            --query 'tasks[0].taskArn' \
+            --output text)
+
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "$ECS_CLUSTER" \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration task failed with exit code: $EXIT_CODE"
+            exit 1
+          fi
+
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build, migrate]
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: argos-app
+            task-definition: aws/tasks/argos-app.json
+            container-name: argos-app
+          - service: argos-worker-build-and-synchronize
+            task-definition: aws/tasks/argos-worker-build-and-synchronize.json
+            container-name: argos-worker-build-and-synchronize
+          - service: argos-worker-screenshot-diff
+            task-definition: aws/tasks/argos-worker-screenshot-diffs.json
+            container-name: argos-worker-screenshot-diff
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Prepare task definition
+        id: prepare-task-def
+        run: |
+          set -euo pipefail
+          PREPARED_TASK_DEF="$RUNNER_TEMP/${{ matrix.container-name }}.task-definition.json"
+          sed \
+            -e "s|__TASK_ROLE_ARN__|$ECS_TASK_ROLE_ARN|g" \
+            -e "s|__EXECUTION_ROLE_ARN__|$ECS_TASK_EXECUTION_ROLE_ARN|g" \
+            "${{ matrix.task-definition }}" > "$PREPARED_TASK_DEF"
+          echo "task-definition=$PREPARED_TASK_DEF" >> "$GITHUB_OUTPUT"
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.prepare-task-def.outputs.task-definition }}
+          container-name: ${{ matrix.container-name }}
+          image: ${{ needs.build.outputs.image }}
+          environment-variables: |
+            NODE_ENV=production
+            API_BASE_URL=https://api.aws.argos-ci.com
+            SERVER_URL=https://app.aws.argos-ci.com
+          secrets: |
+            AMQP_URL=/production/amqp_url
+            AWS_ACCESS_KEY_ID=/production/aws_access_key_id
+            AWS_SECRET_ACCESS_KEY=/production/aws_secret_access_key
+            DATABASE_URL=/production/database_url
+            DISCORD_WEBHOOK_URL=/production/discord_webhook_url
+            GITHUB_APP_ID=/production/github_app_id
+            GITHUB_APP_PRIVATE_KEY=/production/github_app_private_key
+            GITHUB_APP_URL=/production/github_app_url
+            GITHUB_CLIENT_ID=/production/github_client_id
+            GITHUB_CLIENT_SECRET=/production/github_client_secret
+            GITHUB_LIGHT_APP_ID=/production/github_light_app_id
+            GITHUB_LIGHT_APP_PRIVATE_KEY=/production/github_light_app_private_key
+            GITHUB_LIGHT_APP_URL=/production/github_light_app_url
+            GITHUB_LIGHT_WEBHOOK_SECRET=/production/github_light_webhook_secret
+            GITHUB_PROXY_URL=/production/github_proxy_url
+            GITHUB_SSO_STRIPE_PRODUCT_ID=/production/github_sso_stripe_product_id
+            GITHUB_WEBHOOK_SECRET=/production/github_webhook_secret
+            GITLAB_APP_ID=/production/gitlab_app_id
+            GITLAB_APP_SECRET=/production/gitlab_app_secret
+            GITLAB_ARGOS_AUTH_SECRET=/production/gitlab_argos_auth_secret
+            GOOGLE_CLIENT_ID=/production/google_client_id
+            GOOGLE_CLIENT_SECRET=/production/google_client_secret
+            REDIS_URL=/production/redis_url
+            RESEND_API_KEY=/production/resend_api_key
+            RESEND_WEBHOOK_SECRET=/production/resend_webhook_secret
+            SCREENSHOT_STRIPE_PRODUCT_ID=/production/screenshot_stripe_product_id
+            SENTRY_AUTH_TOKEN=/production/sentry_auth_token
+            SENTRY_CLIENT_DSN=/production/sentry_client_dsn
+            SENTRY_SERVER_DSN=/production/sentry_server_dsn
+            SERVER_SESSION_SECRET=/production/server_session_secret
+            SLACK_CLIENT_ID=/production/slack_client_id
+            SLACK_CLIENT_SECRET=/production/slack_client_secret
+            SLACK_SIGNING_SECRET=/production/slack_signing_secret
+            SLACK_STATE_SECRET=/production/slack_state_secret
+            SQIDS_ALPHABET=/production/sqids_alphabet
+            STORYBOOK_SCREENSHOT_STRIPE_PRODUCT_ID=/production/storybook_screenshot_stripe_product_id
+            STRIPE_API_KEY=/production/stripe_api_key
+            STRIPE_WEBHOOK_SECRET=/production/stripe_webhook_secret
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ matrix.service }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
