@@ -27,6 +27,29 @@ type StripeClientReferenceIdPayload = z.infer<
   typeof StripeClientReferenceIdPayloadSchema
 >;
 
+function getCancelReason(
+  stripeSubscription: Stripe.Subscription,
+): string | undefined | null {
+  const cancellationDetails = stripeSubscription.cancellation_details;
+  if (!cancellationDetails) {
+    return undefined;
+  }
+
+  const reasonCandidates = [
+    cancellationDetails.comment,
+    cancellationDetails.feedback,
+    cancellationDetails.reason,
+  ]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  if (reasonCandidates.length === 0) {
+    return null;
+  }
+
+  return reasonCandidates[0];
+}
+
 export function encodeStripeClientReferenceId(
   payload: StripeClientReferenceIdPayload,
 ): string {
@@ -650,6 +673,7 @@ export async function handleStripeEvent({
                 previousStatus: argosSubscription.status,
                 status: "cancel_scheduled",
                 account,
+                cancelReason: getCancelReason(stripeSubscription),
               });
             }
           }
@@ -680,6 +704,7 @@ export async function handleStripeEvent({
             previousStatus: argosSubscription.status,
             status,
             account,
+            cancelReason: getCancelReason(stripeSubscription),
           });
         })(),
       ]);
