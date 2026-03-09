@@ -17,6 +17,7 @@ export async function notifyDiscord(input: { content: string }) {
   if (webhookClient) {
     await webhookClient.send({
       content: input.content,
+      allowedMentions: { parse: [] },
     });
   }
 }
