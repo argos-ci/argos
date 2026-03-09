@@ -38,6 +38,18 @@ import { badUserInput, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const METRICS_MAX_RANGE_DAYS = 90;
+
+function getUTCStartOfDayTimestamp(date: Date) {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function getInclusiveCalendarDayDiff(from: Date, to: Date) {
+  const fromDay = getUTCStartOfDayTimestamp(from);
+  const toDay = getUTCStartOfDayTimestamp(to);
+  return Math.floor((toDay - fromDay) / DAY_IN_MS) + 1;
+}
 
 export const typeDefs = gql`
   type AccountAvatar {
@@ -103,6 +115,7 @@ export const typeDefs = gql`
   input AccountMetricsInput {
     projectIds: [ID!]
     from: DateTime!
+    to: DateTime
     groupBy: TimeSeriesGroupBy!
   }
 
@@ -399,11 +412,34 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return ctx.loaders.GithubAccount.load(account.githubAccountId);
   },
   metrics: async (account, args) => {
+    const now = new Date();
+    const from = args.input.from;
+    const to =
+      args.input.to && args.input.to.getTime() <= now.getTime()
+        ? args.input.to
+        : now;
+
+    if (from.getTime() > to.getTime()) {
+      throw badUserInput("`from` must be before `to`.", {
+        field: ["from", "to"],
+      });
+    }
+
+    const durationDays = getInclusiveCalendarDayDiff(from, to);
+    if (durationDays > METRICS_MAX_RANGE_DAYS) {
+      throw badUserInput(
+        `Date range cannot exceed ${METRICS_MAX_RANGE_DAYS} days.`,
+        {
+          field: ["from", "to"],
+        },
+      );
+    }
+
     const params = {
       accountId: account.id,
       projectIds: args.input.projectIds,
-      from: args.input.from,
-      to: new Date(),
+      from,
+      to,
       groupBy: args.input.groupBy,
     };
     const [screenshots, builds] = await Promise.all([

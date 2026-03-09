@@ -31,6 +31,7 @@ import {
   getChartColorFromIndex,
   getTimeTicks,
 } from "@/ui/Charts";
+import { DateRangePicker } from "@/ui/DateRangePicker";
 import { IconButton } from "@/ui/IconButton";
 import {
   Page,
@@ -51,12 +52,13 @@ const AccountQuery = graphql(`
   query AccountUsage_account(
     $slug: String!
     $from: DateTime!
+    $to: DateTime!
     $groupBy: TimeSeriesGroupBy!
   ) {
     account(slug: $slug) {
       id
       permissions
-      metrics(input: { from: $from, groupBy: $groupBy }) {
+      metrics(input: { from: $from, to: $to, groupBy: $groupBy }) {
         screenshots {
           all {
             total
@@ -99,7 +101,8 @@ export function Component() {
   const [searchParams, setSearchParams] = useSearchParams({
     period: DEFAULT_PERIOD,
   });
-  const period = parsePeriod(searchParams.get("period"));
+  const customPeriod = parseCustomPeriod(searchParams);
+  const period = parsePeriod(searchParams.get("period"), Boolean(customPeriod));
 
   const setPeriod = useCallback(
     (value: Period) => {
@@ -110,6 +113,27 @@ export function Component() {
         } else {
           next.set("period", value);
         }
+        if (value !== "custom") {
+          next.delete("from");
+          next.delete("to");
+        } else {
+          const range = parseCustomPeriod(next) ?? getDefaultCustomPeriod();
+          next.set("from", getDateQueryValue(range.from));
+          next.set("to", getDateQueryValue(range.to));
+        }
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const setCustomPeriod = useCallback(
+    (range: { from: Date; to: Date }) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("period", "custom");
+        next.set("from", getDateQueryValue(range.from));
+        next.set("to", getDateQueryValue(range.to));
         return next;
       });
     },
@@ -135,25 +159,62 @@ export function Component() {
             </Text>
           </PageHeaderContent>
           <PageHeaderActions>
-            <PeriodSelect value={period} onChange={setPeriod} />
+            <div className="flex items-center gap-2">
+              <PeriodSelect value={period} onChange={setPeriod} />
+              {period === "custom" && customPeriod ? (
+                <DateRangePicker
+                  aria-label="Custom analytics period"
+                  granularity="day"
+                  value={customPeriod}
+                  onChange={(value) => {
+                    if (!checkIsDurationValid(value)) {
+                      return;
+                    }
+                    setCustomPeriod(value);
+                  }}
+                  validate={(value) => {
+                    if (!value) {
+                      return null;
+                    }
+                    const range = {
+                      from: new Date(`${value.start}T00:00:00`),
+                      to: new Date(`${value.end}T00:00:00`),
+                    };
+                    if (checkIsDurationValid(range)) {
+                      return null;
+                    }
+                    return `Date range cannot exceed ${MAX_DURATION_DAYS} days.`;
+                  }}
+                />
+              ) : null}
+            </div>
           </PageHeaderActions>
         </PageHeader>
         <Suspense fallback={<PageLoader />}>
-          <Charts accountSlug={accountSlug} period={period} />
+          <Charts
+            accountSlug={accountSlug}
+            period={period}
+            customPeriod={customPeriod}
+          />
         </Suspense>
       </PageContainer>
     </Page>
   );
 }
 
-function Charts(props: { accountSlug: string; period: Period }) {
-  const { accountSlug, period } = props;
-  const { from, to, groupBy } = Periods[period];
+function Charts(props: {
+  accountSlug: string;
+  period: Period;
+  customPeriod: { from: Date; to: Date } | null;
+}) {
+  const { accountSlug, period, customPeriod } = props;
+  const { from, to, groupBy } = getPeriodSettings(period, customPeriod);
 
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: {
       slug: accountSlug,
       from: from.toISOString(),
+      to: to.toISOString(),
       groupBy,
     },
   });
@@ -675,43 +736,38 @@ function EvolutionChart(props: {
   );
 }
 
-type Period = "last-7-days" | "last-30-days" | "last-90-days" | "last-365-days";
+type PresetPeriod = "last-7-days" | "last-30-days" | "last-90-days";
+type Period = PresetPeriod | "custom";
 
 const Periods: Record<
-  Period,
-  { from: Date; to: Date; groupBy: TimeSeriesGroupBy }
+  PresetPeriod,
+  { days: number; groupBy: TimeSeriesGroupBy }
 > = {
   "last-7-days": {
-    from: moment().startOf("day").subtract(7, "days").toDate(),
-    to: new Date(),
+    days: 7,
     groupBy: TimeSeriesGroupBy.Day,
   },
   "last-30-days": {
-    from: moment().startOf("day").subtract(30, "days").toDate(),
-    to: new Date(),
+    days: 30,
     groupBy: TimeSeriesGroupBy.Day,
   },
   "last-90-days": {
-    from: moment().startOf("day").subtract(90, "days").toDate(),
-    to: new Date(),
+    days: 90,
     groupBy: TimeSeriesGroupBy.Week,
-  },
-  "last-365-days": {
-    from: moment().startOf("day").subtract(365, "days").toDate(),
-    to: new Date(),
-    groupBy: TimeSeriesGroupBy.Month,
   },
 };
 
-const DEFAULT_PERIOD: Period = "last-30-days";
+const MAX_DURATION_DAYS = 90;
+const DEFAULT_PERIOD: PresetPeriod = "last-30-days";
 
-function parsePeriod(value: string | null): Period {
+function parsePeriod(value: string | null, hasCustomPeriod: boolean): Period {
   switch (value) {
     case "last-7-days":
     case "last-30-days":
     case "last-90-days":
-    case "last-365-days":
       return value;
+    case "custom":
+      return hasCustomPeriod ? value : DEFAULT_PERIOD;
     default:
       return DEFAULT_PERIOD;
   }
@@ -721,7 +777,7 @@ const PeriodLabels: Record<Period, string> = {
   "last-7-days": "Last 7 days",
   "last-30-days": "Last 30 days",
   "last-90-days": "Last 90 days",
-  "last-365-days": "Last 365 days",
+  custom: "Custom",
 };
 
 const GroupByLabels: Record<TimeSeriesGroupBy, string> = {
@@ -756,4 +812,75 @@ function PeriodSelect(props: {
       </Popover>
     </Select>
   );
+}
+
+function getDateQueryValue(date: Date): string {
+  return moment(date).format("YYYY-MM-DD");
+}
+
+function parseDateQueryValue(value: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = moment(value, "YYYY-MM-DD", true);
+  if (!parsed.isValid()) {
+    return null;
+  }
+  return parsed.startOf("day").toDate();
+}
+
+function getDurationInDays(range: { from: Date; to: Date }) {
+  return moment(range.to).diff(moment(range.from), "days") + 1;
+}
+
+function checkIsDurationValid(range: { from: Date; to: Date }) {
+  if (range.from > range.to) {
+    return false;
+  }
+  return getDurationInDays(range) <= MAX_DURATION_DAYS;
+}
+
+function getDefaultCustomPeriod() {
+  const now = moment();
+  return {
+    from: now.clone().startOf("day").subtract(30, "days").toDate(),
+    to: now.clone().startOf("day").toDate(),
+  };
+}
+
+function parseCustomPeriod(searchParams: URLSearchParams) {
+  const from = parseDateQueryValue(searchParams.get("from"));
+  const to = parseDateQueryValue(searchParams.get("to"));
+  if (!from || !to) {
+    return null;
+  }
+  const range = { from, to };
+  if (!checkIsDurationValid(range)) {
+    return null;
+  }
+  return range;
+}
+
+function getPeriodSettings(
+  period: Period,
+  customPeriod: { from: Date; to: Date } | null,
+) {
+  if (period === "custom") {
+    const range = customPeriod ?? getDefaultCustomPeriod();
+    return {
+      from: moment(range.from).startOf("day").toDate(),
+      to: moment(range.to).endOf("day").toDate(),
+      groupBy:
+        getDurationInDays(range) <= 30
+          ? TimeSeriesGroupBy.Day
+          : TimeSeriesGroupBy.Week,
+    };
+  }
+
+  const today = moment().startOf("day");
+  return {
+    from: today.clone().subtract(Periods[period].days, "days").toDate(),
+    to: today.clone().endOf("day").toDate(),
+    groupBy: Periods[period].groupBy,
+  };
 }
