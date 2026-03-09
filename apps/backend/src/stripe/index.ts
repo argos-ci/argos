@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -138,7 +139,7 @@ function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2025-02-24.acacia",
+  apiVersion: "2026-02-25.clover",
   typescript: true,
 });
 
@@ -186,32 +187,6 @@ async function checkSubscriptionPaymentMethodFilled(
   return customer.invoice_settings.default_payment_method !== null;
 }
 
-type StripeFlatTier = Stripe.Price.Tier & {
-  up_to: number;
-  flat_amount: number;
-  unit_amount: 0 | null;
-};
-
-type StripeUsageTier = Stripe.Price.Tier & {
-  unit_amount_decimal: string;
-};
-
-/**
- * Check if a tier is a flat tier.
- * A flat tier has a flat_amount, an up_to value and no unit_amount.
- */
-function checkIsFlatTier(tier: Stripe.Price.Tier): tier is StripeFlatTier {
-  return Boolean(tier.up_to && tier.flat_amount && !tier.unit_amount);
-}
-
-/**
- * Check if a tier is a usage tier.
- * A usage tier has a unit_amount_decimal and no flat_amount.
- */
-function checkIsUsageTier(tier: Stripe.Price.Tier): tier is StripeUsageTier {
-  return Boolean(tier.unit_amount_decimal && !tier.flat_amount);
-}
-
 const CurrencySchema = z.enum(["usd", "eur"]);
 
 /**
@@ -227,43 +202,17 @@ async function getPriceInfosFromStripeSubscription(
     | "currency"
     | "additionalScreenshotPrice"
     | "additionalStorybookScreenshotPrice"
+    | "startDate"
   >
 > {
   const planItem = getPlanItemFromStripeSubscription(stripeSubscription);
   const { price } = planItem;
+  const startDate = timestampToISOString(planItem.current_period_start);
   const currency = CurrencySchema.parse(price.currency);
 
   switch (price.billing_scheme) {
     case "tiered": {
-      const { tiers } = await stripe.prices.retrieve(price.id, {
-        expand: ["tiers"],
-      });
-      invariant(tiers);
-
-      // Find the highest flat tier "up_to" value
-      const includedScreenshots = tiers.reduce(
-        (max, tier) => {
-          if (!checkIsFlatTier(tier)) {
-            return max;
-          }
-          return Math.max(max ?? 0, tier.up_to);
-        },
-        null as null | number,
-      );
-
-      const usageTiers = tiers.filter((tier) => checkIsUsageTier(tier));
-      const firstUsageTier = usageTiers[0];
-      invariant(firstUsageTier, "no usage tier found");
-      invariant(usageTiers.length === 1, "multiple usage tiers found");
-
-      return {
-        includedScreenshots,
-        currency,
-        additionalScreenshotPrice: decimalToNumber(
-          firstUsageTier.unit_amount_decimal,
-        ),
-        additionalStorybookScreenshotPrice: null,
-      };
+      throw new Error("Tiered mode is not supported");
     }
     case "per_unit": {
       if (!price.tiers_mode) {
@@ -288,8 +237,9 @@ async function getPriceInfosFromStripeSubscription(
             );
 
             return {
-              includedScreenshots: includedScreenshots,
+              startDate,
               currency,
+              includedScreenshots: includedScreenshots,
               additionalScreenshotPrice: screenshotItem
                 ? getUnitAmountFromPrice(screenshotItem.price)
                 : null,
@@ -301,19 +251,15 @@ async function getPriceInfosFromStripeSubscription(
         }
       }
       return {
-        includedScreenshots: null,
+        startDate,
         currency,
+        includedScreenshots: null,
         additionalScreenshotPrice: null,
         additionalStorybookScreenshotPrice: null,
       };
     }
     default:
-      return {
-        includedScreenshots: null,
-        currency,
-        additionalScreenshotPrice: null,
-        additionalStorybookScreenshotPrice: null,
-      };
+      assertNever(price.billing_scheme);
   }
 }
 
@@ -342,9 +288,6 @@ async function getArgosSubscriptionDataFromStripe(
     checkSubscriptionPaymentMethodFilled(stripeSubscription),
     getPriceInfosFromStripeSubscription(stripeSubscription),
   ]);
-  const startDate = timestampToISOString(
-    stripeSubscription.current_period_start,
-  );
   const trialEndDate = stripeSubscription.trial_end
     ? timestampToISOString(stripeSubscription.trial_end)
     : null;
@@ -356,7 +299,6 @@ async function getArgosSubscriptionDataFromStripe(
     planId: plan.id,
     provider: "stripe",
     stripeSubscriptionId: stripeSubscription.id,
-    startDate,
     endDate,
     trialEndDate,
     paymentMethodFilled,
@@ -500,7 +442,6 @@ export async function updateStripeUsage(input: {
 
     // Get timestamp at second precision
     const timestamp = Math.ceil(Date.now() / 1000);
-    const item = getPlanItemFromStripeSubscription(stripeSubscription);
 
     const stripeCustomerId = stripeSubscription.customer;
     invariant(typeof stripeCustomerId === "string");
@@ -529,14 +470,6 @@ export async function updateStripeUsage(input: {
           value: String(additional.storybook),
         },
       }),
-      // Whereas old plans are using usage records.
-      item.plan.usage_type === "metered"
-        ? stripe.subscriptionItems.createUsageRecord(item.id, {
-            action: "set",
-            quantity: screenshots.all,
-            timestamp,
-          })
-        : null,
     ]);
 
     await subscription.$query().patch({
