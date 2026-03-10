@@ -1,11 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import {
-  getLocalTimeZone,
-  parseAbsolute,
-  today,
-} from "@internationalized/date";
+import { getLocalTimeZone, today } from "@internationalized/date";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
 import { FileDownIcon } from "lucide-react";
@@ -171,13 +167,9 @@ export function Component() {
                   aria-label="Custom analytics period"
                   granularity="day"
                   value={customPeriod}
-                  minValue={parseAbsolute(
-                    moment()
-                      .startOf("day")
-                      .subtract(MAX_DURATION_DAYS, "day")
-                      .toISOString(),
-                    getLocalTimeZone(),
-                  )}
+                  minValue={today(getLocalTimeZone()).subtract({
+                    days: MAX_DURATION_DAYS - 1,
+                  })}
                   maxValue={today(getLocalTimeZone())}
                   onChange={(value) => {
                     if (!checkIsDurationValid(value)) {
@@ -196,7 +188,6 @@ export function Component() {
                     if (checkIsDurationValid(range)) {
                       return null;
                     }
-                    console.log("INVALID");
                     return `Date range cannot exceed ${MAX_DURATION_DAYS} days.`;
                   }}
                 />
