@@ -350,7 +350,7 @@ async function importGithubProject(props: {
     accountId: account.id,
   });
 
-  const project = await Project.query().insertAndFetch({
+  const project = await createProject({
     name,
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
@@ -421,7 +421,7 @@ const importGitlabProject = async (props: {
     accountId: account.id,
   });
 
-  const project = await Project.query().insertAndFetch({
+  const project = await createProject({
     name,
     accountId: account.id,
     gitlabProjectId: glProject.id,
@@ -436,6 +436,16 @@ const importGitlabProject = async (props: {
 
   return project;
 };
+
+function createProject(
+  attrs: { name: string; accountId: string } & PartialModelObject<Project>,
+) {
+  return Project.query().insertAndFetch({
+    ...attrs,
+    // Automatically enable auto-ignore
+    autoIgnore: { changes: 3 },
+  });
+}
 
 export const resolvers: IResolvers = {
   Project: {
