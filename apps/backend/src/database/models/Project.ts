@@ -67,7 +67,7 @@ export class Project extends Model {
               { type: "null" },
               {
                 type: "object",
-                required: ["changes", "period"],
+                required: ["changes"],
                 properties: {
                   changes: { type: "integer", minimum: 1 },
                 },
