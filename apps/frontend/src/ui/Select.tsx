@@ -113,22 +113,22 @@ export function SelectButton({
       {...rest}
       className={clsx(
         /* Appearance */
-        "bg-app cursor-default appearance-none rounded-sm border leading-tight select-none",
+        "bg-app cursor-default appearance-none rounded-sm border select-none",
         /* Layout */
         "flex items-center justify-between",
         /* Focus */
-        "group-data-[focused]/select:border-active group-data-[focused]/select:outline-hidden",
+        "group-data-focused/select:border-active group-data-focused/select:outline-hidden",
         /* Hover */
-        "data-[hovered]:border-hover",
+        "data-hovered:border-hover",
         /* Disabled */
-        "group-data-[disabled]/select:opacity-disabled group-data-[disabled]/select:cursor-not-allowed",
+        "group-data-disabled/select:opacity-disabled group-data-disabled/select:cursor-not-allowed",
         /* Invalid */
-        "group-data-[invalid]/select:border-danger group-data-[invalid]/select:group-data-[focused]/select:border-danger-active group-data-[invalid]/select:data-[hovered]:border-danger-hover",
+        "group-data-invalid/select:border-danger group-data-invalid/select:group-data-focused/select:border-danger-active group-data-invalid/select:data-hovered:border-danger-hover",
         /* Placeholder */
-        "has-[[data-placeholder]]:text-low",
+        "has-data-placeholder:text-low",
         {
-          md: "gap-2 px-3 py-2 text-base",
-          sm: "gap-2 px-2 py-1 text-sm",
+          md: "gap-2 px-3 py-1.5 text-base leading-5",
+          sm: "gap-2 px-2 py-0.5 text-sm leading-4",
         }[size],
         rest.className,
       )}
