@@ -27,7 +27,7 @@ type DateRange = {
   to: Date;
 };
 
-export interface DateRangePickerProps extends Omit<
+interface DateRangePickerProps extends Omit<
   AriaDateRangePickerProps<DateValue>,
   "value" | "onChange" | "defaultValue" | "children"
 > {
