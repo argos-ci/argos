@@ -1,6 +1,11 @@
 import { Suspense, useCallback, useEffect, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import {
+  getLocalTimeZone,
+  parseAbsolute,
+  today,
+} from "@internationalized/date";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
 import { FileDownIcon } from "lucide-react";
@@ -166,6 +171,14 @@ export function Component() {
                   aria-label="Custom analytics period"
                   granularity="day"
                   value={customPeriod}
+                  minValue={parseAbsolute(
+                    moment()
+                      .startOf("day")
+                      .subtract(MAX_DURATION_DAYS, "day")
+                      .toISOString(),
+                    getLocalTimeZone(),
+                  )}
+                  maxValue={today(getLocalTimeZone())}
                   onChange={(value) => {
                     if (!checkIsDurationValid(value)) {
                       return;
@@ -183,6 +196,7 @@ export function Component() {
                     if (checkIsDurationValid(range)) {
                       return null;
                     }
+                    console.log("INVALID");
                     return `Date range cannot exceed ${MAX_DURATION_DAYS} days.`;
                   }}
                 />
@@ -736,7 +750,11 @@ function EvolutionChart(props: {
   );
 }
 
-type PresetPeriod = "last-7-days" | "last-30-days" | "last-90-days";
+type PresetPeriod =
+  | "last-7-days"
+  | "last-30-days"
+  | "last-90-days"
+  | "last-365-days";
 type Period = PresetPeriod | "custom";
 
 const Periods: Record<
@@ -755,9 +773,13 @@ const Periods: Record<
     days: 90,
     groupBy: TimeSeriesGroupBy.Week,
   },
+  "last-365-days": {
+    days: 365,
+    groupBy: TimeSeriesGroupBy.Month,
+  },
 };
 
-const MAX_DURATION_DAYS = 90;
+const MAX_DURATION_DAYS = 365;
 const DEFAULT_PERIOD: PresetPeriod = "last-30-days";
 
 function parsePeriod(value: string | null, hasCustomPeriod: boolean): Period {
@@ -765,6 +787,7 @@ function parsePeriod(value: string | null, hasCustomPeriod: boolean): Period {
     case "last-7-days":
     case "last-30-days":
     case "last-90-days":
+    case "last-365-days":
       return value;
     case "custom":
       return hasCustomPeriod ? value : DEFAULT_PERIOD;
@@ -777,6 +800,7 @@ const PeriodLabels: Record<Period, string> = {
   "last-7-days": "Last 7 days",
   "last-30-days": "Last 30 days",
   "last-90-days": "Last 90 days",
+  "last-365-days": "Last 365 days",
   custom: "Custom",
 };
 
@@ -873,7 +897,9 @@ function getPeriodSettings(
       groupBy:
         getDurationInDays(range) <= 30
           ? TimeSeriesGroupBy.Day
-          : TimeSeriesGroupBy.Week,
+          : getDurationInDays(range) <= 90
+            ? TimeSeriesGroupBy.Week
+            : TimeSeriesGroupBy.Month,
     };
   }
 

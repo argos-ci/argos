@@ -153,16 +153,17 @@ export function DateRangePicker({
                       "data-selected:my-[calc(var(--spacing)*0.5-0.5px)] data-selected:border-y-[0.5px]",
                       "data-selection-end:mr-[calc(var(--spacing)*0.5-0.5px)] data-selection-end:pr-0",
                       "data-selection-start:ml-[calc(var(--spacing)*0.5-0.5px)] data-selection-start:pl-0",
+                      "data-disabled:opacity-disabled data-disabled:cursor-not-allowed",
                     )}
                   >
                     {(renderProps) => (
                       <div
                         className={clsx(
-                          "flex size-8 items-center justify-center",
+                          "flex size-8 items-center justify-center rounded-full",
                           renderProps.isSelectionEnd ||
                             renderProps.isSelectionStart
-                            ? "bg-primary-solid group-invalid:bg-danger-solid rounded-full text-white"
-                            : null,
+                            ? "bg-primary-solid group-invalid:bg-danger-solid text-white"
+                            : "group-data-hovered:bg-(--violet-5)",
                         )}
                       >
                         {renderProps.defaultChildren}
