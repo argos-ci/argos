@@ -155,6 +155,7 @@ export const typeDefs = gql`
     total: Int!
     received: Int!
     nonce: String!
+    manualFinalization: Boolean!
   }
 
   type BuildConnection implements Connection {
@@ -247,14 +248,16 @@ export const resolvers: IResolvers = {
       return ctx.loaders.GithubPullRequest.load(build.githubPullRequestId);
     },
     parallel: (build) => {
-      if (!build.totalBatch || !build.batchCount || !build.externalId) {
-        return null;
+      if (build.batchCount !== null && build.externalId !== null) {
+        return {
+          total: build.totalBatch ?? -1,
+          received: build.batchCount,
+          nonce: build.externalId,
+          manualFinalization:
+            build.totalBatch === -1 || build.totalBatch === null,
+        };
       }
-      return {
-        total: build.totalBatch,
-        received: build.batchCount,
-        nonce: build.externalId,
-      };
+      return null;
     },
     baseBranch: async (build, _args, ctx) => {
       if (build.baseBranch) {
