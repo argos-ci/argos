@@ -16,9 +16,15 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
 import { BuildDiffList } from "./BuildDiffList";
-import { useSearchModeState, useSearchState } from "./BuildDiffState";
+import {
+  useMetadataFilterState,
+  useSearchModeState,
+  useSearchState,
+} from "./BuildDiffState";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
+import { ActiveFilterPills } from "./metadata/ActiveFilterPills";
+import { FilterButton } from "./metadata/FilterButton";
 
 function Tab(
   props: TabProps & {
@@ -29,8 +35,8 @@ function Tab(
     <RACTab
       className={clsx(
         "text-low rac-focus cursor-default rounded-sm px-2 text-sm leading-6 font-medium",
-        "data-[hovered]:bg-ui",
-        "data-[selected]:text-default data-[selected]:bg-ui",
+        "data-hovered:bg-ui",
+        "data-selected:text-default data-selected:bg-ui",
       )}
       {...props}
     />
@@ -77,6 +83,8 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
 }) {
   const { build } = props;
   const { searchMode, setSearchMode } = useSearchModeState();
+  const { tags, selectedFilters, setSelectedFilters } =
+    useMetadataFilterState();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const enterSearchMode = useCallback(() => {
     startTransition(() => {
@@ -103,7 +111,7 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
       className="group/sidebar flex w-73.75 shrink-0 flex-col border-r-[0.5px]"
     >
       {build.type !== BuildType.Skipped ? (
-        <div className="flex shrink-0 items-center border-b px-2">
+        <div className="flex shrink-0 items-center gap-1 border-b px-2">
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />
@@ -139,17 +147,26 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
               </HotkeyTooltip>
             </>
           )}
+          {tags.length > 0 && (
+            <FilterButton
+              tags={tags}
+              selectedFilters={selectedFilters}
+              setSelectedFilters={setSelectedFilters}
+            />
+          )}
         </div>
       ) : null}
 
       {searchMode ? (
         <div className="flex min-h-0 flex-1 flex-col">
+          <ActiveFilterPills />
           <BuildDiffList />
         </div>
       ) : (
         <>
           {build.type !== BuildType.Skipped ? (
             <TabPanel id="screenshots" className="flex min-h-0 flex-1 flex-col">
+              <ActiveFilterPills />
               <BuildDiffList />
             </TabPanel>
           ) : null}
