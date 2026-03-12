@@ -33,10 +33,10 @@ import {
   useHasPreviousDiff,
 } from "./BuildDiffState";
 import {
-  EvaluationStatus,
   useAcknowledgeMarkedDiff,
   useBuildDiffStatusState,
 } from "./BuildReviewState";
+import { EvaluationStatus } from "./EvaluationStatus";
 import { AnnotationIndicator } from "./metadata/AnnotationIndicator";
 import { AutomationLibraryIndicator } from "./metadata/automationLibrary/AutomationLibraryIndicator";
 import {

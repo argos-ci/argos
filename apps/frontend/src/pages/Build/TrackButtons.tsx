@@ -11,10 +11,10 @@ import { useNonNullable } from "@/util/useNonNullable";
 
 import { Diff } from "./BuildDiffState";
 import {
-  EvaluationStatus,
   useAcknowledgeMarkedDiff,
   useBuildDiffStatusState,
 } from "./BuildReviewState";
+import { EvaluationStatus } from "./EvaluationStatus";
 
 function useEvaluationToggle(props: {
   diffId: string;

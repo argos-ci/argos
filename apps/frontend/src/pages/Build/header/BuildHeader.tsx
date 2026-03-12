@@ -28,10 +28,8 @@ import {
   BuildReviewButton,
   DisabledBuildReviewButton,
 } from "../BuildReviewButton";
-import {
-  EvaluationStatus,
-  useGetDiffEvaluationStatus,
-} from "../BuildReviewState";
+import { useGetDiffEvaluationStatus } from "../BuildReviewState";
+import { EvaluationStatus } from "../EvaluationStatus";
 
 const _BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {

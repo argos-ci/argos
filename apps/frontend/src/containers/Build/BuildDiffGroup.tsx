@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { ScreenshotDiffStatus } from "@/gql/graphql";
-import { EvaluationStatus } from "@/pages/Build/BuildReviewState";
+import { EvaluationStatus } from "@/pages/Build/EvaluationStatus";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
 

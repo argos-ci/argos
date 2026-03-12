@@ -121,6 +121,10 @@ function RootErrorBoundary() {
   const isSAMLRequired = checkIsErrorCode(error, "SAML_SSO_REQUIRED");
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.error(error);
+    }
+
     if (isSAMLRequired) {
       return;
     }

@@ -65,6 +65,9 @@ const ApolloProvider = (props: {
               return `Account:${obj.id}`;
             },
           },
+          TestMetrics: {
+            merge: false,
+          },
         },
       }),
       link: ApolloLink.from([logoutLink, retryLink, httpLink]),
