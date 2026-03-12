@@ -27,7 +27,8 @@ import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
 import { getBuildURL, type BuildParams } from "./BuildParams";
-import { EvaluationStatus, useBuildReviewState } from "./BuildReviewState";
+import { useBuildReviewState } from "./BuildReviewState";
+import { EvaluationStatus } from "./EvaluationStatus";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`

@@ -30,12 +30,7 @@ import {
 } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
 import { useReviewDialog } from "./BuildReviewDialog";
-
-export enum EvaluationStatus {
-  Accepted = "accepted",
-  Rejected = "rejected",
-  Pending = "pending",
-}
+import { EvaluationStatus } from "./EvaluationStatus";
 
 type Listener = (value: { id: Diff["id"]; status: EvaluationStatus }) => void;
 

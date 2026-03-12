@@ -7,10 +7,10 @@ import {
   PartyPopperIcon,
   TriangleAlertIcon,
 } from "lucide-react";
+import { useQueryState } from "nuqs";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useSearchParams } from "react-router-dom";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
@@ -45,7 +45,6 @@ import {
 } from "@/ui/Layout";
 import { Separator } from "@/ui/Separator";
 import { Tooltip } from "@/ui/Tooltip";
-import { useEventCallback } from "@/ui/useEventCallback";
 import useViewportSize from "@/ui/useViewportSize";
 
 import { NotFound } from "../NotFound";
@@ -273,24 +272,13 @@ type TestChangeDocument = DocumentType<typeof _ChangesFragment>;
 const CHANGE_PARAM = "change" satisfies keyof TestSearchParams;
 
 function useActiveChange(props: { test: TestDocument }) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeDiffIdParam = searchParams.get(CHANGE_PARAM);
   const defaultChange = props.test.changes.edges[0] ?? null;
-  const activeChange =
-    props.test.changes.edges.find(
-      (change) => change.id === activeDiffIdParam,
-    ) ?? defaultChange;
-  const setActiveChangeId = useEventCallback((changeId: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
-      if (changeId === defaultChange?.id) {
-        newParams.delete(CHANGE_PARAM);
-      } else {
-        newParams.set(CHANGE_PARAM, changeId);
-      }
-      return newParams;
-    });
+  const [activeChangeId, setActiveChangeId] = useQueryState(CHANGE_PARAM, {
+    defaultValue: defaultChange?.id ?? "",
   });
+  const activeChange =
+    props.test.changes.edges.find((change) => change.id === activeChangeId) ??
+    defaultChange;
   return [activeChange, setActiveChangeId] as const;
 }
 

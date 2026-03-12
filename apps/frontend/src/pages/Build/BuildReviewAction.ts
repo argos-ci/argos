@@ -12,10 +12,10 @@ import {
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import {
-  EvaluationStatus,
   useBuildReviewAPI,
   useGetReviewedDiffStatuses,
 } from "./BuildReviewState";
+import { EvaluationStatus } from "./EvaluationStatus";
 
 const ReviewBuildMutation = graphql(`
   mutation BuildReviewAction_reviewBuild($input: ReviewBuildInput!) {

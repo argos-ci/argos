@@ -64,13 +64,13 @@ import {
   useSearchModeState,
 } from "./BuildDiffState";
 import {
-  EvaluationStatus,
   useGetDiffEvaluationStatus,
   useGetDiffGroupEvaluationStatus,
   useGetDiffStatus,
   useWatchItemReview,
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
+import { EvaluationStatus } from "./EvaluationStatus";
 
 const DIFF_IMAGE_CONFIG = {
   maxWidth: 262,

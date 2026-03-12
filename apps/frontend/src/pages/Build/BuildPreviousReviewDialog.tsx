@@ -13,11 +13,11 @@ import {
 } from "@/ui/Dialog";
 
 import {
-  EvaluationStatus,
   useAcknowledgeMarkedDiff,
   useBuildReviewAPI,
   useBuildReviewState,
 } from "./BuildReviewState";
+import { EvaluationStatus } from "./EvaluationStatus";
 
 const _BuildFragment = graphql(`
   fragment BuildPreviousReviewDialog_Build on Build {
