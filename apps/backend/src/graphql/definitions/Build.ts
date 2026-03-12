@@ -155,7 +155,6 @@ export const typeDefs = gql`
     total: Int!
     received: Int!
     nonce: String!
-    manualFinalization: Boolean!
   }
 
   type BuildConnection implements Connection {
@@ -253,8 +252,6 @@ export const resolvers: IResolvers = {
           total: build.totalBatch ?? -1,
           received: build.batchCount,
           nonce: build.externalId,
-          manualFinalization:
-            build.totalBatch === -1 || build.totalBatch === null,
         };
       }
       return null;
