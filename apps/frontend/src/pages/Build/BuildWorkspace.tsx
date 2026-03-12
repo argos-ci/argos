@@ -11,6 +11,8 @@ import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
 
+import { Code } from "../../ui/Code";
+import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
@@ -66,6 +68,7 @@ const BuildProgress = memo(function BuildProgress({
           <div className="mb-0.5 flex justify-between font-medium tabular-nums">
             <div>
               {parallel.received} batch{parallel.received > 1 ? "es" : ""}
+              {parallel.total === -1 && " received"}
             </div>
             {parallel.total > 0 && (
               <div className="text-low">/ {parallel.total}</div>
@@ -75,7 +78,19 @@ const BuildProgress = memo(function BuildProgress({
             {parallel.nonce}
           </div>
           {parallel.total === -1 && (
-            <div className="text-sm">Waiting for build to be finalized.</div>
+            <div className="mt-4 space-y-1 border-l-2 pl-3 text-sm">
+              <div className="text-sm">Waiting for build to be finalized.</div>
+              <div>
+                Run <Code>argos finalize</Code> to complete this build in{" "}
+                <Link
+                  href="https://argos-ci.com/docs/parallel-testing#modes"
+                  target="_blank"
+                >
+                  manual parallel mode
+                </Link>
+                .
+              </div>
+            </div>
           )}
         </div>
       )}

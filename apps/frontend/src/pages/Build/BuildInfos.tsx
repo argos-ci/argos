@@ -7,7 +7,11 @@ import {
   BuildModeLabel,
 } from "@/containers/BuildModeIndicator";
 import { DocumentType, graphql } from "@/gql";
-import { BaseBranchResolution, TestReportStatus } from "@/gql/graphql";
+import {
+  BaseBranchResolution,
+  BuildStatus,
+  TestReportStatus,
+} from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 import { getTestReportStatusDescriptor } from "@/util/build";
@@ -27,6 +31,7 @@ const _BuildFragment = graphql(`
     mode
     mergeQueue
     subset
+    status
     stats {
       total
     }
@@ -309,7 +314,15 @@ export function BuildInfos(props: {
           {build.parallel.total === -1 ? (
             <>
               <Dt>Sharding</Dt>
-              <Dd>Finalized manually</Dd>
+              <Dd>
+                {build.parallel.received} batch
+                {build.parallel.received > 1 ? "es" : ""} received
+                <br />
+                {build.status === BuildStatus.Pending ||
+                build.status === BuildStatus.Expired
+                  ? "Waiting for manual finalization"
+                  : "Finalized manually"}
+              </Dd>
             </>
           ) : (
             <>

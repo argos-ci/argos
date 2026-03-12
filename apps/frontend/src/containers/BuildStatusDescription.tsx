@@ -44,10 +44,24 @@ export function BuildStatusDescription(props: {
       if (build.parallel.total === -1) {
         return (
           <>
-            The build was aborted because it took too long to be finalized.
-            <br />
-            Received {build.parallel.received} batches with nonce{" "}
-            <span className="font-mono">{build.parallel.nonce}</span>.
+            <div>
+              This build expired while waiting for <Code>argos finalize</Code>.
+            </div>
+            <div>
+              <Link
+                external
+                target="_blank"
+                href="https://argos-ci.com/docs/parallel-testing#modes"
+              >
+                How to finalize in manual mode
+              </Link>
+            </div>
+
+            <div className="text-low mt-1">
+              Received {build.parallel.received} batch
+              {build.parallel.received === 1 ? "" : "es"} for nonce{" "}
+              <span className="font-mono">{build.parallel.nonce}</span>.
+            </div>
           </>
         );
       }
