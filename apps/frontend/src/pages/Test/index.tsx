@@ -7,6 +7,7 @@ import {
   PartyPopperIcon,
   TriangleAlertIcon,
 } from "lucide-react";
+import { useOptimisticSearchParams } from "nuqs/adapters/react-router/v7";
 import { useNumberFormatter } from "react-aria";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
@@ -273,7 +274,8 @@ type TestChangeDocument = DocumentType<typeof _ChangesFragment>;
 const CHANGE_PARAM = "change" satisfies keyof TestSearchParams;
 
 function useActiveChange(props: { test: TestDocument }) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParams = useOptimisticSearchParams();
+  const [, setSearchParams] = useSearchParams();
   const activeDiffIdParam = searchParams.get(CHANGE_PARAM);
   const defaultChange = props.test.changes.edges[0] ?? null;
   const activeChange =
@@ -281,8 +283,8 @@ function useActiveChange(props: { test: TestDocument }) {
       (change) => change.id === activeDiffIdParam,
     ) ?? defaultChange;
   const setActiveChangeId = useEventCallback((changeId: string) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
+    setSearchParams(() => {
+      const newParams = new URLSearchParams(searchParams);
       if (changeId === defaultChange?.id) {
         newParams.delete(CHANGE_PARAM);
       } else {
