@@ -3,6 +3,8 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
+import { Comment } from "./Comment";
+import { CommentReaction } from "./CommentReaction";
 import { GitlabUser } from "./GitlabUser";
 import { GoogleUser } from "./GoogleUser";
 import { Team } from "./Team";
@@ -106,6 +108,22 @@ export class User extends Model {
         },
         modify: (query) => query.whereRaw(`team_invites."expiresAt" > now()`),
       },
+      comments: {
+        relation: Model.HasManyRelation,
+        modelClass: Comment,
+        join: {
+          from: "users.id",
+          to: "comments.userId",
+        },
+      },
+      commentReactions: {
+        relation: Model.HasManyRelation,
+        modelClass: CommentReaction,
+        join: {
+          from: "users.id",
+          to: "comment_reactions.userId",
+        },
+      },
     };
   }
 
@@ -116,6 +134,8 @@ export class User extends Model {
   gitlabUser?: GitlabUser;
   googleUser?: GoogleUser;
   emails?: UserEmail[];
+  comments?: Comment[];
+  commentReactions?: CommentReaction[];
 
   static getPermissions(
     userId: string,
