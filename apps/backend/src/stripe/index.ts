@@ -38,7 +38,6 @@ function getCancelReason(
   const reasonCandidates = [
     cancellationDetails.comment,
     cancellationDetails.feedback,
-    cancellationDetails.reason,
   ]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value));
