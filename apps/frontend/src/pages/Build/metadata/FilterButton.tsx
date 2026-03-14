@@ -1,33 +1,36 @@
+import { useState } from "react";
 import { FilterIcon } from "lucide-react";
-import { CheckboxGroup } from "react-aria-components";
+import type { Selection } from "react-aria-components";
 
-import { Checkbox } from "@/ui/Checkbox";
-import { DialogTrigger } from "@/ui/Dialog";
 import { IconButton } from "@/ui/IconButton";
+import {
+  Menu,
+  MenuCheckboxItem,
+  MenuItem,
+  MenuTrigger,
+  SubmenuTrigger,
+} from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
 import { MetadataFilterContextValue } from "./MetadataFilterState";
 
 function getTagsByCategory(tags: MetadataFilterContextValue["tags"]) {
   const tagsByCategory = new Map<string, MetadataFilterContextValue["tags"]>();
-
   for (const tag of tags) {
-    const categoryTags = tagsByCategory.get(tag.category) ?? [];
-    categoryTags.push(tag);
-    tagsByCategory.set(tag.category, categoryTags);
+    const list = tagsByCategory.get(tag.category);
+    if (!list) {
+      tagsByCategory.set(tag.category, [tag]);
+      continue;
+    }
+    list.push(tag);
   }
-
   return tagsByCategory;
 }
 
-function getSelectedCategoryFilters({
-  categoryKeys,
-  selectedFilters,
-}: {
-  categoryKeys: Set<string>;
-  selectedFilters: string[];
-}) {
-  return selectedFilters.filter((filter) => categoryKeys.has(filter));
+function getCategoryFilters(props: { category: string; filters: string[] }) {
+  return new Set(
+    props.filters.filter((filter) => filter.startsWith(`${props.category}:`)),
+  );
 }
 
 export function FilterButton({
@@ -35,14 +38,15 @@ export function FilterButton({
   selectedFilters,
   setSelectedFilters,
 }: MetadataFilterContextValue) {
+  const [isOpen, setIsOpen] = useState(false);
   const hasActiveFilters = selectedFilters.length > 0;
   const tagsByCategory = getTagsByCategory(tags);
 
   const filterGroups = Array.from(tagsByCategory.entries()).map(
-    ([category, tags]) => ({
+    ([category, categoryTags]) => ({
       key: category,
       label: category,
-      options: tags.map((tag) => ({
+      options: categoryTags.map((tag) => ({
         key: `${tag.category}:${tag.value}`,
         label: tag.label,
         count: tag.count,
@@ -50,56 +54,75 @@ export function FilterButton({
     }),
   );
 
-  function handleOnChange(categoryKey: string, categoryValue: string[]) {
-    const nextFilters = selectedFilters.filter(
-      (filter) => !filter.startsWith(`${categoryKey}:`),
+  function handleCategorySelectionChange(
+    category: string,
+    selection: Selection,
+  ) {
+    const group = filterGroups.find((group) => group.key === category);
+    if (!group) {
+      return;
+    }
+
+    const nextCategoryFilters =
+      selection === "all"
+        ? group.options.map((option) => option.key)
+        : Array.from(selection, String);
+    const filtersOutsideCategory = selectedFilters.filter(
+      (filter) => !filter.startsWith(`${category}:`),
     );
-    setSelectedFilters([...nextFilters, ...categoryValue]);
+    setSelectedFilters([...filtersOutsideCategory, ...nextCategoryFilters]);
   }
 
   return (
-    <DialogTrigger>
+    <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <IconButton size="small" aria-pressed={hasActiveFilters}>
         <FilterIcon />
       </IconButton>
+      <Popover placement="bottom start" className="bg-app w-40">
+        {isOpen ? (
+          <Menu aria-label="Metadata filters" className="w-full">
+            {filterGroups.map((group) => {
+              const category = group.key;
+              const selectedCategoryFilters = getCategoryFilters({
+                category,
+                filters: selectedFilters,
+              });
 
-      <Popover placement="bottom end" className="w-56">
-        <div className="max-h-80 w-full overflow-auto">
-          {filterGroups.map((group) => {
-            const categoryKeys = new Set(
-              group.options.map((option) => option.key),
-            );
-            const selectedCategoryFilters = getSelectedCategoryFilters({
-              categoryKeys,
-              selectedFilters,
-            });
-
-            return (
-              <CheckboxGroup
-                key={group.key}
-                aria-label={group.label}
-                value={selectedCategoryFilters}
-                onChange={(value) => handleOnChange(group.key, value)}
-                className="pb-1 last:border-b-0"
-              >
-                <div className="text-low text-xxs px-2 pt-1 font-semibold">
-                  {group.label}
-                </div>
-                {group.options.map((option) => (
-                  <Checkbox
-                    key={option.key}
-                    value={option.key}
-                    className="hover:bg-hover w-full rounded-sm px-2 py-1.5 text-sm"
-                  >
-                    <span className="min-w-0 flex-1">{option.label}</span>
-                    <span className="text-low text-xs">{option.count}</span>
-                  </Checkbox>
-                ))}
-              </CheckboxGroup>
-            );
-          })}
-        </div>
+              return (
+                <SubmenuTrigger key={group.key}>
+                  <MenuItem id={group.key}>{group.label}</MenuItem>
+                  <Popover className="bg-white">
+                    <Menu
+                      aria-label={`${group.label} filters`}
+                      selectionMode="multiple"
+                      selectedKeys={selectedCategoryFilters}
+                      onSelectionChange={(selection) =>
+                        handleCategorySelectionChange(category, selection)
+                      }
+                      className="min-w-32"
+                    >
+                      {group.options.map((option) => (
+                        <MenuCheckboxItem
+                          key={option.key}
+                          id={option.key}
+                          textValue={option.label}
+                        >
+                          <div className="flex flex-1 items-center justify-between gap-6">
+                            <span className="truncate">{option.label}</span>
+                            <span className="text-low shrink-0 text-xs">
+                              {option.count}
+                            </span>
+                          </div>
+                        </MenuCheckboxItem>
+                      ))}
+                    </Menu>
+                  </Popover>
+                </SubmenuTrigger>
+              );
+            })}
+          </Menu>
+        ) : null}
       </Popover>
-    </DialogTrigger>
+    </MenuTrigger>
   );
 }

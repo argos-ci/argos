@@ -18,13 +18,14 @@ import {
   Separator,
 } from "react-aria-components";
 
+import { Checkbox } from "./Checkbox";
 import { Tooltip } from "./Tooltip";
 
 export function MenuSeparator() {
   return <Separator className="my-1 border-t" />;
 }
 
-export { MenuTrigger } from "react-aria-components";
+export { MenuTrigger, SubmenuTrigger } from "react-aria-components";
 
 export function Menu<T extends object>(
   props: MenuProps<T> & {
@@ -49,6 +50,9 @@ const menuItemVariantClasses: Record<MenuItemVariant, string> = {
   danger: "text-danger-low data-[focused]:bg-danger-hover",
 };
 
+const menuItemClassName =
+  "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent data-[open]:bg-active";
+
 export function MenuItem(
   props: Omit<MenuItemProps, "className"> & {
     variant?: MenuItemVariant;
@@ -60,7 +64,7 @@ export function MenuItem(
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
-        "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent",
+        menuItemClassName,
       )}
       {...props}
     >
@@ -92,6 +96,36 @@ export function MenuItem(
 
         return props.children;
       }}
+    </RACMenuItem>
+  );
+}
+
+export function MenuCheckboxItem(
+  props: Omit<MenuItemProps, "className"> & {
+    variant?: MenuItemVariant;
+    children: React.ReactNode;
+  },
+) {
+  return (
+    <RACMenuItem
+      className={clsx(
+        menuItemVariantClasses[props.variant ?? "default"],
+        props.href ? "cursor-pointer" : "cursor-default",
+        menuItemClassName,
+      )}
+      {...props}
+    >
+      {(menuProps) => (
+        <Checkbox
+          isSelected={menuProps.isSelected}
+          isDisabled={menuProps.isDisabled}
+          isReadOnly
+          excludeFromTabOrder
+          className="w-full"
+        >
+          {props.children}
+        </Checkbox>
+      )}
     </RACMenuItem>
   );
 }
