@@ -36,7 +36,6 @@ import {
   type MetadataFilterContextValue,
 } from "./metadata/MetadataFilterState";
 
-export type { MetadataTag } from "./metadata/MetadataFilterState";
 export { useMetadataFilterState } from "./metadata/MetadataFilterState";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -644,9 +643,10 @@ export function BuildDiffProvider(props: {
     return diffs;
   }, [screenshotDiffs, results, searchMode, selectedFilters]);
 
+  // Keep available filter options stable while filters/search are changing.
   const metadataTags = useMemo(
-    () => extractMetadataTags(filteredDiffs),
-    [filteredDiffs],
+    () => extractMetadataTags(screenshotDiffs),
+    [screenshotDiffs],
   );
 
   const [initialDiffIdParam] = useState(params.diffId);
