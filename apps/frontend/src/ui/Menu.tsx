@@ -24,7 +24,7 @@ export function MenuSeparator() {
   return <Separator className="my-1 border-t" />;
 }
 
-export { MenuTrigger } from "react-aria-components";
+export { MenuTrigger, SubmenuTrigger } from "react-aria-components";
 
 export function Menu<T extends object>(
   props: MenuProps<T> & {
@@ -49,6 +49,9 @@ const menuItemVariantClasses: Record<MenuItemVariant, string> = {
   danger: "text-danger-low data-[focused]:bg-danger-hover",
 };
 
+const menuItemClassName =
+  "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent data-[open]:bg-active";
+
 export function MenuItem(
   props: Omit<MenuItemProps, "className"> & {
     variant?: MenuItemVariant;
@@ -60,7 +63,7 @@ export function MenuItem(
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
-        "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent",
+        menuItemClassName,
       )}
       {...props}
     >
@@ -92,6 +95,41 @@ export function MenuItem(
 
         return props.children;
       }}
+    </RACMenuItem>
+  );
+}
+
+export function MenuCheckboxItem(
+  props: Omit<MenuItemProps, "className"> & {
+    variant?: MenuItemVariant;
+    children: React.ReactNode;
+  },
+) {
+  return (
+    <RACMenuItem
+      className={clsx(
+        menuItemVariantClasses[props.variant ?? "default"],
+        menuItemClassName,
+      )}
+      {...props}
+    >
+      {(menuProps) => (
+        <div className="flex w-full items-center gap-2">
+          <button type="button" tabIndex={-1} className="shrink-0">
+            <span
+              className={clsx(
+                "border-primary hover:border-active flex size-4 items-center justify-center rounded-sm border",
+                menuProps.isSelected &&
+                  "bg-primary-active text-primary border-active",
+                menuProps.isDisabled && "opacity-disabled",
+              )}
+            >
+              {menuProps.isSelected ? <CheckIcon className="size-4" /> : null}
+            </span>
+          </button>
+          <div className="min-w-0 flex-1 select-none">{props.children}</div>
+        </div>
+      )}
     </RACMenuItem>
   );
 }

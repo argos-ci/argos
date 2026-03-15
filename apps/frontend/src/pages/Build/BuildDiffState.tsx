@@ -29,6 +29,14 @@ import { useLiveRef } from "@/ui/useLiveRef";
 import { getBuildURL, type BuildParams } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import {
+  diffMatchesFilters,
+  extractMetadataTags,
+  MetadataFilterContext,
+  type MetadataFilterContextValue,
+} from "./metadata/MetadataFilterState";
+
+export { useMetadataFilterState } from "./metadata/MetadataFilterState";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -568,6 +576,7 @@ export function BuildDiffProvider(props: {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const navigate = useNavigate();
   const expandedState = useExpandedState(
     build?.subset ? INITIAL_SUBSET_EXPANDED : INITIAL_EXPANDED,
@@ -624,9 +633,20 @@ export function BuildDiffProvider(props: {
     [searchMode, searcher, deferredSearch],
   );
 
-  const filteredDiffs = useMemo(
-    () => (searchMode ? results.map((result) => result.item) : screenshotDiffs),
-    [screenshotDiffs, results, searchMode],
+  const filteredDiffs = useMemo(() => {
+    let diffs = searchMode
+      ? results.map((result) => result.item)
+      : screenshotDiffs;
+    if (selectedFilters.length > 0) {
+      diffs = diffs.filter((diff) => diffMatchesFilters(diff, selectedFilters));
+    }
+    return diffs;
+  }, [screenshotDiffs, results, searchMode, selectedFilters]);
+
+  // Keep available filter options stable while filters/search are changing.
+  const metadataTags = useMemo(
+    () => extractMetadataTags(screenshotDiffs),
+    [screenshotDiffs],
   );
 
   const [initialDiffIdParam] = useState(params.diffId);
@@ -772,11 +792,23 @@ export function BuildDiffProvider(props: {
       isSubsetBuild,
     ],
   );
+
+  const metadataFilterValue = useMemo(
+    (): MetadataFilterContextValue => ({
+      tags: metadataTags,
+      selectedFilters,
+      setSelectedFilters,
+    }),
+    [metadataTags, selectedFilters, setSelectedFilters],
+  );
+
   return (
-    <SearchModeContext value={searchModeValue}>
-      <SearchContext value={searchValue}>
-        <BuildDiffContext value={value}>{children}</BuildDiffContext>
-      </SearchContext>
-    </SearchModeContext>
+    <MetadataFilterContext value={metadataFilterValue}>
+      <SearchModeContext value={searchModeValue}>
+        <SearchContext value={searchValue}>
+          <BuildDiffContext value={value}>{children}</BuildDiffContext>
+        </SearchContext>
+      </SearchModeContext>
+    </MetadataFilterContext>
   );
 }
