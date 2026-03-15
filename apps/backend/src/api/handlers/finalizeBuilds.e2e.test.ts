@@ -84,6 +84,11 @@ describe("finalizeBuilds", () => {
                 },
                 conclusion: "no-changes",
                 metadata: null,
+                base: null,
+                head: {
+                  branch: "master",
+                  sha: compareScreenshotBucket.commit,
+                },
                 stats: {
                   added: 0,
                   changed: 0,
@@ -148,6 +153,11 @@ describe("finalizeBuilds", () => {
             },
             conclusion: "no-changes",
             metadata: null,
+            base: null,
+            head: {
+              branch: "master",
+              sha: compareScreenshotBucket.commit,
+            },
             stats: {
               added: 0,
               changed: 0,

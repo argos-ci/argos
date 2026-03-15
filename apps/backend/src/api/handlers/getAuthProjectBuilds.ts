@@ -16,7 +16,8 @@ import {
 import { CreateAPIHandler } from "../util";
 
 const GetAuthProjectBuildsParams = PageParamsSchema.extend({
-  commit: Sha1HashSchema.optional(),
+  head: z.string().min(1).optional(),
+  headSha: Sha1HashSchema.optional(),
   distinctName: z
     .string()
     .optional()
@@ -61,19 +62,27 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
       throw boom(401, "Unauthorized");
     }
 
-    const { page, perPage, commit, distinctName } = req.ctx.query;
+    const { page, perPage, head, headSha, distinctName } = req.ctx.query;
 
     const filterQuery = Build.query()
       .select("builds.id")
       .where("builds.projectId", req.authProject.id);
 
-    if (commit) {
-      // Check if the commit is in the compareScreenshotBucket or prHeadCommit
-      filterQuery.joinRelated("compareScreenshotBucket").where((qb) => {
-        qb.where("compareScreenshotBucket.commit", commit).orWhere(
-          "prHeadCommit",
-          commit,
-        );
+    if (head || headSha) {
+      filterQuery.joinRelated("compareScreenshotBucket");
+    }
+
+    if (head) {
+      filterQuery.where("compareScreenshotBucket.branch", head);
+    }
+
+    if (headSha) {
+      filterQuery.where((qb) => {
+        qb.where("builds.prHeadCommit", headSha).orWhere((subquery) => {
+          subquery
+            .whereNull("builds.prHeadCommit")
+            .where("compareScreenshotBucket.commit", headSha);
+        });
       });
     }
 
@@ -85,7 +94,9 @@ export const getAuthProjectBuilds: CreateAPIHandler = ({ get }) => {
     }
 
     const builds = await Build.query()
-      .withGraphFetched("project.account")
+      .withGraphFetched(
+        "[project.account, compareScreenshotBucket, baseScreenshotBucket]",
+      )
       .whereIn("builds.id", filterQuery)
       .orderBy("builds.id", "desc")
       .page(page - 1, perPage);

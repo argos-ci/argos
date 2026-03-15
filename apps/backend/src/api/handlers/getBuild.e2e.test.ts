@@ -67,9 +67,16 @@ describe("getBuild", () => {
       const compareScreenshotBucket = await factory.ScreenshotBucket.create({
         projectId: project.id,
       });
+      const baseScreenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "develop",
+        commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+      });
       const build = await factory.Build.create({
         projectId: project.id,
         compareScreenshotBucketId: compareScreenshotBucket.id,
+        baseScreenshotBucketId: baseScreenshotBucket.id,
+        prHeadCommit: "91d4f24b71c2ef18fb8a5f5f4d2e9d3dcb1a4d6a",
         metadata: null,
       });
 
@@ -81,6 +88,14 @@ describe("getBuild", () => {
       expect(res.body).toMatchObject({
         id: build.id,
         number: build.number,
+        head: {
+          sha: build.prHeadCommit,
+          branch: compareScreenshotBucket.branch,
+        },
+        base: {
+          branch: "develop",
+          sha: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+        },
         status: "no-changes",
         conclusion: "no-changes",
         stats: {
@@ -126,6 +141,7 @@ describe("getBuild", () => {
       const build = await factory.Build.create({
         projectId: project.id,
         compareScreenshotBucketId: compareScreenshotBucket.id,
+        prHeadCommit: "91d4f24b71c2ef18fb8a5f5f4d2e9d3dcb1a4d6a",
         conclusion: "changes-detected",
         stats: {
           total: 1,
@@ -163,6 +179,11 @@ describe("getBuild", () => {
       const url = await build.getUrl();
       expect(res.body).toMatchObject({
         id: build.id,
+        head: {
+          sha: build.prHeadCommit,
+          branch: compareScreenshotBucket.branch,
+        },
+        base: null,
         status: "changes-detected",
         conclusion: "changes-detected",
         stats: {

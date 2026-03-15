@@ -2,5 +2,7 @@
 
 ## Repository expectations
 
-- Before finishing any change, run `prettier` on modified files to ensure formatting is correct.
-- Before finishing any change, run `pnpm run check-types` to be sure types are accurate.
+- Before finishing any change:
+  - Run `prettier` on modified files to ensure formatting is correct.
+  - Run `pnpm run check-types` to be sure types are accurate.
+  - Run `pnpm run knip` and fix unused code.

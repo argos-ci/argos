@@ -12,7 +12,9 @@ import {
   getNotificationPayload,
   NotificationPayloadSchema,
 } from "@/build-notification";
-import { Build, BuildNotification } from "@/database/models";
+import { Build, BuildNotification, ScreenshotBucket } from "@/database/models";
+
+import { Sha1HashSchema } from "./sha";
 
 export const BuildIdSchema = z.string().meta({
   description: "A unique identifier for the build",
@@ -20,11 +22,31 @@ export const BuildIdSchema = z.string().meta({
   id: "BuildId",
 });
 
+const BuildGitReferenceSchema = z
+  .object({
+    sha: Sha1HashSchema.meta({
+      description: "The commit SHA",
+    }),
+    branch: z.string().meta({
+      description: "The branch name",
+    }),
+  })
+  .meta({
+    description: "Git reference",
+    id: "BuildGitReference",
+  });
+
 export const BuildSchema = z
   .object({
     id: BuildIdSchema,
     number: z.number().min(1).meta({
       description: "The build number",
+    }),
+    head: BuildGitReferenceSchema.meta({
+      description: "The head reference of the build",
+    }),
+    base: BuildGitReferenceSchema.nullable().meta({
+      description: "The base reference of the build",
     }),
     status: BuildAggregatedStatusSchema.meta({
       description: "The status of the build",
@@ -75,10 +97,37 @@ function getBuildNotificationTypeFromBuildStatus(
 export async function serializeBuilds(
   builds: Build[],
 ): Promise<z.infer<typeof BuildSchema>[]> {
-  const [statuses, urls] = await Promise.all([
+  const missingBucketIds = builds.reduce<string[]>(
+    (missingBucketIds, build) => {
+      if (
+        !build.compareScreenshotBucket &&
+        !missingBucketIds.includes(build.compareScreenshotBucketId)
+      ) {
+        missingBucketIds.push(build.compareScreenshotBucketId);
+      }
+      if (
+        build.baseScreenshotBucketId &&
+        !build.baseScreenshotBucket &&
+        !missingBucketIds.includes(build.baseScreenshotBucketId)
+      ) {
+        missingBucketIds.push(build.baseScreenshotBucketId);
+      }
+      return missingBucketIds;
+    },
+    [],
+  );
+
+  const [missingScreenshotBuckets, statuses, urls] = await Promise.all([
+    missingBucketIds.length > 0
+      ? ScreenshotBucket.query().whereIn("id", missingBucketIds)
+      : [],
     Build.getAggregatedBuildStatuses(builds),
     Promise.all(builds.map(async (build) => build.getUrl())),
   ]);
+
+  const screenshotBucketsById = new Map(
+    missingScreenshotBuckets.map((bucket) => [bucket.id, bucket]),
+  );
 
   const notificationPayloads = await Promise.all(
     builds.map((build, i) => {
@@ -97,6 +146,17 @@ export async function serializeBuilds(
   );
 
   return builds.map((build, i) => {
+    const compareScreenshotBucket =
+      build.compareScreenshotBucket ??
+      screenshotBucketsById.get(build.compareScreenshotBucketId);
+    const baseScreenshotBucket = build.baseScreenshotBucketId
+      ? (build.baseScreenshotBucket ??
+        screenshotBucketsById.get(build.baseScreenshotBucketId))
+      : null;
+    invariant(
+      compareScreenshotBucket,
+      "Compare screenshot bucket should be fetched for all builds",
+    );
     const status = statuses[i];
     invariant(status, "Status should be fetched for all builds");
     const url = urls[i];
@@ -109,6 +169,16 @@ export async function serializeBuilds(
     return {
       id: build.id,
       number: build.number,
+      head: {
+        sha: build.prHeadCommit ?? compareScreenshotBucket.commit,
+        branch: compareScreenshotBucket.branch,
+      },
+      base: baseScreenshotBucket
+        ? {
+            sha: baseScreenshotBucket.commit,
+            branch: baseScreenshotBucket.branch,
+          }
+        : null,
       metadata: build.metadata,
       stats: build.getStats(),
       status,
