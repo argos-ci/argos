@@ -10,6 +10,6 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "ignoreDeprecations": "5.0",
-    "jsx": "preserve"
+    "jsx": "react-jsx"
   }
 }

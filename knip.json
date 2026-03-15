@@ -16,7 +16,7 @@
     "apps/frontend": {
       "ignore": ["vite.config.mts"],
       "ignoreDependencies": [
-        "@vitejs/plugin-react-swc",
+        "@vitejs/plugin-react",
         "@sentry/vite-plugin",
         "@tailwindcss/vite"
       ],
