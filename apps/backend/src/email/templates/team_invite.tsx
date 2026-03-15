@@ -1,4 +1,3 @@
-import * as React from "react";
 import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { Column, Row, Section } from "@react-email/components";
 import { z } from "zod";

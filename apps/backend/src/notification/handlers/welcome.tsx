@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Heading, Section } from "@react-email/components";
 import { z } from "zod";
 

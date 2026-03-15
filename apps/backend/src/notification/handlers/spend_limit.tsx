@@ -1,4 +1,3 @@
-import * as React from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { z } from "zod";
 
