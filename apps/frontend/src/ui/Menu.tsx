@@ -18,7 +18,6 @@ import {
   Separator,
 } from "react-aria-components";
 
-import { Checkbox } from "./Checkbox";
 import { Tooltip } from "./Tooltip";
 
 export function MenuSeparator() {
