@@ -27,10 +27,17 @@ function getTagsByCategory(tags: MetadataFilterContextValue["tags"]) {
   return tagsByCategory;
 }
 
-function getCategoryFilters(props: { category: string; filters: string[] }) {
-  return new Set(
-    props.filters.filter((filter) => filter.startsWith(`${props.category}:`)),
-  );
+function getFiltersByCategory(category: string, filters: string[]) {
+  const prefix = `${category}:`;
+  const keys = new Set<string>();
+
+  for (const filter of filters) {
+    if (filter.startsWith(prefix)) {
+      keys.add(filter);
+    }
+  }
+
+  return keys;
 }
 
 export function FilterButton({
@@ -39,7 +46,6 @@ export function FilterButton({
   setSelectedFilters,
 }: MetadataFilterContextValue) {
   const [isOpen, setIsOpen] = useState(false);
-  const hasActiveFilters = selectedFilters.length > 0;
   const tagsByCategory = getTagsByCategory(tags);
 
   const filterGroups = Array.from(tagsByCategory.entries()).map(
@@ -54,39 +60,37 @@ export function FilterButton({
     }),
   );
 
-  function handleCategorySelectionChange(
-    category: string,
-    selection: Selection,
-  ) {
+  function handleSelectionChange(category: string, selection: Selection) {
     const group = filterGroups.find((group) => group.key === category);
     if (!group) {
       return;
     }
 
-    const nextCategoryFilters =
+    const nextKeys =
       selection === "all"
         ? group.options.map((option) => option.key)
         : Array.from(selection, String);
-    const filtersOutsideCategory = selectedFilters.filter(
+    const otherFilters = selectedFilters.filter(
       (filter) => !filter.startsWith(`${category}:`),
     );
-    setSelectedFilters([...filtersOutsideCategory, ...nextCategoryFilters]);
+    setSelectedFilters([...otherFilters, ...nextKeys]);
   }
 
   return (
     <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-      <IconButton size="small" aria-pressed={hasActiveFilters}>
+      <IconButton size="small">
         <FilterIcon />
       </IconButton>
+
       <Popover placement="bottom start" className="bg-app w-40">
         {isOpen ? (
           <Menu aria-label="Metadata filters" className="w-full">
             {filterGroups.map((group) => {
               const category = group.key;
-              const selectedCategoryFilters = getCategoryFilters({
+              const selectedKeys = getFiltersByCategory(
                 category,
-                filters: selectedFilters,
-              });
+                selectedFilters,
+              );
 
               return (
                 <SubmenuTrigger key={group.key}>
@@ -95,9 +99,9 @@ export function FilterButton({
                     <Menu
                       aria-label={`${group.label} filters`}
                       selectionMode="multiple"
-                      selectedKeys={selectedCategoryFilters}
+                      selectedKeys={selectedKeys}
                       onSelectionChange={(selection) =>
-                        handleCategorySelectionChange(category, selection)
+                        handleSelectionChange(category, selection)
                       }
                       className="min-w-32"
                     >
@@ -107,7 +111,10 @@ export function FilterButton({
                           id={option.key}
                           textValue={option.label}
                         >
-                          <div className="flex flex-1 items-center justify-between gap-6">
+                          <div
+                            className="flex flex-1 items-center justify-between gap-6"
+                            onClick={() => setIsOpen(false)}
+                          >
                             <span className="truncate">{option.label}</span>
                             <span className="text-low shrink-0 text-xs">
                               {option.count}
