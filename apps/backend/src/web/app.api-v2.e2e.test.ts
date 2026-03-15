@@ -116,6 +116,11 @@ describe("api v2", () => {
             id: build.id,
             url: "http://localhost:3000/argos-ci/argos/builds/1",
             number: 1,
+            head: {
+              sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+              branch: "main",
+            },
+            base: null,
             status: "pending",
             notification: {
               context: "argos/current",
@@ -288,6 +293,11 @@ describe("api v2", () => {
         expect(updateResult.body).toEqual({
           build: {
             id: build.id,
+            head: {
+              sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+              branch: "main",
+            },
+            base: null,
             metadata: null,
             stats: null,
             conclusion: null,
@@ -395,6 +405,11 @@ describe("api v2", () => {
         expect(updateResult.body).toEqual({
           build: {
             id: build.id,
+            head: {
+              sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+              branch: "main",
+            },
+            base: null,
             metadata: null,
             stats: null,
             conclusion: null,
@@ -543,6 +558,11 @@ describe("api v2", () => {
           expect(body).toEqual({
             build: {
               id: build.id,
+              head: {
+                sha: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+                branch: "main",
+              },
+              base: null,
               metadata: null,
               stats: null,
               conclusion: null,

@@ -15,10 +15,13 @@ const it = base.extend<{
   project: Project;
   builds: Build[];
   factory: typeof factory;
-  commit: {
+  compareBucketFilter: {
     sha: string;
-    withPrHeadCommit: Build;
+    prHeadCommit: string;
+    branch: string;
+    prHeadBranch: string;
     withCompareScreenshotBucket: Build;
+    withoutCompareScreenshotBucket: Build;
   };
 }>({
   factory: async ({}, use) => {
@@ -40,25 +43,47 @@ const it = base.extend<{
     builds.sort((a: Build, b: Build) => Number(b.id) - Number(a.id));
     await use(builds);
   },
-  commit: async ({ project, builds }, use) => {
+  compareBucketFilter: async ({ project, builds }, use) => {
     const sha = "a0a6e27051024a628a3b8e632874f5afc08c5c2d";
-    const [withPrHeadCommit, withCompareScreenshotBucket] = builds;
-    invariant(withPrHeadCommit && withCompareScreenshotBucket);
+    const prHeadCommit = "91d4f24b71c2ef18fb8a5f5f4d2e9d3dcb1a4d6a";
+    const branch = "release/v1";
+    const prHeadBranch = "feature/pr-head";
+    const [withCompareScreenshotBucket, withoutCompareScreenshotBucket] =
+      builds;
+    invariant(withCompareScreenshotBucket && withoutCompareScreenshotBucket);
+
+    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      name: withCompareScreenshotBucket.name,
+      commit: sha,
+      branch,
+    });
+    const prHeadScreenshotBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      name: withoutCompareScreenshotBucket.name,
+      commit: "5c63d1eec3417f0d38f6b8c5c2d8f4d1ab9de432",
+      branch: prHeadBranch,
+    });
 
     await Promise.all([
-      withPrHeadCommit.$query().patch({ prHeadCommit: sha }),
-      (async () => {
-        const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-          projectId: project.id,
-          name: withCompareScreenshotBucket.name,
-          commit: sha,
-        });
-        await withCompareScreenshotBucket.$query().patch({
-          compareScreenshotBucketId: compareScreenshotBucket.id,
-        });
-      })(),
+      withCompareScreenshotBucket.$query().patch({
+        compareScreenshotBucketId: compareScreenshotBucket.id,
+        prHeadCommit,
+      }),
+      withoutCompareScreenshotBucket.$query().patch({
+        compareScreenshotBucketId: prHeadScreenshotBucket.id,
+        prHeadCommit: sha,
+      }),
     ]);
-    await use({ sha, withPrHeadCommit, withCompareScreenshotBucket });
+
+    await use({
+      sha,
+      prHeadCommit,
+      branch,
+      prHeadBranch,
+      withCompareScreenshotBucket,
+      withoutCompareScreenshotBucket,
+    });
   },
 });
 
@@ -96,6 +121,13 @@ describe("getAuthProjectBuilds", () => {
         expect(res.body.pageInfo.total).toBe(3);
         expect(res.body.pageInfo.page).toBe(1);
         expect(res.body.pageInfo.perPage).toBe(30);
+        expect(res.body.results[0]).toMatchObject({
+          head: {
+            sha: expect.any(String),
+            branch: expect.any(String),
+          },
+          base: null,
+        });
       });
   });
 
@@ -113,37 +145,72 @@ describe("getAuthProjectBuilds", () => {
     });
   });
 
-  describe('with "commit" params', () => {
-    it("filters builds by `compareScreenshotBucket.commit` or `builds.prHeadCommit`", async ({
-      commit,
+  describe('with "headSha" params', () => {
+    it("filters builds by the serialized head SHA", async ({
+      compareBucketFilter,
     }) => {
       await request(app)
-        .get(`/project/builds?commit=${commit.sha}`)
+        .get(`/project/builds?headSha=${compareBucketFilter.sha}`)
         .set("Authorization", "Bearer the-awesome-token")
         .expect(200)
         .expect((res) => {
-          expect(res.body.results).toHaveLength(2);
+          expect(res.body.results).toHaveLength(1);
           expect(res.body.results.map((b: Build) => b.id)).toEqual([
-            commit.withPrHeadCommit.id,
-            commit.withCompareScreenshotBucket.id,
+            compareBucketFilter.withoutCompareScreenshotBucket.id,
           ]);
+          expect(res.body.results[0]).toMatchObject({
+            head: {
+              sha: compareBucketFilter.sha,
+              branch: compareBucketFilter.prHeadBranch,
+            },
+            base: null,
+          });
+        });
+    });
+  });
+
+  describe('with "head" params', () => {
+    it("filters builds by `compareScreenshotBucket.branch`", async ({
+      compareBucketFilter,
+    }) => {
+      await request(app)
+        .get(
+          `/project/builds?head=${encodeURIComponent(compareBucketFilter.branch)}`,
+        )
+        .set("Authorization", "Bearer the-awesome-token")
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.results).toHaveLength(1);
+          expect(res.body.results[0]).toMatchObject({
+            head: {
+              sha: compareBucketFilter.prHeadCommit,
+              branch: compareBucketFilter.branch,
+            },
+            base: null,
+          });
         });
     });
   });
 
   describe('with "distinctName" params', () => {
     it("returns only the latest builds by `builds.name`", async ({
-      commit,
+      compareBucketFilter,
     }) => {
       await request(app)
-        .get(`/project/builds?commit=${commit.sha}&distinctName=true`)
+        .get(
+          `/project/builds?headSha=${compareBucketFilter.sha}&distinctName=true`,
+        )
         .set("Authorization", "Bearer the-awesome-token")
         .expect(200)
         .expect((res) => {
           expect(res.body.results).toHaveLength(1);
-          expect(res.body.results.map((b: Build) => b.id)).toEqual([
-            commit.withPrHeadCommit.id,
-          ]);
+          expect(res.body.results[0]).toMatchObject({
+            head: {
+              sha: compareBucketFilter.sha,
+              branch: compareBucketFilter.prHeadBranch,
+            },
+            base: null,
+          });
         });
     });
   });
