@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
@@ -26,7 +26,6 @@ export default defineConfig((args) => {
       sourcemap: mode !== "development",
       rollupOptions: {
         output: {
-          experimentalMinChunkSize: 10_240,
           manualChunks: (id) => {
             const chunkMap = {
               common: [
@@ -43,13 +42,12 @@ export default defineConfig((args) => {
               d3: ["node_modules/d3-"],
               lodash: ["node_modules/lodash"],
               recharts: ["node_modules/recharts"],
-              react: [
+              "react-aria": [
                 "node_modules/react-aria",
                 "node_modules/@react-aria",
                 "node_modules/@react-stately",
-                "node_modules/react",
-                "node_modules/react-dom",
               ],
+              react: ["node_modules/react", "node_modules/react-dom"],
             };
 
             // https://github.com/vitejs/vite/issues/5189#issuecomment-2175410148
