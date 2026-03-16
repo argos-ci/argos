@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { XIcon } from "lucide-react";
 import { Button, type Selection } from "react-aria-components";
 
+import { ChipSegment, chipSegmentBaseClassName } from "@/ui/Chip";
 import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
@@ -27,27 +28,13 @@ type ActiveTag = {
   value: string;
 };
 
-const segmentClassName =
-  "border-primary text-primary-low flex h-5 items-center border leading-none select-none";
-
-const PillSegment = (props: {
-  children: React.ReactNode;
-  className?: string;
-}) => {
-  return (
-    <div className={clsx(segmentClassName, "-ml-px", props.className)}>
-      {props.children}
-    </div>
-  );
-};
-
 const StackedIcons = (props: {
   category: MetadataCategory;
   activeTags: ActiveTag[];
 }) => {
   return (
     <div className="flex items-center -space-x-1">
-      {[...props.activeTags]
+      {Array.from(props.activeTags)
         .sort((a, b) => a.value.localeCompare(b.value))
         .map((tag) => (
           <span
@@ -61,7 +48,7 @@ const StackedIcons = (props: {
   );
 };
 
-const PillValueButton = ({
+const ChipValueButton = ({
   category,
   activeTags,
   allCategoryTags,
@@ -83,8 +70,8 @@ const PillValueButton = ({
     <MenuTrigger>
       <Button
         className={clsx(
-          segmentClassName,
-          "group hover:bg-primary-hover data-pressed:bg-primary-active -ml-px min-w-0 cursor-pointer gap-1 px-1.5",
+          chipSegmentBaseClassName,
+          "group hover:bg-primary-hover data-pressed:bg-primary-active min-w-0 gap-1 px-1.5",
         )}
       >
         {isMultiple ? (
@@ -109,7 +96,7 @@ const PillValueButton = ({
   );
 };
 
-const ActiveFilterPill = ({
+const ActiveFilterChip = ({
   category,
   activeTags,
   allCategoryTags,
@@ -142,16 +129,16 @@ const ActiveFilterPill = ({
 
   return (
     <div className="text-xxs text-low flex min-w-0 items-center font-medium">
-      <PillSegment className="rounded-l-chip shrink-0 gap-1 px-1.5">
+      <ChipSegment className="rounded-l-chip shrink-0 gap-1 px-1.5">
         <CategoryIcon category={category} />
         <span>{category}</span>
-      </PillSegment>
+      </ChipSegment>
 
-      <PillSegment className="shrink-0 px-1">
+      <ChipSegment className="shrink-0 px-1">
         <span>{isMultiple ? "is any of" : "is"}</span>
-      </PillSegment>
+      </ChipSegment>
 
-      <PillValueButton
+      <ChipValueButton
         category={category}
         activeTags={activeTags}
         allCategoryTags={allCategoryTags}
@@ -161,8 +148,8 @@ const ActiveFilterPill = ({
 
       <Button
         className={clsx(
-          segmentClassName,
-          "hover:bg-primary-hover rounded-r-chip -ml-px cursor-pointer px-1",
+          chipSegmentBaseClassName,
+          "hover:bg-primary-hover rounded-r-chip cursor-pointer px-1",
         )}
         onPress={handleRemove}
         aria-label={`Remove ${category} filter`}
@@ -194,7 +181,7 @@ function groupActiveFiltersByCategory(
   return activeByCategory;
 }
 
-export const ActiveFilterPills = () => {
+export const ActiveFilterChips = () => {
   const { tags, selectedFilters, setSelectedFilters } =
     useMetadataFilterState();
 
@@ -207,7 +194,7 @@ export const ActiveFilterPills = () => {
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
       {Array.from(activeByCategory.entries()).map(([category, activeTags]) => (
-        <ActiveFilterPill
+        <ActiveFilterChip
           key={category}
           category={category}
           activeTags={activeTags}

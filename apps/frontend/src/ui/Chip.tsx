@@ -105,6 +105,18 @@ function getChipClassName(props: {
   );
 }
 
+export const chipSegmentBaseClassName =
+  "border-primary text-primary-low flex h-5 items-center border leading-none select-none -ml-px";
+
+export function ChipSegment({
+  className,
+  ...props
+}: React.ComponentPropsWithRef<"div">) {
+  return (
+    <div className={clsx(chipSegmentBaseClassName, className)} {...props} />
+  );
+}
+
 /**
  * Hook to get the props for a chip.
  */
