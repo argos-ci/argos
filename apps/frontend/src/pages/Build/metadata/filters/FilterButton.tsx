@@ -80,7 +80,7 @@ export const FilterButton = ({
               );
 
               return (
-                <SubmenuTrigger key={group.key}>
+                <SubmenuTrigger key={group.key} delay={0}>
                   <MenuItem id={group.key}>{group.label}</MenuItem>
                   <Popover className="bg-white">
                     <MetadataCategoryMenu
