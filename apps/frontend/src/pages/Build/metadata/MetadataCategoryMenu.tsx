@@ -5,9 +5,10 @@ import { Menu, MenuCheckboxItem, MenuSeparator } from "@/ui/Menu";
 
 import { TagValueIcon } from "./MetadataCategories";
 import type { MetadataTag } from "./MetadataFilterState";
+import type { MetadataCategory } from "./metadataIcons";
 
 type MetadataCategoryMenuProps = {
-  category: string;
+  category: MetadataCategory;
   tags: MetadataTag[];
   selectedKeys: Set<string>;
   onSelectionChange: (selection: Selection) => void;
@@ -17,7 +18,7 @@ type MetadataCategoryMenuProps = {
 };
 
 const MetadataCategoryMenuOption = (props: {
-  category: string;
+  category: MetadataCategory;
   tag: MetadataTag;
   onOptionClick?: () => void;
 }) => {

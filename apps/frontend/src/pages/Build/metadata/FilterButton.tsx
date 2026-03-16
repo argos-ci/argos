@@ -13,6 +13,7 @@ import {
   updateCategoryFilters,
   type MetadataFilterContextValue,
 } from "./MetadataFilterState";
+import type { MetadataCategory } from "./metadataIcons";
 
 export const FilterButton = ({
   tags,
@@ -30,7 +31,10 @@ export const FilterButton = ({
     }),
   );
 
-  function handleSelectionChange(category: string, selection: Selection) {
+  function handleSelectionChange(
+    category: MetadataCategory,
+    selection: Selection,
+  ) {
     const group = filterGroups.find((group) => group.key === category);
     if (!group) {
       return;
@@ -62,7 +66,7 @@ export const FilterButton = ({
                   <MenuItem id={group.key}>{group.label}</MenuItem>
                   <Popover className="bg-white">
                     <MetadataCategoryMenu
-                      category={group.label}
+                      category={category}
                       tags={group.tags}
                       selectedKeys={selectedKeys}
                       onSelectionChange={(selection) =>

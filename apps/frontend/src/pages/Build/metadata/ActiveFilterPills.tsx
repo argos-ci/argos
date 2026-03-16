@@ -19,6 +19,7 @@ import {
   useMetadataFilterState,
   type MetadataTag,
 } from "./MetadataFilterState";
+import type { MetadataCategory } from "./metadataIcons";
 
 type ActiveTag = {
   key: string;
@@ -40,7 +41,10 @@ const PillSegment = (props: {
   );
 };
 
-const StackedIcons = (props: { category: string; activeTags: ActiveTag[] }) => {
+const StackedIcons = (props: {
+  category: MetadataCategory;
+  activeTags: ActiveTag[];
+}) => {
   return (
     <div className="flex items-center -space-x-1">
       {[...props.activeTags]
@@ -64,7 +68,7 @@ const PillValueButton = ({
   selectedKeys,
   onSelectionChange,
 }: {
-  category: string;
+  category: MetadataCategory;
   activeTags: ActiveTag[];
   allCategoryTags: MetadataTag[];
   selectedKeys: Set<string>;
@@ -112,7 +116,7 @@ const ActiveFilterPill = ({
   selectedFilters,
   setSelectedFilters,
 }: {
-  category: string;
+  category: MetadataCategory;
   activeTags: ActiveTag[];
   allCategoryTags: MetadataTag[];
   selectedFilters: string[];
@@ -173,7 +177,7 @@ function groupActiveFiltersByCategory(
   selectedFilters: string[],
   tags: MetadataTag[],
 ) {
-  const activeByCategory = new Map<string, ActiveTag[]>();
+  const activeByCategory = new Map<MetadataCategory, ActiveTag[]>();
 
   for (const filterKey of selectedFilters) {
     const tag = tags.find(

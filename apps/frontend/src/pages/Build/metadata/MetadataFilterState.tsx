@@ -3,9 +3,13 @@ import { invariant } from "@argos/util/invariant";
 import type { Selection } from "react-aria-components";
 
 import type { Diff } from "../BuildDiffState";
+import {
+  isKnownMetadataCategory,
+  type MetadataCategory,
+} from "./metadataIcons";
 
 export type MetadataTag = {
-  category: string;
+  category: MetadataCategory;
   value: string;
   label: string;
   count: number;
@@ -30,7 +34,7 @@ export function useMetadataFilterState() {
 }
 
 export function groupTagsByCategory(tags: MetadataTag[]) {
-  const byCategory = new Map<string, MetadataTag[]>();
+  const byCategory = new Map<MetadataCategory, MetadataTag[]>();
   for (const tag of tags) {
     const list = byCategory.get(tag.category) ?? [];
     list.push(tag);
@@ -39,7 +43,10 @@ export function groupTagsByCategory(tags: MetadataTag[]) {
   return byCategory;
 }
 
-export function getTagsForCategory(tags: MetadataTag[], category: string) {
+export function getTagsForCategory(
+  tags: MetadataTag[],
+  category: MetadataCategory,
+) {
   return tags.filter((tag) => tag.category === category);
 }
 
@@ -51,7 +58,7 @@ export function resolveSelectionKeys(
 }
 
 export function updateCategoryFilters(
-  category: string,
+  category: MetadataCategory,
   nextKeys: string[],
   currentFilters: string[],
 ): string[] {
@@ -61,7 +68,7 @@ export function updateCategoryFilters(
   return [...otherFilters, ...nextKeys];
 }
 
-export function getFilterKey(category: string, value: string) {
+export function getFilterKey(category: MetadataCategory, value: string) {
   return `${category}:${value}`;
 }
 
@@ -72,7 +79,7 @@ function getMetadataForDiff(diff: Diff) {
 export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
   const counts = new Map<
     string,
-    { category: string; value: string; label: string; count: number }
+    { category: MetadataCategory; value: string; label: string; count: number }
   >();
 
   for (const diff of diffs) {
@@ -81,7 +88,7 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
       continue;
     }
 
-    const entries: { category: string; value: string; label: string }[] = [];
+    const entries: Omit<MetadataTag, "count">[] = [];
 
     if (metadata.browser) {
       entries.push({
@@ -155,12 +162,15 @@ export function diffMatchesFilters(
   }
 
   // Group filters by category
-  const byCategory = new Map<string, string[]>();
+  const byCategory = new Map<MetadataCategory, string[]>();
   for (const filter of selectedFilters) {
     const [category, ...rest] = filter.split(":");
     const value = rest.join(":");
     if (!category) {
       continue;
+    }
+    if (!isKnownMetadataCategory(category)) {
+      return false;
     }
     const existing = byCategory.get(category) ?? [];
     existing.push(value);

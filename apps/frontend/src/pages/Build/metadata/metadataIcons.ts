@@ -15,7 +15,7 @@ export const categoryIcons = {
   "Media type": PrinterIcon,
 } as const;
 
-type MetadataCategory = keyof typeof categoryIcons;
+export type MetadataCategory = keyof typeof categoryIcons;
 
 export function isKnownMetadataCategory(
   category: string,
