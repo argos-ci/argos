@@ -312,13 +312,13 @@ function ListHeader(props: {
   activeIndex: number;
 }) {
   const { style, onClick, item, activeIndex } = props;
-  const borderB = item.borderBottom ? "border-b border-b-border" : "";
+  const borderB = item.borderBottom ? "border-b-thin" : "";
   const def = getDiffGroupDefinition(item.name);
   return (
     <RACButton
       className={clsx(
         borderB,
-        "group/list-header bg-app data-hovered:bg-subtle data-focus-visible:bg-subtle z-10 flex w-full cursor-default items-center border-t pr-2 text-left select-none focus:outline-hidden",
+        "group/list-header bg-app data-hovered:bg-subtle data-focus-visible:bg-subtle border-t-thin z-10 flex w-full cursor-default items-center pr-2 text-left select-none focus:outline-hidden",
       )}
       style={style}
       onPress={onClick}
@@ -854,8 +854,8 @@ const InternalBuildDiffList = memo(() => {
       }
       switch (row.type) {
         case "header": {
-          const headerHeight = 34;
-          return headerHeight - (row.borderBottom ? 0 : 1);
+          const headerHeight = 33.5;
+          return headerHeight - (row.borderBottom ? 0 : 0.5);
         }
         case "item":
         case "group-item": {
@@ -973,7 +973,7 @@ const InternalBuildDiffList = memo(() => {
     <>
       {stats && !searchMode && (
         <BuildStatsIndicator
-          className="no-scrollbar shrink-0 overflow-x-auto border-b px-2"
+          className="no-scrollbar border-b-thin shrink-0 overflow-x-auto px-2"
           stats={stats}
           onClickGroup={openGroup}
           isSubsetBuild={isSubsetBuild}

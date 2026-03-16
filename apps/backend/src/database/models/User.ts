@@ -3,6 +3,8 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
+import { Comment } from "./Comment";
+import { CommentReaction } from "./CommentReaction";
 import { GitlabUser } from "./GitlabUser";
 import { GoogleUser } from "./GoogleUser";
 import { Team } from "./Team";
@@ -115,6 +117,22 @@ export class User extends Model {
           to: "user_access_tokens.userId",
         },
       },
+      comments: {
+        relation: Model.HasManyRelation,
+        modelClass: Comment,
+        join: {
+          from: "users.id",
+          to: "comments.userId",
+        },
+      },
+      commentReactions: {
+        relation: Model.HasManyRelation,
+        modelClass: CommentReaction,
+        join: {
+          from: "users.id",
+          to: "comment_reactions.userId",
+        },
+      },
     };
   }
 
@@ -126,6 +144,8 @@ export class User extends Model {
   googleUser?: GoogleUser;
   emails?: UserEmail[];
   userAccessTokens?: UserAccessToken[];
+  comments?: Comment[];
+  commentReactions?: CommentReaction[];
 
   static getPermissions(
     userId: string,
