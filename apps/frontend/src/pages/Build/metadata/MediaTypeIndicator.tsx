@@ -1,6 +1,8 @@
-import { LucideProps, Printer } from "lucide-react";
+import { LucideProps } from "lucide-react";
 
 import { Tooltip } from "@/ui/Tooltip";
+
+import { getMediaTypeIconKind, mediaTypeIcons } from "./metadataIcons";
 
 export function MediaTypeIndicator({
   mediaType,
@@ -8,12 +10,16 @@ export function MediaTypeIndicator({
 }: LucideProps & {
   mediaType: string;
 }) {
-  if (mediaType === "print") {
-    return (
-      <Tooltip content="Print mode (media: print)">
-        <Printer {...props} />
-      </Tooltip>
-    );
+  const kind = getMediaTypeIconKind(mediaType);
+  if (!kind) {
+    return null;
   }
-  return null;
+
+  const Icon = mediaTypeIcons[kind];
+
+  return (
+    <Tooltip content="Print mode (media: print)">
+      <Icon {...props} />
+    </Tooltip>
+  );
 }

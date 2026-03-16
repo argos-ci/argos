@@ -1,14 +1,15 @@
-import {
-  GlobeIcon,
-  LaptopIcon,
-  MoonIcon,
-  PrinterIcon,
-  SmartphoneIcon,
-  SunIcon,
-  TabletIcon,
-} from "lucide-react";
-
 import { BrowserIcon } from "./browser/BrowserIcon";
+import {
+  categoryIcons,
+  colorSchemeIcons,
+  getColorSchemeIconKind,
+  getMediaTypeIconKind,
+  getViewportIconKind,
+  isKnownMetadataCategory,
+  mediaTypeIcons,
+  parseViewportWidth,
+  viewportIcons,
+} from "./metadataIcons";
 
 export const categoryPluralLabels: Record<string, string> = {
   Browser: "browsers",
@@ -18,25 +19,20 @@ export const categoryPluralLabels: Record<string, string> = {
 };
 
 export const CategoryIcon = (props: { category: string }) => {
-  const Icon = (() => {
-    switch (props.category) {
-      case "Browser":
-        return GlobeIcon;
-      case "Viewport":
-        return LaptopIcon;
-      case "Color scheme":
-        return SunIcon;
-      case "Media type":
-        return PrinterIcon;
-      default:
-        return null;
-    }
-  })();
-  return Icon ? <Icon className="size-3" /> : null;
+  if (!isKnownMetadataCategory(props.category)) {
+    return null;
+  }
+
+  const Icon = categoryIcons[props.category];
+  return <Icon className="size-3" />;
 };
 
 export const TagValueIcon = (props: { category: string; value: string }) => {
   const iconSizeClass = "size-3 shrink-0";
+
+  if (!isKnownMetadataCategory(props.category)) {
+    return null;
+  }
 
   switch (props.category) {
     case "Browser":
@@ -48,21 +44,26 @@ export const TagValueIcon = (props: { category: string; value: string }) => {
       );
 
     case "Viewport": {
-      const width = Number(props.value.split("×")[0]) || 0;
-      const Icon =
-        width >= 1025 ? LaptopIcon : width >= 641 ? TabletIcon : SmartphoneIcon;
+      const width = parseViewportWidth(props.value);
+      const kind = getViewportIconKind(width);
+      const Icon = viewportIcons[kind];
       return <Icon className={iconSizeClass} />;
     }
 
-    case "Color scheme":
-      return props.value === "dark" ? (
-        <MoonIcon className={iconSizeClass} />
-      ) : (
-        <SunIcon className={iconSizeClass} />
-      );
+    case "Color scheme": {
+      const kind = getColorSchemeIconKind(props.value);
+      const Icon = colorSchemeIcons[kind];
+      return <Icon className={iconSizeClass} />;
+    }
 
-    case "Media type":
-      return <PrinterIcon className={iconSizeClass} />;
+    case "Media type": {
+      const kind = getMediaTypeIconKind(props.value);
+      if (!kind) {
+        return null;
+      }
+      const Icon = mediaTypeIcons[kind];
+      return <Icon className={iconSizeClass} />;
+    }
 
     default:
       return null;
