@@ -28,7 +28,8 @@ function useColorSchemeIndicator<
   },
 >(props: T) {
   const { colorScheme, className, ...rest } = props;
-  const icon = colorSchemeIcons[getColorSchemeIconKind(colorScheme)];
+  const iconKind = getColorSchemeIconKind(colorScheme);
+  const icon = iconKind ? colorSchemeIcons[iconKind] : undefined;
   const label = getColorSchemeLabel(colorScheme);
   return {
     chipProps: {

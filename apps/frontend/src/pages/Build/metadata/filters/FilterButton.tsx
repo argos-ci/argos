@@ -6,17 +6,18 @@ import { IconButton } from "@/ui/IconButton";
 import { Menu, MenuItem, MenuTrigger, SubmenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
-import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
-import {
-  groupTagsByCategory,
-  resolveSelectionKeys,
-  updateCategoryFilters,
-  type MetadataFilterContextValue,
-} from "./MetadataFilterState";
 import {
   getMetadataCategoryDefinition,
   type MetadataCategory,
-} from "./metadataIcons";
+} from "../metadataCategories";
+import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
+import type { MetadataFilterContextValue } from "./MetadataFilterState";
+import {
+  getFilterKey,
+  groupTagsByCategory,
+  resolveSelectionKeys,
+  updateCategoryFilters,
+} from "./metadataFilterUtils";
 
 export const FilterButton = ({
   tags,
@@ -38,11 +39,14 @@ export const FilterButton = ({
     category: MetadataCategory,
     selection: Selection,
   ) {
-    const group = filterGroups.find((group) => group.key === category);
-    if (!group) {
+    const categoryTags = tagsByCategory.get(category);
+    if (!categoryTags) {
       return;
     }
-    const allKeys = group.tags.map((tag) => `${tag.category}:${tag.value}`);
+
+    const allKeys = categoryTags.map((tag) =>
+      getFilterKey(tag.category, tag.value),
+    );
     const nextKeys = resolveSelectionKeys(selection, allKeys);
     setSelectedFilters(
       updateCategoryFilters(category, nextKeys, selectedFilters),

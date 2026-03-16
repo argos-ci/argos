@@ -1,13 +1,11 @@
-import { createContext, use } from "react";
-import { invariant } from "@argos/util/invariant";
 import type { Selection } from "react-aria-components";
 
-import type { Diff } from "../BuildDiffState";
+import type { Diff } from "../../BuildDiffState";
 import {
   getMetadataCategoryDefinition,
-  isKnownMetadataCategory,
+  isCustomMetadataCategory,
   MetadataCategory,
-} from "./metadataIcons";
+} from "../metadataCategories";
 
 export type MetadataTag = {
   category: MetadataCategory;
@@ -15,24 +13,6 @@ export type MetadataTag = {
   label: string;
   count: number;
 };
-
-export type MetadataFilterContextValue = {
-  tags: MetadataTag[];
-  selectedFilters: string[];
-  setSelectedFilters: (filters: string[]) => void;
-};
-
-export const MetadataFilterContext =
-  createContext<MetadataFilterContextValue | null>(null);
-
-export function useMetadataFilterState() {
-  const context = use(MetadataFilterContext);
-  invariant(
-    context,
-    "useMetadataFilterState must be used within a BuildDiffProvider",
-  );
-  return context;
-}
 
 export function groupTagsByCategory(tags: MetadataTag[]) {
   const byCategory = new Map<MetadataCategory, MetadataTag[]>();
@@ -78,10 +58,7 @@ function getMetadataForDiff(diff: Diff) {
 }
 
 export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
-  const counts = new Map<
-    string,
-    { category: MetadataCategory; value: string; label: string; count: number }
-  >();
+  const counts = new Map<string, MetadataTag>();
 
   for (const diff of diffs) {
     const metadata = getMetadataForDiff(diff);
@@ -171,7 +148,7 @@ export function diffMatchesFilters(
     return false;
   }
 
-  // Group filters by category
+  // All categories must match (AND), within a category any value matches (OR).
   const byCategory = new Map<MetadataCategory, string[]>();
   for (const filter of selectedFilters) {
     const [category, ...rest] = filter.split(":");
@@ -179,17 +156,16 @@ export function diffMatchesFilters(
     if (!category) {
       continue;
     }
-    if (!isKnownMetadataCategory(category)) {
+    if (isCustomMetadataCategory(category)) {
       return false;
     }
-    const existing = byCategory.get(category) ?? [];
+    const knownCategory = category as MetadataCategory;
+    const existing = byCategory.get(knownCategory) ?? [];
     existing.push(value);
-    byCategory.set(category, existing);
+    byCategory.set(knownCategory, existing);
   }
 
-  // All categories must match (AND), within a category any value matches (OR)
-  for (const entry of Array.from(byCategory.entries())) {
-    const [category, values] = entry;
+  for (const [category, values] of Array.from(byCategory.entries())) {
     let matched = false;
     for (const value of values) {
       switch (category) {
@@ -221,6 +197,7 @@ export function diffMatchesFilters(
           break;
       }
     }
+
     if (!matched) {
       return false;
     }

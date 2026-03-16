@@ -7,20 +7,20 @@ import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 
-import { CategoryIcon, TagValueIcon } from "./MetadataCategories";
-import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
-import {
-  getFilterKey,
-  getTagsForCategory,
-  MetadataTag,
-  resolveSelectionKeys,
-  updateCategoryFilters,
-  useMetadataFilterState,
-} from "./MetadataFilterState";
 import {
   getMetadataCategoryDefinition,
   MetadataCategory,
-} from "./metadataIcons";
+} from "../metadataCategories";
+import { CategoryIcon, TagValueIcon } from "../MetadataTagIcons";
+import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
+import { useMetadataFilterState } from "./MetadataFilterState";
+import {
+  getFilterKey,
+  getTagsForCategory,
+  resolveSelectionKeys,
+  updateCategoryFilters,
+  type MetadataTag,
+} from "./metadataFilterUtils";
 
 type ActiveTag = {
   key: string;
@@ -84,7 +84,7 @@ const ChipValueButton = ({
   );
 };
 
-const ActiveFilterChip = ({
+const FilterChip = ({
   category,
   activeTags,
   allCategoryTags,
@@ -154,11 +154,12 @@ function groupActiveFiltersByCategory(
   tags: MetadataTag[],
 ) {
   const activeByCategory = new Map<MetadataCategory, ActiveTag[]>();
+  const tagsByKey = new Map(
+    tags.map((tag) => [getFilterKey(tag.category, tag.value), tag]),
+  );
 
   for (const filterKey of selectedFilters) {
-    const tag = tags.find(
-      (t) => getFilterKey(t.category, t.value) === filterKey,
-    );
+    const tag = tagsByKey.get(filterKey);
     if (!tag) {
       continue;
     }
@@ -170,7 +171,7 @@ function groupActiveFiltersByCategory(
   return activeByCategory;
 }
 
-export const ActiveFilterChips = () => {
+export const FilterChips = () => {
   const { tags, selectedFilters, setSelectedFilters } =
     useMetadataFilterState();
 
@@ -183,7 +184,7 @@ export const ActiveFilterChips = () => {
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
       {Array.from(activeByCategory.entries()).map(([category, activeTags]) => (
-        <ActiveFilterChip
+        <FilterChip
           key={category}
           category={category}
           activeTags={activeTags}

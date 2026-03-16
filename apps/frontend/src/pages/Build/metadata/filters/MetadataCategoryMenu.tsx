@@ -3,12 +3,12 @@ import type { Selection } from "react-aria-components";
 
 import { Menu, MenuCheckboxItem, MenuSeparator } from "@/ui/Menu";
 
-import { TagValueIcon } from "./MetadataCategories";
-import type { MetadataTag } from "./MetadataFilterState";
 import {
   getMetadataCategoryDefinition,
   type MetadataCategory,
-} from "./metadataIcons";
+} from "../metadataCategories";
+import { TagValueIcon } from "../MetadataTagIcons";
+import type { MetadataTag } from "./metadataFilterUtils";
 
 type MetadataCategoryMenuProps = {
   category: MetadataCategory;

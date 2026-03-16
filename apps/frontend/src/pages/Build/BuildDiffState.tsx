@@ -30,13 +30,15 @@ import { getBuildURL, type BuildParams } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import {
-  diffMatchesFilters,
-  extractMetadataTags,
   MetadataFilterContext,
   type MetadataFilterContextValue,
-} from "./metadata/MetadataFilterState";
+} from "./metadata/filters/MetadataFilterState";
+import {
+  diffMatchesFilters,
+  extractMetadataTags,
+} from "./metadata/filters/metadataFilterUtils";
 
-export { useMetadataFilterState } from "./metadata/MetadataFilterState";
+export { useMetadataFilterState } from "./metadata/filters/MetadataFilterState";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`

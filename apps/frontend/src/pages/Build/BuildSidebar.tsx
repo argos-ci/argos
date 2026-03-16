@@ -23,8 +23,8 @@ import {
 } from "./BuildDiffState";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
-import { ActiveFilterChips } from "./metadata/ActiveFilterChips";
-import { FilterButton } from "./metadata/FilterButton";
+import { FilterButton } from "./metadata/filters/FilterButton";
+import { FilterChips } from "./metadata/filters/FilterChips";
 
 function Tab(
   props: TabProps & {
@@ -159,14 +159,14 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
 
       {searchMode ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          <ActiveFilterChips />
+          <FilterChips />
           <BuildDiffList />
         </div>
       ) : (
         <>
           {build.type !== BuildType.Skipped ? (
             <TabPanel id="screenshots" className="flex min-h-0 flex-1 flex-col">
-              <ActiveFilterChips />
+              <FilterChips />
               <BuildDiffList />
             </TabPanel>
           ) : null}

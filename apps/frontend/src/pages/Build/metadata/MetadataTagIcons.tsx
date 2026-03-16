@@ -1,12 +1,14 @@
 import { BrowserIcon } from "./browser/BrowserIcon";
 import {
+  getMetadataCategoryDefinition,
+  MetadataCategory,
+} from "./metadataCategories";
+import {
   colorSchemeIcons,
   getColorSchemeIconKind,
   getMediaTypeIconKind,
-  getMetadataCategoryDefinition,
   getViewportIconKind,
   mediaTypeIcons,
-  MetadataCategory,
   parseViewportWidth,
   viewportIcons,
 } from "./metadataIcons";
@@ -40,6 +42,9 @@ export const TagValueIcon = (props: {
 
     case MetadataCategory.colorScheme: {
       const kind = getColorSchemeIconKind(props.value);
+      if (!kind) {
+        return null;
+      }
       const Icon = colorSchemeIcons[kind];
       return <Icon className={iconSizeClass} />;
     }
