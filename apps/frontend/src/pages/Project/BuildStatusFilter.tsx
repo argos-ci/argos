@@ -7,6 +7,7 @@ import { Badge } from "@/ui/Badge";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
+import { StackedItems } from "@/ui/StackedItems";
 import { buildStatusDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
 import { parseAsSetOf } from "@/util/search-params";
@@ -44,7 +45,7 @@ export function BuildStatusFilter(props: {
   return (
     <MenuTrigger>
       <SelectButton className="text-sm">
-        <div className="flex -space-x-1">
+        <StackedItems>
           {BuildStatuses.map((status) => {
             return (
               <div
@@ -60,7 +61,7 @@ export function BuildStatusFilter(props: {
               />
             );
           })}
-        </div>
+        </StackedItems>
         Status
         <Badge>
           {value.size}/{BuildStatuses.length}

@@ -5,6 +5,7 @@ import { Button, type Selection } from "react-aria-components";
 import { ChipSegment, chipSegmentBaseClassName } from "@/ui/Chip";
 import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
+import { StackedItems } from "@/ui/StackedItems";
 
 import {
   CategoryIcon,
@@ -26,26 +27,6 @@ type ActiveTag = {
   key: string;
   label: string;
   value: string;
-};
-
-const StackedIcons = (props: {
-  category: MetadataCategory;
-  activeTags: ActiveTag[];
-}) => {
-  return (
-    <div className="flex items-center -space-x-1">
-      {Array.from(props.activeTags)
-        .sort((a, b) => a.value.localeCompare(b.value))
-        .map((tag) => (
-          <span
-            key={tag.key}
-            className="bg-app group-hover:bg-primary-hover group-data-pressed:bg-primary-hover rounded-full"
-          >
-            <TagValueIcon category={props.category} value={tag.value} />
-          </span>
-        ))}
-    </div>
-  );
 };
 
 const ChipValueButton = ({
@@ -74,11 +55,18 @@ const ChipValueButton = ({
           "group hover:bg-primary-hover data-pressed:bg-primary-active min-w-0 gap-1 px-1.5",
         )}
       >
-        {isMultiple ? (
-          <StackedIcons category={category} activeTags={activeTags} />
-        ) : activeTags[0] ? (
-          <TagValueIcon category={category} value={activeTags[0].value} />
-        ) : null}
+        <StackedItems>
+          {Array.from(activeTags)
+            .sort((a, b) => a.value.localeCompare(b.value))
+            .map((tag) => (
+              <span
+                key={tag.key}
+                className="bg-app group-hover:bg-primary-hover group-data-pressed:bg-primary-hover rounded-full"
+              >
+                <TagValueIcon category={category} value={tag.value} />
+              </span>
+            ))}
+        </StackedItems>
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
       </Button>
 
