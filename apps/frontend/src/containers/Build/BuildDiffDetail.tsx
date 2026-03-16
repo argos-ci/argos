@@ -1281,10 +1281,9 @@ export function BuildDiffDetail(props: {
   repoUrl: string | null;
   className?: string;
   header?: React.ReactNode;
-  sidebar?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { build, diff, header, sidebar, className, ref } = props;
+  const { build, diff, header, className, ref } = props;
   const containerRef = useObjectRef(ref);
   useScrollToTop(containerRef, diff);
   return (
@@ -1298,17 +1297,10 @@ export function BuildDiffDetail(props: {
       {diff ? (
         <ZoomerSyncProvider id={diff.id}>
           <BuildDiffHighlighterProvider>
-            <div
-              className={clsx(
-                "sticky top-0 z-20 shrink-0 border-b-[0.5px] p-4 transition-colors",
-              )}
-            >
+            <div className="border-b-thin sticky top-0 z-20 shrink-0 p-4 transition-colors">
               {header}
             </div>
-            <div className="flex min-h-0 min-w-0 flex-1">
-              <BuildScreenshots build={build} diff={diff} />
-              {sidebar}
-            </div>
+            <BuildScreenshots build={build} diff={diff} />
             <BuildDialogs build={build} />
           </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>

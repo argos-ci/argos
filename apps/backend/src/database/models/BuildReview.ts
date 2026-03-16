@@ -3,6 +3,7 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Build } from "./Build";
+import { Comment } from "./Comment";
 import { ScreenshotDiffReview } from "./ScreenshotDiffReview";
 import { User } from "./User";
 
@@ -54,10 +55,19 @@ export class BuildReview extends Model {
           to: "screenshot_diff_reviews.buildReviewId",
         },
       },
+      comments: {
+        relation: Model.HasManyRelation,
+        modelClass: Comment,
+        join: {
+          from: "build_reviews.id",
+          to: "comments.buildReviewId",
+        },
+      },
     };
   }
 
   build?: Build;
   user?: User;
   screenshotDiffReviews?: ScreenshotDiffReview[];
+  comments?: Comment[];
 }

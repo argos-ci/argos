@@ -29,6 +29,7 @@ import { Model } from "../util/model";
 import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
 import { BuildReview } from "./BuildReview";
 import { BuildShard } from "./BuildShard";
+import { Comment } from "./Comment";
 import { GithubPullRequest } from "./GithubPullRequest";
 import { Project } from "./Project";
 import { ScreenshotBucket } from "./ScreenshotBucket";
@@ -217,6 +218,14 @@ export class Build extends Model {
           to: "build_shards.buildId",
         },
       },
+      comments: {
+        relation: Model.HasManyRelation,
+        modelClass: Comment,
+        join: {
+          from: "builds.id",
+          to: "comments.buildId",
+        },
+      },
     };
   }
 
@@ -226,6 +235,7 @@ export class Build extends Model {
   screenshotDiffs?: ScreenshotDiff[];
   pullRequest?: GithubPullRequest | null;
   shards?: BuildShard[];
+  comments?: Comment[];
 
   override $afterValidate(json: Pojo) {
     if (

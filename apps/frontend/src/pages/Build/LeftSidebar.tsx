@@ -29,8 +29,8 @@ function Tab(
     <RACTab
       className={clsx(
         "text-low rac-focus cursor-default rounded-sm px-2 text-sm leading-6 font-medium",
-        "data-[hovered]:bg-ui",
-        "data-[selected]:text-default data-[selected]:bg-ui",
+        "data-hovered:bg-ui",
+        "data-selected:text-default data-selected:bg-ui",
       )}
       {...props}
     />
@@ -38,7 +38,7 @@ function Tab(
 }
 
 const _BuildFragment = graphql(`
-  fragment BuildSidebar_Build on Build {
+  fragment BuildLeftSidebar_Build on Build {
     ...BuildInfos_Build
     type
     stats {
@@ -70,7 +70,19 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   );
 }
 
-export const BuildSidebar = memo(function BuildSidebar(props: {
+export const BuildLeftSidebar = memo(function BuildLeftSidebar(props: {
+  repoUrl: string | null;
+  build: DocumentType<typeof _BuildFragment>;
+  params: BuildParams;
+}) {
+  return (
+    <div className="bg-app border-r-thin flex min-h-0 w-73.75 shrink-0 flex-col">
+      <LeftSidebarTabs {...props} />
+    </div>
+  );
+});
+
+const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
   repoUrl: string | null;
   build: DocumentType<typeof _BuildFragment>;
   params: BuildParams;
@@ -100,10 +112,10 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
   return (
     <Tabs
       defaultSelectedKey={!build.stats?.total ? "info" : "screenshots"}
-      className="group/sidebar flex w-73.75 shrink-0 flex-col border-r-[0.5px]"
+      className="group/sidebar flex min-h-0 flex-1 shrink-0 flex-col"
     >
       {build.type !== BuildType.Skipped ? (
-        <div className="flex shrink-0 items-center border-b px-2">
+        <div className="border-b-thin flex shrink-0 items-center px-2">
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />

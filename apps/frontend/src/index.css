@@ -192,6 +192,9 @@
   --z-index-hover-card: 800;
   --z-index-dialog: 900;
 
+  --border-width-thin: 0.5px;
+  --spacing-thin: 0.5px;
+
   --animate-caret-blink: caret-blink 1.2s ease-out infinite;
 
   @keyframes caret-blink {

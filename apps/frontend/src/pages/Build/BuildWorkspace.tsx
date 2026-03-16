@@ -16,13 +16,13 @@ import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
-import { BuildSidebar } from "./BuildSidebar";
-import { TestDetails, type TestDetailsProps } from "./TestDetails";
-import { testSidebarAtom } from "./TestSidebar";
+import { BuildLeftSidebar } from "./LeftSidebar";
+import { rightSidebarAtom } from "./RightSidebar";
+import { TestDetails } from "./TestDetails";
 
 const _BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
-    ...BuildSidebar_Build
+    ...BuildLeftSidebar_Build
     ...BuildStatusDescription_Build
     ...BuildDiffDetail_Build
     status
@@ -108,7 +108,7 @@ export function BuildWorkspace(props: {
 
   return (
     <div className="flex min-h-0 flex-1">
-      <BuildSidebar build={build} repoUrl={repoUrl} params={params} />
+      <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
       {(() => {
         switch (build.status) {
           case BuildStatus.Aborted:
@@ -139,6 +139,7 @@ export function BuildWorkspace(props: {
             return build && <BuildDetail build={build} repoUrl={repoUrl} />;
         }
       })()}
+      <RightSidebar />
     </div>
   );
 }
@@ -172,28 +173,41 @@ function BuildDetail(props: {
             />
           ) : null
         }
-        sidebar={
-          activeDiff?.test ? (
-            <TestSidebar
-              test={activeDiff.test}
-              change={activeDiff.change ?? null}
-              occurrences={activeDiff.last7daysOccurrences}
-            />
-          ) : null
-        }
       />
     </div>
   );
 }
 
-function TestSidebar(props: TestDetailsProps) {
-  const sidebar = useAtomValue(testSidebarAtom);
-  switch (sidebar) {
-    case "details":
-      return <TestDetails {...props} />;
-    case null:
-      return null;
-    default:
-      assertNever(sidebar);
+function RightSidebar() {
+  const sidebar = useAtomValue(rightSidebarAtom);
+  if (!sidebar) {
+    return null;
   }
+  return (
+    <div className="bg-app border-l-thin flex min-h-0 max-w-80 flex-1 flex-col overflow-y-auto">
+      {(() => {
+        switch (sidebar) {
+          case "details":
+            return <ActiveTestDetails />;
+          default:
+            assertNever(sidebar);
+        }
+      })()}
+    </div>
+  );
+}
+
+function ActiveTestDetails() {
+  const { activeDiff } = useBuildDiffState();
+  if (!activeDiff?.test) {
+    return null;
+  }
+
+  return (
+    <TestDetails
+      test={activeDiff.test}
+      change={activeDiff.change ?? null}
+      occurrences={activeDiff.last7daysOccurrences}
+    />
+  );
 }

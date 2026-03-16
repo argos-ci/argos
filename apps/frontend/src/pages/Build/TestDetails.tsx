@@ -30,7 +30,7 @@ import {
   FlakinessTooltip,
   StabilityTooltip,
 } from "../Test/Widgets";
-import { testSidebarAtom } from "./TestSidebar";
+import { rightSidebarAtom } from "./RightSidebar";
 
 const _TestFragment = graphql(`
   fragment TestDetails_Test on Test {
@@ -73,191 +73,185 @@ export function TestDetails(props: TestDetailsProps) {
   const lastIgnoredTrail =
     lastTrail?.action === "files.ignored" ? lastTrail : null;
   return (
-    <div className="bg-subtle flex min-h-0 max-w-80 flex-1 flex-col overflow-y-auto border-l-[0.5px]">
-      <div className="flex min-h-0 max-w-3xl flex-1 flex-col divide-y-[0.5px]">
-        {change ? (
-          <SidebarSection>
-            <SidebarHeader>
-              <SidebarHeading>Change</SidebarHeading>
-              <HeadlessLink
-                className="hover:text-default text-low flex items-center text-xs"
-                href={getTestURL(
-                  { ...params, testId: test.id },
-                  { change: change.id },
-                )}
-              >
-                See details
-              </HeadlessLink>
-            </SidebarHeader>
-            <div className="shrink-0 px-4">
-              <InsightTitle
-                className="mb-2"
-                title="Occurrences"
-                tooltip={
-                  <>
-                    The number of auto-approved builds that have shown exactly
-                    the same change in the last 7 days.
-                  </>
-                }
-              />
-              <div
-                className={clsx(
-                  "text-xl font-bold",
-                  occurrences > 1 ? "text-danger-low" : "text-success-low",
-                )}
-              >
-                {compactFormatter.format(occurrences)} /{" "}
-                {compactFormatter.format(test.last7daysMetrics.all.total)}
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-1.5 px-4 text-xs">
-              {occurrences > 1 ? (
-                change.ignored ? (
-                  <>
-                    <FlagOffIcon className="text-low size-3" />
-                    Change ignored{" "}
-                    {lastIgnoredTrail ? (
-                      <>
-                        by{" "}
-                        <AccountAvatar
-                          avatar={lastIgnoredTrail.user.avatar}
-                          className="size-3.5 border"
-                        />
-                        {lastIgnoredTrail.user.name ||
-                          lastIgnoredTrail.user.slug}
-                      </>
-                    ) : null}
-                    .
-                  </>
-                ) : (
-                  <>
-                    <WavesIcon className="text-danger-low size-3" />
-                    This change is flaky, safe to be ignored.
-                  </>
-                )
-              ) : occurrences === 1 ? (
+    <div className="divide-y-thin flex min-h-0 max-w-3xl flex-1 flex-col">
+      {change ? (
+        <SidebarSection>
+          <SidebarHeader>
+            <SidebarHeading>Change</SidebarHeading>
+            <HeadlessLink
+              className="hover:text-default text-low flex items-center text-xs"
+              href={getTestURL(
+                { ...params, testId: test.id },
+                { change: change.id },
+              )}
+            >
+              See details
+            </HeadlessLink>
+          </SidebarHeader>
+          <div className="shrink-0 px-4">
+            <InsightTitle
+              className="mb-2"
+              title="Occurrences"
+              tooltip={
                 <>
-                  <CircleCheckIcon className="text-success-low size-3" />
-                  Seen once in the last seven days.
+                  The number of auto-approved builds that have shown exactly the
+                  same change in the last 7 days.
+                </>
+              }
+            />
+            <div
+              className={clsx(
+                "text-xl font-bold",
+                occurrences > 1 ? "text-danger-low" : "text-success-low",
+              )}
+            >
+              {compactFormatter.format(occurrences)} /{" "}
+              {compactFormatter.format(test.last7daysMetrics.all.total)}
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-1.5 px-4 text-xs">
+            {occurrences > 1 ? (
+              change.ignored ? (
+                <>
+                  <FlagOffIcon className="text-low size-3" />
+                  Change ignored{" "}
+                  {lastIgnoredTrail ? (
+                    <>
+                      by{" "}
+                      <AccountAvatar
+                        avatar={lastIgnoredTrail.user.avatar}
+                        className="size-3.5 border"
+                      />
+                      {lastIgnoredTrail.user.name || lastIgnoredTrail.user.slug}
+                    </>
+                  ) : null}
+                  .
                 </>
               ) : (
                 <>
-                  <CircleCheckIcon className="text-success-low size-3" />
-                  Not seen in the last seven days.
+                  <WavesIcon className="text-danger-low size-3" />
+                  This change is flaky, safe to be ignored.
                 </>
-              )}
-            </div>
-          </SidebarSection>
-        ) : null}
-        <SidebarSection>
-          <SidebarHeader>
-            <SidebarHeading>
-              Test Insights
-              <Tooltip content="Over the last 7 days">
-                <TooltipIndicator />
-              </Tooltip>
-            </SidebarHeading>
-            <HeadlessLink
-              className="hover:text-default text-low flex items-center text-xs"
-              href={getTestURL({ ...params, testId: test.id })}
-            >
-              See all
-            </HeadlessLink>
-          </SidebarHeader>
-          <div className="flex">
-            <div className="px-4">
+              )
+            ) : occurrences === 1 ? (
+              <>
+                <CircleCheckIcon className="text-success-low size-3" />
+                Seen once in the last seven days.
+              </>
+            ) : (
+              <>
+                <CircleCheckIcon className="text-success-low size-3" />
+                Not seen in the last seven days.
+              </>
+            )}
+          </div>
+        </SidebarSection>
+      ) : null}
+      <SidebarSection>
+        <SidebarHeader>
+          <SidebarHeading>
+            Test Insights
+            <Tooltip content="Over the last 7 days">
+              <TooltipIndicator />
+            </Tooltip>
+          </SidebarHeading>
+          <HeadlessLink
+            className="hover:text-default text-low flex items-center text-xs"
+            href={getTestURL({ ...params, testId: test.id })}
+          >
+            See all
+          </HeadlessLink>
+        </SidebarHeader>
+        <div className="flex">
+          <div className="px-4">
+            <InsightTitle
+              className="mb-2"
+              title="Flakiness"
+              tooltip={<FlakinessTooltip />}
+            />
+            <FlakinessCircleIndicator
+              value={test.last7daysMetrics.all.flakiness}
+              className="size-20"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-3 px-4">
+            <InsightRow>
               <InsightTitle
-                className="mb-2"
-                title="Flakiness"
-                tooltip={<FlakinessTooltip />}
+                title="Builds"
+                tooltip={<BuildsTooltip periodLabel="over last 7 days" />}
               />
-              <FlakinessCircleIndicator
-                value={test.last7daysMetrics.all.flakiness}
-                className="size-20"
+              <InsightValue>
+                {compactFormatter.format(test.last7daysMetrics.all.total)}
+              </InsightValue>
+            </InsightRow>
+            <InsightRow>
+              <InsightTitle
+                title="Changes"
+                tooltip={<ChangesTooltip periodLabel="over last 7 days" />}
               />
-            </div>
-            <div className="flex flex-1 flex-col gap-3 px-4">
-              <InsightRow>
-                <InsightTitle
-                  title="Builds"
-                  tooltip={<BuildsTooltip periodLabel="over last 7 days" />}
-                />
-                <InsightValue>
-                  {compactFormatter.format(test.last7daysMetrics.all.total)}
-                </InsightValue>
-              </InsightRow>
-              <InsightRow>
-                <InsightTitle
-                  title="Changes"
-                  tooltip={<ChangesTooltip periodLabel="over last 7 days" />}
-                />
-                <InsightValue>
-                  {compactFormatter.format(test.last7daysMetrics.all.changes)}
-                </InsightValue>
-              </InsightRow>
-              <InsightRow>
-                <InsightTitle
-                  title="Stability"
-                  tooltip={<StabilityTooltip />}
-                />
-                <InsightValue>
-                  {compactFormatter.format(
-                    test.last7daysMetrics.all.stability * 100,
-                  )}
-                  <InsightUnit>%</InsightUnit>
-                </InsightValue>
-              </InsightRow>
-              <InsightRow>
-                <InsightTitle
-                  title="Consistency"
-                  tooltip={<ConsistencyTooltip />}
-                />
-                <InsightValue>
-                  {compactFormatter.format(
-                    test.last7daysMetrics.all.consistency * 100,
-                  )}
-                  <InsightUnit>%</InsightUnit>
-                </InsightValue>
-              </InsightRow>
-            </div>
+              <InsightValue>
+                {compactFormatter.format(test.last7daysMetrics.all.changes)}
+              </InsightValue>
+            </InsightRow>
+            <InsightRow>
+              <InsightTitle title="Stability" tooltip={<StabilityTooltip />} />
+              <InsightValue>
+                {compactFormatter.format(
+                  test.last7daysMetrics.all.stability * 100,
+                )}
+                <InsightUnit>%</InsightUnit>
+              </InsightValue>
+            </InsightRow>
+            <InsightRow>
+              <InsightTitle
+                title="Consistency"
+                tooltip={<ConsistencyTooltip />}
+              />
+              <InsightValue>
+                {compactFormatter.format(
+                  test.last7daysMetrics.all.consistency * 100,
+                )}
+                <InsightUnit>%</InsightUnit>
+              </InsightValue>
+            </InsightRow>
           </div>
-        </SidebarSection>
-        <SidebarSection>
-          <SidebarHeader>
-            <SidebarHeading>Activity</SidebarHeading>
-          </SidebarHeader>
-          <div className="px-3 pb-8">
-            <div className="relative px-1">
-              <div className="absolute top-1 bottom-0 left-[10.5px] w-[0.5px] bg-(--mauve-6)" />
-              <ul className="relative space-y-3 text-xs">
-                <li className="text-low flex items-center">
-                  <div className="bg-subtle mr-2 py-1">
-                    <FileUpIcon className="size-3.5" />
-                  </div>
-                  Test created
-                  <span className="w-3 text-center">·</span>
-                  <Time date={test.createdAt} />
-                </li>
-                {change?.trails.map((trail) => {
-                  return (
-                    <li key={trail.id} className="text-low flex items-center">
-                      <div className="bg-subtle mr-2 py-1">
-                        <AccountAvatar
-                          avatar={trail.user.avatar}
-                          className="size-3.5 border"
-                        />
-                      </div>
-                      {getActionLabel(trail.action)}
-                      <span className="w-3 text-center">·</span>
-                      <Time date={trail.date} />
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+        </div>
+      </SidebarSection>
+      <SidebarSection>
+        <SidebarHeader>
+          <SidebarHeading>Activity</SidebarHeading>
+        </SidebarHeader>
+        <div className="px-3 pb-8">
+          <div className="relative px-1">
+            <div className="w-thin absolute top-1 bottom-0 left-[10.5px] bg-(--mauve-6)" />
+            <ul className="relative space-y-3 text-xs">
+              <li className="text-low flex items-center">
+                <div className="bg-subtle mr-2 py-1">
+                  <FileUpIcon className="size-3.5" />
+                </div>
+                Test created
+                <span className="w-3 text-center">·</span>
+                <Time date={test.createdAt} />
+              </li>
+              {change?.trails.map((trail) => {
+                return (
+                  <li key={trail.id} className="text-low flex items-center">
+                    <div className="bg-subtle mr-2 py-1">
+                      <AccountAvatar
+                        avatar={trail.user.avatar}
+                        className="size-3.5 border"
+                      />
+                    </div>
+                    {getActionLabel(trail.action)}
+                    <span className="w-3 text-center">·</span>
+                    <Time date={trail.date} />
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        </SidebarSection>
-      </div>
+        </div>
+      </SidebarSection>
     </div>
   );
 }
@@ -334,7 +328,7 @@ function getActionLabel(action: string) {
 }
 
 export function TestDetailsButton() {
-  const [sidebar, setSidebar] = useAtom(testSidebarAtom);
+  const [sidebar, setSidebar] = useAtom(rightSidebarAtom);
   const isToggled = sidebar === "details";
   const toggle = () => {
     setSidebar((sidebar) => (sidebar === "details" ? null : "details"));

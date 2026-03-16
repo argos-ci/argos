@@ -7,6 +7,8 @@ export * from "./Build";
 export * from "./BuildNotification";
 export * from "./BuildReview";
 export * from "./BuildShard";
+export * from "./Comment";
+export * from "./CommentReaction";
 export * from "./File";
 export * from "./GithubAccount";
 export * from "./GithubAccountMember";

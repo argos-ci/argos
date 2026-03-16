@@ -204,7 +204,7 @@ export const BuildHeader = memo(
   }) => {
     const { build, project } = props;
     return (
-      <div className="flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 border-b-[0.5px] p-4">
+      <div className="border-b-thin flex w-screen min-w-0 flex-none grow-0 items-center justify-between gap-4 p-4">
         <div className="flex h-8 items-center gap-4">
           <div className="relative flex">
             <BrandLink
