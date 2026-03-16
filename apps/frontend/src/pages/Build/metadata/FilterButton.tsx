@@ -3,60 +3,30 @@ import { FilterIcon } from "lucide-react";
 import type { Selection } from "react-aria-components";
 
 import { IconButton } from "@/ui/IconButton";
-import {
-  Menu,
-  MenuCheckboxItem,
-  MenuItem,
-  MenuTrigger,
-  SubmenuTrigger,
-} from "@/ui/Menu";
+import { Menu, MenuItem, MenuTrigger, SubmenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
-import { MetadataFilterContextValue } from "./MetadataFilterState";
+import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
+import {
+  groupTagsByCategory,
+  resolveSelectionKeys,
+  updateCategoryFilters,
+  type MetadataFilterContextValue,
+} from "./MetadataFilterState";
 
-function getTagsByCategory(tags: MetadataFilterContextValue["tags"]) {
-  const tagsByCategory = new Map<string, MetadataFilterContextValue["tags"]>();
-  for (const tag of tags) {
-    const list = tagsByCategory.get(tag.category);
-    if (!list) {
-      tagsByCategory.set(tag.category, [tag]);
-      continue;
-    }
-    list.push(tag);
-  }
-  return tagsByCategory;
-}
-
-function getFiltersByCategory(category: string, filters: string[]) {
-  const prefix = `${category}:`;
-  const keys = new Set<string>();
-
-  for (const filter of filters) {
-    if (filter.startsWith(prefix)) {
-      keys.add(filter);
-    }
-  }
-
-  return keys;
-}
-
-export function FilterButton({
+export const FilterButton = ({
   tags,
   selectedFilters,
   setSelectedFilters,
-}: MetadataFilterContextValue) {
+}: MetadataFilterContextValue) => {
   const [isOpen, setIsOpen] = useState(false);
-  const tagsByCategory = getTagsByCategory(tags);
+  const tagsByCategory = groupTagsByCategory(tags);
 
   const filterGroups = Array.from(tagsByCategory.entries()).map(
     ([category, categoryTags]) => ({
       key: category,
       label: category,
-      options: categoryTags.map((tag) => ({
-        key: `${tag.category}:${tag.value}`,
-        label: tag.label,
-        count: tag.count,
-      })),
+      tags: categoryTags,
     }),
   );
 
@@ -65,15 +35,11 @@ export function FilterButton({
     if (!group) {
       return;
     }
-
-    const nextKeys =
-      selection === "all"
-        ? group.options.map((option) => option.key)
-        : Array.from(selection, String);
-    const otherFilters = selectedFilters.filter(
-      (filter) => !filter.startsWith(`${category}:`),
+    const allKeys = group.tags.map((tag) => `${tag.category}:${tag.value}`);
+    const nextKeys = resolveSelectionKeys(selection, allKeys);
+    setSelectedFilters(
+      updateCategoryFilters(category, nextKeys, selectedFilters),
     );
-    setSelectedFilters([...otherFilters, ...nextKeys]);
   }
 
   return (
@@ -87,42 +53,24 @@ export function FilterButton({
           <Menu aria-label="Metadata filters" className="w-full">
             {filterGroups.map((group) => {
               const category = group.key;
-              const selectedKeys = getFiltersByCategory(
-                category,
-                selectedFilters,
+              const selectedKeys = new Set(
+                selectedFilters.filter((f) => f.startsWith(`${category}:`)),
               );
 
               return (
                 <SubmenuTrigger key={group.key}>
                   <MenuItem id={group.key}>{group.label}</MenuItem>
                   <Popover className="bg-white">
-                    <Menu
-                      aria-label={`${group.label} filters`}
-                      selectionMode="multiple"
+                    <MetadataCategoryMenu
+                      category={group.label}
+                      tags={group.tags}
                       selectedKeys={selectedKeys}
                       onSelectionChange={(selection) =>
                         handleSelectionChange(category, selection)
                       }
                       className="min-w-32"
-                    >
-                      {group.options.map((option) => (
-                        <MenuCheckboxItem
-                          key={option.key}
-                          id={option.key}
-                          textValue={option.label}
-                        >
-                          <div
-                            className="flex flex-1 items-center justify-between gap-6"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <span className="truncate">{option.label}</span>
-                            <span className="text-low shrink-0 text-xs">
-                              {option.count}
-                            </span>
-                          </div>
-                        </MenuCheckboxItem>
-                      ))}
-                    </Menu>
+                      onOptionClick={() => setIsOpen(false)}
+                    />
                   </Popover>
                 </SubmenuTrigger>
               );
@@ -132,4 +80,4 @@ export function FilterButton({
       </Popover>
     </MenuTrigger>
   );
-}
+};

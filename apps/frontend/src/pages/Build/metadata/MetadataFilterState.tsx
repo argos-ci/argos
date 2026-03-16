@@ -1,5 +1,6 @@
 import { createContext, use } from "react";
 import { invariant } from "@argos/util/invariant";
+import type { Selection } from "react-aria-components";
 
 import type { Diff } from "../BuildDiffState";
 
@@ -26,6 +27,38 @@ export function useMetadataFilterState() {
     "useMetadataFilterState must be used within a BuildDiffProvider",
   );
   return context;
+}
+
+export function groupTagsByCategory(tags: MetadataTag[]) {
+  const byCategory = new Map<string, MetadataTag[]>();
+  for (const tag of tags) {
+    const list = byCategory.get(tag.category) ?? [];
+    list.push(tag);
+    byCategory.set(tag.category, list);
+  }
+  return byCategory;
+}
+
+export function getTagsForCategory(tags: MetadataTag[], category: string) {
+  return tags.filter((tag) => tag.category === category);
+}
+
+export function resolveSelectionKeys(
+  selection: Selection,
+  allKeys: string[],
+): string[] {
+  return selection === "all" ? allKeys : Array.from(selection, String);
+}
+
+export function updateCategoryFilters(
+  category: string,
+  nextKeys: string[],
+  currentFilters: string[],
+): string[] {
+  const otherFilters = currentFilters.filter(
+    (f) => !f.startsWith(`${category}:`),
+  );
+  return [...otherFilters, ...nextKeys];
 }
 
 function getFilterKey(category: string, value: string) {
