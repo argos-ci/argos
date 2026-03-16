@@ -70,7 +70,7 @@ export const FilterButton = ({
         <FilterIcon />
       </IconButton>
 
-      <Popover placement="bottom start" className="bg-app w-40">
+      <Popover placement="bottom start" className="bg-app min-w-40">
         {hasBeenOpened ? (
           <Menu aria-label="Metadata filters" className="w-full">
             {filterGroups.map((group) => {
@@ -78,10 +78,16 @@ export const FilterButton = ({
               const selectedKeys = new Set(
                 selectedFilters.filter((f) => f.startsWith(`${category}:`)),
               );
+              const Icon = getMetadataCategoryDefinition(category).icon;
 
               return (
                 <SubmenuTrigger key={group.key} delay={0}>
-                  <MenuItem id={group.key}>{group.label}</MenuItem>
+                  <MenuItem id={group.key}>
+                    <div className="grid grid-cols-[1em_auto] items-center gap-2">
+                      <Icon className="size-4" />
+                      <div>{group.label}</div>
+                    </div>
+                  </MenuItem>
                   <Popover className="bg-white">
                     <MetadataCategoryMenu
                       category={category}

@@ -1,3 +1,5 @@
+import clsx from "clsx";
+
 import { BrowserIcon } from "./browser/BrowserIcon";
 import {
   getMetadataCategoryDefinition,
@@ -21,15 +23,16 @@ export const CategoryIcon = (props: { category: MetadataCategory }) => {
 export const TagValueIcon = (props: {
   category: MetadataCategory;
   value: string;
+  className?: string;
 }) => {
-  const iconSizeClass = "size-3 shrink-0";
+  const iconSizeClass = "shrink-0";
 
   switch (props.category) {
     case MetadataCategory.browser:
       return (
         <BrowserIcon
           browser={{ name: props.value }}
-          className={iconSizeClass}
+          className={clsx(iconSizeClass, props.className)}
         />
       );
 
@@ -37,7 +40,7 @@ export const TagValueIcon = (props: {
       const width = parseViewportWidth(props.value);
       const kind = getViewportIconKind(width);
       const Icon = viewportIcons[kind];
-      return <Icon className={iconSizeClass} />;
+      return <Icon className={clsx(iconSizeClass, props.className)} />;
     }
 
     case MetadataCategory.colorScheme: {
@@ -46,7 +49,7 @@ export const TagValueIcon = (props: {
         return null;
       }
       const Icon = colorSchemeIcons[kind];
-      return <Icon className={iconSizeClass} />;
+      return <Icon className={clsx(iconSizeClass, props.className)} />;
     }
 
     case MetadataCategory.mediaType: {
@@ -55,7 +58,7 @@ export const TagValueIcon = (props: {
         return null;
       }
       const Icon = mediaTypeIcons[kind];
-      return <Icon className={iconSizeClass} />;
+      return <Icon className={clsx(iconSizeClass, props.className)} />;
     }
 
     default:

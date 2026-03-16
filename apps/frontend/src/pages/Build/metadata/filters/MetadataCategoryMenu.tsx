@@ -34,8 +34,12 @@ const MetadataCategoryMenuOption = (props: {
         className="flex flex-1 items-center justify-between gap-6"
         onClick={props.onOptionClick}
       >
-        <div className="flex items-center gap-1.5">
-          <TagValueIcon category={category} value={tag.value} />
+        <div className="flex items-center gap-2">
+          <TagValueIcon
+            category={category}
+            value={tag.value}
+            className="size-4"
+          />
           <span className="truncate">{tag.label}</span>
         </div>
         <span className="text-low shrink-0 text-xs">{tag.count}</span>

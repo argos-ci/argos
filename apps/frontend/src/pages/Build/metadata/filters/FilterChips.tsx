@@ -63,7 +63,11 @@ const ChipValueButton = ({
                 key={tag.key}
                 className="bg-app group-hover:bg-primary-hover group-data-pressed:bg-primary-hover rounded-full"
               >
-                <TagValueIcon category={category} value={tag.value} />
+                <TagValueIcon
+                  category={category}
+                  value={tag.value}
+                  className="size-3"
+                />
               </span>
             ))}
         </StackedItems>
