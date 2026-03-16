@@ -25,6 +25,7 @@ export const FilterButton = ({
   setSelectedFilters,
 }: MetadataFilterContextValue) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasBeenOpened, setHasBeenOpened] = useState(false);
   const tagsByCategory = groupTagsByCategory(tags);
 
   const filterGroups = Array.from(tagsByCategory.entries()).map(
@@ -54,13 +55,23 @@ export const FilterButton = ({
   }
 
   return (
-    <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
+    <MenuTrigger
+      // Force the popover to be rendered when the menu is opened for the first time to avoid a page crash due to a bug
+      isOpen={isOpen}
+      // Prevent the popover to blink empty
+      onOpenChange={(open) => {
+        if (open) {
+          setHasBeenOpened(true);
+        }
+        setIsOpen(open);
+      }}
+    >
       <IconButton size="small">
         <FilterIcon />
       </IconButton>
 
       <Popover placement="bottom start" className="bg-app w-40">
-        {isOpen ? (
+        {hasBeenOpened ? (
           <Menu aria-label="Metadata filters" className="w-full">
             {filterGroups.map((group) => {
               const category = group.key;
