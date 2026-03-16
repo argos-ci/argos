@@ -7,21 +7,20 @@ import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 
-import {
-  CategoryIcon,
-  categoryPluralLabels,
-  TagValueIcon,
-} from "./MetadataCategories";
+import { CategoryIcon, TagValueIcon } from "./MetadataCategories";
 import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
 import {
   getFilterKey,
   getTagsForCategory,
+  MetadataTag,
   resolveSelectionKeys,
   updateCategoryFilters,
   useMetadataFilterState,
-  type MetadataTag,
 } from "./MetadataFilterState";
-import type { MetadataCategory } from "./metadataIcons";
+import {
+  getMetadataCategoryDefinition,
+  MetadataCategory,
+} from "./metadataIcons";
 
 type ActiveTag = {
   key: string;
@@ -43,8 +42,9 @@ const ChipValueButton = ({
   onSelectionChange: (selection: Selection) => void;
 }) => {
   const isMultiple = activeTags.length > 1;
+  const categoryDefinition = getMetadataCategoryDefinition(category);
   const tagLabel = isMultiple
-    ? `${activeTags.length} ${categoryPluralLabels[category] ?? category.toLowerCase()}`
+    ? `${activeTags.length} ${categoryDefinition.pluralLabel}`
     : (activeTags[0]?.label ?? "");
 
   return (
@@ -97,6 +97,7 @@ const ActiveFilterChip = ({
   selectedFilters: string[];
   setSelectedFilters: (filters: string[]) => void;
 }) => {
+  const categoryLabel = getMetadataCategoryDefinition(category).label;
   const selectedKeys = new Set(activeTags.map((t) => t.key));
 
   function handleSelectionChange(selection: Selection) {
@@ -119,7 +120,7 @@ const ActiveFilterChip = ({
     <div className="text-xxs text-low flex min-w-0 items-center font-medium">
       <ChipSegment className="rounded-l-chip shrink-0 gap-1 px-1.5">
         <CategoryIcon category={category} />
-        <span>{category}</span>
+        <span>{categoryLabel}</span>
       </ChipSegment>
 
       <ChipSegment className="shrink-0 px-1">
@@ -140,7 +141,7 @@ const ActiveFilterChip = ({
           "hover:bg-primary-hover rounded-r-chip cursor-pointer px-1",
         )}
         onPress={handleRemove}
-        aria-label={`Remove ${category} filter`}
+        aria-label={`Remove ${categoryLabel} filter`}
       >
         <XIcon className="size-3" />
       </Button>

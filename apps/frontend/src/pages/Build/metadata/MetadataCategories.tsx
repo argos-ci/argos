@@ -1,25 +1,18 @@
 import { BrowserIcon } from "./browser/BrowserIcon";
 import {
-  categoryIcons,
   colorSchemeIcons,
   getColorSchemeIconKind,
   getMediaTypeIconKind,
+  getMetadataCategoryDefinition,
   getViewportIconKind,
   mediaTypeIcons,
+  MetadataCategory,
   parseViewportWidth,
   viewportIcons,
-  type MetadataCategory,
 } from "./metadataIcons";
 
-export const categoryPluralLabels: Record<MetadataCategory, string> = {
-  Browser: "browsers",
-  Viewport: "viewports",
-  "Color scheme": "color schemes",
-  "Media type": "media types",
-};
-
 export const CategoryIcon = (props: { category: MetadataCategory }) => {
-  const Icon = categoryIcons[props.category];
+  const Icon = getMetadataCategoryDefinition(props.category).icon;
   return <Icon className="size-3" />;
 };
 
@@ -30,7 +23,7 @@ export const TagValueIcon = (props: {
   const iconSizeClass = "size-3 shrink-0";
 
   switch (props.category) {
-    case "Browser":
+    case MetadataCategory.browser:
       return (
         <BrowserIcon
           browser={{ name: props.value }}
@@ -38,20 +31,20 @@ export const TagValueIcon = (props: {
         />
       );
 
-    case "Viewport": {
+    case MetadataCategory.viewport: {
       const width = parseViewportWidth(props.value);
       const kind = getViewportIconKind(width);
       const Icon = viewportIcons[kind];
       return <Icon className={iconSizeClass} />;
     }
 
-    case "Color scheme": {
+    case MetadataCategory.colorScheme: {
       const kind = getColorSchemeIconKind(props.value);
       const Icon = colorSchemeIcons[kind];
       return <Icon className={iconSizeClass} />;
     }
 
-    case "Media type": {
+    case MetadataCategory.mediaType: {
       const kind = getMediaTypeIconKind(props.value);
       if (!kind) {
         return null;

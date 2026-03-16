@@ -5,7 +5,10 @@ import { Menu, MenuCheckboxItem, MenuSeparator } from "@/ui/Menu";
 
 import { TagValueIcon } from "./MetadataCategories";
 import type { MetadataTag } from "./MetadataFilterState";
-import type { MetadataCategory } from "./metadataIcons";
+import {
+  getMetadataCategoryDefinition,
+  type MetadataCategory,
+} from "./metadataIcons";
 
 type MetadataCategoryMenuProps = {
   category: MetadataCategory;
@@ -42,6 +45,8 @@ const MetadataCategoryMenuOption = (props: {
 };
 
 export const MetadataCategoryMenu = (props: MetadataCategoryMenuProps) => {
+  const categoryLabel = getMetadataCategoryDefinition(props.category).label;
+
   const checkedTags = props.tags.filter((tag) =>
     props.selectedKeys.has(`${tag.category}:${tag.value}`),
   );
@@ -56,7 +61,7 @@ export const MetadataCategoryMenu = (props: MetadataCategoryMenuProps) => {
 
   return (
     <Menu
-      aria-label={`${props.category} filters`}
+      aria-label={`${categoryLabel} filters`}
       selectionMode="multiple"
       selectedKeys={props.selectedKeys}
       onSelectionChange={props.onSelectionChange}

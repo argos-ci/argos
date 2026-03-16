@@ -13,7 +13,10 @@ import {
   updateCategoryFilters,
   type MetadataFilterContextValue,
 } from "./MetadataFilterState";
-import type { MetadataCategory } from "./metadataIcons";
+import {
+  getMetadataCategoryDefinition,
+  type MetadataCategory,
+} from "./metadataIcons";
 
 export const FilterButton = ({
   tags,
@@ -26,7 +29,7 @@ export const FilterButton = ({
   const filterGroups = Array.from(tagsByCategory.entries()).map(
     ([category, categoryTags]) => ({
       key: category,
-      label: category,
+      label: getMetadataCategoryDefinition(category).label,
       tags: categoryTags,
     }),
   );

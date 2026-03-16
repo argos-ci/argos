@@ -4,8 +4,9 @@ import type { Selection } from "react-aria-components";
 
 import type { Diff } from "../BuildDiffState";
 import {
+  getMetadataCategoryDefinition,
   isKnownMetadataCategory,
-  type MetadataCategory,
+  MetadataCategory,
 } from "./metadataIcons";
 
 export type MetadataTag = {
@@ -92,7 +93,7 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
 
     if (metadata.browser) {
       entries.push({
-        category: "Browser",
+        category: MetadataCategory.browser,
         value: metadata.browser.name,
         label: metadata.browser.name,
       });
@@ -100,12 +101,16 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
 
     if (metadata.viewport) {
       const vp = `${metadata.viewport.width}×${metadata.viewport.height}`;
-      entries.push({ category: "Viewport", value: vp, label: vp });
+      entries.push({
+        category: MetadataCategory.viewport,
+        value: vp,
+        label: vp,
+      });
     }
 
     if (metadata.colorScheme) {
       entries.push({
-        category: "Color scheme",
+        category: MetadataCategory.colorScheme,
         value: metadata.colorScheme,
         label: metadata.colorScheme,
       });
@@ -113,7 +118,7 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
 
     if (metadata.mediaType) {
       entries.push({
-        category: "Media type",
+        category: MetadataCategory.mediaType,
         value: metadata.mediaType,
         label: metadata.mediaType,
       });
@@ -132,10 +137,15 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
 
   return Array.from(counts.values()).sort((a, b) => {
     if (a.category !== b.category) {
-      return a.category.localeCompare(b.category);
+      const aLabel = getMetadataCategoryDefinition(a.category).label;
+      const bLabel = getMetadataCategoryDefinition(b.category).label;
+      return aLabel.localeCompare(bLabel);
     }
 
-    if (a.category === "Viewport" && b.category === "Viewport") {
+    if (
+      a.category === MetadataCategory.viewport &&
+      b.category === MetadataCategory.viewport
+    ) {
       const [aWidth = 0, aHeight = 0] = a.value.split("×").map(Number);
       const [bWidth = 0, bHeight = 0] = b.value.split("×").map(Number);
 
@@ -183,13 +193,13 @@ export function diffMatchesFilters(
     let matched = false;
     for (const value of values) {
       switch (category) {
-        case "Browser":
+        case MetadataCategory.browser:
           if (metadata.browser?.name === value) {
             matched = true;
           }
           break;
 
-        case "Viewport":
+        case MetadataCategory.viewport:
           if (metadata.viewport) {
             const vp = `${metadata.viewport.width}×${metadata.viewport.height}`;
             if (vp === value) {
@@ -198,13 +208,13 @@ export function diffMatchesFilters(
           }
           break;
 
-        case "Color scheme":
+        case MetadataCategory.colorScheme:
           if (metadata.colorScheme === value) {
             matched = true;
           }
           break;
 
-        case "Media type":
+        case MetadataCategory.mediaType:
           if (metadata.mediaType === value) {
             matched = true;
           }

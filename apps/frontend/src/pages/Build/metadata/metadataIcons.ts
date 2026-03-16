@@ -8,19 +8,47 @@ import {
   TabletIcon,
 } from "lucide-react";
 
-export const categoryIcons = {
-  Browser: GlobeIcon,
-  Viewport: LaptopIcon,
-  "Color scheme": SunIcon,
-  "Media type": PrinterIcon,
+export const MetadataCategory = {
+  browser: "browser",
+  viewport: "viewport",
+  colorScheme: "colorScheme",
+  mediaType: "mediaType",
 } as const;
 
-export type MetadataCategory = keyof typeof categoryIcons;
+export type MetadataCategory =
+  (typeof MetadataCategory)[keyof typeof MetadataCategory];
+
+const metadataCategoryDefinitions = {
+  [MetadataCategory.browser]: {
+    label: "Browser",
+    pluralLabel: "browsers",
+    icon: GlobeIcon,
+  },
+  [MetadataCategory.viewport]: {
+    label: "Viewport",
+    pluralLabel: "viewports",
+    icon: LaptopIcon,
+  },
+  [MetadataCategory.colorScheme]: {
+    label: "Color scheme",
+    pluralLabel: "color schemes",
+    icon: SunIcon,
+  },
+  [MetadataCategory.mediaType]: {
+    label: "Media type",
+    pluralLabel: "media types",
+    icon: PrinterIcon,
+  },
+} as const;
+
+export function getMetadataCategoryDefinition(category: MetadataCategory) {
+  return metadataCategoryDefinitions[category];
+}
 
 export function isKnownMetadataCategory(
   category: string,
 ): category is MetadataCategory {
-  return category in categoryIcons;
+  return category in metadataCategoryDefinitions;
 }
 
 export const viewportIcons = {
