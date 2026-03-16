@@ -1,4 +1,4 @@
-import { memo, startTransition, useCallback, useRef } from "react";
+import { memo, startTransition, useCallback, useRef, useState } from "react";
 import clsx from "clsx";
 import { SearchIcon, XIcon } from "lucide-react";
 import {
@@ -85,6 +85,7 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
   const { searchMode, setSearchMode } = useSearchModeState();
   const { tags, selectedFilters, setSelectedFilters } =
     useMetadataFilterState();
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const enterSearchMode = useCallback(() => {
     startTransition(() => {
@@ -105,6 +106,14 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
   const searchModeHotKey = useBuildHotkey("enterSearchMode", enterSearchMode, {
     allowInInput: true,
   });
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterHotKey = useBuildHotkey(
+    "toggleFilters",
+    () => {
+      filterButtonRef.current?.click();
+    },
+    { enabled: tags.length > 0 },
+  );
   return (
     <Tabs
       defaultSelectedKey={!build.stats?.total ? "info" : "screenshots"}
@@ -148,11 +157,19 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
             </>
           )}
           {tags.length > 0 && (
-            <FilterButton
-              tags={tags}
-              selectedFilters={selectedFilters}
-              setSelectedFilters={setSelectedFilters}
-            />
+            <HotkeyTooltip
+              keys={filterHotKey.displayKeys}
+              description={filterHotKey.description}
+              disabled={filterMenuOpen}
+            >
+              <FilterButton
+                ref={filterButtonRef}
+                tags={tags}
+                selectedFilters={selectedFilters}
+                setSelectedFilters={setSelectedFilters}
+                onOpenChange={setFilterMenuOpen}
+              />
+            </HotkeyTooltip>
           )}
         </div>
       ) : null}

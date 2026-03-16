@@ -50,6 +50,12 @@ const hotkeyGroups = [
         description: "Exit search",
         envs: ["build"],
       },
+      toggleFilters: {
+        keys: ["KeyF"],
+        displayKeys: ["F"],
+        description: "Open filters",
+        envs: ["build"],
+      },
     },
   },
   {

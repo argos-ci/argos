@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { FilterIcon } from "lucide-react";
 import type { Selection } from "react-aria-components";
 
@@ -19,93 +19,96 @@ import {
   updateCategoryFilters,
 } from "./metadataFilterUtils";
 
-export const FilterButton = ({
-  tags,
-  selectedFilters,
-  setSelectedFilters,
-}: MetadataFilterContextValue) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [hasBeenOpened, setHasBeenOpened] = useState(false);
-  const tagsByCategory = groupTagsByCategory(tags);
+type FilterButtonProps = MetadataFilterContextValue & {
+  onOpenChange?: (isOpen: boolean) => void;
+};
 
-  const filterGroups = Array.from(tagsByCategory.entries())
-    .map(([category, categoryTags]) => ({
-      key: category,
-      label: getMetadataCategoryDefinition(category).label,
-      tags: categoryTags,
-    }))
-    .filter((group) => group.tags.length > 1);
+export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
+  ({ tags, selectedFilters, setSelectedFilters, onOpenChange }, ref) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [hasBeenOpened, setHasBeenOpened] = useState(false);
+    const tagsByCategory = groupTagsByCategory(tags);
 
-  function handleSelectionChange(
-    category: MetadataCategory,
-    selection: Selection,
-  ) {
-    const categoryTags = tagsByCategory.get(category);
-    if (!categoryTags) {
-      return;
+    const filterGroups = Array.from(tagsByCategory.entries())
+      .map(([category, categoryTags]) => ({
+        key: category,
+        label: getMetadataCategoryDefinition(category).label,
+        tags: categoryTags,
+      }))
+      .filter((group) => group.tags.length > 1);
+
+    function handleSelectionChange(
+      category: MetadataCategory,
+      selection: Selection,
+    ) {
+      const categoryTags = tagsByCategory.get(category);
+      if (!categoryTags) {
+        return;
+      }
+
+      const allKeys = categoryTags.map((tag) =>
+        getFilterKey(tag.category, tag.value),
+      );
+      const nextKeys = resolveSelectionKeys(selection, allKeys);
+      setSelectedFilters(
+        updateCategoryFilters(category, nextKeys, selectedFilters),
+      );
     }
 
-    const allKeys = categoryTags.map((tag) =>
-      getFilterKey(tag.category, tag.value),
+    return (
+      <MenuTrigger
+        // Force the popover to be rendered when the menu is opened for the first time to avoid a page crash due to a bug
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          // Prevent the popover to blink empty
+          if (open) {
+            setHasBeenOpened(true);
+          }
+          setIsOpen(open);
+          onOpenChange?.(open);
+        }}
+      >
+        <IconButton ref={ref} size="small">
+          <FilterIcon />
+        </IconButton>
+
+        <Popover placement="bottom start" className="bg-app min-w-40">
+          {hasBeenOpened ? (
+            <Menu autoFocus aria-label="Metadata filters" className="w-full">
+              {filterGroups.map((group) => {
+                const category = group.key;
+                const selectedKeys = new Set(
+                  selectedFilters.filter((f) => f.startsWith(`${category}:`)),
+                );
+                const Icon = getMetadataCategoryDefinition(category).icon;
+
+                return (
+                  <SubmenuTrigger key={group.key} delay={0}>
+                    <MenuItem id={group.key}>
+                      <div className="grid grid-cols-[1em_auto] items-center gap-2">
+                        <Icon className="size-4" />
+                        <div>{group.label}</div>
+                      </div>
+                    </MenuItem>
+                    <Popover className="bg-white">
+                      <MetadataCategoryMenu
+                        category={category}
+                        tags={group.tags}
+                        selectedKeys={selectedKeys}
+                        onSelectionChange={(selection) =>
+                          handleSelectionChange(category, selection)
+                        }
+                        className="min-w-32"
+                        onOptionClick={() => setIsOpen(false)}
+                      />
+                    </Popover>
+                  </SubmenuTrigger>
+                );
+              })}
+            </Menu>
+          ) : null}
+        </Popover>
+      </MenuTrigger>
     );
-    const nextKeys = resolveSelectionKeys(selection, allKeys);
-    setSelectedFilters(
-      updateCategoryFilters(category, nextKeys, selectedFilters),
-    );
-  }
-
-  return (
-    <MenuTrigger
-      // Force the popover to be rendered when the menu is opened for the first time to avoid a page crash due to a bug
-      isOpen={isOpen}
-      // Prevent the popover to blink empty
-      onOpenChange={(open) => {
-        if (open) {
-          setHasBeenOpened(true);
-        }
-        setIsOpen(open);
-      }}
-    >
-      <IconButton size="small">
-        <FilterIcon />
-      </IconButton>
-
-      <Popover placement="bottom start" className="bg-app min-w-40">
-        {hasBeenOpened ? (
-          <Menu aria-label="Metadata filters" className="w-full">
-            {filterGroups.map((group) => {
-              const category = group.key;
-              const selectedKeys = new Set(
-                selectedFilters.filter((f) => f.startsWith(`${category}:`)),
-              );
-              const Icon = getMetadataCategoryDefinition(category).icon;
-
-              return (
-                <SubmenuTrigger key={group.key} delay={0}>
-                  <MenuItem id={group.key}>
-                    <div className="grid grid-cols-[1em_auto] items-center gap-2">
-                      <Icon className="size-4" />
-                      <div>{group.label}</div>
-                    </div>
-                  </MenuItem>
-                  <Popover className="bg-white">
-                    <MetadataCategoryMenu
-                      category={category}
-                      tags={group.tags}
-                      selectedKeys={selectedKeys}
-                      onSelectionChange={(selection) =>
-                        handleSelectionChange(category, selection)
-                      }
-                      className="min-w-32"
-                      onOptionClick={() => setIsOpen(false)}
-                    />
-                  </Popover>
-                </SubmenuTrigger>
-              );
-            })}
-          </Menu>
-        ) : null}
-      </Popover>
-    </MenuTrigger>
-  );
-};
+  },
+);
