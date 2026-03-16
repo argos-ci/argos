@@ -28,13 +28,13 @@ export const FilterButton = ({
   const [hasBeenOpened, setHasBeenOpened] = useState(false);
   const tagsByCategory = groupTagsByCategory(tags);
 
-  const filterGroups = Array.from(tagsByCategory.entries()).map(
-    ([category, categoryTags]) => ({
+  const filterGroups = Array.from(tagsByCategory.entries())
+    .map(([category, categoryTags]) => ({
       key: category,
       label: getMetadataCategoryDefinition(category).label,
       tags: categoryTags,
-    }),
-  );
+    }))
+    .filter((group) => group.tags.length > 1);
 
   function handleSelectionChange(
     category: MetadataCategory,
