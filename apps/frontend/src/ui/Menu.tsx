@@ -115,7 +115,7 @@ export function MenuCheckboxItem(
     >
       {(menuProps) => (
         <div className="flex w-full items-center gap-2">
-          <button type="button" tabIndex={-1} className="shrink-0">
+          <div className="shrink-0">
             <span
               className={clsx(
                 "border-primary hover:border-active flex size-4 items-center justify-center rounded-sm border",
@@ -126,7 +126,7 @@ export function MenuCheckboxItem(
             >
               {menuProps.isSelected ? <CheckIcon className="size-4" /> : null}
             </span>
-          </button>
+          </div>
           <div className="min-w-0 flex-1 select-none">{props.children}</div>
         </div>
       )}

@@ -12,12 +12,19 @@ import {
 } from "./MetadataCategories";
 import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
 import {
+  getFilterKey,
   getTagsForCategory,
   resolveSelectionKeys,
   updateCategoryFilters,
   useMetadataFilterState,
   type MetadataTag,
 } from "./MetadataFilterState";
+
+type ActiveTag = {
+  key: string;
+  label: string;
+  value: string;
+};
 
 const segmentClassName =
   "border-primary text-primary-low flex h-5 items-center border leading-none select-none";
@@ -33,32 +40,36 @@ const PillSegment = (props: {
   );
 };
 
-const StackedIcons = (props: {
-  category: string;
-  activeTags: { key: string; value: string }[];
-}) => {
+const StackedIcons = (props: { category: string; activeTags: ActiveTag[] }) => {
   return (
     <div className="flex items-center -space-x-1">
-      {props.activeTags.map((tag) => (
-        <span
-          key={tag.key}
-          className="bg-app group-hover:bg-hover rounded-full"
-        >
-          <TagValueIcon category={props.category} value={tag.value} />
-        </span>
-      ))}
+      {[...props.activeTags]
+        .sort((a, b) => a.value.localeCompare(b.value))
+        .map((tag) => (
+          <span
+            key={tag.key}
+            className="bg-app group-hover:bg-primary-hover group-data-pressed:bg-primary-hover rounded-full"
+          >
+            <TagValueIcon category={props.category} value={tag.value} />
+          </span>
+        ))}
     </div>
   );
 };
 
-const PillValueButton = (props: {
+const PillValueButton = ({
+  category,
+  activeTags,
+  allCategoryTags,
+  selectedKeys,
+  onSelectionChange,
+}: {
   category: string;
-  activeTags: { key: string; label: string; value: string }[];
+  activeTags: ActiveTag[];
   allCategoryTags: MetadataTag[];
   selectedKeys: Set<string>;
   onSelectionChange: (selection: Selection) => void;
 }) => {
-  const { category, activeTags, allCategoryTags, selectedKeys } = props;
   const isMultiple = activeTags.length > 1;
   const tagLabel = isMultiple
     ? `${activeTags.length} ${categoryPluralLabels[category] ?? category.toLowerCase()}`
@@ -69,7 +80,7 @@ const PillValueButton = (props: {
       <Button
         className={clsx(
           segmentClassName,
-          "group hover:bg-hover -ml-px min-w-0 cursor-pointer gap-1 px-1.5",
+          "group hover:bg-primary-hover data-pressed:bg-primary-active -ml-px min-w-0 cursor-pointer gap-1 px-1.5",
         )}
       >
         {isMultiple ? (
@@ -85,7 +96,7 @@ const PillValueButton = (props: {
           category={category}
           tags={allCategoryTags}
           selectedKeys={selectedKeys}
-          onSelectionChange={props.onSelectionChange}
+          onSelectionChange={onSelectionChange}
           className="min-w-32"
           splitSelected
         />
@@ -94,21 +105,19 @@ const PillValueButton = (props: {
   );
 };
 
-const ActiveFilterPill = (props: {
+const ActiveFilterPill = ({
+  category,
+  activeTags,
+  allCategoryTags,
+  selectedFilters,
+  setSelectedFilters,
+}: {
   category: string;
-  activeTags: { key: string; label: string; value: string }[];
+  activeTags: ActiveTag[];
   allCategoryTags: MetadataTag[];
   selectedFilters: string[];
   setSelectedFilters: (filters: string[]) => void;
 }) => {
-  const {
-    category,
-    activeTags,
-    allCategoryTags,
-    selectedFilters,
-    setSelectedFilters,
-  } = props;
-
   const selectedKeys = new Set(activeTags.map((t) => t.key));
 
   function handleSelectionChange(selection: Selection) {
@@ -149,7 +158,7 @@ const ActiveFilterPill = (props: {
       <Button
         className={clsx(
           segmentClassName,
-          "hover:bg-hover hover:text rounded-r-chip -ml-px cursor-pointer px-1",
+          "hover:bg-primary-hover rounded-r-chip -ml-px cursor-pointer px-1",
         )}
         onPress={handleRemove}
         aria-label={`Remove ${category} filter`}
@@ -160,6 +169,27 @@ const ActiveFilterPill = (props: {
   );
 };
 
+function groupActiveFiltersByCategory(
+  selectedFilters: string[],
+  tags: MetadataTag[],
+) {
+  const activeByCategory = new Map<string, ActiveTag[]>();
+
+  for (const filterKey of selectedFilters) {
+    const tag = tags.find(
+      (t) => getFilterKey(t.category, t.value) === filterKey,
+    );
+    if (!tag) {
+      continue;
+    }
+
+    const list = activeByCategory.get(tag.category) ?? [];
+    list.push({ key: filterKey, label: tag.label, value: tag.value });
+    activeByCategory.set(tag.category, list);
+  }
+  return activeByCategory;
+}
+
 export const ActiveFilterPills = () => {
   const { tags, selectedFilters, setSelectedFilters } =
     useMetadataFilterState();
@@ -168,25 +198,7 @@ export const ActiveFilterPills = () => {
     return null;
   }
 
-  // Group active filters by category
-  const activeByCategory = new Map<
-    string,
-    { key: string; label: string; value: string }[]
-  >();
-  for (const filterKey of selectedFilters) {
-    const tag = tags.find((t) => `${t.category}:${t.value}` === filterKey);
-    if (!tag) {
-      continue;
-    }
-
-    const list = activeByCategory.get(tag.category) ?? [];
-    list.push({
-      key: filterKey,
-      label: tag.label,
-      value: tag.value,
-    });
-    activeByCategory.set(tag.category, list);
-  }
+  const activeByCategory = groupActiveFiltersByCategory(selectedFilters, tags);
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">

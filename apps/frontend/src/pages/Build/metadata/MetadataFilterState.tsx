@@ -61,7 +61,7 @@ export function updateCategoryFilters(
   return [...otherFilters, ...nextKeys];
 }
 
-function getFilterKey(category: string, value: string) {
+export function getFilterKey(category: string, value: string) {
   return `${category}:${value}`;
 }
 

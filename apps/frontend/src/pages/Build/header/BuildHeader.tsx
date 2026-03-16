@@ -93,7 +93,7 @@ function useBuildReviewProgression() {
   const diffState = useBuildDiffState();
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
   if (diffState.ready && getDiffEvaluationStatus) {
-    const toReview = diffState.diffs.filter((diff) =>
+    const toReview = diffState.allDiffs.filter((diff) =>
       checkDiffCanBeReviewed(diff.status, {
         isSubsetBuild: diffState.isSubsetBuild,
       }),

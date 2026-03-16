@@ -169,6 +169,7 @@ export type DiffResult = MatchData<Diff>;
 
 type BuildDiffContextValue = {
   diffs: Diff[];
+  allDiffs: Diff[];
   groups: DiffGroup[];
   expanded: string[];
   toggleGroup: (name: string, value?: boolean) => void;
@@ -756,6 +757,7 @@ export function BuildDiffProvider(props: {
     (): BuildDiffContextValue => ({
       groups,
       diffs: sortedDiffs,
+      allDiffs: screenshotDiffs,
       expanded,
       toggleGroup,
       activeDiff,
@@ -775,6 +777,7 @@ export function BuildDiffProvider(props: {
     [
       groups,
       sortedDiffs,
+      screenshotDiffs,
       expanded,
       toggleGroup,
       activeDiff,
