@@ -109,6 +109,7 @@ export function MenuCheckboxItem(
     <RACMenuItem
       className={clsx(
         menuItemVariantClasses[props.variant ?? "default"],
+        "group/menu-checkbox-item",
         menuItemClassName,
       )}
       {...props}
@@ -118,13 +119,16 @@ export function MenuCheckboxItem(
           <div className="shrink-0">
             <span
               className={clsx(
-                "border-primary hover:border-active flex size-4 items-center justify-center rounded-sm border",
+                "border-primary text-primary hover:border-primary-hover flex size-3.5 items-center justify-center rounded-sm border",
+                "opacity-0 group-data-focused/menu-checkbox-item:opacity-100 group-data-hovered/menu-checkbox-item:opacity-100",
                 menuProps.isSelected &&
-                  "bg-primary-active text-primary border-active",
-                menuProps.isDisabled && "opacity-disabled",
+                  "bg-primary-active border-active opacity-100",
+                menuProps.isDisabled &&
+                  menuProps.isSelected &&
+                  "opacity-disabled",
               )}
             >
-              {menuProps.isSelected ? <CheckIcon className="size-4" /> : null}
+              {menuProps.isSelected ? <CheckIcon className="size-3" /> : null}
             </span>
           </div>
           <div className="min-w-0 flex-1 select-none">{props.children}</div>
