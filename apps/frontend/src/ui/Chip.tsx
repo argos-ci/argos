@@ -185,7 +185,7 @@ export function ChipLink(props: ChipLinkProps) {
 }
 
 const chipSegmentBaseClassName =
-  "group/chip-segment flex items-center border-r border-inherit text-inherit last:border-r-0 select-none -ml-px first:ml-0 gap-1 px-1 first:pl-1.5 last:rounded-r-chip";
+  "group/chip-segment flex items-center border-r border-inherit text-inherit last:border-r-0 select-none gap-1 px-1 first:pl-1.5 last:rounded-r-chip";
 
 export const ChipSegment = ({
   className,
