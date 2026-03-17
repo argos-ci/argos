@@ -36,6 +36,27 @@ type ChipOptions = {
   segmented?: boolean;
 };
 
+const interactiveClassNames = {
+  primary: clsx(
+    "data-[hovered]:not-aria-[current=page]:bg-primary-hover",
+    "data-[hovered]:not-aria-[current=page]:text-primary",
+    "aria-[current=page]:bg-primary-active",
+    "aria-[current=page]:text-primary",
+    "data-pressed:bg-primary-active",
+  ),
+  info: "data-[hovered]:not-aria-[current=page]:bg-info-hover aria-[current=page]:bg-info-active data-pressed:bg-info-active",
+  success:
+    "data-[hovered]:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active data-pressed:bg-success-active",
+  neutral:
+    "data-[hovered]:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active data-pressed:bg-active",
+  pending:
+    "data-[hovered]:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active data-pressed:bg-pending-active",
+  danger:
+    "data-[hovered]:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active data-pressed:bg-danger-active",
+  warning:
+    "data-[hovered]:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
+};
+
 /**
  * Compute the class name for a chip.
  */
@@ -61,53 +82,26 @@ function getChipClassName(props: {
     primary: clsx(
       lowTextColorClassNames.primary,
       "border-primary bg-primary-app",
-      interactive &&
-        clsx(
-          "data-[hovered]:not-aria-[current=page]:bg-primary-hover",
-          "data-[hovered]:not-aria-[current=page]:text-primary",
-          "aria-[current=page]:bg-primary-active",
-          "aria-[current=page]:text-primary",
-        ),
     ),
-    info: clsx(
-      lowTextColorClassNames.info,
-      "border-info bg-info-app",
-      interactive &&
-        "data-[hovered]:not-aria-[current=page]:bg-info-hover aria-[current=page]:bg-info-active",
-    ),
+    info: clsx(lowTextColorClassNames.info, "border-info bg-info-app"),
     success: clsx(
       lowTextColorClassNames.success,
       "border-success bg-success-app",
-      interactive &&
-        "data-[hovered]:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active",
     ),
-    neutral: clsx(
-      lowTextColorClassNames.neutral,
-      "border bg-app",
-      interactive &&
-        "data-[hovered]:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active",
-    ),
+    neutral: clsx(lowTextColorClassNames.neutral, "border bg-app"),
     pending: clsx(
       lowTextColorClassNames.pending,
       "border-pending bg-pending-app",
-      interactive &&
-        "data-[hovered]:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active",
     ),
-    danger: clsx(
-      lowTextColorClassNames.danger,
-      "border-danger bg-danger-app",
-      interactive &&
-        "data-[hovered]:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active",
-    ),
+    danger: clsx(lowTextColorClassNames.danger, "border-danger bg-danger-app"),
     warning: clsx(
       lowTextColorClassNames.warning,
       "border-warning bg-warning-app",
-      interactive &&
-        "data-[hovered]:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active",
     ),
   };
   return clsx(
     colorClassNames[color],
+    interactive && interactiveClassNames[color],
     interactive &&
       clsx(
         "rac-focus",
@@ -202,16 +196,6 @@ export const ChipSegment = ({
   );
 };
 
-const segmentButtonClassNames: Record<ChipColor, string> = {
-  primary: "data-hovered:bg-primary-hover data-pressed:bg-primary-active",
-  info: "data-hovered:bg-info-hover data-pressed:bg-info-active",
-  success: "data-hovered:bg-success-hover data-pressed:bg-success-active",
-  neutral: "data-hovered:bg-hover data-pressed:bg-active",
-  pending: "data-hovered:bg-pending-hover data-pressed:bg-pending-active",
-  danger: "data-hovered:bg-danger-hover data-pressed:bg-danger-active",
-  warning: "data-hovered:bg-warning-hover data-pressed:bg-warning-active",
-};
-
 export const ChipSegmentButton = ({
   className,
   color = "primary",
@@ -221,8 +205,8 @@ export const ChipSegmentButton = ({
     <Button
       className={clsx(
         chipSegmentBaseClassName,
+        interactiveClassNames[color],
         "h-4 truncate",
-        segmentButtonClassNames[color],
         className,
       )}
       {...props}

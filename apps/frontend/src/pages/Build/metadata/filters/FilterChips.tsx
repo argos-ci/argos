@@ -178,20 +178,20 @@ export const FilterChips = () => {
     return null;
   }
 
-  const filterCategories = groupFiltersByCategory(selectedFilters, tags);
-
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {filterCategories.map(([category, activeTags]) => (
-        <FilterChip
-          key={category}
-          category={category}
-          activeTags={activeTags}
-          allCategoryTags={getTagsForCategory(tags, category)}
-          selectedFilters={selectedFilters}
-          setSelectedFilters={setSelectedFilters}
-        />
-      ))}
+      {groupFiltersByCategory(selectedFilters, tags).map(
+        ([category, activeTags]) => (
+          <FilterChip
+            key={category}
+            category={category}
+            activeTags={activeTags}
+            allCategoryTags={getTagsForCategory(tags, category)}
+            selectedFilters={selectedFilters}
+            setSelectedFilters={setSelectedFilters}
+          />
+        ),
+      )}
     </div>
   );
 };
