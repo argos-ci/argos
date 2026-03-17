@@ -1,11 +1,12 @@
 import { clsx } from "clsx";
-import { LaptopIcon, SmartphoneIcon, TabletIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { Chip, ChipLink, ChipLinkProps, ChipProps } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
+
+import { getViewportIconKind, viewportIcons } from "./metadataIcons";
 
 type Viewport = {
   width: number;
@@ -16,16 +17,6 @@ type ViewportIndicatorOptions = {
   viewport: Viewport;
 };
 
-function getViewportIcon(viewport: Viewport) {
-  if (viewport.width >= 1025) {
-    return LaptopIcon;
-  }
-  if (viewport.width >= 641) {
-    return TabletIcon;
-  }
-  return SmartphoneIcon;
-}
-
 function useViewportIndicator<
   T extends ViewportIndicatorOptions & {
     className?: string;
@@ -34,7 +25,7 @@ function useViewportIndicator<
   const { viewport, className, ...rest } = props;
   return {
     chipProps: {
-      icon: getViewportIcon(viewport),
+      icon: viewportIcons[getViewportIconKind(viewport.width)],
       scale: "xs",
       className: clsx("font-mono cursor-default", className),
       children: viewport.width,

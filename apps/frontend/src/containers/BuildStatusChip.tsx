@@ -1,6 +1,7 @@
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
 import { Chip, ChipProps } from "@/ui/Chip";
+import { StackedItems } from "@/ui/StackedItems";
 import { Tooltip } from "@/ui/Tooltip";
 import { getBuildDescriptor } from "@/util/build";
 
@@ -89,7 +90,7 @@ function BuildReviewUsers(props: {
     return null;
   }
   return (
-    <div className="flex -space-x-1">
+    <StackedItems>
       {props.reviews.map((review) => {
         if (!review.user) {
           return null;
@@ -104,6 +105,6 @@ function BuildReviewUsers(props: {
           </div>
         );
       })}
-    </div>
+    </StackedItems>
   );
 }

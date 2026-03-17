@@ -50,6 +50,12 @@ const hotkeyGroups = [
         description: "Exit search",
         envs: ["build"],
       },
+      toggleFilters: {
+        keys: ["KeyF"],
+        displayKeys: ["F"],
+        description: "Open filters",
+        envs: ["build"],
+      },
     },
   },
   {
@@ -285,7 +291,7 @@ export function useBuildHotkey(
       if (
         event.target instanceof HTMLElement &&
         (event.target.role === "menu" ||
-          event.target.role === "menuitem" ||
+          event.target.role?.startsWith("menuitem") ||
           event.target.role === "textbox" ||
           event.target.classList.contains("native-edit-context"))
       ) {

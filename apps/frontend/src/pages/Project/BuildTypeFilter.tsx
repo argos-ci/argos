@@ -7,6 +7,7 @@ import { Badge } from "@/ui/Badge";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { SelectButton } from "@/ui/Select";
+import { StackedItems } from "@/ui/StackedItems";
 import { buildTypeDescriptors } from "@/util/build";
 import { bgSolidColorClassNames, lowTextColorClassNames } from "@/util/colors";
 import { parseAsSetOf } from "@/util/search-params";
@@ -30,7 +31,7 @@ export function BuildTypeFilter(props: {
   return (
     <MenuTrigger>
       <SelectButton className="text-sm">
-        <div className="flex -space-x-1">
+        <StackedItems>
           {BuildTypes.map((type) => {
             return (
               <div
@@ -44,7 +45,7 @@ export function BuildTypeFilter(props: {
               />
             );
           })}
-        </div>
+        </StackedItems>
         Type
         <Badge>
           {value.size}/{BuildTypes.length}

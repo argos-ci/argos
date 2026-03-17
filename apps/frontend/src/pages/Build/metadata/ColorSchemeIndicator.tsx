@@ -1,21 +1,22 @@
 import { assertNever } from "@argos/util/assertNever";
 import { clsx } from "clsx";
-import { MoonIcon, SunIcon } from "lucide-react";
 
 import { ScreenshotMetadataColorScheme } from "@/gql/graphql";
 import { Chip, ChipLink, ChipLinkProps, ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { colorSchemeIcons } from "./metadataIcons";
+
 type ColorSchemeIndicatorOptions = {
   colorScheme: ScreenshotMetadataColorScheme;
 };
 
-function getColorSchemeDetails(colorScheme: ScreenshotMetadataColorScheme) {
+function getColorSchemeLabel(colorScheme: ScreenshotMetadataColorScheme) {
   switch (colorScheme) {
     case ScreenshotMetadataColorScheme.Light:
-      return { icon: SunIcon, label: "Light color scheme" };
+      return "Light color scheme";
     case ScreenshotMetadataColorScheme.Dark:
-      return { icon: MoonIcon, label: "Dark color scheme" };
+      return "Dark color scheme";
     default:
       assertNever(colorScheme, `Unknown color scheme: ${colorScheme}`);
   }
@@ -27,17 +28,18 @@ function useColorSchemeIndicator<
   },
 >(props: T) {
   const { colorScheme, className, ...rest } = props;
-  const details = getColorSchemeDetails(colorScheme);
+  const icon = colorSchemeIcons[colorScheme];
+  const label = getColorSchemeLabel(colorScheme);
   return {
     chipProps: {
-      icon: details.icon,
+      icon,
       scale: "xs",
       className: clsx("font-mono cursor-default", className),
       children: null,
       ...rest,
     },
     tooltipProps: {
-      content: details.label,
+      content: label,
     },
   };
 }

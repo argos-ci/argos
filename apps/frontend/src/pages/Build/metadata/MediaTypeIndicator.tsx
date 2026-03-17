@@ -1,19 +1,25 @@
-import { LucideProps, Printer } from "lucide-react";
+import { LucideProps } from "lucide-react";
 
+import { ScreenshotMetadataMediaType } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
+
+import { mediaTypeIcons } from "./metadataIcons";
 
 export function MediaTypeIndicator({
   mediaType,
   ...props
 }: LucideProps & {
-  mediaType: string;
+  mediaType: ScreenshotMetadataMediaType;
 }) {
-  if (mediaType === "print") {
-    return (
-      <Tooltip content="Print mode (media: print)">
-        <Printer {...props} />
-      </Tooltip>
-    );
+  if (mediaType === ScreenshotMetadataMediaType.Screen) {
+    return null;
   }
-  return null;
+
+  const Icon = mediaTypeIcons[mediaType];
+
+  return (
+    <Tooltip content="Print mode (media: print)">
+      <Icon {...props} />
+    </Tooltip>
+  );
 }

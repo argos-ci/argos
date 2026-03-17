@@ -93,7 +93,7 @@ function useBuildReviewProgression() {
   const diffState = useBuildDiffState();
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
   if (diffState.ready && getDiffEvaluationStatus) {
-    const toReview = diffState.diffs.filter((diff) =>
+    const toReview = diffState.allDiffs.filter((diff) =>
       checkDiffCanBeReviewed(diff.status, {
         isSubsetBuild: diffState.isSubsetBuild,
       }),
@@ -214,7 +214,7 @@ export const BuildHeader = memo(
             <SyncingIcon />
           </div>
           <div className="flex flex-col justify-center">
-            <div className="mb-1 flex gap-1">
+            <div className="mb-1 flex items-start gap-1">
               <BuildModeIndicator
                 mode={build ? build.mode : BuildMode.Ci}
                 scale="sm"
