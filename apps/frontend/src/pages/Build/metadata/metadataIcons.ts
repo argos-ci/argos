@@ -1,11 +1,18 @@
 import {
   LaptopIcon,
+  MonitorIcon,
   MoonIcon,
   PrinterIcon,
   SmartphoneIcon,
   SunIcon,
   TabletIcon,
+  type LucideIcon,
 } from "lucide-react";
+
+import {
+  ScreenshotMetadataColorScheme,
+  ScreenshotMetadataMediaType,
+} from "@/gql/graphql";
 
 export const viewportIcons = {
   desktop: LaptopIcon,
@@ -23,42 +30,27 @@ export function getViewportIconKind(width: number): keyof typeof viewportIcons {
   return "mobile";
 }
 
-export function parseViewportWidth(value: string) {
-  return Number(value.split("×")[0]) || 0;
-}
-
-export const colorSchemeIcons = {
+export const colorSchemeIcons: Record<
+  ScreenshotMetadataColorScheme,
+  LucideIcon
+> = {
   dark: MoonIcon,
   light: SunIcon,
 } as const;
 
-export function getColorSchemeIconKind(
-  colorScheme: string,
-): keyof typeof colorSchemeIcons | null {
-  switch (colorScheme) {
-    case "dark":
-      return "dark";
-
-    case "light":
-      return "light";
-
-    default:
-      return null;
-  }
+export function isColorScheme(
+  value: string,
+): value is ScreenshotMetadataColorScheme {
+  return value in colorSchemeIcons;
 }
 
-export const mediaTypeIcons = {
+export const mediaTypeIcons: Record<ScreenshotMetadataMediaType, LucideIcon> = {
   print: PrinterIcon,
+  screen: MonitorIcon,
 } as const;
 
-export function getMediaTypeIconKind(
-  mediaType: string,
-): keyof typeof mediaTypeIcons | null {
-  switch (mediaType) {
-    case "print":
-      return "print";
-
-    default:
-      return null;
-  }
+export function isMediaType(
+  value: string,
+): value is ScreenshotMetadataMediaType {
+  return value in mediaTypeIcons;
 }

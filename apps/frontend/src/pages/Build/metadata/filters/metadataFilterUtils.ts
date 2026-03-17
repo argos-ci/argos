@@ -3,7 +3,7 @@ import type { Selection } from "react-aria-components";
 import type { Diff } from "../../BuildDiffState";
 import {
   getMetadataCategoryDefinition,
-  isCustomMetadataCategory,
+  isKnownMetadataCategory,
   MetadataCategory,
 } from "../metadataCategories";
 
@@ -58,6 +58,14 @@ export function getFilterKey(tag: {
 
 function getMetadataForDiff(diff: Diff) {
   return diff.compareScreenshot?.metadata ?? diff.baseScreenshot?.metadata;
+}
+
+export function parseViewport(value: string) {
+  const [width, height] = value.split("×").map(Number);
+  if (!width || !height || isNaN(width) || isNaN(height)) {
+    throw new Error("Invalid viewport value");
+  }
+  return { width, height };
 }
 
 export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
@@ -126,15 +134,15 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
       a.category === MetadataCategory.viewport &&
       b.category === MetadataCategory.viewport
     ) {
-      const [aWidth = 0, aHeight = 0] = a.value.split("×").map(Number);
-      const [bWidth = 0, bHeight = 0] = b.value.split("×").map(Number);
+      const aViewport = parseViewport(a.value);
+      const bViewport = parseViewport(b.value);
 
-      if (aWidth !== bWidth) {
-        return aWidth - bWidth;
+      if (aViewport.width !== bViewport.width) {
+        return aViewport.width - bViewport.width;
       }
 
-      if (aHeight !== bHeight) {
-        return aHeight - bHeight;
+      if (aViewport.height !== bViewport.height) {
+        return aViewport.height - bViewport.height;
       }
     }
 
@@ -159,13 +167,12 @@ export function diffMatchesFilters(
     if (!category) {
       continue;
     }
-    if (isCustomMetadataCategory(category)) {
+    if (!isKnownMetadataCategory(category)) {
       return false;
     }
-    const knownCategory = category as MetadataCategory;
-    const existing = byCategory.get(knownCategory) ?? [];
+    const existing = byCategory.get(category) ?? [];
     existing.push(value);
-    byCategory.set(knownCategory, existing);
+    byCategory.set(category, existing);
   }
 
   for (const [category, values] of Array.from(byCategory.entries())) {

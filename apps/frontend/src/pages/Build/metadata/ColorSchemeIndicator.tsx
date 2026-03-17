@@ -5,7 +5,7 @@ import { ScreenshotMetadataColorScheme } from "@/gql/graphql";
 import { Chip, ChipLink, ChipLinkProps, ChipProps } from "@/ui/Chip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { colorSchemeIcons, getColorSchemeIconKind } from "./metadataIcons";
+import { colorSchemeIcons } from "./metadataIcons";
 
 type ColorSchemeIndicatorOptions = {
   colorScheme: ScreenshotMetadataColorScheme;
@@ -28,8 +28,7 @@ function useColorSchemeIndicator<
   },
 >(props: T) {
   const { colorScheme, className, ...rest } = props;
-  const iconKind = getColorSchemeIconKind(colorScheme);
-  const icon = iconKind ? colorSchemeIcons[iconKind] : undefined;
+  const icon = colorSchemeIcons[colorScheme];
   const label = getColorSchemeLabel(colorScheme);
   return {
     chipProps: {

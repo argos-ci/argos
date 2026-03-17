@@ -37,8 +37,8 @@ export function getMetadataCategoryDefinition(category: MetadataCategory) {
   return metadataCategoryDefinitions[category];
 }
 
-export function isCustomMetadataCategory(category: string): boolean {
-  return !Object.values(MetadataCategory).includes(
-    category as MetadataCategory,
-  );
+export function isKnownMetadataCategory(
+  category: string,
+): category is MetadataCategory {
+  return Object.values(MetadataCategory).includes(category as MetadataCategory);
 }
