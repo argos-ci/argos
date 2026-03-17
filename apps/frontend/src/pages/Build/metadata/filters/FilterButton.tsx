@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { invariant } from "@argos/util/invariant";
 import { FilterIcon } from "lucide-react";
 import type { Selection } from "react-aria-components";
 
@@ -65,9 +66,7 @@ export function FilterButton({
     selection: Selection,
   ) {
     const categoryTags = tagsByCategory.get(category);
-    if (!categoryTags) {
-      return;
-    }
+    invariant(categoryTags, `No tags found for category: ${category}`);
 
     const allKeys = categoryTags.map((tag) => getFilterKey(tag));
     const nextKeys = resolveSelectionKeys(selection, allKeys);

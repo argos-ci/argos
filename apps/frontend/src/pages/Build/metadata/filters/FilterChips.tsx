@@ -73,7 +73,7 @@ const ChipValueButton = ({
 
   return (
     <MenuTrigger>
-      <ChipSegmentButton color="success">
+      <ChipSegmentButton>
         <StackedChipValueIcons category={category} activeTags={activeTags} />
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
       </ChipSegmentButton>

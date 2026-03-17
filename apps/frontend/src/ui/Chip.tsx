@@ -221,7 +221,7 @@ export const ChipSegmentButton = ({
     <Button
       className={clsx(
         chipSegmentBaseClassName,
-        "h-4",
+        "h-4 truncate",
         segmentButtonClassNames[color],
         className,
       )}
