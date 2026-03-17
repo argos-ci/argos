@@ -1,16 +1,17 @@
 import { LucideProps } from "lucide-react";
 
+import { ScreenshotMetadataMediaType } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { isMediaType, mediaTypeIcons } from "./metadataIcons";
+import { mediaTypeIcons } from "./metadataIcons";
 
 export function MediaTypeIndicator({
   mediaType,
   ...props
 }: LucideProps & {
-  mediaType: string;
+  mediaType: ScreenshotMetadataMediaType;
 }) {
-  if (!isMediaType(mediaType)) {
+  if (mediaType === ScreenshotMetadataMediaType.Screen) {
     return null;
   }
 
