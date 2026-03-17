@@ -25,6 +25,7 @@
     "@number-flow/react": "^0.6.0",
     "@primer/octicons-react": "^19.22.0",
     "@radix-ui/colors": "^3.0.0",
+    "@react-aria/collections": "^3.0.3",
     "@reflag/react-sdk": "^1.4.7",
     "@sentry/react": "^10.43.0",
     "@sentry/vite-plugin": "^5.1.1",

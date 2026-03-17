@@ -442,6 +442,9 @@ importers:
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
+      '@react-aria/collections':
+        specifier: ^3.0.3
+        version: 3.0.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@reflag/react-sdk':
         specifier: ^1.4.7
         version: 1.4.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

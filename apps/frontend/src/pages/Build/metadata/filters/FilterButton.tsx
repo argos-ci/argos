@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { invariant } from "@argos/util/invariant";
+import { createHideableComponent } from "@react-aria/collections";
 import { FilterIcon } from "lucide-react";
 import type { Selection } from "react-aria-components";
 
@@ -41,22 +42,20 @@ function getCategoryGroups(
     .filter((group) => group.tags.length > 1);
 }
 
-export function FilterButton({
+// This is needed because of https://github.com/adobe/react-spectrum/issues/9011
+export const FilterButton = createHideableComponent(function FilterButton({
   tags,
   selectedFilters,
   setSelectedFilters,
 }: MetadataFilterContextValue) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const filterHotKey = useBuildHotkey(
     "toggleFilters",
     () => {
-      buttonRef.current?.click();
+      setIsOpen(true);
     },
     { enabled: tags.length > 0 },
   );
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [hasBeenOpened, setHasBeenOpened] = useState(false);
 
   const tagsByCategory = groupTagsByCategory(tags);
   const categoryGroups = getCategoryGroups(tagsByCategory);
@@ -76,63 +75,49 @@ export function FilterButton({
   }
 
   return (
-    <MenuTrigger
-      // Using isOpen force the submenu to be rendered after menu is
-      // fully rendered and avoid a page crash due to a bug in react-aria
-      isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (open) {
-          setHasBeenOpened(true);
-        }
-        setIsOpen(open);
-      }}
-    >
+    <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <HotkeyTooltip
         keys={filterHotKey.displayKeys}
         description={filterHotKey.description}
-        disabled={isOpen}
       >
-        <IconButton ref={buttonRef} size="small">
+        <IconButton size="small">
           <FilterIcon />
         </IconButton>
       </HotkeyTooltip>
 
       <Popover placement="bottom start" className="bg-app min-w-40">
-        {/* Prevent the popover to blink empty */}
-        {hasBeenOpened ? (
-          <Menu autoFocus aria-label="Metadata filters" className="w-full">
-            {categoryGroups.map(({ category, label, tags }) => {
-              const selectedKeys = new Set(
-                selectedFilters.filter((f) => f.startsWith(`${category}:`)),
-              );
-              const Icon = getMetadataCategoryDefinition(category).icon;
+        <Menu autoFocus aria-label="Metadata filters" className="w-full">
+          {categoryGroups.map(({ category, label, tags }) => {
+            const selectedKeys = new Set(
+              selectedFilters.filter((f) => f.startsWith(`${category}:`)),
+            );
+            const Icon = getMetadataCategoryDefinition(category).icon;
 
-              return (
-                <SubmenuTrigger key={category} delay={0}>
-                  <MenuItem id={category}>
-                    <div className="grid grid-cols-[1em_auto] items-center gap-2">
-                      <Icon className="size-4" />
-                      <div>{label}</div>
-                    </div>
-                  </MenuItem>
-                  <Popover>
-                    <MetadataCategoryMenu
-                      category={category}
-                      tags={tags}
-                      selectedKeys={selectedKeys}
-                      onSelectionChange={(selection) =>
-                        handleSelectionChange(category, selection)
-                      }
-                      className="min-w-32"
-                      onOptionClick={() => setIsOpen(false)}
-                    />
-                  </Popover>
-                </SubmenuTrigger>
-              );
-            })}
-          </Menu>
-        ) : null}
+            return (
+              <SubmenuTrigger key={category} delay={0}>
+                <MenuItem id={category}>
+                  <div className="grid grid-cols-[1em_auto] items-center gap-2">
+                    <Icon className="size-4" />
+                    <div>{label}</div>
+                  </div>
+                </MenuItem>
+                <Popover>
+                  <MetadataCategoryMenu
+                    category={category}
+                    tags={tags}
+                    selectedKeys={selectedKeys}
+                    onSelectionChange={(selection) =>
+                      handleSelectionChange(category, selection)
+                    }
+                    className="min-w-32"
+                    onOptionClick={() => setIsOpen(false)}
+                  />
+                </Popover>
+              </SubmenuTrigger>
+            );
+          })}
+        </Menu>
       </Popover>
     </MenuTrigger>
   );
-}
+});
