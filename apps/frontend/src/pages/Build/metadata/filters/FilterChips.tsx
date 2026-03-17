@@ -1,8 +1,7 @@
-import clsx from "clsx";
 import { XIcon } from "lucide-react";
-import { Button, type Selection } from "react-aria-components";
+import { type Selection } from "react-aria-components";
 
-import { ChipSegment, chipSegmentBaseClassName } from "@/ui/Chip";
+import { Chip, ChipSegment, ChipSegmentButton } from "@/ui/Chip";
 import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
@@ -28,6 +27,31 @@ type ActiveTag = {
   value: string;
 };
 
+const StackedChipValueIcons = ({
+  activeTags,
+  category,
+}: {
+  activeTags: ActiveTag[];
+  category: MetadataCategory;
+}) => (
+  <StackedItems>
+    {Array.from(activeTags)
+      .sort((a, b) => a.value.localeCompare(b.value))
+      .map((tag) => (
+        <span
+          key={tag.key}
+          className="bg-app group-data-hovered/chip-segment:bg-primary-hover group-data-pressed/chip-segment:bg-primary-active rounded-full"
+        >
+          <TagValueIcon
+            category={category}
+            value={tag.value}
+            className="size-3"
+          />
+        </span>
+      ))}
+  </StackedItems>
+);
+
 const ChipValueButton = ({
   category,
   activeTags,
@@ -49,31 +73,10 @@ const ChipValueButton = ({
 
   return (
     <MenuTrigger>
-      <Button
-        className={clsx(
-          chipSegmentBaseClassName,
-          "group hover:bg-primary-hover data-pressed:bg-primary-active min-w-0 gap-1 px-1.5",
-        )}
-      >
-        <StackedItems>
-          {Array.from(activeTags)
-            .sort((a, b) => a.value.localeCompare(b.value))
-            .map((tag) => (
-              <span
-                key={tag.key}
-                className="bg-app group-hover:bg-primary-hover group-data-pressed:bg-primary-hover rounded-full"
-              >
-                <TagValueIcon
-                  category={category}
-                  value={tag.value}
-                  className="size-3"
-                />
-              </span>
-            ))}
-        </StackedItems>
+      <ChipSegmentButton color="success">
+        <StackedChipValueIcons category={category} activeTags={activeTags} />
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
-      </Button>
-
+      </ChipSegmentButton>
       <Popover placement="bottom start">
         <MetadataCategoryMenu
           category={category}
@@ -121,16 +124,14 @@ const FilterChip = ({
   const isMultiple = activeTags.length > 1;
 
   return (
-    <div className="text-xxs text-low flex min-w-0 items-center font-medium">
-      <ChipSegment className="rounded-l-chip shrink-0 gap-1 px-1.5">
+    <Chip segmented scale="xs">
+      <ChipSegment className="shrink-0">
         <CategoryIcon category={category} />
         <span>{categoryLabel}</span>
       </ChipSegment>
-
-      <ChipSegment className="shrink-0 px-1">
-        <span>{isMultiple ? "is any of" : "is"}</span>
+      <ChipSegment className="shrink-0">
+        {isMultiple ? "is any of" : "is"}
       </ChipSegment>
-
       <ChipValueButton
         category={category}
         activeTags={activeTags}
@@ -138,29 +139,22 @@ const FilterChip = ({
         selectedKeys={selectedKeys}
         onSelectionChange={handleSelectionChange}
       />
-
-      <Button
-        className={clsx(
-          chipSegmentBaseClassName,
-          "hover:bg-primary-hover rounded-r-chip cursor-pointer px-1",
-        )}
+      <ChipSegmentButton
         onPress={handleRemove}
         aria-label={`Remove ${categoryLabel} filter`}
       >
         <XIcon className="size-3" />
-      </Button>
-    </div>
+      </ChipSegmentButton>
+    </Chip>
   );
 };
 
-function groupActiveFiltersByCategory(
+function groupFiltersByCategory(
   selectedFilters: string[],
   tags: MetadataTag[],
-) {
+): [MetadataCategory, ActiveTag[]][] {
   const activeByCategory = new Map<MetadataCategory, ActiveTag[]>();
-  const tagsByKey = new Map(
-    tags.map((tag) => [getFilterKey(tag.category, tag.value), tag]),
-  );
+  const tagsByKey = new Map(tags.map((tag) => [getFilterKey(tag), tag]));
 
   for (const filterKey of selectedFilters) {
     const tag = tagsByKey.get(filterKey);
@@ -172,7 +166,8 @@ function groupActiveFiltersByCategory(
     list.push({ key: filterKey, label: tag.label, value: tag.value });
     activeByCategory.set(tag.category, list);
   }
-  return activeByCategory;
+
+  return Array.from(activeByCategory.entries());
 }
 
 export const FilterChips = () => {
@@ -183,11 +178,11 @@ export const FilterChips = () => {
     return null;
   }
 
-  const activeByCategory = groupActiveFiltersByCategory(selectedFilters, tags);
+  const filterCategories = groupFiltersByCategory(selectedFilters, tags);
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {Array.from(activeByCategory.entries()).map(([category, activeTags]) => (
+      {filterCategories.map(([category, activeTags]) => (
         <FilterChip
           key={category}
           category={category}

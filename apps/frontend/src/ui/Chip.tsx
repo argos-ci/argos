@@ -1,6 +1,8 @@
 import { cloneElement, ComponentProps, isValidElement } from "react";
 import { clsx } from "clsx";
 import {
+  Button,
+  ButtonProps,
   Link as RACLink,
   LinkProps as RACLinkProps,
 } from "react-aria-components";
@@ -28,6 +30,10 @@ type ChipOptions = {
    * Scale of the chip.
    */
   scale?: ChipScale | undefined;
+  /**
+   * When true, renders children directly (for segmented chips).
+   */
+  segmented?: boolean;
 };
 
 /**
@@ -37,9 +43,20 @@ function getChipClassName(props: {
   color: ChipColor;
   scale: ChipScale;
   elementType: ChipElementType;
+  segmented?: boolean;
 }) {
-  const { color, scale, elementType } = props;
+  const { color, scale, elementType, segmented } = props;
   const interactive = elementType === "button" || elementType === "a";
+  const textSizeClassName: Record<ChipScale, string> = {
+    xs: "text-xs",
+    sm: "text-xs",
+    md: "text-sm",
+  };
+  const spacingClassName: Record<ChipScale, string> = {
+    xs: "px-2 [--chip-gap:--spacing(1)]",
+    sm: "px-3 py-1 [--chip-gap:--spacing(1.5)]",
+    md: "px-4 py-2 [--chip-gap:--spacing(2)]",
+  };
   const colorClassNames: Record<ChipColor, string> = {
     primary: clsx(
       lowTextColorClassNames.primary,
@@ -98,22 +115,9 @@ function getChipClassName(props: {
         "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:not-first:border-l-0",
         "group-[*]/button-group:last:rounded-r-lg",
       ),
-    scale === "xs" && "px-2 text-xs [--chip-gap:--spacing(1)]",
-    scale === "sm" && "px-3 py-1 text-xs [--chip-gap:--spacing(1.5)]",
-    scale === "md" && "px-4 py-2 text-sm [--chip-gap:--spacing(2)]",
+    textSizeClassName[scale],
+    !segmented && spacingClassName[scale],
     "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border font-medium leading-4",
-  );
-}
-
-export const chipSegmentBaseClassName =
-  "border-primary text-primary-low flex h-5 items-center border leading-none select-none -ml-px";
-
-export function ChipSegment({
-  className,
-  ...props
-}: React.ComponentPropsWithRef<"div">) {
-  return (
-    <div className={clsx(chipSegmentBaseClassName, className)} {...props} />
   );
 }
 
@@ -134,15 +138,18 @@ function useChip<
     icon,
     children,
     elementType,
+    segmented,
     ...rest
   } = options;
   return {
     chipProps: {
       className: clsx(
-        getChipClassName({ color, scale, elementType }),
+        getChipClassName({ color, scale, elementType, segmented }),
         className,
       ),
-      children: (
+      children: segmented ? (
+        children
+      ) : (
         <>
           {(() => {
             const iconClassName = "size-[1em] my-[calc((1lh-1em)/2)] shrink-0";
@@ -182,3 +189,43 @@ export function ChipLink(props: ChipLinkProps) {
   const { chipProps } = useChip({ ...props, elementType: "a" });
   return <RACLink {...chipProps} />;
 }
+
+const chipSegmentBaseClassName =
+  "group/chip-segment flex items-center border-r border-inherit text-inherit last:border-r-0 select-none -ml-px first:ml-0 gap-1 px-1 first:pl-1.5 last:rounded-r-chip";
+
+export const ChipSegment = ({
+  className,
+  ...props
+}: React.ComponentPropsWithRef<"div">) => {
+  return (
+    <div className={clsx(chipSegmentBaseClassName, className)} {...props} />
+  );
+};
+
+const segmentButtonClassNames: Record<ChipColor, string> = {
+  primary: "data-hovered:bg-primary-hover data-pressed:bg-primary-active",
+  info: "data-hovered:bg-info-hover data-pressed:bg-info-active",
+  success: "data-hovered:bg-success-hover data-pressed:bg-success-active",
+  neutral: "data-hovered:bg-hover data-pressed:bg-active",
+  pending: "data-hovered:bg-pending-hover data-pressed:bg-pending-active",
+  danger: "data-hovered:bg-danger-hover data-pressed:bg-danger-active",
+  warning: "data-hovered:bg-warning-hover data-pressed:bg-warning-active",
+};
+
+export const ChipSegmentButton = ({
+  className,
+  color = "primary",
+  ...props
+}: ButtonProps & { color?: ChipColor }) => {
+  return (
+    <Button
+      className={clsx(
+        chipSegmentBaseClassName,
+        "h-4",
+        segmentButtonClassNames[color],
+        className,
+      )}
+      {...props}
+    />
+  );
+};

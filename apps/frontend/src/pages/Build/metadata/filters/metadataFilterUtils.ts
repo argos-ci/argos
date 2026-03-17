@@ -49,8 +49,11 @@ export function updateCategoryFilters(
   return [...otherFilters, ...nextKeys];
 }
 
-export function getFilterKey(category: MetadataCategory, value: string) {
-  return `${category}:${value}`;
+export function getFilterKey(tag: {
+  category: MetadataCategory;
+  value: string;
+}): string {
+  return `${tag.category}:${tag.value}`;
 }
 
 function getMetadataForDiff(diff: Diff) {
@@ -102,7 +105,7 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
     }
 
     for (const entry of entries) {
-      const key = getFilterKey(entry.category, entry.value);
+      const key = getFilterKey(entry);
       const existing = counts.get(key);
       if (existing) {
         existing.count++;

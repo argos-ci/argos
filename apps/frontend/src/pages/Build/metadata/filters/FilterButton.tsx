@@ -15,9 +15,28 @@ import type { MetadataFilterContextValue } from "./MetadataFilterState";
 import {
   getFilterKey,
   groupTagsByCategory,
+  MetadataTag,
   resolveSelectionKeys,
   updateCategoryFilters,
 } from "./metadataFilterUtils";
+
+type CategoryGroup = {
+  category: MetadataCategory;
+  label: string;
+  tags: MetadataTag[];
+};
+
+function getCategoryGroups(
+  tagsByCategory: Map<MetadataCategory, MetadataTag[]>,
+): CategoryGroup[] {
+  return Array.from(tagsByCategory.entries())
+    .map(([category, tags]) => ({
+      category,
+      label: getMetadataCategoryDefinition(category).label,
+      tags,
+    }))
+    .filter((group) => group.tags.length > 1);
+}
 
 type FilterButtonProps = MetadataFilterContextValue & {
   onOpenChange?: (isOpen: boolean) => void;
@@ -28,14 +47,7 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
     const [isOpen, setIsOpen] = useState(false);
     const [hasBeenOpened, setHasBeenOpened] = useState(false);
     const tagsByCategory = groupTagsByCategory(tags);
-
-    const filterGroups = Array.from(tagsByCategory.entries())
-      .map(([category, categoryTags]) => ({
-        key: category,
-        label: getMetadataCategoryDefinition(category).label,
-        tags: categoryTags,
-      }))
-      .filter((group) => group.tags.length > 1);
+    const categoryGroups = getCategoryGroups(tagsByCategory);
 
     function handleSelectionChange(
       category: MetadataCategory,
@@ -46,9 +58,7 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
         return;
       }
 
-      const allKeys = categoryTags.map((tag) =>
-        getFilterKey(tag.category, tag.value),
-      );
+      const allKeys = categoryTags.map((tag) => getFilterKey(tag));
       const nextKeys = resolveSelectionKeys(selection, allKeys);
       setSelectedFilters(
         updateCategoryFilters(category, nextKeys, selectedFilters),
@@ -57,10 +67,10 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
 
     return (
       <MenuTrigger
-        // Force the popover to be rendered when the menu is opened for the first time to avoid a page crash due to a bug
+        // Using isOpen force the submenu to be rendered after menu is
+        // fully rendered and avoid a page crash due to a bug in react-aria
         isOpen={isOpen}
         onOpenChange={(open) => {
-          // Prevent the popover to blink empty
           if (open) {
             setHasBeenOpened(true);
           }
@@ -73,27 +83,27 @@ export const FilterButton = forwardRef<HTMLButtonElement, FilterButtonProps>(
         </IconButton>
 
         <Popover placement="bottom start" className="bg-app min-w-40">
+          {/* Prevent the popover to blink empty */}
           {hasBeenOpened ? (
             <Menu autoFocus aria-label="Metadata filters" className="w-full">
-              {filterGroups.map((group) => {
-                const category = group.key;
+              {categoryGroups.map(({ category, label, tags }) => {
                 const selectedKeys = new Set(
                   selectedFilters.filter((f) => f.startsWith(`${category}:`)),
                 );
                 const Icon = getMetadataCategoryDefinition(category).icon;
 
                 return (
-                  <SubmenuTrigger key={group.key} delay={0}>
-                    <MenuItem id={group.key}>
+                  <SubmenuTrigger key={category} delay={0}>
+                    <MenuItem id={category}>
                       <div className="grid grid-cols-[1em_auto] items-center gap-2">
                         <Icon className="size-4" />
-                        <div>{group.label}</div>
+                        <div>{label}</div>
                       </div>
                     </MenuItem>
-                    <Popover className="bg-white">
+                    <Popover>
                       <MetadataCategoryMenu
                         category={category}
-                        tags={group.tags}
+                        tags={tags}
                         selectedKeys={selectedKeys}
                         onSelectionChange={(selection) =>
                           handleSelectionChange(category, selection)
