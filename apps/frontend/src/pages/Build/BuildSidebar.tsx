@@ -147,13 +147,11 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
               </HotkeyTooltip>
             </>
           )}
-          {tags.length > 0 && (
-            <FilterButton
-              tags={tags}
-              selectedFilters={selectedFilters}
-              setSelectedFilters={setSelectedFilters}
-            />
-          )}
+          <FilterButton
+            tags={tags}
+            selectedFilters={selectedFilters}
+            setSelectedFilters={setSelectedFilters}
+          />
         </div>
       ) : null}
 

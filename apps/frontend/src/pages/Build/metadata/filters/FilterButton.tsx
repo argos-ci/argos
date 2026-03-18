@@ -60,6 +60,10 @@ export const FilterButton = createHideableComponent(function FilterButton({
   const tagsByCategory = groupTagsByCategory(tags);
   const categoryGroups = getCategoryGroups(tagsByCategory);
 
+  if (categoryGroups.length === 0) {
+    return null;
+  }
+
   function handleSelectionChange(
     category: MetadataCategory,
     selection: Selection,
