@@ -99,7 +99,7 @@ const InnerFilterButton = createHideableComponent(
         </HotkeyTooltip>
 
         <Popover placement="bottom start" className="bg-app min-w-40">
-          <Menu autoFocus aria-label="Metadata filters" className="w-full">
+          <Menu autoFocus aria-label="Filters" className="w-full">
             {categoryGroups.map(({ category, label, filters }) => {
               const selectedKeys = new Set(
                 state.active.filter((key) =>
