@@ -1,10 +1,17 @@
-import { GlobeIcon, LaptopIcon, PrinterIcon, SunIcon } from "lucide-react";
+import {
+  GlobeIcon,
+  LaptopIcon,
+  PrinterIcon,
+  SunIcon,
+  TagIcon,
+} from "lucide-react";
 
 export const MetadataCategory = {
   browser: "browser",
   viewport: "viewport",
   colorScheme: "colorScheme",
   mediaType: "mediaType",
+  tag: "tag",
 } as const;
 
 export type MetadataCategory =
@@ -30,6 +37,11 @@ const metadataCategoryDefinitions = {
     label: "Media type",
     pluralLabel: "media types",
     icon: PrinterIcon,
+  },
+  [MetadataCategory.tag]: {
+    label: "Tag",
+    pluralLabel: "tags",
+    icon: TagIcon,
   },
 } as const;
 

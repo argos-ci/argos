@@ -1,5 +1,6 @@
 import type { Selection } from "react-aria-components";
 
+import { ScreenshotMetadata } from "../../../../gql/graphql";
 import type { Diff } from "../../BuildDiffState";
 import {
   getMetadataCategoryDefinition,
@@ -112,6 +113,15 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
       });
     }
 
+    const tags = getUniqueTags(metadata);
+    for (const tag of tags) {
+      entries.push({
+        category: MetadataCategory.tag,
+        value: tag,
+        label: tag,
+      });
+    }
+
     for (const entry of entries) {
       const key = getFilterKey(entry);
       const existing = counts.get(key);
@@ -205,6 +215,14 @@ export function diffMatchesFilters(
             matched = true;
           }
           break;
+
+        case MetadataCategory.tag: {
+          const tags = getUniqueTags(metadata);
+          if (tags.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
       }
     }
 
@@ -214,4 +232,16 @@ export function diffMatchesFilters(
   }
 
   return true;
+}
+
+// Collect tags from both screenshot-level and test-level
+export function getUniqueTags(metadata: ScreenshotMetadata | null): string[] {
+  if (!metadata) {
+    return [];
+  }
+  const tagSet = new Set([
+    ...(metadata.tags ?? []),
+    ...(metadata.test?.tags ?? []),
+  ]);
+  return Array.from(tagSet);
 }

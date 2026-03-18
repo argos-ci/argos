@@ -149,7 +149,9 @@ const _DiffFragment = graphql(`
               column
             }
           }
+          tags
         }
+        tags
       }
     }
     compareScreenshot {
@@ -202,7 +204,9 @@ const _DiffFragment = graphql(`
               column
             }
           }
+          tags
         }
+        tags
       }
       playwrightTraceUrl
     }

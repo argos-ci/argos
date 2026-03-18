@@ -84,6 +84,10 @@ const TestSchema = z
     annotations: z.array(TestAnnotationSchema).optional().meta({
       description: "Annotations associated to the test",
     }),
+    tags: z
+      .array(z.string())
+      .optional()
+      .meta({ description: "Tags associated to the test" }),
   })
   .meta({ description: "The test that generated the screenshot" });
 
@@ -147,6 +151,10 @@ export const ScreenshotMetadataSchema = z
     browser: BrowserSchema.optional().nullable(),
     automationLibrary: AutomationLibrarySchema,
     sdk: SdkSchema,
+    tags: z
+      .array(z.string())
+      .optional()
+      .meta({ description: "Tags associated to the screenshot" }),
   })
   .meta({ description: "Metadata about a screenshot" });
 
