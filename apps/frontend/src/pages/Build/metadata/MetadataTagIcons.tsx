@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { TagIcon } from "lucide-react";
 
 import { BrowserIcon } from "./browser/BrowserIcon";
 import { parseViewport } from "./filters/metadataFilterUtils";
@@ -61,7 +60,7 @@ export const TagValueIcon = (props: {
     }
 
     case MetadataCategory.tag:
-      return <TagIcon className={clsx(iconSizeClass, props.className)} />;
+      return null;
 
     default:
       return null;

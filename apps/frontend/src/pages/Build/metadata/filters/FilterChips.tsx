@@ -74,7 +74,9 @@ const ChipValueButton = ({
   return (
     <MenuTrigger>
       <ChipSegmentButton>
-        <StackedChipValueIcons category={category} activeTags={activeTags} />
+        {category !== MetadataCategory.tag && (
+          <StackedChipValueIcons category={category} activeTags={activeTags} />
+        )}
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
       </ChipSegmentButton>
       <Popover placement="bottom start">
