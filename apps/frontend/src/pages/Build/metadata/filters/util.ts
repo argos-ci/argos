@@ -1,35 +1,35 @@
 import type { Selection } from "react-aria-components";
 
-import { ScreenshotMetadata } from "../../../../gql/graphql";
 import type { Diff } from "../../BuildDiffState";
 import {
   getMetadataCategoryDefinition,
   isKnownMetadataCategory,
   MetadataCategory,
 } from "../metadataCategories";
+import { getUniqueMetadataTags } from "../tags/util";
+import { formatViewport, parseViewport } from "../viewports/util";
 
-export type MetadataTag = {
-  category: MetadataCategory;
+export const FilterCategory = MetadataCategory;
+export type FilterCategory = MetadataCategory;
+
+export { getMetadataCategoryDefinition as getFilterCategoryDefinition };
+
+export type Filter = {
+  key: string;
+  category: FilterCategory;
   value: string;
   label: string;
   count: number;
 };
 
-export function groupTagsByCategory(tags: MetadataTag[]) {
-  const byCategory = new Map<MetadataCategory, MetadataTag[]>();
-  for (const tag of tags) {
-    const list = byCategory.get(tag.category) ?? [];
-    list.push(tag);
-    byCategory.set(tag.category, list);
+export function groupFiltersByCategory(filters: Filter[]) {
+  const byCategory = new Map<FilterCategory, Filter[]>();
+  for (const filter of filters) {
+    const list = byCategory.get(filter.category) ?? [];
+    list.push(filter);
+    byCategory.set(filter.category, list);
   }
   return byCategory;
-}
-
-export function getTagsForCategory(
-  tags: MetadataTag[],
-  category: MetadataCategory,
-) {
-  return tags.filter((tag) => tag.category === category);
 }
 
 export function resolveSelectionKeys(
@@ -39,38 +39,40 @@ export function resolveSelectionKeys(
   return selection === "all" ? allKeys : Array.from(selection, String);
 }
 
-export function updateCategoryFilters(
+export function setCategoryFilters(
   category: MetadataCategory,
   nextKeys: string[],
-  currentFilters: string[],
+  currentKeys: string[],
 ): string[] {
-  const otherFilters = currentFilters.filter(
-    (f) => !f.startsWith(`${category}:`),
+  const otherFilters = currentKeys.filter(
+    (key) => !checkIsCategoryFilterKey(key, category),
   );
   return [...otherFilters, ...nextKeys];
 }
 
-export function getFilterKey(tag: {
-  category: MetadataCategory;
-  value: string;
-}): string {
-  return `${tag.category}:${tag.value}`;
+function createFilter<T extends Pick<Filter, "category" | "value">>(
+  args: T,
+): T & { key: string } {
+  return { ...args, key: getFilterKey(args) };
+}
+
+function getFilterKey(filter: Pick<Filter, "category" | "value">): string {
+  return `${filter.category}:${filter.value}`;
+}
+
+export function checkIsCategoryFilterKey(
+  key: string,
+  category: FilterCategory,
+) {
+  return key.startsWith(`${category}:`);
 }
 
 function getMetadataForDiff(diff: Diff) {
   return diff.compareScreenshot?.metadata ?? diff.baseScreenshot?.metadata;
 }
 
-export function parseViewport(value: string) {
-  const [width, height] = value.split("×").map(Number);
-  if (!width || !height || isNaN(width) || isNaN(height)) {
-    throw new Error("Invalid viewport value");
-  }
-  return { width, height };
-}
-
-export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
-  const counts = new Map<string, MetadataTag>();
+export function extractFilters(diffs: Diff[]): Filter[] {
+  const counts = new Map<string, Filter>();
 
   for (const diff of diffs) {
     const metadata = getMetadataForDiff(diff);
@@ -78,48 +80,58 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
       continue;
     }
 
-    const entries: Omit<MetadataTag, "count">[] = [];
+    const entries: Omit<Filter, "count">[] = [];
 
     if (metadata.browser) {
-      entries.push({
-        category: MetadataCategory.browser,
-        value: metadata.browser.name,
-        label: metadata.browser.name,
-      });
+      entries.push(
+        createFilter({
+          category: MetadataCategory.browser,
+          value: metadata.browser.name,
+          label: metadata.browser.name,
+        }),
+      );
     }
 
     if (metadata.viewport) {
-      const vp = `${metadata.viewport.width}×${metadata.viewport.height}`;
-      entries.push({
-        category: MetadataCategory.viewport,
-        value: vp,
-        label: vp,
-      });
+      const vp = formatViewport(metadata.viewport);
+      entries.push(
+        createFilter({
+          category: MetadataCategory.viewport,
+          value: vp,
+          label: vp,
+        }),
+      );
     }
 
     if (metadata.colorScheme) {
-      entries.push({
-        category: MetadataCategory.colorScheme,
-        value: metadata.colorScheme,
-        label: metadata.colorScheme,
-      });
+      entries.push(
+        createFilter({
+          category: MetadataCategory.colorScheme,
+          value: metadata.colorScheme,
+          label: metadata.colorScheme,
+        }),
+      );
     }
 
     if (metadata.mediaType) {
-      entries.push({
-        category: MetadataCategory.mediaType,
-        value: metadata.mediaType,
-        label: metadata.mediaType,
-      });
+      entries.push(
+        createFilter({
+          category: MetadataCategory.mediaType,
+          value: metadata.mediaType,
+          label: metadata.mediaType,
+        }),
+      );
     }
 
-    const tags = getUniqueTags(metadata);
+    const tags = getUniqueMetadataTags(metadata);
     for (const tag of tags) {
-      entries.push({
-        category: MetadataCategory.tag,
-        value: tag,
-        label: tag,
-      });
+      entries.push(
+        createFilter({
+          category: MetadataCategory.tag,
+          value: tag,
+          label: tag,
+        }),
+      );
     }
 
     for (const entry of entries) {
@@ -197,7 +209,7 @@ export function diffMatchesFilters(
 
         case MetadataCategory.viewport:
           if (metadata.viewport) {
-            const vp = `${metadata.viewport.width}×${metadata.viewport.height}`;
+            const vp = formatViewport(metadata.viewport);
             if (vp === value) {
               matched = true;
             }
@@ -217,7 +229,7 @@ export function diffMatchesFilters(
           break;
 
         case MetadataCategory.tag: {
-          const tags = getUniqueTags(metadata);
+          const tags = getUniqueMetadataTags(metadata);
           if (tags.includes(value)) {
             matched = true;
           }
@@ -232,16 +244,4 @@ export function diffMatchesFilters(
   }
 
   return true;
-}
-
-// Collect tags from both screenshot-level and test-level
-export function getUniqueTags(metadata: ScreenshotMetadata | null): string[] {
-  if (!metadata) {
-    return [];
-  }
-  const tagSet = new Set([
-    ...(metadata.tags ?? []),
-    ...(metadata.test?.tags ?? []),
-  ]);
-  return Array.from(tagSet);
 }

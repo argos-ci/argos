@@ -6,7 +6,7 @@ import { Chip, ChipLink, ChipLinkProps, ChipProps } from "@/ui/Chip";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
-import { getViewportIconKind, viewportIcons } from "./metadataIcons";
+import { getViewportIconKind, viewportIcons } from "../metadataIcons";
 
 type Viewport = {
   width: number;

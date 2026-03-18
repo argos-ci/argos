@@ -47,12 +47,12 @@ import {
   ColorSchemeIndicator,
   ColorSchemeIndicatorLink,
 } from "./metadata/ColorSchemeIndicator";
-import { getUniqueTags } from "./metadata/filters/metadataFilterUtils";
 import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
-import { TagIndicator } from "./metadata/TagIndicator";
+import { TagIndicator } from "./metadata/tags/TagIndicator";
+import { getUniqueMetadataTags } from "./metadata/tags/util";
 import { TestIndicator } from "./metadata/TestIndicator";
 import { ThresholdIndicator } from "./metadata/ThresholdIndicator";
 import { TraceIndicator } from "./metadata/TraceIndicator";
@@ -60,7 +60,7 @@ import { UrlIndicator } from "./metadata/UrlIndicator";
 import {
   ViewportIndicator,
   ViewportIndicatorLink,
-} from "./metadata/ViewportIndicator";
+} from "./metadata/viewports/ViewportIndicator";
 import { TestDetailsButton } from "./TestDetails";
 import { TrackButtons } from "./TrackButtons";
 
@@ -345,11 +345,11 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             repoUrl={repoUrl}
           />
         ))}
-        {getUniqueTags(metadata)
-          .sort()
-          .map((tag) => (
-            <TagIndicator key={tag} tag={tag} />
-          ))}
+        {metadata
+          ? getUniqueMetadataTags(metadata)
+              .sort()
+              .map((tag) => <TagIndicator key={tag} tag={tag} />)
+          : null}
         {pwTraceUrl ? (
           <TraceIndicator pwTraceUrl={pwTraceUrl} />
         ) : siblingTrace ? (

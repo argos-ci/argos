@@ -16,11 +16,7 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
 import { BuildDiffList } from "./BuildDiffList";
-import {
-  useMetadataFilterState,
-  useSearchModeState,
-  useSearchState,
-} from "./BuildDiffState";
+import { useSearchModeState, useSearchState } from "./BuildDiffState";
 import { BuildInfos } from "./BuildInfos";
 import { BuildParams } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
@@ -83,8 +79,6 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
 }) {
   const { build } = props;
   const { searchMode, setSearchMode } = useSearchModeState();
-  const { tags, selectedFilters, setSelectedFilters } =
-    useMetadataFilterState();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const enterSearchMode = useCallback(() => {
     startTransition(() => {
@@ -147,11 +141,7 @@ export const BuildSidebar = memo(function BuildSidebar(props: {
               </HotkeyTooltip>
             </>
           )}
-          <FilterButton
-            tags={tags}
-            selectedFilters={selectedFilters}
-            setSelectedFilters={setSelectedFilters}
-          />
+          <FilterButton />
         </div>
       ) : null}
 

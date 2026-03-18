@@ -30,15 +30,10 @@ import { getBuildURL, type BuildParams } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import {
-  MetadataFilterContext,
-  type MetadataFilterContextValue,
-} from "./metadata/filters/MetadataFilterState";
-import {
-  diffMatchesFilters,
-  extractMetadataTags,
-} from "./metadata/filters/metadataFilterUtils";
-
-export { useMetadataFilterState } from "./metadata/filters/MetadataFilterState";
+  FilterStateContext,
+  type FilterState,
+} from "./metadata/filters/FilterState";
+import { diffMatchesFilters, extractFilters } from "./metadata/filters/util";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -583,7 +578,7 @@ export function BuildDiffProvider(props: {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const navigate = useNavigate();
   const expandedState = useExpandedState(
     build?.subset ? INITIAL_SUBSET_EXPANDED : INITIAL_EXPANDED,
@@ -644,15 +639,15 @@ export function BuildDiffProvider(props: {
     let diffs = searchMode
       ? results.map((result) => result.item)
       : screenshotDiffs;
-    if (selectedFilters.length > 0) {
-      diffs = diffs.filter((diff) => diffMatchesFilters(diff, selectedFilters));
+    if (activeFilters.length > 0) {
+      diffs = diffs.filter((diff) => diffMatchesFilters(diff, activeFilters));
     }
     return diffs;
-  }, [screenshotDiffs, results, searchMode, selectedFilters]);
+  }, [screenshotDiffs, results, searchMode, activeFilters]);
 
   // Keep available filter options stable while filters/search are changing.
-  const metadataTags = useMemo(
-    () => extractMetadataTags(screenshotDiffs),
+  const filters = useMemo(
+    () => extractFilters(screenshotDiffs),
     [screenshotDiffs],
   );
 
@@ -802,22 +797,18 @@ export function BuildDiffProvider(props: {
     ],
   );
 
-  const metadataFilterValue = useMemo(
-    (): MetadataFilterContextValue => ({
-      tags: metadataTags,
-      selectedFilters,
-      setSelectedFilters,
-    }),
-    [metadataTags, selectedFilters, setSelectedFilters],
+  const filterState: FilterState = useMemo(
+    () => ({ filters, active: activeFilters, setActive: setActiveFilters }),
+    [filters, setActiveFilters, activeFilters],
   );
 
   return (
-    <MetadataFilterContext value={metadataFilterValue}>
+    <FilterStateContext value={filterState}>
       <SearchModeContext value={searchModeValue}>
         <SearchContext value={searchValue}>
           <BuildDiffContext value={value}>{children}</BuildDiffContext>
         </SearchContext>
       </SearchModeContext>
-    </MetadataFilterContext>
+    </FilterStateContext>
   );
 }
