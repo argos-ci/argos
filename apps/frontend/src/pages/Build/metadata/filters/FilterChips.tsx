@@ -1,3 +1,5 @@
+import { use } from "react";
+import { invariant } from "@argos/util/invariant";
 import { XIcon } from "lucide-react";
 import { type Selection } from "react-aria-components";
 
@@ -6,83 +8,66 @@ import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 
+import { FilterCategoryMenu } from "./FilterCategoryMenu";
+import { FilterIcon } from "./FilterIcon";
+import { FilterStateContext } from "./FilterState";
 import {
-  getMetadataCategoryDefinition,
-  MetadataCategory,
-} from "../metadataCategories";
-import { CategoryIcon, TagValueIcon } from "../MetadataTagIcons";
-import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
-import { useMetadataFilterState } from "./MetadataFilterState";
-import {
-  getFilterKey,
-  getTagsForCategory,
+  checkIsCategoryFilterKey,
+  FilterCategory,
+  getFilterCategoryDefinition,
   resolveSelectionKeys,
-  updateCategoryFilters,
-  type MetadataTag,
-} from "./metadataFilterUtils";
+  setCategoryFilters,
+  type Filter,
+} from "./util";
 
-type ActiveTag = {
-  key: string;
-  label: string;
-  value: string;
+const StackedChipValueIcons = (props: { filters: Filter[] }) => {
+  const { filters } = props;
+  return (
+    <StackedItems>
+      {Array.from(filters)
+        .sort((a, b) => a.value.localeCompare(b.value))
+        .map((filter) => (
+          <span
+            key={filter.key}
+            className="bg-app group-data-hovered/chip-segment:bg-primary-hover group-data-pressed/chip-segment:bg-primary-active rounded-full"
+          >
+            <FilterIcon filter={filter} className="size-3" />
+          </span>
+        ))}
+    </StackedItems>
+  );
 };
 
-const StackedChipValueIcons = ({
-  activeTags,
-  category,
-}: {
-  activeTags: ActiveTag[];
-  category: MetadataCategory;
-}) => (
-  <StackedItems>
-    {Array.from(activeTags)
-      .sort((a, b) => a.value.localeCompare(b.value))
-      .map((tag) => (
-        <span
-          key={tag.key}
-          className="bg-app group-data-hovered/chip-segment:bg-primary-hover group-data-pressed/chip-segment:bg-primary-active rounded-full"
-        >
-          <TagValueIcon
-            category={category}
-            value={tag.value}
-            className="size-3"
-          />
-        </span>
-      ))}
-  </StackedItems>
-);
-
-const ChipValueButton = ({
-  category,
-  activeTags,
-  allCategoryTags,
-  selectedKeys,
-  onSelectionChange,
-}: {
-  category: MetadataCategory;
-  activeTags: ActiveTag[];
-  allCategoryTags: MetadataTag[];
+const ChipValueButton = (props: {
+  category: FilterCategory;
+  filters: Filter[];
   selectedKeys: Set<string>;
   onSelectionChange: (selection: Selection) => void;
 }) => {
-  const isMultiple = activeTags.length > 1;
-  const categoryDefinition = getMetadataCategoryDefinition(category);
+  const { category, filters, selectedKeys, onSelectionChange } = props;
+  const isMultiple = selectedKeys.size > 1;
+  const categoryDefinition = getFilterCategoryDefinition(category);
+  const activeFilters = filters.filter((filter) =>
+    selectedKeys.has(filter.key),
+  );
+  const firstActiveFilter = activeFilters[0];
+  invariant(firstActiveFilter, "At least one filter should be active");
   const tagLabel = isMultiple
-    ? `${activeTags.length} ${categoryDefinition.pluralLabel}`
-    : (activeTags[0]?.label ?? "");
+    ? `${selectedKeys.size} ${categoryDefinition.pluralLabel}`
+    : firstActiveFilter.label;
 
   return (
     <MenuTrigger>
       <ChipSegmentButton>
-        {category !== MetadataCategory.tag && (
-          <StackedChipValueIcons category={category} activeTags={activeTags} />
+        {category !== FilterCategory.tag && (
+          <StackedChipValueIcons filters={activeFilters} />
         )}
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
       </ChipSegmentButton>
       <Popover placement="bottom start">
-        <MetadataCategoryMenu
+        <FilterCategoryMenu
           category={category}
-          tags={allCategoryTags}
+          filters={filters}
           selectedKeys={selectedKeys}
           onSelectionChange={onSelectionChange}
           className="min-w-32"
@@ -93,42 +78,28 @@ const ChipValueButton = ({
   );
 };
 
-const FilterChip = ({
-  category,
-  activeTags,
-  allCategoryTags,
-  selectedFilters,
-  setSelectedFilters,
-}: {
-  category: MetadataCategory;
-  activeTags: ActiveTag[];
-  allCategoryTags: MetadataTag[];
-  selectedFilters: string[];
-  setSelectedFilters: (filters: string[]) => void;
+const FilterChip = (props: {
+  category: FilterCategory;
+  filters: Filter[];
+  active: string[];
+  setActive: (filters: string[]) => void;
 }) => {
-  const categoryLabel = getMetadataCategoryDefinition(category).label;
-  const selectedKeys = new Set(activeTags.map((t) => t.key));
+  const { category, filters, active, setActive } = props;
+  const categoryLabel = getFilterCategoryDefinition(category).label;
+  const selectedKeys = new Set(
+    filters
+      .filter((filter) => active.includes(filter.key))
+      .map((filter) => filter.key),
+  );
 
-  function handleSelectionChange(selection: Selection) {
-    const allKeys = allCategoryTags.map((t) => `${t.category}:${t.value}`);
-    const nextKeys = resolveSelectionKeys(selection, allKeys);
-    setSelectedFilters(
-      updateCategoryFilters(category, nextKeys, selectedFilters),
-    );
-  }
+  const isMultiple = selectedKeys.size > 1;
 
-  function handleRemove() {
-    setSelectedFilters(
-      selectedFilters.filter((f) => !f.startsWith(`${category}:`)),
-    );
-  }
-
-  const isMultiple = activeTags.length > 1;
+  const CategoryIcon = getFilterCategoryDefinition(category).icon;
 
   return (
     <Chip segmented scale="xs">
       <ChipSegment className="shrink-0">
-        <CategoryIcon category={category} />
+        <CategoryIcon className="size-3" />
         <span>{categoryLabel}</span>
       </ChipSegment>
       <ChipSegment className="shrink-0">
@@ -136,13 +107,20 @@ const FilterChip = ({
       </ChipSegment>
       <ChipValueButton
         category={category}
-        activeTags={activeTags}
-        allCategoryTags={allCategoryTags}
+        filters={filters}
         selectedKeys={selectedKeys}
-        onSelectionChange={handleSelectionChange}
+        onSelectionChange={(selection) => {
+          const allKeys = filters.map((filter) => filter.key);
+          const nextKeys = resolveSelectionKeys(selection, allKeys);
+          setActive(setCategoryFilters(category, nextKeys, active));
+        }}
       />
       <ChipSegmentButton
-        onPress={handleRemove}
+        onPress={() =>
+          setActive(
+            active.filter((key) => !checkIsCategoryFilterKey(key, category)),
+          )
+        }
         aria-label={`Remove ${categoryLabel} filter`}
       >
         <XIcon className="size-3" />
@@ -151,49 +129,43 @@ const FilterChip = ({
   );
 };
 
-function groupFiltersByCategory(
-  selectedFilters: string[],
-  tags: MetadataTag[],
-): [MetadataCategory, ActiveTag[]][] {
-  const activeByCategory = new Map<MetadataCategory, ActiveTag[]>();
-  const tagsByKey = new Map(tags.map((tag) => [getFilterKey(tag), tag]));
+function getActiveCategories(
+  active: string[],
+  filters: Filter[],
+): FilterCategory[] {
+  const activeCategories = new Set<FilterCategory>();
+  const filterByKey = new Map(filters.map((filter) => [filter.key, filter]));
 
-  for (const filterKey of selectedFilters) {
-    const tag = tagsByKey.get(filterKey);
-    if (!tag) {
-      continue;
-    }
-
-    const list = activeByCategory.get(tag.category) ?? [];
-    list.push({ key: filterKey, label: tag.label, value: tag.value });
-    activeByCategory.set(tag.category, list);
+  for (const key of active) {
+    const filter = filterByKey.get(key);
+    invariant(filter, "Filter not found");
+    activeCategories.add(filter.category);
   }
 
-  return Array.from(activeByCategory.entries());
+  return Array.from(activeCategories);
 }
 
 export const FilterChips = () => {
-  const { tags, selectedFilters, setSelectedFilters } =
-    useMetadataFilterState();
+  const state = use(FilterStateContext);
+  invariant(state, "Must be used in a filter context");
 
-  if (selectedFilters.length === 0) {
+  if (state.active.length === 0) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {groupFiltersByCategory(selectedFilters, tags).map(
-        ([category, activeTags]) => (
-          <FilterChip
-            key={category}
-            category={category}
-            activeTags={activeTags}
-            allCategoryTags={getTagsForCategory(tags, category)}
-            selectedFilters={selectedFilters}
-            setSelectedFilters={setSelectedFilters}
-          />
-        ),
-      )}
+      {getActiveCategories(state.active, state.filters).map((category) => (
+        <FilterChip
+          key={category}
+          filters={state.filters.filter(
+            (filter) => filter.category === category,
+          )}
+          category={category}
+          active={state.active}
+          setActive={state.setActive}
+        />
+      ))}
     </div>
   );
 };
