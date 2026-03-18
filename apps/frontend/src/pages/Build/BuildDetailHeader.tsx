@@ -495,7 +495,7 @@ function hashViewport(viewport: MetadataViewport): string {
  * Hash a browser object.
  */
 function hashBrowser(browser: MetadataBrowser): string {
-  return `${browser.name} ${browser.version}`;
+  return `${browser.name} ${browser.version}`.toLowerCase();
 }
 
 function resolveDiffMetadata(diff: Diff) {

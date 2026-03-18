@@ -52,7 +52,7 @@ function useBrowserIndicator<
     },
     chipProps: {
       className,
-      children: Labels[browser.name] ?? browser.name,
+      children: Labels[browser.name.toLowerCase()] ?? browser.name,
       ...rest,
     },
   };
