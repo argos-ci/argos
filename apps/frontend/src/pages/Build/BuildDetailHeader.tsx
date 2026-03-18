@@ -47,10 +47,12 @@ import {
   ColorSchemeIndicator,
   ColorSchemeIndicatorLink,
 } from "./metadata/ColorSchemeIndicator";
+import { getUniqueTags } from "./metadata/filters/metadataFilterUtils";
 import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
+import { TagIndicator } from "./metadata/TagIndicator";
 import { TestIndicator } from "./metadata/TestIndicator";
 import { ThresholdIndicator } from "./metadata/ThresholdIndicator";
 import { TraceIndicator } from "./metadata/TraceIndicator";
@@ -343,6 +345,11 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             repoUrl={repoUrl}
           />
         ))}
+        {getUniqueTags(metadata)
+          .sort()
+          .map((tag) => (
+            <TagIndicator key={tag} tag={tag} />
+          ))}
         {pwTraceUrl ? (
           <TraceIndicator pwTraceUrl={pwTraceUrl} />
         ) : siblingTrace ? (

@@ -49,6 +49,7 @@ export const typeDefs = gql`
     retries: Int
     repeat: Int
     annotations: [ScreenshotMetadataTestAnnotation!]
+    tags: [String!]
   }
 
   type ScreenshotMetadataBrowser {
@@ -78,6 +79,7 @@ export const typeDefs = gql`
     browser: ScreenshotMetadataBrowser
     automationLibrary: ScreenshotMetadataAutomationLibrary!
     sdk: ScreenshotMetadataSDK!
+    tags: [String!]
   }
 
   type Screenshot implements Node {
