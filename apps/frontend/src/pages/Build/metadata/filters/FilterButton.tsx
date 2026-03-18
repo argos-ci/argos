@@ -80,7 +80,7 @@ const InnerFilterButton = createHideableComponent(
       selection: Selection,
     ) {
       const categoryFilters = filtersByCategory.get(category);
-      invariant(categoryFilters, `No tags found for category: ${category}`);
+      invariant(categoryFilters, `No filters found for category: ${category}`);
 
       const allKeys = categoryFilters.map((filter) => filter.key);
       const nextKeys = resolveSelectionKeys(selection, allKeys);
