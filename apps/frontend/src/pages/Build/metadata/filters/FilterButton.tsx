@@ -49,13 +49,9 @@ export const FilterButton = createHideableComponent(function FilterButton({
   setSelectedFilters,
 }: MetadataFilterContextValue) {
   const [isOpen, setIsOpen] = useState(false);
-  const filterHotKey = useBuildHotkey(
-    "toggleFilters",
-    () => {
-      setIsOpen(true);
-    },
-    { enabled: tags.length > 0 },
-  );
+  const filterHotKey = useBuildHotkey("toggleFilters", () => {
+    setIsOpen(true);
+  });
 
   const tagsByCategory = groupTagsByCategory(tags);
   const categoryGroups = getCategoryGroups(tagsByCategory);
