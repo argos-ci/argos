@@ -80,12 +80,38 @@ export function createConfig() {
         env: "CSP_SCRIPT_SRC",
       },
     },
+    app: {
+      rateLimit: {
+        window: {
+          doc: "Rate limit window in ms",
+          format: "int",
+          default: 1 * 60 * 1000, // 1 minute
+        },
+        limit: {
+          doc: "Maximum number of requests",
+          format: "int",
+          default: 1000,
+        },
+      },
+    },
     api: {
       baseUrl: {
         doc: "The API base URL",
         format: String,
         default: "https://api.argos-ci.dev:4001",
         env: "API_BASE_URL",
+      },
+      rateLimit: {
+        window: {
+          doc: "Rate limit window in ms",
+          format: "int",
+          default: 5 * 60 * 1000, // 5 minutes
+        },
+        limit: {
+          doc: "Maximum number of requests",
+          format: "int",
+          default: 500,
+        },
       },
     },
     amqp: {

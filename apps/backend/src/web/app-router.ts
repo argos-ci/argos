@@ -22,10 +22,10 @@ export const installAppRouter = async (app: express.Application) => {
   const router = Router();
 
   const limiter = rateLimit({
-    windowMs: 10 * 1000, // 10 seconds
-    max: 1000, // Limit each IP to 1000 requests per `window` (here, per 10 seconds)
-    standardHeaders: false, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    windowMs: config.get("app.rateLimit.window"),
+    limit: config.get("app.rateLimit.limit"),
+    standardHeaders: false,
+    legacyHeaders: false,
     store: createRedisStore("app"),
   });
 
