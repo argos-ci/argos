@@ -16,19 +16,20 @@ const Icons: Record<string, string> = {
   electron: electronIcon,
 };
 
-export function BrowserIcon({
-  browser,
-  ...props
-}: Omit<React.ComponentPropsWithRef<"img">, "src" | "alt"> & {
-  browser: {
-    name: string;
-  };
-}) {
-  const icon = Icons[browser.name];
+export function BrowserIcon(
+  props: Omit<React.ComponentPropsWithRef<"img">, "src" | "alt"> &
+    React.ComponentPropsWithRef<"svg"> & {
+      browser: {
+        name: string;
+      };
+    },
+) {
+  const { browser, ...rest } = props;
+  const icon = Icons[browser.name.toLowerCase()];
 
   if (!icon) {
-    return <GlobeIcon className={props.className} />;
+    return <GlobeIcon {...rest} />;
   }
 
-  return <img src={icon} alt={browser.name} {...props} />;
+  return <img src={icon} alt={browser.name} {...rest} />;
 }
