@@ -12,7 +12,7 @@ import { Popover } from "@/ui/Popover";
 
 import {
   getMetadataCategoryDefinition,
-  type MetadataCategory,
+  MetadataCategory,
 } from "../metadataCategories";
 import { MetadataCategoryMenu } from "./MetadataCategoryMenu";
 import type { MetadataFilterContextValue } from "./MetadataFilterState";
@@ -39,7 +39,12 @@ function getCategoryGroups(
       label: getMetadataCategoryDefinition(category).label,
       tags,
     }))
-    .filter((group) => group.tags.length > 1);
+    .filter(
+      (group) =>
+        group.category === MetadataCategory.snapshotTag ||
+        group.category === MetadataCategory.testTag ||
+        group.tags.length > 1,
+    );
 }
 
 // This is needed because of https://github.com/adobe/react-spectrum/issues/9011

@@ -47,7 +47,7 @@ import {
   ColorSchemeIndicator,
   ColorSchemeIndicatorLink,
 } from "./metadata/ColorSchemeIndicator";
-import { getUniqueTags } from "./metadata/filters/metadataFilterUtils";
+import { getTagsWithSource } from "./metadata/filters/metadataFilterUtils";
 import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
@@ -345,10 +345,10 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             repoUrl={repoUrl}
           />
         ))}
-        {getUniqueTags(metadata)
-          .sort()
-          .map((tag) => (
-            <TagIndicator key={tag} tag={tag} />
+        {getTagsWithSource(metadata)
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map(({ name: tag, source }) => (
+            <TagIndicator key={`${source}:${tag}`} name={tag} source={source} />
           ))}
         {pwTraceUrl ? (
           <TraceIndicator pwTraceUrl={pwTraceUrl} />

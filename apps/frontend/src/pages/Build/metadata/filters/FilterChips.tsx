@@ -70,11 +70,14 @@ const ChipValueButton = ({
   const tagLabel = isMultiple
     ? `${activeTags.length} ${categoryDefinition.pluralLabel}`
     : (activeTags[0]?.label ?? "");
+  const showIcons =
+    category !== MetadataCategory.snapshotTag &&
+    category !== MetadataCategory.testTag;
 
   return (
     <MenuTrigger>
       <ChipSegmentButton>
-        {category !== MetadataCategory.tag && (
+        {showIcons && (
           <StackedChipValueIcons category={category} activeTags={activeTags} />
         )}
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>

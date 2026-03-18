@@ -59,7 +59,8 @@ export const TagValueIcon = (props: {
       return <Icon className={clsx(iconSizeClass, props.className)} />;
     }
 
-    case MetadataCategory.tag:
+    case MetadataCategory.snapshotTag:
+    case MetadataCategory.testTag:
       return null;
 
     default:

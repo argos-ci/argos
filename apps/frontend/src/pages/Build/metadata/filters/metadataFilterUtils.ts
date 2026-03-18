@@ -7,6 +7,7 @@ import {
   isKnownMetadataCategory,
   MetadataCategory,
 } from "../metadataCategories";
+import { TagSource, type TagWithSource } from "../TagIndicator";
 
 export type MetadataTag = {
   category: MetadataCategory;
@@ -113,13 +114,24 @@ export function extractMetadataTags(diffs: Diff[]): MetadataTag[] {
       });
     }
 
-    const tags = getUniqueTags(metadata);
-    for (const tag of tags) {
-      entries.push({
-        category: MetadataCategory.tag,
-        value: tag,
-        label: tag,
-      });
+    if (metadata.tags) {
+      for (const tag of metadata.tags) {
+        entries.push({
+          category: MetadataCategory.snapshotTag,
+          value: tag,
+          label: tag,
+        });
+      }
+    }
+
+    if (metadata.test?.tags) {
+      for (const tag of metadata.test.tags) {
+        entries.push({
+          category: MetadataCategory.testTag,
+          value: tag,
+          label: tag,
+        });
+      }
     }
 
     for (const entry of entries) {
@@ -216,9 +228,15 @@ export function diffMatchesFilters(
           }
           break;
 
-        case MetadataCategory.tag: {
-          const tags = getUniqueTags(metadata);
-          if (tags.includes(value)) {
+        case MetadataCategory.snapshotTag: {
+          if (metadata.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.testTag: {
+          if (metadata.test?.tags?.includes(value)) {
             matched = true;
           }
           break;
@@ -234,14 +252,21 @@ export function diffMatchesFilters(
   return true;
 }
 
-// Collect tags from both screenshot-level and test-level
-export function getUniqueTags(metadata: ScreenshotMetadata | null): string[] {
+/**
+ * Collect tags with their source (screenshot-level or test-level).
+ */
+export function getTagsWithSource(
+  metadata: ScreenshotMetadata | null,
+): TagWithSource[] {
   if (!metadata) {
     return [];
   }
-  const tagSet = new Set([
-    ...(metadata.tags ?? []),
-    ...(metadata.test?.tags ?? []),
-  ]);
-  return Array.from(tagSet);
+  const tags: TagWithSource[] = [];
+  for (const tag of metadata.tags ?? []) {
+    tags.push({ name: tag, source: TagSource.snapshot });
+  }
+  for (const tag of metadata.test?.tags ?? []) {
+    tags.push({ name: tag, source: TagSource.test });
+  }
+  return tags;
 }

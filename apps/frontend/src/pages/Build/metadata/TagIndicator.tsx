@@ -1,19 +1,44 @@
 import { TagIcon } from "lucide-react";
 
 import { Chip, type ChipProps } from "@/ui/Chip";
+import { Tooltip } from "@/ui/Tooltip";
 
-interface TagIndicatorProps extends Omit<
+export const TagSource = {
+  snapshot: "snapshot",
+  test: "test",
+} as const;
+
+export type TagSource = keyof typeof TagSource;
+
+export type TagWithSource = {
+  name: string;
+  source: TagSource;
+};
+
+type TagIndicatorProps = Omit<
   ChipProps,
-  "children" | "scale" | "icon"
-> {
-  tag: string;
-}
+  "children" | "scale" | "icon" | "color"
+> & {
+  name: string;
+  source: TagSource;
+};
 
-export function TagIndicator(props: TagIndicatorProps) {
-  const { tag, ...rest } = props;
+const TAG_SOURCE_META: Record<
+  TagSource,
+  { color: ChipProps["color"]; tooltip: string }
+> = {
+  snapshot: { color: "info", tooltip: "Snapshot tag" },
+  test: { color: "success", tooltip: "Test tag" },
+};
+
+export function TagIndicator({ name, source, ...rest }: TagIndicatorProps) {
+  const meta = TAG_SOURCE_META[source];
+
   return (
-    <Chip color="info" icon={TagIcon} scale="xs" {...rest}>
-      {tag}
-    </Chip>
+    <Tooltip content={meta.tooltip}>
+      <Chip color={meta.color} icon={TagIcon} scale="xs" {...rest}>
+        {name}
+      </Chip>
+    </Tooltip>
   );
 }
