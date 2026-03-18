@@ -1,4 +1,4 @@
-import { memo, useEffect } from "react";
+import { memo, useEffect, useRef } from "react";
 import clsx from "clsx";
 import { XIcon } from "lucide-react";
 
@@ -264,6 +264,7 @@ export function useBuildHotkey(
   } = options ?? {};
   const optionsWithDefaults = { preventDefault, enabled, allowInInput };
   const refs = useLiveRef({ callback, options: optionsWithDefaults });
+  const timeoutRef = useRef(0);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       const { options, callback } = refs.current;
@@ -339,13 +340,17 @@ export function useBuildHotkey(
         event.preventDefault();
       }
 
-      callback(event);
+      // Make sure events are triggered asynchronously.
+      timeoutRef.current = window.setTimeout(() => {
+        callback(event);
+      });
     };
     document.addEventListener("keydown", listener, { capture: true });
     return () => {
       document.removeEventListener("keydown", listener, { capture: true });
     };
   }, [hotkey, refs]);
+  useEffect(() => () => window.clearTimeout(timeoutRef.current), []);
   return hotkey;
 }
 
