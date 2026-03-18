@@ -1,4 +1,4 @@
-import { use } from "react";
+import { memo, use } from "react";
 import { invariant } from "@argos/util/invariant";
 import { XIcon } from "lucide-react";
 import { type Selection } from "react-aria-components";
@@ -145,7 +145,7 @@ function getActiveCategories(
   return Array.from(activeCategories);
 }
 
-export const FilterChips = () => {
+export const FilterChips = memo(() => {
   const state = use(FilterStateContext);
   invariant(state, "Must be used in a filter context");
 
@@ -168,4 +168,4 @@ export const FilterChips = () => {
       ))}
     </div>
   );
-};
+});
