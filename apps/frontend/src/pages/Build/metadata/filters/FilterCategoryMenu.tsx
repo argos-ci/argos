@@ -21,6 +21,7 @@ export const FilterCategoryMenu = (props: {
   const { getFilterByKey } = state;
   const categoryDef = getFilterCategoryDefinition(filterGroup.category);
   const selectedKeys = state.active.intersection(filterGroup.filterKeys);
+  // Keep the initial display for splitted groups to avoid CLS while clicking on items
   const [{ showMenuSeparator, checked, visibleFilters }] = useState(() => {
     const filters = Array.from(filterGroup.filterKeys).map((key) =>
       getFilterByKey(key),

@@ -193,6 +193,8 @@ function getFilterGroups(filters: Filter[]) {
 
   return Array.from(groupByCategory.values()).filter(
     (group) =>
+      // These categories are shown in filters even if there is only one because they act as a discriminator.
+      // It means a portion of the tests may not be on this category.
       group.category === FilterCategory.snapshotTag ||
       group.category === FilterCategory.testTag ||
       group.filterKeys.size > 1,
