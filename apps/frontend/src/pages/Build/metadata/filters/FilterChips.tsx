@@ -101,15 +101,13 @@ export const FilterChips = memo(() => {
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {getActiveFilterGroups(state)
-        .values()
-        .map((filterGroup) => (
-          <FilterChip
-            key={filterGroup.category}
-            filterGroup={filterGroup}
-            state={state}
-          />
-        ))}
+      {Array.from(getActiveFilterGroups(state).values(), (filterGroup) => (
+        <FilterChip
+          key={filterGroup.category}
+          filterGroup={filterGroup}
+          state={state}
+        />
+      ))}
     </div>
   );
 });

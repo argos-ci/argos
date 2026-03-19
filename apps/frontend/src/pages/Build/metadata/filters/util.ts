@@ -156,7 +156,10 @@ function getMetadataForDiff(diff: Diff) {
  */
 export function useCreateFilterState(diffs: Diff[]): FilterState {
   const [active, setActive] = useState<Set<string>>(new Set());
-  const { filterByKey, filterGroups, filters } = getFiltersFromDiffs(diffs);
+  const { filterByKey, filterGroups, filters } = useMemo(
+    () => getFiltersFromDiffs(diffs),
+    [diffs],
+  );
   const getFilterByKey: FilterState["getFilterByKey"] = useCallback(
     (key) => {
       const filter = filterByKey.get(key);
