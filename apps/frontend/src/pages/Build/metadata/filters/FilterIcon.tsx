@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { assertNever } from "@argos/util/assertNever";
 
 import { BrowserIcon } from "../browser/BrowserIcon";
 import {
@@ -12,24 +12,18 @@ import {
 import { parseViewport } from "../viewports/util";
 import { FilterCategory, type Filter } from "./util";
 
-export const FilterIcon = (props: { filter: Filter; className?: string }) => {
-  const { filter, className } = props;
-  const iconClassName = clsx("shrink-0", className);
+export function FilterIcon(props: { filter: Filter; className?: string }) {
+  const { filter, ...rest } = props;
 
   switch (filter.category) {
     case FilterCategory.browser:
-      return (
-        <BrowserIcon
-          browser={{ name: filter.value }}
-          className={iconClassName}
-        />
-      );
+      return <BrowserIcon browser={{ name: filter.value }} {...rest} />;
 
     case FilterCategory.viewport: {
       const { width } = parseViewport(filter.value);
       const kind = getViewportIconKind(width);
       const Icon = viewportIcons[kind];
-      return <Icon className={iconClassName} />;
+      return <Icon {...rest} />;
     }
 
     case FilterCategory.colorScheme: {
@@ -37,7 +31,7 @@ export const FilterIcon = (props: { filter: Filter; className?: string }) => {
         return null;
       }
       const Icon = colorSchemeIcons[filter.value];
-      return <Icon className={iconClassName} />;
+      return <Icon {...rest} />;
     }
 
     case FilterCategory.mediaType: {
@@ -45,7 +39,7 @@ export const FilterIcon = (props: { filter: Filter; className?: string }) => {
         return null;
       }
       const Icon = mediaTypeIcons[filter.value];
-      return <Icon className={iconClassName} />;
+      return <Icon {...rest} />;
     }
 
     case FilterCategory.testTag:
@@ -53,6 +47,6 @@ export const FilterIcon = (props: { filter: Filter; className?: string }) => {
       return null;
 
     default:
-      return null;
+      assertNever(filter.category);
   }
-};
+}
