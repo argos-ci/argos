@@ -11,7 +11,8 @@ export const MetadataCategory = {
   viewport: "viewport",
   colorScheme: "colorScheme",
   mediaType: "mediaType",
-  tag: "tag",
+  snapshotTag: "snapshotTag",
+  testTag: "testTag",
 } as const;
 
 export type MetadataCategory =
@@ -38,9 +39,14 @@ const metadataCategoryDefinitions = {
     pluralLabel: "media types",
     icon: PrinterIcon,
   },
-  [MetadataCategory.tag]: {
-    label: "Tag",
-    pluralLabel: "tags",
+  [MetadataCategory.snapshotTag]: {
+    label: "Snapshot tag",
+    pluralLabel: "snapshot tags",
+    icon: TagIcon,
+  },
+  [MetadataCategory.testTag]: {
+    label: "Test tag",
+    pluralLabel: "test tags",
     icon: TagIcon,
   },
 } as const;

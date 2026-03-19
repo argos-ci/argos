@@ -1,12 +1,25 @@
 import type { ScreenshotMetadata } from "@/gql/graphql";
 
+import { TagSource, TagWithSource } from "./TagIndicator";
+
 /**
- * Collect tags from both screenshot-level and test-level.
+ * Collect tags with their source (screenshot-level or test-level).
  */
-export function getUniqueMetadataTags(metadata: ScreenshotMetadata): string[] {
-  const tagSet = new Set([
-    ...(metadata.tags ?? []),
-    ...(metadata.test?.tags ?? []),
-  ]);
-  return Array.from(tagSet);
+export function getTagsWithSource(
+  metadata: ScreenshotMetadata | null,
+): TagWithSource[] {
+  if (!metadata) {
+    return [];
+  }
+  const tags: TagWithSource[] = [];
+
+  for (const tag of metadata.tags ?? []) {
+    tags.push({ name: tag, source: TagSource.snapshot });
+  }
+
+  for (const tag of metadata.test?.tags ?? []) {
+    tags.push({ name: tag, source: TagSource.test });
+  }
+
+  return tags;
 }

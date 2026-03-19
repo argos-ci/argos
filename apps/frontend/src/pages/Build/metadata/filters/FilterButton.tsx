@@ -10,6 +10,7 @@ import { IconButton } from "@/ui/IconButton";
 import { Menu, MenuItem, MenuTrigger, SubmenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
+import { MetadataCategory } from "../metadataCategories";
 import { FilterCategoryMenu } from "./FilterCategoryMenu";
 import { FilterStateContext, type FilterState } from "./FilterState";
 import {
@@ -37,7 +38,12 @@ function getCategoryGroups(
       label: getFilterCategoryDefinition(category).label,
       filters,
     }))
-    .filter((group) => group.filters.length > 1);
+    .filter(
+      (group) =>
+        group.category === MetadataCategory.snapshotTag ||
+        group.category === MetadataCategory.testTag ||
+        group.filters.length > 1,
+    );
 }
 
 export const FilterButton = memo(function FilterButton() {

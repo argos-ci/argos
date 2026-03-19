@@ -8,6 +8,7 @@ import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 
+import { MetadataCategory } from "../metadataCategories";
 import { FilterCategoryMenu } from "./FilterCategoryMenu";
 import { FilterIcon } from "./FilterIcon";
 import { FilterStateContext } from "./FilterState";
@@ -55,13 +56,14 @@ const ChipValueButton = (props: {
   const tagLabel = isMultiple
     ? `${selectedKeys.size} ${categoryDefinition.pluralLabel}`
     : firstActiveFilter.label;
+  const showIcons =
+    category !== MetadataCategory.snapshotTag &&
+    category !== MetadataCategory.testTag;
 
   return (
     <MenuTrigger>
       <ChipSegmentButton>
-        {category !== FilterCategory.tag && (
-          <StackedChipValueIcons filters={activeFilters} />
-        )}
+        {showIcons && <StackedChipValueIcons filters={activeFilters} />}
         <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
       </ChipSegmentButton>
       <Popover placement="bottom start">
