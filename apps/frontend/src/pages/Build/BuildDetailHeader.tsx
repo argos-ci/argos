@@ -52,7 +52,7 @@ import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
 import { TagIndicator } from "./metadata/tags/TagIndicator";
-import { getUniqueMetadataTags } from "./metadata/tags/util";
+import { getTagsWithSource } from "./metadata/tags/util";
 import { TestIndicator } from "./metadata/TestIndicator";
 import { ThresholdIndicator } from "./metadata/ThresholdIndicator";
 import { TraceIndicator } from "./metadata/TraceIndicator";
@@ -346,9 +346,15 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           />
         ))}
         {metadata
-          ? getUniqueMetadataTags(metadata)
-              .sort()
-              .map((tag) => <TagIndicator key={tag} tag={tag} />)
+          ? getTagsWithSource(metadata)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((tag) => (
+                <TagIndicator
+                  key={`${tag.source}:${tag.name}`}
+                  name={tag.name}
+                  source={tag.source}
+                />
+              ))
           : null}
         {pwTraceUrl ? (
           <TraceIndicator pwTraceUrl={pwTraceUrl} />

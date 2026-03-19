@@ -6,7 +6,6 @@ import {
   isKnownMetadataCategory,
   MetadataCategory,
 } from "../metadataCategories";
-import { getUniqueMetadataTags } from "../tags/util";
 import { formatViewport, parseViewport } from "../viewports/util";
 
 export const FilterCategory = MetadataCategory;
@@ -123,15 +122,28 @@ export function extractFilters(diffs: Diff[]): Filter[] {
       );
     }
 
-    const tags = getUniqueMetadataTags(metadata);
-    for (const tag of tags) {
-      entries.push(
-        createFilter({
-          category: MetadataCategory.tag,
-          value: tag,
-          label: tag,
-        }),
-      );
+    if (metadata.tags) {
+      for (const tag of metadata.tags) {
+        entries.push(
+          createFilter({
+            category: MetadataCategory.snapshotTag,
+            value: tag,
+            label: tag,
+          }),
+        );
+      }
+    }
+
+    if (metadata.test?.tags) {
+      for (const tag of metadata.test.tags) {
+        entries.push(
+          createFilter({
+            category: MetadataCategory.testTag,
+            value: tag,
+            label: tag,
+          }),
+        );
+      }
     }
 
     for (const entry of entries) {
@@ -228,9 +240,15 @@ export function diffMatchesFilters(
           }
           break;
 
-        case MetadataCategory.tag: {
-          const tags = getUniqueMetadataTags(metadata);
-          if (tags.includes(value)) {
+        case MetadataCategory.snapshotTag: {
+          if (metadata.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.testTag: {
+          if (metadata.test?.tags?.includes(value)) {
             matched = true;
           }
           break;

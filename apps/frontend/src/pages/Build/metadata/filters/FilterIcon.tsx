@@ -48,7 +48,8 @@ export const FilterIcon = (props: { filter: Filter; className?: string }) => {
       return <Icon className={iconClassName} />;
     }
 
-    case FilterCategory.tag:
+    case FilterCategory.testTag:
+    case FilterCategory.snapshotTag:
       return null;
 
     default:
