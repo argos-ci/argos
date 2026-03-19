@@ -29,11 +29,11 @@ import { useLiveRef } from "@/ui/useLiveRef";
 import { getBuildURL, type BuildParams } from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { FilterStateContext } from "./metadata/filters/FilterState";
 import {
-  FilterStateContext,
-  type FilterState,
-} from "./metadata/filters/FilterState";
-import { diffMatchesFilters, extractFilters } from "./metadata/filters/util";
+  diffMatchesFilters,
+  useCreateFilterState,
+} from "./metadata/filters/util";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ScreenshotDiffFragment = graphql(`
@@ -578,7 +578,6 @@ export function BuildDiffProvider(props: {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [searchMode, setSearchMode] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const navigate = useNavigate();
   const expandedState = useExpandedState(
     build?.subset ? INITIAL_SUBSET_EXPANDED : INITIAL_EXPANDED,
@@ -635,21 +634,19 @@ export function BuildDiffProvider(props: {
     [searchMode, searcher, deferredSearch],
   );
 
+  const filterState = useCreateFilterState(screenshotDiffs);
+
   const filteredDiffs = useMemo(() => {
     let diffs = searchMode
       ? results.map((result) => result.item)
       : screenshotDiffs;
-    if (activeFilters.length > 0) {
-      diffs = diffs.filter((diff) => diffMatchesFilters(diff, activeFilters));
+    if (filterState.active.size > 0) {
+      diffs = diffs.filter((diff) =>
+        diffMatchesFilters(diff, filterState.active),
+      );
     }
     return diffs;
-  }, [screenshotDiffs, results, searchMode, activeFilters]);
-
-  // Keep available filter options stable while filters/search are changing.
-  const filters = useMemo(
-    () => extractFilters(screenshotDiffs),
-    [screenshotDiffs],
-  );
+  }, [screenshotDiffs, results, searchMode, filterState.active]);
 
   const [initialDiffIdParam] = useState(params.diffId);
   const initialDiffId = initialDiffIdParam ?? firstDiffId;
@@ -795,11 +792,6 @@ export function BuildDiffProvider(props: {
       hasMore,
       isSubsetBuild,
     ],
-  );
-
-  const filterState: FilterState = useMemo(
-    () => ({ filters, active: activeFilters, setActive: setActiveFilters }),
-    [filters, setActiveFilters, activeFilters],
   );
 
   return (

@@ -3,6 +3,9 @@ import { clsx } from "clsx";
 
 export function StackedItems(props: ComponentPropsWithRef<"div">) {
   return (
-    <div {...props} className={clsx("flex -space-x-1", props.className)} />
+    <div
+      {...props}
+      className={clsx("flex -space-x-1 empty:hidden", props.className)}
+    />
   );
 }

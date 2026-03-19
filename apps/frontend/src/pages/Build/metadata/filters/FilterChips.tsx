@@ -1,77 +1,57 @@
 import { memo, use } from "react";
 import { invariant } from "@argos/util/invariant";
 import { XIcon } from "lucide-react";
-import { type Selection } from "react-aria-components";
 
 import { Chip, ChipSegment, ChipSegmentButton } from "@/ui/Chip";
 import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { StackedItems } from "@/ui/StackedItems";
 
-import { MetadataCategory } from "../metadataCategories";
 import { FilterCategoryMenu } from "./FilterCategoryMenu";
 import { FilterIcon } from "./FilterIcon";
-import { FilterStateContext } from "./FilterState";
-import {
-  checkIsCategoryFilterKey,
-  FilterCategory,
-  getFilterCategoryDefinition,
-  resolveSelectionKeys,
-  setCategoryFilters,
-  type Filter,
-} from "./util";
-
-const StackedChipValueIcons = (props: { filters: Filter[] }) => {
-  const { filters } = props;
-  return (
-    <StackedItems>
-      {Array.from(filters)
-        .sort((a, b) => a.value.localeCompare(b.value))
-        .map((filter) => (
-          <span
-            key={filter.key}
-            className="bg-app group-data-hovered/chip-segment:bg-primary-hover group-data-pressed/chip-segment:bg-primary-active rounded-full"
-          >
-            <FilterIcon filter={filter} className="size-3" />
-          </span>
-        ))}
-    </StackedItems>
-  );
-};
+import { FilterStateContext, type FilterState } from "./FilterState";
+import { getFilterCategoryDefinition, type FilterGroup } from "./util";
 
 const ChipValueButton = (props: {
-  category: FilterCategory;
-  filters: Filter[];
-  selectedKeys: Set<string>;
-  onSelectionChange: (selection: Selection) => void;
+  filterGroup: FilterGroup;
+  state: FilterState;
 }) => {
-  const { category, filters, selectedKeys, onSelectionChange } = props;
-  const isMultiple = selectedKeys.size > 1;
-  const categoryDefinition = getFilterCategoryDefinition(category);
-  const activeFilters = filters.filter((filter) =>
-    selectedKeys.has(filter.key),
-  );
-  const firstActiveFilter = activeFilters[0];
-  invariant(firstActiveFilter, "At least one filter should be active");
-  const tagLabel = isMultiple
-    ? `${selectedKeys.size} ${categoryDefinition.pluralLabel}`
-    : firstActiveFilter.label;
-  const showIcons =
-    category !== MetadataCategory.snapshotTag &&
-    category !== MetadataCategory.testTag;
+  const { filterGroup, state } = props;
+  const selectedKeys = state.active.intersection(filterGroup.filterKeys);
+  const categoryDef = getFilterCategoryDefinition(filterGroup.category);
+
+  const label = (() => {
+    if (selectedKeys.size > 1) {
+      return `${selectedKeys.size} ${categoryDef.pluralLabel}`;
+    }
+    const firstKey = Array.from(selectedKeys)[0];
+    invariant(firstKey, "At least one filter should be active");
+    return state.getFilterByKey(firstKey).label;
+  })();
 
   return (
     <MenuTrigger>
       <ChipSegmentButton>
-        {showIcons && <StackedChipValueIcons filters={activeFilters} />}
-        <span className="text-xxs max-w-32 truncate">{tagLabel}</span>
+        <StackedItems>
+          {Array.from(selectedKeys)
+            .map((key) => state.getFilterByKey(key))
+            .sort((a, b) => a.value.localeCompare(b.value))
+            .map((filter) => {
+              return (
+                <FilterIcon
+                  key={filter.key}
+                  filter={filter}
+                  className="bg-app group-data-hovered/chip-segment:bg-primary-hover group-data-pressed/chip-segment:bg-primary-active size-3 shrink-0 rounded-full"
+                />
+              );
+            })}
+        </StackedItems>
+        <span className="text-xxs max-w-32 truncate">{label}</span>
       </ChipSegmentButton>
       <Popover placement="bottom start">
         <FilterCategoryMenu
-          category={category}
-          filters={filters}
-          selectedKeys={selectedKeys}
-          onSelectionChange={onSelectionChange}
+          filterGroup={filterGroup}
+          state={state}
           className="min-w-32"
           splitSelected
         />
@@ -81,49 +61,29 @@ const ChipValueButton = (props: {
 };
 
 const FilterChip = (props: {
-  category: FilterCategory;
-  filters: Filter[];
-  active: string[];
-  setActive: (filters: string[]) => void;
+  filterGroup: FilterGroup;
+  state: FilterState;
 }) => {
-  const { category, filters, active, setActive } = props;
-  const categoryLabel = getFilterCategoryDefinition(category).label;
-  const selectedKeys = new Set(
-    filters
-      .filter((filter) => active.includes(filter.key))
-      .map((filter) => filter.key),
-  );
-
-  const isMultiple = selectedKeys.size > 1;
-
-  const CategoryIcon = getFilterCategoryDefinition(category).icon;
+  const { filterGroup, state } = props;
+  const categoryDef = getFilterCategoryDefinition(filterGroup.category);
+  const selectedKeys = filterGroup.filterKeys.intersection(state.active);
 
   return (
     <Chip segmented scale="xs">
       <ChipSegment className="shrink-0">
-        <CategoryIcon className="size-3" />
-        <span>{categoryLabel}</span>
+        <categoryDef.icon className="size-3" />
+        <span>{categoryDef.label}</span>
       </ChipSegment>
       <ChipSegment className="shrink-0">
-        {isMultiple ? "is any of" : "is"}
+        {selectedKeys.size > 1 ? "is any of" : "is"}
       </ChipSegment>
-      <ChipValueButton
-        category={category}
-        filters={filters}
-        selectedKeys={selectedKeys}
-        onSelectionChange={(selection) => {
-          const allKeys = filters.map((filter) => filter.key);
-          const nextKeys = resolveSelectionKeys(selection, allKeys);
-          setActive(setCategoryFilters(category, nextKeys, active));
-        }}
-      />
+      <ChipValueButton filterGroup={filterGroup} state={state} />
       <ChipSegmentButton
-        onPress={() =>
-          setActive(
-            active.filter((key) => !checkIsCategoryFilterKey(key, category)),
-          )
-        }
-        aria-label={`Remove ${categoryLabel} filter`}
+        onPress={() => {
+          const otherKeys = state.active.difference(filterGroup.filterKeys);
+          state.setActive(otherKeys);
+        }}
+        aria-label={`Remove ${categoryDef.label} filter`}
       >
         <XIcon className="size-3" />
       </ChipSegmentButton>
@@ -131,43 +91,36 @@ const FilterChip = (props: {
   );
 };
 
-function getActiveCategories(
-  active: string[],
-  filters: Filter[],
-): FilterCategory[] {
-  const activeCategories = new Set<FilterCategory>();
-  const filterByKey = new Map(filters.map((filter) => [filter.key, filter]));
-
-  for (const key of active) {
-    const filter = filterByKey.get(key);
-    invariant(filter, "Filter not found");
-    activeCategories.add(filter.category);
-  }
-
-  return Array.from(activeCategories);
-}
-
 export const FilterChips = memo(() => {
   const state = use(FilterStateContext);
   invariant(state, "Must be used in a filter context");
 
-  if (state.active.length === 0) {
+  if (state.active.size === 0) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
-      {getActiveCategories(state.active, state.filters).map((category) => (
-        <FilterChip
-          key={category}
-          filters={state.filters.filter(
-            (filter) => filter.category === category,
-          )}
-          category={category}
-          active={state.active}
-          setActive={state.setActive}
-        />
-      ))}
+      {getActiveFilterGroups(state)
+        .values()
+        .map((filterGroup) => (
+          <FilterChip
+            key={filterGroup.category}
+            filterGroup={filterGroup}
+            state={state}
+          />
+        ))}
     </div>
   );
 });
+
+function getActiveFilterGroups(state: FilterState) {
+  const groups = new Set<FilterGroup>();
+  for (const key of state.active) {
+    const group = state.filterGroups.find((group) => group.filterKeys.has(key));
+    invariant(group, "Group not found");
+    groups.add(group);
+  }
+
+  return groups;
+}

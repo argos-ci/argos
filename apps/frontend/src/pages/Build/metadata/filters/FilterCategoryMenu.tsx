@@ -1,47 +1,51 @@
-import { Fragment } from "react";
-import type { Selection } from "react-aria-components";
+import { Fragment, useState } from "react";
 
 import { Menu, MenuCheckboxItem, MenuSeparator } from "@/ui/Menu";
 
 import { FilterIcon } from "./FilterIcon";
+import type { FilterState } from "./FilterState";
 import {
   getFilterCategoryDefinition,
   type Filter,
-  type FilterCategory,
+  type FilterGroup,
 } from "./util";
 
 export const FilterCategoryMenu = (props: {
-  category: FilterCategory;
-  filters: Filter[];
-  selectedKeys: Set<string>;
-  onSelectionChange: (selection: Selection) => void;
+  filterGroup: FilterGroup;
+  state: FilterState;
   className?: string;
   onOptionClick?: () => void;
   splitSelected?: boolean;
 }) => {
-  const {
-    filters,
-    category,
-    selectedKeys,
-    splitSelected,
-    onSelectionChange,
-    className,
-    onOptionClick,
-  } = props;
-  const categoryLabel = getFilterCategoryDefinition(category).label;
-
-  const checked = filters.filter((filter) => selectedKeys.has(filter.key));
-  const unchecked = filters.filter((filter) => !selectedKeys.has(filter.key));
-  const visibleFilters = splitSelected ? [...checked, ...unchecked] : filters;
-  const showMenuSeparator =
-    splitSelected && checked.length > 0 && unchecked.length > 0;
+  const { filterGroup, state, splitSelected, className, onOptionClick } = props;
+  const { getFilterByKey } = state;
+  const categoryDef = getFilterCategoryDefinition(filterGroup.category);
+  const selectedKeys = state.active.intersection(filterGroup.filterKeys);
+  const [{ showMenuSeparator, checked, visibleFilters }] = useState(() => {
+    const filters = Array.from(filterGroup.filterKeys).map((key) =>
+      getFilterByKey(key),
+    );
+    const checked = filters.filter((filter) => selectedKeys.has(filter.key));
+    const unchecked = filters.filter((filter) => !selectedKeys.has(filter.key));
+    const visibleFilters = splitSelected ? [...checked, ...unchecked] : filters;
+    const showMenuSeparator =
+      splitSelected && checked.length > 0 && unchecked.length > 0;
+    return { checked, visibleFilters, showMenuSeparator };
+  });
 
   return (
     <Menu
-      aria-label={`${categoryLabel} filters`}
+      aria-label={`${categoryDef.label} filters`}
       selectionMode="multiple"
       selectedKeys={selectedKeys}
-      onSelectionChange={onSelectionChange}
+      onSelectionChange={(selection) => {
+        const otherKeys = state.active.difference(filterGroup.filterKeys);
+        const selectedKeys =
+          selection === "all"
+            ? filterGroup.filterKeys
+            : (selection as Set<string>);
+        state.setActive(otherKeys.union(selectedKeys));
+      }}
       className={className}
     >
       {visibleFilters.map((filter, index) => {
@@ -72,7 +76,7 @@ const FilterCategoryMenuOption = (props: {
         onClick={onOptionClick}
       >
         <div className="flex items-center gap-2">
-          <FilterIcon filter={filter} className="size-4" />
+          <FilterIcon filter={filter} className="size-4 shrink-0" />
           <span className="truncate">{filter.label}</span>
         </div>
         <span className="text-low shrink-0 text-xs">{filter.count}</span>
