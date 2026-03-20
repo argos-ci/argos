@@ -349,11 +349,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           ? getTagsWithSource(metadata)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((tag) => (
-                <TagIndicator
-                  key={`${tag.source}:${tag.name}`}
-                  name={tag.name}
-                  source={tag.source}
-                />
+                <TagIndicator key={`${tag.source}:${tag.name}`} tag={tag} />
               ))
           : null}
         {pwTraceUrl ? (
