@@ -34,7 +34,9 @@ function createFilter<T extends Pick<Filter, "category" | "value">>(
   return { ...args, key: getFilterKey(args) };
 }
 
-function getFilterKey(filter: Pick<Filter, "category" | "value">): string {
+export function getFilterKey(
+  filter: Pick<Filter, "category" | "value">,
+): string {
   return `${filter.category}:${filter.value}`;
 }
 
