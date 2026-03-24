@@ -1,4 +1,4 @@
-import { Children, cloneElement } from "react";
+import { Children, cloneElement, use, useRef } from "react";
 import { clsx } from "clsx";
 import {
   CheckIcon,
@@ -11,10 +11,11 @@ import {
   ButtonProps,
   Header,
   Keyboard,
-  MenuItemProps,
+  MenuContext,
   MenuProps,
   Menu as RACMenu,
   MenuItem as RACMenuItem,
+  MenuItemProps as RACMenuItemProps,
   Separator,
 } from "react-aria-components";
 
@@ -52,20 +53,24 @@ const menuItemVariantClasses: Record<MenuItemVariant, string> = {
 const menuItemClassName =
   "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent data-[open]:bg-active";
 
-export function MenuItem(
-  props: Omit<MenuItemProps, "className"> & {
-    variant?: MenuItemVariant;
-    children: React.ReactNode;
-  },
-) {
+type MenuItemProps = Omit<RACMenuItemProps, "className"> & {
+  variant?: MenuItemVariant;
+  children: React.ReactNode;
+};
+
+export function MenuItem(props: MenuItemProps) {
+  const { variant, ...rest } = props;
+  const menuContext = use(MenuContext);
+  const checkboxRef = useRef<HTMLSpanElement>(null);
   return (
     <RACMenuItem
       className={clsx(
-        menuItemVariantClasses[props.variant ?? "default"],
+        "group/menu-item",
+        menuItemVariantClasses[variant ?? "default"],
         props.href ? "cursor-pointer" : "cursor-default",
         menuItemClassName,
       )}
-      {...props}
+      {...rest}
     >
       {(menuProps) => {
         if (menuProps.hasSubmenu) {
@@ -76,10 +81,8 @@ export function MenuItem(
             </div>
           );
         }
-        if (
-          menuProps.selectionMode === "single" ||
-          menuProps.selectionMode === "multiple"
-        ) {
+
+        if (menuProps.selectionMode === "single") {
           return (
             <div className="flex items-center justify-between gap-2">
               <CheckIcon
@@ -93,47 +96,54 @@ export function MenuItem(
           );
         }
 
+        if (menuProps.selectionMode === "multiple") {
+          return (
+            <div
+              className="flex w-full items-center gap-2"
+              onClick={(event) => {
+                // If we click outside the checkbox
+                if (
+                  !checkboxRef.current ||
+                  !(event.target instanceof Element) ||
+                  event.target === checkboxRef.current ||
+                  checkboxRef.current.contains(event.target) ||
+                  !menuContext ||
+                  !("onClose" in menuContext) ||
+                  !menuContext.onClose
+                ) {
+                  return;
+                }
+
+                menuContext.onClose();
+              }}
+            >
+              <div className="shrink-0">
+                <span
+                  ref={checkboxRef}
+                  className={clsx(
+                    "border-primary text-primary hover:border-primary-hover flex size-3.5 items-center justify-center rounded-sm border",
+                    "opacity-0 group-data-focused/menu-item:opacity-100 group-data-hovered/menu-item:opacity-100",
+                    menuProps.isSelected &&
+                      "bg-primary-active border-active opacity-100",
+                    menuProps.isDisabled &&
+                      menuProps.isSelected &&
+                      "opacity-disabled",
+                  )}
+                >
+                  {menuProps.isSelected ? (
+                    <CheckIcon className="size-3" />
+                  ) : null}
+                </span>
+              </div>
+              <div className="flex min-w-0 flex-1 items-center select-none">
+                {props.children}
+              </div>
+            </div>
+          );
+        }
+
         return props.children;
       }}
-    </RACMenuItem>
-  );
-}
-
-export function MenuCheckboxItem(
-  props: Omit<MenuItemProps, "className"> & {
-    variant?: MenuItemVariant;
-    children: React.ReactNode;
-  },
-) {
-  return (
-    <RACMenuItem
-      className={clsx(
-        menuItemVariantClasses[props.variant ?? "default"],
-        "group/menu-checkbox-item",
-        menuItemClassName,
-      )}
-      {...props}
-    >
-      {(menuProps) => (
-        <div className="flex w-full items-center gap-2">
-          <div className="shrink-0">
-            <span
-              className={clsx(
-                "border-primary text-primary hover:border-primary-hover flex size-3.5 items-center justify-center rounded-sm border",
-                "opacity-0 group-data-focused/menu-checkbox-item:opacity-100 group-data-hovered/menu-checkbox-item:opacity-100",
-                menuProps.isSelected &&
-                  "bg-primary-active border-active opacity-100",
-                menuProps.isDisabled &&
-                  menuProps.isSelected &&
-                  "opacity-disabled",
-              )}
-            >
-              {menuProps.isSelected ? <CheckIcon className="size-3" /> : null}
-            </span>
-          </div>
-          <div className="min-w-0 flex-1 select-none">{props.children}</div>
-        </div>
-      )}
     </RACMenuItem>
   );
 }
@@ -160,9 +170,29 @@ export function MenuItemIcon(props: {
     >
       {cloneElement(child, {
         "aria-hidden": true,
-        className: clsx("size-[1em] mx-auto", child.props.className),
+        className: clsx(
+          "size-[1em] mx-auto text-low group-data-focused/menu-item:text-default",
+          child.props.className,
+        ),
       })}
     </div>
+  );
+}
+
+export function MenuItemSuffix(props: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { className, children } = props;
+  return (
+    <span
+      className={clsx(
+        "text-low ml-2 flex-1 shrink-0 text-right text-xs",
+        className,
+      )}
+    >
+      {children}
+    </span>
   );
 }
 

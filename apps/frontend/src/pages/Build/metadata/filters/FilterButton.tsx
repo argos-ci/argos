@@ -6,7 +6,13 @@ import { FilterIcon } from "lucide-react";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { Menu, MenuItem, MenuTrigger, SubmenuTrigger } from "@/ui/Menu";
+import {
+  Menu,
+  MenuItem,
+  MenuItemIcon,
+  MenuTrigger,
+  SubmenuTrigger,
+} from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
 import { FilterCategoryMenu } from "./FilterCategoryMenu";
@@ -50,17 +56,16 @@ const InnerFilterButton = createHideableComponent(
               return (
                 <SubmenuTrigger key={category} delay={0}>
                   <MenuItem id={category}>
-                    <div className="grid grid-cols-[1em_auto] items-center gap-2">
-                      <categoryDef.icon className="size-4" />
-                      <div>{categoryDef.label}</div>
-                    </div>
+                    <MenuItemIcon>
+                      <categoryDef.icon />
+                    </MenuItemIcon>
+                    {categoryDef.label}
                   </MenuItem>
                   <Popover>
                     <FilterCategoryMenu
                       state={state}
                       filterGroup={filterGroup}
                       className="min-w-32"
-                      onOptionClick={() => setIsOpen(false)}
                     />
                   </Popover>
                 </SubmenuTrigger>
