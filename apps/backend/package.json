@@ -96,7 +96,7 @@
     "stripe": "^20.4.1",
     "tmp": "^0.2.5",
     "undici": "^7.24.3",
-    "yaml": "^2.8.2",
+    "yaml": "^2.8.3",
     "zod": "catalog:",
     "zod-openapi": "^5.4.6"
   },
