@@ -52,6 +52,8 @@ const interactiveClassNames = {
     "data-[hovered]:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active data-pressed:bg-danger-active",
   warning:
     "data-[hovered]:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
+  storybook:
+    "data-[hovered]:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active data-pressed:bg-storybook-active",
 };
 
 /**
@@ -94,6 +96,10 @@ function getChipClassName(props: {
     warning: clsx(
       lowTextColorClassNames.warning,
       "border-warning bg-warning-app",
+    ),
+    storybook: clsx(
+      lowTextColorClassNames.storybook,
+      "border-storybook bg-storybook-app",
     ),
   };
   return clsx(

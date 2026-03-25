@@ -1,4 +1,5 @@
 import {
+  BookMarkedIcon,
   GlobeIcon,
   LaptopIcon,
   PrinterIcon,
@@ -11,6 +12,7 @@ export const MetadataCategory = {
   viewport: "viewport",
   colorScheme: "colorScheme",
   mediaType: "mediaType",
+  storyKind: "storyKind",
   snapshotTag: "snapshotTag",
   testTag: "testTag",
 } as const;
@@ -38,6 +40,11 @@ const metadataCategoryDefinitions = {
     label: "Media type",
     pluralLabel: "media types",
     icon: PrinterIcon,
+  },
+  [MetadataCategory.storyKind]: {
+    label: "Story",
+    pluralLabel: "Stories",
+    icon: BookMarkedIcon,
   },
   [MetadataCategory.snapshotTag]: {
     label: "Snapshot tag",

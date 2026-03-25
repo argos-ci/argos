@@ -69,6 +69,13 @@ export const typeDefs = gql`
     latestVersion: String
   }
 
+  type ScreenshotMetadataStory {
+    id: String!
+    tags: [String!]
+    mode: String
+    play: Boolean
+  }
+
   type ScreenshotMetadata {
     url: String
     previewUrl: String
@@ -79,6 +86,7 @@ export const typeDefs = gql`
     browser: ScreenshotMetadataBrowser
     automationLibrary: ScreenshotMetadataAutomationLibrary!
     sdk: ScreenshotMetadataSDK!
+    story: ScreenshotMetadataStory
     tags: [String!]
   }
 

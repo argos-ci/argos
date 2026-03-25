@@ -74,6 +74,9 @@ const ScreenshotDiffFragment = graphql(`
           version
           latestVersion
         }
+        story {
+          id
+        }
         viewport {
           width
           height
@@ -128,6 +131,9 @@ const ScreenshotDiffFragment = graphql(`
           name
           version
           latestVersion
+        }
+        story {
+          id
         }
         viewport {
           width
