@@ -208,6 +208,12 @@ NODE_ENV=test pnpm run --filter @argos/backend db:load
 pnpm run test
 ```
 
+### Run a specific test file
+
+```sh
+pnpm test path/to/test/file.e2e.test.ts
+```
+
 ### End-to-End (E2E) Tests
 
 1. Install Playwright dependencies:
