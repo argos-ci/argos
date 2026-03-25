@@ -2,7 +2,7 @@ import {
   GlobeIcon,
   LaptopIcon,
   PrinterIcon,
-  SunIcon,
+  SunMoonIcon,
   TagIcon,
 } from "lucide-react";
 
@@ -32,7 +32,7 @@ const metadataCategoryDefinitions = {
   [MetadataCategory.colorScheme]: {
     label: "Color scheme",
     pluralLabel: "color schemes",
-    icon: SunIcon,
+    icon: SunMoonIcon,
   },
   [MetadataCategory.mediaType]: {
     label: "Media type",
