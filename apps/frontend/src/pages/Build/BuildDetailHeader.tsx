@@ -52,6 +52,11 @@ import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
 import { StoryKindIndicator } from "./metadata/StoryKindIndicator";
+import {
+  StoryModeIndicator,
+  StoryModeIndicatorLink,
+} from "./metadata/StoryModeIndicator";
+import { StoryPlayIndicator } from "./metadata/StoryPlayIndicator";
 import { TagIndicator } from "./metadata/tags/TagIndicator";
 import { getTagsWithSource } from "./metadata/tags/util";
 import { TestIndicator } from "./metadata/TestIndicator";
@@ -92,6 +97,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const previewUrl = metadata?.previewUrl ?? null;
   const mediaType = metadata?.mediaType ?? null;
   const storyId = metadata?.story?.id ?? null;
+  const storyPlay = metadata?.story?.play ?? null;
   const test = metadata?.test ?? null;
   const retry = test?.retry ?? null;
   const retries = test?.retries ?? null;
@@ -148,6 +154,12 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
 
   const colorSchemes = getUniqueColorSchemes(siblingMetadataList);
   const activeColorScheme = resolveColorScheme(metadata);
+
+  const storyModes = getUniqueStoryModes(siblingMetadataList);
+  const activeStoryMode = metadata?.story?.mode ?? null;
+  const activeStoryModeIndex = storyModes.findIndex(
+    (m) => m === activeStoryMode,
+  );
 
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
@@ -348,6 +360,38 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
           />
         ))}
         {storyId ? <StoryKindIndicator storyId={storyId} /> : null}
+        {storyModes.length > 0 && (
+          <ButtonGroup>
+            {storyModes.map((mode, index) => {
+              if (storyModes.length === 1) {
+                return <StoryModeIndicator key={mode} mode={mode} />;
+              }
+
+              const isActive = activeStoryMode === mode;
+              const isNextActive =
+                (activeStoryModeIndex + 1) % storyModes.length === index;
+              const resolvedDiff = isActive
+                ? diff
+                : siblingDiffs.find((diff) => {
+                    const metadata = resolveDiffMetadata(diff);
+                    return metadata?.story?.mode === mode;
+                  });
+
+              invariant(resolvedDiff, "diff cannot be null");
+
+              return (
+                <StoryModeIndicatorLink
+                  key={mode}
+                  mode={mode}
+                  aria-current={isActive ? "page" : undefined}
+                  href={getDiffPath(resolvedDiff.id) ?? ""}
+                  shortcutEnabled={isNextActive}
+                />
+              );
+            })}
+          </ButtonGroup>
+        )}
+        {storyPlay ? <StoryPlayIndicator /> : null}
         {metadata
           ? getTagsWithSource(metadata)
               .sort((a, b) => a.name.localeCompare(b.name))
@@ -480,6 +524,19 @@ function getUniqueColorSchemes(
   metadataList: Metadata[],
 ): ScreenshotMetadataColorScheme[] {
   return Array.from(new Set(metadataList.map(resolveColorScheme)));
+}
+
+/**
+ * Get a sorted list of unique story modes from a list of metadata.
+ */
+function getUniqueStoryModes(metadataList: Metadata[]): string[] {
+  const modes = new Set<string>();
+  for (const metadata of metadataList) {
+    if (metadata?.story?.mode) {
+      modes.add(metadata.story.mode);
+    }
+  }
+  return Array.from(modes).sort();
 }
 
 /**

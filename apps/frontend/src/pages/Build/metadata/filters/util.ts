@@ -122,6 +122,16 @@ function getFiltersFromDiffs(diffs: Diff[]): {
       }
     }
 
+    if (metadata.story?.tags) {
+      for (const tag of metadata.story.tags) {
+        addFilter({
+          category: MetadataCategory.storyTag,
+          value: tag,
+          label: tag,
+        });
+      }
+    }
+
     if (metadata.test?.tags) {
       for (const tag of metadata.test.tags) {
         addFilter({
@@ -214,6 +224,7 @@ function getFilterGroups(filters: Filter[]) {
       // These categories are shown in filters even if there is only one because they act as a discriminator.
       // It means a portion of the tests may not be on this category.
       group.category === FilterCategory.storyKind ||
+      group.category === FilterCategory.storyTag ||
       group.category === FilterCategory.snapshotTag ||
       group.category === FilterCategory.testTag ||
       group.filterKeys.size > 1,
@@ -286,6 +297,13 @@ export function diffMatchesFilters(
 
         case MetadataCategory.snapshotTag: {
           if (metadata.tags?.includes(value)) {
+            matched = true;
+          }
+          break;
+        }
+
+        case MetadataCategory.storyTag: {
+          if (metadata.story?.tags?.includes(value)) {
             matched = true;
           }
           break;

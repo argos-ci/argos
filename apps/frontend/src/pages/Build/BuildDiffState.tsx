@@ -76,6 +76,9 @@ const ScreenshotDiffFragment = graphql(`
         }
         story {
           id
+          mode
+          play
+          tags
         }
         viewport {
           width
@@ -134,6 +137,9 @@ const ScreenshotDiffFragment = graphql(`
         }
         story {
           id
+          mode
+          play
+          tags
         }
         viewport {
           width

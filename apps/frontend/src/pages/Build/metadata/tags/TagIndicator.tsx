@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { TagIcon } from "lucide-react";
 
 import { Chip, type ChipProps } from "@/ui/Chip";
@@ -9,6 +10,7 @@ import { MetadataCategory } from "../metadataCategories";
 
 export const TagSource = {
   snapshot: "snapshot",
+  story: "story",
   test: "test",
 } as const;
 
@@ -24,6 +26,7 @@ const TAG_SOURCE_META: Record<
   { color: ChipProps["color"]; tooltip: string }
 > = {
   test: { color: "primary", tooltip: "Test tag" },
+  story: { color: "storybook", tooltip: "Story tag" },
   snapshot: { color: "info", tooltip: "Snapshot tag" },
 };
 
@@ -41,15 +44,23 @@ const Tag = ({ tag }: TagProps) => {
 };
 
 function getTagFilterKey(tag: TagWithSource) {
-  return getFilterKey({
-    category:
-      tag.source === "snapshot"
-        ? MetadataCategory.snapshotTag
-        : MetadataCategory.testTag,
-    value: tag.name,
-  });
-}
+  const category = (() => {
+    switch (tag.source) {
+      case "snapshot":
+        return MetadataCategory.snapshotTag;
 
+      case "story":
+        return MetadataCategory.storyTag;
+
+      case "test":
+        return MetadataCategory.testTag;
+
+      default:
+        assertNever(tag.source);
+    }
+  })();
+  return getFilterKey({ category, value: tag.name });
+}
 export const TagIndicator = ({ tag }: TagProps) => {
   return (
     <FilterableIndicator filterKey={getTagFilterKey(tag)}>
