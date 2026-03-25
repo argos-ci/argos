@@ -71,18 +71,9 @@ function getChipClassName(props: {
     md: "text-sm",
   };
   const spacingClassName: Record<ChipScale, string> = {
-    xs: clsx(
-      isEmpty ? "px-1" : "px-2",
-      "[--chip-gap:--spacing(1)] group-[*]/button-group:not-first:not-last:px-1",
-    ),
-    sm: clsx(
-      isEmpty ? "px-1" : "px-3",
-      "px-3 py-1 [--chip-gap:--spacing(1.5)] group-[*]/button-group:not-first:not-last:px-2",
-    ),
-    md: clsx(
-      isEmpty ? "px-2" : "px-4",
-      "px-4 py-2 [--chip-gap:--spacing(2)] group-[*]/button-group:not-first:not-last:px-3",
-    ),
+    xs: clsx(isEmpty ? "px-1" : "px-2", "[--chip-gap:--spacing(1)]"),
+    sm: clsx(!isEmpty && "px-3", "p-1 [--chip-gap:--spacing(1.5)]"),
+    md: clsx(!isEmpty && "px-4", "p-2 [--chip-gap:--spacing(2)]"),
   };
   const colorClassNames: Record<ChipColor, string> = {
     primary: clsx(
@@ -111,6 +102,7 @@ function getChipClassName(props: {
     interactive && "rac-focus",
     textSizeClassName[scale],
     spacingClassName[scale],
+    "group-[*]/button-group:not-first:pl-(--chip-gap) group-[*]/button-group:not-last:pr-(--chip-gap)",
     "group-[*]/button-group:rounded-none",
     "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:not-first:border-l-0",
     "group-[*]/button-group:last:rounded-r-lg",

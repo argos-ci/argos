@@ -59,7 +59,9 @@ export const FilterCategoryMenu = (props: {
                 <FilterIcon filter={filter} />
               </MenuItemIcon>
               {filter.label}
-              <MenuItemSuffix>{filter.count} items</MenuItemSuffix>
+              <MenuItemSuffix>
+                {filter.count} {filter.count === 1 ? "item" : "items"}
+              </MenuItemSuffix>
             </MenuItem>
           </Fragment>
         );
