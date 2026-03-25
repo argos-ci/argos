@@ -180,6 +180,7 @@ describe("api v2", () => {
               browser: { name: "chromium", version: "119.0.6045.9" },
               automationLibrary: { name: "playwright", version: "1.39.0" },
               sdk: { name: "@argos-ci/playwright", version: "0.0.7" },
+              story: { id: "components-button--primary", tags: ["autodocs"] },
             },
           },
           {
@@ -263,6 +264,7 @@ describe("api v2", () => {
           browser: { name: "chromium", version: "119.0.6045.9" },
           automationLibrary: { name: "playwright", version: "1.39.0" },
           sdk: { name: "@argos-ci/playwright", version: "0.0.7" },
+          story: { id: "components-button--primary", tags: ["autodocs"] },
         });
 
         expect(build.jobStatus).toBe("pending");
