@@ -13,6 +13,7 @@ export const MetadataCategory = {
   colorScheme: "colorScheme",
   mediaType: "mediaType",
   storyKind: "storyKind",
+  storyTag: "storyTag",
   snapshotTag: "snapshotTag",
   testTag: "testTag",
 } as const;
@@ -45,6 +46,11 @@ const metadataCategoryDefinitions = {
     label: "Story",
     pluralLabel: "Stories",
     icon: BookMarkedIcon,
+  },
+  [MetadataCategory.storyTag]: {
+    label: "Story tag",
+    pluralLabel: "story tags",
+    icon: TagIcon,
   },
   [MetadataCategory.snapshotTag]: {
     label: "Snapshot tag",

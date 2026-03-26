@@ -133,6 +133,12 @@ const hotkeyGroups = [
         description: "Switch browser",
         envs: ["build"],
       },
+      switchStoryMode: {
+        keys: ["KeyM"],
+        displayKeys: ["M"],
+        description: "Switch story mode",
+        envs: ["build"],
+      },
     },
   },
   {
