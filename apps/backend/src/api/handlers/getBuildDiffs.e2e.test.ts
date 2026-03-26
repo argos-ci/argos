@@ -24,6 +24,12 @@ const screenshotMetadata = {
   mediaType: "screen" as const,
   automationLibrary: { name: "playwright", version: "1.0.0" },
   sdk: { name: "@argos-ci/playwright", version: "0.0.1" },
+  story: {
+    id: "components-button--primary",
+    tags: ["autodocs", "stable"],
+    mode: "dark",
+    play: true,
+  },
 };
 
 const test = base.extend<{

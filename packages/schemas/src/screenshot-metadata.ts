@@ -50,8 +50,7 @@ const TestSchema = z
   .object({
     id: z
       .string()
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The unique identifier of the test" }),
     title: z.string().meta({ description: "The title of the test" }),
     titlePath: z
@@ -61,22 +60,19 @@ const TestSchema = z
       .number()
       .int()
       .min(0)
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The number of retries for the test" }),
     retry: z
       .number()
       .int()
       .min(0)
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The current retry count" }),
     repeat: z
       .number()
       .int()
       .min(0)
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The repeat count for the test" }),
     location: LocationSchema.optional().meta({
       description: "The location of the test in the source code",
@@ -118,6 +114,21 @@ const SdkSchema = z
   })
   .meta({ description: "The Argos SDK that generated the screenshot" });
 
+const StoryMetadataSchema = z
+  .object({
+    id: z.string().meta({ description: "Unique ID of the story" }),
+    tags: z
+      .array(z.string())
+      .optional()
+      .meta({ description: "Tags attached to the story" }),
+    mode: z.string().optional().meta({ description: "Story mode" }),
+    play: z
+      .boolean()
+      .optional()
+      .meta({ description: "True if the story has a play function" }),
+  })
+  .meta({ description: "Storybook story metadata" });
+
 export const ScreenshotMetadataSchema = z
   .object({
     $schema: z
@@ -130,27 +141,27 @@ export const ScreenshotMetadataSchema = z
       }),
     url: z
       .string()
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The URL of the page that was screenshotted" }),
-    previewUrl: z.string().optional().nullable().meta({
+    previewUrl: z.string().nullish().meta({
       description: "An URL to an accessible preview of the screenshot",
     }),
-    viewport: ViewportSchema.optional().nullable(),
+    viewport: ViewportSchema.nullish(),
     colorScheme: z
       .enum(["light", "dark"])
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The color scheme when the screenshot was taken" }),
     mediaType: z
       .enum(["screen", "print"])
-      .optional()
-      .nullable()
+      .nullish()
       .meta({ description: "The media type when the screenshot was taken" }),
-    test: TestSchema.nullable().optional().nullable(),
-    browser: BrowserSchema.optional().nullable(),
+    test: TestSchema.nullish(),
+    browser: BrowserSchema.nullish(),
     automationLibrary: AutomationLibrarySchema,
     sdk: SdkSchema,
+    story: StoryMetadataSchema.nullish().meta({
+      description: "Storybook story metadata",
+    }),
     tags: z
       .array(z.string())
       .optional()
@@ -164,3 +175,4 @@ export const ScreenshotMetadataJSONSchema = z.toJSONSchema(
 
 export type ScreenshotMetadata = z.infer<typeof ScreenshotMetadataSchema>;
 export type ScreenshotMetadataSDK = z.infer<typeof SdkSchema>;
+export type ScreenshotMetadataStory = z.infer<typeof StoryMetadataSchema>;
