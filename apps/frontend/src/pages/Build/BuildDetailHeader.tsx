@@ -51,6 +51,7 @@ import { MediaTypeIndicator } from "./metadata/MediaTypeIndicator";
 import { RepeatIndicator } from "./metadata/RepeatIndicator";
 import { RetryIndicator } from "./metadata/RetryIndicator";
 import { SdkIndicator } from "./metadata/SdkIndicator";
+import { StoryKindIndicator } from "./metadata/StoryKindIndicator";
 import { TagIndicator } from "./metadata/tags/TagIndicator";
 import { getTagsWithSource } from "./metadata/tags/util";
 import { TestIndicator } from "./metadata/TestIndicator";
@@ -90,6 +91,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const url = metadata?.url ?? null;
   const previewUrl = metadata?.previewUrl ?? null;
   const mediaType = metadata?.mediaType ?? null;
+  const storyId = metadata?.story?.id ?? null;
   const test = metadata?.test ?? null;
   const retry = test?.retry ?? null;
   const retries = test?.retries ?? null;
@@ -345,6 +347,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
             repoUrl={repoUrl}
           />
         ))}
+        {storyId ? <StoryKindIndicator storyId={storyId} /> : null}
         {metadata
           ? getTagsWithSource(metadata)
               .sort((a, b) => a.name.localeCompare(b.name))

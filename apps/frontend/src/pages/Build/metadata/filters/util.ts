@@ -40,6 +40,10 @@ export function getFilterKey(
   return `${filter.category}:${filter.value}`;
 }
 
+export function getStoryKindFromStoryId(storyId: string | null | undefined) {
+  return (storyId || "").split("--")[0] || null;
+}
+
 function getFiltersFromDiffs(diffs: Diff[]): {
   filters: Filter[];
   filterByKey: Map<string, Filter>;
@@ -96,6 +100,15 @@ function getFiltersFromDiffs(diffs: Diff[]): {
         category: MetadataCategory.mediaType,
         value: metadata.mediaType,
         label: metadata.mediaType,
+      });
+    }
+
+    const storyKind = getStoryKindFromStoryId(metadata.story?.id);
+    if (storyKind) {
+      addFilter({
+        category: MetadataCategory.storyKind,
+        value: storyKind,
+        label: storyKind,
       });
     }
 
@@ -200,6 +213,7 @@ function getFilterGroups(filters: Filter[]) {
     (group) =>
       // These categories are shown in filters even if there is only one because they act as a discriminator.
       // It means a portion of the tests may not be on this category.
+      group.category === FilterCategory.storyKind ||
       group.category === FilterCategory.snapshotTag ||
       group.category === FilterCategory.testTag ||
       group.filterKeys.size > 1,
@@ -261,6 +275,14 @@ export function diffMatchesFilters(
             matched = true;
           }
           break;
+
+        case MetadataCategory.storyKind: {
+          const storyKind = getStoryKindFromStoryId(metadata.story?.id);
+          if (storyKind === value) {
+            matched = true;
+          }
+          break;
+        }
 
         case MetadataCategory.snapshotTag: {
           if (metadata.tags?.includes(value)) {

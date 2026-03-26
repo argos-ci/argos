@@ -4,6 +4,8 @@
 @import "@radix-ui/colors/gray-dark" layer(base);
 @import "@radix-ui/colors/mauve" layer(base);
 @import "@radix-ui/colors/mauve-dark" layer(base);
+@import "@radix-ui/colors/pink" layer(base);
+@import "@radix-ui/colors/pink-dark" layer(base);
 @import "@radix-ui/colors/violet" layer(base);
 @import "@radix-ui/colors/violet-dark" layer(base);
 @import "@radix-ui/colors/tomato" layer(base);
@@ -59,6 +61,9 @@
 
   --text-color-success: var(--grass-12);
   --text-color-success-low: var(--grass-11);
+
+  --text-color-storybook: var(--pink-12);
+  --text-color-storybook-low: var(--pink-11);
 
   --background-color-app: var(--mauve-1);
   --background-color-subtle: var(--mauve-2);
@@ -123,6 +128,15 @@
   --background-color-success-solid-hover: var(--grass-10);
   --background-color-success-solid-active: var(--grass-11);
 
+  --background-color-storybook-app: var(--pink-1);
+  --background-color-storybook-subtle: var(--pink-2);
+  --background-color-storybook-ui: var(--pink-3);
+  --background-color-storybook-hover: var(--pink-4);
+  --background-color-storybook-active: var(--pink-5);
+  --background-color-storybook-solid: var(--pink-9);
+  --background-color-storybook-solid-hover: var(--pink-10);
+  --background-color-storybook-solid-active: var(--pink-11);
+
   --background-color-bar: var(--violet-8);
 
   --background-color-github: rgb(36 41 46);
@@ -162,6 +176,10 @@
   --border-color-success: var(--grass-6);
   --border-color-success-hover: var(--grass-8);
 
+  --border-color-storybook: var(--pink-6);
+  --border-color-storybook-hover: var(--pink-8);
+  --border-color-storybook-active: var(--pink-9);
+
   --ring-color-default: var(--border-color-default);
 
   --ring-color-primary: var(--violet-6);
@@ -175,6 +193,10 @@
   --ring-color-success: var(--grass-6);
   --ring-color-success-hover: var(--grass-8);
   --ring-color-success-active: var(--grass-9);
+
+  --ring-color-storybook: var(--pink-6);
+  --ring-color-storybook-hover: var(--pink-8);
+  --ring-color-storybook-active: var(--pink-9);
 
   --ring-color-neutral: var(--mauve-6);
   --ring-color-neutral-hover: var(--mauve-8);
