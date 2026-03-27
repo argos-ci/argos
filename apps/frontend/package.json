@@ -7,7 +7,9 @@
     "check-types": "tsc --noEmit",
     "check-format": "prettier --check --cache --ignore-path=../../.gitignore --ignore-path=../../.prettierignore .",
     "watch-build": "vite --logLevel silent",
-    "lint": "eslint --max-warnings 0 ."
+    "lint": "eslint --max-warnings 0 .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "sideEffects": false,
   "devDependencies": {
@@ -29,6 +31,8 @@
     "@reflag/react-sdk": "^1.4.8",
     "@sentry/react": "^10.46.0",
     "@sentry/vite-plugin": "^5.1.1",
+    "@storybook/addon-a11y": "^10.3.3",
+    "@storybook/react-vite": "^10.3.3",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-virtual": "^3.13.23",
     "@types/d3-interpolate": "^3.0.4",
@@ -74,6 +78,7 @@
     "recharts": "^3.8.1",
     "rxjs": "^7.8.2",
     "sonner": "^2.0.7",
+    "storybook": "^10.3.3",
     "tailwindcss": "^4.2.2",
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",

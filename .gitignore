@@ -28,3 +28,6 @@ src/graphql/__generated__
 .turbo
 # TypeScript logs
 tsconfig.tsbuildinfo
+# Storybook
+*storybook.log
+storybook-static
