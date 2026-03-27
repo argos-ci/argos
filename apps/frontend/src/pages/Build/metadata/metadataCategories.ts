@@ -34,32 +34,32 @@ const metadataCategoryDefinitions = {
   },
   [MetadataCategory.colorScheme]: {
     label: "Color scheme",
-    pluralLabel: "color schemes",
+    pluralLabel: "schemes",
     icon: SunMoonIcon,
   },
   [MetadataCategory.mediaType]: {
     label: "Media type",
-    pluralLabel: "media types",
+    pluralLabel: "types",
     icon: PrinterIcon,
   },
   [MetadataCategory.storyKind]: {
-    label: "Story",
-    pluralLabel: "Stories",
+    label: "Story kind",
+    pluralLabel: "kinds",
     icon: BookMarkedIcon,
   },
   [MetadataCategory.storyTag]: {
     label: "Story tag",
-    pluralLabel: "story tags",
+    pluralLabel: "tags",
     icon: TagIcon,
   },
   [MetadataCategory.snapshotTag]: {
     label: "Snapshot tag",
-    pluralLabel: "snapshot tags",
+    pluralLabel: "tags",
     icon: TagIcon,
   },
   [MetadataCategory.testTag]: {
     label: "Test tag",
-    pluralLabel: "test tags",
+    pluralLabel: "tags",
     icon: TagIcon,
   },
 } as const;

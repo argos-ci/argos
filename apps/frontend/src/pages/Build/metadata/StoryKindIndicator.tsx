@@ -20,7 +20,7 @@ export function StoryKindIndicator(props: { storyId: string }) {
 
   return (
     <FilterableIndicator filterKey={filterKey}>
-      <Tooltip content="Story">
+      <Tooltip content="Story kind">
         <Chip color="storybook" icon={BookMarkedIcon} scale="xs">
           {storyKind}
         </Chip>
