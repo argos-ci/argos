@@ -43,8 +43,8 @@ const metadataCategoryDefinitions = {
     icon: PrinterIcon,
   },
   [MetadataCategory.storyKind]: {
-    label: "Story",
-    pluralLabel: "Stories",
+    label: "Story kind",
+    pluralLabel: "story kinds",
     icon: BookMarkedIcon,
   },
   [MetadataCategory.storyTag]: {
