@@ -79,7 +79,7 @@ export function Form<
  * Handle form errors by unwrapping them and setting them in the form state.
  */
 export function handleFormError(
-  form: UseFormReturn<any, any, any>,
+  form: Pick<UseFormReturn<any, any, any>, "setError">,
   error: unknown,
 ) {
   const errors = unwrapErrors(error);

@@ -20,7 +20,6 @@
     "format": "prettier --write .",
     "clean-deps": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
     "build-production": "BUILD_MODE=production pnpm run build && pnpm run clean-deps && pnpm install --prod",
-    "heroku-postbuild": "BUILD_MODE=production pnpm run build && pnpm run clean-deps && pnpm install --prod",
     "codegen": "NODE_TLS_REJECT_UNAUTHORIZED=0 graphql-codegen --config codegen.ts",
     "watch-codegen": "pnpm run codegen --watch --silent",
     "knip": "knip",
@@ -30,10 +29,10 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@10.31.0+sha512.e3927388bfaa8078ceb79b748ffc1e8274e84d75163e67bc22e06c0d3aed43dd153151cbf11d7f8301ff4acb98c68bdc5cadf6989532801ffafe3b3e4a63c268",
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.2",
-    "@argos-ci/playwright": "^6.4.2",
+    "@argos-ci/playwright": "^6.6.0",
     "@argos/eslint-config": "workspace:*",
     "@graphql-codegen/cli": "^6.2.1",
     "@graphql-codegen/client-preset": "^5.2.4",
@@ -45,17 +44,17 @@
     "@parcel/watcher": "^2.5.6",
     "@playwright/test": "^1.58.2",
     "@swc/cli": "^0.8.0",
-    "@swc/core": "^1.15.18",
-    "@types/node": "^24.12.0",
+    "@swc/core": "^1.15.21",
+    "@types/node": "^24.0.0",
     "chokidar": "^5.0.0",
     "eslint": "catalog:",
-    "knip": "^5.86.0",
+    "knip": "^6.0.6",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "smee-client": "^5.0.0",
-    "turbo": "^2.8.17",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "turbo": "^2.8.20",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

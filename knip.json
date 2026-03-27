@@ -11,7 +11,8 @@
         "src/graphql/definitions/*.ts",
         "scripts/*.ts"
       ],
-      "ignore": ["**/bin/**/*"]
+      "ignore": ["**/bin/**/*"],
+      "ignoreDependencies": ["@argos/knex-scripts", "moment"]
     },
     "apps/frontend": {
       "ignore": ["vite.config.mts"],
@@ -25,7 +26,6 @@
       }
     }
   },
-  "exclude": ["classMembers"],
   "ignore": ["playwright.config.mts"],
   "ignoreBinaries": ["stripe", "ngrok", "op"]
 }
