@@ -7,6 +7,7 @@ import {
   isKnownMetadataCategory,
   MetadataCategory,
 } from "../metadataCategories";
+import { isRelevantStoryTag } from "../tags/util";
 import { formatViewport, parseViewport } from "../viewports/util";
 import type { FilterState } from "./FilterState";
 
@@ -124,6 +125,9 @@ function getFiltersFromDiffs(diffs: Diff[]): {
 
     if (metadata.story?.tags) {
       for (const tag of metadata.story.tags) {
+        if (!isRelevantStoryTag(tag)) {
+          continue;
+        }
         addFilter({
           category: MetadataCategory.storyTag,
           value: tag,
