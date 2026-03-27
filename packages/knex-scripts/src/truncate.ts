@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import Knex from "knex";
+import type { Knex as KnexType } from "knex";
 import { oraPromise } from "ora";
 
 import { getConfig } from "./config";
@@ -12,7 +13,7 @@ let truncateQuery: string;
 /**
  * Get the query to truncate the database.
  */
-async function getTruncateQuery(knex: Knex.Knex) {
+async function getTruncateQuery(knex: KnexType) {
   if (!truncateQuery) {
     const result: { rows: { tablename: string }[] } = await knex.raw(
       "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'",

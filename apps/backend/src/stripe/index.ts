@@ -161,7 +161,7 @@ function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2026-02-25.clover",
+  apiVersion: "2026-03-25.dahlia",
   typescript: true,
 });
 
@@ -290,14 +290,7 @@ async function getPriceInfosFromStripeSubscription(
  */
 function getUnitAmountFromPrice(price: Stripe.Price): number | null {
   invariant(price.unit_amount_decimal !== null, "unit_amount_decimal is null");
-  return decimalToNumber(price.unit_amount_decimal);
-}
-
-/**
- * Convert a decimal string (e.g. "1000") to a number (e.g. 10.00).
- */
-function decimalToNumber(value: string): number {
-  return Number(value) / 100;
+  return price.unit_amount_decimal.toNumber();
 }
 
 async function getArgosSubscriptionDataFromStripe(
