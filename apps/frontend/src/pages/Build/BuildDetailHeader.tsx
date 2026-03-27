@@ -58,7 +58,7 @@ import {
 } from "./metadata/StoryModeIndicator";
 import { StoryPlayIndicator } from "./metadata/StoryPlayIndicator";
 import { TagIndicator } from "./metadata/tags/TagIndicator";
-import { getTagsWithSource } from "./metadata/tags/util";
+import { getTagsWithSource, isRelevantTag } from "./metadata/tags/util";
 import { TestIndicator } from "./metadata/TestIndicator";
 import { ThresholdIndicator } from "./metadata/ThresholdIndicator";
 import { TraceIndicator } from "./metadata/TraceIndicator";
@@ -394,6 +394,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
         {storyPlay ? <StoryPlayIndicator /> : null}
         {metadata
           ? getTagsWithSource(metadata)
+              .filter(isRelevantTag)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((tag) => (
                 <TagIndicator key={`${tag.source}:${tag.name}`} tag={tag} />
