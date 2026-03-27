@@ -187,7 +187,7 @@ export function MenuItemSuffix(props: {
   return (
     <span
       className={clsx(
-        "text-low ml-2 flex-1 shrink-0 text-right text-xs",
+        "text-low ml-3 flex-1 shrink-0 text-right text-xs",
         className,
       )}
     >

@@ -6,18 +6,11 @@ import { FilterIcon } from "lucide-react";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import {
-  Menu,
-  MenuItem,
-  MenuItemIcon,
-  MenuTrigger,
-  SubmenuTrigger,
-} from "@/ui/Menu";
+import { MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
-import { FilterCategoryMenu } from "./FilterCategoryMenu";
+import { FilterSearchMenu } from "./FilterSearchMenu";
 import { FilterStateContext, type FilterState } from "./FilterState";
-import { getFilterCategoryDefinition } from "./util";
 
 export const FilterButton = memo(function FilterButton() {
   const state = use(FilterStateContext);
@@ -49,29 +42,7 @@ const InnerFilterButton = createHideableComponent(
         </HotkeyTooltip>
 
         <Popover placement="bottom start" className="bg-app min-w-40">
-          <Menu autoFocus aria-label="Filters" className="w-full">
-            {state.filterGroups.map((filterGroup) => {
-              const { category } = filterGroup;
-              const categoryDef = getFilterCategoryDefinition(category);
-              return (
-                <SubmenuTrigger key={category} delay={0}>
-                  <MenuItem id={category}>
-                    <MenuItemIcon>
-                      <categoryDef.icon />
-                    </MenuItemIcon>
-                    {categoryDef.label}
-                  </MenuItem>
-                  <Popover>
-                    <FilterCategoryMenu
-                      state={state}
-                      filterGroup={filterGroup}
-                      className="min-w-32"
-                    />
-                  </Popover>
-                </SubmenuTrigger>
-              );
-            })}
-          </Menu>
+          <FilterSearchMenu state={state} />
         </Popover>
       </MenuTrigger>
     );
