@@ -147,7 +147,7 @@ function UserMenu() {
       <RACButton
         className={clsx(
           "rac-focus bg-ui size-8 shrink-0 cursor-default rounded-full border-2 transition",
-          "data-[hovered]:border-primary-hover data-[pressed]:border-primary-active aria-expanded:border-primary-active",
+          "data-hovered:border-primary-hover data-pressed:border-primary-active aria-expanded:border-primary-active",
         )}
         aria-label="User settings"
       >

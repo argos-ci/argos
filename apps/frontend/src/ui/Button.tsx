@@ -28,17 +28,17 @@ type ButtonOptions = {
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "data-[focus-visible]:ring-primary text-white border-transparent bg-primary-solid data-[hovered]:bg-primary-solid-hover data-[pressed]:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
+    "data-focus-visible:ring-primary text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
   secondary:
-    "data-[focus-visible]:ring-default text-default border bg-transparent data-[hovered]:bg-hover data-[hovered]:border-hover data-[pressed]:bg-active",
+    "data-focus-visible:ring-default text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
   destructive:
-    "data-[focus-visible]:ring-danger text-white border-transparent bg-danger-solid data-[hovered]:bg-danger-solid-hover data-[pressed]:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
+    "data-focus-visible:ring-danger text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
   github:
-    "data-[focus-visible]:ring-default text-white border-transparent bg-github data-[hovered]:bg-github-hover data-[pressed]:bg-github-active aria-expanded:bg-github-active",
+    "data-focus-visible:ring-default text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active",
   gitlab:
-    "data-[focus-visible]:ring-default text-white border-transparent bg-gitlab data-[hovered]:bg-gitlab-hover data-[pressed]:bg-gitlab-active aria-expanded:bg-gitlab-active",
+    "data-focus-visible:ring-default text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active",
   google:
-    "data-[focus-visible]:ring-default text-default border-transparent bg-google data-[hovered]:bg-google-hover data-[pressed]:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
+    "data-focus-visible:ring-default text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {

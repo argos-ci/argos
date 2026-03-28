@@ -31,7 +31,7 @@ export function ColorSwatchPickerItem(
       {...props}
       className={clsx(
         "rac-focus relative w-fit rounded-sm outline-hidden forced-color-adjust-none",
-        "data-[selected]:ring-primary-active data-[selected]:ring-1 data-[selected]:ring-offset-1",
+        "data-selected:ring-primary-active data-selected:ring-1 data-selected:ring-offset-1",
         props.className,
       )}
     />

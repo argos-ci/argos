@@ -67,7 +67,7 @@ export function SliderThumb(props: SliderThumbProps) {
     <RACSliderThumb
       {...props}
       className={clsx(
-        "bg-primary-solid data-[dragging]:bg-primary-solid-active rac-focus top-1/2 size-4 rounded-full",
+        "bg-primary-solid data-dragging:bg-primary-solid-active rac-focus top-1/2 size-4 rounded-full",
         props.className,
       )}
     />

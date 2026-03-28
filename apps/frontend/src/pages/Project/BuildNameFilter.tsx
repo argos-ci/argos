@@ -49,7 +49,7 @@ export function BuildNameFilter(props: {
               className="!pl-8 [&::-webkit-search-cancel-button]:hidden"
               placeholder="Find build name…"
             />
-            <Button className="text-low data-[hovered]:text-default absolute top-2 right-2">
+            <Button className="text-low data-hovered:text-default absolute top-2 right-2">
               <XIcon className="size-4" />
             </Button>
           </SearchField>

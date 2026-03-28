@@ -94,7 +94,7 @@ function RadioAccordion(props: { value: string; children: ReactNode }) {
       {...rest}
       className={clsx(
         "bg-app peer flex items-center gap-4 border p-4 text-sm",
-        "data-[hovered]:bg-subtle",
+        "data-hovered:bg-subtle",
         "first:rounded-t first:border-b-0",
         "last:rounded-b",
         "not-first:not-last:border-b-0",

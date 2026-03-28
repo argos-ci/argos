@@ -26,9 +26,9 @@ export function Checkbox(props: CheckboxProps) {
         clsx(
           "group/checkbox peer flex items-center gap-x-2",
           /* Disabled */
-          "data-[disabled]:opacity-disabled",
+          "data-disabled:opacity-disabled",
           /* Invalid */
-          "data-[invalid]:text-danger-low",
+          "data-invalid:text-danger-low",
           /* Resets */
           "focus:outline-none focus-visible:outline-none",
           className,
@@ -42,15 +42,15 @@ export function Checkbox(props: CheckboxProps) {
             className={clsx(
               "border-primary flex size-4 shrink-0 items-center justify-center rounded-sm border",
               /* Focus Visible */
-              "group-data-[focus-visible]/checkbox:ring-primary group-data-[focus-visible]/checkbox:ring-4 group-data-[focus-visible]/checkbox:ring-offset-2 group-data-[focus-visible]/checkbox:outline-hidden",
+              "group-data-focus-visible/checkbox:ring-primary group-data-focus-visible/checkbox:ring-4 group-data-focus-visible/checkbox:ring-offset-2 group-data-focus-visible/checkbox:outline-hidden",
               /* Selected */
-              "group-data-[indeterminate]/checkbox:bg-primary-active group-data-[selected]/checkbox:bg-primary-active group-data-[indeterminate]/checkbox:text-primary group-data-[selected]/checkbox:text-primary",
+              "group-data-indeterminate/checkbox:bg-primary-active group-data-selected/checkbox:bg-primary-active group-data-indeterminate/checkbox:text-primary group-data-selected/checkbox:text-primary",
               /* Disabled */
-              "group-data-[disabled]/checkbox:opacity-disabled group-data-[disabled]/checkbox:cursor-not-allowed",
+              "group-data-disabled/checkbox:opacity-disabled group-data-disabled/checkbox:cursor-not-allowed",
               /* Hover  */
-              "group-data-[hovered]/checkbox:border-primary-hover group-data-[hovered]/checkbox:bg-primary-hover",
+              "group-data-hovered/checkbox:border-primary-hover group-data-hovered/checkbox:bg-primary-hover",
               /* Invalid */
-              "group-data-[invalid]/checkbox:border-danger group-data-[invalid]/checkbox:group-data-[hovered]/checkbox:border-danger-hover group-data-[invalid]/checkbox:group-data-[hovered]/checkbox:bg-danger-hover group-data-[invalid]/checkbox:group-data-[selected]/checkbox:bg-danger-subtle group-data-[invalid]/checkbox:group-data-[selected]/checkbox:text-danger-low",
+              "group-data-invalid/checkbox:border-danger group-data-invalid/checkbox:group-data-hovered/checkbox:border-danger-hover group-data-invalid/checkbox:group-data-hovered/checkbox:bg-danger-hover group-data-invalid/checkbox:group-data-selected/checkbox:bg-danger-subtle group-data-invalid/checkbox:group-data-selected/checkbox:text-danger-low",
             )}
           >
             {renderProps.isIndeterminate ? (
