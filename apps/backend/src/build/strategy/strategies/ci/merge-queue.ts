@@ -104,13 +104,9 @@ async function getLastApprovedOrNoChangesBuilds(args: {
 }
 
 async function getTargetPullRequestIds(build: Build): Promise<string[]> {
-  if (build.mergeQueueGhPullRequests) {
-    return build.mergeQueueGhPullRequests.map((pr) => pr.githubPullRequestId);
-  }
-
-  const mergeQueuePullRequests = await build.$relatedQuery(
-    "mergeQueueGhPullRequests",
-  );
+  const mergeQueuePullRequests =
+    build.mergeQueueGhPullRequests ??
+    (await build.$relatedQuery("mergeQueueGhPullRequests"));
 
   if (mergeQueuePullRequests.length > 0) {
     return mergeQueuePullRequests.map((pr) => pr.githubPullRequestId);
