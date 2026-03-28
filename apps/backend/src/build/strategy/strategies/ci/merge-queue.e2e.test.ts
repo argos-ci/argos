@@ -189,7 +189,7 @@ describe("#getCIMergeQueueBase", () => {
 
     expect(mockMergeBucketWithBuildDiffs).toHaveBeenCalledOnce();
     const [bucketArg, buildArg] = mockMergeBucketWithBuildDiffs.mock.calls[0]!;
-    expect(bucketArg.id).toBe(recentlyMergedBucket.id);
+    expect(bucketArg).toHaveProperty("id", recentlyMergedBucket.id);
     expect(buildArg.id).toBe(lastApprovedBuild.id);
     expect(result.baseBucket).toBe(virtualBucket);
     expect(result.baseBranch).toBeNull();
@@ -277,6 +277,124 @@ describe("#getCIMergeQueueBase", () => {
     expect(buildArg.id).toBe(noChangesBuild.id);
     expect(buildArg.id).not.toBe(lastApprovedBuild.id);
     expect(result.baseBucket).toBe(virtualBucket);
+    expect(result.baseBranch).toBeNull();
+    expect(result.baseBranchResolvedFrom).toBeNull();
+  });
+
+  it("merges all targeted merge queue pull requests", async () => {
+    const githubRepository = await factory.GithubRepository.create();
+    const project = await factory.Project.create({
+      githubRepositoryId: githubRepository.id,
+    });
+    const compareBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      branch: "merge-queue/main",
+    });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareBucket.id,
+      githubPullRequestId: null,
+      name: "default",
+      mode: "ci",
+      mergeQueue: true,
+      type: "check",
+    });
+
+    const [targetPullRequest1, targetPullRequest2] =
+      await factory.PullRequest.createMany(2, [
+        { githubRepositoryId: githubRepository.id, number: 10 },
+        { githubRepositoryId: githubRepository.id, number: 11 },
+      ]);
+    invariant(targetPullRequest1 && targetPullRequest2);
+
+    await factory.BuildMergeQueueGhPullRequest.createMany(2, [
+      {
+        buildId: build.id,
+        githubPullRequestId: targetPullRequest1.id,
+      },
+      {
+        buildId: build.id,
+        githubPullRequestId: targetPullRequest2.id,
+      },
+    ]);
+
+    const [approvedBucket1, approvedBucket2] =
+      await factory.ScreenshotBucket.createMany(2, [
+        { projectId: project.id, branch: "feature/pr-10" },
+        { projectId: project.id, branch: "feature/pr-11" },
+      ]);
+    invariant(approvedBucket1 && approvedBucket2);
+
+    const [approvedBuild1, approvedBuild2] = await factory.Build.createMany(2, [
+      {
+        projectId: project.id,
+        compareScreenshotBucketId: approvedBucket1.id,
+        githubPullRequestId: targetPullRequest1.id,
+        createdAt: new Date("2024-01-01").toISOString(),
+        name: build.name,
+        mode: "ci",
+        mergeQueue: true,
+        type: "check",
+      },
+      {
+        projectId: project.id,
+        compareScreenshotBucketId: approvedBucket2.id,
+        githubPullRequestId: targetPullRequest2.id,
+        createdAt: new Date("2024-01-02").toISOString(),
+        name: build.name,
+        mode: "ci",
+        mergeQueue: true,
+        type: "check",
+      },
+    ]);
+    invariant(approvedBuild1 && approvedBuild2);
+
+    await Promise.all([
+      factory.BuildReview.create({
+        buildId: approvedBuild1.id,
+        state: "approved",
+      }),
+      factory.BuildReview.create({
+        buildId: approvedBuild2.id,
+        state: "approved",
+      }),
+    ]);
+
+    const baseBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      branch: "main",
+      createdAt: new Date("2023-12-31").toISOString(),
+    });
+
+    const mergedOnce = { screenshots: [] };
+    const mergedTwice = { screenshots: [] };
+    mockGetCIBase.mockResolvedValue({
+      baseBucket,
+      baseBranch: "main",
+      baseBranchResolvedFrom: "project" as const,
+    });
+    mockMergeBucketWithBuildDiffs
+      .mockResolvedValueOnce(mergedOnce)
+      .mockResolvedValueOnce(mergedTwice);
+
+    const result = await getCIMergeQueueBase({
+      build,
+      compareScreenshotBucket: compareBucket,
+      project,
+      pullRequest: null,
+      context: { checkIsAutoApproved: () => false },
+    });
+
+    expect(mockMergeBucketWithBuildDiffs).toHaveBeenCalledTimes(2);
+    expect(mockMergeBucketWithBuildDiffs.mock.calls[0]?.[0]).toBe(baseBucket);
+    expect(mockMergeBucketWithBuildDiffs.mock.calls[0]?.[1].id).toBe(
+      approvedBuild1.id,
+    );
+    expect(mockMergeBucketWithBuildDiffs.mock.calls[1]?.[0]).toBe(mergedOnce);
+    expect(mockMergeBucketWithBuildDiffs.mock.calls[1]?.[1].id).toBe(
+      approvedBuild2.id,
+    );
+    expect(result.baseBucket).toBe(mergedTwice);
     expect(result.baseBranch).toBeNull();
     expect(result.baseBranchResolvedFrom).toBeNull();
   });

@@ -4,6 +4,7 @@ export * from "./AutomationRule";
 export * from "./AutomationRun";
 export * from "./AuditTrail";
 export * from "./Build";
+export * from "./BuildMergeQueueGhPullRequest";
 export * from "./BuildNotification";
 export * from "./BuildReview";
 export * from "./BuildShard";

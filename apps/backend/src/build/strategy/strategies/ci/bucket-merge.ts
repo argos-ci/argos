@@ -13,23 +13,31 @@ import type { VirtualScreenshotBucket } from "../../types";
  * Merge a bucket with some build diffs to build a virtual screenshot bucket.
  */
 export async function mergeBucketWithBuildDiffs(
-  baseBucket: ScreenshotBucket,
+  baseBucket: ScreenshotBucket | VirtualScreenshotBucket,
   headBuild: Build,
 ): Promise<VirtualScreenshotBucket> {
-  await Promise.all([
-    baseBucket.$fetchGraph("screenshots"),
-    headBuild.$fetchGraph("screenshotDiffs.[compareScreenshot,baseScreenshot]"),
-  ]);
-
-  invariant(baseBucket.screenshots, "Relation `screenshots` not loaded");
+  await headBuild.$fetchGraph(
+    "screenshotDiffs.[compareScreenshot,baseScreenshot]",
+  );
   invariant(headBuild.screenshotDiffs, "Relation `screenshotDiffs` not loaded");
 
-  const screenshotsByName = baseBucket.screenshots.reduce<
-    Record<string, Screenshot>
-  >((index, screenshot) => {
-    index[screenshot.baseName ?? screenshot.name] = screenshot;
-    return index;
-  }, {});
+  const baseScreenshots = await (async () => {
+    if (baseBucket instanceof ScreenshotBucket) {
+      await baseBucket.$fetchGraph("screenshots");
+      invariant(baseBucket.screenshots, "Relation `screenshots` not loaded");
+      return baseBucket.screenshots;
+    }
+
+    return baseBucket.screenshots;
+  })();
+
+  const screenshotsByName = baseScreenshots.reduce<Record<string, Screenshot>>(
+    (index, screenshot) => {
+      index[screenshot.baseName ?? screenshot.name] = screenshot;
+      return index;
+    },
+    {},
+  );
 
   for (const diff of headBuild.screenshotDiffs) {
     const status = await diff.$getDiffStatus();

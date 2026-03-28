@@ -89,6 +89,15 @@ const RequestBodySchema = z.object({
   mergeQueue: z.boolean().nullable().optional().meta({
     description: "Whether the build has been created in a merge queue",
   }),
+  mergeQueuePrNumbers: z
+    .array(z.number().int().min(1))
+    .min(1)
+    .nullable()
+    .optional()
+    .meta({
+      description:
+        "Pull request numbers aggregated by the merge queue build. Requires `mergeQueue` to be `true`.",
+    }),
   subset: z
     .boolean()
     .nullable()
@@ -334,6 +343,7 @@ async function createBuildFromRequest(ctx: BuildContext) {
     argosSdk: body.argosSdk ?? null,
     skipped: body.skipped ?? false,
     mergeQueue: body.mergeQueue ?? false,
+    mergeQueuePrNumbers: body.mergeQueuePrNumbers ?? null,
     subset: body.subset ?? false,
   });
 }

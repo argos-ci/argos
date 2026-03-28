@@ -6,6 +6,7 @@ import { checkIsPartialBuild } from "@/build/partial";
 import { transaction } from "@/database";
 import {
   Build,
+  BuildMergeQueueGhPullRequest,
   BuildMode,
   GithubPullRequest,
   Project,
@@ -62,6 +63,7 @@ export async function createBuild(params: {
   mode: BuildMode | null;
   ciProvider: string | null;
   mergeQueue: boolean;
+  mergeQueuePrNumbers?: number[] | null;
   argosSdk: string | null;
   runId: string | null;
   runAttempt: number | null;
@@ -131,14 +133,34 @@ export async function createBuild(params: {
 
   const buildName = params.buildName || "default";
   const mode = params.mode ?? "ci";
+  const mergeQueuePrNumbers = params.mergeQueuePrNumbers
+    ? [...new Set(params.mergeQueuePrNumbers)]
+    : [];
 
-  const [pullRequest, isPartial] = await Promise.all([
+  if (mergeQueuePrNumbers.length > 0 && !params.mergeQueue) {
+    throw boom(
+      400,
+      "`mergeQueue` must be `true` when `mergeQueuePrNumbers` is provided",
+    );
+  }
+
+  const githubRepository =
+    params.prNumber || mergeQueuePrNumbers.length > 0
+      ? await params.project.$relatedQuery("githubRepository")
+      : null;
+
+  if (mergeQueuePrNumbers.length > 0 && !githubRepository) {
+    throw boom(
+      400,
+      "A GitHub repository is required when `mergeQueuePrNumbers` is provided",
+    );
+  }
+
+  const [pullRequest, mergeQueuePullRequests, isPartial] = await Promise.all([
     (async () => {
       if (!params.prNumber) {
         return null;
       }
-      const githubRepository =
-        await params.project.$relatedQuery("githubRepository");
       if (!githubRepository) {
         return null;
       }
@@ -147,6 +169,14 @@ export async function createBuild(params: {
         number: params.prNumber,
       });
     })(),
+    Promise.all(
+      mergeQueuePrNumbers.map((number) =>
+        getOrCreatePullRequest({
+          githubRepositoryId: githubRepository!.id,
+          number,
+        }),
+      ),
+    ),
     checkIsPartialBuild({
       ciProvider: params.ciProvider ?? null,
       project: params.project,
@@ -194,6 +224,15 @@ export async function createBuild(params: {
           type: params.skipped ? "skipped" : null,
           subset: params.subset,
         });
+
+        if (mergeQueuePullRequests.length > 0) {
+          await BuildMergeQueueGhPullRequest.query(trx).insert(
+            mergeQueuePullRequests.map((pullRequest) => ({
+              buildId: build.id,
+              githubPullRequestId: pullRequest.id,
+            })),
+          );
+        }
 
         return build;
       });
