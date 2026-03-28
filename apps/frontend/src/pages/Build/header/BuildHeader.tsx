@@ -80,7 +80,7 @@ const ProjectLink = memo(
       <Tooltip content="See all builds">
         <HeadlessLink
           href={`${getProjectURL({ accountSlug, projectName })}/builds`}
-          className="text-low data-[hovered]:text-default rac-focus text-xs leading-none transition"
+          className="text-low data-hovered:text-default rac-focus text-xs leading-none transition"
         >
           {accountSlug}/{projectName}
         </HeadlessLink>

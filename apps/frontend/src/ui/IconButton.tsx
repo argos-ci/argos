@@ -20,17 +20,17 @@ const colorClassNames: Record<
 > = {
   contained: {
     neutral:
-      "data-[hovered]:border-hover data-[hovered]:bg-ui text-low data-[hovered]:text-default bg-ui/60 data-[focus-visible]:ring-default data-[pressed]:bg-active data-[pressed]:text-default aria-pressed:bg-active aria-pressed:text-default",
+      "data-hovered:border-hover data-hovered:bg-ui text-low data-hovered:text-default bg-ui/60 data-focus-visible:ring-default data-pressed:bg-active data-pressed:text-default aria-pressed:bg-active aria-pressed:text-default",
     danger: "", // not used
     success: "", // not used
   },
   outline: {
     neutral:
-      "data-[hovered]:border-hover text-low aria-pressed:bg-active aria-pressed:text-default data-[pressed]:bg-active data-[pressed]:text-default data-[focus-visible]:ring-default",
+      "data-hovered:border-hover text-low aria-pressed:bg-active aria-pressed:text-default data-pressed:bg-active data-pressed:text-default data-focus-visible:ring-default",
     danger:
-      "data-[hovered]:border-danger-hover text-danger-low aria-pressed:bg-danger-active data-[pressed]:bg-danger-active data-[focus-visible]:ring-danger",
+      "data-hovered:border-danger-hover text-danger-low aria-pressed:bg-danger-active data-pressed:bg-danger-active data-focus-visible:ring-danger",
     success:
-      "data-[hovered]:border-success-hover text-success-low aria-pressed:bg-success-active data-[pressed]:bg-success-active data-[focus-visible]:ring-success",
+      "data-hovered:border-success-hover text-success-low aria-pressed:bg-success-active data-pressed:bg-success-active data-focus-visible:ring-success",
   },
 };
 

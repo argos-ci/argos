@@ -41,19 +41,19 @@ const interactiveClassNames = {
     "data-pressed:bg-primary-active",
     "data-pressed:text-primary",
   ),
-  info: "data-[hovered]:not-aria-[current=page]:bg-info-hover aria-[current=page]:bg-info-active data-pressed:bg-info-active",
+  info: "data-hovered:not-aria-[current=page]:bg-info-hover aria-[current=page]:bg-info-active data-pressed:bg-info-active",
   success:
-    "data-[hovered]:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active data-pressed:bg-success-active",
+    "data-hovered:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active data-pressed:bg-success-active",
   neutral:
-    "data-[hovered]:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active data-pressed:bg-active",
+    "data-hovered:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active data-pressed:bg-active",
   pending:
-    "data-[hovered]:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active data-pressed:bg-pending-active",
+    "data-hovered:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active data-pressed:bg-pending-active",
   danger:
-    "data-[hovered]:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active data-pressed:bg-danger-active",
+    "data-hovered:not-aria-[current=page]:bg-danger-hover aria-[current=page]:bg-danger-active data-pressed:bg-danger-active",
   warning:
-    "data-[hovered]:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
+    "data-hovered:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
   storybook:
-    "data-[hovered]:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active data-pressed:bg-storybook-active",
+    "data-hovered:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active data-pressed:bg-storybook-active",
 };
 
 /**

@@ -46,12 +46,12 @@ export function Menu<T extends object>(
 type MenuItemVariant = "default" | "danger";
 
 const menuItemVariantClasses: Record<MenuItemVariant, string> = {
-  default: "text-default data-[focused]:bg-hover",
-  danger: "text-danger-low data-[focused]:bg-danger-hover",
+  default: "text-default data-focused:bg-hover",
+  danger: "text-danger-low data-focused:bg-danger-hover",
 };
 
 const menuItemClassName =
-  "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-[focused]:data-[disabled]:bg-transparent data-[open]:bg-active";
+  "aria-disabled:opacity-disabled flex items-center rounded-sm px-2 py-1.5 text-sm focus:outline-hidden data-focused:data-disabled:bg-transparent data-open:bg-active";
 
 type MenuItemProps = Omit<RACMenuItemProps, "className"> & {
   variant?: MenuItemVariant;
