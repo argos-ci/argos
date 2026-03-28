@@ -64,6 +64,9 @@ describe("#getCIMergeQueueBase", () => {
 
   it("returns the last approved bucket when CI base does not exist", async () => {
     const project = await factory.Project.create();
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: project.githubRepositoryId!,
+    });
     const branch = "feature/approved";
     const compareBucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
@@ -72,6 +75,7 @@ describe("#getCIMergeQueueBase", () => {
     const build = await factory.Build.create({
       projectId: project.id,
       compareScreenshotBucketId: compareBucket.id,
+      githubPullRequestId: pullRequest.id,
       name: "default",
       mode: "ci",
       mergeQueue: true,
@@ -85,6 +89,7 @@ describe("#getCIMergeQueueBase", () => {
     const lastApprovedBuild = await factory.Build.create({
       projectId: project.id,
       compareScreenshotBucketId: approvedBucket.id,
+      githubPullRequestId: pullRequest.id,
       name: build.name,
       mode: "ci",
       mergeQueue: true,
@@ -119,6 +124,9 @@ describe("#getCIMergeQueueBase", () => {
 
   it("merges the CI base bucket with the latest merge queue bucket", async () => {
     const project = await factory.Project.create();
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: project.githubRepositoryId!,
+    });
     const branch = "feature/merge-queue";
     const compareBucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
@@ -127,6 +135,7 @@ describe("#getCIMergeQueueBase", () => {
     const build = await factory.Build.create({
       projectId: project.id,
       compareScreenshotBucketId: compareBucket.id,
+      githubPullRequestId: pullRequest.id,
       name: "default",
       mode: "ci",
       mergeQueue: true,
@@ -146,6 +155,7 @@ describe("#getCIMergeQueueBase", () => {
     const lastApprovedBuild = await factory.Build.create({
       projectId: project.id,
       compareScreenshotBucketId: lastApprovedBucket.id,
+      githubPullRequestId: pullRequest.id,
       name: build.name,
       mode: "ci",
       mergeQueue: true,
@@ -198,6 +208,9 @@ describe("#getCIMergeQueueBase", () => {
 
   it('uses the latest "no-changes" build instead of the latest approved one', async () => {
     const project = await factory.Project.create();
+    const pullRequest = await factory.PullRequest.create({
+      githubRepositoryId: project.githubRepositoryId!,
+    });
     const branch = "feature/no-changes-latest";
     const [compareBucket, lastApprovedBucket, noChangesBucket] =
       await factory.ScreenshotBucket.createMany(3, {
@@ -211,6 +224,7 @@ describe("#getCIMergeQueueBase", () => {
         {
           projectId: project.id,
           compareScreenshotBucketId: compareBucket.id,
+          githubPullRequestId: pullRequest.id,
           name: "default",
           mode: "ci",
           mergeQueue: true,
@@ -219,6 +233,7 @@ describe("#getCIMergeQueueBase", () => {
         {
           projectId: project.id,
           compareScreenshotBucketId: lastApprovedBucket.id,
+          githubPullRequestId: pullRequest.id,
           name: "default",
           mode: "ci",
           mergeQueue: true,
@@ -228,6 +243,7 @@ describe("#getCIMergeQueueBase", () => {
         {
           projectId: project.id,
           compareScreenshotBucketId: noChangesBucket.id,
+          githubPullRequestId: pullRequest.id,
           name: "default",
           mode: "ci",
           mergeQueue: true,

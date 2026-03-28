@@ -144,12 +144,7 @@ export async function createBuild(params: {
     );
   }
 
-  const githubRepository =
-    params.prNumber || mergeQueuePrNumbers.length > 0
-      ? await params.project.$relatedQuery("githubRepository")
-      : null;
-
-  if (mergeQueuePrNumbers.length > 0 && !githubRepository) {
+  if (mergeQueuePrNumbers.length > 0 && !params.project.githubRepositoryId) {
     throw boom(
       400,
       "A GitHub repository is required when `mergeQueuePrNumbers` is provided",
@@ -161,22 +156,29 @@ export async function createBuild(params: {
       if (!params.prNumber) {
         return null;
       }
-      if (!githubRepository) {
+      if (!params.project.githubRepositoryId) {
         return null;
       }
       return getOrCreatePullRequest({
-        githubRepositoryId: githubRepository.id,
+        githubRepositoryId: params.project.githubRepositoryId,
         number: params.prNumber,
       });
     })(),
-    Promise.all(
-      mergeQueuePrNumbers.map((number) =>
-        getOrCreatePullRequest({
-          githubRepositoryId: githubRepository!.id,
-          number,
-        }),
-      ),
-    ),
+    (async () => {
+      if (mergeQueuePrNumbers.length === 0) {
+        return [];
+      }
+      const { githubRepositoryId } = params.project;
+      invariant(githubRepositoryId, "Checked before");
+      return Promise.all(
+        mergeQueuePrNumbers.map((number) =>
+          getOrCreatePullRequest({
+            githubRepositoryId,
+            number,
+          }),
+        ),
+      );
+    })(),
     checkIsPartialBuild({
       ciProvider: params.ciProvider ?? null,
       project: params.project,

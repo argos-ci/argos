@@ -62,32 +62,45 @@ async function getLastApprovedOrNoChangesBuilds(args: {
 }): Promise<Build[]> {
   const { build, compareScreenshotBucket } = args;
   const targetPullRequestIds = await getTargetPullRequestIds(build);
-  const builds = await Promise.all(
-    targetPullRequestIds.map((githubPullRequestId) => {
-      return Build.query()
-        .withGraphFetched("compareScreenshotBucket")
-        .joinRelated("compareScreenshotBucket")
-        .where("builds.projectId", build.projectId)
-        .where("builds.name", build.name)
-        .where("builds.mode", "ci")
-        .where("builds.jobStatus", "complete")
-        .whereNot("builds.type", "skipped")
-        .whereNot("builds.id", build.id)
-        .where("compareScreenshotBucket.branch", compareScreenshotBucket.branch)
-        .where("builds.githubPullRequestId", githubPullRequestId)
-        .where((qb) => {
-          qb.whereExists(
-            Build.submittedReviewQuery().where(
-              "build_reviews.state",
-              "approved",
-            ),
-          ).orWhere("builds.conclusion", "no-changes");
-        })
-        .orderBy("builds.createdAt", "desc")
-        .first();
-    }),
-  );
-  return builds.filter((build) => build !== undefined);
+
+  const latestBuildIdsQuery = Build.query()
+    .select("builds.id")
+    .joinRelated("compareScreenshotBucket")
+    .where("builds.projectId", build.projectId)
+    .where("builds.name", build.name)
+    .where("builds.mode", "ci")
+    .where("builds.jobStatus", "complete")
+    .whereNot("builds.type", "skipped")
+    .whereNot("builds.id", build.id)
+    .where((qb) => {
+      if (targetPullRequestIds.length > 0) {
+        qb.whereIn("builds.githubPullRequestId", targetPullRequestIds);
+      }
+    })
+    .where((qb) => {
+      // Legacy GitHub merge queue builds still target a single PR on the merge
+      // queue branch, while aggregate merge queue builds point to multiple PR
+      // branches and must not be constrained to the queue branch.
+      if (targetPullRequestIds.length === 1) {
+        qb.where(
+          "compareScreenshotBucket.branch",
+          compareScreenshotBucket.branch,
+        );
+      }
+    })
+    .where((qb) => {
+      qb.whereExists(
+        Build.submittedReviewQuery().where("build_reviews.state", "approved"),
+      ).orWhere("builds.conclusion", "no-changes");
+    })
+    .distinctOn("builds.githubPullRequestId")
+    .orderBy("builds.githubPullRequestId")
+    .orderBy("builds.id", "desc");
+
+  return Build.query()
+    .withGraphJoined("compareScreenshotBucket")
+    .whereIn("builds.id", latestBuildIdsQuery)
+    .orderBy("builds.id", "asc");
 }
 
 async function getTargetPullRequestIds(build: Build): Promise<string[]> {
