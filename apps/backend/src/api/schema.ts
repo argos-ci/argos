@@ -5,6 +5,7 @@ import config from "@/config";
 
 import { createBuildOperation } from "./handlers/createBuild";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
+import { getAuthBuildByNumberOperation } from "./handlers/getAuthBuildByNumber";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getAuthProjectBuildsOperation } from "./handlers/getAuthProjectBuilds";
 import { getBuildOperation } from "./handlers/getBuild";
@@ -53,6 +54,9 @@ export const zodSchema = {
     },
     "/project/builds": {
       get: getAuthProjectBuildsOperation,
+    },
+    "/project/builds/{buildNumber}": {
+      get: getAuthBuildByNumberOperation,
     },
   },
 } satisfies ZodOpenApiObject;
