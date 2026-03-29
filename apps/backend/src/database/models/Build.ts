@@ -27,6 +27,7 @@ import { SHA1_REGEX } from "@/util/validation";
 
 import { Model } from "../util/model";
 import { jobModelSchema, JobStatus, timestampsSchema } from "../util/schemas";
+import { BuildMergeQueueGhPullRequest } from "./BuildMergeQueueGhPullRequest";
 import { BuildReview } from "./BuildReview";
 import { BuildShard } from "./BuildShard";
 import { GithubPullRequest } from "./GithubPullRequest";
@@ -209,6 +210,14 @@ export class Build extends Model {
           to: "github_pull_requests.id",
         },
       },
+      mergeQueueGhPullRequests: {
+        relation: Model.HasManyRelation,
+        modelClass: BuildMergeQueueGhPullRequest,
+        join: {
+          from: "builds.id",
+          to: "build_merge_queue_gh_pull_requests.buildId",
+        },
+      },
       shards: {
         relation: Model.HasManyRelation,
         modelClass: BuildShard,
@@ -225,6 +234,7 @@ export class Build extends Model {
   project?: Project;
   screenshotDiffs?: ScreenshotDiff[];
   pullRequest?: GithubPullRequest | null;
+  mergeQueueGhPullRequests?: BuildMergeQueueGhPullRequest[];
   shards?: BuildShard[];
 
   override $afterValidate(json: Pojo) {

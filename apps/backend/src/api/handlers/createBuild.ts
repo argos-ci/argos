@@ -41,58 +41,61 @@ const RequestBodySchema = z.object({
   pwTraceKeys: UniqueSha256HashArraySchema.optional().meta({
     description: "Keys of Playwright trace files",
   }),
-  name: z.string().nullable().optional().meta({
+  name: z.string().nullish().meta({
     description: "The name of the build (for multi-build setups)",
   }),
-  parallel: z.boolean().nullable().optional().meta({
+  parallel: z.boolean().nullish().meta({
     description: "Whether to run the build in parallel",
   }),
-  parallelNonce: z.string().nullable().optional().meta({
+  parallelNonce: z.string().nullish().meta({
     description: "A unique nonce for the parallel build",
   }),
-  prNumber: z.number().int().min(1).nullable().optional().meta({
+  prNumber: z.number().int().min(1).nullish().meta({
     description: "The pull request number",
   }),
-  prHeadCommit: Sha1HashSchema.nullable().optional().meta({
+  prHeadCommit: Sha1HashSchema.nullish().meta({
     description: "The head commit of the pull request",
   }),
   // To avoid breaking change, we keep referenceCommit instead of baseCommit
-  referenceCommit: Sha1HashSchema.nullable().optional().meta({
+  referenceCommit: Sha1HashSchema.nullish().meta({
     description: "The commit to use as a reference for the build",
   }),
   // To avoid breaking change, we keep referenceBranch instead of baseBranch
-  referenceBranch: z.string().nullable().optional().meta({
+  referenceBranch: z.string().nullish().meta({
     description: "The branch to use as a reference for the build",
   }),
-  parentCommits: z.array(Sha1HashSchema).nullable().optional().meta({
+  parentCommits: z.array(Sha1HashSchema).nullish().meta({
     description: "The parent commits of the build",
   }),
-  mode: z.enum(["ci", "monitoring"]).nullable().optional().meta({
+  mode: z.enum(["ci", "monitoring"]).nullish().meta({
     description: "The mode in which the build is running",
   }),
-  ciProvider: z.string().nullable().optional().meta({
+  ciProvider: z.string().nullish().meta({
     description: "The CI provider being used",
   }),
-  argosSdk: z.string().nullable().optional().meta({
+  argosSdk: z.string().nullish().meta({
     description: "The version of the Argos SDK being used",
   }),
-  runId: z.string().nullable().optional().meta({
+  runId: z.string().nullish().meta({
     description: "The ID of the current run",
   }),
-  runAttempt: z.number().int().min(1).nullable().optional().meta({
+  runAttempt: z.number().int().min(1).nullish().meta({
     description: "The attempt number of the current run",
   }),
-  skipped: z.boolean().nullable().optional().meta({
+  skipped: z.boolean().nullish().meta({
     description:
       "Whether the build was skipped, not comparing anything and always succeeding",
   }),
-  mergeQueue: z.boolean().nullable().optional().meta({
+  mergeQueue: z.boolean().nullish().meta({
     description: "Whether the build has been created in a merge queue",
+  }),
+  mergeQueuePrNumbers: z.array(z.number().int().min(1)).min(1).nullish().meta({
+    description:
+      "Pull request numbers aggregated by the merge queue build. Requires `mergeQueue` to be `true`.",
   }),
   subset: z
     .boolean()
-    .nullable()
-    .optional()
+    .nullish()
     .meta({
       description:
         "Indicates whether this build contains only a subset of screenshots.\n" +
@@ -334,6 +337,7 @@ async function createBuildFromRequest(ctx: BuildContext) {
     argosSdk: body.argosSdk ?? null,
     skipped: body.skipped ?? false,
     mergeQueue: body.mergeQueue ?? false,
+    mergeQueuePrNumbers: body.mergeQueuePrNumbers ?? null,
     subset: body.subset ?? false,
   });
 }

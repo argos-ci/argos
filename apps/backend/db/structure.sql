@@ -311,6 +311,42 @@ ALTER SEQUENCE public.automation_runs_id_seq OWNED BY public.automation_runs.id;
 
 
 --
+-- Name: build_merge_queue_gh_pull_requests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.build_merge_queue_gh_pull_requests (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "buildId" bigint NOT NULL,
+    "githubPullRequestId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.build_merge_queue_gh_pull_requests OWNER TO postgres;
+
+--
+-- Name: build_merge_queue_gh_pull_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.build_merge_queue_gh_pull_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.build_merge_queue_gh_pull_requests_id_seq OWNER TO postgres;
+
+--
+-- Name: build_merge_queue_gh_pull_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.build_merge_queue_gh_pull_requests_id_seq OWNED BY public.build_merge_queue_gh_pull_requests.id;
+
+
+--
 -- Name: build_notifications; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1879,6 +1915,13 @@ ALTER TABLE ONLY public.automation_runs ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
+-- Name: build_merge_queue_gh_pull_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests ALTER COLUMN id SET DEFAULT nextval('public.build_merge_queue_gh_pull_requests_id_seq'::regclass);
+
+
+--
 -- Name: build_notifications id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2186,6 +2229,22 @@ ALTER TABLE ONLY public.automation_rules
 
 ALTER TABLE ONLY public.automation_runs
     ADD CONSTRAINT automation_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: build_merge_queue_gh_pull_requests build_merge_queue_gh_pull_requests_buildid_githubpullrequestid_; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
+    ADD CONSTRAINT build_merge_queue_gh_pull_requests_buildid_githubpullrequestid_ UNIQUE ("buildId", "githubPullRequestId");
+
+
+--
+-- Name: build_merge_queue_gh_pull_requests build_merge_queue_gh_pull_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
+    ADD CONSTRAINT build_merge_queue_gh_pull_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -3230,6 +3289,22 @@ ALTER TABLE ONLY public.automation_runs
 
 
 --
+-- Name: build_merge_queue_gh_pull_requests build_merge_queue_gh_pull_requests_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
+    ADD CONSTRAINT build_merge_queue_gh_pull_requests_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: build_merge_queue_gh_pull_requests build_merge_queue_gh_pull_requests_githubpullrequestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
+    ADD CONSTRAINT build_merge_queue_gh_pull_requests_githubpullrequestid_foreign FOREIGN KEY ("githubPullRequestId") REFERENCES public.github_pull_requests(id) ON DELETE CASCADE;
+
+
+--
 -- Name: build_notifications build_notifications_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3862,3 +3937,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026021
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260216200736_enforce-sso.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260219170000_project-auto-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260222100000_team-saml-expiration-check.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260328120000_build-merge-queue-gh-pull-requests.js', 1, NOW());

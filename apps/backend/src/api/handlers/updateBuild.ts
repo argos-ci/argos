@@ -29,9 +29,9 @@ import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
   screenshots: z.array(ScreenshotInputSchema),
-  parallel: z.boolean().nullable().optional(),
-  parallelTotal: z.number().int().min(-1).nullable().optional(),
-  parallelIndex: z.number().int().min(1).nullable().optional(),
+  parallel: z.boolean().nullish(),
+  parallelTotal: z.number().int().min(-1).nullish(),
+  parallelIndex: z.number().int().min(1).nullish(),
   metadata: BuildMetadataSchema.optional().meta({
     description: "Build metadata",
     id: "BuildMetadata",

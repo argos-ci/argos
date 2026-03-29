@@ -168,6 +168,14 @@ export const BuildReview = defineFactory(models.BuildReview, () => ({
   state: "approved" as const,
 }));
 
+export const BuildMergeQueueGhPullRequest = defineFactory(
+  models.BuildMergeQueueGhPullRequest,
+  () => ({
+    buildId: Build.associate("id") as unknown as string,
+    githubPullRequestId: PullRequest.associate("id") as unknown as string,
+  }),
+);
+
 export const ScreenshotDiffReview = defineFactory(
   models.ScreenshotDiffReview,
   () => ({
