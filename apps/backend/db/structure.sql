@@ -2736,20 +2736,6 @@ CREATE INDEX automation_runs_automationruleid_index ON public.automation_runs US
 
 
 --
--- Name: build_merge_queue_gh_pull_requests_buildid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX build_merge_queue_gh_pull_requests_buildid_index ON public.build_merge_queue_gh_pull_requests USING btree ("buildId");
-
-
---
--- Name: build_merge_queue_gh_pull_requests_githubpullrequestid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX build_merge_queue_gh_pull_requests_githubpullrequestid_index ON public.build_merge_queue_gh_pull_requests USING btree ("githubPullRequestId");
-
-
---
 -- Name: build_notifications_buildid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 

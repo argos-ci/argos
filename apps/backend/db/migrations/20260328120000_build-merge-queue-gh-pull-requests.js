@@ -8,9 +8,9 @@ export const up = async (knex) => {
       table.bigIncrements("id").primary();
       table.dateTime("createdAt").notNullable();
       table.dateTime("updatedAt").notNullable();
-      table.bigInteger("buildId").notNullable().index();
+      table.bigInteger("buildId").notNullable();
       table.foreign("buildId").references("builds.id").onDelete("CASCADE");
-      table.bigInteger("githubPullRequestId").notNullable().index();
+      table.bigInteger("githubPullRequestId").notNullable();
       table
         .foreign("githubPullRequestId")
         .references("github_pull_requests.id")
