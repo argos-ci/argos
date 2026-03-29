@@ -81,7 +81,7 @@ async function getLastApprovedOrNoChangesBuilds(args: {
       // Legacy GitHub merge queue builds still target a single PR on the merge
       // queue branch, while aggregate merge queue builds point to multiple PR
       // branches and must not be constrained to the queue branch.
-      if (targetPullRequestIds.length === 1) {
+      if (targetPullRequestIds.length <= 1) {
         qb.where(
           "compareScreenshotBucket.branch",
           compareScreenshotBucket.branch,
@@ -98,7 +98,7 @@ async function getLastApprovedOrNoChangesBuilds(args: {
     .orderBy("builds.id", "desc");
 
   return Build.query()
-    .withGraphJoined("compareScreenshotBucket")
+    .withGraphFetched("compareScreenshotBucket")
     .whereIn("builds.id", latestBuildIdsQuery)
     .orderBy("builds.id", "asc");
 }

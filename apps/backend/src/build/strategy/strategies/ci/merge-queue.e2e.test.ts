@@ -1,9 +1,10 @@
 import { invariant } from "@argos/util/invariant";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { test as baseTest, beforeEach, describe, expect, vi } from "vitest";
 
+import type { Build, Project, ScreenshotBucket } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getCIBase } from "./base";
+import { getCIBase, type GetCIBaseArgs } from "./base";
 import { mergeBucketWithBuildDiffs } from "./bucket-merge";
 import { getCIMergeQueueBase } from "./merge-queue";
 
@@ -20,28 +21,61 @@ vi.mock("./bucket-merge", () => ({
 const mockGetCIBase = vi.mocked(getCIBase);
 const mockMergeBucketWithBuildDiffs = vi.mocked(mergeBucketWithBuildDiffs);
 
+type Fixtures = {
+  branch: string;
+  project: Project;
+  compareBucket: ScreenshotBucket;
+  build: Build;
+  args: GetCIBaseArgs;
+};
+
+const test = baseTest.extend<Fixtures>({
+  branch: async ({}, use) => {
+    await use("feature/merge-queue");
+  },
+  project: async ({}, use) => {
+    await use(await factory.Project.create());
+  },
+  compareBucket: async ({ project, branch }, use) => {
+    await use(
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch,
+      }),
+    );
+  },
+  build: async ({ project, compareBucket }, use) => {
+    await use(
+      await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: compareBucket.id,
+        name: "default",
+        mode: "ci",
+        mergeQueue: true,
+        type: "check",
+      }),
+    );
+  },
+  args: async ({ build, compareBucket, project }, use) => {
+    await use({
+      build,
+      compareScreenshotBucket: compareBucket,
+      project,
+      pullRequest: null,
+      context: { checkIsAutoApproved: () => false },
+    });
+  },
+});
+
 describe("#getCIMergeQueueBase", () => {
   beforeEach(async () => {
     await setupDatabase();
     vi.clearAllMocks();
   });
 
-  it("falls back to CI base when no approved build exists", async () => {
-    const project = await factory.Project.create();
-    const branch = "feature/fallback";
-    const compareBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      branch,
-    });
-    const build = await factory.Build.create({
-      projectId: project.id,
-      compareScreenshotBucketId: compareBucket.id,
-      name: "default",
-      mode: "ci",
-      mergeQueue: true,
-      type: "check",
-    });
-
+  test("falls back to CI base when no approved build exists", async ({
+    args,
+  }) => {
     const ciBaseResult = {
       baseBucket: null,
       baseBranch: "main",
@@ -50,27 +84,23 @@ describe("#getCIMergeQueueBase", () => {
 
     mockGetCIBase.mockResolvedValue(ciBaseResult);
 
-    const result = await getCIMergeQueueBase({
-      build,
-      compareScreenshotBucket: compareBucket,
-      project,
-      pullRequest: null,
-      context: { checkIsAutoApproved: () => false },
-    });
+    const result = await getCIMergeQueueBase(args);
 
     expect(result).toEqual(ciBaseResult);
     expect(mockMergeBucketWithBuildDiffs).not.toHaveBeenCalled();
   });
 
-  it("returns the last approved bucket when CI base does not exist", async () => {
-    const project = await factory.Project.create();
+  test("returns the last approved bucket when CI base does not exist", async ({
+    branch,
+    project,
+    compareBucket,
+  }) => {
+    invariant(
+      project.githubRepositoryId,
+      "Project should have a GitHub repository",
+    );
     const pullRequest = await factory.PullRequest.create({
-      githubRepositoryId: project.githubRepositoryId!,
-    });
-    const branch = "feature/approved";
-    const compareBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      branch,
+      githubRepositoryId: project.githubRepositoryId,
     });
     const build = await factory.Build.create({
       projectId: project.id,
@@ -122,15 +152,17 @@ describe("#getCIMergeQueueBase", () => {
     expect(mockMergeBucketWithBuildDiffs).not.toHaveBeenCalled();
   });
 
-  it("merges the CI base bucket with the latest merge queue bucket", async () => {
-    const project = await factory.Project.create();
+  test("merges the CI base bucket with the latest merge queue bucket", async ({
+    branch,
+    project,
+    compareBucket,
+  }) => {
+    invariant(
+      project.githubRepositoryId,
+      "Project should have a GitHub repository",
+    );
     const pullRequest = await factory.PullRequest.create({
-      githubRepositoryId: project.githubRepositoryId!,
-    });
-    const branch = "feature/merge-queue";
-    const compareBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      branch,
+      githubRepositoryId: project.githubRepositoryId,
     });
     const build = await factory.Build.create({
       projectId: project.id,
@@ -206,12 +238,18 @@ describe("#getCIMergeQueueBase", () => {
     expect(result.baseBranchResolvedFrom).toBeNull();
   });
 
-  it('uses the latest "no-changes" build instead of the latest approved one', async () => {
-    const project = await factory.Project.create();
+  test('uses the latest "no-changes" build instead of the latest approved one', async ({
+    branch,
+    project,
+  }) => {
+    invariant(
+      project.githubRepositoryId,
+      "Project should have a GitHub repository",
+    );
     const pullRequest = await factory.PullRequest.create({
-      githubRepositoryId: project.githubRepositoryId!,
+      githubRepositoryId: project.githubRepositoryId,
     });
-    const branch = "feature/no-changes-latest";
+
     const [compareBucket, lastApprovedBucket, noChangesBucket] =
       await factory.ScreenshotBucket.createMany(3, {
         projectId: project.id,
@@ -297,11 +335,12 @@ describe("#getCIMergeQueueBase", () => {
     expect(result.baseBranchResolvedFrom).toBeNull();
   });
 
-  it("merges all targeted merge queue pull requests", async () => {
-    const githubRepository = await factory.GithubRepository.create();
-    const project = await factory.Project.create({
-      githubRepositoryId: githubRepository.id,
-    });
+  test("merges all targeted merge queue pull requests", async ({ project }) => {
+    invariant(
+      project.githubRepositoryId,
+      "Project should have a GitHub repository",
+    );
+
     const compareBucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
       branch: "merge-queue/main",
@@ -318,8 +357,8 @@ describe("#getCIMergeQueueBase", () => {
 
     const [targetPullRequest1, targetPullRequest2] =
       await factory.PullRequest.createMany(2, [
-        { githubRepositoryId: githubRepository.id, number: 10 },
-        { githubRepositoryId: githubRepository.id, number: 11 },
+        { githubRepositoryId: project.githubRepositoryId, number: 10 },
+        { githubRepositoryId: project.githubRepositoryId, number: 11 },
       ]);
     invariant(targetPullRequest1 && targetPullRequest2);
 

@@ -144,13 +144,6 @@ export async function createBuild(params: {
     );
   }
 
-  if (mergeQueuePrNumbers.length > 0 && !params.project.githubRepositoryId) {
-    throw boom(
-      400,
-      "A GitHub repository is required when `mergeQueuePrNumbers` is provided",
-    );
-  }
-
   const [pullRequest, mergeQueuePullRequests, isPartial] = await Promise.all([
     (async () => {
       if (!params.prNumber) {
