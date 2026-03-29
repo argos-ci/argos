@@ -18,7 +18,7 @@ export const handler = defineNotificationHandler({
   type: "project_deleted",
   schema: z.object({
     accountType: z.enum(["user", "team"]),
-    accountName: z.string().nullable().optional(),
+    accountName: z.string().nullish(),
     accountSlug: z.string(),
     projectName: z.string(),
   }),

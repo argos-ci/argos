@@ -20,7 +20,7 @@ export const handler = defineNotificationHandler({
   type: "spend_limit",
   schema: z.object({
     threshold: SpendLimitThresholdSchema,
-    accountName: z.string().nullable().optional(),
+    accountName: z.string().nullish(),
     accountSlug: z.string(),
     blockWhenSpendLimitIsReached: z.boolean(),
   }),
