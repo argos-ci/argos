@@ -1,46 +1,71 @@
-import { invariant } from "@argos/util/invariant";
-import { beforeEach, describe, expect, it } from "vitest";
+import { test as baseTest, beforeEach, describe, expect } from "vitest";
 
+import type { Build, Project, ScreenshotBucket, Test } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { mergeBucketWithBuildDiffs } from "./bucket-merge";
+
+type Fixtures = {
+  project: Project;
+  compareBucket: ScreenshotBucket;
+  headBuild: Build;
+  sharedTest: Test;
+};
+
+const test = baseTest.extend<Fixtures>({
+  project: async ({}, use) => {
+    await use(await factory.Project.create());
+  },
+  compareBucket: async ({ project }, use) => {
+    await use(
+      await factory.ScreenshotBucket.create({
+        projectId: project.id,
+      }),
+    );
+  },
+  headBuild: async ({ project, compareBucket }, use) => {
+    await use(
+      await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: compareBucket.id,
+      }),
+    );
+  },
+  sharedTest: async ({ project }, use) => {
+    await use(await factory.Test.create({ projectId: project.id }));
+  },
+});
 
 describe("#mergeBucketWithBuildDiffs", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
 
-  it("merges the base bucket screenshots with the build diffs", async () => {
-    const project = await factory.Project.create();
-    const [baseBucket, compareBucket] =
-      await factory.ScreenshotBucket.createMany(2, [
-        { projectId: project.id },
-        { projectId: project.id },
-      ]);
-    invariant(baseBucket && compareBucket);
-    const [headBuild, sharedTest] = await Promise.all([
-      factory.Build.create({
-        projectId: project.id,
-        compareScreenshotBucketId: compareBucket!.id,
-      }),
-      factory.Test.create({ projectId: project.id }),
-    ]);
+  test("merges the base bucket screenshots with the build diffs", async ({
+    project,
+    compareBucket,
+    headBuild,
+    sharedTest,
+  }) => {
+    const baseBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+    });
 
     const [screenshotToReplace, screenshotToRemove, untouchedScreenshot] =
       await Promise.all([
         factory.Screenshot.create({
-          screenshotBucketId: baseBucket!.id,
+          screenshotBucketId: baseBucket.id,
           testId: sharedTest.id,
           name: "old-home.png",
           baseName: "home.png",
         }),
         factory.Screenshot.create({
-          screenshotBucketId: baseBucket!.id,
+          screenshotBucketId: baseBucket.id,
           testId: sharedTest.id,
           name: "obsolete.png",
         }),
         factory.Screenshot.create({
-          screenshotBucketId: baseBucket!.id,
+          screenshotBucketId: baseBucket.id,
           testId: sharedTest.id,
           name: "untouched.png",
         }),
@@ -48,13 +73,13 @@ describe("#mergeBucketWithBuildDiffs", () => {
 
     const [replacementScreenshot, addedScreenshot] = await Promise.all([
       factory.Screenshot.create({
-        screenshotBucketId: compareBucket!.id,
+        screenshotBucketId: compareBucket.id,
         testId: sharedTest.id,
         name: "new-home.png",
         baseName: "home.png",
       }),
       factory.Screenshot.create({
-        screenshotBucketId: compareBucket!.id,
+        screenshotBucketId: compareBucket.id,
         testId: sharedTest.id,
         name: "changelog.png",
       }),
@@ -95,19 +120,11 @@ describe("#mergeBucketWithBuildDiffs", () => {
     ).toEqual(["changelog.png", "new-home.png", "untouched.png"].sort());
   });
 
-  it("merges build diffs when the base bucket is virtual", async () => {
-    const project = await factory.Project.create();
-    const compareBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-    });
-    const [headBuild, sharedTest] = await Promise.all([
-      factory.Build.create({
-        projectId: project.id,
-        compareScreenshotBucketId: compareBucket.id,
-      }),
-      factory.Test.create({ projectId: project.id }),
-    ]);
-
+  test("merges build diffs when the base bucket is virtual", async ({
+    compareBucket,
+    headBuild,
+    sharedTest,
+  }) => {
     const [screenshotToReplace, screenshotToRemove, untouchedScreenshot] =
       await Promise.all([
         factory.Screenshot.create({
