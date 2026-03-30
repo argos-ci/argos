@@ -209,5 +209,265 @@ describe("getBuildDiffs", () => {
       expect(diff.base.url).toContain(files.base.key);
       expect(diff.head.url).toContain(files.compare.key);
     });
+
+    describe("with a mixed diff set on a non-subset build", () => {
+      test.beforeEach(async ({ factory, build, buckets }) => {
+        await build.$query().patch({ subset: false });
+
+        const [
+          changedBaseFile,
+          changedHeadFile,
+          unchangedBaseFile,
+          unchangedHeadFile,
+          ignoredBaseFile,
+          ignoredHeadFile,
+          addedHeadFile,
+          removedBaseFile,
+        ] = await factory.File.createMany(8, [
+          { key: "changed-base-file", type: "screenshot" },
+          { key: "changed-head-file", type: "screenshot" },
+          { key: "unchanged-base-file", type: "screenshot" },
+          { key: "unchanged-head-file", type: "screenshot" },
+          { key: "ignored-base-file", type: "screenshot" },
+          { key: "ignored-head-file", type: "screenshot" },
+          { key: "added-head-file", type: "screenshot" },
+          { key: "removed-base-file", type: "screenshot" },
+        ]);
+        invariant(
+          changedBaseFile &&
+            changedHeadFile &&
+            unchangedBaseFile &&
+            unchangedHeadFile &&
+            ignoredBaseFile &&
+            ignoredHeadFile &&
+            addedHeadFile &&
+            removedBaseFile,
+        );
+
+        const [
+          changedBaseScreenshot,
+          changedHeadScreenshot,
+          unchangedBaseScreenshot,
+          unchangedHeadScreenshot,
+          ignoredBaseScreenshot,
+          ignoredHeadScreenshot,
+          addedHeadScreenshot,
+          removedBaseScreenshot,
+        ] = await factory.Screenshot.createMany(8, [
+          {
+            screenshotBucketId: buckets.base.id,
+            name: "changed.png",
+            fileId: changedBaseFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.compare.id,
+            name: "changed.png",
+            fileId: changedHeadFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.base.id,
+            name: "unchanged.png",
+            fileId: unchangedBaseFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.compare.id,
+            name: "unchanged.png",
+            fileId: unchangedHeadFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.base.id,
+            name: "ignored.png",
+            fileId: ignoredBaseFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.compare.id,
+            name: "ignored.png",
+            fileId: ignoredHeadFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.compare.id,
+            name: "added.png",
+            fileId: addedHeadFile.id,
+            metadata: screenshotMetadata,
+          },
+          {
+            screenshotBucketId: buckets.base.id,
+            name: "removed.png",
+            fileId: removedBaseFile.id,
+            metadata: screenshotMetadata,
+          },
+        ]);
+        invariant(
+          changedBaseScreenshot &&
+            changedHeadScreenshot &&
+            unchangedBaseScreenshot &&
+            unchangedHeadScreenshot &&
+            ignoredBaseScreenshot &&
+            ignoredHeadScreenshot &&
+            addedHeadScreenshot &&
+            removedBaseScreenshot,
+        );
+
+        await factory.ScreenshotDiff.createMany(5, [
+          {
+            buildId: build.id,
+            baseScreenshotId: changedBaseScreenshot.id,
+            compareScreenshotId: changedHeadScreenshot.id,
+            score: 0.42,
+          },
+          {
+            buildId: build.id,
+            baseScreenshotId: null,
+            compareScreenshotId: addedHeadScreenshot.id,
+            score: null,
+          },
+          {
+            buildId: build.id,
+            baseScreenshotId: removedBaseScreenshot.id,
+            compareScreenshotId: null,
+            score: null,
+          },
+          {
+            buildId: build.id,
+            baseScreenshotId: unchangedBaseScreenshot.id,
+            compareScreenshotId: unchangedHeadScreenshot.id,
+            score: 0,
+          },
+          {
+            buildId: build.id,
+            baseScreenshotId: ignoredBaseScreenshot.id,
+            compareScreenshotId: ignoredHeadScreenshot.id,
+            score: 0.73,
+            ignored: true,
+          },
+        ]);
+      });
+
+      test("filters diffs that require review on non-subset builds", async ({
+        build,
+        project,
+      }) => {
+        const res = await request(app)
+          .get(`/builds/${build.id}/diffs`)
+          .query({ needsReview: "true" })
+          .set("Authorization", `Bearer ${project.token}`)
+          .expect(200);
+
+        expect(res.body.pageInfo).toEqual({
+          total: 3,
+          page: 1,
+          perPage: 30,
+        });
+        expect(
+          res.body.results.map((diff: { name: string }) => diff.name),
+        ).toEqual(["changed.png", "added.png", "removed.png"]);
+      });
+
+      test("returns all screenshot diffs when needsReview is not provided", async ({
+        build,
+        project,
+      }) => {
+        const res = await request(app)
+          .get(`/builds/${build.id}/diffs`)
+          .set("Authorization", `Bearer ${project.token}`)
+          .expect(200);
+
+        expect(res.body.pageInfo).toEqual({
+          total: 5,
+          page: 1,
+          perPage: 30,
+        });
+        expect(
+          res.body.results.map((diff: { name: string }) => diff.name),
+        ).toEqual([
+          "changed.png",
+          "added.png",
+          "removed.png",
+          "unchanged.png",
+          "ignored.png",
+        ]);
+      });
+    });
+
+    test("does not include removed diffs when filtering review-required subset builds", async ({
+      factory,
+      build,
+      project,
+      buckets,
+    }) => {
+      await build.$query().patch({ subset: true });
+
+      const [changedBaseFile, changedHeadFile, removedBaseFile] =
+        await factory.File.createMany(3, [
+          { key: "subset-changed-base-file", type: "screenshot" },
+          { key: "subset-changed-head-file", type: "screenshot" },
+          { key: "subset-removed-base-file", type: "screenshot" },
+        ]);
+      invariant(changedBaseFile && changedHeadFile && removedBaseFile);
+
+      const [
+        changedBaseScreenshot,
+        changedHeadScreenshot,
+        removedBaseScreenshot,
+      ] = await factory.Screenshot.createMany(3, [
+        {
+          screenshotBucketId: buckets.base.id,
+          name: "subset-changed.png",
+          fileId: changedBaseFile.id,
+          metadata: screenshotMetadata,
+        },
+        {
+          screenshotBucketId: buckets.compare.id,
+          name: "subset-changed.png",
+          fileId: changedHeadFile.id,
+          metadata: screenshotMetadata,
+        },
+        {
+          screenshotBucketId: buckets.base.id,
+          name: "subset-removed.png",
+          fileId: removedBaseFile.id,
+          metadata: screenshotMetadata,
+        },
+      ]);
+      invariant(
+        changedBaseScreenshot && changedHeadScreenshot && removedBaseScreenshot,
+      );
+
+      await factory.ScreenshotDiff.createMany(2, [
+        {
+          buildId: build.id,
+          baseScreenshotId: changedBaseScreenshot.id,
+          compareScreenshotId: changedHeadScreenshot.id,
+          score: 0.42,
+        },
+        {
+          buildId: build.id,
+          baseScreenshotId: removedBaseScreenshot.id,
+          compareScreenshotId: null,
+          score: null,
+        },
+      ]);
+
+      const res = await request(app)
+        .get(`/builds/${build.id}/diffs`)
+        .query({ needsReview: "true" })
+        .set("Authorization", `Bearer ${project.token}`)
+        .expect(200);
+
+      expect(res.body.pageInfo).toEqual({
+        total: 1,
+        page: 1,
+        perPage: 30,
+      });
+      expect(
+        res.body.results.map((diff: { name: string }) => diff.name),
+      ).toEqual(["subset-changed.png"]);
+    });
   });
 });
