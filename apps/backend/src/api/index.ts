@@ -5,6 +5,7 @@ import { stringify } from "yaml";
 
 import { createBuild } from "./handlers/createBuild";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
+import { getAuthBuildByNumber } from "./handlers/getAuthBuildByNumber";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds";
 import { getBuild } from "./handlers/getBuild";
@@ -40,6 +41,7 @@ router.get("/openapi.yaml", (_req, res) => {
 registerHandler(router, getAuthProject);
 registerHandler(router, getAuthProjectBuilds);
 registerHandler(router, getBuild);
+registerHandler(router, getAuthBuildByNumber);
 registerHandler(router, getBuildDiffs);
 registerHandler(router, createBuild);
 registerHandler(router, updateBuild);
