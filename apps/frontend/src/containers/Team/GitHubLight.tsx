@@ -1,4 +1,8 @@
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { MarkGithubIcon } from "@primer/octicons-react";
+import { ErrorBoundary } from "@sentry/react";
+import { TriangleAlertIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { LinkButton } from "@/ui/Button";
@@ -10,6 +14,7 @@ import {
   CardTitle,
 } from "@/ui/Card";
 import { Link } from "@/ui/Link";
+import { PageLoader } from "@/ui/PageLoader";
 
 import { getGitHubAppInstallURL } from "../GitHub";
 import { AccountLink } from "../GithubAccountLink";
@@ -29,7 +34,33 @@ const _TeamFragment = graphql(`
   }
 `);
 
-export function TeamGitHubLight(props: {
+const TeamGitHubLightQuery = graphql(`
+  query TeamGitHubLight($slug: String!) {
+    account(slug: $slug) {
+      __typename
+      id
+      ... on Team {
+        ...TeamGitHubLight_Team
+      }
+    }
+  }
+`);
+
+function TeamGitHubLightContent(props: { accountSlug: string }) {
+  const {
+    data: { account },
+  } = useSuspenseQuery(TeamGitHubLightQuery, {
+    variables: { slug: props.accountSlug },
+  });
+
+  if (!account || account.__typename !== "Team") {
+    return null;
+  }
+
+  return <TeamGitHubLightCard team={account} />;
+}
+
+function TeamGitHubLightCard(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
@@ -84,5 +115,31 @@ export function TeamGitHubLight(props: {
         )}
       </CardFooter>
     </Card>
+  );
+}
+
+function TeamGitHubLightFallback() {
+  return (
+    <Card>
+      <CardBody>
+        <CardTitle id="github-without-content-access">
+          GitHub without content access
+        </CardTitle>
+        <CardParagraph className="text-danger-low text-sm">
+          <TriangleAlertIcon className="mr-2 inline-block size-4 shrink-0" />
+          <span>Unable to load GitHub installation details</span>
+        </CardParagraph>
+      </CardBody>
+    </Card>
+  );
+}
+
+export function TeamGitHubLight(props: { accountSlug: string }) {
+  return (
+    <ErrorBoundary fallback={<TeamGitHubLightFallback />}>
+      <Suspense fallback={<PageLoader />}>
+        <TeamGitHubLightContent accountSlug={props.accountSlug} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

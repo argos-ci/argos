@@ -66,7 +66,6 @@ const AccountQuery = graphql(`
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
       ...TeamAccessRole_Team
-      ...TeamGitHubLight_Team
       ...UserAuth_Account
       ...TeamSpendManagement_Account
       ...UserDelete_User
@@ -221,7 +220,9 @@ function PageContent() {
       element: (
         <>
           {isTeam && <TeamSlack account={account} />}
-          {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
+          {isTeam && hasAdminPermission && (
+            <TeamGitHubLight accountSlug={accountSlug} />
+          )}
           {hasAdminPermission && <AccountGitLab account={account} />}
         </>
       ),
