@@ -15,12 +15,16 @@ import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { useAtomValue } from "jotai/react";
 import {
+  BlendIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   DownloadIcon,
+  FileDownIcon,
+  Layers2Icon,
   type LucideIcon,
 } from "lucide-react";
 import { useObjectRef } from "react-aria";
+import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
@@ -28,6 +32,8 @@ import { BuildDialogs } from "@/pages/Build/BuildDialogs";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -35,6 +41,7 @@ import { useResizeObserver } from "@/ui/useResizeObserver";
 import { useColoredRects } from "@/util/color-detection/hook";
 import { Rect } from "@/util/color-detection/types";
 import { checkIsImageContentType } from "@/util/content-type";
+import { getErrorMessage } from "@/util/error";
 import { fetchImage } from "@/util/image";
 import { useTextContent } from "@/util/text";
 
@@ -53,6 +60,7 @@ import { buildViewModeAtom } from "./BuildViewMode";
 import { DiffEditor, Editor, getLanguageFromContentType } from "./DiffEditor";
 import {
   overlayColorAtom,
+  overlayOpacityAtom,
   overlayVisibleAtom,
   useOverlayStyle,
 } from "./OverlayStyle";
@@ -245,15 +253,9 @@ const DownloadScreenshotButton = memo(
           isDisabled={loading}
           onPress={() => {
             setLoading(true);
-            fetchImage(props.url)
-              .then((res) => res.blob())
+            fetchBlob(props.url)
               .then((blob) => {
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = props.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                downloadBlob(blob, props.name);
               })
               .finally(() => {
                 setLoading(false);
@@ -266,6 +268,90 @@ const DownloadScreenshotButton = memo(
     );
   },
 );
+
+function downloadBlob(blob: Blob, name: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function fetchBlob(url: string) {
+  const response = await fetchImage(url);
+  return response.blob();
+}
+
+async function loadImageElement(url: string) {
+  const blob = await fetchBlob(url);
+  const objectUrl = URL.createObjectURL(blob);
+  return await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error(`Failed to load image: ${url}`));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function canvasToBlob(canvas: HTMLCanvasElement) {
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      reject(new Error("Failed to create image blob from canvas"));
+    }, "image/png");
+  });
+}
+
+async function createMaskedCompareBlob(props: {
+  compareUrl: string;
+  maskUrl: string;
+  color: string;
+  opacity: number;
+}) {
+  const [compareImage, maskImage] = await Promise.all([
+    loadImageElement(props.compareUrl),
+    loadImageElement(props.maskUrl),
+  ]);
+
+  const width = compareImage.naturalWidth || compareImage.width;
+  const height = compareImage.naturalHeight || compareImage.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  invariant(context, "Expected canvas to have a 2d context");
+
+  context.drawImage(compareImage, 0, 0, width, height);
+
+  const overlayCanvas = document.createElement("canvas");
+  overlayCanvas.width = width;
+  overlayCanvas.height = height;
+  const overlayContext = overlayCanvas.getContext("2d");
+  invariant(overlayContext, "Expected overlay canvas to have a 2d context");
+
+  overlayContext.fillStyle = props.color;
+  overlayContext.globalAlpha = props.opacity;
+  overlayContext.fillRect(0, 0, width, height);
+  overlayContext.globalAlpha = 1;
+  overlayContext.globalCompositeOperation = "destination-in";
+  overlayContext.drawImage(maskImage, 0, 0, width, height);
+
+  context.drawImage(overlayCanvas, 0, 0, width, height);
+
+  return canvasToBlob(canvas);
+}
 
 function BuildScreenshotHeaderPlaceholder() {
   return <div className="h-10.5" />;
@@ -608,12 +694,91 @@ function DownloadCompareScreenshotButton({
   diff: BuildDiffDetailDocument;
   buildId: string;
 }) {
+  const overlayColor = useAtomValue(overlayColorAtom);
+  const overlayOpacity = useAtomValue(overlayOpacityAtom);
+  const getName = (identifier: string) => {
+    return `Build #${buildId} - ${diff.name} - ${identifier}.png`;
+  };
+  const runDownload = (promise: Promise<void>) => {
+    toast.promise(promise, {
+      loading: "Downloading image…",
+      success: "Image downloaded",
+      error: (data) => getErrorMessage(data),
+    });
+  };
+
+  const { url: diffUrl, compareScreenshot } = diff;
+  invariant(compareScreenshot);
+
+  if (!diffUrl) {
+    return (
+      <DownloadScreenshotButton
+        url={compareScreenshot.originalUrl}
+        tooltip="Download"
+        name={getName("head")}
+      />
+    );
+  }
+
   return (
-    <DownloadScreenshotButton
-      url={diff.compareScreenshot!.originalUrl}
-      tooltip="Download changes screenshot"
-      name={`Build #${buildId} - ${diff.name} - new.png`}
-    />
+    <MenuTrigger>
+      <Tooltip placement="left" content="Download changes screenshot">
+        <IconButton variant="contained">
+          <DownloadIcon />
+        </IconButton>
+      </Tooltip>
+      <Popover placement="bottom end">
+        <Menu aria-label="Download changes screenshot">
+          <MenuItem
+            onAction={() => {
+              runDownload(
+                fetchBlob(compareScreenshot.originalUrl).then((blob) => {
+                  downloadBlob(blob, getName("head"));
+                }),
+              );
+            }}
+          >
+            <MenuItemIcon>
+              <FileDownIcon />
+            </MenuItemIcon>
+            Download changes screenshot
+          </MenuItem>
+          <MenuItem
+            onAction={() => {
+              runDownload(
+                fetchBlob(diffUrl).then((blob) => {
+                  downloadBlob(blob, getName("mask"));
+                }),
+              );
+            }}
+          >
+            <MenuItemIcon>
+              <BlendIcon />
+            </MenuItemIcon>
+            Download changes mask
+          </MenuItem>
+          <MenuItem
+            onAction={() => {
+              runDownload(
+                createMaskedCompareBlob({
+                  compareUrl: compareScreenshot.originalUrl,
+                  maskUrl: diffUrl,
+                  color: overlayColor,
+                  opacity: overlayOpacity,
+                }).then((blob) => {
+                  downloadBlob(blob, getName("composite"));
+                }),
+              );
+            }}
+          >
+            <MenuItemIcon>
+              <Layers2Icon />
+            </MenuItemIcon>
+            Download composed changes
+          </MenuItem>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
 }
 

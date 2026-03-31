@@ -446,7 +446,7 @@ export function ZoomPane(props: {
         {children}
       </div>
       {controls && (
-        <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100">
+        <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100 group-has-[button[aria-expanded=true]]/pane:opacity-100">
           <div
             className={clsx(
               ZOOMER_CONTROLS_CLASS,
