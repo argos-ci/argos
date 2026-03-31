@@ -290,7 +290,7 @@ async function getPriceInfosFromStripeSubscription(
  */
 function getUnitAmountFromPrice(price: Stripe.Price): number | null {
   invariant(price.unit_amount_decimal !== null, "unit_amount_decimal is null");
-  return price.unit_amount_decimal.toNumber();
+  return price.unit_amount_decimal.toNumber() / 100;
 }
 
 async function getArgosSubscriptionDataFromStripe(
