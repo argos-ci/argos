@@ -1,6 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { RelationExpression } from "objection";
+import { RelationExpression, TransactionOrKnex } from "objection";
 
 import {
   Account,
@@ -13,6 +13,8 @@ import {
   TeamInvite,
   TeamUser,
   User,
+  UserAccessToken,
+  UserAccessTokenScope,
   UserEmail,
 } from "@/database/models";
 import { resolveAccountSlug } from "@/database/services/account";
@@ -23,6 +25,34 @@ import { cancelStripeSubscription } from "@/stripe";
 
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { unsafe_deleteProject } from "./project";
+
+async function deleteUserAccessTokensByUserId(args: {
+  userId: string;
+  trx?: TransactionOrKnex;
+}) {
+  const { userId, trx } = args;
+  const tokenIds = await UserAccessToken.query(trx)
+    .select("id")
+    .where("userId", userId);
+
+  if (tokenIds.length === 0) {
+    return;
+  }
+
+  const ids = tokenIds.map((token) => token.id);
+  await UserAccessTokenScope.query(trx)
+    .whereIn("userAccessTokenId", ids)
+    .delete();
+  await UserAccessToken.query(trx).whereIn("id", ids).delete();
+}
+
+async function deleteUserAccessTokenScopesByAccountId(args: {
+  accountId: string;
+  trx?: TransactionOrKnex;
+}) {
+  const { accountId, trx } = args;
+  await UserAccessTokenScope.query(trx).where("accountId", accountId).delete();
+}
 
 /**
  * Get an account by ID, ensuring the user has admin permissions.
@@ -45,6 +75,25 @@ export async function getAdminAccount(args: {
     throw forbidden("user is not an admin of the account");
   }
   return account;
+}
+
+export async function getAccessibleAccounts(args: {
+  accountIds: string[];
+  userId: string;
+  trx?: TransactionOrKnex;
+}): Promise<Account[]> {
+  const { accountIds, userId, trx } = args;
+
+  return Account.query(trx)
+    .whereIn("id", accountIds)
+    .where((qb) =>
+      qb
+        .where("userId", userId)
+        .orWhereIn(
+          "teamId",
+          User.relatedQuery("teams").select("teams.id").for(userId),
+        ),
+    );
 }
 
 /**
@@ -79,6 +128,12 @@ export async function deleteAccount(args: {
 
       // Remove all subscriptions linkedto the account
       Subscription.query(trx).where("accountId", account.id).delete(),
+
+      // Remove user access token scopes pointing to this account before deleting it
+      deleteUserAccessTokenScopesByAccountId({
+        accountId: account.id,
+        trx,
+      }),
     ]);
 
     // Delete the account
@@ -129,6 +184,9 @@ export async function deleteAccount(args: {
         await Promise.all([
           // Remove user from all of its teams
           TeamUser.query(trx).where("userId", userId).delete(),
+
+          // Remove all user access tokens owned by the user
+          deleteUserAccessTokensByUserId({ userId, trx }),
 
           // Remove all user emails
           UserEmail.query(trx).where("userId", userId).delete(),

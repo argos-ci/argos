@@ -28,6 +28,7 @@ import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";
 import { UserDelete } from "@/containers/User/Delete";
 import { UserEmails } from "@/containers/User/Emails";
+import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
 import { NotFound } from "@/pages/NotFound";
@@ -71,6 +72,7 @@ const AccountQuery = graphql(`
       ...TeamSpendManagement_Account
       ...UserDelete_User
       ...UserEmail_Account
+      ...UserAccessTokens_Account
     }
   }
 `);
@@ -200,7 +202,12 @@ function PageContent() {
     {
       name: "Authentication",
       slug: "authentication",
-      element: isUser && hasAdminPermission && <UserAuth account={account} />,
+      element: isUser && hasAdminPermission && (
+        <>
+          <UserAuth account={account} />
+          <UserAccessTokens account={account} />
+        </>
+      ),
     },
     {
       name: "Members",

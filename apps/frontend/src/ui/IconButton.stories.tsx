@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CopyIcon, PencilIcon, TrashIcon } from "lucide-react";
+import { CopyIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import { IconButton } from "./IconButton";
 import { StoryTitle } from "./StoryTitle";
@@ -23,7 +23,7 @@ export const Default: Story = {
             <PencilIcon />
           </IconButton>
           <IconButton variant="outline" color="danger">
-            <TrashIcon />
+            <Trash2Icon />
           </IconButton>
           <IconButton variant="outline" color="success">
             <CopyIcon />

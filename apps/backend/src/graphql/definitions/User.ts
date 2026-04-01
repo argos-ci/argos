@@ -7,6 +7,7 @@ import {
   Subscription,
   TeamInvite,
   User,
+  UserAccessToken,
   UserEmail,
 } from "@/database/models";
 import {
@@ -70,6 +71,8 @@ export const typeDefs = gql`
     email: String
     "List of email addresses associated with the user"
     emails: [UserEmail!]!
+    "List of personal access tokens for the user"
+    userAccessTokens: [UserAccessToken!]!
   }
 
   type UserEmail {
@@ -383,6 +386,28 @@ export const resolvers: IResolvers = {
       const user = await ctx.loaders.User.load(account.userId);
       invariant(user, "user is undefined");
       return user.$relatedQuery("emails");
+    },
+    userAccessTokens: async (account) => {
+      invariant(account.userId, "account.userId is undefined");
+      const tokens = await UserAccessToken.query()
+        .where("userId", account.userId)
+        .withGraphFetched("scope.account")
+        .orderBy("createdAt", "desc");
+
+      return tokens.map((token) => {
+        invariant(token.scope, "token.scope is undefined");
+
+        return {
+          ...token,
+          createdAt: new Date(token.createdAt),
+          expireAt: token.expireAt ? new Date(token.expireAt) : null,
+          lastUsedAt: token.lastUsedAt ? new Date(token.lastUsedAt) : null,
+          scope: token.scope.map((scopeEntry) => {
+            invariant(scopeEntry.account, "scopeEntry.account is undefined");
+            return scopeEntry.account;
+          }),
+        };
+      });
     },
   },
 };

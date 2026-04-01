@@ -7,6 +7,7 @@ import { GitlabUser } from "./GitlabUser";
 import { GoogleUser } from "./GoogleUser";
 import { Team } from "./Team";
 import { TeamInvite } from "./TeamInvite";
+import { UserAccessToken } from "./UserAccessToken";
 import { UserEmail } from "./UserEmail";
 
 export class User extends Model {
@@ -106,6 +107,14 @@ export class User extends Model {
         },
         modify: (query) => query.whereRaw(`team_invites."expiresAt" > now()`),
       },
+      userAccessTokens: {
+        relation: Model.HasManyRelation,
+        modelClass: UserAccessToken,
+        join: {
+          from: "users.id",
+          to: "user_access_tokens.userId",
+        },
+      },
     };
   }
 
@@ -116,6 +125,7 @@ export class User extends Model {
   gitlabUser?: GitlabUser;
   googleUser?: GoogleUser;
   emails?: UserEmail[];
+  userAccessTokens?: UserAccessToken[];
 
   static getPermissions(
     userId: string,

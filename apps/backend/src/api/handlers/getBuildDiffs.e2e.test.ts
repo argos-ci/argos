@@ -11,6 +11,8 @@ import type {
   ScreenshotBucket,
   ScreenshotDiff,
 } from "@/database/models";
+import { UserAccessTokenScope } from "@/database/models";
+import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -208,6 +210,50 @@ describe("getBuildDiffs", () => {
       });
       expect(diff.base.url).toContain(files.base.key);
       expect(diff.head.url).toContain(files.compare.key);
+    });
+
+    test("returns diffs with a user access token", async ({ factory }) => {
+      const [user, account] = await Promise.all([
+        factory.User.create(),
+        factory.TeamAccount.create(),
+      ]);
+      const [project] = await Promise.all([
+        factory.Project.create({ accountId: account.id }),
+        factory.UserAccount.create({ userId: user.id }),
+        factory.TeamUser.create({
+          teamId: account.teamId,
+          userId: user.id,
+          userLevel: "member",
+        }),
+      ]);
+      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: compareScreenshotBucket.id,
+      });
+
+      const token = `arp_${"e".repeat(36)}`;
+      const userAccessToken = await factory.UserAccessToken.create({
+        userId: user.id,
+        token: hashToken(token),
+      });
+      await UserAccessTokenScope.query().insert({
+        userAccessTokenId: userAccessToken.id,
+        accountId: account.id,
+      });
+
+      const res = await request(app)
+        .get(`/builds/${build.id}/diffs`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.pageInfo).toMatchObject({
+        total: expect.any(Number),
+        page: 1,
+      });
+      expect(Array.isArray(res.body.results)).toBe(true);
     });
 
     describe("with a mixed diff set on a non-subset build", () => {

@@ -4,6 +4,8 @@ import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import type { Build, Project } from "@/database/models";
+import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
+import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -52,18 +54,22 @@ const it = base.extend<{
       builds;
     invariant(withCompareScreenshotBucket && withoutCompareScreenshotBucket);
 
-    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      name: withCompareScreenshotBucket.name,
-      commit: sha,
-      branch,
-    });
-    const prHeadScreenshotBucket = await factory.ScreenshotBucket.create({
-      projectId: project.id,
-      name: withoutCompareScreenshotBucket.name,
-      commit: "5c63d1eec3417f0d38f6b8c5c2d8f4d1ab9de432",
-      branch: prHeadBranch,
-    });
+    const [compareScreenshotBucket, prHeadScreenshotBucket] =
+      await factory.ScreenshotBucket.createMany(2, [
+        {
+          projectId: project.id,
+          name: withCompareScreenshotBucket.name,
+          commit: sha,
+          branch,
+        },
+        {
+          projectId: project.id,
+          name: withoutCompareScreenshotBucket.name,
+          commit: "5c63d1eec3417f0d38f6b8c5c2d8f4d1ab9de432",
+          branch: prHeadBranch,
+        },
+      ]);
+    invariant(compareScreenshotBucket && prHeadScreenshotBucket);
 
     await Promise.all([
       withCompareScreenshotBucket.$query().patch({
@@ -213,5 +219,48 @@ describe("getAuthProjectBuilds", () => {
           });
         });
     });
+  });
+
+  it("returns project builds using a user access token on explicit project route", async ({
+    factory,
+  }) => {
+    const [user, account] = await Promise.all([
+      factory.User.create(),
+      factory.TeamAccount.create({ slug: "acme" }),
+    ]);
+    const [project] = await Promise.all([
+      factory.Project.create({
+        accountId: account.id,
+        name: "web",
+      }),
+      factory.UserAccount.create({ userId: user.id }),
+      factory.TeamUser.create({
+        teamId: account.teamId,
+        userId: user.id,
+        userLevel: "member",
+      }),
+    ]);
+    await factory.Build.createMany(2, {
+      projectId: project.id,
+      name: "default",
+    });
+
+    const token = UserAccessToken.generateToken();
+    const userAccessToken = await factory.UserAccessToken.create({
+      userId: user.id,
+      token: hashToken(token),
+    });
+    await UserAccessTokenScope.query().insert({
+      userAccessTokenId: userAccessToken.id,
+      accountId: account.id,
+    });
+
+    await request(app)
+      .get("/projects/acme/web/builds")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.results).toHaveLength(2);
+      });
   });
 });

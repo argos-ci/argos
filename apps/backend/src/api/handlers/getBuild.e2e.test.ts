@@ -1,7 +1,10 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import z from "zod";
 
+import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
+import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -64,14 +67,18 @@ describe("getBuild", () => {
         name: "awesome-project",
         token: "the-awesome-token",
       });
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-      });
-      const baseScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        branch: "develop",
-        commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
-      });
+      const [compareScreenshotBucket, baseScreenshotBucket] =
+        await factory.ScreenshotBucket.createMany(2, [
+          { projectId: project.id },
+          {
+            projectId: project.id,
+            branch: "develop",
+            commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+          },
+        ]);
+      invariant(compareScreenshotBucket);
+      invariant(baseScreenshotBucket);
+
       const build = await factory.Build.create({
         projectId: project.id,
         compareScreenshotBucketId: compareScreenshotBucket.id,
@@ -118,6 +125,43 @@ describe("getBuild", () => {
         },
       });
     });
+
+    it("returns a build with a user access token", async () => {
+      const [user, account] = await Promise.all([
+        factory.User.create(),
+        factory.TeamAccount.create(),
+      ]);
+      const [project] = await Promise.all([
+        factory.Project.create({ accountId: account.id }),
+        factory.UserAccount.create({ userId: user.id }),
+        factory.TeamUser.create({
+          teamId: account.teamId,
+          userId: user.id,
+          userLevel: "member",
+        }),
+      ]);
+      const build = await factory.Build.create({
+        projectId: project.id,
+      });
+
+      const token = UserAccessToken.generateToken();
+      const userAccessToken = await factory.UserAccessToken.create({
+        userId: user.id,
+        token: hashToken(token),
+      });
+      await UserAccessTokenScope.query().insert({
+        userAccessTokenId: userAccessToken.id,
+        accountId: account.id,
+      });
+
+      await request(app)
+        .get(`/builds/${build.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.id).toBe(build.id);
+        });
+    });
   });
 
   describe("with screenshot diffs containing a change", () => {
@@ -130,14 +174,13 @@ describe("getBuild", () => {
         name: "diffs-project",
         token: "token-with-diffs",
       });
-      const baseScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        name: "base",
-      });
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        name: "compare",
-      });
+      const [baseScreenshotBucket, compareScreenshotBucket] =
+        await factory.ScreenshotBucket.createMany(2, [
+          { projectId: project.id, name: "base" },
+          { projectId: project.id, name: "compare" },
+        ]);
+      invariant(baseScreenshotBucket);
+      invariant(compareScreenshotBucket);
       const build = await factory.Build.create({
         projectId: project.id,
         compareScreenshotBucketId: compareScreenshotBucket.id,
@@ -155,15 +198,20 @@ describe("getBuild", () => {
         },
       });
 
-      const baseScreenshot = await factory.Screenshot.create({
-        screenshotBucketId: baseScreenshotBucket.id,
-        name: "home.png",
-      });
-      const compareScreenshot = await factory.Screenshot.create({
-        screenshotBucketId: compareScreenshotBucket.id,
-        name: "home.png",
-        baseName: "home.png",
-      });
+      const [baseScreenshot, compareScreenshot] =
+        await factory.Screenshot.createMany(2, [
+          {
+            screenshotBucketId: baseScreenshotBucket.id,
+            name: "home.png",
+          },
+          {
+            screenshotBucketId: compareScreenshotBucket.id,
+            name: "home.png",
+            baseName: "home.png",
+          },
+        ]);
+      invariant(baseScreenshot);
+      invariant(compareScreenshot);
 
       await factory.ScreenshotDiff.create({
         buildId: build.id,

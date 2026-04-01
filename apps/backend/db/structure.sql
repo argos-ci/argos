@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
+\restrict tcwwa0navv4WKeaYIi4EKa3vQQ4QsdRuGwaRIjvsh5ua5zp7TYRTpd8lgNzd9lh
+
 -- Dumped from database version 17.5
--- Dumped by pg_dump version 17.5 (Homebrew)
+-- Dumped by pg_dump version 17.9 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1826,6 +1828,82 @@ ALTER SEQUENCE public.tests_id_seq OWNED BY public.tests.id;
 
 
 --
+-- Name: user_access_token_scopes; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_access_token_scopes (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userAccessTokenId" bigint NOT NULL,
+    "accountId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.user_access_token_scopes OWNER TO postgres;
+
+--
+-- Name: user_access_token_scopes_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_access_token_scopes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_access_token_scopes_id_seq OWNER TO postgres;
+
+--
+-- Name: user_access_token_scopes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_access_token_scopes_id_seq OWNED BY public.user_access_token_scopes.id;
+
+
+--
+-- Name: user_access_tokens; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_access_tokens (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "userId" bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    token character varying(255) NOT NULL,
+    "expireAt" timestamp with time zone,
+    "lastUsedAt" timestamp with time zone,
+    "createdBy" character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.user_access_tokens OWNER TO postgres;
+
+--
+-- Name: user_access_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_access_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_access_tokens_id_seq OWNER TO postgres;
+
+--
+-- Name: user_access_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_access_tokens_id_seq OWNED BY public.user_access_tokens.id;
+
+
+--
 -- Name: user_emails; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2150,6 +2228,20 @@ ALTER TABLE ONLY public.teams ALTER COLUMN id SET DEFAULT nextval('public.teams_
 --
 
 ALTER TABLE ONLY public.tests ALTER COLUMN id SET DEFAULT nextval('public.tests_id_seq'::regclass);
+
+
+--
+-- Name: user_access_token_scopes id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_token_scopes ALTER COLUMN id SET DEFAULT nextval('public.user_access_token_scopes_id_seq'::regclass);
+
+
+--
+-- Name: user_access_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_tokens ALTER COLUMN id SET DEFAULT nextval('public.user_access_tokens_id_seq'::regclass);
 
 
 --
@@ -2664,6 +2756,38 @@ ALTER TABLE ONLY public.tests
 
 
 --
+-- Name: user_access_token_scopes user_access_token_scopes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_token_scopes
+    ADD CONSTRAINT user_access_token_scopes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_access_token_scopes user_access_token_scopes_useraccesstokenid_accountid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_token_scopes
+    ADD CONSTRAINT user_access_token_scopes_useraccesstokenid_accountid_unique UNIQUE ("userAccessTokenId", "accountId");
+
+
+--
+-- Name: user_access_tokens user_access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_tokens
+    ADD CONSTRAINT user_access_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_access_tokens user_access_tokens_token_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_tokens
+    ADD CONSTRAINT user_access_tokens_token_unique UNIQUE (token);
+
+
+--
 -- Name: user_emails user_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3167,6 +3291,27 @@ CREATE INDEX tests_projectid_buildname_createdat_id_idx ON public.tests USING bt
 --
 
 CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
+
+
+--
+-- Name: user_access_token_scopes_accountid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_access_token_scopes_accountid_index ON public.user_access_token_scopes USING btree ("accountId");
+
+
+--
+-- Name: user_access_token_scopes_useraccesstokenid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_access_token_scopes_useraccesstokenid_index ON public.user_access_token_scopes USING btree ("userAccessTokenId");
+
+
+--
+-- Name: user_access_tokens_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_access_tokens_userid_index ON public.user_access_tokens USING btree ("userId");
 
 
 --
@@ -3729,6 +3874,30 @@ ALTER TABLE ONLY public.tests
 
 
 --
+-- Name: user_access_token_scopes user_access_token_scopes_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_token_scopes
+    ADD CONSTRAINT user_access_token_scopes_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id);
+
+
+--
+-- Name: user_access_token_scopes user_access_token_scopes_useraccesstokenid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_token_scopes
+    ADD CONSTRAINT user_access_token_scopes_useraccesstokenid_foreign FOREIGN KEY ("userAccessTokenId") REFERENCES public.user_access_tokens(id);
+
+
+--
+-- Name: user_access_tokens user_access_tokens_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_access_tokens
+    ADD CONSTRAINT user_access_tokens_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
 -- Name: user_emails user_emails_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3755,6 +3924,8 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict tcwwa0navv4WKeaYIi4EKa3vQQ4QsdRuGwaRIjvsh5ua5zp7TYRTpd8lgNzd9lh
 
 -- Knex migrations
 
@@ -3938,3 +4109,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026021
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260219170000_project-auto-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260222100000_team-saml-expiration-check.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260328120000_build-merge-queue-gh-pull-requests.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260401084427_user_access_tokens.js', 1, NOW());

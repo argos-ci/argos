@@ -3,6 +3,8 @@ import request from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import z from "zod";
 
+import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
+import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -135,6 +137,54 @@ describe("getAuthBuildByNumber", () => {
           expect(res.body.error).toBeDefined();
         })
         .expect(400);
+    });
+  });
+
+  describe("with a user access token on explicit project route", () => {
+    it("returns the build", async () => {
+      const [user, account] = await Promise.all([
+        factory.User.create(),
+        factory.TeamAccount.create({ slug: "acme" }),
+      ]);
+
+      const [project] = await Promise.all([
+        factory.Project.create({
+          accountId: account.id,
+          name: "web",
+        }),
+        factory.UserAccount.create({ userId: user.id }),
+        factory.TeamUser.create({
+          teamId: account.teamId,
+          userId: user.id,
+          userLevel: "member",
+        }),
+      ]);
+      const bucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: bucket.id,
+        number: 4,
+      });
+
+      const token = UserAccessToken.generateToken();
+      const userAccessToken = await factory.UserAccessToken.create({
+        userId: user.id,
+        token: hashToken(token),
+      });
+      await UserAccessTokenScope.query().insert({
+        userAccessTokenId: userAccessToken.id,
+        accountId: account.id,
+      });
+
+      await request(app)
+        .get("/projects/acme/web/builds/4")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.id).toBe(build.id);
+        });
     });
   });
 });

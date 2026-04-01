@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -19,6 +20,10 @@ import {
   unauthorized,
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
+import {
+  assertProjectAccess,
+  assertProjectAccessResponses,
+} from "./projectAccess";
 
 const GetBuildDiffsParams = PageParamsSchema.extend({
   needsReview: z
@@ -49,6 +54,7 @@ export const getBuildDiffsOperation = {
     query: GetBuildDiffsParams,
   },
   responses: {
+    ...assertProjectAccessResponses,
     "200": {
       description: "List of screenshot diffs",
       content: {
@@ -66,23 +72,21 @@ export const getBuildDiffsOperation = {
 
 export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
   return get("/builds/{buildId}/diffs", repoAuth, async (req, res) => {
-    if (!req.authProject) {
-      throw boom(401, "Unauthorized");
-    }
-
     const {
       params: { buildId },
       query: { page, perPage, needsReview },
     } = req.ctx;
 
-    const build = await Build.query().findOne({
-      id: buildId,
-      projectId: req.authProject.id,
-    });
+    const build = await Build.query()
+      .findById(buildId)
+      .withGraphFetched("project");
 
     if (!build) {
       throw boom(404, "Not found");
     }
+
+    invariant(build.project, "Build project is missing");
+    await assertProjectAccess({ request: req, project: build.project });
 
     const diffsQuery = ScreenshotDiff.query()
       .where("screenshot_diffs.buildId", build.id)

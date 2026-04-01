@@ -2,7 +2,8 @@
 
 import type { RequestHandler } from "express";
 
-import { Project } from "@/database/models";
+import { getAuthPayloadFromRequest } from "@/auth/request";
+import { Project, UserAccessToken } from "@/database/models";
 import { boom } from "@/util/error";
 
 import { asyncHandler } from "../util";
@@ -29,6 +30,17 @@ export const repoAuth: RequestHandler[] = [
         401,
         `Missing bearer token. Please provide a token in the Authorization header.`,
       );
+    }
+
+    // If it's a user access token, authenticate as user
+    if (UserAccessToken.isValidUserAccessToken(bearerToken)) {
+      const authPayload = await getAuthPayloadFromRequest(req);
+      if (!authPayload) {
+        throw boom(401, `Invalid or expired personal access token.`);
+      }
+      req.auth = authPayload;
+      next();
+      return;
     }
 
     const strategy =

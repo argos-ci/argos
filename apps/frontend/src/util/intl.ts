@@ -23,3 +23,14 @@ export function formatCurrency(
 ) {
   return getCurrencyFormatter(currency, digits).format(value);
 }
+
+export function formatList(items: string[]) {
+  if (items.length === 0) {
+    return "";
+  }
+  if (items.length === 1) {
+    return items[0];
+  }
+  const formatter = new Intl.ListFormat("en-GB");
+  return formatter.format(items);
+}

@@ -38,6 +38,8 @@ export * from "./TeamInvite";
 export * from "./TeamSamlConfig";
 export * from "./TeamUser";
 export * from "./Test";
+export * from "./UserAccessToken";
+export * from "./UserAccessTokenScope";
 export * from "./User";
 export * from "./UserEmail";
 export type { Model } from "../util/model";

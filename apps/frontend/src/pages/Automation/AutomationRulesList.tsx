@@ -8,7 +8,7 @@ import {
   CircleDotIcon,
   MoreVerticalIcon,
   PencilIcon,
-  TrashIcon,
+  Trash2Icon,
   XCircleIcon,
 } from "lucide-react";
 
@@ -166,7 +166,7 @@ function AutomationRow(props: AutomationRowProps) {
                 onAction={() => onDelete(automationRule.id)}
               >
                 <MenuItemIcon>
-                  <TrashIcon />
+                  <Trash2Icon />
                 </MenuItemIcon>
                 Delete
               </MenuItem>

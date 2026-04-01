@@ -5,6 +5,7 @@ import moment from "moment";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
 import * as models from "../models";
+import { hashToken } from "../services/crypto";
 
 class ObjectionAdapter<
   TEntity extends Model,
@@ -55,6 +56,15 @@ export const Team = defineFactory(models.Team, () => ({
 
 export const User = defineFactory(models.User, () => ({
   email: FactoryGirl.sequence("user.email", (n) => `user-${n}@email.com`),
+}));
+
+export const UserAccessToken = defineFactory(models.UserAccessToken, () => ({
+  userId: User.associate("id") as unknown as string,
+  name: FactoryGirl.sequence("userAccessToken.name", (n) => `token-${n}`),
+  token: FactoryGirl.sequence("userAccessToken.token", (n) =>
+    hashToken(`arp_${n.toString(16).padStart(36, "0")}`),
+  ),
+  createdBy: "user" as const,
 }));
 
 export const GithubAccount = defineFactory(models.GithubAccount, () => ({
