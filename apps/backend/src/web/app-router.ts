@@ -190,6 +190,7 @@ export const installAppRouter = async (app: express.Application) => {
           "img-src": [
             "'self'",
             "data:",
+            "blob:",
             "https://argos-ci.com",
             // ImageKit images
             "https://files.argos-ci.com",
