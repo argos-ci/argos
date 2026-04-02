@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
+\restrict 2GIQSmC2cllwgA5SKtS5RhAwQOcUPaKxQ1gBkaPnM6Ir2Gz1OmHj6kk5YsYjXKG
+
 -- Dumped from database version 17.5
--- Dumped by pg_dump version 17.5 (Homebrew)
+-- Dumped by pg_dump version 17.9 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2672,6 +2674,22 @@ ALTER TABLE ONLY public.user_emails
 
 
 --
+-- Name: users users_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_unique UNIQUE (email);
+
+
+--
+-- Name: users users_gitlabuserid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_gitlabuserid_unique UNIQUE ("gitlabUserId");
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3756,6 +3774,8 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
+\unrestrict 2GIQSmC2cllwgA5SKtS5RhAwQOcUPaKxQ1gBkaPnM6Ir2Gz1OmHj6kk5YsYjXKG
+
 -- Knex migrations
 
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
@@ -3938,3 +3958,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026021
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260219170000_project-auto-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260222100000_team-saml-expiration-check.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260328120000_build-merge-queue-gh-pull-requests.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260402112104_update-github-pull-request-id-type.js', 1, NOW());
