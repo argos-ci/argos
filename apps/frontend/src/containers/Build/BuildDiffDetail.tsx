@@ -12,6 +12,7 @@ import {
 } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/react";
 import { clsx } from "clsx";
 import { useAtomValue } from "jotai/react";
 import {
@@ -286,19 +287,16 @@ async function fetchBlob(url: string) {
 }
 
 async function loadImageElement(url: string) {
-  const blob = await fetchBlob(url);
-  const objectUrl = URL.createObjectURL(blob);
   return await new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
+    image.crossOrigin = "anonymous";
     image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
       resolve(image);
     };
     image.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
       reject(new Error(`Failed to load image: ${url}`));
     };
-    image.src = objectUrl;
+    image.src = url;
   });
 }
 
@@ -325,30 +323,58 @@ async function createMaskedCompareBlob(props: {
     loadImageElement(props.maskUrl),
   ]);
 
-  const width = compareImage.naturalWidth || compareImage.width;
-  const height = compareImage.naturalHeight || compareImage.height;
+  const compareDimensions = {
+    width: compareImage.naturalWidth,
+    height: compareImage.naturalHeight,
+  };
+  const maskDimensions = {
+    width: maskImage.naturalWidth,
+    height: maskImage.naturalHeight,
+  };
+  const resultDimensions = {
+    width: Math.max(compareDimensions.width, maskDimensions.width),
+    height: Math.max(compareDimensions.height, maskDimensions.height),
+  };
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = resultDimensions.width;
+  canvas.height = resultDimensions.height;
   const context = canvas.getContext("2d");
   invariant(context, "Expected canvas to have a 2d context");
 
-  context.drawImage(compareImage, 0, 0, width, height);
+  context.drawImage(
+    compareImage,
+    0,
+    0,
+    compareDimensions.width,
+    compareDimensions.height,
+  );
 
   const overlayCanvas = document.createElement("canvas");
-  overlayCanvas.width = width;
-  overlayCanvas.height = height;
+  overlayCanvas.width = maskDimensions.width;
+  overlayCanvas.height = maskDimensions.height;
   const overlayContext = overlayCanvas.getContext("2d");
   invariant(overlayContext, "Expected overlay canvas to have a 2d context");
 
   overlayContext.fillStyle = props.color;
   overlayContext.globalAlpha = props.opacity;
-  overlayContext.fillRect(0, 0, width, height);
+  overlayContext.fillRect(0, 0, maskDimensions.width, maskDimensions.height);
   overlayContext.globalAlpha = 1;
   overlayContext.globalCompositeOperation = "destination-in";
-  overlayContext.drawImage(maskImage, 0, 0, width, height);
+  overlayContext.drawImage(
+    maskImage,
+    0,
+    0,
+    maskDimensions.width,
+    maskDimensions.height,
+  );
 
-  context.drawImage(overlayCanvas, 0, 0, width, height);
+  context.drawImage(
+    overlayCanvas,
+    0,
+    0,
+    maskDimensions.width,
+    maskDimensions.height,
+  );
 
   return canvasToBlob(canvas);
 }
@@ -703,7 +729,11 @@ function DownloadCompareScreenshotButton({
     toast.promise(promise, {
       loading: "Downloading image…",
       success: "Image downloaded",
-      error: (data) => getErrorMessage(data),
+      error: (data) => {
+        console.error(data);
+        captureException(data);
+        return getErrorMessage(data);
+      },
     });
   };
 
