@@ -53,13 +53,14 @@ export const getBuild: CreateAPIHandler = ({ get }) => {
       Build.query()
         .joinRelated("project.account")
         .where("project:account.slug", params.owner)
+        .where("project.name", params.project)
         .where("number", params.buildNumber)
         .first(),
     ]);
 
     assertProjectAccess(auth, {
       projectId: build?.projectId ?? null,
-      owner: params.owner,
+      account: { slug: params.owner },
     });
 
     if (!build) {

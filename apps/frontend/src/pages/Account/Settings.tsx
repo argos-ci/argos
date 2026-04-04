@@ -202,11 +202,13 @@ function PageContent() {
     {
       name: "Authentication",
       slug: "authentication",
+      element: isUser && hasAdminPermission && <UserAuth account={account} />,
+    },
+    {
+      name: "Tokens",
+      slug: "tokens",
       element: isUser && hasAdminPermission && (
-        <>
-          <UserAuth account={account} />
-          <UserAccessTokens account={account} />
-        </>
+        <UserAccessTokens account={account} />
       ),
     },
     {

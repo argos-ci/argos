@@ -116,7 +116,8 @@ async function getSnapshotDiffUrl(diff: ScreenshotDiff) {
 }
 
 /**
- * Serialize screenshot diffs for API response.
+ * Serialize screenshot diffs into the public API shape, including resolved diff
+ * status, snapshot payloads, and the public URL for the diff image.
  */
 export async function serializeSnapshotDiffs(
   diffs: ScreenshotDiff[],

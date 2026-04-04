@@ -1,13 +1,13 @@
-import { invariant } from "@argos/util/invariant";
-
 import type { AuthProjectPayload } from "@/auth/payload";
 import { Project, UserAccessToken } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { tokenlessGitHubActionsStrategy } from "./tokenless/github-actions";
+import { tokenlessStrategies } from "./tokenless";
 
-const tokenlessStrategies = [tokenlessGitHubActionsStrategy];
-
+/**
+ * Resolve a project auth payload from a project token or a supported tokenless
+ * CI bearer token.
+ */
 export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
   if (UserAccessToken.isValidUserAccessToken(bearer)) {
     throw boom(
@@ -36,8 +36,6 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
       `Project not found in Argos. If the issue persists, verify your token. (token: "${bearer}").`,
     );
   }
-
-  invariant(project.account, "Account not loaded on project");
 
   const authPayload: AuthProjectPayload = {
     type: "project",

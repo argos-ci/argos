@@ -17,6 +17,11 @@ export const ProjectSchema = z
     id: "Project",
   });
 
+/**
+ * Serialize a project into the public API shape, including its resolved default
+ * base branch and whether remote content access is available through the main
+ * GitHub app installation.
+ */
 export async function serializeProject(
   project: Project,
 ): Promise<z.infer<typeof ProjectSchema>> {

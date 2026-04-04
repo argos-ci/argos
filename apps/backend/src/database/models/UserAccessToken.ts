@@ -23,7 +23,7 @@ export class UserAccessToken extends Model {
         properties: {
           userId: { type: "string" },
           name: { type: "string" },
-          token: { type: "string", minLength: 40, maxLength: 40 },
+          token: { type: "string", minLength: 64, maxLength: 64 },
           expireAt: { type: ["string", "null"] },
           lastUsedAt: { type: ["string", "null"] },
           source: SourceSchema.toJSONSchema() as JSONSchema,

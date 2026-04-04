@@ -14,6 +14,9 @@ function parseAuthHeader(authHeader: string) {
   }
 }
 
+/**
+ * Extract the bearer token from an Authorization header.
+ */
 export function parseBearerFromHeader(authHeader: string) {
   const authorization = parseAuthHeader(authHeader);
 
@@ -31,6 +34,10 @@ export function parseBearerFromHeader(authHeader: string) {
   return authorization.token;
 }
 
+/**
+ * Extract the bearer token from an Authorization header and return `null`
+ * instead of throwing when the header is invalid.
+ */
 export function safeParseBearerFromHeader(authHeader: string) {
   try {
     return parseBearerFromHeader(authHeader);
@@ -39,6 +46,9 @@ export function safeParseBearerFromHeader(authHeader: string) {
   }
 }
 
+/**
+ * Read the Authorization header from an Express request.
+ */
 export function getAuthHeaderFromExpressReq(request: Request) {
   const authHeader = request.get("authorization");
 

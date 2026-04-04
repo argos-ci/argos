@@ -66,3 +66,11 @@ export async function jwtAuthFromExpressReq(req: Request) {
   const bearer = parseBearerFromHeader(authHeader);
   return getAuthPayloadFromJWT(bearer);
 }
+
+export async function safeJwtAuthFromExpressReq(req: Request) {
+  try {
+    return await jwtAuthFromExpressReq(req);
+  } catch {
+    return null;
+  }
+}

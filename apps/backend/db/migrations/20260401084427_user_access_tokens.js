@@ -9,7 +9,7 @@ export const up = async (knex) => {
     table.bigInteger("userId").notNullable().index();
     table.foreign("userId").references("users.id").onDelete("cascade");
     table.string("name").notNullable();
-    table.string("token", 40).notNullable().unique();
+    table.string("token", 64).notNullable().unique();
     table.dateTime("expireAt").nullable();
     table.dateTime("lastUsedAt").nullable();
     table.enum("source", ["user", "cli"]).notNullable();

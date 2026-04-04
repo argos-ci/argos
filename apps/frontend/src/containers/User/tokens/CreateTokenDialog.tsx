@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
-import { AlertCircleIcon } from "lucide-react";
+import { AlertCircleIcon, TriangleAlertIcon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
-import { graphql } from "@/gql";
-import { Button } from "@/ui/Button";
+import { AccountAvatar } from "@/containers/AccountAvatar";
+import { graphql, type DocumentType } from "@/gql";
 import { Checkbox } from "@/ui/Checkbox";
 import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import {
@@ -15,10 +15,12 @@ import {
   DialogText,
   DialogTitle,
 } from "@/ui/Dialog";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Label } from "@/ui/Label";
 import { ListBox, ListBoxItem } from "@/ui/ListBox";
 import { Popover } from "@/ui/Popover";
 import { Pre } from "@/ui/Pre";
@@ -72,20 +74,24 @@ const EXPIRATION_OPTIONS = [
   { label: "1 year", days: 365 },
 ] as const;
 
-type Account = {
-  id: string;
-  name?: string | null;
-  slug: string;
-};
-
-type CreateTokenDialogProps = {
-  account: {
-    id: string;
-    slug: string;
-    name?: string | null;
-    teams: Account[];
-  };
-};
+const _AccountFragment = graphql(`
+  fragment CreateTokenDialog_Account on User {
+    id
+    slug
+    name
+    avatar {
+      ...AccountAvatarFragment
+    }
+    teams {
+      id
+      name
+      slug
+      avatar {
+        ...AccountAvatarFragment
+      }
+    }
+  }
+`);
 
 type Inputs = {
   name: string;
@@ -109,8 +115,8 @@ const CreatedTokenDialog = ({
           <span className="font-medium">Keep it secure</span>.
         </DialogText>
         <Pre code={createdToken} className="mt-4" />
-        <div className="text-warning-low flex items-start gap-2 rounded-sm p-2 text-sm">
-          <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
+        <div className="text-warning-low flex items-start gap-2 p-2 text-sm">
+          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
           <p>Copy your token now. You won’t be able to see it again.</p>
         </div>
         {createdExpireAt && (
@@ -134,11 +140,19 @@ const CreatedTokenDialog = ({
   );
 };
 
-export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
+export function CreateTokenDialog(props: {
+  account: DocumentType<typeof _AccountFragment>;
+}) {
+  const { account } = props;
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [createdExpireAt, setCreatedExpireAt] = useState<string | null>(null);
-  const availableAccounts: Account[] = [
-    { id: account.id, name: account.name, slug: account.slug },
+  const availableAccounts = [
+    {
+      id: account.id,
+      name: account.name,
+      slug: account.slug,
+      avatar: account.avatar,
+    },
     ...account.teams,
   ];
   const form = useForm<Inputs>({
@@ -149,17 +163,6 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
     },
   });
   const client = useApolloClient();
-  const setFormValue = (
-    field: keyof Inputs,
-    value: any,
-    options?: Parameters<typeof form.setValue>[2],
-  ) => {
-    form.setValue(field, value, {
-      shouldDirty: true,
-      shouldValidate: true,
-      ...options,
-    });
-  };
 
   const expireInDaysValue = form.watch("expireInDays");
   const selectedExpiration = EXPIRATION_OPTIONS.find(
@@ -265,39 +268,7 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
             />
 
             <div>
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <div>
-                  <label className="text-sm font-medium">Scope</label>
-                  <p className="text-low text-xs">
-                    Select the accounts this token can access.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="small"
-                    onPress={() => {
-                      setFormValue(
-                        "accountIds",
-                        availableAccounts.map((a) => a.id),
-                      );
-                    }}
-                  >
-                    Select all
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="small"
-                    onPress={() => {
-                      setFormValue("accountIds", []);
-                    }}
-                  >
-                    Clear all
-                  </Button>
-                </div>
-              </div>
+              <Label>Scope — accounts this token can access</Label>
 
               <CheckboxGroupField
                 control={form.control}
@@ -306,19 +277,26 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
               >
                 {availableAccounts.map((acc) => (
                   <Checkbox key={acc.id} value={acc.id}>
-                    {acc.name ?? acc.slug}
+                    {acc.name ? (
+                      <>
+                        <AccountAvatar avatar={acc.avatar} className="size-4" />
+                        {acc.name} <span className="text-low">{acc.slug}</span>
+                      </>
+                    ) : (
+                      acc.slug
+                    )}
                   </Checkbox>
                 ))}
               </CheckboxGroupField>
               {form.formState.errors.accountIds && (
-                <p className="text-danger-low mt-1 text-xs">
+                <ErrorMessage className="mt-2">
                   {form.formState.errors.accountIds.message}
-                </p>
+                </ErrorMessage>
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Expiration</label>
+            <div>
+              <Label>Expiration</Label>
               <SelectField control={form.control} name="expireInDays">
                 <SelectButton className="w-full text-sm">
                   <SelectValue />
@@ -346,7 +324,7 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
                   </span>
                 </div>
               ) : expirationDate ? (
-                <p className="text-low mt-1 text-xs">
+                <p className="text-low mt-2 text-xs">
                   This token will expire on{" "}
                   <strong>
                     {expirationDate.toLocaleDateString(undefined, {

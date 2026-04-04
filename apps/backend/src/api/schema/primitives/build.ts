@@ -14,7 +14,78 @@ import {
 } from "@/build-notification";
 import { Build, BuildNotification, ScreenshotBucket } from "@/database/models";
 
+import { PageParamsSchema } from "./pagination";
 import { Sha1HashSchema } from "./sha";
+
+export const BuildListParamsSchema = PageParamsSchema.extend({
+  head: z.string().min(1).optional(),
+  headSha: Sha1HashSchema.optional(),
+  distinctName: z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === "true") {
+        return true;
+      }
+      if (v === "false") {
+        return false;
+      }
+      return null;
+    })
+    .meta({
+      description:
+        "Only return the latest builds created, unique by name and commit.",
+    }),
+});
+
+/**
+ * List builds for a project with optional branch, commit, and deduplication
+ * filters applied for the API response.
+ */
+export async function listBuilds(
+  ctx: {
+    projectId: string;
+  },
+  params: z.infer<typeof BuildListParamsSchema>,
+) {
+  const { head, headSha, distinctName, page, perPage } = params;
+  const filterQuery = Build.query()
+    .select("builds.id")
+    .where("builds.projectId", ctx.projectId);
+
+  if (head || headSha) {
+    filterQuery.joinRelated("compareScreenshotBucket");
+  }
+
+  if (head) {
+    filterQuery.where("compareScreenshotBucket.branch", head);
+  }
+
+  if (headSha) {
+    filterQuery.where((qb) => {
+      qb.where("builds.prHeadCommit", headSha).orWhere((subquery) => {
+        subquery
+          .whereNull("builds.prHeadCommit")
+          .where("compareScreenshotBucket.commit", headSha);
+      });
+    });
+  }
+
+  if (distinctName) {
+    filterQuery
+      .distinctOn("builds.name")
+      .orderBy("builds.name")
+      .orderBy("builds.id", "desc");
+  }
+
+  return Build.query()
+    .withGraphFetched(
+      "[project.account, compareScreenshotBucket, baseScreenshotBucket]",
+    )
+    .whereIn("builds.id", filterQuery)
+    .orderBy("builds.id", "desc")
+    .page(page - 1, perPage);
+}
 
 export const BuildIdSchema = z.string().meta({
   description: "A unique identifier for the build",
@@ -99,7 +170,8 @@ function getBuildNotificationTypeFromBuildStatus(
 }
 
 /**
- * Serialize builds for API response.
+ * Serialize a list of builds into the public API shape, fetching any missing
+ * bucket relations needed to build git references, URLs, and notifications.
  */
 export async function serializeBuilds(
   builds: Build[],
@@ -197,7 +269,7 @@ export async function serializeBuilds(
 }
 
 /**
- * Serialize a build for API response.
+ * Serialize a single build into the public API shape.
  */
 export async function serializeBuild(
   build: Build,

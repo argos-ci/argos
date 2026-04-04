@@ -17,5 +17,3 @@ export type AuthPATPayload = {
   user: User;
   scope: Account[];
 };
-
-export type AuthPayload = AuthProjectPayload | AuthJWTPayload | AuthPATPayload;

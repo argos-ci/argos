@@ -14,7 +14,7 @@ export function assertProjectAccess(
   auth: AuthPATPayload | AuthProjectPayload,
   params: {
     projectId: string | null;
-    owner: string;
+    account: { slug: string } | { id: string };
   },
 ) {
   switch (auth.type) {
@@ -25,7 +25,20 @@ export function assertProjectAccess(
       break;
     }
     case "pat": {
-      if (!auth.scope.some((account) => account.slug === params.owner)) {
+      // PAT scopes are stored as accounts, but callers may identify the
+      // authorized account either with its public slug or with an internal
+      // identifier field that is already slug-shaped.
+      if (
+        !auth.scope.some((account) => {
+          if ("slug" in params.account) {
+            return account.slug === params.account.slug;
+          }
+          if ("id" in params.account) {
+            return account.slug === params.account.id;
+          }
+          return false;
+        })
+      ) {
         throw boom(401);
       }
       break;
@@ -55,6 +68,9 @@ export async function getProjectFromReqAndParams(
     project: string;
   },
 ) {
+  // Load the auth payload and the routed project together, then authorize the
+  // resolved account/project pair before deciding whether this route is a 401
+  // or a genuine 404.
   const [auth, project] = await Promise.all([
     getAuthPayloadFromExpressReq(request),
     Project.query()
@@ -66,7 +82,7 @@ export async function getProjectFromReqAndParams(
 
   assertProjectAccess(auth, {
     projectId: project?.id ?? null,
-    owner: params.owner,
+    account: { slug: params.owner },
   });
 
   if (!project) {

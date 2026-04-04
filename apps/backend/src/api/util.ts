@@ -102,7 +102,6 @@ export const errorHandler: ErrorRequestHandler = (
   error: unknown,
   _req,
   res,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next,
 ) => {
   const details =

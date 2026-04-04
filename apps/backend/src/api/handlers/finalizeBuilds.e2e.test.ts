@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
@@ -11,39 +11,47 @@ import { createTestHandlerApp } from "../test-util";
 import { finalizeBuilds } from "./finalizeBuilds";
 
 const app = createTestHandlerApp(finalizeBuilds);
-
-describe("finalizeBuilds", () => {
-  let project: Project;
-  let compareScreenshotBucket: ScreenshotBucket;
-  let build: Build;
-
-  beforeAll(() => {
-    z.globalRegistry.clear();
-  });
-
-  beforeEach(async () => {
+const test = base.extend<{
+  project: Project;
+  compareScreenshotBucket: ScreenshotBucket;
+  build: Build;
+}>({
+  project: async ({}, use) => {
     await setupDatabase();
     const account = await factory.TeamAccount.create({
       slug: "awesome-team",
     });
-    project = await factory.Project.create({
+    const project = await factory.Project.create({
       token: "the-awesome-token",
       accountId: account.id,
     });
-    compareScreenshotBucket = await factory.ScreenshotBucket.create({
+    await use(project);
+  },
+  compareScreenshotBucket: async ({ project }, use) => {
+    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
       complete: false,
     });
-    build = await factory.Build.create({
+    await use(compareScreenshotBucket);
+  },
+  build: async ({ project, compareScreenshotBucket }, use) => {
+    const build = await factory.Build.create({
       projectId: project.id,
       compareScreenshotBucketId: compareScreenshotBucket.id,
       externalId: "123",
       totalBatch: -1,
     });
+    await use(build);
+  },
+});
+
+describe("finalizeBuilds", () => {
+  beforeAll(() => {
+    z.globalRegistry.clear();
   });
 
   describe("without a valid token", () => {
-    it("returns 401 status code", async () => {
+    test("returns 401 status code", async () => {
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer invalid-token")
@@ -58,12 +66,13 @@ describe("finalizeBuilds", () => {
   });
 
   describe("with a bucket already complete", () => {
-    beforeEach(async () => {
+    test("returns 200 with the finalized build", async ({
+      build,
+      compareScreenshotBucket,
+    }) => {
       await compareScreenshotBucket.$query().patch({ complete: true });
       await concludeBuild({ build, notify: false });
-    });
 
-    it("returns 200 with the finalized build", async () => {
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")
@@ -108,11 +117,9 @@ describe("finalizeBuilds", () => {
   });
 
   describe("without matching builds", () => {
-    beforeEach(async () => {
+    test("returns 200 with an empty array", async ({ build }) => {
       await build.$query().patch({ totalBatch: null });
-    });
 
-    it("returns 200 with an empty array", async () => {
       await request(app)
         .post(`/builds/finalize`)
         .set("Authorization", "Bearer the-awesome-token")
@@ -125,7 +132,10 @@ describe("finalizeBuilds", () => {
   });
 
   describe("with a valid build", () => {
-    it("returns 200 status code", async () => {
+    test("returns 200 status code", async ({
+      build,
+      compareScreenshotBucket,
+    }) => {
       await concludeBuild({ build, notify: false });
       const res = await request(app)
         .post(`/builds/finalize`)

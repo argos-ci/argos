@@ -3,7 +3,7 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { jwtAuthFromExpressReq } from "@/auth/jwt";
+import { safeJwtAuthFromExpressReq } from "@/auth/jwt";
 import type { AuthJWTPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
 import config from "@/config";
@@ -61,7 +61,7 @@ function withOAuth(
     allowOnlyPost,
     express.json(),
     asyncHandler(async (req, res) => {
-      const auth = await jwtAuthFromExpressReq(req);
+      const auth = await safeJwtAuthFromExpressReq(req);
       try {
         const parsed = OAuthBodySchema.parse(req.body);
         const account = await retrieveAccount(parsed, auth ?? null);

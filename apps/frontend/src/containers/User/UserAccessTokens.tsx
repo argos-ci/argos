@@ -6,7 +6,13 @@ import { DialogTrigger, MenuTrigger } from "react-aria-components";
 import { ProviderMenuButton } from "@/containers/User/ui";
 import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
-import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardParagraph,
+  CardTitle,
+} from "@/ui/Card";
 import { useDialogValueState } from "@/ui/Dialog";
 import { List, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
@@ -27,13 +33,7 @@ type TokenDialogValue = {
 const _AccountFragment = graphql(`
   fragment UserAccessTokens_Account on User {
     id
-    slug
-    name
-    teams {
-      id
-      name
-      slug
-    }
+    ...CreateTokenDialog_Account
     userAccessTokens {
       id
       name
@@ -182,47 +182,22 @@ export function UserAccessTokens(props: {
   const editing = useDialogValueState<TokenDialogValue | null>(null);
   const deleting = useDialogValueState<TokenDialogValue | null>(null);
 
-  function handleRename(value: TokenDialogValue) {
-    editing.open(value);
-  }
-
-  function handleDelete(value: TokenDialogValue) {
-    deleting.open(value);
-  }
-
   return (
     <Card>
       <CardBody>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <CardTitle id="personal-access-tokens">
-              Personal Access Tokens
-            </CardTitle>
-            <CardParagraph>
-              Personal access tokens allow you to authenticate with the Argos
-              API on your behalf.
-            </CardParagraph>
-          </div>
-          <DialogTrigger>
-            <Button variant="secondary" className="shrink-0">
-              <ButtonIcon>
-                <PlusIcon />
-              </ButtonIcon>
-              Generate new token
-            </Button>
-            <Modal>
-              <CreateTokenDialog account={account} />
-            </Modal>
-          </DialogTrigger>
-        </div>
+        <CardTitle>Tokens</CardTitle>
+        <CardParagraph>
+          These tokens allow you to authenticate with the Argos API on your
+          behalf. Be careful!
+        </CardParagraph>
 
         <div className="flex flex-col gap-2 overflow-auto">
           {account.userAccessTokens.length > 0 && (
             <>
               <UserAccessTokenList
                 account={account}
-                onRename={handleRename}
-                onDelete={handleDelete}
+                onRename={(value) => editing.open(value)}
+                onDelete={(value) => deleting.open(value)}
               />
               <div className="text-low text-sm">
                 Tokens are shown only once at creation. Store them in a safe
@@ -232,6 +207,20 @@ export function UserAccessTokens(props: {
           )}
         </div>
       </CardBody>
+      <CardFooter className="flex items-center justify-between gap-4">
+        <div />
+        <DialogTrigger>
+          <Button variant="secondary">
+            <ButtonIcon>
+              <PlusIcon />
+            </ButtonIcon>
+            Generate new token
+          </Button>
+          <Modal>
+            <CreateTokenDialog account={account} />
+          </Modal>
+        </DialogTrigger>
+      </CardFooter>
 
       {editing.value ? (
         <Modal isOpen={editing.isOpen} onOpenChange={editing.onOpenChange}>

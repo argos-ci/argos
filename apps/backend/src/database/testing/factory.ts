@@ -81,6 +81,40 @@ export const GithubRepository = defineFactory(models.GithubRepository, () => ({
   githubAccountId: GithubAccount.associate("id") as unknown as string,
 }));
 
+export const GithubInstallation = defineFactory(
+  models.GithubInstallation,
+  () => ({
+    githubId: FactoryGirl.sequence("githubInstallation.githubId", (n) => n),
+    deleted: false,
+    githubToken: null,
+    githubTokenExpiresAt: null,
+    app: "main" as const,
+    proxy: false,
+  }),
+);
+
+export const GithubRepositoryInstallation = defineFactory(
+  models.GithubRepositoryInstallation,
+  () => ({
+    githubRepositoryId: GithubRepository.associate("id") as unknown as string,
+    githubInstallationId: GithubInstallation.associate(
+      "id",
+    ) as unknown as string,
+  }),
+);
+
+export const GitlabProject = defineFactory(models.GitlabProject, () => ({
+  name: FactoryGirl.sequence("gitlabProject.name", (n) => `project-${n}`),
+  path: FactoryGirl.sequence("gitlabProject.path", (n) => `project-${n}`),
+  pathWithNamespace: FactoryGirl.sequence(
+    "gitlabProject.pathWithNamespace",
+    (n) => `group/project-${n}`,
+  ),
+  visibility: "private" as const,
+  defaultBranch: "main",
+  gitlabId: FactoryGirl.sequence("gitlabProject.gitlabId", (n) => n),
+}));
+
 export const UserAccount = defineFactory(models.Account, () => ({
   userId: User.associate("id") as unknown as string,
   name: FactoryGirl.sequence("account.slug", (n) => `Account ${n}`),

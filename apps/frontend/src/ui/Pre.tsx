@@ -19,7 +19,7 @@ export function Pre({ code, copyRef, ...rest }: PreProps) {
       )}
     >
       <CopyButton
-        className="absolute top-4 right-2 text-lg"
+        className="absolute top-3 right-2 text-lg"
         text={code}
         copyRef={copyRef}
       />

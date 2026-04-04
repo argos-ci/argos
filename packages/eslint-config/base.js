@@ -20,6 +20,7 @@ export const config = defineConfig([
         "error",
         {
           varsIgnorePattern: "^_",
+          argsIgnorePattern: "^_",
         },
       ],
     },
@@ -38,6 +39,7 @@ export const config = defineConfig([
     rules: {
       ...vitest.configs.recommended.rules,
       "no-empty-pattern": "off",
+      "vitest/no-conditional-expect": "off",
     },
   },
 ]);

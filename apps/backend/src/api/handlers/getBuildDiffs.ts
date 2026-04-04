@@ -91,7 +91,7 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
 
       assertProjectAccess(auth, {
         projectId: build?.projectId ?? null,
-        owner: params.owner,
+        account: { slug: params.owner },
       });
 
       if (!build) {
