@@ -25,7 +25,7 @@ const UpdateUserAccessTokenMutation = graphql(`
       createdAt
       expireAt
       lastUsedAt
-      createdBy
+      source
       scope {
         id
         name

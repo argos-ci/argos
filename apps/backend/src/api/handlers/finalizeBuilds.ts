@@ -6,9 +6,8 @@ import { job as buildJob } from "@/build";
 import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
 import { Build } from "@/database/models";
 import { transaction } from "@/database/transaction";
-import { boom } from "@/util/error";
-import { repoAuth } from "@/web/middlewares/repoAuth";
 
+import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
 import {
   conflict,
@@ -52,16 +51,14 @@ export const finalizeBuildsOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
-  return post("/builds/finalize", repoAuth, async (req, res) => {
-    if (!req.authProject) {
-      throw boom(401, "Unauthorized");
-    }
+  return post("/builds/finalize", async (req, res) => {
+    const auth = await getAuthProjectPayloadFromExpressReq(req);
 
     const { parallelNonce } = req.body;
 
     const builds = await Build.query()
       .withGraphFetched("compareScreenshotBucket")
-      .where("builds.projectId", req.authProject.id)
+      .where("builds.projectId", auth.project.id)
       .where("builds.externalId", parallelNonce)
       .where("builds.totalBatch", -1);
 

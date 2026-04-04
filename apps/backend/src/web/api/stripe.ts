@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import express from "express";
 
+import { jwtAuthFromExpressReq } from "@/auth/jwt";
 import config from "@/config";
 import { getAdminAccount } from "@/graphql/services/account";
 import parentLogger from "@/logger";
@@ -14,7 +15,6 @@ import {
 import type { Stripe } from "@/stripe";
 import { boom } from "@/util/error";
 
-import { auth } from "../middlewares/auth";
 import { allowApp } from "../middlewares/cors";
 import { allowOnlyPost } from "../middlewares/methods";
 import { asyncHandler } from "../util";
@@ -63,14 +63,14 @@ router.use(
   "/stripe/create-customer-portal-session",
   allowApp,
   allowOnlyPost,
-  auth,
   express.json(),
   asyncHandler(async (req, res) => {
+    const auth = await jwtAuthFromExpressReq(req);
+    const { user } = auth;
+
     try {
       const { stripeCustomerId, accountId } = req.body;
-      const user = req.auth?.user;
 
-      invariant(user, "user not logged in");
       invariant(stripeCustomerId, "Stripe customer id missing");
       invariant(accountId, "account id missing");
 
@@ -108,24 +108,24 @@ router.use(
   "/stripe/create-checkout-session",
   allowApp,
   allowOnlyPost,
-  auth,
   express.json(),
   asyncHandler(async (req, res) => {
+    const auth = await jwtAuthFromExpressReq(req);
+
     try {
       const { accountId, successUrl, cancelUrl } = req.body;
-      invariant(req.auth, "Unauthenticated");
       invariant(accountId, "accountId missing");
 
       const [teamAccount, proPlan, noTrial] = await Promise.all([
-        getAdminAccount({ id: accountId, user: req.auth.user }),
+        getAdminAccount({ id: accountId, user: auth.user }),
         getStripeProPlanOrThrow(),
-        req.auth.account.$checkHasSubscribedToTrial(),
+        auth.account.$checkHasSubscribedToTrial(),
       ]);
 
       const session = await createStripeCheckoutSession({
         plan: proPlan,
         teamAccount,
-        subscriberAccount: req.auth.account,
+        subscriberAccount: auth.account,
         successUrl,
         cancelUrl,
         trial: !noTrial,

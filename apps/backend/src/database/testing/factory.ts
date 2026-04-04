@@ -64,7 +64,7 @@ export const UserAccessToken = defineFactory(models.UserAccessToken, () => ({
   token: FactoryGirl.sequence("userAccessToken.token", (n) =>
     hashToken(`arp_${n.toString(16).padStart(36, "0")}`),
   ),
-  createdBy: "user" as const,
+  source: "user" as const,
 }));
 
 export const GithubAccount = defineFactory(models.GithubAccount, () => ({

@@ -2,10 +2,8 @@
 -- PostgreSQL database dump
 --
 
-\restrict tcwwa0navv4WKeaYIi4EKa3vQQ4QsdRuGwaRIjvsh5ua5zp7TYRTpd8lgNzd9lh
-
 -- Dumped from database version 17.5
--- Dumped by pg_dump version 17.9 (Homebrew)
+-- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1873,10 +1871,11 @@ CREATE TABLE public.user_access_tokens (
     "updatedAt" timestamp with time zone NOT NULL,
     "userId" bigint NOT NULL,
     name character varying(255) NOT NULL,
-    token character varying(255) NOT NULL,
+    token character varying(40) NOT NULL,
     "expireAt" timestamp with time zone,
     "lastUsedAt" timestamp with time zone,
-    "createdBy" character varying(255) NOT NULL
+    source text NOT NULL,
+    CONSTRAINT user_access_tokens_source_check CHECK ((source = ANY (ARRAY['user'::text, 'cli'::text])))
 );
 
 
@@ -3294,20 +3293,6 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 
 
 --
--- Name: user_access_token_scopes_accountid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_access_token_scopes_accountid_index ON public.user_access_token_scopes USING btree ("accountId");
-
-
---
--- Name: user_access_token_scopes_useraccesstokenid_index; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX user_access_token_scopes_useraccesstokenid_index ON public.user_access_token_scopes USING btree ("userAccessTokenId");
-
-
---
 -- Name: user_access_tokens_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3878,7 +3863,7 @@ ALTER TABLE ONLY public.tests
 --
 
 ALTER TABLE ONLY public.user_access_token_scopes
-    ADD CONSTRAINT user_access_token_scopes_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id);
+    ADD CONSTRAINT user_access_token_scopes_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
 
 
 --
@@ -3886,7 +3871,7 @@ ALTER TABLE ONLY public.user_access_token_scopes
 --
 
 ALTER TABLE ONLY public.user_access_token_scopes
-    ADD CONSTRAINT user_access_token_scopes_useraccesstokenid_foreign FOREIGN KEY ("userAccessTokenId") REFERENCES public.user_access_tokens(id);
+    ADD CONSTRAINT user_access_token_scopes_useraccesstokenid_foreign FOREIGN KEY ("userAccessTokenId") REFERENCES public.user_access_tokens(id) ON DELETE CASCADE;
 
 
 --
@@ -3894,7 +3879,7 @@ ALTER TABLE ONLY public.user_access_token_scopes
 --
 
 ALTER TABLE ONLY public.user_access_tokens
-    ADD CONSTRAINT user_access_tokens_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+    ADD CONSTRAINT user_access_tokens_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -3924,8 +3909,6 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict tcwwa0navv4WKeaYIi4EKa3vQQ4QsdRuGwaRIjvsh5ua5zp7TYRTpd8lgNzd9lh
 
 -- Knex migrations
 

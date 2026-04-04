@@ -2,7 +2,9 @@ import type { BaseContext } from "@apollo/server";
 import type { Request } from "express";
 import { GraphQLError } from "graphql";
 
-import { AuthPayload, getAuthPayloadFromRequest } from "@/auth/request";
+import { safeParseBearerFromHeader } from "@/auth/auth-header";
+import { getAuthPayloadFromJWT } from "@/auth/jwt";
+import type { AuthJWTPayload } from "@/auth/payload";
 import { HTTPError } from "@/util/error";
 import {
   extractLocationFromRequest,
@@ -12,17 +14,27 @@ import {
 import { createLoaders } from "./loaders";
 
 export type Context = BaseContext & {
-  auth: AuthPayload | null;
+  auth: AuthJWTPayload | null;
   requestLocation: RequestLocation | null;
   loaders: ReturnType<typeof createLoaders>;
 };
 
-async function getContextAuth(request: Request): Promise<AuthPayload | null> {
+async function getContextAuth(
+  request: Request,
+): Promise<AuthJWTPayload | null> {
   if (process.env["NODE_ENV"] === "test") {
     return (request as any).__MOCKED_AUTH__ ?? null;
   }
 
-  return getAuthPayloadFromRequest(request);
+  const authHeader = request.get("authorization");
+  if (!authHeader) {
+    return null;
+  }
+  const bearer = safeParseBearerFromHeader(authHeader);
+  if (!bearer) {
+    return null;
+  }
+  return getAuthPayloadFromJWT(bearer);
 }
 
 export async function getContext(request: Request): Promise<Context> {

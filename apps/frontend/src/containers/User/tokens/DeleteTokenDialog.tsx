@@ -24,7 +24,7 @@ const DeleteUserAccessTokenMutation = graphql(`
         createdAt
         expireAt
         lastUsedAt
-        createdBy
+        source
         scope {
           id
           name

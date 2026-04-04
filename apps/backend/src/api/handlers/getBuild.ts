@@ -1,66 +1,70 @@
-import { invariant } from "@argos/util/invariant";
 import z from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { Build } from "@/database/models";
 import { boom } from "@/util/error";
-import { repoAuth } from "@/web/middlewares/repoAuth";
 
 import {
-  BuildIdSchema,
+  assertProjectAccess,
+  getAuthPayloadFromExpressReq,
+} from "../auth/project";
+import {
+  BuildNumber,
   BuildSchema,
   serializeBuild,
 } from "../schema/primitives/build";
+import { ProjectName, ProjectOwner } from "../schema/primitives/project";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
   unauthorized,
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
-import {
-  assertProjectAccess,
-  assertProjectAccessResponses,
-} from "./projectAccess";
 
 export const getBuildOperation = {
   operationId: "getBuild",
   requestParams: {
     path: z.object({
-      buildId: BuildIdSchema,
+      owner: ProjectOwner,
+      project: ProjectName,
+      buildNumber: BuildNumber,
     }),
   },
   responses: {
-    ...assertProjectAccessResponses,
     "200": {
       description: "Build",
-      content: {
-        "application/json": {
-          schema: BuildSchema,
-        },
-      },
+      content: { "application/json": { schema: BuildSchema } },
     },
     "400": invalidParameters,
     "401": unauthorized,
     "404": notFound,
+    "403": forbidden,
     "500": serverError,
   },
 } satisfies ZodOpenApiOperationObject;
 
 export const getBuild: CreateAPIHandler = ({ get }) => {
-  return get("/builds/{buildId}", repoAuth, async (req, res) => {
-    const { buildId } = req.ctx.params;
+  get("/projects/{owner}/{project}/builds/{buildNumber}", async (req, res) => {
+    const { params } = req.ctx;
+    const [auth, build] = await Promise.all([
+      getAuthPayloadFromExpressReq(req),
+      Build.query()
+        .joinRelated("project.account")
+        .where("project:account.slug", params.owner)
+        .where("number", params.buildNumber)
+        .first(),
+    ]);
 
-    const build = await Build.query()
-      .findById(buildId)
-      .withGraphFetched("project");
+    assertProjectAccess(auth, {
+      projectId: build?.projectId ?? null,
+      owner: params.owner,
+    });
 
     if (!build) {
       throw boom(404, "Not found");
     }
-
-    invariant(build.project, "Build project is missing");
-    await assertProjectAccess({ request: req, project: build.project });
 
     res.send(await serializeBuild(build));
   });

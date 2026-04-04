@@ -18,18 +18,12 @@ export const typeDefs = gql`
     createdAt: DateTime!
     expireAt: DateTime
     lastUsedAt: DateTime
-    createdBy: String!
+    source: String!
     scope: [Account!]!
   }
 
-  type CreatedUserAccessToken {
-    id: ID!
-    name: String!
-    createdAt: DateTime!
-    expireAt: DateTime
-    lastUsedAt: DateTime
-    createdBy: String!
-    scope: [Account!]!
+  type CreateUserAccessTokenPayload {
+    accessToken: UserAccessToken!
     "The token value, only returned once at creation"
     token: String!
   }
@@ -53,7 +47,7 @@ export const typeDefs = gql`
     "Create a personal access token"
     createUserAccessToken(
       input: CreateUserAccessTokenInput!
-    ): CreatedUserAccessToken!
+    ): CreateUserAccessTokenPayload!
     "Update a personal access token"
     updateUserAccessToken(input: UpdateUserAccessTokenInput!): UserAccessToken!
     "Delete a personal access token"
@@ -62,11 +56,23 @@ export const typeDefs = gql`
 `;
 
 export const resolvers: IResolvers = {
+  UserAccessToken: {
+    scope: async (userAccessToken) => {
+      const scopes = await UserAccessTokenScope.query()
+        .where("userAccessTokenId", userAccessToken.id)
+        .withGraphFetched("account");
+      return scopes.map((scope) => {
+        invariant(scope.account);
+        return scope.account;
+      });
+    },
+  },
   Mutation: {
     createUserAccessToken: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw forbidden();
       }
+      const userId = ctx.auth.user.id;
 
       const { name, accountIds, expireInDays } = args.input;
 
@@ -76,7 +82,7 @@ export const resolvers: IResolvers = {
 
       const accessibleAccounts = await getAccessibleAccounts({
         accountIds,
-        userId: ctx.auth.user.id,
+        userId,
       });
 
       if (accessibleAccounts.length !== accountIds.length) {
@@ -84,7 +90,6 @@ export const resolvers: IResolvers = {
       }
 
       const token = UserAccessToken.generateToken();
-      const userId = ctx.auth.user.id;
       const expireAt =
         expireInDays != null
           ? new Date(
@@ -93,14 +98,16 @@ export const resolvers: IResolvers = {
           : null;
 
       const userAccessToken = await transaction(async (trx) => {
-        const userAccessToken = await UserAccessToken.query(trx).insert({
-          userId,
-          name: name.trim(),
-          token: hashToken(token),
-          lastUsedAt: null,
-          expireAt,
-          createdBy: "user",
-        });
+        const userAccessToken = await UserAccessToken.query(trx).insertAndFetch(
+          {
+            userId,
+            name: name.trim(),
+            token: hashToken(token),
+            lastUsedAt: null,
+            expireAt,
+            source: "user",
+          },
+        );
 
         await UserAccessTokenScope.query(trx).insert(
           accessibleAccounts.map((account) => ({
@@ -113,13 +120,7 @@ export const resolvers: IResolvers = {
       });
 
       return {
-        ...userAccessToken,
-        createdAt: new Date(userAccessToken.createdAt),
-        expireAt: userAccessToken.expireAt
-          ? new Date(userAccessToken.expireAt)
-          : null,
-        lastUsedAt: null,
-        scope: accessibleAccounts,
+        accessToken: userAccessToken,
         token,
       };
     },
@@ -144,24 +145,9 @@ export const resolvers: IResolvers = {
         throw badUserInput("Token not found");
       }
 
-      const updated = await token.$query().patchAndFetch({
+      return token.$query().patchAndFetch({
         name: trimmedName,
       });
-
-      const scopes = await UserAccessTokenScope.query()
-        .where("userAccessTokenId", updated.id)
-        .withGraphFetched("account");
-
-      return {
-        ...updated,
-        createdAt: new Date(updated.createdAt),
-        expireAt: updated.expireAt ? new Date(updated.expireAt) : null,
-        lastUsedAt: updated.lastUsedAt ? new Date(updated.lastUsedAt) : null,
-        scope: scopes.map((scope) => {
-          invariant(scope.account, "scope.account is undefined");
-          return scope.account;
-        }),
-      };
     },
     deleteUserAccessToken: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -170,20 +156,9 @@ export const resolvers: IResolvers = {
 
       const { id } = args.input;
 
-      const token = await UserAccessToken.query().findOne({
+      await UserAccessToken.query().delete().where({
         id,
         userId: ctx.auth.user.id,
-      });
-
-      if (!token) {
-        return ctx.auth.account;
-      }
-
-      await transaction(async (trx) => {
-        await UserAccessTokenScope.query(trx)
-          .where("userAccessTokenId", token.id)
-          .delete();
-        await token.$query(trx).delete();
       });
 
       return ctx.auth.account;

@@ -5,11 +5,11 @@ import { stringify } from "yaml";
 
 import { createBuild } from "./handlers/createBuild";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
-import { getAuthBuildByNumber } from "./handlers/getAuthBuildByNumber";
 import { getAuthProject } from "./handlers/getAuthProject";
-import { getAuthProjectBuilds } from "./handlers/getAuthProjectBuilds";
 import { getBuild } from "./handlers/getBuild";
 import { getBuildDiffs } from "./handlers/getBuildDiffs";
+import { getProject } from "./handlers/getProject";
+import { getProjectBuilds } from "./handlers/getProjectBuilds";
 import { updateBuild } from "./handlers/updateBuild";
 import { schema } from "./schema";
 import { errorHandler, registerHandler } from "./util";
@@ -38,14 +38,14 @@ router.get("/openapi.yaml", (_req, res) => {
 });
 
 // Register the handlers.
-registerHandler(router, getAuthProject);
-registerHandler(router, getAuthProjectBuilds);
-registerHandler(router, getBuild);
-registerHandler(router, getAuthBuildByNumber);
-registerHandler(router, getBuildDiffs);
 registerHandler(router, createBuild);
-registerHandler(router, updateBuild);
 registerHandler(router, finalizeBuilds);
+registerHandler(router, getAuthProject);
+registerHandler(router, getBuild);
+registerHandler(router, getBuildDiffs);
+registerHandler(router, getProject);
+registerHandler(router, getProjectBuilds);
+registerHandler(router, updateBuild);
 
 // Error handlers
 router.use(errorHandler);

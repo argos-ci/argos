@@ -27,16 +27,18 @@ import { SelectButton, SelectField, SelectValue } from "@/ui/Select";
 const CreateUserAccessTokenMutation = graphql(`
   mutation CreateUserAccessToken($input: CreateUserAccessTokenInput!) {
     createUserAccessToken(input: $input) {
-      id
-      name
-      createdAt
-      expireAt
-      lastUsedAt
-      createdBy
-      scope {
+      accessToken {
         id
         name
-        slug
+        createdAt
+        expireAt
+        lastUsedAt
+        source
+        scope {
+          id
+          name
+          slug
+        }
       }
       token
     }
@@ -50,7 +52,7 @@ const UserAccessTokenCacheFragment = graphql(`
     createdAt
     expireAt
     lastUsedAt
-    createdBy
+    source
     scope {
       id
       name
@@ -207,16 +209,7 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
 
         const newTokenRef = cache.writeFragment({
           fragment: UserAccessTokenCacheFragment,
-          data: {
-            __typename: "UserAccessToken",
-            id: newToken.id,
-            name: newToken.name,
-            createdAt: newToken.createdAt,
-            expireAt: newToken.expireAt,
-            lastUsedAt: newToken.lastUsedAt,
-            createdBy: newToken.createdBy,
-            scope: newToken.scope,
-          },
+          data: newToken.accessToken,
         });
 
         cache.modify({
@@ -226,7 +219,7 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
               if (
                 existingTokens.some(
                   (tokenRef: Parameters<typeof readField>[1]) =>
-                    readField("id", tokenRef) === newToken.id,
+                    readField("id", tokenRef) === newToken.accessToken.id,
                 )
               ) {
                 return existingTokens;
@@ -239,7 +232,9 @@ export function CreateTokenDialog({ account }: CreateTokenDialogProps) {
     });
     if (result.data) {
       setCreatedToken(result.data.createUserAccessToken.token);
-      setCreatedExpireAt(result.data.createUserAccessToken.expireAt ?? null);
+      setCreatedExpireAt(
+        result.data.createUserAccessToken.accessToken.expireAt ?? null,
+      );
     }
   };
 

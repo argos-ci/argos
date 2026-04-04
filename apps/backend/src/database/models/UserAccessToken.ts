@@ -1,4 +1,5 @@
-import type { RelationMappings } from "objection";
+import type { JSONSchema, RelationMappings } from "objection";
+import { z } from "zod";
 
 import { generateRandomHexString } from "../services/crypto";
 import { Model } from "../util/model";
@@ -8,6 +9,8 @@ import { UserAccessTokenScope } from "./UserAccessTokenScope";
 
 const UserAccessTokenPrefix = "arp_";
 
+const SourceSchema = z.enum(["user", "cli"]);
+
 export class UserAccessToken extends Model {
   static override tableName = "user_access_tokens";
 
@@ -16,14 +19,14 @@ export class UserAccessToken extends Model {
       timestampsSchema,
       {
         type: "object",
-        required: ["userId", "name", "token", "createdBy"],
+        required: ["userId", "name", "token", "source"],
         properties: {
           userId: { type: "string" },
           name: { type: "string" },
-          token: { type: "string" },
+          token: { type: "string", minLength: 40, maxLength: 40 },
           expireAt: { type: ["string", "null"] },
           lastUsedAt: { type: ["string", "null"] },
-          createdBy: { type: "string", enum: ["user", "cli"] },
+          source: SourceSchema.toJSONSchema() as JSONSchema,
         },
       },
     ],
@@ -34,7 +37,7 @@ export class UserAccessToken extends Model {
   token!: string;
   expireAt!: string | null;
   lastUsedAt!: string | null;
-  createdBy!: "user" | "cli";
+  source!: z.infer<typeof SourceSchema>;
 
   static override get relationMappings(): RelationMappings {
     return {

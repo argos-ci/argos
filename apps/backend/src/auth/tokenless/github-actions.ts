@@ -36,7 +36,7 @@ const validateAuthData = (infos: any): infos is AuthData => {
   return Boolean(infos.owner && infos.repository && infos.jobId && infos.runId);
 };
 
-const strategy = {
+export const tokenlessGitHubActionsStrategy = {
   detect: (bearerToken: string) => bearerToken.startsWith(marker),
   getProject: async (bearerToken: string): Promise<Project | null> => {
     const authData = decodeToken(bearerToken, marker);
@@ -122,5 +122,3 @@ const strategy = {
     return repository.projects[0];
   },
 };
-
-export default strategy;

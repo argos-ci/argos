@@ -36,12 +36,19 @@ const BuildGitReferenceSchema = z
     id: "BuildGitReference",
   });
 
+export const BuildNumber = z
+  .string()
+  .transform((value) => z.coerce.number().int().min(1).parse(value))
+  .meta({
+    description: "The build number",
+    example: 42,
+    id: "BuildNumber",
+  });
+
 export const BuildSchema = z
   .object({
     id: BuildIdSchema,
-    number: z.number().min(1).meta({
-      description: "The build number",
-    }),
+    number: BuildNumber,
     head: BuildGitReferenceSchema.meta({
       description: "The head reference of the build",
     }),

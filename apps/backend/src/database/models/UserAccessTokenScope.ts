@@ -47,4 +47,5 @@ export class UserAccessTokenScope extends Model {
   }
 
   account?: Account;
+  userAccessToken?: UserAccessToken;
 }

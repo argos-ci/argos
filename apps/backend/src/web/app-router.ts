@@ -15,7 +15,6 @@ import { createRedisStore } from "@/util/rate-limit";
 import { getEmailPreviewMiddleware } from "../email/express";
 import { getNotificationPreviewMiddleware } from "../notification/express";
 import samlAuthRouter from "./auth-saml";
-import { auth } from "./middlewares/auth";
 import { subdomain } from "./util";
 
 export const installAppRouter = async (app: express.Application) => {
@@ -134,8 +133,6 @@ export const installAppRouter = async (app: express.Application) => {
     }),
     createApolloMiddleware(),
   );
-
-  router.use(auth);
 
   router.get("/auth/logout", (req, res) => {
     // @ts-expect-error logout is added dynamically

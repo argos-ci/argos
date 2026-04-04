@@ -7,22 +7,25 @@ export const up = async (knex) => {
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
     table.bigInteger("userId").notNullable().index();
-    table.foreign("userId").references("users.id");
+    table.foreign("userId").references("users.id").onDelete("cascade");
     table.string("name").notNullable();
-    table.string("token").notNullable().unique();
+    table.string("token", 40).notNullable().unique();
     table.dateTime("expireAt").nullable();
     table.dateTime("lastUsedAt").nullable();
-    table.string("createdBy").notNullable();
+    table.enum("source", ["user", "cli"]).notNullable();
   });
 
   await knex.schema.createTable("user_access_token_scopes", (table) => {
     table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
-    table.bigInteger("userAccessTokenId").notNullable().index();
-    table.foreign("userAccessTokenId").references("user_access_tokens.id");
-    table.bigInteger("accountId").notNullable().index();
-    table.foreign("accountId").references("accounts.id");
+    table.bigInteger("userAccessTokenId").notNullable();
+    table
+      .foreign("userAccessTokenId")
+      .references("user_access_tokens.id")
+      .onDelete("cascade");
+    table.bigInteger("accountId").notNullable();
+    table.foreign("accountId").references("accounts.id").onDelete("cascade");
     table.unique(["userAccessTokenId", "accountId"]);
   });
 };
