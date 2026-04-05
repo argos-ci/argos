@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { Account, UserAccessToken } from "@/database/models";
@@ -39,19 +40,24 @@ export async function getAuthPayloadFromUserAccessToken(
   const userTeamIds = new Set(user.teams.map((team) => team.id));
   const scopeAccounts = scope.reduce<Account[]>((accounts, entry) => {
     invariant(entry.account);
-    if (entry.account.userId) {
-      if (entry.account.userId === userAccessToken.userId) {
-        accounts.push(entry.account);
+    switch (entry.account.type) {
+      case "team": {
+        invariant(entry.account.teamId);
+        if (userTeamIds.has(entry.account.teamId)) {
+          accounts.push(entry.account);
+        }
+        return accounts;
       }
-      return accounts;
-    }
-    if (entry.account.teamId) {
-      if (userTeamIds.has(entry.account.teamId)) {
-        accounts.push(entry.account);
+      case "user": {
+        invariant(entry.account.userId);
+        if (entry.account.userId === userAccessToken.userId) {
+          accounts.push(entry.account);
+        }
+        return accounts;
       }
-      return accounts;
+      default:
+        assertNever(entry.account.type);
     }
-    throw new Error(`Invalid account type (id: ${entry.account.id})`);
   }, []);
 
   if (scopeAccounts.length === 0) {
