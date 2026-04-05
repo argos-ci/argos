@@ -4,6 +4,7 @@ import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import type {
+  Account,
   Build,
   File,
   Project,
@@ -35,6 +36,7 @@ const screenshotMetadata = {
 };
 
 const test = base.extend<{
+  account: Account;
   factory: typeof factory;
   project: Project;
   buckets: { base: ScreenshotBucket; compare: ScreenshotBucket };
@@ -48,8 +50,13 @@ const test = base.extend<{
     await setupDatabase();
     await use(factory);
   },
-  project: async ({ factory }, use) => {
+  account: async ({ factory }, use) => {
+    const account = await factory.TeamAccount.create({ slug: "acme" });
+    await use(account);
+  },
+  project: async ({ factory, account }, use) => {
     const project = await factory.Project.create({
+      accountId: account.id,
       name: "diffs-project",
       token: "token-with-diffs",
     });
@@ -125,6 +132,16 @@ const test = base.extend<{
   },
 });
 
+const getBuildDiffsPath = ({
+  owner,
+  project,
+  buildNumber,
+}: {
+  owner: string;
+  project: string;
+  buildNumber: number;
+}) => `/projects/${owner}/${project}/builds/${buildNumber}/diffs`;
+
 describe("getBuildDiffs", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
@@ -133,7 +150,9 @@ describe("getBuildDiffs", () => {
   describe("without a valid token", () => {
     test("returns 401 status code", async () => {
       await request(app)
-        .get("/builds/non-existing-id/diffs")
+        .get(
+          getBuildDiffsPath({ owner: "acme", project: "web", buildNumber: 1 }),
+        )
         .set("Authorization", "Bearer invalid-token")
         .expect((res) => {
           expect(res.body.error).toBe(
@@ -145,8 +164,11 @@ describe("getBuildDiffs", () => {
   });
 
   describe("with a build from another project", () => {
-    test("returns 404 status code", async ({ factory, project }) => {
-      const otherProject = await factory.Project.create();
+    test("returns 401 status code", async ({ factory, account }) => {
+      const otherProject = await factory.Project.create({
+        accountId: account.id,
+        name: "docs",
+      });
       const compareScreenshotBucket = await factory.ScreenshotBucket.create({
         projectId: otherProject.id,
       });
@@ -156,12 +178,20 @@ describe("getBuildDiffs", () => {
       });
 
       await request(app)
-        .get(`/builds/${foreignBuild.id}/diffs`)
-        .set("Authorization", `Bearer ${project.token}`)
+        .get(
+          getBuildDiffsPath({
+            owner: "acme",
+            project: otherProject.name,
+            buildNumber: foreignBuild.number,
+          }),
+        )
+        .set("Authorization", "Bearer token-with-diffs")
         .expect((res) => {
-          expect(res.body.error).toBe("Not found");
+          expect(res.body.error).toBe(
+            `Project not found in Argos. If the issue persists, verify your token. (token: "token-with-diffs").`,
+          );
         })
-        .expect(404);
+        .expect(401);
     });
   });
 
@@ -174,7 +204,13 @@ describe("getBuildDiffs", () => {
       files,
     }) => {
       const res = await request(app)
-        .get(`/builds/${build.id}/diffs`)
+        .get(
+          getBuildDiffsPath({
+            owner: "acme",
+            project: project.name,
+            buildNumber: build.number,
+          }),
+        )
         .set("Authorization", `Bearer ${project.token}`)
         .expect(200);
 
@@ -245,7 +281,13 @@ describe("getBuildDiffs", () => {
       });
 
       const res = await request(app)
-        .get(`/builds/${build.id}/diffs`)
+        .get(
+          getBuildDiffsPath({
+            owner: account.slug,
+            project: project.name,
+            buildNumber: build.number,
+          }),
+        )
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
@@ -400,7 +442,13 @@ describe("getBuildDiffs", () => {
         project,
       }) => {
         const res = await request(app)
-          .get(`/builds/${build.id}/diffs`)
+          .get(
+            getBuildDiffsPath({
+              owner: "acme",
+              project: project.name,
+              buildNumber: build.number,
+            }),
+          )
           .query({ needsReview: "true" })
           .set("Authorization", `Bearer ${project.token}`)
           .expect(200);
@@ -420,7 +468,13 @@ describe("getBuildDiffs", () => {
         project,
       }) => {
         const res = await request(app)
-          .get(`/builds/${build.id}/diffs`)
+          .get(
+            getBuildDiffsPath({
+              owner: "acme",
+              project: project.name,
+              buildNumber: build.number,
+            }),
+          )
           .set("Authorization", `Bearer ${project.token}`)
           .expect(200);
 
@@ -501,7 +555,13 @@ describe("getBuildDiffs", () => {
       ]);
 
       const res = await request(app)
-        .get(`/builds/${build.id}/diffs`)
+        .get(
+          getBuildDiffsPath({
+            owner: "acme",
+            project: project.name,
+            buildNumber: build.number,
+          }),
+        )
         .query({ needsReview: "true" })
         .set("Authorization", `Bearer ${project.token}`)
         .expect(200);

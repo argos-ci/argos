@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -85,6 +84,7 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
         Build.query()
           .joinRelated("project.account")
           .where("project:account.slug", params.owner)
+          .where("project.name", params.project)
           .where("number", params.buildNumber)
           .first(),
       ]);
@@ -97,8 +97,6 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
       if (!build) {
         throw boom(404, "Not found");
       }
-
-      invariant(build.project, "Build project is missing");
 
       const diffsQuery = ScreenshotDiff.query()
         .where("screenshot_diffs.buildId", build.id)
