@@ -56,6 +56,10 @@ const config = defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
+      name: "auth",
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
@@ -74,7 +78,7 @@ const config = defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "node apps/backend/dist/processes/proc/web.js",
+    command: "NODE_ENV=test node apps/backend/dist/processes/proc/web.js",
     port: 3000,
     timeout: 10 * 1000,
     reuseExistingServer: false,
