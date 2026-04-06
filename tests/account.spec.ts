@@ -2,17 +2,43 @@ import { expect } from "@playwright/test";
 
 import { loggedTest } from "./logged-test";
 
-loggedTest("change name", async ({ page }) => {
+loggedTest("personal settings - name", async ({ page, auth }) => {
   await page.goto("/gregberge/settings");
-  const nameRegion = page.getByRole("region", { name: "Your Name" });
-  const nameTextbox = nameRegion.getByRole("textbox", {
+  const region = page.getByRole("region", { name: "Your Name" });
+  const textbox = region.getByRole("textbox", {
     name: "Name",
     exact: true,
   });
-  expect(await nameTextbox.inputValue()).toBe("Greg Bergé");
-  await nameTextbox.fill("James Bond");
-  await nameRegion.getByRole("button", { name: "Save" }).click();
-  await expect(nameRegion.getByText("Saved")).toBeVisible();
+  expect(await textbox.inputValue()).toBe(auth.account.name);
+  await textbox.fill("James Bond");
+  await region.getByRole("button", { name: "Save" }).click();
+  await expect(region.getByRole("alert", { name: "Saved" })).toBeVisible();
   await page.reload();
-  expect(await nameTextbox.inputValue()).toBe("James Bond");
+  expect(await textbox.inputValue()).toBe("James Bond");
+});
+
+loggedTest("personal settings - username", async ({ page, auth }) => {
+  await page.goto("/gregberge/settings");
+  const region = page.getByRole("region", { name: "Your Username" });
+  const textbox = region.getByRole("textbox", {
+    name: "URL namespace",
+    exact: true,
+  });
+  const saveButton = region.getByRole("button", { name: "Save" });
+
+  expect(await textbox.inputValue()).toBe(auth.account.slug);
+
+  // Test with a "-" at the end to trigger an error
+  await textbox.fill("new-slug-");
+  await saveButton.click();
+  await expect(
+    region.getByRole("alert", {
+      name: /ending with an alphanumeric character/,
+    }),
+  ).toBeVisible();
+  await textbox.fill("new-slug");
+  await saveButton.click();
+  await expect(region.getByRole("alert", { name: "Saved" })).toBeVisible();
+  await page.reload();
+  expect(await textbox.inputValue()).toBe("new-slug");
 });

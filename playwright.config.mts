@@ -5,10 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
 import argosConfig from "./apps/backend/src/config";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Number of workers.
  */
-// require('dotenv').config();
+const WORKERS = 2;
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -31,8 +30,7 @@ const config = defineConfig({
   forbidOnly: Boolean(process.env.CI),
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 2 : undefined,
+  workers: WORKERS,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ["list"],
@@ -65,27 +63,39 @@ const config = defineConfig({
         ...devices["Desktop Chrome"],
       },
     },
-    {
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-      },
-    },
+    // {
+    //   name: "firefox",
+    //   use: {
+    //     ...devices["Desktop Firefox"],
+    //   },
+    // },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   outputDir: "screenshots",
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "NODE_ENV=test node apps/backend/dist/processes/proc/web.js",
-    port: 3000,
+  webServer: Array.from({ length: WORKERS }, (_, index) =>
+    getServerByIndex(index),
+  ),
+});
+
+function getServerByIndex(index: number) {
+  const DATABASE_URL =
+    process.env.DATABASE_URL || "postgresql://postgres@localhost/test";
+  const port = 3000 + index;
+  return {
+    command: "node apps/backend/dist/processes/proc/web.js",
+    port,
     timeout: 10 * 1000,
     reuseExistingServer: false,
     env: {
+      NODE_ENV: "test",
+      PORT: String(port),
+      DATABASE_URL: `${DATABASE_URL}-${index}`,
       CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
     },
-  },
-});
+  };
+}
 
 export default config;

@@ -1,17 +1,24 @@
 import baseSlugify from "@sindresorhus/slugify";
 
 /**
+ * Regex to validate a slug.
+ * A slug must be lowercase alphanumeric, may contain hyphens in the middle,
+ * and must start and end with an alphanumeric character.
+ */
+export const SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
+
+/**
  * Slug JSON schema
  */
 export const slugJsonSchema = {
   type: "string",
   minLength: 1,
   maxLength: 48,
-  pattern: "^[-a-z0-9]+$",
+  pattern: SLUG_REGEX.source,
 };
 
 /**
- * Slugify a string to match "^[-a-z0-9]+$" pattern.
+ * Slugify a string to match the slug regex.
  */
 export function slugify(str: string): string {
   // Be sure the slug is not too long (max 48 chars)

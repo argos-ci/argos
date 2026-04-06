@@ -697,6 +697,9 @@ importers:
       '@argos/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@sindresorhus/slugify':
+        specifier: ^3.0.0
+        version: 3.0.0
       eslint:
         specifier: 'catalog:'
         version: 10.2.0(jiti@2.6.1)

@@ -16,13 +16,8 @@ export function FormSuccess<
   TFieldValues extends FieldValues = FieldValues,
   TContext = any,
   TTransformedValues = TFieldValues,
->({
-  className,
-  children,
-  isSuccessful,
-  ...props
-}: FormSuccessProps<TFieldValues, TContext, TTransformedValues>) {
-  const { control, ...rest } = props;
+>(props: FormSuccessProps<TFieldValues, TContext, TTransformedValues>) {
+  const { className, children, isSuccessful, control, ...otherProps } = props;
   const formState = useFormState({ control });
   if (!isSuccessful && !formState.isSubmitSuccessful) {
     return null;
@@ -30,7 +25,9 @@ export function FormSuccess<
   return (
     <div
       className={clsx(className, "flex items-center gap-2 font-medium")}
-      {...rest}
+      role="alert"
+      aria-live="polite"
+      {...otherProps}
     >
       <CheckIcon className="text-success size-4" />
       {children}

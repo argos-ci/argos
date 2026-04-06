@@ -1,6 +1,7 @@
 import type { ErrorCode } from "@argos/error-types";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { slugify } from "@argos/util/slug";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email";
@@ -10,7 +11,6 @@ import { sendNotification } from "@/notification";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
 import { boom } from "@/util/error";
 import type { RequestLocation } from "@/util/request-location";
-import { slugify } from "@/util/slug";
 
 import { Account } from "../models/Account";
 import { GithubAccount } from "../models/GithubAccount";
