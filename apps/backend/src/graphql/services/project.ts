@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { TransactionOrKnex } from "objection";
 
 import {
+  AuditTrail,
   AutomationActionRun,
   AutomationRule,
   AutomationRun,
@@ -174,6 +175,7 @@ export async function unsafe_deleteProject(args: {
       .delete();
     await ProjectUser.query(trx).where("projectId", args.projectId).delete();
     await IgnoredChange.query(trx).where("projectId", args.projectId).delete();
+    await AuditTrail.query(trx).where("projectId", args.projectId).delete();
     await Test.query(trx).where("projectId", args.projectId).delete();
     await Project.query(trx).findById(args.projectId).delete();
   });
