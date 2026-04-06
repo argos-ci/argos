@@ -30,13 +30,13 @@ loggedTest("personal settings - username", async ({ page, auth }) => {
 
   expect(await textbox.inputValue()).toBe(auth.account.slug);
   // Test with a "-" at the end to trigger an error
-  const newSlug = `${auth.account.slug}-x`;
   await textbox.fill("invalid-");
   await saveButton.click();
   await expect(
     region.getByText(/ending with an alphanumeric character/),
   ).toBeVisible();
   await argosScreenshot(page, "settings/username", { element: region });
+  const newSlug = `${auth.account.slug}-x`;
   await textbox.fill(newSlug);
   await saveButton.click();
   await page.waitForURL(`/${newSlug}/settings`);
