@@ -5,7 +5,7 @@ import { getKnexConfig } from "@/config/database";
 
 import { transaction } from "./transaction";
 
-export function getKnexFromConfig(config: Config) {
+function getKnexFromConfig(config: Config) {
   return Knex(getKnexConfig(config));
 }
 

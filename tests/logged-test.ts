@@ -1,18 +1,20 @@
+/* eslint-disable no-empty-pattern */
 import type { Page } from "@playwright/test";
+import { test as base } from "@playwright/test";
 
 import { createJWT, JWT_VERSION } from "../apps/backend/src/auth/jwt";
 import argosConfig from "../apps/backend/src/config";
-import type { Account, User } from "../apps/backend/src/database/models";
-import { seedTest } from "./seed-test";
+import { Account, User } from "../apps/backend/src/database/models";
 
-export const loggedTest = seedTest.extend<
+export const loggedTest = base.extend<
   { page: Page },
   { auth: { account: Account; user: User } }
 >({
   auth: [
-    async ({ models }, use) => {
-      const account = await models.Account.query()
-        .findOne("slug", "gregberge")
+    async ({}, use) => {
+      const { parallelIndex } = base.info();
+      const account = await Account.query()
+        .findOne("slug", getSlugByIndex(parallelIndex))
         .withGraphFetched("user")
         .throwIfNotFound();
 
@@ -43,13 +45,13 @@ export const loggedTest = seedTest.extend<
   },
 });
 
-// function getSlugByIndex(index: number) {
-//   switch (index) {
-//     case 0:
-//       return "gregberge";
-//     case 1:
-//       return "jsfez";
-//     default:
-//       throw new Error(`Unsupported worker index ${index}`);
-//   }
-// }
+function getSlugByIndex(index: number) {
+  switch (index) {
+    case 0:
+      return "gregberge";
+    case 1:
+      return "jsfez";
+    default:
+      throw new Error(`Unsupported worker index ${index}`);
+  }
+}

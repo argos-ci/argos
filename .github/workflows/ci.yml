@@ -164,9 +164,6 @@ jobs:
         env:
           BUILD_MODE: production
 
-      - name: Truncate and seed database
-        run: pnpm run e2e:setup
-
       - name: Run Playwright tests
         uses: docker://mcr.microsoft.com/playwright:v1.59.1-jammy
         with:

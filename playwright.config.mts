@@ -54,14 +54,15 @@ const config = defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "auth",
-      testMatch: /auth\.setup\.ts/,
+      name: "setup",
+      testMatch: /.*\.setup\.ts/,
     },
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
       },
+      dependencies: ["setup"],
     },
     // {
     //   name: "firefox",
@@ -75,27 +76,16 @@ const config = defineConfig({
   outputDir: "screenshots",
 
   /* Run your local dev server before starting the tests */
-  webServer: Array.from({ length: WORKERS }, (_, index) =>
-    getServerByIndex(index),
-  ),
-});
-
-function getServerByIndex(index: number) {
-  const DATABASE_URL =
-    process.env.DATABASE_URL || "postgresql://postgres@localhost/test";
-  const port = 3000 + index;
-  return {
+  webServer: {
     command: "node apps/backend/dist/processes/proc/web.js",
-    port,
+    port: 3000,
     timeout: 10 * 1000,
     reuseExistingServer: false,
     env: {
       NODE_ENV: "test",
-      PORT: String(port),
-      DATABASE_URL: `${DATABASE_URL}-${index}`,
       CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
     },
-  };
-}
+  },
+});
 
 export default config;

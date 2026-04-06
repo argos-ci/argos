@@ -29,7 +29,7 @@ export class Model extends ObjectionModel {
   }
 }
 
-export function initObjection(knex: Knex) {
+function initObjection(knex: Knex) {
   ObjectionModel.knex(knex);
 }
 
