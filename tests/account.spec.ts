@@ -1,3 +1,4 @@
+import { argosScreenshot } from "@argos-ci/playwright";
 import { expect } from "@playwright/test";
 
 import { loggedTest } from "./logged-test";
@@ -15,6 +16,7 @@ loggedTest("personal settings - name", async ({ page, auth }) => {
   await expect(region.getByText("Saved")).toBeVisible();
   await page.reload();
   expect(await textbox.inputValue()).toBe("James Bond");
+  await argosScreenshot(page, "settings/name", { element: region });
 });
 
 loggedTest("personal settings - username", async ({ page, auth }) => {
@@ -27,15 +29,16 @@ loggedTest("personal settings - username", async ({ page, auth }) => {
   const saveButton = region.getByRole("button", { name: "Save" });
 
   expect(await textbox.inputValue()).toBe(auth.account.slug);
-
   // Test with a "-" at the end to trigger an error
-  await textbox.fill("new-slug-");
+  const newSlug = `${auth.account.slug}-x`;
+  await textbox.fill("invalid-");
   await saveButton.click();
   await expect(
     region.getByText(/ending with an alphanumeric character/),
   ).toBeVisible();
-  await textbox.fill("new-slug");
+  await argosScreenshot(page, "settings/username", { element: region });
+  await textbox.fill(newSlug);
   await saveButton.click();
-  await page.waitForURL("/new-slug/settings");
-  expect(await textbox.inputValue()).toBe("new-slug");
+  await page.waitForURL(`/${newSlug}/settings`);
+  expect(await textbox.inputValue()).toBe(newSlug);
 });

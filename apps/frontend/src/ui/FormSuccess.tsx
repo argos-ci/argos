@@ -25,8 +25,7 @@ export function FormSuccess<
   return (
     <div
       className={clsx(className, "flex items-center gap-2 font-medium")}
-      role="alert"
-      aria-live="polite"
+      role="status"
       {...otherProps}
     >
       <CheckIcon className="text-success size-4" />

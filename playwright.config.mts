@@ -64,6 +64,13 @@ const config = defineConfig({
       },
       dependencies: ["setup"],
     },
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+      },
+      dependencies: ["setup"],
+    },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */

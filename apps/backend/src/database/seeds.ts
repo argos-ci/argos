@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import { concludeBuild } from "@/build/concludeBuild";
 
 import { UserEmail } from "./models";
@@ -23,6 +25,55 @@ const now = new Date().toISOString();
 
 function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
+}
+
+export async function createUser(input: {
+  email: string;
+  slug: string;
+  name: string;
+  githubId?: number;
+  /**
+   * @default "user"
+   */
+  type?: "user" | "bot";
+}): Promise<{ user: User; account: Account }> {
+  const type = input.type ?? "user";
+  const [user, githubAccount] = await Promise.all([
+    (async () => {
+      const user = await User.query().insertAndFetch({
+        email: input.email,
+        type,
+      });
+      await UserEmail.query().insert({
+        email: input.email,
+        verified: true,
+        userId: user.id,
+      });
+      return user;
+    })(),
+    (async () => {
+      if (input.githubId) {
+        invariant(type === "user", "A bot can't have a GitHub account");
+        return GithubAccount.query().insertAndFetch({
+          githubId: 266302,
+          name: input.name,
+          login: input.slug,
+          email: input.email,
+          type: "user",
+        });
+      }
+      return null;
+    })(),
+  ]);
+
+  const account = await Account.query().insertAndFetch({
+    userId: user.id,
+    name: input.name,
+    slug: input.slug,
+    githubAccountId: githubAccount?.id ?? null,
+  });
+
+  return { user, account };
 }
 
 export async function seed() {
@@ -83,44 +134,33 @@ export async function seed() {
     { defaultUserLevel: "member" },
   ]);
 
-  const [gregUser, jeremyUser, argosBot] = await User.query().insertAndFetch([
-    { email: "greg@smooth-code.com" },
-    { email: "jeremy@smooth-code.com" },
-    { email: "argos-bot@no-reply.argos-ci.com", type: "bot" },
+  const [greg, jeremy] = await Promise.all([
+    createUser({
+      email: "greg@smooth-code.com",
+      name: "Greg Bergé",
+      slug: "gregberge",
+      githubId: 266302,
+    }),
+    createUser({
+      email: "jeremy@smooth-code.com",
+      name: "Jeremy Sfez",
+      slug: "jsfez",
+      githubId: 15954562,
+    }),
+    createUser({
+      email: "argos-bot@no-reply.argos-ci.com",
+      name: "Argos Bot",
+      slug: "argos-bot",
+    }),
   ]);
 
-  await UserEmail.query().insert(
-    [gregUser, jeremyUser, argosBot].map((user) => ({
-      email: user!.email!,
-      verified: true,
-      userId: user!.id,
-    })),
-  );
-
-  const [gregGhAccount, jeremyGhAccount, argosGhAccount] =
-    await GithubAccount.query().insertAndFetch([
-      {
-        githubId: 266302,
-        name: "Greg Bergé",
-        login: "gregberge",
-        email: "greg@smooth-code.com",
-        type: "user",
-      },
-      {
-        githubId: 15954562,
-        name: "Jeremy SFEZ",
-        login: "jsfez",
-        email: "jeremy@smooth-code.com",
-        type: "user",
-      },
-      {
-        githubId: 24552866,
-        name: "Argos",
-        login: "argos-ci",
-        email: null,
-        type: "organization",
-      },
-    ]);
+  const argosGhAccount = await GithubAccount.query().insertAndFetch({
+    githubId: 24552866,
+    name: "Argos",
+    login: "argos-ci",
+    email: null,
+    type: "organization",
+  });
 
   const [smoothAccount, helloAccount] = await Account.query().insertAndFetch([
     {
@@ -132,31 +172,11 @@ export async function seed() {
     { teamId: helloTeam!.id, name: "Hello You", slug: "hello-you" },
   ]);
 
-  const [gregAccount, jeremyAccount] = await Account.query().insertAndFetch([
-    {
-      userId: gregUser!.id,
-      name: "Greg Bergé",
-      slug: "gregberge",
-      githubAccountId: gregGhAccount!.id,
-    },
-    {
-      userId: jeremyUser!.id,
-      name: "Jeremy Sfez",
-      slug: "jsfez",
-      githubAccountId: jeremyGhAccount!.id,
-    },
-    {
-      userId: argosBot!.id,
-      name: "Argos Bot",
-      slug: "argos-bot",
-    },
-  ]);
-
   await TeamUser.query().insert([
-    { teamId: smoothTeam!.id, userId: gregUser!.id, userLevel: "owner" },
-    { teamId: smoothTeam!.id, userId: jeremyUser!.id, userLevel: "owner" },
-    { teamId: helloTeam!.id, userId: gregUser!.id, userLevel: "owner" },
-    { teamId: helloTeam!.id, userId: jeremyUser!.id, userLevel: "owner" },
+    { teamId: smoothTeam!.id, userId: greg.user.id, userLevel: "owner" },
+    { teamId: smoothTeam!.id, userId: jeremy.user.id, userLevel: "owner" },
+    { teamId: helloTeam!.id, userId: greg.user.id, userLevel: "owner" },
+    { teamId: helloTeam!.id, userId: jeremy.user.id, userLevel: "owner" },
   ]);
 
   const [bigProject] = await Project.query().insertAndFetch([
@@ -175,12 +195,12 @@ export async function seed() {
     {
       name: "zone-51",
       token: "zone-51-650ded7d72e85b52e099df6e56aa204d",
-      accountId: gregAccount!.id,
+      accountId: greg.account.id,
     },
     {
       name: "lalouland",
       token: "lalouland-650ded7d72e85b52e099df6e56aa20",
-      accountId: jeremyAccount!.id,
+      accountId: jeremy.account.id,
     },
   ]);
 
@@ -499,7 +519,7 @@ export async function seed() {
   await BuildReview.query().insert([
     {
       buildId: acceptedBuild!.id,
-      userId: gregUser!.id,
+      userId: greg.user.id,
       state: "approved",
     },
     {

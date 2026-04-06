@@ -26,6 +26,6 @@
       }
     }
   },
-  "ignore": ["playwright.config.mts", "tests/seed.setup.ts"],
+  "ignore": ["playwright.config.mts", "tests/truncate.setup.ts"],
   "ignoreBinaries": ["stripe", "ngrok", "op"]
 }
