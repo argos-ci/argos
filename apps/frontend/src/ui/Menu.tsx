@@ -59,17 +59,18 @@ type MenuItemProps = Omit<RACMenuItemProps, "className"> & {
 };
 
 export function MenuItem(props: MenuItemProps) {
-  const { variant, ...rest } = props;
+  const { variant = "default", ...rest } = props;
   const menuContext = use(MenuContext);
   const checkboxRef = useRef<HTMLSpanElement>(null);
   return (
     <RACMenuItem
       className={clsx(
         "group/menu-item",
-        menuItemVariantClasses[variant ?? "default"],
+        menuItemVariantClasses[variant],
         props.href ? "cursor-pointer" : "cursor-default",
         menuItemClassName,
       )}
+      data-variant={variant}
       {...rest}
     >
       {(menuProps) => {
@@ -172,6 +173,7 @@ export function MenuItemIcon(props: {
         "aria-hidden": true,
         className: clsx(
           "size-[1em] mx-auto text-low group-data-focused/menu-item:text-default",
+          "group-data-[variant=danger]/menu-item:text-danger-low",
           child.props.className,
         ),
       })}

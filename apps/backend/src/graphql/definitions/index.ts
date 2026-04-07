@@ -35,6 +35,7 @@ import * as Team from "./Team";
 import * as Test from "./Test";
 import * as TimeSeries from "./TimeSeries";
 import * as User from "./User";
+import * as UserAccessToken from "./UserAccessToken";
 import * as ValidationStatus from "./ValidationStatus";
 
 export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
@@ -73,5 +74,6 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   Test,
   TimeSeries,
   User,
+  UserAccessToken,
   ValidationStatus,
 ];

@@ -3,14 +3,19 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { Build } from "@/database/models";
 import { boom } from "@/util/error";
-import { repoAuth } from "@/web/middlewares/repoAuth";
 
 import {
-  BuildIdSchema,
+  assertProjectAccess,
+  getAuthPayloadFromExpressReq,
+} from "../auth/project";
+import {
+  BuildNumber,
   BuildSchema,
   serializeBuild,
 } from "../schema/primitives/build";
+import { ProjectName, ProjectOwner } from "../schema/primitives/project";
 import {
+  forbidden,
   invalidParameters,
   notFound,
   serverError,
@@ -22,35 +27,40 @@ export const getBuildOperation = {
   operationId: "getBuild",
   requestParams: {
     path: z.object({
-      buildId: BuildIdSchema,
+      owner: ProjectOwner,
+      project: ProjectName,
+      buildNumber: BuildNumber,
     }),
   },
   responses: {
     "200": {
       description: "Build",
-      content: {
-        "application/json": {
-          schema: BuildSchema,
-        },
-      },
+      content: { "application/json": { schema: BuildSchema } },
     },
     "400": invalidParameters,
     "401": unauthorized,
     "404": notFound,
+    "403": forbidden,
     "500": serverError,
   },
 } satisfies ZodOpenApiOperationObject;
 
 export const getBuild: CreateAPIHandler = ({ get }) => {
-  return get("/builds/{buildId}", repoAuth, async (req, res) => {
-    if (!req.authProject) {
-      throw boom(401, "Unauthorized");
-    }
+  get("/projects/{owner}/{project}/builds/{buildNumber}", async (req, res) => {
     const { params } = req.ctx;
+    const [auth, build] = await Promise.all([
+      getAuthPayloadFromExpressReq(req),
+      Build.query()
+        .joinRelated("project.account")
+        .where("project:account.slug", params.owner)
+        .where("project.name", params.project)
+        .where("number", params.buildNumber)
+        .first(),
+    ]);
 
-    const build = await Build.query().findOne({
-      id: params.buildId,
-      projectId: req.authProject.id,
+    assertProjectAccess(auth, {
+      projectId: build?.projectId ?? null,
+      account: { slug: params.owner },
     });
 
     if (!build) {

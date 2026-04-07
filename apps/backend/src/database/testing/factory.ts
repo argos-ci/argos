@@ -5,6 +5,7 @@ import moment from "moment";
 import type { Model, ModelClass, PartialModelObject } from "objection";
 
 import * as models from "../models";
+import { hashToken } from "../services/crypto";
 
 class ObjectionAdapter<
   TEntity extends Model,
@@ -57,6 +58,15 @@ export const User = defineFactory(models.User, () => ({
   email: FactoryGirl.sequence("user.email", (n) => `user-${n}@email.com`),
 }));
 
+export const UserAccessToken = defineFactory(models.UserAccessToken, () => ({
+  userId: User.associate("id") as unknown as string,
+  name: FactoryGirl.sequence("userAccessToken.name", (n) => `token-${n}`),
+  token: FactoryGirl.sequence("userAccessToken.token", (n) =>
+    hashToken(`arp_${n.toString(16).padStart(36, "0")}`),
+  ),
+  source: "user" as const,
+}));
+
 export const GithubAccount = defineFactory(models.GithubAccount, () => ({
   login: FactoryGirl.sequence("githubAccount.login", (n) => `login-${n}`),
   githubId: FactoryGirl.sequence("githubAccount.githubId", (n) => n),
@@ -69,6 +79,40 @@ export const GithubRepository = defineFactory(models.GithubRepository, () => ({
   defaultBranch: "main",
   githubId: FactoryGirl.sequence("githubRepository.githubId", (n) => n),
   githubAccountId: GithubAccount.associate("id") as unknown as string,
+}));
+
+export const GithubInstallation = defineFactory(
+  models.GithubInstallation,
+  () => ({
+    githubId: FactoryGirl.sequence("githubInstallation.githubId", (n) => n),
+    deleted: false,
+    githubToken: null,
+    githubTokenExpiresAt: null,
+    app: "main" as const,
+    proxy: false,
+  }),
+);
+
+export const GithubRepositoryInstallation = defineFactory(
+  models.GithubRepositoryInstallation,
+  () => ({
+    githubRepositoryId: GithubRepository.associate("id") as unknown as string,
+    githubInstallationId: GithubInstallation.associate(
+      "id",
+    ) as unknown as string,
+  }),
+);
+
+export const GitlabProject = defineFactory(models.GitlabProject, () => ({
+  name: FactoryGirl.sequence("gitlabProject.name", (n) => `project-${n}`),
+  path: FactoryGirl.sequence("gitlabProject.path", (n) => `project-${n}`),
+  pathWithNamespace: FactoryGirl.sequence(
+    "gitlabProject.pathWithNamespace",
+    (n) => `group/project-${n}`,
+  ),
+  visibility: "private" as const,
+  defaultBranch: "main",
+  gitlabId: FactoryGirl.sequence("gitlabProject.gitlabId", (n) => n),
 }));
 
 export const UserAccount = defineFactory(models.Account, () => ({

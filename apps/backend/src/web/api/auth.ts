@@ -3,7 +3,8 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { AuthPayload } from "@/auth/request";
+import { safeJwtAuthFromExpressReq } from "@/auth/jwt";
+import type { AuthJWTPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
 import config from "@/config";
 import type { Account } from "@/database/models";
@@ -29,7 +30,6 @@ import {
 } from "@/gitlab";
 import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
 
-import { auth } from "../middlewares/auth";
 import { allowApp } from "../middlewares/cors";
 import { allowOnlyPost } from "../middlewares/methods";
 import { asyncHandler } from "../util";
@@ -53,18 +53,18 @@ type OAuthBody = z.infer<typeof OAuthBodySchema>;
 function withOAuth(
   retrieveAccount: (
     body: OAuthBody,
-    auth: AuthPayload | null,
+    auth: AuthJWTPayload | null,
   ) => Promise<Account>,
 ): express.RequestHandler[] {
   return [
     allowApp,
     allowOnlyPost,
-    auth,
     express.json(),
     asyncHandler(async (req, res) => {
+      const auth = await safeJwtAuthFromExpressReq(req);
       try {
         const parsed = OAuthBodySchema.parse(req.body);
-        const account = await retrieveAccount(parsed, req.auth ?? null);
+        const account = await retrieveAccount(parsed, auth ?? null);
         res.send({ jwt: createJWTFromAccount(account) });
       } catch (error) {
         if (error instanceof axios.AxiosError && error.response) {

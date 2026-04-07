@@ -9,8 +9,8 @@ import { Build, BuildShard, Project } from "@/database/models";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
-import { repoAuth } from "@/web/middlewares/repoAuth";
 
+import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import {
   BuildIdSchema,
   BuildSchema,
@@ -73,10 +73,8 @@ export const updateBuildOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 export const updateBuild: CreateAPIHandler = ({ put }) => {
-  return put("/builds/{buildId}", repoAuth, async (req, res) => {
-    if (!req.authProject) {
-      throw boom(401, "Unauthorized");
-    }
+  return put("/builds/{buildId}", async (req, res) => {
+    const auth = await getAuthProjectPayloadFromExpressReq(req);
 
     const { body, params } = req.ctx;
 
@@ -98,12 +96,12 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
       throw boom(409, "Build is already finalized");
     }
 
-    if (build.projectId !== req.authProject!.id) {
+    if (build.projectId !== auth.project.id) {
       throw boom(403, "Build does not belong to project");
     }
 
     const ctx = {
-      project: req.authProject,
+      project: auth.project,
       build,
       body,
     } satisfies Context;

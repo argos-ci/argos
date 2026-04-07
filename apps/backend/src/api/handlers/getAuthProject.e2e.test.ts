@@ -1,5 +1,5 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
+import { test as base, describe, expect } from "vitest";
 
 import type { Build, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -8,26 +8,31 @@ import { createTestHandlerApp } from "../test-util";
 import { getAuthProject } from "./getAuthProject";
 
 const app = createTestHandlerApp(getAuthProject);
-
-describe("getAuthProject", () => {
-  let project: Project;
-  let builds: Build[];
-
-  beforeEach(async () => {
+const test = base.extend<{
+  project: Project;
+  builds: Build[];
+}>({
+  project: async ({}, use) => {
     await setupDatabase();
-    project = await factory.Project.create({
+    const project = await factory.Project.create({
       token: "the-awesome-token",
     });
-    builds = await factory.Build.createMany(3, {
+    await use(project);
+  },
+  builds: async ({ project }, use) => {
+    const builds = await factory.Build.createMany(3, {
       projectId: project.id,
       name: "default",
     });
     // Sort builds by id desc
     builds.sort((a: Build, b: Build) => b.id.localeCompare(a.id));
-  });
+    await use(builds);
+  },
+});
 
+describe("getAuthProject", () => {
   describe("without a valid token", () => {
-    it("returns 401 status code", async () => {
+    test("returns 401 status code", async () => {
       await request(app)
         .get("/project")
         .set("Authorization", "Bearer invalid-token")
@@ -40,7 +45,7 @@ describe("getAuthProject", () => {
     });
   });
 
-  it("returns a project", async () => {
+  test("returns a project", async ({ project, builds: _builds }) => {
     await request(app)
       .get("/project")
       .set("Authorization", "Bearer the-awesome-token")
@@ -48,6 +53,7 @@ describe("getAuthProject", () => {
       .expect((res) => {
         expect(res.body).toEqual({
           id: project.id,
+          name: project.name,
           defaultBaseBranch: "main",
           hasRemoteContentAccess: false,
         });

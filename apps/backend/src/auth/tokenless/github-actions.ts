@@ -10,7 +10,7 @@ const marker = "tokenless-github-";
 /**
  * Decode bearer token.
  */
-const decodeToken = (bearerToken: string, marker: string) => {
+function decodeToken(bearerToken: string, marker: string) {
   try {
     const parts = bearerToken.split(marker);
     const base64 = parts[1];
@@ -20,7 +20,7 @@ const decodeToken = (bearerToken: string, marker: string) => {
   } catch {
     throw boom(401, `Invalid token (token: "${bearerToken}")`);
   }
-};
+}
 
 interface AuthData {
   owner: string;
@@ -32,11 +32,11 @@ interface AuthData {
 /**
  * Validate auth data.
  */
-const validateAuthData = (infos: any): infos is AuthData => {
+function validateAuthData(infos: any): infos is AuthData {
   return Boolean(infos.owner && infos.repository && infos.jobId && infos.runId);
-};
+}
 
-const strategy = {
+export const tokenlessGitHubActionsStrategy = {
   detect: (bearerToken: string) => bearerToken.startsWith(marker),
   getProject: async (bearerToken: string): Promise<Project | null> => {
     const authData = decodeToken(bearerToken, marker);
@@ -122,5 +122,3 @@ const strategy = {
     return repository.projects[0];
   },
 };
-
-export default strategy;

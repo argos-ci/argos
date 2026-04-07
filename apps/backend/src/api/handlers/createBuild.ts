@@ -13,8 +13,8 @@ import { getS3Client } from "@/storage/s3";
 import { getSignedObjectUrl } from "@/storage/signed-url";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
-import { repoAuth } from "@/web/middlewares/repoAuth";
 
+import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import {
   Sha1HashSchema,
@@ -144,14 +144,12 @@ export const createBuildOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 export const createBuild: CreateAPIHandler = ({ post }) => {
-  return post("/builds", repoAuth, async (req, res) => {
-    if (!req.authProject) {
-      throw boom(401, "Unauthorized");
-    }
+  return post("/builds", async (req, res) => {
+    const auth = await getAuthProjectPayloadFromExpressReq(req);
 
     const ctx = {
       body: req.body,
-      project: req.authProject,
+      project: auth.project,
     } satisfies BuildContext;
 
     const { build, screenshots, pwTraces } = await (async () => {

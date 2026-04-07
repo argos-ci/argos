@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CopyIcon, PencilIcon, TrashIcon } from "lucide-react";
+import { CopyIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "./Button";
 import {
@@ -42,7 +42,7 @@ export const Default: Story = {
           <MenuSeparator />
           <MenuItem variant="danger">
             <MenuItemIcon>
-              <TrashIcon />
+              <Trash2Icon />
             </MenuItemIcon>
             Delete
           </MenuItem>

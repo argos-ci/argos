@@ -1,7 +1,14 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
+import type {
+  Account,
+  Build,
+  Project,
+  ScreenshotBucket,
+} from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
@@ -9,19 +16,76 @@ import { getBuild } from "./getBuild";
 
 const app = createTestHandlerApp(getBuild);
 
+const test = base.extend<{
+  account: Account;
+  project: Project;
+  buckets: { base: ScreenshotBucket; compare: ScreenshotBucket };
+  build: Build;
+}>({
+  account: async ({}, use) => {
+    await setupDatabase();
+    const account = await factory.TeamAccount.create({ slug: "acme" });
+    await use(account);
+  },
+  project: async ({ account }, use) => {
+    const project = await factory.Project.create({
+      accountId: account.id,
+      name: "web",
+      token: "the-awesome-token",
+    });
+    await use(project);
+  },
+  buckets: async ({ project }, use) => {
+    const [baseBucket, compareBucket] =
+      await factory.ScreenshotBucket.createMany(2, [
+        {
+          projectId: project.id,
+          name: "base",
+          branch: "main",
+          commit: "a".repeat(40),
+        },
+        {
+          projectId: project.id,
+          name: "compare",
+          branch: "feature/login",
+          commit: "b".repeat(40),
+        },
+      ]);
+    invariant(baseBucket);
+    invariant(compareBucket);
+    await use({ base: baseBucket, compare: compareBucket });
+  },
+  build: async ({ project, buckets }, use) => {
+    const build = await factory.Build.create({
+      projectId: project.id,
+      baseScreenshotBucketId: buckets.base.id,
+      compareScreenshotBucketId: buckets.compare.id,
+      prHeadCommit: "c".repeat(40),
+      stats: {
+        failure: 0,
+        added: 1,
+        unchanged: 2,
+        changed: 3,
+        removed: 4,
+        total: 10,
+        retryFailure: 0,
+        ignored: 0,
+      },
+      conclusion: "no-changes",
+    });
+    await use(build);
+  },
+});
+
 describe("getBuild", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
   });
 
-  beforeEach(async () => {
-    await setupDatabase();
-  });
-
   describe("without a valid token", () => {
-    it("returns 401 status code", async () => {
+    test("returns 401 status code", async () => {
       await request(app)
-        .get("/builds/non-existing-id")
+        .get("/projects/acme/web/builds/1")
         .set("Authorization", "Bearer invalid-token")
         .expect((res) => {
           expect(res.body.error).toBe(
@@ -32,178 +96,72 @@ describe("getBuild", () => {
     });
   });
 
-  describe("with a build from another project", () => {
-    it("returns 404 status code", async () => {
-      await factory.Project.create({ token: "valid-token" });
-      const otherProject = await factory.Project.create();
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: otherProject.id,
+  test("returns a build for a project token", async ({ build }) => {
+    await request(app)
+      .get(`/projects/acme/web/builds/${build.number}`)
+      .set("Authorization", "Bearer the-awesome-token")
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          id: build.id,
+          number: build.number,
+          status: "no-changes",
+          url: "http://localhost:3000/acme/web/builds/1",
+          notification: {
+            description: "3 changed, 1 added, 4 removed — no changes found",
+            context: "argos",
+            github: { state: "success" },
+            gitlab: { state: "success" },
+          },
+          conclusion: "no-changes",
+          metadata: null,
+          base: {
+            branch: "main",
+            sha: "a".repeat(40),
+          },
+          head: {
+            branch: "feature/login",
+            sha: "c".repeat(40),
+          },
+          stats: {
+            added: 1,
+            changed: 3,
+            failure: 0,
+            ignored: 0,
+            removed: 4,
+            retryFailure: 0,
+            total: 10,
+            unchanged: 2,
+          },
+        });
       });
-      const foreignBuild = await factory.Build.create({
-        projectId: otherProject.id,
-        compareScreenshotBucketId: compareScreenshotBucket.id,
-      });
-
-      await request(app)
-        .get(`/builds/${foreignBuild.id}`)
-        .set("Authorization", "Bearer valid-token")
-        .expect((res) => {
-          expect(res.body.error).toBe("Not found");
-        })
-        .expect(404);
-    });
   });
 
-  describe("with a valid build", () => {
-    it("returns the build", async () => {
-      const account = await factory.TeamAccount.create({
-        slug: "awesome-team",
-      });
-      const project = await factory.Project.create({
-        accountId: account.id,
-        name: "awesome-project",
-        token: "the-awesome-token",
-      });
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-      });
-      const baseScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        branch: "develop",
-        commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
-      });
-      const build = await factory.Build.create({
-        projectId: project.id,
-        compareScreenshotBucketId: compareScreenshotBucket.id,
-        baseScreenshotBucketId: baseScreenshotBucket.id,
-        prHeadCommit: "91d4f24b71c2ef18fb8a5f5f4d2e9d3dcb1a4d6a",
-        metadata: null,
-      });
-
-      const res = await request(app)
-        .get(`/builds/${build.id}`)
-        .set("Authorization", "Bearer the-awesome-token")
-        .expect(200);
-      const url = await build.getUrl();
-      expect(res.body).toMatchObject({
-        id: build.id,
-        number: build.number,
-        head: {
-          sha: build.prHeadCommit,
-          branch: compareScreenshotBucket.branch,
-        },
-        base: {
-          branch: "develop",
-          sha: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
-        },
-        status: "no-changes",
-        conclusion: "no-changes",
-        stats: {
-          total: 0,
-          failure: 0,
-          changed: 0,
-          added: 0,
-          removed: 0,
-          unchanged: 0,
-          retryFailure: 0,
-          ignored: 0,
-        },
-        metadata: null,
-        url,
-        notification: {
-          description: "Everything's good!",
-          context: "argos",
-          github: { state: "success" },
-          gitlab: { state: "success" },
-        },
-      });
+  test("returns a build without base info and uses the compare bucket sha when prHeadCommit is null", async ({
+    project,
+  }) => {
+    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      branch: "release",
+      commit: "d".repeat(40),
     });
-  });
-
-  describe("with screenshot diffs containing a change", () => {
-    it("returns a build with changes-detected status and stats", async () => {
-      const account = await factory.TeamAccount.create({
-        slug: "diffs-team",
-      });
-      const project = await factory.Project.create({
-        accountId: account.id,
-        name: "diffs-project",
-        token: "token-with-diffs",
-      });
-      const baseScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        name: "base",
-      });
-      const compareScreenshotBucket = await factory.ScreenshotBucket.create({
-        projectId: project.id,
-        name: "compare",
-      });
-      const build = await factory.Build.create({
-        projectId: project.id,
-        compareScreenshotBucketId: compareScreenshotBucket.id,
-        prHeadCommit: "91d4f24b71c2ef18fb8a5f5f4d2e9d3dcb1a4d6a",
-        conclusion: "changes-detected",
-        stats: {
-          total: 1,
-          changed: 1,
-          added: 0,
-          removed: 0,
-          failure: 0,
-          unchanged: 0,
-          retryFailure: 0,
-          ignored: 0,
-        },
-      });
-
-      const baseScreenshot = await factory.Screenshot.create({
-        screenshotBucketId: baseScreenshotBucket.id,
-        name: "home.png",
-      });
-      const compareScreenshot = await factory.Screenshot.create({
-        screenshotBucketId: compareScreenshotBucket.id,
-        name: "home.png",
-        baseName: "home.png",
-      });
-
-      await factory.ScreenshotDiff.create({
-        buildId: build.id,
-        baseScreenshotId: baseScreenshot.id,
-        compareScreenshotId: compareScreenshot.id,
-        score: 0.42,
-      });
-
-      const res = await request(app)
-        .get(`/builds/${build.id}`)
-        .set("Authorization", "Bearer token-with-diffs")
-        .expect(200);
-      const url = await build.getUrl();
-      expect(res.body).toMatchObject({
-        id: build.id,
-        head: {
-          sha: build.prHeadCommit,
-          branch: compareScreenshotBucket.branch,
-        },
-        base: null,
-        status: "changes-detected",
-        conclusion: "changes-detected",
-        stats: {
-          total: 1,
-          changed: 1,
-          added: 0,
-          removed: 0,
-          failure: 0,
-          unchanged: 0,
-          retryFailure: 0,
-          ignored: 0,
-        },
-        url,
-        notification: {
-          description: "1 changed — waiting for your decision",
-          context: "argos",
-          github: { state: "failure" },
-          gitlab: { state: "failed" },
-        },
-      });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareScreenshotBucket.id,
+      prHeadCommit: null,
+      baseScreenshotBucketId: null,
     });
+
+    await request(app)
+      .get(`/projects/acme/web/builds/${build.number}`)
+      .set("Authorization", "Bearer the-awesome-token")
+      .expect((res) => {
+        expect(res.body.base).toBeNull();
+        expect(res.body.head).toEqual({
+          branch: "release",
+          sha: "d".repeat(40),
+        });
+      })
+      .expect(200);
   });
 });

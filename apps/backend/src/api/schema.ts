@@ -5,11 +5,11 @@ import config from "@/config";
 
 import { createBuildOperation } from "./handlers/createBuild";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
-import { getAuthBuildByNumberOperation } from "./handlers/getAuthBuildByNumber";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
-import { getAuthProjectBuildsOperation } from "./handlers/getAuthProjectBuilds";
 import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
+import { getProjectOperation } from "./handlers/getProject";
+import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
 import { updateBuildOperation } from "./handlers/updateBuild";
 
 export const zodSchema = {
@@ -42,21 +42,23 @@ export const zodSchema = {
     "/builds/finalize": {
       post: finalizeBuildsOperation,
     },
-    "/builds/{buildId}": {
-      get: getBuildOperation,
-      put: updateBuildOperation,
-    },
-    "/builds/{buildId}/diffs": {
-      get: getBuildDiffsOperation,
-    },
     "/project": {
       get: getAuthProjectOperation,
     },
-    "/project/builds": {
-      get: getAuthProjectBuildsOperation,
+    "/builds/{buildId}": {
+      put: updateBuildOperation,
     },
-    "/project/builds/{buildNumber}": {
-      get: getAuthBuildByNumberOperation,
+    "/projects/{owner}/{project}": {
+      get: getProjectOperation,
+    },
+    "/projects/{owner}/{project}/builds": {
+      get: getProjectBuildsOperation,
+    },
+    "/projects/{owner}/{project}/builds/{buildNumber}": {
+      get: getBuildOperation,
+    },
+    "/projects/{owner}/{project}/builds/{buildNumber}/diffs": {
+      get: getBuildDiffsOperation,
     },
   },
 } satisfies ZodOpenApiObject;
