@@ -21,6 +21,7 @@ import {
   checkProjectName,
   resolveProjectName,
 } from "@/database/services/project";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
@@ -827,6 +828,10 @@ export const resolvers: IResolvers = {
       return project;
     },
     projectById: async (_root, args, ctx) => {
+      if (!isValidPgBigInt(args.id)) {
+        return null;
+      }
+
       const project = await Project.query()
         .joinRelated("account")
         .findById(args.id);

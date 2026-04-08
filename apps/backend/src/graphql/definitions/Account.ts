@@ -15,6 +15,7 @@ import {
   requestEmailSignup,
 } from "@/database/services/account";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
 import {
   getAccountBuildMetrics,
@@ -217,6 +218,11 @@ async function accountByIdResolver(
   if (!ctx.auth) {
     return null;
   }
+
+  if (!isValidPgBigInt(args.id)) {
+    return null;
+  }
+
   const account = await Account.query().findById(args.id);
   if (!account) {
     return null;
