@@ -8,8 +8,8 @@ describe("isValidPgBigInt", () => {
     expect(isValidPgBigInt("9223372036854775807")).toBe(true);
     expect(isValidPgBigInt("-9223372036854775808")).toBe(true);
     expect(isValidPgBigInt("0")).toBe(true);
-    expect(isValidPgBigInt("")).toBe(true);
-    expect(isValidPgBigInt("  ")).toBe(true);
+    expect(isValidPgBigInt("")).toBe(false);
+    expect(isValidPgBigInt("  ")).toBe(false);
   });
 
   it("returns `false` for values outside the PostgreSQL bigint range", () => {
@@ -18,13 +18,13 @@ describe("isValidPgBigInt", () => {
   });
 
   it("returns `false` for non-integer values", () => {
-    expect(() => isValidPgBigInt("1.5")).toThrow();
-    expect(() => isValidPgBigInt("NaN")).toThrow();
-    expect(() => isValidPgBigInt("Infinity")).toThrow();
+    expect(isValidPgBigInt("1.5")).toBe(false);
+    expect(isValidPgBigInt("NaN")).toBe(false);
+    expect(isValidPgBigInt("Infinity")).toBe(false);
   });
 
   it("throws for invalid bigint inputs", () => {
-    expect(() => isValidPgBigInt("abc")).toThrow();
-    expect(() => isValidPgBigInt("123abc")).toThrow();
+    expect(isValidPgBigInt("abc")).toBe(false);
+    expect(isValidPgBigInt("123abc")).toBe(false);
   });
 });
