@@ -79,7 +79,9 @@ export async function createTeamAccount(input: {
   name: string;
   forcedPlanId?: string | null;
 }): Promise<{ team: Team; account: Account }> {
-  const team = await Team.query().insertAndFetch({ defaultUserLevel: "member" });
+  const team = await Team.query().insertAndFetch({
+    defaultUserLevel: "member",
+  });
   const account = await Account.query().insertAndFetch({
     teamId: team.id,
     name: input.name,
@@ -99,8 +101,7 @@ export async function createProject(input: {
   return Project.query().insertAndFetch({
     name: input.name,
     token:
-      input.token ??
-      `${input.name}-${Math.random().toString(36).slice(2)}`,
+      input.token ?? `${input.name}-${Math.random().toString(36).slice(2)}`,
     accountId: input.accountId,
     private: input.private ?? false,
     ...(input.defaultBaseBranch !== undefined && {
@@ -574,12 +575,11 @@ export async function seed() {
     type: "organization",
   });
 
-  const { team: smoothTeam, account: smoothAccount } =
-    await createTeamAccount({
-      slug: "smooth",
-      name: "Smooth",
-      forcedPlanId: plans[0]!.id,
-    });
+  const { team: smoothTeam, account: smoothAccount } = await createTeamAccount({
+    slug: "smooth",
+    name: "Smooth",
+    forcedPlanId: plans[0]!.id,
+  });
 
   const { team: helloTeam, account: helloAccount } = await createTeamAccount({
     slug: "hello-you",
