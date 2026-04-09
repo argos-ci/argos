@@ -1,4 +1,6 @@
+import { useId } from "react";
 import { useApolloClient } from "@apollo/client/react";
+import { SLUG_REGEX } from "@argos/util/slug";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
@@ -34,7 +36,8 @@ export const AccountChangeSlug = (props: {
   title: React.ReactNode;
   description: React.ReactNode;
 }) => {
-  const { account } = props;
+  const { account, title, description } = props;
+  const headingId = useId();
   const client = useApolloClient();
   const form = useForm<Inputs>({
     defaultValues: {
@@ -55,11 +58,11 @@ export const AccountChangeSlug = (props: {
     });
   };
   return (
-    <Card>
+    <Card role="region" aria-labelledby={headingId}>
       <Form form={form} onSubmit={onSubmit}>
         <CardBody>
-          <CardTitle>{props.title}</CardTitle>
-          <CardParagraph>{props.description}</CardParagraph>
+          <CardTitle id={headingId}>{title}</CardTitle>
+          <CardParagraph>{description}</CardParagraph>
           <FormTextInput
             control={form.control}
             {...form.register("slug", {
@@ -69,7 +72,7 @@ export const AccountChangeSlug = (props: {
                 message: "Account slugs must be 48 characters or less",
               },
               pattern: {
-                value: /^[-a-z0-9]+$/,
+                value: SLUG_REGEX,
                 message:
                   "Account slugs must be lowercase, begin with an alphanumeric character followed by more alphanumeric characters or dashes and ending with an alphanumeric character.",
               },

@@ -23,5 +23,8 @@
     "@argos/eslint-config": "workspace:*",
     "@argos/tsconfig": "workspace:*",
     "eslint": "catalog:"
+  },
+  "dependencies": {
+    "@sindresorhus/slugify": "^3.0.0"
   }
 }

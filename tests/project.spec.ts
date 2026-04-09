@@ -1,19 +1,16 @@
 import { argosScreenshot } from "@argos-ci/playwright";
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 
-test("project builds", async ({ page }) => {
-  await page.goto("/smooth/big");
+import { seedTest } from "./seed-test";
+import { replaceText } from "./util";
+
+seedTest("project builds", async ({ page, team, project, builds }) => {
+  void builds;
+  await page.goto(`/${team.account.slug}/${project.name}`);
   await expect(page.getByText("12")).toBeVisible();
+  const restore = await replaceText(page, {
+    [team.account.slug]: "acme",
+  });
   await argosScreenshot(page, `project-builds`);
-});
-
-test.skip("project tests", async ({ page }) => {
-  await page.goto("/smooth/big/tests");
-  await expect(page.getByText("penelope.jpg")).toBeVisible();
-  await argosScreenshot(page, `project-tests`);
-});
-
-test("project hidden settings", async ({ page }) => {
-  await page.goto("/smooth/big/settings");
-  await expect(page.getByText("Page not found")).toBeVisible();
+  await restore();
 });

@@ -222,13 +222,7 @@ pnpm test path/to/test/file.e2e.test.ts
 npx playwright install --with-deps
 ```
 
-2. Run E2E setup:
-
-```sh
-pnpm run e2e:setup
-```
-
-3. Run E2E tests:
+2. Run E2E tests:
 
 ```sh
 pnpm run e2e:start

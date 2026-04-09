@@ -1,3 +1,5 @@
+import { invariant } from "@argos/util/invariant";
+
 import { concludeBuild } from "@/build/concludeBuild";
 
 import { UserEmail } from "./models";
@@ -19,204 +21,132 @@ import { TeamUser } from "./models/TeamUser";
 import { Test } from "./models/Test";
 import { User } from "./models/User";
 
-const now = new Date().toISOString();
-
 function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
 }
 
-export async function seed() {
-  const plans = await Plan.query().insert([
-    {
-      name: "free",
-      includedScreenshots: 7000,
-      githubPlanId: 7772,
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "starter",
-      includedScreenshots: 40000,
-      githubPlanId: 7786,
-      stripeProductId: "prod_MzEZEfBDYFIc53",
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "standard",
-      includedScreenshots: 250000,
-      githubPlanId: 7787,
-      stripeProductId: "prod_MzEavomA8VeCvW",
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "Pro (legacy)",
-      includedScreenshots: 1000000,
-      githubPlanId: 7788,
-      stripeProductId: "prod_MzEawyq1kFcHEn",
-      usageBased: false,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
-    {
-      name: "pro",
-      includedScreenshots: 15000,
-      githubPlanId: null,
-      stripeProductId: "prod_Njgin72JdGT9Yu",
-      usageBased: true,
-      githubSsoIncluded: true,
-      fineGrainedAccessControlIncluded: true,
-      interval: "month",
-    },
+export async function createUserAccount(input: {
+  email: string;
+  slug: string;
+  name: string;
+  githubId?: number;
+  /**
+   * @default "user"
+   */
+  type?: "user" | "bot";
+}): Promise<{ user: User; account: Account }> {
+  const type = input.type ?? "user";
+  const [user, githubAccount] = await Promise.all([
+    (async () => {
+      const user = await User.query().insertAndFetch({
+        email: input.email,
+        type,
+      });
+      await UserEmail.query().insert({
+        email: input.email,
+        verified: true,
+        userId: user.id,
+      });
+      return user;
+    })(),
+    (async () => {
+      if (input.githubId) {
+        invariant(type === "user", "A bot can't have a GitHub account");
+        return GithubAccount.query().insertAndFetch({
+          githubId: 266302,
+          name: input.name,
+          login: input.slug,
+          email: input.email,
+          type: "user",
+        });
+      }
+      return null;
+    })(),
   ]);
 
-  const [smoothTeam, helloTeam] = await Team.query().insertAndFetch([
-    { defaultUserLevel: "member" },
-    { defaultUserLevel: "member" },
-  ]);
-
-  const [gregUser, jeremyUser, argosBot] = await User.query().insertAndFetch([
-    { email: "greg@smooth-code.com" },
-    { email: "jeremy@smooth-code.com" },
-    { email: "argos-bot@no-reply.argos-ci.com", type: "bot" },
-  ]);
-
-  await UserEmail.query().insert(
-    [gregUser, jeremyUser, argosBot].map((user) => ({
-      email: user!.email!,
-      verified: true,
-      userId: user!.id,
-    })),
-  );
-
-  const [gregGhAccount, jeremyGhAccount, argosGhAccount] =
-    await GithubAccount.query().insertAndFetch([
-      {
-        githubId: 266302,
-        name: "Greg Bergé",
-        login: "gregberge",
-        email: "greg@smooth-code.com",
-        type: "user",
-      },
-      {
-        githubId: 15954562,
-        name: "Jeremy SFEZ",
-        login: "jsfez",
-        email: "jeremy@smooth-code.com",
-        type: "user",
-      },
-      {
-        githubId: 24552866,
-        name: "Argos",
-        login: "argos-ci",
-        email: null,
-        type: "organization",
-      },
-    ]);
-
-  const [smoothAccount, helloAccount] = await Account.query().insertAndFetch([
-    {
-      teamId: smoothTeam!.id,
-      name: "Smooth",
-      slug: "smooth",
-      forcedPlanId: plans[0]!.id,
-    },
-    { teamId: helloTeam!.id, name: "Hello You", slug: "hello-you" },
-  ]);
-
-  const [gregAccount, jeremyAccount] = await Account.query().insertAndFetch([
-    {
-      userId: gregUser!.id,
-      name: "Greg Bergé",
-      slug: "gregberge",
-      githubAccountId: gregGhAccount!.id,
-    },
-    {
-      userId: jeremyUser!.id,
-      name: "Jeremy Sfez",
-      slug: "jsfez",
-      githubAccountId: jeremyGhAccount!.id,
-    },
-    {
-      userId: argosBot!.id,
-      name: "Argos Bot",
-      slug: "argos-bot",
-    },
-  ]);
-
-  await TeamUser.query().insert([
-    { teamId: smoothTeam!.id, userId: gregUser!.id, userLevel: "owner" },
-    { teamId: smoothTeam!.id, userId: jeremyUser!.id, userLevel: "owner" },
-    { teamId: helloTeam!.id, userId: gregUser!.id, userLevel: "owner" },
-    { teamId: helloTeam!.id, userId: jeremyUser!.id, userLevel: "owner" },
-  ]);
-
-  const [bigProject] = await Project.query().insertAndFetch([
-    {
-      name: "big",
-      token: "big-650ded7d72e85b52e099df6e56aa204d4fe9",
-      accountId: smoothAccount!.id,
-      private: false,
-    },
-    {
-      name: "awesome",
-      token: "awesome-650ded7d72e85b52e099df6e56aa204d",
-      accountId: helloAccount!.id,
-      defaultBaseBranch: "main",
-    },
-    {
-      name: "zone-51",
-      token: "zone-51-650ded7d72e85b52e099df6e56aa204d",
-      accountId: gregAccount!.id,
-    },
-    {
-      name: "lalouland",
-      token: "lalouland-650ded7d72e85b52e099df6e56aa20",
-      accountId: jeremyAccount!.id,
-    },
-  ]);
-
-  const ghInstallation = await GithubInstallation.query().insertAndFetch({
-    createdAt: "2016-12-08T22:59:55Z",
-    updatedAt: "2016-12-08T22:59:55Z",
-    githubId: 70324597,
-    deleted: false,
-    githubTokenExpiresAt: "2025-06-08 07:39:55+00",
-    app: "main",
-    proxy: false,
+  const account = await Account.query().insertAndFetch({
+    userId: user.id,
+    name: input.name,
+    slug: input.slug,
+    githubAccountId: githubAccount?.id ?? null,
   });
 
-  const argosTestRepositoryGhRepository =
-    await GithubRepository.query().insertAndFetch({
-      name: "argos-test-repository",
-      private: false,
-      defaultBranch: "main",
-      githubId: 123456789,
-      githubAccountId: argosGhAccount!.id,
-      createdAt: "2016-12-08T22:59:55Z",
-      updatedAt: "2016-12-08T22:59:55Z",
-    });
+  return { user, account };
+}
 
-  await GithubRepositoryInstallation.query().insertAndFetch({
-    githubRepositoryId: argosTestRepositoryGhRepository!.id,
-    githubInstallationId: ghInstallation!.id,
-    createdAt: "2016-12-08T22:59:55Z",
-    updatedAt: "2016-12-08T22:59:55Z",
+export async function createTeamAccount(input: {
+  slug: string;
+  name: string;
+  forcedPlanId?: string | null;
+}): Promise<{ team: Team; account: Account }> {
+  const team = await Team.query().insertAndFetch({
+    defaultUserLevel: "member",
   });
+  const account = await Account.query().insertAndFetch({
+    teamId: team.id,
+    name: input.name,
+    slug: input.slug,
+    forcedPlanId: input.forcedPlanId ?? null,
+  });
+  return { team, account };
+}
+
+export async function createProject(input: {
+  accountId: string;
+  name: string;
+  token?: string;
+  private?: boolean;
+  defaultBaseBranch?: string;
+}): Promise<Project> {
+  return Project.query().insertAndFetch({
+    name: input.name,
+    token:
+      input.token ?? `${input.name}-${Math.random().toString(36).slice(2)}`,
+    accountId: input.accountId,
+    private: input.private ?? false,
+    ...(input.defaultBaseBranch !== undefined && {
+      defaultBaseBranch: input.defaultBaseBranch,
+    }),
+  });
+}
+
+export type BuildScenario = {
+  orphanBuild: Build;
+  referenceBuild: Build;
+  expiredBuild: Build;
+  abortedBuild: Build;
+  errorBuild: Build;
+  diffDetectedBuild: Build;
+  acceptedBuild: Build;
+  rejectedBuild: Build;
+  pendingBuild: Build;
+  inProgressBuild: Build;
+  failBuild: Build;
+  stableBuild: Build;
+  emptyBuild: Build;
+  removedBuild: Build;
+};
+
+/**
+ * Creates a full set of build scenarios for a given project.
+ * Useful for testing build-related UI components.
+ *
+ * @param keyPrefix - A unique prefix for file keys to avoid conflicts when
+ *   calling this function multiple times (e.g. across parallel test workers).
+ */
+export async function createBuildScenario(input: {
+  projectId: string;
+  userId?: string;
+  keyPrefix?: string;
+}): Promise<BuildScenario> {
+  const { projectId, keyPrefix = "" } = input;
+  const ts = new Date().toISOString();
 
   const screenshotBucketProps = {
     name: "default",
     commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
     branch: "main",
-    projectId: bigProject!.id,
+    projectId,
     createdAt: "2016-12-08T22:59:55Z",
     updatedAt: "2016-12-08T22:59:55Z",
     complete: true,
@@ -310,14 +240,14 @@ export async function seed() {
       type: "screenshot" as const,
       width,
       height,
-      key: `dummy-${width}x${height}.png`,
+      key: `${keyPrefix}dummy-${width}x${height}.png`,
       contentType: "image/png",
     })),
     ...bearFilesDimensions.map(({ width, height }) => ({
       type: "screenshot" as const,
       width,
       height,
-      key: `bear-${width}x${height}.jpg`,
+      key: `${keyPrefix}bear-${width}x${height}.jpg`,
       contentType: "image/jpeg",
     })),
   ]);
@@ -327,14 +257,14 @@ export async function seed() {
       type: "screenshotDiff" as const,
       width: 375,
       height: 1024,
-      key: "diff-1024-to-720.png",
+      key: `${keyPrefix}diff-1024-to-720.png`,
       contentType: "image/png",
     },
     {
       type: "screenshotDiff" as const,
       width: 375,
       height: 1440,
-      key: "diff-1024-to-1440.png",
+      key: `${keyPrefix}diff-1024-to-1440.png`,
       contentType: "image/png",
     },
   ]);
@@ -355,12 +285,11 @@ export async function seed() {
 
   const bearScreenshotIds = bearScreenshots.map(({ id }) => id);
 
-  const build = {
-    number: 1,
+  const buildBase = {
     name: "main",
     baseScreenshotBucketId: screenshotBuckets[0]!.id,
     compareScreenshotBucketId: screenshotBuckets[1]!.id,
-    projectId: bigProject!.id,
+    projectId,
     jobStatus: "complete" as const,
     type: "check" as const,
     createdAt: "2016-12-08T22:59:55Z",
@@ -370,33 +299,33 @@ export async function seed() {
   const [
     orphanBuild,
     referenceBuild,
-    ,
-    ,
-    ,
+    expiredBuild,
+    abortedBuild,
+    errorBuild,
     diffDetectedBuild,
     acceptedBuild,
     rejectedBuild,
-    ,
+    pendingBuild,
     inProgressBuild,
     failBuild,
     stableBuild,
-    ,
+    emptyBuild,
     removedBuild,
   ] = await Build.query().insertAndFetch([
-    { ...build, number: 1, type: "orphan", baseScreenshotBucketId: null },
-    { ...build, number: 2, type: "reference" },
-    { ...build, number: 3, jobStatus: "progress" }, // Expired
-    { ...build, number: 4, jobStatus: "aborted" },
-    { ...build, number: 5, jobStatus: "error" },
-    { ...build, number: 6 }, // Diff detected
-    { ...build, number: 7 }, // Accepted
-    { ...build, number: 8 }, // Rejected
-    { ...build, number: 9, jobStatus: "pending" }, // Pending
-    { ...build, number: 10 }, // Progress
-    { ...build, number: 11 }, // Fail
-    { ...build, number: 12 }, // Stable
-    { ...build, number: 13 }, // Empty
-    { ...build, number: 14 }, // Removed
+    { ...buildBase, number: 1, type: "orphan", baseScreenshotBucketId: null },
+    { ...buildBase, number: 2, type: "reference" },
+    { ...buildBase, number: 3, jobStatus: "progress" }, // Expired
+    { ...buildBase, number: 4, jobStatus: "aborted" },
+    { ...buildBase, number: 5, jobStatus: "error" },
+    { ...buildBase, number: 6 }, // Diff detected
+    { ...buildBase, number: 7 }, // Accepted
+    { ...buildBase, number: 8 }, // Rejected
+    { ...buildBase, number: 9, jobStatus: "pending" }, // Pending/Scheduled
+    { ...buildBase, number: 10 }, // In progress (diffs pending)
+    { ...buildBase, number: 11 }, // Fail
+    { ...buildBase, number: 12 }, // Stable
+    { ...buildBase, number: 13 }, // Empty
+    { ...buildBase, number: 14 }, // Removed
   ]);
 
   const defaultScreenshotDiff = {
@@ -405,8 +334,8 @@ export async function seed() {
     score: null,
     jobStatus: "complete" as const,
     s3Id: "penelope-diff-transparent.png",
-    createdAt: now,
-    updatedAt: now,
+    createdAt: ts,
+    updatedAt: ts,
   };
 
   const stableScreenshotDiff = {
@@ -499,7 +428,7 @@ export async function seed() {
   await BuildReview.query().insert([
     {
       buildId: acceptedBuild!.id,
-      userId: gregUser!.id,
+      userId: input.userId ?? null,
       state: "approved",
     },
     {
@@ -513,12 +442,10 @@ export async function seed() {
     .withGraphFetched("compareScreenshot.test")
     .insertAndFetch(
       Object.keys(buildScreenshotDiffs).flatMap((buildId) =>
-        buildScreenshotDiffs[buildId]!.map((screenshotDiff) => {
-          return {
-            ...screenshotDiff,
-            buildId,
-          };
-        }),
+        buildScreenshotDiffs[buildId]!.map((screenshotDiff) => ({
+          ...screenshotDiff,
+          buildId,
+        })),
       ),
     );
 
@@ -532,8 +459,196 @@ export async function seed() {
     }),
   );
 
-  const completeBuilds = await Build.query().where("jobStatus", "complete");
-  for (const build of completeBuilds) {
-    await concludeBuild({ build, notify: false });
+  const completeBuilds = [
+    orphanBuild,
+    referenceBuild,
+    diffDetectedBuild,
+    acceptedBuild,
+    rejectedBuild,
+    inProgressBuild,
+    failBuild,
+    stableBuild,
+    emptyBuild,
+    removedBuild,
+  ].filter((b): b is Build => b?.jobStatus === "complete");
+
+  for (const b of completeBuilds) {
+    await concludeBuild({ build: b, notify: false });
   }
+
+  return {
+    orphanBuild: orphanBuild!,
+    referenceBuild: referenceBuild!,
+    expiredBuild: expiredBuild!,
+    abortedBuild: abortedBuild!,
+    errorBuild: errorBuild!,
+    diffDetectedBuild: diffDetectedBuild!,
+    acceptedBuild: acceptedBuild!,
+    rejectedBuild: rejectedBuild!,
+    pendingBuild: pendingBuild!,
+    inProgressBuild: inProgressBuild!,
+    failBuild: failBuild!,
+    stableBuild: stableBuild!,
+    emptyBuild: emptyBuild!,
+    removedBuild: removedBuild!,
+  };
+}
+
+export async function seed() {
+  const plans = await Plan.query().insert([
+    {
+      name: "free",
+      includedScreenshots: 7000,
+      githubPlanId: 7772,
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "starter",
+      includedScreenshots: 40000,
+      githubPlanId: 7786,
+      stripeProductId: "prod_MzEZEfBDYFIc53",
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "standard",
+      includedScreenshots: 250000,
+      githubPlanId: 7787,
+      stripeProductId: "prod_MzEavomA8VeCvW",
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "Pro (legacy)",
+      includedScreenshots: 1000000,
+      githubPlanId: 7788,
+      stripeProductId: "prod_MzEawyq1kFcHEn",
+      usageBased: false,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+    {
+      name: "pro",
+      includedScreenshots: 15000,
+      githubPlanId: null,
+      stripeProductId: "prod_Njgin72JdGT9Yu",
+      usageBased: true,
+      githubSsoIncluded: true,
+      fineGrainedAccessControlIncluded: true,
+      interval: "month",
+    },
+  ]);
+
+  const [greg, jeremy] = await Promise.all([
+    createUserAccount({
+      email: "greg@smooth-code.com",
+      name: "Greg Bergé",
+      slug: "gregberge",
+      githubId: 266302,
+    }),
+    createUserAccount({
+      email: "jeremy@smooth-code.com",
+      name: "Jeremy Sfez",
+      slug: "jsfez",
+      githubId: 15954562,
+    }),
+    createUserAccount({
+      email: "argos-bot@no-reply.argos-ci.com",
+      name: "Argos Bot",
+      slug: "argos-bot",
+    }),
+  ]);
+
+  const argosGhAccount = await GithubAccount.query().insertAndFetch({
+    githubId: 24552866,
+    name: "Argos",
+    login: "argos-ci",
+    email: null,
+    type: "organization",
+  });
+
+  const { team: smoothTeam, account: smoothAccount } = await createTeamAccount({
+    slug: "smooth",
+    name: "Smooth",
+    forcedPlanId: plans[0]!.id,
+  });
+
+  const { team: helloTeam, account: helloAccount } = await createTeamAccount({
+    slug: "hello-you",
+    name: "Hello You",
+  });
+
+  await TeamUser.query().insert([
+    { teamId: smoothTeam.id, userId: greg.user.id, userLevel: "owner" },
+    { teamId: smoothTeam.id, userId: jeremy.user.id, userLevel: "owner" },
+    { teamId: helloTeam.id, userId: greg.user.id, userLevel: "owner" },
+    { teamId: helloTeam.id, userId: jeremy.user.id, userLevel: "owner" },
+  ]);
+
+  const bigProject = await createProject({
+    name: "big",
+    token: "big-650ded7d72e85b52e099df6e56aa204d4fe9",
+    accountId: smoothAccount.id,
+    private: false,
+  });
+
+  await Promise.all([
+    createProject({
+      name: "awesome",
+      token: "awesome-650ded7d72e85b52e099df6e56aa204d",
+      accountId: helloAccount.id,
+      defaultBaseBranch: "main",
+    }),
+    createProject({
+      name: "zone-51",
+      token: "zone-51-650ded7d72e85b52e099df6e56aa204d",
+      accountId: greg.account.id,
+    }),
+    createProject({
+      name: "lalouland",
+      token: "lalouland-650ded7d72e85b52e099df6e56aa20",
+      accountId: jeremy.account.id,
+    }),
+  ]);
+
+  const ghInstallation = await GithubInstallation.query().insertAndFetch({
+    createdAt: "2016-12-08T22:59:55Z",
+    updatedAt: "2016-12-08T22:59:55Z",
+    githubId: 70324597,
+    deleted: false,
+    githubTokenExpiresAt: "2025-06-08 07:39:55+00",
+    app: "main",
+    proxy: false,
+  });
+
+  const argosTestRepositoryGhRepository =
+    await GithubRepository.query().insertAndFetch({
+      name: "argos-test-repository",
+      private: false,
+      defaultBranch: "main",
+      githubId: 123456789,
+      githubAccountId: argosGhAccount!.id,
+      createdAt: "2016-12-08T22:59:55Z",
+      updatedAt: "2016-12-08T22:59:55Z",
+    });
+
+  await GithubRepositoryInstallation.query().insertAndFetch({
+    githubRepositoryId: argosTestRepositoryGhRepository!.id,
+    githubInstallationId: ghInstallation!.id,
+    createdAt: "2016-12-08T22:59:55Z",
+    updatedAt: "2016-12-08T22:59:55Z",
+  });
+
+  await createBuildScenario({
+    projectId: bigProject.id,
+    userId: greg.user.id,
+  });
 }

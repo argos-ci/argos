@@ -1,9 +1,8 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { slugJsonSchema } from "@argos/util/slug";
 import { memoize } from "lodash-es";
 import type { Pojo, RelationMappings } from "objection";
-
-import { slugJsonSchema } from "@/util/slug";
 
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
 import { Model } from "../util/model";

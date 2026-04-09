@@ -23,7 +23,10 @@ async function getContextAuth(
   request: Request,
 ): Promise<AuthJWTPayload | null> {
   if (process.env["NODE_ENV"] === "test") {
-    return (request as any).__MOCKED_AUTH__ ?? null;
+    const mockedAuth = (request as any).__MOCKED_AUTH__;
+    if (mockedAuth) {
+      return mockedAuth;
+    }
   }
 
   const authHeader = request.get("authorization");

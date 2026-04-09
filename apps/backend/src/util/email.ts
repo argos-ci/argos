@@ -1,4 +1,4 @@
-import { slugify } from "./slug";
+import { slugify } from "@argos/util/slug";
 
 /**
  * Sanitize email before inserting in database.

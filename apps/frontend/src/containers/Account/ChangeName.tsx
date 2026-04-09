@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
@@ -33,7 +34,8 @@ export const AccountChangeName = (props: {
   title: React.ReactNode;
   description: React.ReactNode;
 }) => {
-  const { account } = props;
+  const { account, title, description } = props;
+  const headingId = useId();
   const client = useApolloClient();
   const form = useForm<Inputs>({
     defaultValues: {
@@ -51,11 +53,11 @@ export const AccountChangeName = (props: {
     form.reset(data);
   };
   return (
-    <Card>
+    <Card role="region" aria-labelledby={headingId}>
       <Form form={form} onSubmit={onSubmit}>
         <CardBody>
-          <CardTitle>{props.title}</CardTitle>
-          <CardParagraph>{props.description}</CardParagraph>
+          <CardTitle id={headingId}>{title}</CardTitle>
+          <CardParagraph>{description}</CardParagraph>
           <FormTextInput
             control={form.control}
             {...form.register("name", {

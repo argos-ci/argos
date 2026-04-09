@@ -1,9 +1,8 @@
+import type { Knex } from "knex";
 import { Model as ObjectionModel } from "objection";
 import type { ModelOptions, QueryContext, TransactionOrKnex } from "objection";
 
 import { knex } from "../knex";
-
-ObjectionModel.knex(knex);
 
 export class Model extends ObjectionModel {
   id!: string;
@@ -29,3 +28,9 @@ export class Model extends ObjectionModel {
     return this;
   }
 }
+
+function initObjection(knex: Knex) {
+  ObjectionModel.knex(knex);
+}
+
+initObjection(knex);

@@ -5,10 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
 import argosConfig from "./apps/backend/src/config";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Number of workers.
  */
-// require('dotenv').config();
+const WORKERS = 2;
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -31,8 +30,7 @@ const config = defineConfig({
   forbidOnly: Boolean(process.env.CI),
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 2 : undefined,
+  workers: WORKERS,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ["list"],
@@ -56,16 +54,22 @@ const config = defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
+      name: "setup",
+      testMatch: /.*\.setup\.ts/,
+    },
+    {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
       },
+      dependencies: ["setup"],
     },
     {
       name: "firefox",
       use: {
         ...devices["Desktop Firefox"],
       },
+      dependencies: ["setup"],
     },
   ],
 
@@ -79,6 +83,7 @@ const config = defineConfig({
     timeout: 10 * 1000,
     reuseExistingServer: false,
     env: {
+      NODE_ENV: "test",
       CSP_SCRIPT_SRC: `${getCSPScriptHash()},'unsafe-eval'`,
     },
   },

@@ -1,7 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
+import { slugify } from "@argos/util/slug";
 import type { PartialModelObject } from "objection";
-
-import { slugify } from "@/util/slug";
 
 import { Account } from "../models/Account";
 import { Team } from "../models/Team";
