@@ -1,47 +1,63 @@
 /* eslint-disable no-empty-pattern */
 import { test as base } from "@playwright/test";
 
-import { Account } from "../apps/backend/src/database/models/Account";
-import { Project } from "../apps/backend/src/database/models/Project";
+import type {
+  Account,
+  Project,
+  Team,
+  User,
+} from "../apps/backend/src/database/models";
 import {
   BuildScenario,
   createBuildScenario,
   createProject,
   createTeamAccount,
+  createUserAccount,
 } from "../apps/backend/src/database/seeds";
 
 type WorkerFixtures = {
-  seedAccount: { account: Account; slug: string };
-  seedProject: { project: Project; accountSlug: string; projectName: string };
-  seedBuilds: BuildScenario;
+  user: { user: User; account: Account };
+  team: { team: Team; account: Account };
+  project: Project;
+  builds: BuildScenario;
 };
 
-export const test = base.extend<object, WorkerFixtures>({
-  seedAccount: [
+export const seedTest = base.extend<object, WorkerFixtures>({
+  user: [
     async ({}, use, workerInfo) => {
-      const slug = `team-w${workerInfo.workerIndex}`;
-      const { account } = await createTeamAccount({ slug, name: "Smooth" });
-      await use({ account, slug });
-    },
-    { scope: "worker" },
-  ],
-
-  seedProject: [
-    async ({ seedAccount }, use) => {
-      const projectName = "big";
-      const project = await createProject({
-        accountId: seedAccount.account.id,
-        name: projectName,
+      const user = await createUserAccount({
+        email: `kyle-${workerInfo.workerIndex}@acme.com`,
+        name: "Kyle Bertolino",
+        slug: `kyle-${workerInfo.workerIndex}`,
       });
-      await use({ project, accountSlug: seedAccount.slug, projectName });
+      await use(user);
+    },
+    { scope: "worker" },
+  ],
+  team: [
+    async ({}, use, workerInfo) => {
+      const slug = `acme-${workerInfo.workerIndex}`;
+      const team = await createTeamAccount({ slug, name: "Acme" });
+      await use(team);
     },
     { scope: "worker" },
   ],
 
-  seedBuilds: [
-    async ({ seedProject }, use, workerInfo) => {
+  project: [
+    async ({ team }, use) => {
+      const project = await createProject({
+        accountId: team.account.id,
+        name: "sparkle",
+      });
+      await use(project);
+    },
+    { scope: "worker" },
+  ],
+
+  builds: [
+    async ({ project }, use, workerInfo) => {
       const builds = await createBuildScenario({
-        projectId: seedProject.project.id,
+        projectId: project.id,
         keyPrefix: `w${workerInfo.workerIndex}-`,
       });
       await use(builds);

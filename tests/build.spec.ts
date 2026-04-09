@@ -2,7 +2,8 @@ import { argosScreenshot } from "@argos-ci/playwright";
 import { expect } from "@playwright/test";
 
 import { BuildScenario } from "../apps/backend/src/database/seeds";
-import { test } from "./seed-test";
+import { seedTest } from "./seed-test";
+import { replaceText } from "./util";
 
 const buildExamples: {
   name: string;
@@ -47,15 +48,18 @@ const buildExamples: {
 ];
 
 buildExamples.forEach((build) => {
-  test(build.name, async ({ page, seedProject, seedBuilds }) => {
-    const number = build.getNumber(seedBuilds);
-    await page.goto(
-      `/${seedProject.accountSlug}/${seedProject.projectName}/builds/${number}`,
-    );
+  seedTest(build.name, async ({ page, team, project, builds }) => {
+    const number = build.getNumber(builds);
+    await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
     await expect(page.getByText(`Build ${number}`)).toBeVisible();
     if (build.compare !== false) {
       await expect(page.getByText(`Changes from`)).toBeVisible();
     }
+
+    const restore = await replaceText(page, {
+      [`${team.account.slug}/${project.name}`]: "acme/project",
+    });
     await argosScreenshot(page, `build-${build.name}`);
+    await restore();
   });
 });

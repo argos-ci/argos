@@ -25,7 +25,7 @@ function duplicate<T>(obj: T, count: number): T[] {
   return Array.from({ length: count }, () => obj);
 }
 
-export async function createUser(input: {
+export async function createUserAccount(input: {
   email: string;
   slug: string;
   name: string;
@@ -548,19 +548,19 @@ export async function seed() {
   ]);
 
   const [greg, jeremy] = await Promise.all([
-    createUser({
+    createUserAccount({
       email: "greg@smooth-code.com",
       name: "Greg Bergé",
       slug: "gregberge",
       githubId: 266302,
     }),
-    createUser({
+    createUserAccount({
       email: "jeremy@smooth-code.com",
       name: "Jeremy Sfez",
       slug: "jsfez",
       githubId: 15954562,
     }),
-    createUser({
+    createUserAccount({
       email: "argos-bot@no-reply.argos-ci.com",
       name: "Argos Bot",
       slug: "argos-bot",
