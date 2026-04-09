@@ -1,13 +1,25 @@
+import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 
 import { GithubRepository, type Project } from "@/database/models";
 
-export const ProjectOwner = z.string().min(1);
+export const AccountSlug = z.string().min(1);
 export const ProjectName = z.string().min(1);
+
+const AccountSchema = z
+  .object({
+    id: z.string(),
+    slug: AccountSlug,
+  })
+  .meta({
+    description: "Account",
+    id: "Account",
+  });
 
 export const ProjectSchema = z
   .object({
     id: z.string(),
+    account: AccountSchema,
     name: ProjectName,
     defaultBaseBranch: z.string(),
     hasRemoteContentAccess: z.boolean(),
@@ -26,8 +38,10 @@ export async function serializeProject(
   project: Project,
 ): Promise<z.infer<typeof ProjectSchema>> {
   await project.$fetchGraph(
-    "[githubRepository.repoInstallations.installation,gitlabProject]",
+    "[account,githubRepository.repoInstallations.installation,gitlabProject]",
   );
+
+  invariant(project.account, "account is not fetched");
 
   const defaultBaseBranch = await project.$getDefaultBaseBranch();
 
@@ -40,6 +54,10 @@ export async function serializeProject(
 
   return {
     id: project.id,
+    account: {
+      id: project.account.id,
+      slug: project.account.slug,
+    },
     name: project.name,
     defaultBaseBranch,
     hasRemoteContentAccess,

@@ -8,7 +8,7 @@ import {
   serializeBuilds,
 } from "../schema/primitives/build";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
-import { ProjectName, ProjectOwner } from "../schema/primitives/project";
+import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import { Sha1HashSchema } from "../schema/primitives/sha";
 import {
   forbidden,
@@ -44,7 +44,7 @@ export const getProjectBuildsOperation = {
   operationId: "getProjectBuilds",
   requestParams: {
     path: z.object({
-      owner: ProjectOwner,
+      owner: AccountSlug,
       project: ProjectName,
     }),
     query: GetProjectBuildsParams,

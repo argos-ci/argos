@@ -53,7 +53,7 @@ export async function createUserAccount(input: {
       if (input.githubId) {
         invariant(type === "user", "A bot can't have a GitHub account");
         return GithubAccount.query().insertAndFetch({
-          githubId: 266302,
+          githubId: input.githubId,
           name: input.name,
           login: input.slug,
           email: input.email,

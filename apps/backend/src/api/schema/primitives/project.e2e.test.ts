@@ -72,6 +72,7 @@ describe("api/schema/primitives/project", () => {
   }) => {
     await expect(serializeProject(githubProject)).resolves.toMatchObject({
       id: githubProject.id,
+      account: { id: expect.any(String), slug: expect.any(String) },
       name: githubProject.name,
       defaultBaseBranch: "develop",
       hasRemoteContentAccess: true,
@@ -83,6 +84,7 @@ describe("api/schema/primitives/project", () => {
   }) => {
     await expect(serializeProject(lightGithubProject)).resolves.toMatchObject({
       id: lightGithubProject.id,
+      account: { id: expect.any(String), slug: expect.any(String) },
       name: lightGithubProject.name,
       defaultBaseBranch: "release",
       hasRemoteContentAccess: false,
@@ -94,6 +96,7 @@ describe("api/schema/primitives/project", () => {
   }) => {
     await expect(serializeProject(gitlabBackedProject)).resolves.toMatchObject({
       id: gitlabBackedProject.id,
+      account: { id: expect.any(String), slug: expect.any(String) },
       name: gitlabBackedProject.name,
       defaultBaseBranch: "production",
       hasRemoteContentAccess: false,

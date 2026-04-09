@@ -53,6 +53,10 @@ describe("getAuthProject", () => {
       .expect((res) => {
         expect(res.body).toEqual({
           id: project.id,
+          account: expect.objectContaining({
+            id: expect.any(String),
+            slug: expect.any(String),
+          }),
           name: project.name,
           defaultBaseBranch: "main",
           hasRemoteContentAccess: false,

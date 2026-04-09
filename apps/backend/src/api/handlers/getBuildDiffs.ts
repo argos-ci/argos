@@ -11,7 +11,7 @@ import {
 } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
-import { ProjectName, ProjectOwner } from "../schema/primitives/project";
+import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   serializeSnapshotDiffs,
   SnapshotDiffSchema,
@@ -48,7 +48,7 @@ export const getBuildDiffsOperation = {
   operationId: "getBuildDiffs",
   requestParams: {
     path: z.object({
-      owner: ProjectOwner,
+      owner: AccountSlug,
       project: ProjectName,
       buildNumber: BuildNumber,
     }),
