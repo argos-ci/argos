@@ -1,14 +1,9 @@
-import {
-  configDefaults,
-  defineConfig,
-  mergeConfig,
-  UserConfig,
-} from "vitest/config";
+import { configDefaults, defineConfig, mergeConfig } from "vitest/config";
 
-import vitestConfig from "./vitest.config.mjs";
+import baseConfig from "./vitest.base.config.mjs";
 
 export default mergeConfig(
-  vitestConfig,
+  baseConfig,
   defineConfig({
     test: {
       exclude: [
@@ -16,5 +11,5 @@ export default mergeConfig(
         "**/*.e2e.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}",
       ],
     },
-  }) as UserConfig,
+  }),
 );

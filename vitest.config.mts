@@ -1,10 +1,13 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
 
-export default defineConfig({
-  resolve: {
-    tsconfigPaths: true,
-  },
-  test: {
-    exclude: ["node_modules", "tests", "examples", "**/dist"],
-  },
-});
+import baseConfig from "./vitest/vitest.base.config.mjs";
+
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    test: {
+      maxWorkers: 1,
+      fileParallelism: false,
+    },
+  }),
+);
