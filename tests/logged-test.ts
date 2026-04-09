@@ -1,4 +1,3 @@
-/* eslint-disable no-empty-pattern */
 import { type Page } from "@playwright/test";
 
 import { createJWT, JWT_VERSION } from "../apps/backend/src/auth/jwt";
