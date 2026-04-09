@@ -30,6 +30,7 @@ export async function createUserAccount(input: {
   slug: string;
   name: string;
   githubId?: number;
+  staff?: boolean;
   /**
    * @default "user"
    */
@@ -40,6 +41,7 @@ export async function createUserAccount(input: {
     (async () => {
       const user = await User.query().insertAndFetch({
         email: input.email,
+        staff: input.staff ?? false,
         type,
       });
       await UserEmail.query().insert({
@@ -53,7 +55,7 @@ export async function createUserAccount(input: {
       if (input.githubId) {
         invariant(type === "user", "A bot can't have a GitHub account");
         return GithubAccount.query().insertAndFetch({
-          githubId: 266302,
+          githubId: input.githubId,
           name: input.name,
           login: input.slug,
           email: input.email,
@@ -552,12 +554,14 @@ export async function seed() {
       email: "greg@smooth-code.com",
       name: "Greg Bergé",
       slug: "gregberge",
+      staff: true,
       githubId: 266302,
     }),
     createUserAccount({
       email: "jeremy@smooth-code.com",
       name: "Jeremy Sfez",
       slug: "jsfez",
+      staff: true,
       githubId: 15954562,
     }),
     createUserAccount({
