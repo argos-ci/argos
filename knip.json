@@ -26,6 +26,11 @@
       }
     }
   },
-  "ignore": ["playwright.config.mts", "tests/truncate.setup.ts"],
+  "ignore": [
+    "playwright.config.mts",
+    "tests/truncate.setup.ts",
+    "vitest/vitest.e2e.config.mts",
+    "vitest/vitest.unit.config.mts"
+  ],
   "ignoreBinaries": ["stripe", "ngrok", "op"]
 }

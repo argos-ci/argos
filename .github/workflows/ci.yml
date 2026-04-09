@@ -50,7 +50,7 @@ jobs:
         run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Run unit tests
-        run: pnpm exec -- vitest -c vitest.unit.config.mts
+        run: pnpm run test:unit
 
   integration-test:
     runs-on: ubuntu-latest
@@ -113,7 +113,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: npm exec -- vitest -c vitest.e2e.config.mts
+        run: pnpm run test:integration
 
   e2e-test:
     runs-on: ubuntu-latest
@@ -169,7 +169,7 @@ jobs:
         with:
           # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500
-          args: env HOME=/root npm exec -- playwright test
+          args: env HOME=/root npm run test:e2e
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test

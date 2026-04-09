@@ -225,10 +225,10 @@ npx playwright install --with-deps
 2. Run E2E tests:
 
 ```sh
-pnpm run e2e:start
+pnpm run test:e2e
 
 # or in debug mode with
-# pnpm run e2e:start -- --debug
+# pnpm run test:e2e --debug
 ```
 
 ## 📜 Coding Style

@@ -1,9 +1,9 @@
 import { defineConfig, mergeConfig } from "vitest/config";
 
-import vitestConfig from "./vitest.config.mjs";
+import baseConfig from "./vitest.base.config.mjs";
 
 export default mergeConfig(
-  vitestConfig,
+  baseConfig,
   defineConfig({
     test: {
       maxWorkers: 1,
