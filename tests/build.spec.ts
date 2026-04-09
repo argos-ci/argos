@@ -57,7 +57,7 @@ buildExamples.forEach((build) => {
     }
 
     const restore = await replaceText(page, {
-      [`${team.account.slug}/${project.name}`]: "acme/project",
+      [team.account.slug]: "acme",
     });
     await argosScreenshot(page, `build-${build.name}`);
     await restore();
