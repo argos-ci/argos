@@ -13,7 +13,7 @@ import {
   BuildSchema,
   serializeBuild,
 } from "../schema/primitives/build";
-import { ProjectName, ProjectOwner } from "../schema/primitives/project";
+import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
   invalidParameters,
@@ -27,7 +27,7 @@ export const getBuildOperation = {
   operationId: "getBuild",
   requestParams: {
     path: z.object({
-      owner: ProjectOwner,
+      owner: AccountSlug,
       project: ProjectName,
       buildNumber: BuildNumber,
     }),

@@ -48,7 +48,10 @@ describe("getProject", () => {
     });
   });
 
-  test("returns a project for a project token", async ({ project }) => {
+  test("returns a project for a project token", async ({
+    project,
+    account,
+  }) => {
     await request(app)
       .get("/projects/acme/web")
       .set("Authorization", "Bearer the-awesome-token")
@@ -56,6 +59,10 @@ describe("getProject", () => {
       .expect((res) => {
         expect(res.body).toEqual({
           id: project.id,
+          account: {
+            id: account.id,
+            slug: "acme",
+          },
           name: project.name,
           defaultBaseBranch: "main",
           hasRemoteContentAccess: false,

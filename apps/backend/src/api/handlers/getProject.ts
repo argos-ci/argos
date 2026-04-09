@@ -3,8 +3,8 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { getProjectFromReqAndParams } from "../auth/project";
 import {
+  AccountSlug,
   ProjectName,
-  ProjectOwner,
   ProjectSchema,
   serializeProject,
 } from "../schema/primitives/project";
@@ -20,7 +20,7 @@ export const getProjectOperation = {
   operationId: "getProject",
   requestParams: {
     path: z.object({
-      owner: ProjectOwner,
+      owner: AccountSlug,
       project: ProjectName,
     }),
   },
