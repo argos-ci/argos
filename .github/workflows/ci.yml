@@ -50,7 +50,7 @@ jobs:
         run: pnpm exec -- turbo run build --filter=\!@argos/frontend
 
       - name: Run unit tests
-        run: pnpm exec -- vitest -c vitest.unit.config.mts
+        run: pnpm exec -- vitest
 
   integration-test:
     runs-on: ubuntu-latest
