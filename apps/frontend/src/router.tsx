@@ -191,6 +191,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
       lazy: () => import("./pages/AuthCallback"),
     },
     {
+      ErrorBoundary: RootErrorBoundary,
+      path: `/auth/cli`,
+      HydrateFallback,
+      lazy: () => import("./pages/AuthCLI"),
+    },
+    {
       path: "/",
       element: <Root />,
       ErrorBoundary: RootErrorBoundary,

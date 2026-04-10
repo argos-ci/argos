@@ -32,6 +32,7 @@ export const typeDefs = gql`
     name: String!
     accountIds: [ID!]!
     expireInDays: Int
+    source: String
   }
 
   input DeleteUserAccessTokenInput {
@@ -74,7 +75,7 @@ export const resolvers: IResolvers = {
       }
       const userId = ctx.auth.user.id;
 
-      const { name, accountIds, expireInDays } = args.input;
+      const { name, accountIds, expireInDays, source } = args.input;
 
       if (!name.trim()) {
         throw badUserInput("Token name cannot be empty");
@@ -105,7 +106,7 @@ export const resolvers: IResolvers = {
             token: hashToken(token),
             lastUsedAt: null,
             expireAt,
-            source: "user",
+            source: source === "cli" ? "cli" : "user",
           },
         );
 
