@@ -1,12 +1,4 @@
-import { createHash, randomBytes, randomInt } from "node:crypto";
-
-/**
- * Generates a random hex string of the given length.
- */
-export function generateRandomHexString(length: number): string {
-  const token = randomBytes(length / 2);
-  return token.toString("hex");
-}
+import { createHash, randomInt } from "node:crypto";
 
 /**
  * Hashes a token using SHA-256.
@@ -22,4 +14,16 @@ export function generateRandomDigits(length: number): string {
   // Generate a random integer between 0 and 999999
   const randomNumber = randomInt(0, 10 ** length);
   return randomNumber.toString().padStart(length, "0");
+}
+
+/**
+ * Generates a random string containing a-z and 1-9 of the given length.
+ */
+export function generateRandomString(length: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(randomInt(0, chars.length));
+  }
+  return result;
 }

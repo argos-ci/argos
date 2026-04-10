@@ -4,12 +4,15 @@ import { Router } from "express";
 import { stringify } from "yaml";
 
 import { createBuild } from "./handlers/createBuild";
+import { createDeployment } from "./handlers/createDeployment";
 import { createReview } from "./handlers/createReview";
 import { exchangeCliToken } from "./handlers/exchangeCliToken";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
+import { finalizeDeployment } from "./handlers/finalizeDeployment";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getBuild } from "./handlers/getBuild";
 import { getBuildDiffs } from "./handlers/getBuildDiffs";
+import { getDeployment } from "./handlers/getDeployment";
 import { getProject } from "./handlers/getProject";
 import { getProjectBuilds } from "./handlers/getProjectBuilds";
 import { updateBuild } from "./handlers/updateBuild";
@@ -43,7 +46,10 @@ router.get("/openapi.yaml", (_req, res) => {
 registerHandler(router, createBuild);
 registerHandler(router, createReview);
 registerHandler(router, exchangeCliToken);
+registerHandler(router, createDeployment);
 registerHandler(router, finalizeBuilds);
+registerHandler(router, finalizeDeployment);
+registerHandler(router, getDeployment);
 registerHandler(router, getAuthProject);
 registerHandler(router, getBuild);
 registerHandler(router, getBuildDiffs);

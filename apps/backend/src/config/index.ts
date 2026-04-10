@@ -450,6 +450,33 @@ export function createConfig() {
         env: "SLACK_STATE_SECRET",
       },
     },
+    deployments: {
+      bucketName: {
+        doc: "S3 bucket for deployments",
+        format: String,
+        default: "argos-deployments-development",
+        env: "DEPLOYMENTS_BUCKET_NAME",
+      },
+      baseDomain: {
+        doc: "Base domain for Deployment previews",
+        format: String,
+        default: "argos-ci.live",
+        env: "DEPLOYMENTS_BASE_DOMAIN",
+      },
+    },
+    dynamodb: {
+      endpoint: {
+        doc: "DynamoDB endpoint (for local development)",
+        format: String,
+        default: "",
+        env: "DYNAMODB_ENDPOINT",
+      },
+      stage: {
+        doc: "Stage prefix for DynamoDB tables",
+        format: String,
+        default: "development",
+      },
+    },
     bucket: {
       publishableKey: {
         doc: "Bucket.co (feature-flag) publishable key",

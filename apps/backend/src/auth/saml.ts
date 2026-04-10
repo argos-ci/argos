@@ -4,7 +4,7 @@ import z from "zod";
 
 import config from "@/config";
 import type { Account, TeamSamlConfig } from "@/database/models";
-import { generateRandomHexString } from "@/database/services/crypto";
+import { generateRandomString } from "@/database/services/crypto";
 import { boom } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
 
@@ -163,7 +163,7 @@ export async function createSamlAuthCode(
   payload: SamlAuthCodePayload,
 ): Promise<string> {
   const redis = await getRedisClient();
-  const code = generateRandomHexString(40);
+  const code = generateRandomString(40);
   await redis.set(getAuthCodeKey(code), JSON.stringify(payload), {
     expiration: {
       type: "PX",
@@ -354,7 +354,7 @@ export async function createSamlLoginRedirect(args: {
   samlConfig: TeamSamlConfig;
   redirect: string;
 }) {
-  const nonce = generateRandomHexString(32);
+  const nonce = generateRandomString(32);
   const sp = createServiceProvider({
     teamSlug: args.teamSlug,
     relayState: nonce,

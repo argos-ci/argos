@@ -2,7 +2,7 @@ import { TeamUserLevelSchema } from "@argos/schemas/team-user-level";
 import { Model, type JSONSchema, type RelationMappings } from "objection";
 import { z } from "zod";
 
-import { generateRandomHexString } from "../services/crypto";
+import { generateRandomString } from "../services/crypto";
 import { Team } from "./Team";
 import { User } from "./User";
 
@@ -70,7 +70,7 @@ export class TeamInvite extends Model {
    * Generate the invite secret.
    */
   static generateSecret() {
-    return generateRandomHexString(20);
+    return generateRandomString(20);
   }
 
   static formatId(teamInvite: TeamInvite) {

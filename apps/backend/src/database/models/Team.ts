@@ -4,7 +4,7 @@ import type { RelationMappings } from "objection";
 import config from "@/config";
 import { boom } from "@/util/error";
 
-import { generateRandomHexString } from "../services/crypto";
+import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Account, AccountPermission, ALL_ACCOUNT_PERMISSIONS } from "./Account";
@@ -106,7 +106,7 @@ export class Team extends Model {
    * Generate the invite secret.
    */
   static generateInviteSecret() {
-    return generateRandomHexString(20);
+    return generateRandomString(20);
   }
 
   /**

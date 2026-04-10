@@ -14,6 +14,10 @@
       "ignore": ["**/bin/**/*"],
       "ignoreDependencies": ["@argos/knex-scripts", "moment"]
     },
+    "infra": {
+      "entry": ["bin/app.ts", "lambda/origin-request.ts"],
+      "ignoreDependencies": ["esbuild"]
+    },
     "apps/frontend": {
       "ignore": ["vite.config.mts"],
       "ignoreDependencies": [
@@ -32,5 +36,5 @@
     "vitest/vitest.e2e.config.mts",
     "vitest/vitest.unit.config.mts"
   ],
-  "ignoreBinaries": ["stripe", "ngrok", "op"]
+  "ignoreBinaries": ["stripe", "ngrok", "op", "tsx"]
 }

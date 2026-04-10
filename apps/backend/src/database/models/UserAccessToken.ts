@@ -1,7 +1,7 @@
 import type { JSONSchema, RelationMappings } from "objection";
 import { z } from "zod";
 
-import { generateRandomHexString } from "../services/crypto";
+import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { User } from "./User";
@@ -67,7 +67,7 @@ export class UserAccessToken extends Model {
    * Generate a new user access token.
    */
   static generateToken() {
-    const token = generateRandomHexString(36);
+    const token = generateRandomString(36);
     return `${UserAccessTokenPrefix}${token}`;
   }
 

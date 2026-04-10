@@ -1,9 +1,9 @@
 import { GithubPullRequest } from "@/database/models";
 import { createModelJob } from "@/job-core";
 
-import { processPullRequest } from "./pull-request";
+import { processPullRequest } from "./process";
 
-export const job = createModelJob(
+export const githubPullRequestJob = createModelJob(
   "githubPullRequest",
   GithubPullRequest,
   async (pullRequest) => {
