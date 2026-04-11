@@ -9,10 +9,9 @@ const STAGE = process.env.STAGE ?? "development";
 
 // Reuse the DynamoDB client across invocations
 const DEFAULT_REGION = "us-east-1";
-const REPLICA_REGIONS = new Set(["us-east-1", "eu-west-1"]);
 const execRegion = process.env["AWS_REGION"] ?? DEFAULT_REGION;
-const dynamoRegion = REPLICA_REGIONS.has(execRegion)
-  ? execRegion
+const dynamoRegion = execRegion.startsWith("eu-")
+  ? "eu-west-1"
   : DEFAULT_REGION;
 const baseClient = new DynamoDBClient({ region: dynamoRegion });
 const dynamo = DynamoDBDocumentClient.from(baseClient, {
@@ -106,14 +105,19 @@ export const handler = async (
 ): Promise<CloudFrontRequestResult> => {
   const record = event.Records[0];
   if (!record) {
+    console.log("[404] No CloudFront record in event");
     return notFoundResponse();
   }
   const request = record.cf.request;
   const host = request.headers["host"]?.[0]?.value ?? "";
+  console.log(
+    `[request] host=${host} uri=${request.uri} stage=${STAGE} dynamoRegion=${dynamoRegion}`,
+  );
 
   // Extract subdomain from host (e.g. "abc123" from "abc123.argos-ci.live")
   const dotIndex = host.indexOf(".");
   if (dotIndex === -1) {
+    console.log(`[404] No dot in host: ${host}`);
     return notFoundResponse();
   }
   const subdomain = host.substring(0, dotIndex);
@@ -125,27 +129,38 @@ export const handler = async (
     ? normalizedPath.slice(1)
     : normalizedPath;
 
+  console.log(`[lookup] subdomain=${subdomain} filePath=${filePath}`);
+
   let deploymentId: string;
 
   if (isDeploymentId(subdomain)) {
-    // Subdomain is a deployment ID — look up directly
     deploymentId = subdomain;
+    console.log(`[lookup] subdomain is deploymentId=${deploymentId}`);
   } else {
-    // Subdomain is an alias — resolve to the current production deployment
+    console.log(
+      `[lookup] resolving alias=${subdomain} from table=${tableName("deployment_aliases")}`,
+    );
     const resolved = await resolveProjectDeploymentId(subdomain);
     if (!resolved) {
+      console.log(`[404] alias not found: ${subdomain}`);
       return notFoundResponse();
     }
     deploymentId = resolved;
+    console.log(`[lookup] resolved deploymentId=${deploymentId}`);
   }
 
-  // Look up the file's content hash
+  console.log(
+    `[lookup] looking up file table=${tableName("deployment_files")} deploymentId=${deploymentId} path=${filePath}`,
+  );
   const contentHash = await lookupDeploymentFile(deploymentId, filePath);
   if (!contentHash) {
+    console.log(
+      `[404] file not found: deploymentId=${deploymentId} path=${filePath}`,
+    );
     return notFoundResponse();
   }
 
-  // Rewrite the request URI to the content-addressed S3 path
+  console.log(`[hit] rewriting uri to /content/${contentHash}`);
   request.uri = `/content/${contentHash}`;
 
   return request;

@@ -174,7 +174,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         edgeLambdas: [
           {
-            eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
+            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
             functionVersion: originRequestFn.currentVersion,
           },
         ],
