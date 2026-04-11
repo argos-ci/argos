@@ -109,7 +109,7 @@ export const handler = async (
     return notFoundResponse();
   }
   const request = record.cf.request;
-  const host = request.headers["host"]?.[0]?.value ?? "";
+  const host = request.headers["x-original-host"]?.[0]?.value ?? "";
   console.log(
     `[request] host=${host} uri=${request.uri} stage=${STAGE} dynamoRegion=${dynamoRegion}`,
   );

@@ -54,9 +54,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // DynamoDB — files table (content hash → S3 key)
     // ----------------------------------------------------------------
-    const replicationRegions = isProduction
-      ? ["us-east-1", "eu-west-1"]
-      : undefined;
+    const replicationRegions = ["eu-west-1"];
 
     this.filesTable = new dynamodb.Table(this, "FilesTable", {
       tableName: `${stage}_files`,
@@ -168,17 +166,64 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // CloudFront Distribution
     // ----------------------------------------------------------------
+
+    // Lightweight CloudFront Function — copies the viewer Host header into
+    // x-original-host so the Lambda@Edge at ORIGIN_REQUEST can read it
+    // (at ORIGIN_REQUEST the Host header is replaced by the S3 origin host).
+    const copyHostFn = new cloudfront.Function(this, "CopyHostFn", {
+      code: cloudfront.FunctionCode.fromInline(`
+function handler(event) {
+  var host = event.request.headers["host"];
+  if (host) {
+    event.request.headers["x-original-host"] = host;
+  }
+  return event.request;
+}
+      `.trim()),
+      runtime: cloudfront.FunctionRuntime.JS_2_0,
+    });
+
+    // Origin Request Policy — forward x-original-host to the Lambda@Edge
+    const originRequestPolicy = new cloudfront.OriginRequestPolicy(
+      this,
+      "OriginRequestPolicy",
+      {
+        headerBehavior:
+          cloudfront.OriginRequestHeaderBehavior.allowList("x-original-host"),
+        queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.none(),
+        cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
+      },
+    );
+
+    // Cache Policy — cache key includes x-original-host so each deployment
+    // URL gets its own cache entries
+    const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
+      headerBehavior:
+        cloudfront.CacheHeaderBehavior.allowList("x-original-host"),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+      defaultTtl: cdk.Duration.days(365),
+      maxTtl: cdk.Duration.days(365),
+    });
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        functionAssociations: [
+          {
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            function: copyHostFn,
+          },
+        ],
         edgeLambdas: [
           {
-            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+            eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
             functionVersion: originRequestFn.currentVersion,
           },
         ],
-        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+        cachePolicy,
+        originRequestPolicy,
       },
       domainNames: [`*.${baseDomain}`],
       certificate,
@@ -199,14 +244,19 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // Dev user access — full read/write on all tables and bucket
     // ----------------------------------------------------------------
     if (devUserArns.length > 0) {
-      const devUsers = devUserArns.map((arn) =>
-        iam.User.fromUserArn(this, `DevUser-${arn.split("/").pop()}`, arn),
-      );
-      for (const user of devUsers) {
-        this.filesTable.grantReadWriteData(user);
-        this.deploymentFilesTable.grantReadWriteData(user);
-        this.deploymentAliasesTable.grantReadWriteData(user);
-        this.bucket.grantReadWrite(user);
+      const devGroup = new iam.Group(this, "DevGroup");
+      this.filesTable.grantReadWriteData(devGroup);
+      this.deploymentFilesTable.grantReadWriteData(devGroup);
+      this.deploymentAliasesTable.grantReadWriteData(devGroup);
+      this.bucket.grantReadWrite(devGroup);
+
+      for (const arn of devUserArns) {
+        const user = iam.User.fromUserArn(
+          this,
+          `DevUser-${arn.split("/").pop()}`,
+          arn,
+        );
+        devGroup.addUser(user);
       }
     }
 
