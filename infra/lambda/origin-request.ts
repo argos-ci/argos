@@ -94,7 +94,6 @@ async function resolveProjectDeploymentId(
       TableName: tableName("deployment_aliases"),
       Key: {
         alias,
-        environment: "production",
       },
       ProjectionExpression: "deployment_id",
     }),

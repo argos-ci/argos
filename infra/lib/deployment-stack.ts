@@ -145,6 +145,12 @@ export class ArgosDeploymentStack extends cdk.Stack {
     this.deploymentFilesTable.grantReadData(originRequestFn);
     this.deploymentAliasesTable.grantReadData(originRequestFn);
 
+    // Allow CloudFront to invoke the Lambda@Edge version
+    originRequestFn.currentVersion.addPermission("AllowCloudFrontInvoke", {
+      principal: new iam.ServicePrincipal("edgelambda.amazonaws.com"),
+      action: "lambda:InvokeFunction",
+    });
+
     // ----------------------------------------------------------------
     // ACM Certificate — wildcard for the domain
     // ----------------------------------------------------------------
@@ -162,15 +168,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // CloudFront Distribution
     // ----------------------------------------------------------------
-    const originRequestFnVersion = new lambda.Version(
-      this,
-      "OriginRequestFnVersion",
-      {
-        lambda: originRequestFn,
-        removalPolicy: cdk.RemovalPolicy.RETAIN,
-      },
-    );
-
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
@@ -178,7 +175,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
         edgeLambdas: [
           {
             eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
-            functionVersion: originRequestFnVersion,
+            functionVersion: originRequestFn.currentVersion,
           },
         ],
         cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
