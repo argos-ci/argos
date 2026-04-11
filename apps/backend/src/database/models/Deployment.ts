@@ -10,7 +10,7 @@ type DeploymentStatus = "pending" | "ready" | "error";
 type DeploymentEnvironment = "preview" | "production";
 
 export class Deployment extends Model {
-  static override tableName = "storybook_deployments";
+  static override tableName = "deployments";
 
   static override jsonSchema = {
     allOf: [
@@ -57,12 +57,11 @@ export class Deployment extends Model {
   branch!: string | null;
   commitSha!: string | null;
   githubPullRequestId!: string | null;
-  slug!: string | null;
 
   project?: Project;
 
   get url() {
     const baseDomain = config.get("deployments.baseDomain");
-    return new URL(`https://${this.slug}.${baseDomain}`).href;
+    return new URL(`https://${this.id}.${baseDomain}`).href;
   }
 }

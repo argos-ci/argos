@@ -214,7 +214,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       return true;
     });
 
-    const s3 = getS3Client();
+    const s3 = getS3Client("us-east-1");
     const bucketName = config.get("deployments.bucketName");
 
     const uploadFiles = await Promise.all(

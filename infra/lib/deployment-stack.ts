@@ -5,6 +5,7 @@ import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as route53 from "aws-cdk-lib/aws-route53";
@@ -17,6 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 interface ArgosDeploymentStackProps extends cdk.StackProps {
   stage: "development" | "production";
   hostedZoneId: string;
+  devUserArns?: string[];
 }
 const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
   development: "dev.argos-ci.live",
@@ -32,7 +34,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage, hostedZoneId } = props;
+    const { stage, hostedZoneId, devUserArns = [] } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
 
@@ -40,7 +42,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // S3 Bucket — content-addressed storage for Deployment assets
     // ----------------------------------------------------------------
     this.bucket = new s3.Bucket(this, "DeploymentBucket", {
-      bucketName: `argos-deployment-${stage}`,
+      bucketName: `argos-deployments-${stage}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       removalPolicy: isProduction
@@ -109,7 +111,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
           name: "alias",
           type: dynamodb.AttributeType.STRING,
         },
-        sortKey: { name: "environment", type: dynamodb.AttributeType.STRING },
         billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
         removalPolicy: isProduction
           ? cdk.RemovalPolicy.RETAIN
@@ -161,6 +162,14 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // CloudFront Distribution
     // ----------------------------------------------------------------
+    const originRequestFnVersion = new lambda.Version(
+      this,
+      "OriginRequestFnVersion",
+      {
+        lambda: originRequestFn,
+        removalPolicy: cdk.RemovalPolicy.RETAIN,
+      },
+    );
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
@@ -169,7 +178,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
         edgeLambdas: [
           {
             eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
-            functionVersion: originRequestFn.currentVersion,
+            functionVersion: originRequestFnVersion,
           },
         ],
         cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
@@ -188,6 +197,21 @@ export class ArgosDeploymentStack extends cdk.Stack {
         new targets.CloudFrontTarget(distribution),
       ),
     });
+
+    // ----------------------------------------------------------------
+    // Dev user access — full read/write on all tables and bucket
+    // ----------------------------------------------------------------
+    if (devUserArns.length > 0) {
+      const devUsers = devUserArns.map((arn) =>
+        iam.User.fromUserArn(this, `DevUser-${arn.split("/").pop()}`, arn),
+      );
+      for (const user of devUsers) {
+        this.filesTable.grantReadWriteData(user);
+        this.deploymentFilesTable.grantReadWriteData(user);
+        this.deploymentAliasesTable.grantReadWriteData(user);
+        this.bucket.grantReadWrite(user);
+      }
+    }
 
     // ----------------------------------------------------------------
     // Outputs

@@ -211,6 +211,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { account } = project;
     invariant(account, "Account relation not fetched");
 
+    // If production, update the project_deployments table
     await updateDeploymentAliases({ deployment, project, account });
 
     // Post GitHub commit status

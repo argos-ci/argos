@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import { pushBuildNotification } from "@/build-notification";
 import { Build, Project, ScreenshotDiff } from "@/database/models";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
-import { job as githubPullRequestJob } from "@/github-pull-request/job";
+import { githubPullRequestJob } from "@/github-pull-request/job";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
 import { sendNotification } from "@/notification";

@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "cdk": "cdk",
     "synth": "cdk synth",
     "deploy": "cdk deploy",
-    "diff": "cdk diff"
+    "diff": "cdk diff",
+    "check-types": "tsc"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1027.0",

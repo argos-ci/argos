@@ -14,6 +14,7 @@ import {
   ZodOpenApiPathItemObject,
 } from "zod-openapi";
 
+import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 import { asyncHandler } from "@/web/util";
 
@@ -118,6 +119,13 @@ export const errorHandler: ErrorRequestHandler = (
 
   const message =
     error instanceof Error ? error.message : "Internal server error";
+
+  if (statusCode >= 500) {
+    logger.error({
+      error,
+      reportToSentry: false, // There is already a middleware handling this
+    });
+  }
 
   res.status(statusCode).json({ error: message, details });
 };

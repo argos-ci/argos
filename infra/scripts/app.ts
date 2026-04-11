@@ -13,9 +13,15 @@ if (!hostedZoneId) {
   );
 }
 
+const devUserArns = (app.node.tryGetContext("devUserArns") ?? "")
+  .split(",")
+  .map((s: string) => s.trim())
+  .filter(Boolean);
+
 new ArgosDeploymentStack(app, `argos-deployment-${stage}`, {
   stage,
   hostedZoneId,
+  devUserArns,
   env: {
     account: process.env["CDK_DEFAULT_ACCOUNT"],
     region: "us-east-1",

@@ -9,7 +9,7 @@ const logger = pino({
     logMethod(inputArgs, method, level) {
       const parsed = parseArgs(inputArgs);
       // If warning or more and there is an error
-      if (level >= 40 && parsed.error) {
+      if (level >= 40 && parsed.error && parsed.reportToSentry) {
         Sentry.withScope((scope) => {
           scope.setExtras({ ...parsed.obj, msg: parsed.msg });
           scope.setLevel(
@@ -52,7 +52,15 @@ function parseArgs(
     obj.error instanceof Error
   ) {
     const { error, ...rest } = obj;
-    return { obj: rest, error, msg };
+    return {
+      obj: rest,
+      error,
+      reportToSentry:
+        "reportToSentry" in rest && rest.reportToSentry === false
+          ? false
+          : true,
+      msg,
+    };
   }
   return { obj, error: null, msg };
 }
