@@ -460,7 +460,7 @@ export function createConfig() {
       baseDomain: {
         doc: "Base domain for Deployment previews",
         format: String,
-        default: "argos-ci.live",
+        default: "dev.argos-ci.live",
         env: "DEPLOYMENTS_BASE_DOMAIN",
       },
     },

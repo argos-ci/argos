@@ -3,10 +3,9 @@ import { slugify } from "@argos/util/slug";
 import { generateRandomString } from "@/database/services/crypto";
 
 /**
- * Generates a unique slug for a deployment by combining the project name,
- * a random string, and the account slug.
+ * Get the alias of a project deployment.
  */
-export function generateDeploymentSlug(input: {
+export function generateDeploymentProjectAlias(input: {
   accountSlug: string;
   projectName: string;
 }) {

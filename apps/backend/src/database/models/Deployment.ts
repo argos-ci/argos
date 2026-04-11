@@ -28,7 +28,6 @@ export class Deployment extends Model {
             type: "string",
             enum: ["preview", "production"],
           },
-          slug: { type: "string" },
           branch: { type: ["string", "null"] },
           commitSha: { type: ["string", "null"] },
           githubPullRequestId: { type: ["string", "null"] },

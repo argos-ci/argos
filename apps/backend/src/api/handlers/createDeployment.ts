@@ -7,7 +7,6 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import config from "@/config";
 import { Deployment } from "@/database/models/Deployment";
-import { generateDeploymentSlug } from "@/deployment/slug";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
@@ -193,10 +192,6 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       branch: body.branch ?? null,
       commitSha: body.commit ?? null,
       githubPullRequestId: pullRequest?.id ?? null,
-      slug: generateDeploymentSlug({
-        accountSlug: project.account.slug,
-        projectName: project.name,
-      }),
     });
 
     // Insert all files into DynamoDB deployment_files table

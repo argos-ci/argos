@@ -45,14 +45,10 @@ const tables = [
     BillingMode: "PAY_PER_REQUEST" as const,
   },
   {
-    TableName: `${STAGE}_project_deployments`,
-    KeySchema: [
-      { AttributeName: "project_slug", KeyType: "HASH" as const },
-      { AttributeName: "environment", KeyType: "RANGE" as const },
-    ],
+    TableName: `${STAGE}_deployment_aliases`,
+    KeySchema: [{ AttributeName: "alias", KeyType: "HASH" as const }],
     AttributeDefinitions: [
-      { AttributeName: "project_slug", AttributeType: "S" as const },
-      { AttributeName: "environment", AttributeType: "S" as const },
+      { AttributeName: "alias", AttributeType: "S" as const },
     ],
     BillingMode: "PAY_PER_REQUEST" as const,
   },

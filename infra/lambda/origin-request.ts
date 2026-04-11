@@ -1,11 +1,20 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
-import type { CloudFrontRequestEvent, CloudFrontRequestResult } from "aws-lambda";
+import type {
+  CloudFrontRequestEvent,
+  CloudFrontRequestResult,
+} from "aws-lambda";
 
-const STAGE = process.env["STAGE"] ?? "development";
+const STAGE = process.env.STAGE ?? "development";
 
 // Reuse the DynamoDB client across invocations
-const baseClient = new DynamoDBClient({ region: "eu-west-1" });
+const DEFAULT_REGION = "us-east-1";
+const REPLICA_REGIONS = new Set(["us-east-1", "eu-west-1"]);
+const execRegion = process.env["AWS_REGION"] ?? DEFAULT_REGION;
+const dynamoRegion = REPLICA_REGIONS.has(execRegion)
+  ? execRegion
+  : DEFAULT_REGION;
+const baseClient = new DynamoDBClient({ region: dynamoRegion });
 const dynamo = DynamoDBDocumentClient.from(baseClient, {
   marshallOptions: { removeUndefinedValues: true },
 });
@@ -29,7 +38,12 @@ function notFoundResponse(): CloudFrontRequestResult {
  * Check if a subdomain looks like a deployment ID (numeric, from bigIncrements).
  */
 function isDeploymentId(subdomain: string): boolean {
-  return /^[0-9a-f]{12}$/i.test(subdomain);
+  try {
+    BigInt(subdomain);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -73,13 +87,13 @@ async function lookupDeploymentFile(
  * Resolve a project slug to its current production deployment ID.
  */
 async function resolveProjectDeploymentId(
-  projectSlug: string,
+  alias: string,
 ): Promise<string | null> {
   const result = await dynamo.send(
     new GetCommand({
-      TableName: tableName("project_deployments"),
+      TableName: tableName("deployment_aliases"),
       Key: {
-        project_slug: projectSlug,
+        alias,
         environment: "production",
       },
       ProjectionExpression: "deployment_id",
@@ -96,10 +110,9 @@ export const handler = async (
     return notFoundResponse();
   }
   const request = record.cf.request;
-  const host =
-    request.headers["host"]?.[0]?.value ?? "";
+  const host = request.headers["host"]?.[0]?.value ?? "";
 
-  // Extract subdomain from host (e.g. "abc123" from "abc123.argos-ci.io")
+  // Extract subdomain from host (e.g. "abc123" from "abc123.argos-ci.live")
   const dotIndex = host.indexOf(".");
   if (dotIndex === -1) {
     return notFoundResponse();
@@ -119,7 +132,7 @@ export const handler = async (
     // Subdomain is a deployment ID — look up directly
     deploymentId = subdomain;
   } else {
-    // Subdomain is a project slug — resolve to the current production deployment
+    // Subdomain is an alias — resolve to the current production deployment
     const resolved = await resolveProjectDeploymentId(subdomain);
     if (!resolved) {
       return notFoundResponse();

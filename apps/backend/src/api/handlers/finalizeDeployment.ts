@@ -1,16 +1,15 @@
 import { invariant } from "@argos/util/invariant";
-import {
-  BatchWriteCommand,
-  PutCommand,
-  QueryCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { BatchWriteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import type { Account, Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { postDeploymentCommitStatus } from "@/deployment/github-status";
-import { getDeploymentProductionAlias } from "@/deployment/slug";
+import {
+  generateDeploymentProjectAlias,
+  getDeploymentProductionAlias,
+} from "@/deployment/slug";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
@@ -111,7 +110,7 @@ async function registerFileHashes(
 }
 
 /**
- * Update the project_deployments table with the current deployment.
+ * Update the deployment_aliases table with the current deployment.
  */
 async function updateDeploymentAliases(input: {
   deployment: Deployment;
@@ -119,23 +118,38 @@ async function updateDeploymentAliases(input: {
   account: Account;
 }) {
   const { deployment, project, account } = input;
+  const dynamo = getDynamoDBClient();
+  const tableName = getTableName("deployment_aliases");
+  const aliases: string[] = [];
+  aliases.push(
+    generateDeploymentProjectAlias({
+      accountSlug: account.slug,
+      projectName: project.name,
+    }),
+  );
   if (deployment.environment === "production") {
-    const dynamo = getDynamoDBClient();
-    const tableName = getTableName("deployment_aliases");
-    await dynamo.send(
-      new PutCommand({
-        TableName: tableName,
-        Item: {
-          alias: getDeploymentProductionAlias({
-            accountSlug: account.slug,
-            projectName: project.name,
-          }),
-          deployment_id: deployment.id,
-          updated_at: new Date().toISOString(),
-        },
+    aliases.push(
+      getDeploymentProductionAlias({
+        accountSlug: account.slug,
+        projectName: project.name,
       }),
     );
   }
+  await dynamo.send(
+    new BatchWriteCommand({
+      RequestItems: {
+        [tableName]: aliases.map((alias) => ({
+          PutRequest: {
+            Item: {
+              alias,
+              deployment_id: deployment.id,
+              updated_at: new Date().toISOString(),
+            },
+          },
+        })),
+      },
+    }),
+  );
 }
 
 export const finalizeDeploymentOperation = {
@@ -197,10 +211,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { account } = project;
     invariant(account, "Account relation not fetched");
 
-    // If production, update the project_deployments table
-    if (deployment.environment === "production") {
-      await updateDeploymentAliases({ deployment, project, account });
-    }
+    await updateDeploymentAliases({ deployment, project, account });
 
     // Post GitHub commit status
     await postDeploymentCommitStatus({

@@ -13,14 +13,12 @@ export const up = async (knex) => {
       .notNullable()
       .defaultTo("pending");
     table.enum("environment", ["preview", "production"]).notNullable();
-    table.string("slug");
     table.string("branch").nullable();
     table.string("commitSha").nullable();
     table.bigInteger("githubPullRequestId").unsigned().nullable();
     table.foreign("githubPullRequestId").references("github_pull_requests.id");
 
     table.index("projectId");
-    table.unique("slug");
   });
 };
 

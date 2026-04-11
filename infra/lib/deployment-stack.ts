@@ -5,7 +5,6 @@ import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as route53 from "aws-cdk-lib/aws-route53";
@@ -16,8 +15,13 @@ import type { Construct } from "constructs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 interface ArgosDeploymentStackProps extends cdk.StackProps {
-  stage: string;
+  stage: "development" | "production";
+  hostedZoneId: string;
 }
+const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
+  development: "dev.argos-ci.live",
+  production: "argos-ci.live",
+};
 
 export class ArgosDeploymentStack extends cdk.Stack {
   public readonly bucket: s3.Bucket;
@@ -28,9 +32,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage } = props;
+    const { stage, hostedZoneId } = props;
     const isProduction = stage === "production";
-    const baseDomain = "argos-ci.io";
+    const baseDomain = STAGE_DOMAINS[stage];
 
     // ----------------------------------------------------------------
     // S3 Bucket — content-addressed storage for Deployment assets
@@ -62,7 +66,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
       removalPolicy: isProduction
         ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
-      pointInTimeRecovery: isProduction,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: isProduction,
+      },
       replicationRegions,
     });
 
@@ -83,7 +89,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
         removalPolicy: isProduction
           ? cdk.RemovalPolicy.RETAIN
           : cdk.RemovalPolicy.DESTROY,
-        pointInTimeRecovery: isProduction,
+        pointInTimeRecoverySpecification: {
+          pointInTimeRecoveryEnabled: isProduction,
+        },
         timeToLiveAttribute: "expires_at",
         replicationRegions,
       },
@@ -106,7 +114,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
         removalPolicy: isProduction
           ? cdk.RemovalPolicy.RETAIN
           : cdk.RemovalPolicy.DESTROY,
-        pointInTimeRecovery: isProduction,
+        pointInTimeRecoverySpecification: {
+          pointInTimeRecoveryEnabled: isProduction,
+        },
         replicationRegions,
       },
     );
@@ -117,16 +127,16 @@ export class ArgosDeploymentStack extends cdk.Stack {
     const originRequestFn = new nodejs.NodejsFunction(this, "OriginRequestFn", {
       entry: path.join(__dirname, "../lambda/origin-request.ts"),
       handler: "handler",
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 128,
       timeout: cdk.Duration.seconds(5),
-      environment: {
-        STAGE: stage,
-      },
       bundling: {
         minify: true,
         sourceMap: false,
         target: "es2022",
+        define: {
+          "process.env.STAGE": JSON.stringify(stage),
+        },
       },
     });
 
@@ -134,21 +144,14 @@ export class ArgosDeploymentStack extends cdk.Stack {
     this.deploymentFilesTable.grantReadData(originRequestFn);
     this.deploymentAliasesTable.grantReadData(originRequestFn);
 
-    // Lambda@Edge requires the function to be in us-east-1.
-    // The NodejsFunction bundling handles this, but Lambda@Edge needs
-    // the edgeLambda role trust policy for edgelambda.amazonaws.com.
-    originRequestFn.role?.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "service-role/AWSLambdaBasicExecutionRole",
-      ),
+    // ----------------------------------------------------------------
+    // ACM Certificate — wildcard for the domain
+    // ----------------------------------------------------------------
+    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
+      this,
+      "HostedZone",
+      { hostedZoneId, zoneName: baseDomain },
     );
-
-    // ----------------------------------------------------------------
-    // ACM Certificate — wildcard for *.argos-ci.io (must be us-east-1)
-    // ----------------------------------------------------------------
-    const hostedZone = route53.HostedZone.fromLookup(this, "HostedZone", {
-      domainName: baseDomain,
-    });
 
     const certificate = new acm.Certificate(this, "Certificate", {
       domainName: `*.${baseDomain}`,
@@ -158,17 +161,10 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // CloudFront Distribution
     // ----------------------------------------------------------------
-    const originAccessIdentity = new cloudfront.OriginAccessIdentity(
-      this,
-      "OAI",
-    );
-    this.bucket.grantRead(originAccessIdentity);
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.bucket, {
-          originAccessIdentity,
-        }),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         edgeLambdas: [
           {
@@ -176,7 +172,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
             functionVersion: originRequestFn.currentVersion,
           },
         ],
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
       },
       domainNames: [`*.${baseDomain}`],
       certificate,
