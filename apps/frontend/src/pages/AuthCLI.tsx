@@ -12,6 +12,8 @@ import { Button } from "@/ui/Button";
 import { Card, CardBody } from "@/ui/Card";
 import { Container } from "@/ui/Container";
 
+import { UserAccessTokenSource } from "../gql/graphql";
+
 const MeQuery = graphql(`
   query AuthCLI_Me {
     me {
@@ -31,16 +33,21 @@ const CreateCLITokenMutation = graphql(`
   mutation AuthCLI_CreateToken($input: CreateUserAccessTokenInput!) {
     createUserAccessToken(input: $input) {
       token
+      code
     }
   }
 `);
 
-function buildCallbackUrl(port: string, state: string, token: string) {
-  return `http://localhost:${port}/callback?state=${encodeURIComponent(state)}&token=${encodeURIComponent(token)}`;
+function buildCallbackUrl(port: string, state: string, code: string) {
+  return `http://localhost:${port}/callback?state=${encodeURIComponent(state)}&code=${encodeURIComponent(code)}`;
 }
 
-function AuthCLIContent(props: { port: string; state: string }) {
-  const { port, state } = props;
+function AuthCLIContent(props: {
+  port: string;
+  state: string;
+  codeChallenge: string;
+}) {
+  const { port, state, codeChallenge } = props;
   const client = useApolloClient();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
 
@@ -61,18 +68,19 @@ function AuthCLIContent(props: { port: string; state: string }) {
             name: "Argos CLI",
             accountIds,
             expireInDays: null,
-            source: "cli",
+            source: UserAccessTokenSource.Cli,
+            codeChallenge,
           },
         },
       });
 
-      const token = result.data?.createUserAccessToken.token;
-      if (!token) {
+      const code = result.data?.createUserAccessToken.code;
+      if (!code) {
         setStatus("error");
         return;
       }
 
-      window.location.href = buildCallbackUrl(port, state, token);
+      window.location.href = buildCallbackUrl(port, state, code);
     } catch {
       setStatus("error");
     }
@@ -161,13 +169,14 @@ export function Component() {
   const isLoggedIn = useIsLoggedIn();
   const port = searchParams.get("port");
   const state = searchParams.get("state");
+  const codeChallenge = searchParams.get("pkce");
 
-  if (!port || !state) {
+  if (!port || !state || !codeChallenge) {
     return <InvalidRequestPage />;
   }
 
   if (!isLoggedIn) {
-    const returnUrl = `/auth/cli?port=${encodeURIComponent(port)}&state=${encodeURIComponent(state)}`;
+    const returnUrl = `/auth/cli?port=${encodeURIComponent(port)}&state=${encodeURIComponent(state)}&pkce=${encodeURIComponent(codeChallenge)}`;
     return (
       <Navigate to={`/login?r=${encodeURIComponent(returnUrl)}`} replace />
     );
@@ -179,7 +188,11 @@ export function Component() {
         <title>Authorize CLI</title>
       </Helmet>
       <Container className="mt-12 max-w-sm px-4">
-        <AuthCLIContent port={port} state={state} />
+        <AuthCLIContent
+          port={port}
+          state={state}
+          codeChallenge={codeChallenge}
+        />
       </Container>
     </>
   );
