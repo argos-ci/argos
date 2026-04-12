@@ -19,5 +19,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["bin/**/*.ts", "lib/**/*.ts", "lambda/**/*.ts"]
+  "include": ["bin/**/*.ts", "lib/**/*.ts", "lambda/**/*.ts", "scripts/**/*.ts"]
 }

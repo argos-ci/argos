@@ -18,11 +18,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 interface ArgosDeploymentStackProps extends cdk.StackProps {
   stage: "development" | "production";
   hostedZoneId: string;
-  /** Domain for the deployment CDN (e.g. "deploy.dev.argos-ci.com").
-   *  DNS is managed externally — a CNAME must be added manually. */
-  deploymentDomain: string;
   devUserArns?: string[];
 }
+
 const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
   development: "dev.argos-ci.live",
   production: "argos-ci.live",
@@ -37,12 +35,12 @@ export class ArgosDeploymentStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage, hostedZoneId, deploymentDomain, devUserArns = [] } = props;
+    const { stage, hostedZoneId, devUserArns = [] } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
 
     // ----------------------------------------------------------------
-    // S3 Bucket — content-addressed storage for Deployment assets
+    // S3 Bucket — content-addressed storage for deployment assets
     // ----------------------------------------------------------------
     this.bucket = new s3.Bucket(this, "DeploymentBucket", {
       bucketName: `argos-deployments-${stage}`,
@@ -57,7 +55,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // DynamoDB — files table (content hash → S3 key)
     // ----------------------------------------------------------------
-
     this.filesTable = new dynamodb.Table(this, "FilesTable", {
       tableName: `${stage}_files`,
       partitionKey: {
@@ -98,7 +95,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
-    // DynamoDB — deployment aliases (alias → deployment)
+    // DynamoDB — deployment aliases (alias → deploymentId)
     // ----------------------------------------------------------------
     this.deploymentAliasesTable = new dynamodb.Table(
       this,
@@ -120,7 +117,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
-    // Hosted zone & ACM certificates
+    // ACM Certificate — wildcard for *.{baseDomain}
     // ----------------------------------------------------------------
     const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
       this,
@@ -128,80 +125,18 @@ export class ArgosDeploymentStack extends cdk.Stack {
       { hostedZoneId, zoneName: baseDomain },
     );
 
-    // Alias CDN — wildcard cert for *.{baseDomain}, validated via Route53
-    const aliasCertificate = new acm.Certificate(this, "AliasCertificate", {
+    const certificate = new acm.Certificate(this, "Certificate", {
       domainName: `*.${baseDomain}`,
       validation: acm.CertificateValidation.fromDns(hostedZone),
     });
 
-    // Deployment CDN — cert for {deploymentDomain} (e.g. deploy.dev.argos-ci.com).
-    // DNS is managed externally (Cloudflare): CDK will output the CNAME record
-    // to add for validation. The distribution won't become active until it's added.
-    const deploymentCertificate = new acm.Certificate(
-      this,
-      "DeploymentCertificate",
-      {
-        domainName: deploymentDomain,
-        validation: acm.CertificateValidation.fromDns(),
-      },
-    );
-
     // ----------------------------------------------------------------
-    // Lambda@Edge — Deployment CDN origin request
-    // Resolves /<deploymentId>/<path> → /content/<hash> in S3.
-    // Only needs access to the deployment_files table.
-    // ----------------------------------------------------------------
-    const deploymentOriginRequestFn = new nodejs.NodejsFunction(
-      this,
-      "DeploymentOriginRequestFn",
-      {
-        entry: path.join(__dirname, "../lambda/deployment-origin-request.ts"),
-        handler: "handler",
-        runtime: lambda.Runtime.NODEJS_24_X,
-        memorySize: 128,
-        timeout: cdk.Duration.seconds(5),
-        logGroup: new cdk.aws_logs.LogGroup(
-          this,
-          "DeploymentOriginRequestFnLogGroup",
-          { retention: cdk.aws_logs.RetentionDays.ONE_MONTH },
-        ),
-        bundling: {
-          minify: true,
-          sourceMap: false,
-          target: "es2022",
-          define: {
-            "process.env.STAGE": JSON.stringify(stage),
-          },
-        },
-      },
-    );
-
-    this.deploymentFilesTable.grantReadData(deploymentOriginRequestFn);
-
-    const deploymentOriginRequestRole = deploymentOriginRequestFn.role as
-      | iam.Role
-      | undefined;
-    deploymentOriginRequestRole?.assumeRolePolicy?.addStatements(
-      new iam.PolicyStatement({
-        principals: [new iam.ServicePrincipal("edgelambda.amazonaws.com")],
-        actions: ["sts:AssumeRole"],
-      }),
-    );
-    deploymentOriginRequestFn.currentVersion.addPermission(
-      "AllowCloudFrontInvoke",
-      {
-        principal: new iam.ServicePrincipal("edgelambda.amazonaws.com"),
-        action: "lambda:InvokeFunction",
-      },
-    );
-
-    // ----------------------------------------------------------------
-    // Lambda@Edge — Alias CDN viewer request
-    // Prepends the subdomain to the URI so the cache key is path-scoped
-    // and targeted invalidation (/<alias>/*) is possible.
+    // Lambda@Edge — VIEWER_REQUEST
+    // Prepends the alias subdomain to the URI for cache key scoping
+    // and targeted invalidation (/<alias>/*).
     // ----------------------------------------------------------------
     const viewerRequestFn = new nodejs.NodejsFunction(this, "ViewerRequestFn", {
-      entry: path.join(__dirname, "../lambda/alias-viewer-request.ts"),
+      entry: path.join(__dirname, "../lambda/viewer-request.ts"),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 128,
@@ -209,11 +144,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
       logGroup: new cdk.aws_logs.LogGroup(this, "ViewerRequestFnLogGroup", {
         retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
       }),
-      bundling: {
-        minify: true,
-        sourceMap: false,
-        target: "es2022",
-      },
+      bundling: { minify: true, sourceMap: false, target: "es2022" },
     });
 
     const viewerRequestRole = viewerRequestFn.role as iam.Role | undefined;
@@ -225,144 +156,80 @@ export class ArgosDeploymentStack extends cdk.Stack {
     );
 
     // ----------------------------------------------------------------
-    // Lambda@Edge — Alias CDN origin request
-    // Resolves alias → deploymentId, then forwards the request to the
-    // deployment CDN by rewriting the URI and changing the origin.
-    // Only needs access to the deployment_aliases table.
+    // Lambda@Edge — ORIGIN_REQUEST
+    // Resolves alias → deploymentId → content hash → S3 key.
     // ----------------------------------------------------------------
-    const aliasOriginRequestFn = new nodejs.NodejsFunction(
-      this,
-      "AliasOriginRequestFn",
-      {
-        entry: path.join(__dirname, "../lambda/alias-origin-request.ts"),
-        handler: "handler",
-        runtime: lambda.Runtime.NODEJS_24_X,
-        memorySize: 128,
-        timeout: cdk.Duration.seconds(5),
-        logGroup: new cdk.aws_logs.LogGroup(
-          this,
-          "AliasOriginRequestFnLogGroup",
-          { retention: cdk.aws_logs.RetentionDays.ONE_MONTH },
-        ),
-        bundling: {
-          minify: true,
-          sourceMap: false,
-          target: "es2022",
-          define: {
-            "process.env.STAGE": JSON.stringify(stage),
-            "process.env.DEPLOYMENT_DOMAIN": JSON.stringify(deploymentDomain),
-          },
-        },
+    const originRequestFn = new nodejs.NodejsFunction(this, "OriginRequestFn", {
+      entry: path.join(__dirname, "../lambda/origin-request.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(5),
+      logGroup: new cdk.aws_logs.LogGroup(this, "OriginRequestFnLogGroup", {
+        retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
+      }),
+      bundling: {
+        minify: true,
+        sourceMap: false,
+        target: "es2022",
+        define: { "process.env.STAGE": JSON.stringify(stage) },
       },
-    );
+    });
 
-    this.deploymentAliasesTable.grantReadData(aliasOriginRequestFn);
+    this.deploymentAliasesTable.grantReadData(originRequestFn);
+    this.deploymentFilesTable.grantReadData(originRequestFn);
 
-    const aliasOriginRequestRole = aliasOriginRequestFn.role as
-      | iam.Role
-      | undefined;
-    aliasOriginRequestRole?.assumeRolePolicy?.addStatements(
+    const originRequestRole = originRequestFn.role as iam.Role | undefined;
+    originRequestRole?.assumeRolePolicy?.addStatements(
       new iam.PolicyStatement({
         principals: [new iam.ServicePrincipal("edgelambda.amazonaws.com")],
         actions: ["sts:AssumeRole"],
       }),
     );
-    aliasOriginRequestFn.currentVersion.addPermission("AllowCloudFrontInvoke", {
+    originRequestFn.currentVersion.addPermission("AllowCloudFrontInvoke", {
       principal: new iam.ServicePrincipal("edgelambda.amazonaws.com"),
       action: "lambda:InvokeFunction",
     });
 
     // ----------------------------------------------------------------
-    // Deployment CDN — immutable content, keyed on /<deploymentId>/<path>
-    // Never invalidated. S3 OAC origin.
+    // CloudFront — cache key is path-only (alias prefix scopes entries)
     // ----------------------------------------------------------------
-    const deploymentCachePolicy = new cloudfront.CachePolicy(
-      this,
-      "DeploymentCachePolicy",
-      {
-        headerBehavior: cloudfront.CacheHeaderBehavior.none(),
-        queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
-        cookieBehavior: cloudfront.CacheCookieBehavior.none(),
-        defaultTtl: cdk.Duration.days(365),
-        maxTtl: cdk.Duration.days(365),
-      },
-    );
+    const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
+      headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+      defaultTtl: cdk.Duration.days(365),
+      maxTtl: cdk.Duration.days(365),
+    });
 
-    const deploymentDistribution = new cloudfront.Distribution(
-      this,
-      "DeploymentDistribution",
-      {
-        defaultBehavior: {
-          origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          edgeLambdas: [
-            {
-              eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
-              functionVersion: deploymentOriginRequestFn.currentVersion,
-            },
-          ],
-          cachePolicy: deploymentCachePolicy,
-        },
-        domainNames: [deploymentDomain],
-        certificate: deploymentCertificate,
+    const distribution = new cloudfront.Distribution(this, "Distribution", {
+      defaultBehavior: {
+        origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        edgeLambdas: [
+          {
+            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+            functionVersion: viewerRequestFn.currentVersion,
+          },
+          {
+            eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
+            functionVersion: originRequestFn.currentVersion,
+          },
+        ],
+        cachePolicy,
       },
-    );
-    // DNS for {deploymentDomain} is managed externally (Cloudflare).
-    // Add a CNAME manually: deploymentDomain → deploymentDistribution.distributionDomainName
+      domainNames: [`*.${baseDomain}`],
+      certificate,
+    });
 
     // ----------------------------------------------------------------
-    // Alias CDN — resolves aliases, caches per /<alias>/<path>
-    // Invalidate /<alias>/* when an alias points to a new deployment.
-    // Origin is the deployment CDN.
-    // ----------------------------------------------------------------
-    const aliasCachePolicy = new cloudfront.CachePolicy(
-      this,
-      "AliasCachePolicy",
-      {
-        headerBehavior: cloudfront.CacheHeaderBehavior.none(),
-        queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
-        cookieBehavior: cloudfront.CacheCookieBehavior.none(),
-        defaultTtl: cdk.Duration.days(365),
-        maxTtl: cdk.Duration.days(365),
-      },
-    );
-
-    const aliasDistribution = new cloudfront.Distribution(
-      this,
-      "AliasDistribution",
-      {
-        defaultBehavior: {
-          origin: new origins.HttpOrigin(deploymentDomain, {
-            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
-          }),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          edgeLambdas: [
-            {
-              eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
-              functionVersion: viewerRequestFn.currentVersion,
-            },
-            {
-              eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
-              functionVersion: aliasOriginRequestFn.currentVersion,
-            },
-          ],
-          cachePolicy: aliasCachePolicy,
-        },
-        domainNames: [`*.${baseDomain}`],
-        certificate: aliasCertificate,
-      },
-    );
-
-    // ----------------------------------------------------------------
-    // Route 53 — wildcard *.{baseDomain} → alias CDN
+    // Route 53 — wildcard *.{baseDomain} → distribution
     // ----------------------------------------------------------------
     new route53.ARecord(this, "WildcardAlias", {
       zone: hostedZone,
       recordName: `*.${baseDomain}`,
       target: route53.RecordTarget.fromAlias(
-        new targets.CloudFrontTarget(aliasDistribution),
+        new targets.CloudFrontTarget(distribution),
       ),
     });
 
@@ -375,12 +242,11 @@ export class ArgosDeploymentStack extends cdk.Stack {
       this.deploymentFilesTable.grantReadWriteData(devGroup);
       this.deploymentAliasesTable.grantReadWriteData(devGroup);
       this.bucket.grantReadWrite(devGroup);
-      // Only the alias distribution needs invalidation — deployment CDN is immutable
       devGroup.addToPolicy(
         new iam.PolicyStatement({
           actions: ["cloudfront:CreateInvalidation"],
           resources: [
-            `arn:aws:cloudfront::${this.account}:distribution/${aliasDistribution.distributionId}`,
+            `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
           ],
         }),
       );
@@ -398,9 +264,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // Outputs
     // ----------------------------------------------------------------
-    new cdk.CfnOutput(this, "BucketName", {
-      value: this.bucket.bucketName,
-    });
+    new cdk.CfnOutput(this, "BucketName", { value: this.bucket.bucketName });
     new cdk.CfnOutput(this, "FilesTableName", {
       value: this.filesTable.tableName,
     });
@@ -410,17 +274,11 @@ export class ArgosDeploymentStack extends cdk.Stack {
     new cdk.CfnOutput(this, "DeploymentAliasesTableName", {
       value: this.deploymentAliasesTable.tableName,
     });
-    new cdk.CfnOutput(this, "DeploymentDistributionDomainName", {
-      value: deploymentDistribution.distributionDomainName,
+    new cdk.CfnOutput(this, "DistributionDomainName", {
+      value: distribution.distributionDomainName,
     });
-    new cdk.CfnOutput(this, "DeploymentDistributionId", {
-      value: deploymentDistribution.distributionId,
-    });
-    new cdk.CfnOutput(this, "AliasDistributionDomainName", {
-      value: aliasDistribution.distributionDomainName,
-    });
-    new cdk.CfnOutput(this, "AliasDistributionId", {
-      value: aliasDistribution.distributionId,
+    new cdk.CfnOutput(this, "DistributionId", {
+      value: distribution.distributionId,
     });
   }
 }
