@@ -97,7 +97,7 @@ export default defineConfig((args) => {
                 target: "https://app.argos-ci.dev:4001",
                 secure: false,
               },
-              "^(?!/auth/github/callback)(?!/auth/google/callback)(?!/auth/gitlab/callback)(?!/auth/saml/callback)/auth/.*":
+              "^(?!/auth/github/callback)(?!/auth/google/callback)(?!/auth/gitlab/callback)(?!/auth/saml/callback)(?!/auth/cli)/auth/.*":
                 {
                   target: "https://app.argos-ci.dev:4001",
                   secure: false,
