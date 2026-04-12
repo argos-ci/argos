@@ -222,6 +222,7 @@ function handler<TMethod extends "get" | "post" | "put">(
         next();
       }),
       ...wrappedHandlers,
+      // @ts-expect-error wrong type from Sentry
       Sentry.expressErrorHandler({
         shouldHandleError: (error) => {
           // Capture 400 (to see validation errors) and 500+ errors

@@ -7,6 +7,7 @@ import type { Account, Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { getDeploymentAliases } from "@/deployment/alias";
 import { postDeploymentCommitStatus } from "@/deployment/github-status";
+import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
@@ -123,21 +124,29 @@ async function updateDeploymentAliases(input: {
     projectName: project.name,
     deployment,
   });
-  await dynamo.send(
-    new BatchWriteCommand({
-      RequestItems: {
-        [tableName]: aliases.map((alias) => ({
-          PutRequest: {
-            Item: {
-              ...alias,
-              deployment_id: deployment.id,
-              updated_at: new Date().toISOString(),
+  await Promise.all([
+    dynamo.send(
+      new BatchWriteCommand({
+        RequestItems: {
+          [tableName]: aliases.map((alias) => ({
+            PutRequest: {
+              Item: {
+                ...alias,
+                deployment_id: deployment.id,
+                updated_at: new Date().toISOString(),
+              },
             },
-          },
-        })),
-      },
+          })),
+        },
+      }),
+    ),
+    ...aliases.map((alias) => {
+      if (alias.type !== "slug") {
+        return invalidateDeploymentCache(alias.alias);
+      }
+      return;
     }),
-  );
+  ]);
 }
 
 export const finalizeDeploymentOperation = {

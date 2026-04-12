@@ -15,8 +15,7 @@
       "ignoreDependencies": ["@argos/knex-scripts", "moment"]
     },
     "infra": {
-      "entry": ["bin/app.ts", "lambda/origin-request.ts"],
-      "ignoreDependencies": ["esbuild"]
+      "entry": ["scripts/app.ts", "lambda/*.ts"]
     },
     "apps/frontend": {
       "ignore": ["vite.config.mts"],

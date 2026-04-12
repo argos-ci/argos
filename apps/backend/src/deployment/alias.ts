@@ -2,7 +2,7 @@ import { slugify } from "@argos/util/slug";
 
 import type { Deployment } from "@/database/models";
 
-export type DeploymentAlias = {
+type DeploymentAlias = {
   type: "slug" | "branch" | "domain";
   alias: string;
 };

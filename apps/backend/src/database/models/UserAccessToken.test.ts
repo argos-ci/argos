@@ -8,7 +8,7 @@ describe("models/UserAccessToken", () => {
       const token = UserAccessToken.generateToken();
 
       expect(token).toHaveLength(40);
-      expect(token).toMatch(/^arp_[0-9a-f]{36}$/);
+      expect(token).toMatch(/^arp_[0-9a-z]{36}$/);
       expect(UserAccessToken.isValidUserAccessToken(token)).toBe(true);
     });
   });
