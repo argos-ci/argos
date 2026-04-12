@@ -11,14 +11,14 @@
     "check-types": "tsc"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1027.0",
-    "@aws-sdk/lib-dynamodb": "^3.1027.0",
-    "aws-cdk-lib": "^2.200.0",
-    "constructs": "^10.4.2"
+    "@aws-sdk/client-dynamodb": "^3.1029.0",
+    "@aws-sdk/lib-dynamodb": "^3.1029.0",
+    "aws-cdk-lib": "^2.248.0",
+    "constructs": "^10.6.0"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.147",
+    "@types/aws-lambda": "^8.10.161",
     "@types/node": "^24.12.2",
-    "aws-cdk": "^2.200.0"
+    "aws-cdk": "^2.1118.0"
   }
 }
