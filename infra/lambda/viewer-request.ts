@@ -5,12 +5,15 @@ export const handler = async (
 ): Promise<CloudFrontRequestResult> => {
   const request = event.Records[0]!.cf.request;
 
-  // Copy the viewer Host header into x-original-host so the ORIGIN_REQUEST
-  // Lambda can read the original hostname (at ORIGIN_REQUEST the Host header
-  // is replaced by the S3 origin host).
-  const host = request.headers["host"]?.[0]?.value;
-  if (host) {
-    request.headers["x-original-host"] = [{ key: "x-original-host", value: host }];
+  // Prepend the subdomain to the URI so CloudFront's cache key is scoped
+  // per-subdomain via the path alone. This allows targeted cache invalidation
+  // with /{subdomain}/* without affecting other deployments.
+  //
+  // e.g. "test.dev.argos-ci.live/index.html" → URI becomes "/test/index.html"
+  const host = request.headers["host"]?.[0]?.value ?? "";
+  const subdomain = host.split(".")[0];
+  if (subdomain) {
+    request.uri = `/${subdomain}${request.uri}`;
   }
 
   return request;

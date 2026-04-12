@@ -112,21 +112,24 @@ export const handler = async (
     return notFoundResponse();
   }
   const request = record.cf.request;
-  const host = request.headers["x-original-host"]?.[0]?.value ?? "";
+
+  // The viewer-request Lambda prefixes the URI with the subdomain:
+  // "/{subdomain}/path/to/file" — extract both parts here.
+  const parts = request.uri.split("/").filter(Boolean);
+  const subdomain = parts[0] ?? "";
+  const remainingPath = "/" + parts.slice(1).join("/");
+
   console.log(
-    `[request] host=${host} uri=${request.uri} stage=${STAGE} dynamoRegion=${dynamoRegion}`,
+    `[request] uri=${request.uri} subdomain=${subdomain} stage=${STAGE} dynamoRegion=${dynamoRegion}`,
   );
 
-  // Extract subdomain from host (e.g. "abc123" from "abc123.argos-ci.live")
-  const dotIndex = host.indexOf(".");
-  if (dotIndex === -1) {
-    console.log(`[404] No dot in host: ${host}`);
+  if (!subdomain) {
+    console.log(`[404] No subdomain in URI: ${request.uri}`);
     return notFoundResponse();
   }
-  const subdomain = host.substring(0, dotIndex);
 
-  // Normalize the URI
-  const normalizedPath = normalizePath(request.uri);
+  // Normalize the remaining path
+  const normalizedPath = normalizePath(remainingPath);
   // Strip leading slash for DynamoDB path lookup
   const filePath = normalizedPath.startsWith("/")
     ? normalizedPath.slice(1)

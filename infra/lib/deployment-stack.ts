@@ -194,23 +194,11 @@ export class ArgosDeploymentStack extends cdk.Stack {
       }),
     );
 
-    // Origin Request Policy — forward x-original-host to the Lambda@Edge
-    const originRequestPolicy = new cloudfront.OriginRequestPolicy(
-      this,
-      "OriginRequestPolicy",
-      {
-        headerBehavior:
-          cloudfront.OriginRequestHeaderBehavior.allowList("x-original-host"),
-        queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.none(),
-        cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
-      },
-    );
-
-    // Cache Policy — cache key includes x-original-host so each deployment
-    // URL gets its own cache entries
+    // Cache Policy — the viewer-request Lambda prefixes the URI with the
+    // subdomain (e.g. "/test/index.html"), so the path alone is a unique
+    // cache key. No custom headers needed.
     const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
-      headerBehavior:
-        cloudfront.CacheHeaderBehavior.allowList("x-original-host"),
+      headerBehavior: cloudfront.CacheHeaderBehavior.none(),
       queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
       cookieBehavior: cloudfront.CacheCookieBehavior.none(),
       defaultTtl: cdk.Duration.days(365),
@@ -232,7 +220,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
           },
         ],
         cachePolicy,
-        originRequestPolicy,
       },
       domainNames: [`*.${baseDomain}`],
       certificate,
@@ -286,6 +273,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, "DistributionDomainName", {
       value: distribution.distributionDomainName,
+    });
+    new cdk.CfnOutput(this, "DistributionId", {
+      value: distribution.distributionId,
     });
   }
 }
