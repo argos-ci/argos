@@ -245,6 +245,14 @@ export class ArgosDeploymentStack extends cdk.Stack {
       this.deploymentFilesTable.grantReadWriteData(devGroup);
       this.deploymentAliasesTable.grantReadWriteData(devGroup);
       this.bucket.grantReadWrite(devGroup);
+      devGroup.addToPolicy(
+        new iam.PolicyStatement({
+          actions: ["cloudfront:CreateInvalidation"],
+          resources: [
+            `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
+          ],
+        }),
+      );
 
       for (const arn of devUserArns) {
         const user = iam.User.fromUserArn(
