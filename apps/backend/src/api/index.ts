@@ -11,6 +11,7 @@ import { getBuild } from "./handlers/getBuild";
 import { getBuildDiffs } from "./handlers/getBuildDiffs";
 import { getProject } from "./handlers/getProject";
 import { getProjectBuilds } from "./handlers/getProjectBuilds";
+import { reviewBuild } from "./handlers/reviewBuild";
 import { updateBuild } from "./handlers/updateBuild";
 import { schema } from "./schema";
 import { errorHandler, registerHandler } from "./util";
@@ -47,6 +48,7 @@ registerHandler(router, getBuild);
 registerHandler(router, getBuildDiffs);
 registerHandler(router, getProject);
 registerHandler(router, getProjectBuilds);
+registerHandler(router, reviewBuild);
 registerHandler(router, updateBuild);
 
 // Error handlers
