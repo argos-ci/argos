@@ -5,11 +5,12 @@ export const handler = async (
 ): Promise<CloudFrontRequestResult> => {
   const request = event.Records[0]!.cf.request;
 
-  // Prepend the subdomain to the URI so CloudFront's cache key is scoped
-  // per-subdomain via the path alone. This allows targeted cache invalidation
-  // with /{subdomain}/* without affecting other deployments.
+  // Prepend the subdomain to the URI so the ORIGIN_REQUEST Lambda can extract
+  // it (at ORIGIN_REQUEST the Host header is replaced by the origin's host).
+  // Also scopes the CloudFront cache key per alias, enabling targeted
+  // invalidation with /<alias>/*.
   //
-  // e.g. "test.dev.argos-ci.live/index.html" → URI becomes "/test/index.html"
+  // e.g. host "test.dev.argos-ci.live", uri "/page.html" → "/test/page.html"
   const host = request.headers["host"]?.[0]?.value ?? "";
   const subdomain = host.split(".")[0];
   if (subdomain) {

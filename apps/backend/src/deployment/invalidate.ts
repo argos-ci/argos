@@ -8,17 +8,17 @@ import config from "@/config";
 const cf = new CloudFrontClient({ region: "us-east-1" });
 
 /**
- * Invalidate the CloudFront cache for a specific deployment alias.
+ * Invalidate the alias CDN cache for a specific alias.
  *
- * The viewer-request Lambda prefixes every URI with the subdomain
- * (e.g. "/test/index.html"), so cache entries are scoped by path.
- * This allows targeted invalidation with "/{alias}/*" without affecting
- * other deployments.
+ * The alias distribution caches responses keyed on "/<alias>/<path>".
+ * When an alias points to a new deployment, invalidating "/<alias>/*"
+ * clears only that alias's entries. The deployment CDN is immutable
+ * and is never invalidated.
  *
  * No-ops when the distribution ID is not configured (e.g. local dev).
  */
 export async function invalidateDeploymentCache(alias: string): Promise<void> {
-  const distributionId = config.get("deployments.cloudfrontDistributionId");
+  const distributionId = config.get("deployments.aliasDistributionId");
   if (!distributionId) {
     return;
   }
@@ -36,3 +36,5 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
     }),
   );
 }
+
+await invalidateDeploymentCache("big-6jwuo76bf-smooth");
