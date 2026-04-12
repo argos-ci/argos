@@ -7,12 +7,15 @@ import type {
 
 const STAGE = process.env.STAGE ?? "development";
 
-// Reuse the DynamoDB client across invocations
-const DEFAULT_REGION = "us-east-1";
-const execRegion = process.env["AWS_REGION"] ?? DEFAULT_REGION;
-const dynamoRegion = execRegion.startsWith("eu-")
-  ? "eu-west-1"
-  : DEFAULT_REGION;
+// Reuse the DynamoDB client across invocations.
+// For production, tables are replicated to eu-west-1 — use the closest replica.
+// For development, tables only exist in us-east-1 (no replication).
+const PRODUCTION_REPLICA_REGIONS = new Set(["us-east-1", "eu-west-1"]);
+const execRegion = process.env["AWS_REGION"] ?? "us-east-1";
+const dynamoRegion =
+  STAGE === "production" && PRODUCTION_REPLICA_REGIONS.has(execRegion)
+    ? execRegion
+    : "us-east-1";
 const baseClient = new DynamoDBClient({ region: dynamoRegion });
 const dynamo = DynamoDBDocumentClient.from(baseClient, {
   marshallOptions: { removeUndefinedValues: true },

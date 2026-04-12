@@ -54,7 +54,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // DynamoDB — files table (content hash → S3 key)
     // ----------------------------------------------------------------
-    const replicationRegions = ["eu-west-1"];
+    const replicationRegions = isProduction ? ["eu-west-1"] : undefined;
 
     this.filesTable = new dynamodb.Table(this, "FilesTable", {
       tableName: `${stage}_files`,
@@ -129,6 +129,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 128,
       timeout: cdk.Duration.seconds(5),
+      logRetention: cdk.aws_logs.RetentionDays.ONE_MONTH,
       bundling: {
         minify: true,
         sourceMap: false,
@@ -167,21 +168,31 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // CloudFront Distribution
     // ----------------------------------------------------------------
 
-    // Lightweight CloudFront Function — copies the viewer Host header into
-    // x-original-host so the Lambda@Edge at ORIGIN_REQUEST can read it
-    // (at ORIGIN_REQUEST the Host header is replaced by the S3 origin host).
-    const copyHostFn = new cloudfront.Function(this, "CopyHostFn", {
-      code: cloudfront.FunctionCode.fromInline(`
-function handler(event) {
-  var host = event.request.headers["host"];
-  if (host) {
-    event.request.headers["x-original-host"] = host;
-  }
-  return event.request;
-}
-      `.trim()),
-      runtime: cloudfront.FunctionRuntime.JS_2_0,
+    // Lambda@Edge VIEWER_REQUEST — copies the viewer Host header into
+    // x-original-host so the ORIGIN_REQUEST Lambda can read the original
+    // hostname (at ORIGIN_REQUEST the Host header is replaced by the S3 host).
+    // Using Lambda@Edge (vs. CloudFront Function) so auth logic can be added later.
+    const viewerRequestFn = new nodejs.NodejsFunction(this, "ViewerRequestFn", {
+      entry: path.join(__dirname, "../lambda/viewer-request.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(5),
+      logRetention: cdk.aws_logs.RetentionDays.ONE_MONTH,
+      bundling: {
+        minify: true,
+        sourceMap: false,
+        target: "es2022",
+      },
     });
+
+    const viewerRequestRole = viewerRequestFn.role as iam.Role | undefined;
+    viewerRequestRole?.assumeRolePolicy?.addStatements(
+      new iam.PolicyStatement({
+        principals: [new iam.ServicePrincipal("edgelambda.amazonaws.com")],
+        actions: ["sts:AssumeRole"],
+      }),
+    );
 
     // Origin Request Policy — forward x-original-host to the Lambda@Edge
     const originRequestPolicy = new cloudfront.OriginRequestPolicy(
@@ -210,13 +221,11 @@ function handler(event) {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        functionAssociations: [
-          {
-            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
-            function: copyHostFn,
-          },
-        ],
         edgeLambdas: [
+          {
+            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+            functionVersion: viewerRequestFn.currentVersion,
+          },
           {
             eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
             functionVersion: originRequestFn.currentVersion,
