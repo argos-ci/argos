@@ -6,17 +6,20 @@ export const up = async (knex) => {
     table.bigIncrements("id").primary();
     table.dateTime("createdAt").notNullable();
     table.dateTime("updatedAt").notNullable();
-    table.bigInteger("projectId").notNullable().index();
+    table.bigInteger("projectId").unsigned().notNullable().index();
     table.foreign("projectId").references("projects.id").onDelete("cascade");
     table
       .enum("status", ["pending", "ready", "error"])
       .notNullable()
       .defaultTo("pending");
     table.enum("environment", ["preview", "production"]).notNullable();
-    table.string("branch").nullable();
-    table.string("commitSha").nullable();
+    table.string("branch");
+    table.string("commitSha");
+    table.string("slug");
     table.bigInteger("githubPullRequestId").unsigned().nullable();
     table.foreign("githubPullRequestId").references("github_pull_requests.id");
+
+    table.unique("slug");
   });
 };
 

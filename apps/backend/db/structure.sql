@@ -539,6 +539,7 @@ CREATE TABLE public.deployments (
     environment text NOT NULL,
     branch character varying(255),
     "commitSha" character varying(255),
+    slug character varying(255),
     "githubPullRequestId" bigint,
     CONSTRAINT deployments_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
     CONSTRAINT deployments_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'error'::text])))
@@ -2425,6 +2426,14 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.deployments
     ADD CONSTRAINT deployments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deployments deployments_slug_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployments
+    ADD CONSTRAINT deployments_slug_unique UNIQUE (slug);
 
 
 --

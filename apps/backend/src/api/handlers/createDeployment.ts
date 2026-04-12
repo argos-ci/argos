@@ -7,13 +7,15 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import config from "@/config";
 import { Deployment } from "@/database/models/Deployment";
+import { generateDeploymentSlug } from "@/deployment/slug";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
 import { boom } from "@/util/error";
 
 import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
-import { Sha256HashSchema } from "../schema/primitives/sha";
+import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
+import { Sha1HashSchema, Sha256HashSchema } from "../schema/primitives/sha";
 import {
   invalidParameters,
   serverError,
@@ -29,18 +31,11 @@ const FileEntrySchema = z.object({
 });
 
 const RequestBodySchema = z.object({
-  commit: z
-    .string()
-    .regex(/^[a-f0-9]{40}$/)
-    .nullish()
-    .meta({ description: "The commit SHA" }),
-  branch: z.string().nullish().meta({ description: "The branch name" }),
-  prNumber: z
-    .number()
-    .int()
-    .min(1)
-    .nullish()
-    .meta({ description: "The pull request number" }),
+  commit: Sha1HashSchema.meta({ description: "The commit SHA" }),
+  branch: GitBranchSchema.meta({ description: "The branch name" }),
+  prNumber: GitPRNumberSchema.nullish().meta({
+    description: "The pull request number",
+  }),
   environment: z
     .enum(["preview", "production"])
     .default("preview")
@@ -189,8 +184,12 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       projectId: project.id,
       status: "pending",
       environment: body.environment,
-      branch: body.branch ?? null,
-      commitSha: body.commit ?? null,
+      branch: body.branch,
+      commitSha: body.commit,
+      slug: generateDeploymentSlug({
+        accountSlug: project.account.slug,
+        projectName: project.name,
+      }),
       githubPullRequestId: pullRequest?.id ?? null,
     });
 

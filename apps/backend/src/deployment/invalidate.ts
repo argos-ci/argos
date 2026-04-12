@@ -18,7 +18,7 @@ const cf = new CloudFrontClient({ region: "us-east-1" });
  * No-ops when the distribution ID is not configured (e.g. local dev).
  */
 export async function invalidateDeploymentCache(alias: string): Promise<void> {
-  const distributionId = config.get("deployments.aliasDistributionId");
+  const distributionId = config.get("deployments.distributionId");
   if (!distributionId) {
     return;
   }
@@ -36,5 +36,3 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
     }),
   );
 }
-
-await invalidateDeploymentCache("big-6jwuo76bf-smooth");

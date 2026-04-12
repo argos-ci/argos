@@ -5,11 +5,8 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import type { Account, Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
+import { getDeploymentAliases } from "@/deployment/alias";
 import { postDeploymentCommitStatus } from "@/deployment/github-status";
-import {
-  generateDeploymentProjectAlias,
-  getDeploymentProductionAlias,
-} from "@/deployment/slug";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
@@ -111,6 +108,7 @@ async function registerFileHashes(
 
 /**
  * Update the deployment_aliases table with the current deployment.
+ * Returns the aliases.
  */
 async function updateDeploymentAliases(input: {
   deployment: Deployment;
@@ -120,28 +118,18 @@ async function updateDeploymentAliases(input: {
   const { deployment, project, account } = input;
   const dynamo = getDynamoDBClient();
   const tableName = getTableName("deployment_aliases");
-  const aliases: string[] = [];
-  aliases.push(
-    generateDeploymentProjectAlias({
-      accountSlug: account.slug,
-      projectName: project.name,
-    }),
-  );
-  if (deployment.environment === "production") {
-    aliases.push(
-      getDeploymentProductionAlias({
-        accountSlug: account.slug,
-        projectName: project.name,
-      }),
-    );
-  }
+  const aliases = getDeploymentAliases({
+    accountSlug: account.slug,
+    projectName: project.name,
+    deployment,
+  });
   await dynamo.send(
     new BatchWriteCommand({
       RequestItems: {
         [tableName]: aliases.map((alias) => ({
           PutRequest: {
             Item: {
-              alias,
+              ...alias,
               deployment_id: deployment.id,
               updated_at: new Date().toISOString(),
             },
@@ -212,7 +200,11 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     invariant(account, "Account relation not fetched");
 
     // If production, update the project_deployments table
-    await updateDeploymentAliases({ deployment, project, account });
+    await updateDeploymentAliases({
+      deployment,
+      project,
+      account,
+    });
 
     // Post GitHub commit status
     await postDeploymentCommitStatus({

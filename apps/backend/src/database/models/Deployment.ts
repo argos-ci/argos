@@ -1,6 +1,6 @@
 import type { RelationMappings } from "objection";
 
-import config from "@/config";
+import { getDeploymentUrl } from "@/deployment/url";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
@@ -17,7 +17,14 @@ export class Deployment extends Model {
       timestampsSchema,
       {
         type: "object" as const,
-        required: ["projectId", "status", "environment"],
+        required: [
+          "projectId",
+          "status",
+          "environment",
+          "branch",
+          "commitSha",
+          "slug",
+        ],
         properties: {
           projectId: { type: "string" },
           status: {
@@ -28,8 +35,9 @@ export class Deployment extends Model {
             type: "string",
             enum: ["preview", "production"],
           },
-          branch: { type: ["string", "null"] },
-          commitSha: { type: ["string", "null"] },
+          branch: { type: "string" },
+          commitSha: { type: "string" },
+          slug: { type: "string" },
           githubPullRequestId: { type: ["string", "null"] },
         },
       },
@@ -54,14 +62,14 @@ export class Deployment extends Model {
   projectId!: string;
   status!: DeploymentStatus;
   environment!: DeploymentEnvironment;
-  branch!: string | null;
-  commitSha!: string | null;
+  branch!: string;
+  commitSha!: string;
+  slug!: string;
   githubPullRequestId!: string | null;
 
   project?: Project;
 
   get url() {
-    const baseDomain = config.get("deployments.baseDomain");
-    return new URL(`https://${this.id}.${baseDomain}`).href;
+    return getDeploymentUrl(this.slug);
   }
 }

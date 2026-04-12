@@ -463,11 +463,11 @@ export function createConfig() {
         default: "dev.argos-ci.live",
         env: "DEPLOYMENTS_BASE_DOMAIN",
       },
-      aliasDistributionId: {
-        doc: "CloudFront alias distribution ID (invalidated when an alias changes)",
+      distributionId: {
+        doc: "CloudFront distribution ID",
         format: String,
         default: "E23BM6MKO7C9A6",
-        env: "CLOUDFRONT_ALIAS_DISTRIBUTION_ID",
+        env: "DEPLOYMENTS_DISTRIBUTION_ID",
       },
     },
     dynamodb: {
