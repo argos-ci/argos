@@ -132,11 +132,11 @@ export class ArgosDeploymentStack extends cdk.Stack {
 
     // ----------------------------------------------------------------
     // Lambda@Edge — VIEWER_REQUEST
-    // Prepends the alias subdomain to the URI for cache key scoping
-    // and targeted invalidation (/<alias>/*).
+    // Resolves alias → deploymentId and forwards to the files domain
+    // as /deployment/<id>/<file>.
     // ----------------------------------------------------------------
     const viewerRequestFn = new nodejs.NodejsFunction(this, "ViewerRequestFn", {
-      entry: path.join(__dirname, "../lambda/viewer-request.ts"),
+      entry: path.join(__dirname, "../lambda/resolve-alias-viewer-request.ts"),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 128,
@@ -144,8 +144,15 @@ export class ArgosDeploymentStack extends cdk.Stack {
       logGroup: new cdk.aws_logs.LogGroup(this, "ViewerRequestFnLogGroup", {
         retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
       }),
-      bundling: { minify: true, sourceMap: false, target: "es2022" },
+      bundling: {
+        minify: true,
+        sourceMap: false,
+        target: "es2022",
+        define: { "process.env.STAGE": JSON.stringify(stage) },
+      },
     });
+
+    this.deploymentAliasesTable.grantReadData(viewerRequestFn);
 
     const viewerRequestRole = viewerRequestFn.role as iam.Role | undefined;
     viewerRequestRole?.assumeRolePolicy?.addStatements(
@@ -154,13 +161,23 @@ export class ArgosDeploymentStack extends cdk.Stack {
         actions: ["sts:AssumeRole"],
       }),
     );
+    viewerRequestFn.currentVersion.addPermission(
+      "AllowCloudFrontViewerInvoke",
+      {
+        principal: new iam.ServicePrincipal("edgelambda.amazonaws.com"),
+        action: "lambda:InvokeFunction",
+      },
+    );
 
     // ----------------------------------------------------------------
     // Lambda@Edge — ORIGIN_REQUEST
-    // Resolves alias → deploymentId → content hash → S3 key.
+    // Resolves /deployment/<id>/<file> → content hash → S3 key.
     // ----------------------------------------------------------------
     const originRequestFn = new nodejs.NodejsFunction(this, "OriginRequestFn", {
-      entry: path.join(__dirname, "../lambda/origin-request.ts"),
+      entry: path.join(
+        __dirname,
+        "../lambda/resolve-deployment-file-origin-request.ts",
+      ),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 128,
@@ -176,7 +193,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
       },
     });
 
-    this.deploymentAliasesTable.grantReadData(originRequestFn);
     this.deploymentFilesTable.grantReadData(originRequestFn);
 
     const originRequestRole = originRequestFn.role as iam.Role | undefined;
@@ -192,7 +208,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
 
     // ----------------------------------------------------------------
-    // CloudFront — cache key is path-only (alias prefix scopes entries)
+    // CloudFront — cache key is path-only.
     // ----------------------------------------------------------------
     const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
       headerBehavior: cloudfront.CacheHeaderBehavior.none(),
@@ -202,36 +218,71 @@ export class ArgosDeploymentStack extends cdk.Stack {
       maxTtl: cdk.Duration.days(365),
     });
 
-    const distribution = new cloudfront.Distribution(this, "Distribution", {
-      defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        edgeLambdas: [
-          {
-            eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
-            functionVersion: viewerRequestFn.currentVersion,
-          },
-          {
-            eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
-            functionVersion: originRequestFn.currentVersion,
-          },
-        ],
-        cachePolicy,
+    const filesDistribution = new cloudfront.Distribution(
+      this,
+      "FilesDistribution",
+      {
+        defaultBehavior: {
+          origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          edgeLambdas: [
+            {
+              eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
+              functionVersion: originRequestFn.currentVersion,
+            },
+          ],
+          cachePolicy,
+        },
+        domainNames: [`files.${baseDomain}`],
+        certificate,
       },
-      domainNames: [`*.${baseDomain}`],
-      certificate,
-    });
+    );
+
+    const aliasDistribution = new cloudfront.Distribution(
+      this,
+      "AliasDistribution",
+      {
+        defaultBehavior: {
+          origin: new origins.HttpOrigin(`files.${baseDomain}`, {
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+          }),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          edgeLambdas: [
+            {
+              eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+              functionVersion: viewerRequestFn.currentVersion,
+            },
+          ],
+          cachePolicy,
+        },
+        domainNames: [`*.${baseDomain}`],
+        certificate,
+      },
+    );
 
     // ----------------------------------------------------------------
-    // Route 53 — wildcard *.{baseDomain} → distribution
+    // Route 53 — wildcard *.{baseDomain} → alias distribution
+    // files.{baseDomain} → files distribution
     // ----------------------------------------------------------------
+    new route53.ARecord(this, "FilesAlias", {
+      zone: hostedZone,
+      recordName: `files.${baseDomain}`,
+      target: route53.RecordTarget.fromAlias(
+        new targets.CloudFrontTarget(filesDistribution),
+      ),
+    });
+
     new route53.ARecord(this, "WildcardAlias", {
       zone: hostedZone,
       recordName: `*.${baseDomain}`,
       target: route53.RecordTarget.fromAlias(
-        new targets.CloudFrontTarget(distribution),
+        new targets.CloudFrontTarget(aliasDistribution),
       ),
     });
+
+    const distribution = aliasDistribution;
 
     // ----------------------------------------------------------------
     // Dev user access
@@ -279,6 +330,12 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, "DistributionId", {
       value: distribution.distributionId,
+    });
+    new cdk.CfnOutput(this, "FilesDistributionDomainName", {
+      value: filesDistribution.distributionDomainName,
+    });
+    new cdk.CfnOutput(this, "FilesDistributionId", {
+      value: filesDistribution.distributionId,
     });
   }
 }

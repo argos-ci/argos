@@ -27,45 +27,6 @@ function notFoundResponse(): CloudFrontRequestResult {
   };
 }
 
-/**
- * Normalize a file path (no leading slash).
- * - "" or "/" → "index.html"
- * - "about"   → "about/index.html"
- * - "main.js" → "main.js"
- */
-function normalizePath(filePath: string): string {
-  if (filePath === "" || filePath === "/") {
-    return "index.html";
-  }
-  const last = filePath.split("/").pop() ?? "";
-  if (!last.includes(".")) {
-    return filePath.endsWith("/")
-      ? `${filePath}index.html`
-      : `${filePath}/index.html`;
-  }
-  return filePath;
-}
-
-async function resolveAlias(alias: string): Promise<string | null> {
-  const result = await dynamo.send(
-    new GetCommand({
-      TableName: tableName("deployment_aliases"),
-      Key: { alias },
-      ProjectionExpression: "deployment_id",
-    }),
-  );
-  if (!result.Item) {
-    return null;
-  }
-  if (
-    typeof result.Item["deployment_id"] !== "string" ||
-    !result.Item["deployment_id"]
-  ) {
-    throw new Error(`"deployment_id" not found on alias ${alias}`);
-  }
-  return result.Item["deployment_id"];
-}
-
 async function lookupFile(
   deploymentId: string,
   filePath: string,
@@ -101,26 +62,16 @@ export const handler = async (
 
   const request = record.cf.request;
 
-  // The viewer-request Lambda prefixed the URI with the alias subdomain:
-  // "/<alias>/path/to/file" — extract both parts.
   const parts = request.uri.split("/").filter(Boolean);
-  const alias = parts[0] ?? "";
-  const remainingPath = "/" + parts.slice(1).join("/");
+  const prefix = parts[0] ?? "";
+  const deploymentId = parts[1] ?? "";
+  const filePath = parts.slice(2).join("/");
 
-  if (!alias) {
-    console.log("[404] No alias in URI");
+  if (prefix !== "deployment" || !deploymentId || !filePath) {
+    console.log(`[404] Invalid deployment URI: ${request.uri}`);
     return notFoundResponse();
   }
 
-  console.log(`[request] alias=${alias} path=${remainingPath} stage=${STAGE}`);
-
-  const deploymentId = await resolveAlias(alias);
-  if (!deploymentId) {
-    console.log(`[404] alias not found: ${alias}`);
-    return notFoundResponse();
-  }
-
-  const filePath = normalizePath(remainingPath.slice(1)); // strip leading /
   console.log(`[lookup] deploymentId=${deploymentId} filePath=${filePath}`);
 
   const contentHash = await lookupFile(deploymentId, filePath);
