@@ -527,6 +527,42 @@ ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
 
 
 --
+-- Name: deployment_aliases; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.deployment_aliases (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deploymentId" bigint NOT NULL,
+    alias character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.deployment_aliases OWNER TO postgres;
+
+--
+-- Name: deployment_aliases_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.deployment_aliases_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.deployment_aliases_id_seq OWNER TO postgres;
+
+--
+-- Name: deployment_aliases_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.deployment_aliases_id_seq OWNED BY public.deployment_aliases.id;
+
+
+--
 -- Name: deployments; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2070,6 +2106,13 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
+-- Name: deployment_aliases id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_aliases ALTER COLUMN id SET DEFAULT nextval('public.deployment_aliases_id_seq'::regclass);
+
+
+--
 -- Name: deployments id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2418,6 +2461,22 @@ ALTER TABLE ONLY public.build_shards
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deployment_aliases deployment_aliases_alias_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_aliases
+    ADD CONSTRAINT deployment_aliases_alias_unique UNIQUE (alias);
+
+
+--
+-- Name: deployment_aliases deployment_aliases_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_aliases
+    ADD CONSTRAINT deployment_aliases_pkey PRIMARY KEY (id);
 
 
 --
@@ -3009,6 +3068,13 @@ CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
 
 
 --
+-- Name: deployment_aliases_deploymentid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX deployment_aliases_deploymentid_index ON public.deployment_aliases USING btree ("deploymentId");
+
+
+--
 -- Name: deployments_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3569,6 +3635,14 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: deployment_aliases deployment_aliases_deploymentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_aliases
+    ADD CONSTRAINT deployment_aliases_deploymentid_foreign FOREIGN KEY ("deploymentId") REFERENCES public.deployments(id) ON DELETE CASCADE;
 
 
 --
@@ -4183,3 +4257,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026022
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260328120000_build-merge-queue-gh-pull-requests.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260401084427_user_access_tokens.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260409120000_storybook_deployments.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260413145758_deployment_aliases.js', 1, NOW());

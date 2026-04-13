@@ -1,20 +1,9 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import type {
   CloudFrontRequestEvent,
   CloudFrontRequestResult,
 } from "aws-lambda";
 
-const STAGE = process.env.STAGE ?? "development";
-
-const baseClient = new DynamoDBClient({ region: "us-east-1" });
-const dynamo = DynamoDBDocumentClient.from(baseClient, {
-  marshallOptions: { removeUndefinedValues: true },
-});
-
-function tableName(name: string): string {
-  return `${STAGE}_${name}`;
-}
+const API_BASEURL = process.env.API_BASEURL ?? "";
 
 function notFoundResponse(): CloudFrontRequestResult {
   return {
@@ -46,24 +35,29 @@ function normalizePath(filePath: string): string {
   return filePath;
 }
 
-async function resolveAlias(alias: string): Promise<string | null> {
-  const result = await dynamo.send(
-    new GetCommand({
-      TableName: tableName("deployment_aliases"),
-      Key: { alias },
-      ProjectionExpression: "deployment_id",
-    }),
+async function resolveAlias(domain: string): Promise<string | null> {
+  if (!API_BASEURL) {
+    throw new Error("API_BASEURL is not configured");
+  }
+
+  const response = await fetch(
+    `${API_BASEURL}/v2/deployments/resolve/${encodeURIComponent(domain)}`,
   );
-  if (!result.Item) {
+
+  if (response.status === 404) {
     return null;
   }
-  if (
-    typeof result.Item["deployment_id"] !== "string" ||
-    !result.Item["deployment_id"]
-  ) {
-    throw new Error(`"deployment_id" not found on alias ${alias}`);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to resolve deployment domain "${domain}" (${response.status})`,
+    );
   }
-  return result.Item["deployment_id"];
+
+  const body = (await response.json()) as { deploymentId?: unknown };
+  if (typeof body.deploymentId !== "string" || !body.deploymentId) {
+    throw new Error(`"deploymentId" not found for domain "${domain}"`);
+  }
+  return body.deploymentId;
 }
 
 export const handler = async (
@@ -82,9 +76,9 @@ export const handler = async (
     return notFoundResponse();
   }
 
-  console.log(`[request] alias=${alias} path=${request.uri} stage=${STAGE}`);
+  console.log(`[request] alias=${alias} path=${request.uri}`);
 
-  const deploymentId = await resolveAlias(alias);
+  const deploymentId = await resolveAlias(host);
   if (!deploymentId) {
     console.log(`[404] alias not found: ${alias}`);
     return notFoundResponse();

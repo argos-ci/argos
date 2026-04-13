@@ -19,6 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 interface ArgosDeploymentStackProps extends cdk.StackProps {
   stage: "development" | "production";
   hostedZoneId: string;
+  apiBaseUrl: string;
   devUserArns?: string[];
 }
 
@@ -31,12 +32,11 @@ export class ArgosDeploymentStack extends cdk.Stack {
   public readonly bucket: s3.Bucket;
   public readonly filesTable: dynamodb.Table;
   public readonly deploymentFilesTable: dynamodb.Table;
-  public readonly deploymentAliasesTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage, hostedZoneId, devUserArns = [] } = props;
+    const { stage, hostedZoneId, apiBaseUrl, devUserArns = [] } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
     const filesOriginAuthHeaderName = "x-argos-internal-auth";
@@ -87,28 +87,8 @@ export class ArgosDeploymentStack extends cdk.Stack {
           name: "deployment_id",
           type: dynamodb.AttributeType.STRING,
         },
-        sortKey: { name: "path", type: dynamodb.AttributeType.STRING },
-        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-        removalPolicy: isProduction
-          ? cdk.RemovalPolicy.RETAIN
-          : cdk.RemovalPolicy.DESTROY,
-        pointInTimeRecoverySpecification: {
-          pointInTimeRecoveryEnabled: isProduction,
-        },
-        timeToLiveAttribute: "expires_at",
-      },
-    );
-
-    // ----------------------------------------------------------------
-    // DynamoDB — deployment aliases (alias → deploymentId)
-    // ----------------------------------------------------------------
-    this.deploymentAliasesTable = new dynamodb.Table(
-      this,
-      "DeploymentAliasesTable",
-      {
-        tableName: `${stage}_deployment_aliases`,
-        partitionKey: {
-          name: "alias",
+        sortKey: {
+          name: "path",
           type: dynamodb.AttributeType.STRING,
         },
         billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -118,6 +98,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
         pointInTimeRecoverySpecification: {
           pointInTimeRecoveryEnabled: isProduction,
         },
+        timeToLiveAttribute: "expires_at",
       },
     );
 
@@ -153,11 +134,11 @@ export class ArgosDeploymentStack extends cdk.Stack {
         minify: true,
         sourceMap: false,
         target: "es2022",
-        define: { "process.env.STAGE": JSON.stringify(stage) },
+        define: {
+          "process.env.API_BASEURL": JSON.stringify(apiBaseUrl),
+        },
       },
     });
-
-    this.deploymentAliasesTable.grantReadData(viewerRequestFn);
 
     const viewerRequestRole = viewerRequestFn.role as iam.Role | undefined;
     viewerRequestRole?.assumeRolePolicy?.addStatements(
@@ -352,7 +333,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
       const devGroup = new iam.Group(this, "DevGroup");
       this.filesTable.grantReadWriteData(devGroup);
       this.deploymentFilesTable.grantReadWriteData(devGroup);
-      this.deploymentAliasesTable.grantReadWriteData(devGroup);
       this.bucket.grantReadWrite(devGroup);
       devGroup.addToPolicy(
         new iam.PolicyStatement({
@@ -383,9 +363,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
     new cdk.CfnOutput(this, "DeploymentFilesTableName", {
       value: this.deploymentFilesTable.tableName,
     });
-    new cdk.CfnOutput(this, "DeploymentAliasesTableName", {
-      value: this.deploymentAliasesTable.tableName,
-    });
     new cdk.CfnOutput(this, "DistributionDomainName", {
       value: distribution.distributionDomainName,
     });
@@ -397,6 +374,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, "FilesDistributionId", {
       value: filesDistribution.distributionId,
+    });
+    new cdk.CfnOutput(this, "ApiBaseUrl", {
+      value: apiBaseUrl,
     });
   }
 }

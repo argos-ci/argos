@@ -15,6 +15,7 @@ import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
 import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getProjectOperation } from "./handlers/getProject";
 import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
+import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
 import { updateBuildOperation } from "./handlers/updateBuild";
 
 export const zodSchema = {
@@ -52,6 +53,9 @@ export const zodSchema = {
     },
     "/deployments/{deploymentId}/finalize": {
       post: finalizeDeploymentOperation,
+    },
+    "/deployments/resolve/{domain}": {
+      get: resolveDeploymentDomainOperation,
     },
     "/builds/finalize": {
       post: finalizeBuildsOperation,

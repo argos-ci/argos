@@ -7,6 +7,20 @@ type DeploymentAlias = {
   alias: string;
 };
 
+const INTERNAL_DEPLOYMENT_ALIASES = new Set(["dev"]);
+
+export function isInternalDeploymentAlias(alias: string): boolean {
+  return INTERNAL_DEPLOYMENT_ALIASES.has(alias.toLowerCase());
+}
+
+export function findInternalDeploymentAlias(
+  aliases: DeploymentAlias[],
+): DeploymentAlias | null {
+  return (
+    aliases.find((alias) => isInternalDeploymentAlias(alias.alias)) ?? null
+  );
+}
+
 /**
  * Get the aliases of a deployment.
  */

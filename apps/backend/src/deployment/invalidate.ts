@@ -1,38 +1,53 @@
-import {
-  CloudFrontClient,
-  CreateInvalidationCommand,
-} from "@aws-sdk/client-cloudfront";
-
 import config from "@/config";
 
-const cf = new CloudFrontClient({ region: "us-east-1" });
+function getResolveDeploymentDomainUrls(alias: string): string[] {
+  const apiBaseUrl = config.get("api.baseUrl");
+  const baseDomain = config.get("deployments.baseDomain");
+  const encodedAlias = encodeURIComponent(alias);
+  const encodedDomain = encodeURIComponent(`${alias}.${baseDomain}`);
+
+  return [
+    `${apiBaseUrl}/v2/deployments/resolve/${encodedAlias}`,
+    `${apiBaseUrl}/v2/deployments/resolve/${encodedDomain}`,
+  ];
+}
 
 /**
- * Invalidate the alias CDN cache for a specific alias.
+ * Invalidate deployment-domain resolution responses cached by Cloudflare.
  *
- * The alias distribution caches responses keyed on "/<alias>/<path>".
- * When an alias points to a new deployment, invalidating "/<alias>/*"
- * clears only that alias's entries. The deployment CDN is immutable
- * and is never invalidated.
- *
- * No-ops when the distribution ID is not configured (e.g. local dev).
+ * No-ops when Cloudflare credentials are not configured, which keeps local
+ * development and unconfigured environments working.
  */
 export async function invalidateDeploymentCache(alias: string): Promise<void> {
-  const distributionId = config.get("deployments.distributionId");
-  if (!distributionId) {
+  const zoneId = config.get("deployments.cloudflare.zoneId");
+  const apiToken = config.get("deployments.cloudflare.apiToken");
+
+  if (!zoneId || !apiToken) {
     return;
   }
 
-  await cf.send(
-    new CreateInvalidationCommand({
-      DistributionId: distributionId,
-      InvalidationBatch: {
-        CallerReference: Date.now().toString(),
-        Paths: {
-          Quantity: 1,
-          Items: [`/${alias}/*`],
-        },
+  const response = await fetch(
+    `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/json",
       },
-    }),
+      body: JSON.stringify({
+        files: getResolveDeploymentDomainUrls(alias),
+      }),
+    },
   );
+
+  if (!response.ok) {
+    throw new Error(
+      `Cloudflare purge failed with status ${response.status} for alias "${alias}"`,
+    );
+  }
+
+  const body = (await response.json()) as { success?: unknown };
+  if (body.success !== true) {
+    throw new Error(`Cloudflare purge failed for alias "${alias}"`);
+  }
 }

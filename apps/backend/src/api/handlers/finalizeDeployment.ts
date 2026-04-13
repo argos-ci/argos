@@ -5,7 +5,11 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import type { Account, Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
-import { getDeploymentAliases } from "@/deployment/alias";
+import { DeploymentAlias } from "@/database/models/DeploymentAlias";
+import {
+  findInternalDeploymentAlias,
+  getDeploymentAliases,
+} from "@/deployment/alias";
 import { postDeploymentCommitStatus } from "@/deployment/github-status";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
@@ -115,38 +119,37 @@ async function updateDeploymentAliases(input: {
   deployment: Deployment;
   project: Project;
   account: Account;
-}) {
+}): Promise<ReturnType<typeof getDeploymentAliases>> {
   const { deployment, project, account } = input;
-  const dynamo = getDynamoDBClient();
-  const tableName = getTableName("deployment_aliases");
   const aliases = getDeploymentAliases({
     accountSlug: account.slug,
     projectName: project.name,
     deployment,
   });
-  await Promise.all([
-    dynamo.send(
-      new BatchWriteCommand({
-        RequestItems: {
-          [tableName]: aliases.map((alias) => ({
-            PutRequest: {
-              Item: {
-                ...alias,
-                deployment_id: deployment.id,
-                updated_at: new Date().toISOString(),
-              },
-            },
-          })),
-        },
-      }),
-    ),
-    // ...aliases.map((alias) => {
-    //   if (alias.type !== "slug") {
-    //     return invalidateDeploymentCache(alias.alias);
-    //   }
-    //   return;
-    // }),
-  ]);
+  const internalAlias = findInternalDeploymentAlias(aliases);
+  if (internalAlias) {
+    throw boom(
+      400,
+      `Deployment alias "${internalAlias.alias}" is reserved for internal use`,
+    );
+  }
+  const now = new Date().toISOString();
+  await DeploymentAlias.query()
+    .insert(
+      aliases.map((alias) => ({
+        alias: alias.alias,
+        deploymentId: deployment.id,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    )
+    .onConflict("alias")
+    .merge({
+      deploymentId: deployment.id,
+      updatedAt: now,
+    });
+
+  return aliases;
 }
 
 export const finalizeDeploymentOperation = {
@@ -209,11 +212,19 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     invariant(account, "Account relation not fetched");
 
     // If production, update the project_deployments table
-    await updateDeploymentAliases({
+    const aliases = await updateDeploymentAliases({
       deployment,
       project,
       account,
     });
+
+    await Promise.all(
+      aliases.map((alias) =>
+        invalidateDeploymentCache(alias.alias).catch(() => {
+          // Non-blocking — best effort
+        }),
+      ),
+    );
 
     // Post GitHub commit status
     await postDeploymentCommitStatus({

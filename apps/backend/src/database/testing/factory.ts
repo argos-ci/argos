@@ -149,6 +149,23 @@ export const Project = defineFactory(models.Project, () => ({
   githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));
 
+export const Deployment = defineFactory(models.Deployment, () => ({
+  projectId: Project.associate("id") as unknown as string,
+  status: "ready" as const,
+  environment: "preview" as const,
+  branch: "main",
+  commitSha: FactoryGirl.sequence("deployment.commitSha", (n) =>
+    n.toString(16).padStart(40, "0"),
+  ),
+  slug: FactoryGirl.sequence("deployment.slug", (n) => `deployment-${n}`),
+  githubPullRequestId: null,
+}));
+
+export const DeploymentAlias = defineFactory(models.DeploymentAlias, () => ({
+  deploymentId: Deployment.associate("id") as unknown as string,
+  alias: FactoryGirl.sequence("deploymentAlias.alias", (n) => `alias-${n}`),
+}));
+
 export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
   name: "default",
   commit: bytesToString(randomBytes(20)),

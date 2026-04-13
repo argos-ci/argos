@@ -469,6 +469,20 @@ export function createConfig() {
         default: "E23BM6MKO7C9A6",
         env: "DEPLOYMENTS_DISTRIBUTION_ID",
       },
+      cloudflare: {
+        zoneId: {
+          doc: "Cloudflare zone ID used to purge deployment resolution cache",
+          format: String,
+          default: "",
+          env: "DEPLOYMENTS_CLOUDFLARE_ZONE_ID",
+        },
+        apiToken: {
+          doc: "Cloudflare API token used to purge deployment resolution cache",
+          format: String,
+          default: "",
+          env: "DEPLOYMENTS_CLOUDFLARE_API_TOKEN",
+        },
+      },
     },
     dynamodb: {
       endpoint: {
