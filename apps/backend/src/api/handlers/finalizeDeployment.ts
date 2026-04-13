@@ -140,12 +140,12 @@ async function updateDeploymentAliases(input: {
         },
       }),
     ),
-    ...aliases.map((alias) => {
-      if (alias.type !== "slug") {
-        return invalidateDeploymentCache(alias.alias);
-      }
-      return;
-    }),
+    // ...aliases.map((alias) => {
+    //   if (alias.type !== "slug") {
+    //     return invalidateDeploymentCache(alias.alias);
+    //   }
+    //   return;
+    // }),
   ]);
 }
 
