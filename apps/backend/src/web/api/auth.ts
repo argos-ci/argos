@@ -3,7 +3,6 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { exchangeCliAuthCode } from "@/auth/cli";
 import { safeJwtAuthFromExpressReq } from "@/auth/jwt";
 import type { AuthJWTPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
@@ -182,36 +181,6 @@ router.use(
       });
     }
     return account;
-  }),
-);
-
-const CliTokenExchangeSchema = z.object({
-  code: z.string(),
-  code_verifier: z.string(),
-});
-
-// Called by the CLI to exchange a PKCE code for the actual token.
-router.use(
-  "/auth/cli/token",
-  allowOnlyPost,
-  express.json(),
-  asyncHandler(async (req, res) => {
-    const parsed = CliTokenExchangeSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).send({ error: { message: "Invalid request body." } });
-      return;
-    }
-    const token = await exchangeCliAuthCode(
-      parsed.data.code,
-      parsed.data.code_verifier,
-    );
-    if (!token) {
-      res
-        .status(401)
-        .send({ error: { message: "Invalid or expired authorization code." } });
-      return;
-    }
-    res.send({ token });
   }),
 );
 
