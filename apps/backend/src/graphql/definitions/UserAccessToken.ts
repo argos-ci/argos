@@ -98,6 +98,10 @@ export const resolvers: IResolvers = {
         throw badUserInput("codeChallenge is required for CLI tokens");
       }
 
+      if (tokenSource !== "cli" && codeChallenge) {
+        throw badUserInput("codeChallenge is only supported for CLI tokens");
+      }
+
       const accessibleAccounts = await getAccessibleAccounts({
         accountIds,
         userId,
@@ -115,7 +119,7 @@ export const resolvers: IResolvers = {
             ).toISOString()
           : null;
 
-      const userAccessToken = await transaction(async (trx) => {
+      const accessToken = await transaction(async (trx) => {
         const userAccessToken = await UserAccessToken.query(trx).insertAndFetch(
           {
             userId,
@@ -137,14 +141,13 @@ export const resolvers: IResolvers = {
         return userAccessToken;
       });
 
-      const code =
-        tokenSource === "cli" && codeChallenge
-          ? await createCliAuthCode({ token, codeChallenge })
-          : null;
+      const code = codeChallenge
+        ? await createCliAuthCode({ token, codeChallenge })
+        : null;
 
       return {
-        accessToken: userAccessToken,
-        token: tokenSource === "cli" ? "" : token,
+        accessToken,
+        token: code ? "" : token,
         code,
       };
     },

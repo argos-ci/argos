@@ -4,6 +4,7 @@ import { createDocument, ZodOpenApiObject } from "zod-openapi";
 import config from "@/config";
 
 import { createBuildOperation } from "./handlers/createBuild";
+import { createReviewOperation } from "./handlers/createReview";
 import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
@@ -11,7 +12,6 @@ import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
 import { getProjectOperation } from "./handlers/getProject";
 import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
-import { reviewBuildOperation } from "./handlers/reviewBuild";
 import { updateBuildOperation } from "./handlers/updateBuild";
 
 export const zodSchema = {
@@ -65,8 +65,8 @@ export const zodSchema = {
     "/projects/{owner}/{project}/builds/{buildNumber}/diffs": {
       get: getBuildDiffsOperation,
     },
-    "/projects/{owner}/{project}/builds/{buildNumber}/review": {
-      post: reviewBuildOperation,
+    "/projects/{owner}/{project}/builds/{buildNumber}/reviews": {
+      post: createReviewOperation,
     },
   },
 } satisfies ZodOpenApiObject;

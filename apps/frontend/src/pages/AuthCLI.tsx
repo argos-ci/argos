@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { CheckCircleIcon, TerminalIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
@@ -165,7 +165,6 @@ const InvalidRequestPage = () => (
 
 export function Component() {
   const [searchParams] = useSearchParams();
-  const { pathname } = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const port = searchParams.get("port");
   const state = searchParams.get("state");
@@ -176,9 +175,11 @@ export function Component() {
   }
 
   if (!isLoggedIn) {
-    const returnUrl = `${pathname}?${searchParams.toString()}`;
     return (
-      <Navigate to={`/login?r=${encodeURIComponent(returnUrl)}`} replace />
+      <Navigate
+        to={`/login?r=${encodeURIComponent(window.location.href)}`}
+        replace
+      />
     );
   }
 
