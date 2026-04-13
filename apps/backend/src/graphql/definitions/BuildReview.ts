@@ -1,14 +1,9 @@
-import { AutomationEvents } from "@argos/schemas/automation-event";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { triggerAndRunAutomation } from "@/automation";
-import { pushBuildNotification } from "@/build-notification/notifications";
+import { createBuildReview, ReviewState } from "@/build/createBuildReview";
 import { Build } from "@/database/models/Build";
-import { BuildReview } from "@/database/models/BuildReview";
-import { ScreenshotDiffReview } from "@/database/models/ScreenshotDiffReview";
-import { transaction } from "@/database/transaction";
 
 import { IReviewState, type IResolvers } from "../__generated__/resolver-types";
 import { forbidden, notFound, unauthenticated } from "../util";
@@ -88,49 +83,22 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot approve or reject this build");
       }
 
-      const buildReview = await transaction(async (trx) => {
-        const buildReview = await BuildReview.query(trx).insert({
-          buildId: build.id,
-          userId: auth.user.id,
-          state: parseState(input.state),
-        });
-        if (input.screenshotDiffReviews.length) {
-          await ScreenshotDiffReview.query(trx).insert(
-            input.screenshotDiffReviews.map((diffReviewInput) => ({
-              screenshotDiffId: diffReviewInput.screenshotDiffId,
-              buildReviewId: buildReview.id,
-              state: parseState(diffReviewInput.state),
-            })),
-          );
-        }
-
-        return buildReview;
+      await createBuildReview({
+        build,
+        userId: auth.user.id,
+        state: parseState(input.state),
+        snapshotReviews: input.screenshotDiffReviews.map((diffReviewInput) => ({
+          screenshotDiffId: diffReviewInput.screenshotDiffId,
+          state: parseState(diffReviewInput.state),
+        })),
       });
-
-      // That might be better suited into a $afterUpdate hook.
-      await Promise.all([
-        pushBuildNotification({
-          buildId: build.id,
-          type: {
-            [IReviewState.Approved]: "diff-accepted" as const,
-            [IReviewState.Rejected]: "diff-rejected" as const,
-          }[input.state],
-        }),
-        triggerAndRunAutomation({
-          projectId: build.projectId,
-          message: {
-            event: AutomationEvents.BuildReviewed,
-            payload: { build, buildReview },
-          },
-        }),
-      ]);
 
       return build;
     },
   },
 };
 
-function parseState(state: IReviewState): "approved" | "rejected" {
+function parseState(state: IReviewState): ReviewState {
   switch (state) {
     case IReviewState.Approved:
       return "approved";
@@ -141,7 +109,7 @@ function parseState(state: IReviewState): "approved" | "rejected" {
   }
 }
 
-function formatState(state: "approved" | "rejected"): IReviewState {
+function formatState(state: ReviewState): IReviewState {
   switch (state) {
     case "approved":
       return IReviewState.Approved;

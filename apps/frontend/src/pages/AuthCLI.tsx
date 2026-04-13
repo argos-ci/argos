@@ -32,7 +32,6 @@ const MeQuery = graphql(`
 const CreateCLITokenMutation = graphql(`
   mutation AuthCLI_CreateToken($input: CreateUserAccessTokenInput!) {
     createUserAccessToken(input: $input) {
-      token
       code
     }
   }
@@ -176,9 +175,11 @@ export function Component() {
   }
 
   if (!isLoggedIn) {
-    const returnUrl = `/auth/cli?port=${encodeURIComponent(port)}&state=${encodeURIComponent(state)}&pkce=${encodeURIComponent(codeChallenge)}`;
     return (
-      <Navigate to={`/login?r=${encodeURIComponent(returnUrl)}`} replace />
+      <Navigate
+        to={`/login?r=${encodeURIComponent(window.location.href)}`}
+        replace
+      />
     );
   }
 
