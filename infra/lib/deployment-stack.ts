@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cdk from "aws-cdk-lib";
@@ -38,6 +39,10 @@ export class ArgosDeploymentStack extends cdk.Stack {
     const { stage, hostedZoneId, devUserArns = [] } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
+    const filesOriginAuthHeaderName = "x-argos-internal-auth";
+    const filesOriginAuthHeaderValue = createHash("sha256")
+      .update(`${id}:${stage}:${hostedZoneId}:files-origin-auth`)
+      .digest("hex");
 
     // ----------------------------------------------------------------
     // S3 Bucket — content-addressed storage for deployment assets
@@ -208,6 +213,63 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
 
     // ----------------------------------------------------------------
+    // Lambda@Edge — VIEWER_REQUEST (files distribution)
+    // Rejects direct public access unless the request carries the
+    // internal auth header injected by the alias distribution.
+    // ----------------------------------------------------------------
+    const protectFilesViewerRequestFn = new nodejs.NodejsFunction(
+      this,
+      "ProtectFilesViewerRequestFn",
+      {
+        entry: path.join(
+          __dirname,
+          "../lambda/protect-files-viewer-request.ts",
+        ),
+        handler: "handler",
+        runtime: lambda.Runtime.NODEJS_24_X,
+        memorySize: 128,
+        timeout: cdk.Duration.seconds(5),
+        logGroup: new cdk.aws_logs.LogGroup(
+          this,
+          "ProtectFilesViewerRequestFnLogGroup",
+          {
+            retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
+          },
+        ),
+        bundling: {
+          minify: true,
+          sourceMap: false,
+          target: "es2022",
+          define: {
+            "process.env.INTERNAL_AUTH_HEADER_NAME": JSON.stringify(
+              filesOriginAuthHeaderName,
+            ),
+            "process.env.INTERNAL_AUTH_HEADER_VALUE": JSON.stringify(
+              filesOriginAuthHeaderValue,
+            ),
+          },
+        },
+      },
+    );
+
+    const protectFilesViewerRequestRole = protectFilesViewerRequestFn.role as
+      | iam.Role
+      | undefined;
+    protectFilesViewerRequestRole?.assumeRolePolicy?.addStatements(
+      new iam.PolicyStatement({
+        principals: [new iam.ServicePrincipal("edgelambda.amazonaws.com")],
+        actions: ["sts:AssumeRole"],
+      }),
+    );
+    protectFilesViewerRequestFn.currentVersion.addPermission(
+      "AllowCloudFrontProtectFilesViewerInvoke",
+      {
+        principal: new iam.ServicePrincipal("edgelambda.amazonaws.com"),
+        action: "lambda:InvokeFunction",
+      },
+    );
+
+    // ----------------------------------------------------------------
     // CloudFront — cache key is path-only.
     // ----------------------------------------------------------------
     const cachePolicy = new cloudfront.CachePolicy(this, "CachePolicy", {
@@ -228,14 +290,16 @@ export class ArgosDeploymentStack extends cdk.Stack {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: [
             {
+              eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
+              functionVersion: protectFilesViewerRequestFn.currentVersion,
+            },
+            {
               eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
               functionVersion: originRequestFn.currentVersion,
             },
           ],
           cachePolicy,
         },
-        domainNames: [`files.${baseDomain}`],
-        certificate,
       },
     );
 
@@ -244,9 +308,15 @@ export class ArgosDeploymentStack extends cdk.Stack {
       "AliasDistribution",
       {
         defaultBehavior: {
-          origin: new origins.HttpOrigin(`files.${baseDomain}`, {
-            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
-          }),
+          origin: new origins.HttpOrigin(
+            filesDistribution.distributionDomainName,
+            {
+              protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+              customHeaders: {
+                [filesOriginAuthHeaderName]: filesOriginAuthHeaderValue,
+              },
+            },
+          ),
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: [
@@ -264,16 +334,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
 
     // ----------------------------------------------------------------
     // Route 53 — wildcard *.{baseDomain} → alias distribution
-    // files.{baseDomain} → files distribution
     // ----------------------------------------------------------------
-    new route53.ARecord(this, "FilesAlias", {
-      zone: hostedZone,
-      recordName: `files.${baseDomain}`,
-      target: route53.RecordTarget.fromAlias(
-        new targets.CloudFrontTarget(filesDistribution),
-      ),
-    });
-
     new route53.ARecord(this, "WildcardAlias", {
       zone: hostedZone,
       recordName: `*.${baseDomain}`,
