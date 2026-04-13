@@ -4,6 +4,7 @@ import { createDocument, ZodOpenApiObject } from "zod-openapi";
 import config from "@/config";
 
 import { createBuildOperation } from "./handlers/createBuild";
+import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
@@ -41,6 +42,9 @@ export const zodSchema = {
     },
     "/builds/finalize": {
       post: finalizeBuildsOperation,
+    },
+    "/auth/cli/token": {
+      post: exchangeCliTokenOperation,
     },
     "/project": {
       get: getAuthProjectOperation,

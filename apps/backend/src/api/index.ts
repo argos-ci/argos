@@ -4,6 +4,7 @@ import { Router } from "express";
 import { stringify } from "yaml";
 
 import { createBuild } from "./handlers/createBuild";
+import { exchangeCliToken } from "./handlers/exchangeCliToken";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getBuild } from "./handlers/getBuild";
@@ -39,6 +40,7 @@ router.get("/openapi.yaml", (_req, res) => {
 
 // Register the handlers.
 registerHandler(router, createBuild);
+registerHandler(router, exchangeCliToken);
 registerHandler(router, finalizeBuilds);
 registerHandler(router, getAuthProject);
 registerHandler(router, getBuild);
