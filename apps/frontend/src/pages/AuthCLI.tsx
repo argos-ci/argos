@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { CheckCircleIcon, TerminalIcon } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { graphql } from "@/gql";
@@ -32,7 +32,6 @@ const MeQuery = graphql(`
 const CreateCLITokenMutation = graphql(`
   mutation AuthCLI_CreateToken($input: CreateUserAccessTokenInput!) {
     createUserAccessToken(input: $input) {
-      token
       code
     }
   }
@@ -166,6 +165,7 @@ const InvalidRequestPage = () => (
 
 export function Component() {
   const [searchParams] = useSearchParams();
+  const { pathname } = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const port = searchParams.get("port");
   const state = searchParams.get("state");
@@ -176,7 +176,7 @@ export function Component() {
   }
 
   if (!isLoggedIn) {
-    const returnUrl = `/auth/cli?port=${encodeURIComponent(port)}&state=${encodeURIComponent(state)}&pkce=${encodeURIComponent(codeChallenge)}`;
+    const returnUrl = `${pathname}?${searchParams.toString()}`;
     return (
       <Navigate to={`/login?r=${encodeURIComponent(returnUrl)}`} replace />
     );

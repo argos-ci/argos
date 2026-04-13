@@ -32,7 +32,7 @@ export const typeDefs = gql`
     accessToken: UserAccessToken!
     "The token value, only returned once at creation"
     token: String!
-    "PKCE authorization code, present when codeChallenge was provided. Exchange it for the token via POST /auth/cli/token."
+    "PKCE authorization code, present for CLI tokens. Exchange it for the token via POST /auth/cli/token."
     code: String
   }
 
@@ -41,7 +41,7 @@ export const typeDefs = gql`
     accountIds: [ID!]!
     expireInDays: Int
     source: UserAccessTokenSource
-    "PKCE S256 code challenge (base64url-encoded SHA-256 of the code_verifier). When provided, a short-lived authorization code is returned in the payload."
+    "PKCE S256 code challenge (base64url-encoded SHA-256 of the code_verifier). Required when source is cli."
     codeChallenge: String
   }
 
@@ -92,6 +92,12 @@ export const resolvers: IResolvers = {
         throw badUserInput("Token name cannot be empty");
       }
 
+      const tokenSource = source ?? "user";
+
+      if (tokenSource === "cli" && !codeChallenge) {
+        throw badUserInput("codeChallenge is required for CLI tokens");
+      }
+
       const accessibleAccounts = await getAccessibleAccounts({
         accountIds,
         userId,
@@ -117,7 +123,7 @@ export const resolvers: IResolvers = {
             token: hashToken(token),
             lastUsedAt: null,
             expireAt,
-            source: source ?? "user",
+            source: tokenSource,
           },
         );
 
@@ -131,11 +137,16 @@ export const resolvers: IResolvers = {
         return userAccessToken;
       });
 
-      const code = codeChallenge
-        ? await createCliAuthCode({ token, codeChallenge })
-        : null;
+      const code =
+        tokenSource === "cli" && codeChallenge
+          ? await createCliAuthCode({ token, codeChallenge })
+          : null;
 
-      return { accessToken: userAccessToken, token, code };
+      return {
+        accessToken: userAccessToken,
+        token: tokenSource === "cli" ? "" : token,
+        code,
+      };
     },
     updateUserAccessToken: async (_root, args, ctx) => {
       if (!ctx.auth) {
