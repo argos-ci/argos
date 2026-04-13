@@ -19,7 +19,9 @@ export function Component() {
 
           <div className="text-center">
             <h1 className="text-2xl font-semibold">Authorization successful</h1>
-            <p className="text-low mt-1 text-sm">You may close this tab.</p>
+            <p className="text-primary-low mt-1 text-base font-semibold">
+              You can close this tab.
+            </p>
           </div>
 
           <Card className="w-full">
