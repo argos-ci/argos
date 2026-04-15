@@ -7,6 +7,7 @@
     "Connection": [
       "AutomationRuleConnection",
       "BuildConnection",
+      "DeploymentConnection",
       "GhApiInstallationConnection",
       "GhApiRepositoryConnection",
       "GlApiNamespaceConnection",
@@ -29,6 +30,7 @@
       "AutomationRun",
       "Build",
       "BuildReview",
+      "Deployment",
       "GhApiInstallation",
       "GhApiInstallationAccount",
       "GhApiRepository",

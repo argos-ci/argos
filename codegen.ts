@@ -30,6 +30,7 @@ const config: CodegenConfig = {
             "../../database/models/index.js#AutomationActionRun",
           Build: "../../database/models/index.js#Build",
           BuildReview: "../../database/models/index.js#BuildReview",
+          Deployment: "../../database/models/index.js#Deployment",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
           GithubAccount: "../../database/models/index.js#GithubAccount",
