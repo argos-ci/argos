@@ -133,18 +133,14 @@ function DeploymentRow(props: {
           </div>
           <div className="text-low flex items-center gap-[0.4em]">
             <GlobeIcon className="size-3 shrink-0" />
-            {deployment.url ? (
-              <Link
-                className="inline-flex max-w-full min-w-0 items-center"
-                variant="neutral"
-                target="_blank"
-                href={deployment.url}
-              >
-                <Truncable>{deployment.url}</Truncable>
-              </Link>
-            ) : (
-              <span>No deployment URL</span>
-            )}
+            <Link
+              className="inline-flex max-w-full min-w-0 items-center"
+              variant="neutral"
+              target="_blank"
+              href={deployment.url}
+            >
+              <Truncable>{deployment.url}</Truncable>
+            </Link>
           </div>
         </div>
       </div>
