@@ -15,21 +15,41 @@ describe("deployment aliases", () => {
     expect(isInternalDeploymentAlias("preview")).toBe(false);
   });
 
-  it("finds a reserved alias in the generated aliases", () => {
+  it("finds a reserved alias in a list of aliases", () => {
+    expect(
+      findInternalDeploymentAlias([
+        {
+          type: "branch",
+          alias: "preview",
+        },
+        {
+          type: "domain",
+          alias: "dev",
+        },
+      ]),
+    ).toEqual({
+      type: "domain",
+      alias: "dev",
+    });
+  });
+
+  it("generates only the branch alias for a deployment", () => {
     const deployment = {
-      slug: "dev",
+      slug: "deployment-1",
       branch: "main",
     } as Deployment;
 
-    const aliases = getDeploymentAliases({
-      accountSlug: "argos",
-      projectName: "docs",
-      deployment,
-    });
-
-    expect(findInternalDeploymentAlias(aliases)).toEqual({
-      type: "slug",
-      alias: "dev",
-    });
+    expect(
+      getDeploymentAliases({
+        accountSlug: "argos",
+        projectName: "docs",
+        deployment,
+      }),
+    ).toEqual([
+      {
+        type: "branch",
+        alias: "docs-main-argos",
+      },
+    ]);
   });
 });

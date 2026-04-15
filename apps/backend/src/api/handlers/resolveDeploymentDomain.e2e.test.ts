@@ -44,6 +44,20 @@ describe("resolveDeploymentDomain", () => {
       });
   });
 
+  test("resolves a deployment slug from a hostname", async ({ deployment }) => {
+    await request(app)
+      .get(`/deployments/resolve/${deployment.slug}.dev.argos-ci.live`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.headers["cache-control"]).toBe(
+          "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+        );
+        expect(res.body).toEqual({
+          deploymentId: deployment.id,
+        });
+      });
+  });
+
   test("returns 404 when the domain is unknown", async () => {
     await request(app)
       .get("/deployments/resolve/unknown.dev.argos-ci.live")

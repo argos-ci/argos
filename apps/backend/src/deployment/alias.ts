@@ -3,7 +3,7 @@ import { slugify } from "@argos/util/slug";
 import type { Deployment } from "@/database/models";
 
 type DeploymentAlias = {
-  type: "slug" | "branch" | "domain";
+  type: "branch" | "domain";
   alias: string;
 };
 
@@ -31,10 +31,6 @@ export function getDeploymentAliases(input: {
 }): DeploymentAlias[] {
   const { accountSlug, projectName, deployment } = input;
   return [
-    {
-      type: "slug",
-      alias: deployment.slug,
-    },
     {
       type: "branch",
       alias: slugify(`${projectName}-${deployment.branch}-${accountSlug}`),

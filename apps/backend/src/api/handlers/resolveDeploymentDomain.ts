@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import config from "@/config";
-import { DeploymentAlias } from "@/database/models/DeploymentAlias";
+import { Deployment } from "@/database/models/Deployment";
 import { boom } from "@/util/error";
 
 import { invalidParameters, notFound, serverError } from "../schema/util/error";
@@ -75,18 +75,28 @@ export const resolveDeploymentDomain: CreateAPIHandler = ({ get }) => {
       throw boom(400, "Invalid deployment domain");
     }
 
-    const deploymentAlias = await DeploymentAlias.query()
-      .whereIn("alias", aliases)
+    const deployment = await Deployment.query()
+      .select("deployments.id")
+      .leftJoin(
+        "deployment_aliases",
+        "deployment_aliases.deploymentId",
+        "deployments.id",
+      )
+      .where((query) => {
+        query
+          .whereIn("deployment_aliases.alias", aliases)
+          .orWhereIn("deployments.slug", aliases);
+      })
       .first();
 
-    if (!deploymentAlias) {
+    if (!deployment) {
       throw boom(404, "Deployment domain not found");
     }
 
     res.set("Cache-Control", CACHE_CONTROL);
     res.set("CDN-Cache-Control", CACHE_CONTROL);
     res.send({
-      deploymentId: deploymentAlias.deploymentId,
+      deploymentId: deployment.id,
     });
   });
 };
