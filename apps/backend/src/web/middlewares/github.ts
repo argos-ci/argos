@@ -16,9 +16,11 @@ import { asyncHandler } from "../util";
 function createWebhooksHandler(input: {
   app: GithubInstallation["app"];
   secret: string;
+  fallbackSecret?: string;
 }) {
   const webhooks = new Webhooks({
     secret: input.secret,
+    additionalSecrets: input.fallbackSecret ? [input.fallbackSecret] : [],
   });
 
   webhooks.onAny(async (event) => {
@@ -38,6 +40,7 @@ const mainMiddleware = createNodeMiddleware(
   createWebhooksHandler({
     app: "main",
     secret: config.get("github.webhookSecret"),
+    fallbackSecret: config.get("github.fallbackWebhookSecret"),
   }),
   { path: "/github/event-handler" },
 );
@@ -50,6 +53,7 @@ const lightMiddleware = createNodeMiddleware(
   createWebhooksHandler({
     app: "light",
     secret: config.get("githubLight.webhookSecret"),
+    fallbackSecret: config.get("githubLight.fallbackWebhookSecret"),
   }),
   { path: "/github-light/event-handler" },
 );
