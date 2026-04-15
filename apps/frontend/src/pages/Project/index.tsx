@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { useFlag } from "@reflag/react-sdk";
 import { Outlet } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -39,14 +40,19 @@ function ProjectTabs(props: {
   children: React.ReactNode;
 }) {
   const { account, children, permissions } = props;
+  const deploymentsFlag = useFlag("deployments");
   const isTeam = account.__typename === "Team";
   const showAutomationsTab =
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
+  const showDeploymentsTab =
+    !deploymentsFlag.isLoading && deploymentsFlag.isEnabled;
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
-        <TabLink href="deployments">Deployments</TabLink>
+        {showDeploymentsTab && (
+          <TabLink href="deployments">Deployments</TabLink>
+        )}
         <TabLink href="tests">Tests</TabLink>
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>

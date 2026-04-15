@@ -30,22 +30,24 @@ export function HeadlessLink({
   ...props
 }: HeadlessLinkProps) {
   const inLink = use(LinkContext);
-  if (inLink) {
+  const isExternal =
+    external !== undefined
+      ? external
+      : typeof children !== "function" && target === "_blank";
+
+  if (inLink || !props.href) {
     invariant(typeof children !== "function");
     return (
       <FakeLink
         className={clsx("rac-focus", className)}
         href={props.href}
         target={target}
+        isExternal={isExternal}
       >
         {children}
       </FakeLink>
     );
   }
-  const isExternal =
-    external !== undefined
-      ? external
-      : typeof children !== "function" && target === "_blank";
   return (
     <RACLink
       ref={ref}
@@ -61,7 +63,7 @@ export function HeadlessLink({
             {isExternal ? (
               <>
                 {content}
-                <ExternalLinkIcon className="mb-0.5 ml-1 inline size-[1em]" />
+                <ExternalIndicator />
               </>
             ) : (
               content
@@ -76,7 +78,8 @@ export function HeadlessLink({
 function getLinkClassName(props: Pick<LinkProps, "variant">) {
   const { variant = "primary" } = props;
   return clsx(
-    "rac-focus no-underline hover:underline cursor-pointer",
+    "rac-focus no-underline",
+    "not-data-disabled:hover:underline no-data-disabled:cursor-pointer",
     { neutral: "text-low", primary: "text-primary-low" }[variant],
   );
 }
@@ -117,13 +120,30 @@ function FakeLink({
   ref,
   href,
   target = "_self",
+  isExternal = false,
+  children,
   ...props
 }: React.ComponentPropsWithRef<"span"> & {
   href: string | undefined;
   target?: HTMLAttributeAnchorTarget;
+  isExternal?: boolean;
 }) {
+  const content =
+    isExternal && href ? (
+      <>
+        {children}
+        <ExternalIndicator />
+      </>
+    ) : (
+      children
+    );
+
   if (!href) {
-    return <span ref={ref} {...props} />;
+    return (
+      <span ref={ref} data-disabled="" {...props}>
+        {content}
+      </span>
+    );
   }
   return (
     <span
@@ -135,6 +155,12 @@ function FakeLink({
         window.open(href, target)?.focus();
       }}
       {...props}
-    />
+    >
+      {content}
+    </span>
   );
+}
+
+function ExternalIndicator() {
+  return <ExternalLinkIcon className="mb-0.5 ml-[0.4em] inline size-[1em]" />;
 }

@@ -12,7 +12,6 @@ import {
   type QueryRef,
 } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
 import { BoxesIcon } from "lucide-react";
@@ -38,7 +37,6 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
@@ -54,6 +52,7 @@ import {
 } from "./BuildStatusFilter";
 import { BuildTypeFilter, BuildTypeFilterParser } from "./BuildTypeFilter";
 import { GettingStarted } from "./GettingStarted";
+import { ProjectBranchLink, ProjectCommitLink } from "./ProjectGitLink";
 import { useProjectOutletContext } from "./ProjectOutletContext";
 import { useProjectParams, type ProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
@@ -179,35 +178,19 @@ function BuildRow({
       <div className="relative hidden w-32 flex-col gap-1 text-xs md:flex">
         {build.branch && (
           <div>
-            <Link
-              className="inline-flex max-w-full items-center gap-2"
-              variant="neutral"
-              target="_blank"
-              href={
-                project.repository
-                  ? `${project.repository.url}/tree/${build.branch}`
-                  : undefined
-              }
-            >
-              <GitBranchIcon className="size-3 shrink-0" />
-              <Truncable>{build.branch}</Truncable>
-            </Link>
+            <ProjectBranchLink
+              className="inline-flex max-w-full items-center"
+              repository={project.repository}
+              branch={build.branch}
+            />
           </div>
         )}
         <div>
-          <Link
-            className="inline-flex max-w-full items-center gap-2"
-            variant="neutral"
-            target="_blank"
-            href={
-              project.repository
-                ? `${project.repository.url}/commit/${build.commit}`
-                : undefined
-            }
-          >
-            <GitCommitIcon className="size-3 shrink-0" />
-            <span className="truncate">{build.commit.slice(0, 7)}</span>
-          </Link>
+          <ProjectCommitLink
+            className="inline-flex max-w-full items-center"
+            repository={project.repository}
+            commit={build.commit}
+          />
         </div>
       </div>
       <div

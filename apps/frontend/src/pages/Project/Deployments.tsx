@@ -1,14 +1,9 @@
 import { useEffect, useRef, useTransition } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
+import { useFlag } from "@reflag/react-sdk";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  BoxesIcon,
-  ExternalLinkIcon,
-  GlobeIcon,
-  RocketIcon,
-} from "lucide-react";
+import { BoxesIcon, GlobeIcon, RocketIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
@@ -30,6 +25,7 @@ import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import { NotFound } from "../NotFound";
+import { ProjectBranchLink, ProjectCommitLink } from "./ProjectGitLink";
 import { useProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
 
@@ -120,52 +116,26 @@ function DeploymentRow(props: {
         </Chip>
       </div>
       <div className="min-w-0 grow">
-        <div className="flex flex-col gap-1">
-          {deployment.branch ? (
-            <div className="flex items-center gap-2">
-              <GitBranchIcon className="text-low size-3 shrink-0" />
-              <Link
-                className="inline-flex max-w-full min-w-0"
-                variant="neutral"
-                target="_blank"
-                href={
-                  project.repository
-                    ? `${project.repository.url}/tree/${deployment.branch}`
-                    : undefined
-                }
-              >
-                <Truncable>{deployment.branch}</Truncable>
-              </Link>
-            </div>
-          ) : (
-            <div className="text-low text-xs">No branch</div>
-          )}
-          {deployment.commitSha ? (
-            <div className="flex items-center gap-2">
-              <GitCommitIcon className="text-low size-3 shrink-0" />
-              <Link
-                className="inline-flex items-center gap-2"
-                variant="neutral"
-                target="_blank"
-                href={
-                  project.repository
-                    ? `${project.repository.url}/commit/${deployment.commitSha}`
-                    : undefined
-                }
-              >
-                <span className="truncate font-mono text-xs">
-                  {deployment.commitSha.slice(0, 7)}
-                </span>
-              </Link>
-            </div>
-          ) : (
-            <div className="text-low text-xs">No commit SHA</div>
-          )}
-          <div className="text-low flex items-center gap-2 text-xs">
-            <ExternalLinkIcon className="size-3 shrink-0" />
+        <div className="flex flex-col gap-1 text-xs">
+          <div>
+            <ProjectBranchLink
+              className="inline-flex max-w-full items-center"
+              repository={project.repository}
+              branch={deployment.branch}
+            />
+          </div>
+          <div>
+            <ProjectCommitLink
+              className="inline-flex max-w-full items-center"
+              repository={project.repository}
+              commit={deployment.commitSha}
+            />
+          </div>
+          <div className="text-low flex items-center gap-[0.4em]">
+            <GlobeIcon className="size-3 shrink-0" />
             {deployment.url ? (
               <Link
-                className="inline-flex max-w-full min-w-0"
+                className="inline-flex max-w-full min-w-0 items-center"
                 variant="neutral"
                 target="_blank"
                 href={deployment.url}
@@ -372,6 +342,15 @@ function PageContent() {
 export function Component() {
   const params = useProjectParams();
   invariant(params, "it is a project route");
+  const deploymentsFlag = useFlag("deployments");
+
+  if (deploymentsFlag.isLoading) {
+    return null;
+  }
+
+  if (!deploymentsFlag.isEnabled) {
+    return <NotFound />;
+  }
 
   return (
     <Page>

@@ -21,9 +21,9 @@ export const typeDefs = gql`
     createdAt: DateTime!
     status: DeploymentStatus!
     environment: DeploymentEnvironment!
-    branch: String
-    commitSha: String
-    url: String
+    branch: String!
+    commitSha: String!
+    url: String!
   }
 
   type DeploymentConnection implements Connection {
