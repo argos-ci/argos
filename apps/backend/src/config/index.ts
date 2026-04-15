@@ -189,6 +189,11 @@ export function createConfig() {
         default: "development",
         env: "GITHUB_WEBHOOK_SECRET",
       },
+      fallbackWebhookSecret: {
+        format: String,
+        default: "",
+        env: "GITHUB_WEBHOOK_FALLBACK_SECRET",
+      },
       marketplaceUrl: {
         doc: "GitHub Marketplace URL",
         format: String,
@@ -224,6 +229,11 @@ export function createConfig() {
         format: String,
         default: "development",
         env: "GITHUB_LIGHT_WEBHOOK_SECRET",
+      },
+      fallbackWebhookSecret: {
+        format: String,
+        default: "",
+        env: "GITHUB_LIGHT_WEBHOOK_FALLBACK_SECRET",
       },
     },
     gitlab: {
