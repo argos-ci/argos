@@ -1,4 +1,10 @@
+import { z } from "zod";
+
 import config from "@/config";
+
+const CloudflarePurgeResponseSchema = z.object({
+  success: z.literal(true),
+});
 
 function getResolveDeploymentDomainUrls(alias: string): string[] {
   const apiBaseUrl = config.get("api.baseUrl");
@@ -46,8 +52,10 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
     );
   }
 
-  const body = (await response.json()) as { success?: unknown };
-  if (body.success !== true) {
-    throw new Error(`Cloudflare purge failed for alias "${alias}"`);
+  const parsed = CloudflarePurgeResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new Error(
+      `Cloudflare purge returned an invalid response for alias "${alias}"`,
+    );
   }
 }

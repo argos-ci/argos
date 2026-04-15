@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { BatchGetCommand } from "@aws-sdk/lib-dynamodb";
+import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
@@ -129,7 +129,6 @@ async function writeDeploymentFiles(
   deploymentId: string,
   files: z.infer<typeof FileEntrySchema>[],
 ) {
-  const { BatchWriteCommand } = await import("@aws-sdk/lib-dynamodb");
   const dynamo = getDynamoDBClient();
   const tableName = getTableName("deployment_files");
 

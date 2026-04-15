@@ -463,12 +463,6 @@ export function createConfig() {
         default: "dev.argos-ci.live",
         env: "DEPLOYMENTS_BASE_DOMAIN",
       },
-      distributionId: {
-        doc: "CloudFront distribution ID",
-        format: String,
-        default: "E23BM6MKO7C9A6",
-        env: "DEPLOYMENTS_DISTRIBUTION_ID",
-      },
       cloudflare: {
         zoneId: {
           doc: "Cloudflare zone ID used to purge deployment resolution cache",
