@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import pRetry from "p-retry";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -97,27 +98,55 @@ async function getExistingHashes(hashes: Set<string>): Promise<Set<string>> {
     batches.push(hashesArray.slice(i, i + batchSize));
   }
 
-  const results = await Promise.all(
-    batches.map((batch) =>
-      dynamo.send(
-        new BatchGetCommand({
-          RequestItems: {
-            [tableName]: {
-              Keys: batch.map((hash) => ({ content_hash: hash })),
-              ProjectionExpression: "content_hash",
-            },
-          },
-        }),
-      ),
-    ),
-  );
+  await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        await pRetry(
+          async () => {
+            const request = batch.map((hash) => ({ content_hash: hash }));
+            const result = await dynamo.send(
+              new BatchGetCommand({
+                RequestItems: {
+                  [tableName]: {
+                    Keys: request,
+                    ProjectionExpression: "content_hash",
+                  },
+                },
+              }),
+            );
 
-  for (const result of results) {
-    const responses = result.Responses?.[tableName] ?? [];
-    for (const item of responses) {
-      existing.add(item["content_hash"] as string);
-    }
-  }
+            for (const item of result.Responses?.[tableName] ?? []) {
+              existing.add(item["content_hash"] as string);
+            }
+
+            const unprocessedKeys =
+              result.UnprocessedKeys?.[tableName]?.Keys ?? [];
+            if (unprocessedKeys.length > 0) {
+              batch = unprocessedKeys.map((key) => {
+                const contentHash = key["content_hash"];
+                invariant(
+                  typeof contentHash === "string",
+                  "Invalid content hash",
+                );
+                return contentHash;
+              });
+              throw new Error(
+                `DynamoDB returned ${unprocessedKeys.length} unprocessed file keys`,
+              );
+            }
+          },
+          {
+            retries: 5,
+          },
+        );
+      } catch {
+        throw boom(
+          500,
+          `Failed to read existing file hashes after retries (${batch.length} unprocessed keys remain)`,
+        );
+      }
+    }),
+  );
 
   return existing;
 }
@@ -136,22 +165,48 @@ async function writeDeploymentFiles(
   const batchSize = 25;
   for (let i = 0; i < files.length; i += batchSize) {
     const batch = files.slice(i, i + batchSize);
-    await dynamo.send(
-      new BatchWriteCommand({
-        RequestItems: {
-          [tableName]: batch.map((file) => ({
-            PutRequest: {
-              Item: {
-                deployment_id: deploymentId,
-                path: file.path,
-                content_hash: file.hash,
-                content_type: file.contentType,
-              },
-            },
-          })),
+    let requests = batch.map((file) => ({
+      PutRequest: {
+        Item: {
+          deployment_id: deploymentId,
+          path: file.path,
+          content_hash: file.hash,
+          content_type: file.contentType,
         },
-      }),
-    );
+      },
+    }));
+
+    try {
+      await pRetry(
+        async () => {
+          const result = await dynamo.send(
+            new BatchWriteCommand({
+              RequestItems: {
+                [tableName]: requests,
+              },
+            }),
+          );
+
+          requests =
+            (result.UnprocessedItems?.[tableName] as
+              | typeof requests
+              | undefined) ?? [];
+          if (requests.length > 0) {
+            throw new Error(
+              `DynamoDB returned ${requests.length} unprocessed deployment files`,
+            );
+          }
+        },
+        {
+          retries: 5,
+        },
+      );
+    } catch {
+      throw boom(
+        500,
+        `Failed to persist deployment files after retries (${requests.length} unprocessed items remain)`,
+      );
+    }
   }
 }
 

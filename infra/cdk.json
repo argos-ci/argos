@@ -2,9 +2,6 @@
   "app": "node scripts/app.ts",
   "context": {
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
-    "@aws-cdk/core:checkSecretUsage": true,
-    "hostedZoneId": "Z01904561OQU3LI4FGK80",
-    "deploymentDomain": "deploy.dev.argos-ci.com",
-    "devUserArns": "arn:aws:iam::385220074405:user/argos-ci-development"
+    "@aws-cdk/core:checkSecretUsage": true
   }
 }

@@ -1,5 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 import { BatchWriteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import pRetry from "p-retry";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -92,22 +93,48 @@ async function registerFileHashes(
   const batchSize = 25;
   for (let i = 0; i < unique.length; i += batchSize) {
     const batch = unique.slice(i, i + batchSize);
-    await dynamo.send(
-      new BatchWriteCommand({
-        RequestItems: {
-          [tableName]: batch.map((file) => ({
-            PutRequest: {
-              Item: {
-                content_hash: file.content_hash,
-                s3_key: `content/${file.content_hash}`,
-                content_type: file.content_type,
-                created_at: new Date().toISOString(),
-              },
-            },
-          })),
+    let requests = batch.map((file) => ({
+      PutRequest: {
+        Item: {
+          content_hash: file.content_hash,
+          s3_key: `content/${file.content_hash}`,
+          content_type: file.content_type,
+          created_at: new Date().toISOString(),
         },
-      }),
-    );
+      },
+    }));
+
+    try {
+      await pRetry(
+        async () => {
+          const result = await dynamo.send(
+            new BatchWriteCommand({
+              RequestItems: {
+                [tableName]: requests,
+              },
+            }),
+          );
+
+          requests =
+            (result.UnprocessedItems?.[tableName] as
+              | typeof requests
+              | undefined) ?? [];
+          if (requests.length > 0) {
+            throw new Error(
+              `DynamoDB returned ${requests.length} unprocessed file hashes`,
+            );
+          }
+        },
+        {
+          retries: 5,
+        },
+      );
+    } catch {
+      throw boom(
+        500,
+        `Failed to register file hashes after retries (${requests.length} unprocessed items remain)`,
+      );
+    }
   }
 }
 
@@ -181,7 +208,7 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { project } = auth;
     const { deploymentId } = req.ctx.params;
 
-    const deployment = await Deployment.query().findById(deploymentId);
+    let deployment = await Deployment.query().findById(deploymentId);
     if (!deployment) {
       throw boom(404, "Deployment not found");
     }
@@ -200,9 +227,9 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     // Register hashes into the files table for deduplication
     await registerFileHashes(files);
 
-    await Promise.all([
+    [deployment] = await Promise.all([
       // Update deployment status to ready
-      Deployment.query().findById(deploymentId).patch({
+      deployment.$query().patchAndFetch({
         status: "ready",
       }),
       project.$fetchGraph("account"),
@@ -211,7 +238,6 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { account } = project;
     invariant(account, "Account relation not fetched");
 
-    // If production, update the project_deployments table
     const aliases = await updateDeploymentAliases({
       deployment,
       project,

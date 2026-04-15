@@ -13,15 +13,23 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import type { Construct } from "constructs";
+import { z } from "zod";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-interface ArgosDeploymentStackProps extends cdk.StackProps {
-  stage: "development" | "production";
-  hostedZoneId: string;
-  apiBaseUrl: string;
-  devUserArns?: string[];
-}
+export const ArgosDeploymentStackPropsSchema = z.object({
+  stage: z.enum(["development", "production"]).default("development"),
+  hostedZoneId: z.string(),
+  apiBaseUrl: z.url().default("https://foal-great-publicly.ngrok-free.app"),
+  devUserArns: z.array(z.string().min(1)),
+});
+
+type ArgosDeploymentStackOwnProps = z.infer<
+  typeof ArgosDeploymentStackPropsSchema
+>;
+
+interface ArgosDeploymentStackProps
+  extends cdk.StackProps, ArgosDeploymentStackOwnProps {}
 
 const STAGE_DOMAINS: Record<ArgosDeploymentStackProps["stage"], string> = {
   development: "dev.argos-ci.live",
@@ -98,7 +106,6 @@ export class ArgosDeploymentStack extends cdk.Stack {
         pointInTimeRecoverySpecification: {
           pointInTimeRecoveryEnabled: isProduction,
         },
-        timeToLiveAttribute: "expires_at",
       },
     );
 

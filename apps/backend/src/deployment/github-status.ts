@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { GithubRepository, Project } from "@/database/models";
 import type { Deployment } from "@/database/models/Deployment";
-import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import { getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
 
 /**
@@ -43,21 +43,13 @@ export async function postDeploymentCommitStatus(params: {
     return;
   }
 
-  try {
-    await createGhCommitStatus(octokit, {
-      owner: githubRepository.githubAccount.login,
-      repo: githubRepository.name,
-      sha: deployment.commitSha,
-      state: "success",
-      target_url: deployment.url,
-      context: `argos/deployment/${project.name}`,
-      description: "Storybook preview ready",
-    });
-  } catch (error: unknown) {
-    // Ignore 422 (commit not found, e.g. after force-push) and 403 (archived repo)
-    if (checkErrorStatus(422, error) || checkErrorStatus(403, error)) {
-      return;
-    }
-    throw error;
-  }
+  await createGhCommitStatus(octokit, {
+    owner: githubRepository.githubAccount.login,
+    repo: githubRepository.name,
+    sha: deployment.commitSha,
+    state: "success",
+    target_url: deployment.url,
+    context: `argos/deployment/${project.name}`,
+    description: "Storybook preview ready",
+  });
 }

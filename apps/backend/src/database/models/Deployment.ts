@@ -50,7 +50,7 @@ export class Deployment extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Project,
         join: {
-          from: "storybook_deployments.projectId",
+          from: "deployments.projectId",
           to: "projects.id",
         },
       },

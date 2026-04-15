@@ -644,6 +644,9 @@ importers:
       aws-cdk:
         specifier: ^2.1118.0
         version: 2.1118.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
 
   packages/config-types: {}
 

@@ -1,34 +1,24 @@
 import * as cdk from "aws-cdk-lib";
 
-import { ArgosDeploymentStack } from "../lib/deployment-stack.ts";
+import {
+  ArgosDeploymentStack,
+  ArgosDeploymentStackPropsSchema,
+} from "../lib/deployment-stack.ts";
 
 const app = new cdk.App();
 
-const stage = app.node.tryGetContext("stage") ?? "development";
-const hostedZoneId = app.node.tryGetContext("hostedZoneId");
-const apiBaseUrl =
-  process.env["API_BASEURL"] ??
-  app.node.tryGetContext("apiBaseUrl") ??
-  (stage === "production"
-    ? "https://api.argos-ci.com"
-    : "https://foal-great-publicly.ngrok-free.app");
+const props = ArgosDeploymentStackPropsSchema.parse({
+  stage: app.node.tryGetContext("stage"),
+  apiBaseUrl: app.node.tryGetContext("apiBaseUrl"),
+  hostedZoneId: app.node.tryGetContext("hostedZoneId"),
+  devUserArns: (app.node.tryGetContext("devUserArns") ?? "")
+    .split(",")
+    .map((s: string) => s.trim())
+    .filter(Boolean),
+});
 
-if (!hostedZoneId) {
-  throw new Error(
-    "Missing required context: hostedZoneId. Pass it with -c hostedZoneId=<id>",
-  );
-}
-
-const devUserArns = (app.node.tryGetContext("devUserArns") ?? "")
-  .split(",")
-  .map((s: string) => s.trim())
-  .filter(Boolean);
-
-new ArgosDeploymentStack(app, `argos-deployment-${stage}`, {
-  stage,
-  hostedZoneId,
-  apiBaseUrl,
-  devUserArns,
+new ArgosDeploymentStack(app, `argos-deployment-${props.stage}`, {
+  ...props,
   env: {
     account: process.env["CDK_DEFAULT_ACCOUNT"],
     region: "us-east-1",

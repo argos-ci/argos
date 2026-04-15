@@ -2,7 +2,6 @@
   "name": "@argos/root",
   "private": true,
   "scripts": {
-    "create-local-tables": "npx tsx scripts/create-local-tables.ts",
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "build": "turbo run build",
     "test": "vitest",

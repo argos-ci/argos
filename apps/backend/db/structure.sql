@@ -573,9 +573,9 @@ CREATE TABLE public.deployments (
     "projectId" bigint NOT NULL,
     status text DEFAULT 'pending'::text NOT NULL,
     environment text NOT NULL,
-    branch character varying(255),
-    "commitSha" character varying(255),
-    slug character varying(255),
+    branch character varying(255) NOT NULL,
+    "commitSha" character varying(255) NOT NULL,
+    slug character varying(255) NOT NULL,
     "githubPullRequestId" bigint,
     CONSTRAINT deployments_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
     CONSTRAINT deployments_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'ready'::text, 'error'::text])))
