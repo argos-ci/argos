@@ -1,11 +1,14 @@
-import { ComponentProps, memo } from "react";
+import { ComponentProps, memo, useState } from "react";
 import clsx from "clsx";
 import {
+  CheckIcon,
   EllipsisIcon,
   RefreshCcwIcon,
+  SparklesIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "lucide-react";
+import { useClipboard } from "use-clipboard-copy";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
@@ -23,6 +26,7 @@ import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
 
+import { IconButton } from "../../../ui/IconButton";
 import { checkDiffCanBeReviewed, useBuildDiffState } from "../BuildDiffState";
 import {
   BuildReviewButton,
@@ -38,8 +42,10 @@ const _BuildFragment = graphql(`
     type
     mode
     mergeQueue
+    number
     pullRequest {
       id
+      url
       ...PullRequestButton_PullRequest
     }
     ...BuildStatusChip_Build
@@ -155,7 +161,7 @@ function LoggedReviewButton(props: {
     };
   })();
   return (
-    <>
+    <div className="flex items-center gap-4">
       <Tooltip content={tooltip}>
         <div className="flex flex-col gap-1.5">
           <Chip scale="xs" color={color} className="tabular-nums" icon={icon}>
@@ -171,8 +177,16 @@ function LoggedReviewButton(props: {
           />
         </div>
       </Tooltip>
-      <BuildReviewButton project={props.project} />
-    </>
+      <div className="flex items-center gap-1">
+        <BuildReviewButton project={props.project} />
+        <CopyBuildReviewPromptButton
+          build={props.build}
+          buildNumber={props.build.number}
+          accountSlug={props.project.account.slug}
+          projectName={props.project.name}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -193,6 +207,112 @@ const _ProjectFragment = graphql(`
     ...BuildReviewButton_Project
   }
 `);
+
+function createBuildReviewPrompt(input: {
+  buildUrl: string;
+  pullRequest?: {
+    title?: string | null;
+    number: number;
+    url: string;
+    state?: string | null;
+    draft?: boolean | null;
+    merged?: boolean | null;
+    creator?: { login: string; name?: string | null } | null;
+  } | null;
+}) {
+  const pullRequest = input.pullRequest;
+  const prAuthor = pullRequest?.creator
+    ? pullRequest.creator.name
+      ? `${pullRequest.creator.name} (@${pullRequest.creator.login})`
+      : `@${pullRequest.creator.login}`
+    : null;
+
+  return `\
+Review this Argos build and submit the Argos review if possible.
+
+Use $argos-pr-review if available.
+
+Argos build: ${input.buildUrl}
+Pull request: ${pullRequest ? pullRequest.url : "not linked in Argos"}
+${pullRequest?.title ? `PR title: ${pullRequest.title}` : ""}
+${prAuthor ? `PR author: ${prAuthor}` : ""}
+
+Auth:
+- \`ARGOS_TOKEN\` or \`--token\` is required to inspect the build. If not available, ask the user to provide one and stop if they do not.
+- Creating a review requires a personal Argos access token, not a project/CI token.
+- Look for a personal token in \`~/.config/argos-ci/config.json\` under \`token\`.
+- Do not assume \`ARGOS_TOKEN\` is personal. If no personal token is available, return the conclusion and evidence without submitting.
+
+Review:
+- Use the Argos CLI (@argos-ci/cli).
+- Inspect the build status first; do not approve pending, failed, aborted, or incomplete builds.
+- If the build cannot be inspected with complete Argos data, do not submit a review.
+- Inspect the snapshots that need review.
+- Group duplicate visual changes and inspect one representative unless browser-specific differences matter.
+- Infer the intended change from the PR title, branch, description, comments, commit messages, code diff, and any linked ticket or issue that is accessible.
+- Compare base, head, and diff images.
+- Approve only if the visual changes are intentional and stable.
+- Request changes for regressions, flakes, incomplete builds, or insufficient evidence.
+
+Before submitting, summarize:
+- inferred intent
+- diffs reviewed
+- evidence
+- conclusion: \`approve\` or \`request-changes\`
+
+If blocked, report the exact blocker.
+`;
+}
+
+function CopyBuildReviewPromptButton(props: {
+  buildNumber: number;
+  accountSlug: string;
+  projectName: string;
+  build: DocumentType<typeof _BuildFragment>;
+}) {
+  const clipboard = useClipboard({ copiedTimeout: 2000 });
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const buildPath = `${getProjectURL({
+    accountSlug: props.accountSlug,
+    projectName: props.projectName,
+  })}/builds/${props.buildNumber}`;
+  const buildUrl = new URL(buildPath, window.location.origin).toString();
+  const prompt = createBuildReviewPrompt({
+    buildUrl,
+    pullRequest: props.build.pullRequest,
+  });
+  const copy = () => {
+    clipboard.copy(prompt);
+  };
+
+  return (
+    <Tooltip
+      content={clipboard.copied ? "Prompt copied!" : "Copy AI review prompt"}
+      isOpen={clipboard.copied || isTooltipOpen}
+      onOpenChange={setIsTooltipOpen}
+    >
+      <IconButton
+        variant="outline"
+        aria-label="Copy AI review prompt"
+        onPress={copy}
+      >
+        <span className="relative size-4 overflow-hidden">
+          <span
+            className={clsx(
+              "text-low absolute flex flex-col transition [&>svg]:size-4",
+              clipboard.copied && "-translate-y-4",
+            )}
+          >
+            <SparklesIcon
+              className={clsx("transition", clipboard.copied && "opacity-0")}
+            />
+            <CheckIcon />
+          </span>
+        </span>
+      </IconButton>
+    </Tooltip>
+  );
+}
 
 export const BuildHeader = memo(
   (props: {
