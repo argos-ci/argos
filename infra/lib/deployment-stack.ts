@@ -21,7 +21,7 @@ export const ArgosDeploymentStackPropsSchema = z.object({
   stage: z.enum(["development", "production"]).default("development"),
   hostedZoneId: z.string(),
   apiBaseUrl: z.url().default("https://foal-great-publicly.ngrok-free.app"),
-  appUserArns: z.array(z.string().min(1)),
+  appUserArns: z.array(z.string()).min(1),
 });
 
 type ArgosDeploymentStackOwnProps = z.infer<
