@@ -117,7 +117,7 @@ export function Component() {
           </PageHeaderContent>
         </PageHeader>
         <div className="relative max-w-2xl flex-1">
-          <Card>
+          <Card className="p-4">
             <ConnectRepository
               variant="import"
               disabled={loading}
