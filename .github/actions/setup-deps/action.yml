@@ -10,7 +10,7 @@ runs:
         corepack enable
 
     - name: Use Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version-file: .nvmrc
         cache: pnpm
