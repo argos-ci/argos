@@ -227,7 +227,7 @@ function handler<TMethod extends "get" | "post" | "put">(
         shouldHandleError: (error) => {
           // Capture 400 (to see validation errors) and 500+ errors
           if (error instanceof HTTPError) {
-            return error.statusCode === 400 || error.statusCode > 500;
+            return error.statusCode === 400 || error.statusCode >= 500;
           }
           // Capture all other errors
           return true;
