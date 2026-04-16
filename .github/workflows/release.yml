@@ -223,6 +223,8 @@ jobs:
             AWS_ACCESS_KEY_ID=/production/aws_access_key_id
             AWS_SECRET_ACCESS_KEY=/production/aws_secret_access_key
             DATABASE_URL=/production/database_url
+            DEPLOYMENTS_CLOUDFLARE_ZONE_ID=/production/deployments_cloudflare_zone_id
+            DEPLOYMENTS_CLOUDFLARE_API_TOKEN=/production/deployments_cloudflare_api_token
             DISCORD_WEBHOOK_URL=/production/discord_webhook_url
             GITHUB_APP_ID=/production/github_app_id
             GITHUB_APP_PRIVATE_KEY=/production/github_app_private_key
