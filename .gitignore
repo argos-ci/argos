@@ -31,3 +31,5 @@ tsconfig.tsbuildinfo
 # Storybook
 *storybook.log
 storybook-static
+# Claude
+.claude/settings.local.json
