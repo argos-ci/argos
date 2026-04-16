@@ -23,25 +23,26 @@ import { errorHandler, registerHandler } from "./util";
 const router: Router = Router();
 
 // CORS
-router.use(
-  cors({
-    // Allow the Swagger editor to access the OpenAPI schema
-    origin: ["https://editor.swagger.io", "https://editor-next.swagger.io"],
-  }),
-);
 
 router.get("/screenshot-metadata.json", (_req, res) => {
   res.json(ScreenshotMetadataJSONSchema);
 });
 
 // Expose the OpenAPI schema as YAML
-router.get("/openapi.yaml", (_req, res) => {
-  res.set("Content-Type", "text/yaml");
-  const yamlSchema = stringify(schema, {
-    aliasDuplicateObjects: false,
-  });
-  res.send(yamlSchema);
-});
+router.get(
+  "/openapi.yaml",
+  cors({
+    // Allow the Swagger editor to access the OpenAPI schema
+    origin: ["https://editor.swagger.io", "https://editor-next.swagger.io"],
+  }),
+  (_req, res) => {
+    res.set("Content-Type", "text/yaml");
+    const yamlSchema = stringify(schema, {
+      aliasDuplicateObjects: false,
+    });
+    res.send(yamlSchema);
+  },
+);
 
 // Register the handlers.
 registerHandler(router, createBuild);
