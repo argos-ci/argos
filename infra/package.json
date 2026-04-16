@@ -1,0 +1,27 @@
+{
+  "name": "@argos/infra",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "diff": "cdk diff",
+    "check-types": "tsc --noEmit",
+    "check-format": "prettier --check --cache .",
+    "lint": "eslint --max-warnings 0 ."
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1029.0",
+    "@aws-sdk/lib-dynamodb": "^3.1029.0",
+    "aws-cdk-lib": "^2.248.0",
+    "constructs": "^10.6.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
+    "@types/node": "^24.12.2",
+    "aws-cdk": "^2.1118.0",
+    "zod": "catalog:"
+  }
+}

@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - infra
 
 catalog:
   '@types/express': ^5.0.6

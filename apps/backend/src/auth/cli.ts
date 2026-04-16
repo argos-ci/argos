@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import z from "zod";
 
-import { generateRandomHexString } from "@/database/services/crypto";
+import { generateRandomString } from "@/database/services/crypto";
 import { getRedisClient } from "@/util/redis/client";
 
 /**
@@ -28,7 +28,7 @@ export async function createCliAuthCode(
   payload: CliAuthCodePayload,
 ): Promise<string> {
   const redis = await getRedisClient();
-  const code = generateRandomHexString(40);
+  const code = generateRandomString(40);
   await redis.set(getAuthCodeKey(code), JSON.stringify(payload), {
     expiration: {
       type: "PX",

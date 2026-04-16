@@ -8,6 +8,8 @@ export * from "./BuildMergeQueueGhPullRequest";
 export * from "./BuildNotification";
 export * from "./BuildReview";
 export * from "./BuildShard";
+export * from "./Deployment";
+export * from "./DeploymentAlias";
 export * from "./File";
 export * from "./GithubAccount";
 export * from "./GithubAccountMember";

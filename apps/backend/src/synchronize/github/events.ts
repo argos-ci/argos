@@ -20,7 +20,7 @@ import {
 } from "@/database/services/github";
 import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
 import { commentGithubPr, getInstallationOctokit } from "@/github";
-import { parsePullRequestData } from "@/github-pull-request/pull-request";
+import { parsePullRequestData } from "@/github-pull-request/remote";
 import parentLogger from "@/logger";
 
 import { synchronizeFromInstallationId } from "../helpers";

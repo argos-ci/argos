@@ -13,6 +13,7 @@
   },
   "sideEffects": false,
   "exports": {
+    "./package.json": "./package.json",
     "./*": {
       "import": "./dist/*.js",
       "types": "./src/*.ts",

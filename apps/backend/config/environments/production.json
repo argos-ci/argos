@@ -3,6 +3,13 @@
     "screenshotsBucket": "argos-ci-production",
     "publicImageBaseUrl": "https://files.argos-ci.com/"
   },
+  "deployments": {
+    "bucketName": "argos-deployments-production",
+    "baseDomain": "argos-ci.live"
+  },
+  "dynamoDb": {
+    "stage": "production"
+  },
   "github": {
     "marketplaceUrl": "https://github.com/marketplace/argos-ci"
   },

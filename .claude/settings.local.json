@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm eslint:*)"
+    ]
+  }
+}

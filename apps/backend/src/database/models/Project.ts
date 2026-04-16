@@ -10,7 +10,7 @@ import type {
 
 import config from "@/config";
 
-import { generateRandomHexString } from "../services/crypto";
+import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
@@ -272,7 +272,7 @@ export class Project extends Model {
    * Generate a new token for the project.
    */
   static generateToken() {
-    const token = generateRandomHexString(34);
+    const token = generateRandomString(34);
     return `argos_${token}`;
   }
 

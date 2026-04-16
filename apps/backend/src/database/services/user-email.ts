@@ -1,6 +1,6 @@
 import config from "@/config";
 import { UserEmail, type Account } from "@/database/models";
-import { generateRandomHexString } from "@/database/services/crypto";
+import { generateRandomString } from "@/database/services/crypto";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { getRedisClient } from "@/util/redis/client";
 
@@ -13,7 +13,7 @@ function getRedisKey(token: string) {
  */
 async function generateEmailVerificationURL(email: string) {
   const redis = await getRedisClient();
-  const token = generateRandomHexString(24);
+  const token = generateRandomString(24);
   await redis.set(getRedisKey(token), email, {
     expiration: {
       type: "PX",

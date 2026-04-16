@@ -7,7 +7,7 @@ export const Sha1HashSchema = z.string().regex(SHA1_REGEX).meta({
   id: "Sha1Hash",
 });
 
-const Sha256HashSchema = z.string().regex(SHA256_REGEX).meta({
+export const Sha256HashSchema = z.string().regex(SHA256_REGEX).meta({
   description: "SHA256 hash",
   id: "Sha256Hash",
 });

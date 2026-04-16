@@ -4,7 +4,7 @@ import { checkExpiringSamlCertificates } from "@/auth/saml-certificate-expiratio
 import { job as automationActionRunJob } from "@/automation/job";
 import { job as buildJob } from "@/build";
 import { job as buildNotificationJob } from "@/build-notification";
-import { job as ghPullRequestJob } from "@/github-pull-request";
+import { githubPullRequestJob } from "@/github-pull-request/job";
 import { createJobWorker } from "@/job-core";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
@@ -19,7 +19,7 @@ createJobWorker(
   automationActionRunJob,
   buildJob,
   buildNotificationJob,
-  ghPullRequestJob,
+  githubPullRequestJob,
   notificationMessageJob,
   notificationWorkflowJob,
   synchronizeJob,

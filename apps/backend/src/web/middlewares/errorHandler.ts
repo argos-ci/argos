@@ -32,7 +32,6 @@ export function jsonErrorHandler(): ErrorRequestHandler {
         error instanceof Error && "code" in error ? error.code : undefined;
 
       res.status(statusCode);
-
       res.send({
         error: {
           message,

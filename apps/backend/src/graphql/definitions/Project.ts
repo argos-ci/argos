@@ -34,6 +34,7 @@ import {
   IProjectUserLevel,
   IResolvers,
 } from "../__generated__/resolver-types";
+import { listProjectDeployments } from "../services/deployment";
 import { deleteProject, getAdminProject } from "../services/project";
 import { safeParseTestId } from "../services/test";
 import { badUserInput, forbidden, unauthenticated } from "../util";
@@ -168,6 +169,8 @@ export const typeDefs = gql`
       period: MetricsPeriod!
       filters: TestsFilterInput
     ): TestConnection!
+    "Deployments associated to the project"
+    deployments(after: Int = 0, first: Int = 30): DeploymentConnection!
   }
 
   extend type Query {
@@ -702,6 +705,15 @@ export const resolvers: IResolvers = {
           },
         )
         .range(after, after + first - 1);
+
+      return paginateResult({ result, first, after });
+    },
+    deployments: async (project, { first, after }) => {
+      const result = await listProjectDeployments({
+        projectId: project.id,
+        first,
+        after,
+      });
 
       return paginateResult({ result, first, after });
     },

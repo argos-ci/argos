@@ -12,7 +12,7 @@
     "resend-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/H7XOiU60kSYJJTZs --target https://api.argos-ci.dev:4001/resend/event-handler",
     "github-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/SmH89Dx2HZ89wK7T --target https://api.argos-ci.dev:4001/github/event-handler",
     "github-light-webhook-proxy": "NODE_TLS_REJECT_UNAUTHORIZED=0 smee --url https://smee.io/T3JFnf2lr3Zq6 --target https://api.argos-ci.dev:4001/github-light/event-handler",
-    "grok-proxy": "ngrok http --host-header=rewrite --domain=foal-great-publicly.ngrok-free.app https://app.argos-ci.dev:4002",
+    "grok-proxy": "ngrok http --host-header=rewrite --domain=foal-great-publicly.ngrok-free.app https://api.argos-ci.dev:4001",
     "stripe-webhook-proxy": "stripe listen --forward-to https://api.argos-ci.dev:4001/stripe/event-handler",
     "lint": "turbo run lint lint:root",
     "lint:root": "eslint . --max-warnings 0",
@@ -49,13 +49,13 @@
     "@types/node": "^24.12.2",
     "chokidar": "^5.0.0",
     "eslint": "catalog:",
-    "knip": "^6.3.1",
-    "prettier": "^3.8.1",
+    "knip": "^6.4.0",
+    "prettier": "^3.8.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "smee-client": "^5.0.0",
-    "turbo": "^2.9.5",
+    "turbo": "^2.9.6",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.3"
+    "vitest": "^4.1.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

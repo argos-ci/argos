@@ -1,0 +1,31 @@
+/**
+ * @param {import('knex').Knex} knex
+ */
+export const up = async (knex) => {
+  await knex.schema.createTable("deployments", (table) => {
+    table.bigIncrements("id").primary();
+    table.dateTime("createdAt").notNullable();
+    table.dateTime("updatedAt").notNullable();
+    table.bigInteger("projectId").unsigned().notNullable().index();
+    table.foreign("projectId").references("projects.id").onDelete("cascade");
+    table
+      .enum("status", ["pending", "ready", "error"])
+      .notNullable()
+      .defaultTo("pending");
+    table.enum("environment", ["preview", "production"]).notNullable();
+    table.string("branch").notNullable();
+    table.string("commitSha").notNullable();
+    table.string("slug").notNullable();
+    table.bigInteger("githubPullRequestId").unsigned();
+    table.foreign("githubPullRequestId").references("github_pull_requests.id");
+
+    table.unique("slug");
+  });
+};
+
+/**
+ * @param {import('knex').Knex} knex
+ */
+export const down = async (knex) => {
+  await knex.schema.dropTable("deployments");
+};

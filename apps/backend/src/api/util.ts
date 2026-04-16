@@ -14,6 +14,7 @@ import {
   ZodOpenApiPathItemObject,
 } from "zod-openapi";
 
+import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 import { asyncHandler } from "@/web/util";
 
@@ -119,6 +120,13 @@ export const errorHandler: ErrorRequestHandler = (
   const message =
     error instanceof Error ? error.message : "Internal server error";
 
+  if (statusCode >= 500) {
+    logger.error({
+      error,
+      reportToSentry: false, // There is already a middleware handling this
+    });
+  }
+
   res.status(statusCode).json({ error: message, details });
 };
 
@@ -214,6 +222,7 @@ function handler<TMethod extends "get" | "post" | "put">(
         next();
       }),
       ...wrappedHandlers,
+      // @ts-expect-error wrong type from Sentry
       Sentry.expressErrorHandler({
         shouldHandleError: (error) => {
           // Capture 400 (to see validation errors) and 500+ errors

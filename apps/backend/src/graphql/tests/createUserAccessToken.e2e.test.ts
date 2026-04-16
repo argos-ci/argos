@@ -225,7 +225,7 @@ describe("GraphQL createUserAccessToken", () => {
     expectNoGraphQLError(res);
     expect(res.status).toBe(200);
     expect(res.body.data.createUserAccessToken.token).toBe("");
-    expect(res.body.data.createUserAccessToken.code).toMatch(/^[a-f0-9]{40}$/);
+    expect(res.body.data.createUserAccessToken.code).toMatch(/^[a-z0-9]{40}$/);
     expect(res.body.data.createUserAccessToken.accessToken.source).toBe("cli");
 
     const token = await exchangeCliAuthCode(

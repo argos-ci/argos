@@ -4,14 +4,18 @@ import { createDocument, ZodOpenApiObject } from "zod-openapi";
 import config from "@/config";
 
 import { createBuildOperation } from "./handlers/createBuild";
+import { createDeploymentOperation } from "./handlers/createDeployment";
 import { createReviewOperation } from "./handlers/createReview";
 import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
+import { finalizeDeploymentOperation } from "./handlers/finalizeDeployment";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
+import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getProjectOperation } from "./handlers/getProject";
 import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
+import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
 import { updateBuildOperation } from "./handlers/updateBuild";
 
 export const zodSchema = {
@@ -40,6 +44,18 @@ export const zodSchema = {
   paths: {
     "/builds": {
       post: createBuildOperation,
+    },
+    "/deployments": {
+      post: createDeploymentOperation,
+    },
+    "/deployments/{deploymentId}": {
+      get: getDeploymentOperation,
+    },
+    "/deployments/{deploymentId}/finalize": {
+      post: finalizeDeploymentOperation,
+    },
+    "/deployments/resolve/{domain}": {
+      get: resolveDeploymentDomainOperation,
     },
     "/builds/finalize": {
       post: finalizeBuildsOperation,

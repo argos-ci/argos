@@ -16,6 +16,7 @@ import { redisLock } from "@/util/redis";
 
 import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
+import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import {
   Sha1HashSchema,
   UniqueSha256HashArraySchema,
@@ -32,9 +33,9 @@ const RequestBodySchema = z.object({
   commit: Sha1HashSchema.meta({
     description: "The commit the build is running on",
   }),
-  branch: z
-    .string()
-    .meta({ description: "The branch the build is running on" }),
+  branch: GitBranchSchema.meta({
+    description: "The branch the build is running on",
+  }),
   screenshotKeys: UniqueSha256HashArraySchema.meta({
     description: "Keys of screenshot files",
   }),
@@ -50,7 +51,7 @@ const RequestBodySchema = z.object({
   parallelNonce: z.string().nullish().meta({
     description: "A unique nonce for the parallel build",
   }),
-  prNumber: z.number().int().min(1).nullish().meta({
+  prNumber: GitPRNumberSchema.nullish().meta({
     description: "The pull request number",
   }),
   prHeadCommit: Sha1HashSchema.nullish().meta({

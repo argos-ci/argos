@@ -16,6 +16,7 @@ import { useAuthTokenPayload } from "./Auth";
 declare module "@reflag/react-sdk" {
   interface Features {
     "changes-ignore": boolean;
+    deployments: boolean;
   }
 }
 

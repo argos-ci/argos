@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { generateRandomDigits, generateRandomHexString } from "./crypto";
+import { generateRandomDigits, generateRandomString } from "./crypto";
 
-describe("generateRandomHexString", () => {
+describe("generateRandomString", () => {
   it("generates a hex string of the correct length", () => {
     const length = 16;
-    const hex = generateRandomHexString(length);
+    const hex = generateRandomString(length);
     expect(typeof hex).toBe("string");
     expect(hex.length).toBe(length);
-    expect(hex).toMatch(/^[a-f0-9]+$/i);
+    expect(hex).toMatch(/^[a-z0-9]+$/i);
   });
 
   it("generates different values on subsequent calls", () => {
-    const hex1 = generateRandomHexString(16);
-    const hex2 = generateRandomHexString(16);
+    const hex1 = generateRandomString(16);
+    const hex2 = generateRandomString(16);
     expect(hex1).not.toBe(hex2);
   });
 });

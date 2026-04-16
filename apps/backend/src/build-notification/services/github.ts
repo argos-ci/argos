@@ -1,47 +1,12 @@
 import { invariant } from "@argos/util/invariant";
-import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
 
 import { GithubPullRequest, GithubRepository } from "@/database/models";
-import {
-  checkErrorStatus,
-  commentGithubPr,
-  getInstallationOctokit,
-} from "@/github";
+import { commentGithubPr, getInstallationOctokit } from "@/github";
+import { createGhCommitStatus } from "@/github/commit-status";
 import { UnretryableError } from "@/job-core";
-import { redisLock } from "@/util/redis";
 
 import { getCommentBody } from "../comment";
 import type { SendNotificationContext } from "../context";
-
-/**
- * Create a GitHub commit status.
- */
-async function createGhCommitStatus(
-  octokit: Octokit,
-  params: RestEndpointMethodTypes["repos"]["createCommitStatus"]["parameters"],
-) {
-  await redisLock.acquire(
-    ["create-github-commit-status", params.owner, params.repo, params.sha],
-    async () => {
-      try {
-        await octokit.repos.createCommitStatus(params);
-      } catch (error) {
-        // It happens if a push-force occurs before sending the notification, it is not considered as an error
-        // No commit found for SHA: xxx
-        if (checkErrorStatus(422, error)) {
-          return;
-        }
-
-        // It happens if the repository is archived and read-only.
-        if (checkErrorStatus(403, error)) {
-          return;
-        }
-
-        throw error;
-      }
-    },
-  );
-}
 
 /**
  * Send a notification to GitHub.
