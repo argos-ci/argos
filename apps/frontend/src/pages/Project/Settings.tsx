@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { useFlag } from "@reflag/react-sdk";
 import { Heading, Text } from "react-aria-components";
 
 import { SettingsPage } from "@/containers/Layout";
@@ -102,7 +101,6 @@ export function Component() {
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
   const { permissions } = useProjectOutletContext();
-  const autoIgnoreChangesFlag = useFlag("auto-ignore-changes");
   const {
     data: { account, project },
   } = useSuspenseQuery(ProjectQuery, {
@@ -131,9 +129,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       {hasAdminPermission && <ProjectGitRepository project={project} />}
       {hasAdminPermission && <ProjectBranches project={project} />}
       {hasAdminPermission && <ProjectStatusChecks project={project} />}
-      {hasAdminPermission && autoIgnoreChangesFlag.isEnabled && (
-        <ProjectAutoIgnore project={project} />
-      )}
+      {hasAdminPermission && <ProjectAutoIgnore project={project} />}
       <ProjectBadge project={project} />
       {hasAdminPermission && <ProjectVisibility project={project} />}
       {fineGrainedAccessControlIncluded && (
