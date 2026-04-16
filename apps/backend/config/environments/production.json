@@ -7,7 +7,7 @@
     "bucketName": "argos-deployments-production",
     "baseDomain": "argos-ci.live"
   },
-  "dynamoDb": {
+  "dynamodb": {
     "stage": "production"
   },
   "github": {
