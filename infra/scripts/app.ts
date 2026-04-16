@@ -11,7 +11,7 @@ const props = ArgosDeploymentStackPropsSchema.parse({
   stage: app.node.tryGetContext("stage"),
   apiBaseUrl: app.node.tryGetContext("apiBaseUrl"),
   hostedZoneId: app.node.tryGetContext("hostedZoneId"),
-  devUserArns: (app.node.tryGetContext("devUserArns") ?? "")
+  appUserArns: (app.node.tryGetContext("appUserArns") ?? "")
     .split(",")
     .map((s: string) => s.trim())
     .filter(Boolean),

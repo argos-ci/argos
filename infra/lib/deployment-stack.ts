@@ -21,7 +21,7 @@ export const ArgosDeploymentStackPropsSchema = z.object({
   stage: z.enum(["development", "production"]).default("development"),
   hostedZoneId: z.string(),
   apiBaseUrl: z.url().default("https://foal-great-publicly.ngrok-free.app"),
-  devUserArns: z.array(z.string().min(1)),
+  appUserArns: z.array(z.string().min(1)),
 });
 
 type ArgosDeploymentStackOwnProps = z.infer<
@@ -44,7 +44,7 @@ export class ArgosDeploymentStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage, hostedZoneId, apiBaseUrl, devUserArns = [] } = props;
+    const { stage, hostedZoneId, apiBaseUrl, appUserArns = [] } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
     const filesOriginAuthHeaderName = "x-argos-internal-auth";
@@ -336,21 +336,13 @@ export class ArgosDeploymentStack extends cdk.Stack {
     // ----------------------------------------------------------------
     // Dev user access
     // ----------------------------------------------------------------
-    if (devUserArns.length > 0) {
+    if (appUserArns.length > 0) {
       const devGroup = new iam.Group(this, "DevGroup");
       this.filesTable.grantReadWriteData(devGroup);
       this.deploymentFilesTable.grantReadWriteData(devGroup);
       this.bucket.grantReadWrite(devGroup);
-      devGroup.addToPolicy(
-        new iam.PolicyStatement({
-          actions: ["cloudfront:CreateInvalidation"],
-          resources: [
-            `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
-          ],
-        }),
-      );
 
-      for (const arn of devUserArns) {
+      for (const arn of appUserArns) {
         const user = iam.User.fromUserArn(
           this,
           `DevUser-${arn.split("/").pop()}`,
