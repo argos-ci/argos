@@ -2,6 +2,8 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 import semver from "semver";
 
+import config from "@/config";
+import logger from "@/logger";
 import {
   checkIsTrustedNpmPackage,
   getLatestPackageVersion,
@@ -160,12 +162,23 @@ export const resolvers: IResolvers = {
   },
   ScreenshotMetadataSDK: {
     async latestVersion(sdk) {
+      if (config.get("selfHosted")) {
+        return null;
+      }
       if (!checkIsTrustedNpmPackage(sdk.name)) {
         return null;
       }
-      const latestVersion = await getLatestPackageVersion(sdk.name);
-      if (semver.gt(latestVersion, sdk.version)) {
-        return latestVersion;
+      try {
+        const latestVersion = await getLatestPackageVersion(sdk.name);
+        if (semver.gt(latestVersion, sdk.version)) {
+          return latestVersion;
+        }
+      } catch (error) {
+        logger.warn(
+          { sdkName: sdk.name, error },
+          "Failed to fetch latest SDK version from npm registry",
+        );
+        return null;
       }
       return null;
     },

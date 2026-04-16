@@ -37,6 +37,12 @@ export function createConfig() {
       doc: "The contact email",
       default: "contact@argos-ci.com",
     },
+    selfHosted: {
+      doc: "Whether the instance is self-hosted. Disables features that require external network access (e.g. npm registry lookups).",
+      format: Boolean,
+      default: false,
+      env: "SELF_HOSTED",
+    },
     server: {
       port: {
         doc: "The server port number",
