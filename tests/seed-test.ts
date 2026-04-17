@@ -3,10 +3,12 @@ import { test as base } from "@playwright/test";
 
 import type {
   Account,
+  Plan,
   Project,
   Team,
   User,
 } from "../apps/backend/src/database/models";
+import { Plan as PlanModel } from "../apps/backend/src/database/models";
 import {
   BuildScenario,
   createBuildScenario,
@@ -17,6 +19,7 @@ import {
 
 type WorkerFixtures = {
   user: { user: User; account: Account };
+  plan: Plan;
   team: { team: Team; account: Account };
   project: Project;
   builds: BuildScenario;
@@ -34,10 +37,31 @@ export const seedTest = base.extend<object, WorkerFixtures>({
     },
     { scope: "worker" },
   ],
-  team: [
+  plan: [
     async ({}, use, workerInfo) => {
+      const plan = await PlanModel.query().insertAndFetch({
+        name: `pro-${workerInfo.workerIndex}`,
+        includedScreenshots: 15000,
+        githubPlanId: null,
+        stripeProductId: null,
+        usageBased: false,
+        githubSsoIncluded: true,
+        fineGrainedAccessControlIncluded: true,
+        samlIncluded: true,
+        interval: "month",
+      });
+      await use(plan);
+    },
+    { scope: "worker" },
+  ],
+  team: [
+    async ({ plan }, use, workerInfo) => {
       const slug = `acme-${workerInfo.workerIndex}`;
-      const team = await createTeamAccount({ slug, name: "Acme" });
+      const team = await createTeamAccount({
+        slug,
+        name: "Acme",
+        forcedPlanId: plan.id,
+      });
       await use(team);
     },
     { scope: "worker" },
