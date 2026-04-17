@@ -34,6 +34,7 @@ import {
 } from "../BuildReviewButton";
 import { useGetDiffEvaluationStatus } from "../BuildReviewState";
 import { EvaluationStatus } from "../EvaluationStatus";
+import { createBuildReviewPrompt } from "./BuildReviewPrompt";
 
 const _BuildFragment = graphql(`
   fragment BuildHeader_Build on Build {
@@ -44,9 +45,8 @@ const _BuildFragment = graphql(`
     mergeQueue
     number
     pullRequest {
-      id
-      url
       ...PullRequestButton_PullRequest
+      ...BuildReviewPrompt_PullRequest
     }
     ...BuildStatusChip_Build
     ...BuildTestStatusChip_Build
@@ -207,62 +207,6 @@ const _ProjectFragment = graphql(`
     ...BuildReviewButton_Project
   }
 `);
-
-function createBuildReviewPrompt(input: {
-  buildUrl: string;
-  pullRequest?: {
-    title?: string | null;
-    number: number;
-    url: string;
-    state?: string | null;
-    draft?: boolean | null;
-    merged?: boolean | null;
-    creator?: { login: string; name?: string | null } | null;
-  } | null;
-}) {
-  const pullRequest = input.pullRequest;
-  const prAuthor = pullRequest?.creator
-    ? pullRequest.creator.name
-      ? `${pullRequest.creator.name} (@${pullRequest.creator.login})`
-      : `@${pullRequest.creator.login}`
-    : null;
-
-  return `\
-Review this Argos build and submit the Argos review if possible.
-
-Use $argos-pr-review if available.
-
-Argos build: ${input.buildUrl}
-Pull request: ${pullRequest ? pullRequest.url : "not linked in Argos"}
-${pullRequest?.title ? `PR title: ${pullRequest.title}` : ""}
-${prAuthor ? `PR author: ${prAuthor}` : ""}
-
-Auth:
-- \`ARGOS_TOKEN\` or \`--token\` is required to inspect the build. If not available, ask the user to provide one and stop if they do not.
-- Creating a review requires a personal Argos access token, not a project/CI token.
-- Look for a personal token in \`~/.config/argos-ci/config.json\` under \`token\`.
-- Do not assume \`ARGOS_TOKEN\` is personal. If no personal token is available, return the conclusion and evidence without submitting.
-
-Review:
-- Use the Argos CLI (@argos-ci/cli).
-- Inspect the build status first; do not approve pending, failed, aborted, or incomplete builds.
-- If the build cannot be inspected with complete Argos data, do not submit a review.
-- Inspect the snapshots that need review.
-- Group duplicate visual changes and inspect one representative unless browser-specific differences matter.
-- Infer the intended change from the PR title, branch, description, comments, commit messages, code diff, and any linked ticket or issue that is accessible.
-- Compare base, head, and diff images.
-- Approve only if the visual changes are intentional and stable.
-- Request changes for regressions, flakes, incomplete builds, or insufficient evidence.
-
-Before submitting, summarize:
-- inferred intent
-- diffs reviewed
-- evidence
-- conclusion: \`approve\` or \`request-changes\`
-
-If blocked, report the exact blocker.
-`;
-}
 
 function CopyBuildReviewPromptButton(props: {
   buildNumber: number;
