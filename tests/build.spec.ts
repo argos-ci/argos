@@ -1,10 +1,8 @@
-import { argosScreenshot } from "@argos-ci/playwright";
 import { expect } from "@playwright/test";
 
-import { TeamUser } from "../apps/backend/src/database/models";
 import { BuildScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { replaceText } from "./util";
+import { ensureTeamOwner, getPlanLabel, takeLoggedScreenshot } from "./util";
 
 const buildExamples: {
   name: string;
@@ -49,27 +47,28 @@ const buildExamples: {
 ];
 
 buildExamples.forEach((build) => {
-  loggedTest(build.name, async ({ page, auth, team, project, builds }) => {
-    await TeamUser.query()
-      .insert({
-        teamId: team.team.id,
-        userId: auth.user.id,
-        userLevel: "owner",
-      })
-      .onConflict(["teamId", "userId"])
-      .ignore();
+  loggedTest(
+    build.name,
+    async ({ page, auth, team, plan, project, builds }) => {
+      await ensureTeamOwner({ team: team.team, user: auth.user });
 
-    const number = build.getNumber(builds);
-    await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
-    await expect(page.getByText(`Build ${number}`)).toBeVisible();
-    await expect(
-      page.getByText(/Subscribe to Pro plan to use team features/i),
-    ).not.toBeVisible();
-    if (build.compare !== false) {
-      await expect(page.getByText(`Changes from`)).toBeVisible();
-    }
-    const restore = await replaceText(page, { [team.account.slug]: "acme" });
-    await argosScreenshot(page, `build-${build.name}`);
-    await restore();
-  });
+      const number = build.getNumber(builds);
+      await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
+      await expect(page.getByText(`Build ${number}`)).toBeVisible();
+      await expect(
+        page.getByText(/Subscribe to Pro plan to use team features/i),
+      ).not.toBeVisible();
+      if (build.compare !== false) {
+        await expect(page.getByText(`Changes from`)).toBeVisible();
+      }
+      await takeLoggedScreenshot({
+        page,
+        name: `build-${build.name}`,
+        replacements: {
+          [team.account.slug]: "acme",
+          [getPlanLabel(plan.name)]: "Pro",
+        },
+      });
+    },
+  );
 });
