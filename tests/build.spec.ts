@@ -1,8 +1,9 @@
 import { argosScreenshot } from "@argos-ci/playwright";
 import { expect } from "@playwright/test";
 
+import { TeamUser } from "../apps/backend/src/database/models";
 import { BuildScenario } from "../apps/backend/src/database/seeds";
-import { seedTest } from "./seed-test";
+import { loggedTest } from "./logged-test";
 import { replaceText } from "./util";
 
 const buildExamples: {
@@ -48,17 +49,26 @@ const buildExamples: {
 ];
 
 buildExamples.forEach((build) => {
-  seedTest(build.name, async ({ page, team, project, builds }) => {
+  loggedTest(build.name, async ({ page, auth, team, project, builds }) => {
+    await TeamUser.query()
+      .insert({
+        teamId: team.team.id,
+        userId: auth.user.id,
+        userLevel: "owner",
+      })
+      .onConflict(["teamId", "userId"])
+      .ignore();
+
     const number = build.getNumber(builds);
     await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
     await expect(page.getByText(`Build ${number}`)).toBeVisible();
+    await expect(
+      page.getByText(/Subscribe to Pro plan to use team features/i),
+    ).not.toBeVisible();
     if (build.compare !== false) {
       await expect(page.getByText(`Changes from`)).toBeVisible();
     }
-
-    const restore = await replaceText(page, {
-      [team.account.slug]: "acme",
-    });
+    const restore = await replaceText(page, { [team.account.slug]: "acme" });
     await argosScreenshot(page, `build-${build.name}`);
     await restore();
   });
