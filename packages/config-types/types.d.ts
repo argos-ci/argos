@@ -30,6 +30,9 @@ export interface ClientConfig {
   api: {
     baseUrl: string;
   };
+  deployments: {
+    baseDomain: string;
+  };
   bucket: {
     publishableKey: string;
   };

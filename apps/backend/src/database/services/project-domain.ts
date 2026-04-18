@@ -1,4 +1,3 @@
-import { invariant } from "@argos/util/invariant";
 import { slugify } from "@argos/util/slug";
 import type { PartialModelObject } from "objection";
 
@@ -14,7 +13,7 @@ function normalizeDomain(domain: string) {
   return domain.trim().toLowerCase();
 }
 
-export function validateDomain(domain: string) {
+function validateDomain(domain: string) {
   const normalizedDomain = normalizeDomain(domain);
 
   if (!DOMAIN_REGEX.test(normalizedDomain)) {
@@ -24,7 +23,7 @@ export function validateDomain(domain: string) {
   return normalizedDomain;
 }
 
-export function validateInternalDomain(domain: string) {
+function validateInternalDomain(domain: string) {
   const normalizedDomain = validateDomain(domain);
   const suffix = `.${getInternalDeploymentBaseDomain()}`;
 
@@ -35,11 +34,11 @@ export function validateInternalDomain(domain: string) {
   return normalizedDomain;
 }
 
-export function getInternalDeploymentBaseDomain() {
+function getInternalDeploymentBaseDomain() {
   return config.get("deployments.baseDomain").toLowerCase();
 }
 
-export function getInternalDeploymentDomain(slug: string) {
+function getInternalDeploymentDomain(slug: string) {
   return `${slug}.${getInternalDeploymentBaseDomain()}`;
 }
 
@@ -70,17 +69,26 @@ async function resolveInternalDeploymentDomain(
   return resolveInternalDeploymentDomain(name, trx, index + 1);
 }
 
+/**
+ * Get the internal production domain configured for a project, if any.
+ */
 export async function getProductionInternalProjectDomain(
   projectId: string,
   trx?: TransactionOrKnex,
 ) {
-  return ProjectDomain.query(trx).findOne({
-    projectId,
-    environment: "production",
-    internal: true,
-  });
+  return (
+    (await ProjectDomain.query(trx).findOne({
+      projectId,
+      environment: "production",
+      internal: true,
+    })) ?? null
+  );
 }
 
+/**
+ * Ensure a project has a unique internal production domain.
+ * Creates one derived from the project name when none exists yet.
+ */
 export async function ensureProductionInternalProjectDomain(input: {
   projectId: string;
   projectName: string;
@@ -172,6 +180,10 @@ async function syncProductionDomainAlias(input: {
   return { previousAlias: null, nextAlias: input.nextDomain };
 }
 
+/**
+ * Create or update the internal production domain for a project.
+ * When a ready production deployment exists, its domain alias is kept in sync.
+ */
 export async function upsertProductionInternalProjectDomain(input: {
   projectId: string;
   domain: string;
@@ -183,6 +195,7 @@ export async function upsertProductionInternalProjectDomain(input: {
       input.projectId,
       trx,
     );
+    const previousDomain = currentDomain?.domain ?? null;
 
     let projectDomain: ProjectDomain;
     if (currentDomain) {
@@ -202,24 +215,11 @@ export async function upsertProductionInternalProjectDomain(input: {
 
     const aliases = await syncProductionDomainAlias({
       projectId: input.projectId,
-      previousDomain: currentDomain?.domain ?? null,
+      previousDomain,
       nextDomain: projectDomain.domain,
       trx,
     });
 
     return { projectDomain, ...aliases };
   });
-}
-
-export function getInternalDomainSlug(domain: string) {
-  const baseDomain = getInternalDeploymentBaseDomain();
-  const suffix = `.${baseDomain}`;
-  const normalizedDomain = normalizeDomain(domain);
-
-  invariant(
-    normalizedDomain.endsWith(suffix),
-    "Domain does not belong to the internal deployment base domain",
-  );
-
-  return normalizedDomain.slice(0, -suffix.length);
 }

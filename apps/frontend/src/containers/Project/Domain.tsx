@@ -2,17 +2,14 @@ import { useApolloClient } from "@apollo/client/react";
 import { SLUG_REGEX } from "@argos/util/slug";
 import { SubmitHandler, useForm } from "react-hook-form";
 
+import { config } from "@/config";
 import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
 
-const INTERNAL_DOMAIN_SUFFIX =
-  typeof window !== "undefined" &&
-  window.location.hostname.endsWith("argos-ci.com")
-    ? "argos-ci.live"
-    : "dev.argos-ci.live";
+const INTERNAL_DOMAIN_SUFFIX = config.deployments.baseDomain;
 
 const _ProjectFragment = graphql(`
   fragment ProjectDomain_Project on Project {

@@ -60,6 +60,22 @@ describe("resolveDeploymentDomain", () => {
       });
   });
 
+  test("resolves a full domain alias from a URL", async ({ deployment }) => {
+    await factory.DeploymentAlias.create({
+      deploymentId: deployment.id,
+      alias: "docs.dev.argos-ci.live",
+    });
+
+    await request(app)
+      .get("/deployments/resolve/https%3A%2F%2Fdocs.dev.argos-ci.live%2Fpath")
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          deploymentId: deployment.id,
+        });
+      });
+  });
+
   test("resolves a deployment slug from a hostname", async ({ deployment }) => {
     await request(app)
       .get(`/deployments/resolve/${deployment.slug}.dev.argos-ci.live`)
