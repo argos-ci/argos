@@ -7,10 +7,10 @@ loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
 
-loggedTest("team projects page", async ({ page, team, plan }) => {
+loggedTest("team projects page", async ({ page, team, plan, project }) => {
   await page.goto(`/${team.account.slug}`);
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /sparkle/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: project.name })).toBeVisible();
   await screenshot(page, "account-projects", {
     replacements: {
       [team.account.slug]: "acme",

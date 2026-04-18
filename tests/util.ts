@@ -138,12 +138,20 @@ async function replaceText(
 export async function screenshot(
   page: Page,
   name: string,
-  options?: ArgosScreenshotOptions & {
-    replacements: Record<string, string>;
-  },
+  options: ArgosScreenshotOptions & {
+    replacements?: Record<string, string>;
+  } = {},
 ) {
-  const { replacements, ...otherOptions } = options ?? {};
+  const { replacements, ...otherOptions } = options;
   const restore = replacements ? await replaceText(page, replacements) : null;
-  await argosScreenshot(page, name, otherOptions);
+  await argosScreenshot(page, name, {
+    argosCSS: `
+    [data-testid="avatar] {
+      background-color: #4527a0 !important;
+    }
+    ${otherOptions.argosCSS ?? ""}  
+    `,
+    ...otherOptions,
+  });
   await restore?.();
 }
