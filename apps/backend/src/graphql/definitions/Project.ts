@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
+import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
   AutomationRule,
@@ -1136,6 +1137,9 @@ export const resolvers: IResolvers = {
           ) {
             throw badUserInput(error.message, { field: "domain" });
           }
+        }
+        if (isUniqueViolationError(error)) {
+          throw badUserInput("Domain already in use", { field: "domain" });
         }
         throw error;
       }

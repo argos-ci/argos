@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DeploymentAlias, ProjectDomain } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -12,6 +12,10 @@ import {
 describe("project-domain service", () => {
   beforeEach(async () => {
     await setupDatabase();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe("getProductionInternalProjectDomain", () => {
@@ -78,6 +82,56 @@ describe("project-domain service", () => {
         internal: true,
       });
       const project = await factory.Project.create({ name: "docs" });
+
+      const domain = await ensureProductionInternalProjectDomain({
+        projectId: project.id,
+        projectName: project.name,
+      });
+
+      expect(domain).toMatchObject({
+        projectId: project.id,
+        domain: "docs-1.dev.argos-ci.live",
+        environment: "production",
+        internal: true,
+      });
+    });
+
+    it("retries with a new suffix after a concurrent unique-constraint failure", async () => {
+      const project = await factory.Project.create({ name: "docs" });
+      const otherProject = await factory.Project.create({ name: "other-docs" });
+      const originalInsertAndFetch = (
+        ProjectDomain.QueryBuilder.prototype as any
+      ).insertAndFetch;
+      const insertAndFetch = vi.spyOn(
+        ProjectDomain.QueryBuilder.prototype as any,
+        "insertAndFetch",
+      );
+
+      insertAndFetch
+        .mockRejectedValueOnce({
+          nativeError: {
+            code: "23505",
+          },
+        })
+        .mockImplementationOnce(async function (...args: unknown[]) {
+          const [insert] = args as [
+            {
+              domain: string;
+              environment: "production";
+              branch: null;
+              projectId: string;
+              internal: boolean;
+            },
+          ];
+
+          await originalInsertAndFetch.call(ProjectDomain.query(), {
+            ...insert,
+            domain: "docs.dev.argos-ci.live",
+            projectId: otherProject.id,
+          });
+
+          return originalInsertAndFetch.call(ProjectDomain.query(), insert);
+        });
 
       const domain = await ensureProductionInternalProjectDomain({
         projectId: project.id,

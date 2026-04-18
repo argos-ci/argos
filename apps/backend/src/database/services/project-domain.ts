@@ -3,6 +3,7 @@ import type { PartialModelObject } from "objection";
 
 import config from "@/config";
 
+import { isUniqueViolationError } from "../error";
 import { Deployment, DeploymentAlias, ProjectDomain } from "../models";
 import { transaction, type TransactionOrKnex } from "../transaction";
 
@@ -93,6 +94,7 @@ export async function ensureProductionInternalProjectDomain(input: {
   projectId: string;
   projectName: string;
   trx?: TransactionOrKnex;
+  index?: number;
 }) {
   const existingDomain = await getProductionInternalProjectDomain(
     input.projectId,
@@ -106,15 +108,36 @@ export async function ensureProductionInternalProjectDomain(input: {
   const domain = await resolveInternalDeploymentDomain(
     input.projectName,
     input.trx,
+    input.index ?? 0,
   );
 
-  return ProjectDomain.query(input.trx).insertAndFetch({
-    domain,
-    environment: "production",
-    branch: null,
-    projectId: input.projectId,
-    internal: true,
-  });
+  try {
+    return await ProjectDomain.query(input.trx).insertAndFetch({
+      domain,
+      environment: "production",
+      branch: null,
+      projectId: input.projectId,
+      internal: true,
+    });
+  } catch (error) {
+    if (!isUniqueViolationError(error)) {
+      throw error;
+    }
+
+    const concurrentDomain = await getProductionInternalProjectDomain(
+      input.projectId,
+      input.trx,
+    );
+
+    if (concurrentDomain) {
+      return concurrentDomain;
+    }
+
+    return ensureProductionInternalProjectDomain({
+      ...input,
+      index: (input.index ?? 0) + 1,
+    });
+  }
 }
 
 async function getLatestReadyProductionDeployment(
