@@ -69,7 +69,11 @@ export function ChangesChart(props: {
     }));
   }, [series]);
   return (
-    <ChartContainer config={chartConfig} className={className}>
+    <ChartContainer
+      config={chartConfig}
+      className={className}
+      data-visual-test="transparent"
+    >
       <ComposedChart data={transformedSeries}>
         <ChartTooltip
           cursor={false}

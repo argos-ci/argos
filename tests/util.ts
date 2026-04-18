@@ -1,4 +1,7 @@
-import { argosScreenshot } from "@argos-ci/playwright";
+import {
+  argosScreenshot,
+  type ArgosScreenshotOptions,
+} from "@argos-ci/playwright";
 import { type Page } from "@playwright/test";
 
 import {
@@ -132,20 +135,15 @@ async function replaceText(
   };
 }
 
-export async function takeLoggedScreenshot({
-  page,
-  name,
-  replacements,
-}: {
-  page: Page;
-  name: string;
-  replacements: Record<string, string>;
-}) {
-  const restore = await replaceText(page, replacements);
-  await argosScreenshot(page, name, {
-    argosCSS: `button[aria-label="User settings"] [role="img"] {
-      background-color: #4527a0 !important;
-    }`,
-  });
-  await restore();
+export async function screenshot(
+  page: Page,
+  name: string,
+  options?: ArgosScreenshotOptions & {
+    replacements: Record<string, string>;
+  },
+) {
+  const { replacements, ...otherOptions } = options ?? {};
+  const restore = replacements ? await replaceText(page, replacements) : null;
+  await argosScreenshot(page, name, otherOptions);
+  await restore?.();
 }

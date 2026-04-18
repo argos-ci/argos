@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 
 import { BuildScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, getPlanLabel, takeLoggedScreenshot } from "./util";
+import { ensureTeamOwner, getPlanLabel, screenshot } from "./util";
 
 const buildExamples: {
   name: string;
@@ -61,9 +61,7 @@ buildExamples.forEach((build) => {
       if (build.compare !== false) {
         await expect(page.getByText(`Changes from`)).toBeVisible();
       }
-      await takeLoggedScreenshot({
-        page,
-        name: `build-${build.name}`,
+      await screenshot(page, `build-${build.name}`, {
         replacements: {
           [team.account.slug]: "acme",
           [getPlanLabel(plan.name)]: "Pro",

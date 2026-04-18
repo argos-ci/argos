@@ -1,7 +1,7 @@
-import { argosScreenshot } from "@argos-ci/playwright";
 import { expect } from "@playwright/test";
 
 import { loggedTest } from "./logged-test";
+import { screenshot } from "./util";
 
 loggedTest("personal settings - name", async ({ page, auth }) => {
   await page.goto(`/${auth.account.slug}/settings`);
@@ -16,7 +16,7 @@ loggedTest("personal settings - name", async ({ page, auth }) => {
   await expect(region.getByText("Saved")).toBeVisible();
   await page.reload();
   expect(await textbox.inputValue()).toBe("James Bond");
-  await argosScreenshot(page, "settings/name", { element: region });
+  await screenshot(page, "settings/name", { element: region });
 });
 
 loggedTest("personal settings - username", async ({ page, auth }) => {
@@ -35,7 +35,7 @@ loggedTest("personal settings - username", async ({ page, auth }) => {
   await expect(
     region.getByText(/ending with an alphanumeric character/),
   ).toBeVisible();
-  await argosScreenshot(page, "settings/username", { element: region });
+  await screenshot(page, "settings/username", { element: region });
   const newSlug = `${auth.account.slug}-x`;
   await textbox.fill(newSlug);
   await saveButton.click();

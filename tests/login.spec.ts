@@ -1,12 +1,13 @@
-import { argosScreenshot } from "@argos-ci/playwright";
 import { test } from "@playwright/test";
+
+import { screenshot } from "./util";
 
 test("login", async ({ page }) => {
   await page.goto("/login");
-  await argosScreenshot(page, `login`);
+  await screenshot(page, "login");
 });
 
 test("signup", async ({ page }) => {
   await page.goto("/signup");
-  await argosScreenshot(page, `signup`);
+  await screenshot(page, "signup");
 });
