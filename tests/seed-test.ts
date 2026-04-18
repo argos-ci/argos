@@ -1,4 +1,5 @@
 /* eslint-disable no-empty-pattern */
+import { createHash } from "node:crypto";
 import { test as base } from "@playwright/test";
 
 import type {
@@ -28,10 +29,13 @@ type WorkerFixtures = {
   plan: Plan;
 };
 
+function getShortTestId(testId: string) {
+  return createHash("sha256").update(testId).digest("hex").slice(0, 10);
+}
+
 export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
   user: async ({}, use, testInfo) => {
-    const id = testInfo.testId;
-    console.log("TEEST ID", id);
+    const id = getShortTestId(testInfo.testId);
     const user = await createUserAccount({
       email: `kyle-${id}@acme.com`,
       name: "Kyle Bertolino",
@@ -57,7 +61,8 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     { scope: "worker" },
   ],
   team: async ({ plan }, use, testInfo) => {
-    const slug = `acme-${testInfo.testId}`;
+    const id = getShortTestId(testInfo.testId);
+    const slug = `acme-${id}`;
     const team = await createTeamAccount({
       slug,
       name: "Acme",
@@ -66,16 +71,18 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     await use(team);
   },
   project: async ({ team }, use, testInfo) => {
+    const id = getShortTestId(testInfo.testId);
     const project = await createProject({
       accountId: team.account.id,
-      name: `sparkle-${testInfo.testId}`,
+      name: `sparkle-${id}`,
     });
     await use(project);
   },
   builds: async ({ project }, use, testInfo) => {
+    const id = getShortTestId(testInfo.testId);
     const builds = await createBuildScenario({
       projectId: project.id,
-      keyPrefix: `${testInfo.testId}-`,
+      keyPrefix: `${id}-`,
     });
     await use(builds);
   },
