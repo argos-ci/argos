@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { argosScreenshot } from "@argos-ci/playwright";
 import { test } from "@playwright/test";
+
+import { screenshot } from "./util";
 
 const notificationsDir = path.resolve(
   __dirname,
@@ -15,7 +16,7 @@ notificationFiles.forEach((file) => {
   const type = path.basename(file, ".tsx");
   test(`notification ${type}`, async ({ page }) => {
     await page.goto(`/notification-preview/${type}`);
-    await argosScreenshot(page, `notification/${type}`, {
+    await screenshot(page, `notification/${type}`, {
       viewports: ["iphone-x", "macbook-15"],
     });
   });

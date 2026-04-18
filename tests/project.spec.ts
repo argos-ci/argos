@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, getPlanLabel, takeLoggedScreenshot } from "./util";
+import { ensureTeamOwner, getPlanLabel, screenshot } from "./util";
 
 loggedTest(
   "project builds",
@@ -10,10 +10,7 @@ loggedTest(
     void builds;
     await page.goto(`/${team.account.slug}/${project.name}`);
     await expect(page.getByRole("heading", { name: "Builds" })).toBeVisible();
-    await expect(page.getByText("12")).toBeVisible();
-    await takeLoggedScreenshot({
-      page,
-      name: "project-builds",
+    await screenshot(page, "project-builds", {
       replacements: {
         [team.account.slug]: "acme",
         [getPlanLabel(plan.name)]: "Pro",

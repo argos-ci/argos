@@ -60,7 +60,7 @@ export function ProjectTeamMembersList(props: {
       {(() => {
         if (loading) {
           return (
-            <List>
+            <List aria-busy>
               <ListRowLoader>Loading team members…</ListRowLoader>
             </List>
           );

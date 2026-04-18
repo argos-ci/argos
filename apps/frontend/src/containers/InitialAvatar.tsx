@@ -18,6 +18,7 @@ export function InitialAvatar(props: {
       style={{
         backgroundColor: props.color,
       }}
+      data-testid="avatar"
       role="img"
       aria-label={props.alt}
     >

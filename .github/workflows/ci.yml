@@ -55,6 +55,10 @@ jobs:
   integration-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       NODE_ENV: test
       TZ: utc
@@ -113,11 +117,15 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: pnpm run test:integration
+        run: pnpm run test:integration -- --shard=${{ matrix.shard }}/2
 
   e2e-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       API_BASE_URL: http://localhost:3000
       NODE_ENV: test
@@ -170,8 +178,24 @@ jobs:
         with:
           # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500
-          args: env HOME=/root npm run test:e2e
+          args: env HOME=/root npm run test:e2e -- --shard=${{ matrix.shard }}/2
         env:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
           AMQP_URL: amqp://rabbitmq
+
+  test-gate:
+    name: test
+    runs-on: ubuntu-latest
+    needs: [unit-test, integration-test, e2e-test]
+    if: ${{ always() }}
+
+    steps:
+      - name: Fail if any test job failed or was cancelled
+        run: |
+          if [ "${{ needs.unit-test.result }}" != "success" ] || \
+             [ "${{ needs.integration-test.result }}" != "success" ] || \
+             [ "${{ needs.e2e-test.result }}" != "success" ]; then
+            echo "At least one test job did not succeed"
+            exit 1
+          fi

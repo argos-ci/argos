@@ -5,20 +5,13 @@ import argosConfig from "../apps/backend/src/config";
 import { Account, type User } from "../apps/backend/src/database/models";
 import { seedTest } from "./seed-test";
 
-export const loggedTest = seedTest.extend<
-  {
-    page: Page;
+export const loggedTest = seedTest.extend<{
+  page: Page;
+  auth: { account: Account; user: User };
+}>({
+  auth: async ({ user }, use) => {
+    await use(user);
   },
-  {
-    auth: { account: Account; user: User };
-  }
->({
-  auth: [
-    async ({ user }, use) => {
-      await use(user);
-    },
-    { scope: "worker" },
-  ],
   page: async ({ page, auth }, use) => {
     await page.context().addCookies([
       {

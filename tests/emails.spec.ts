@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { argosScreenshot } from "@argos-ci/playwright";
 import { test } from "@playwright/test";
+
+import { screenshot } from "./util";
 
 const templatesDir = path.resolve(
   __dirname,
@@ -18,7 +19,7 @@ templateFiles.forEach((file) => {
   const type = path.basename(file, ".tsx");
   test(`email ${type}`, async ({ page }) => {
     await page.goto(`/email-preview/${type}`);
-    await argosScreenshot(page, `email/${type}`, {
+    await screenshot(page, `email/${type}`, {
       viewports: ["iphone-x", "macbook-15"],
     });
   });
