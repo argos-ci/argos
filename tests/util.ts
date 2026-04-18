@@ -1,6 +1,30 @@
-import type { Page } from "@playwright/test";
+import { argosScreenshot } from "@argos-ci/playwright";
+import { type Page } from "@playwright/test";
 
-export async function replaceText(
+import {
+  TeamUser,
+  type Team,
+  type User,
+} from "../apps/backend/src/database/models";
+
+export function getPlanLabel(name: string) {
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+export async function ensureTeamOwner({
+  team,
+  user,
+}: {
+  team: Team;
+  user: User;
+}) {
+  await TeamUser.query()
+    .insert({ teamId: team.id, userId: user.id, userLevel: "owner" })
+    .onConflict(["teamId", "userId"])
+    .ignore();
+}
+
+async function replaceText(
   page: Page,
   replacements: Record<string, string>,
 ): Promise<() => Promise<void>> {
@@ -28,7 +52,9 @@ export async function replaceText(
           let run: Text[] = [];
 
           function flushRun() {
-            if (run.length === 0) { return; }
+            if (run.length === 0) {
+              return;
+            }
 
             if (run.length === 1) {
               const node = run[0]!;
@@ -47,7 +73,9 @@ export async function replaceText(
                 const removed = run.slice(1);
                 mods.push({ type: "merge", anchor, anchorOriginal, removed });
                 anchor.textContent = replaced;
-                for (const node of removed) { node.remove(); }
+                for (const node of removed) {
+                  node.remove();
+                }
               }
             }
 
@@ -102,4 +130,22 @@ export async function replaceText(
       delete (window as any)[storeKey];
     }, storeKey);
   };
+}
+
+export async function takeLoggedScreenshot({
+  page,
+  name,
+  replacements,
+}: {
+  page: Page;
+  name: string;
+  replacements: Record<string, string>;
+}) {
+  const restore = await replaceText(page, replacements);
+  await argosScreenshot(page, name, {
+    argosCSS: `button[aria-label="User settings"] [role="img"] {
+      background-color: #4527a0 !important;
+    }`,
+  });
+  await restore();
 }

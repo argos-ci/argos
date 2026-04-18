@@ -1,16 +1,23 @@
-import { argosScreenshot } from "@argos-ci/playwright";
 import { expect } from "@playwright/test";
 
-import { seedTest } from "./seed-test";
-import { replaceText } from "./util";
+import { loggedTest } from "./logged-test";
+import { ensureTeamOwner, getPlanLabel, takeLoggedScreenshot } from "./util";
 
-seedTest("project builds", async ({ page, team, project, builds }) => {
-  void builds;
-  await page.goto(`/${team.account.slug}/${project.name}`);
-  await expect(page.getByText("12")).toBeVisible();
-  const restore = await replaceText(page, {
-    [team.account.slug]: "acme",
-  });
-  await argosScreenshot(page, `project-builds`);
-  await restore();
-});
+loggedTest(
+  "project builds",
+  async ({ page, auth, team, plan, project, builds }) => {
+    await ensureTeamOwner({ team: team.team, user: auth.user });
+    void builds;
+    await page.goto(`/${team.account.slug}/${project.name}`);
+    await expect(page.getByRole("heading", { name: "Builds" })).toBeVisible();
+    await expect(page.getByText("12")).toBeVisible();
+    await takeLoggedScreenshot({
+      page,
+      name: "project-builds",
+      replacements: {
+        [team.account.slug]: "acme",
+        [getPlanLabel(plan.name)]: "Pro",
+      },
+    });
+  },
+);
