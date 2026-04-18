@@ -22,7 +22,7 @@ loggedTest(
         [getPlanLabel(plan.name)]: "Pro",
         [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
         [auth.account.slug]: "john-doe",
-        ...(auth.account.name ? { [auth.account.name]: "Jonh Doe" } : {}),
+        ...(auth.account.name ? { [auth.account.name]: "John Doe" } : {}),
       },
     });
   },

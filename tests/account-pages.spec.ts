@@ -82,7 +82,7 @@ loggedTest("team settings members page", async ({ page, team, auth, plan }) => {
       [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
       [auth.account.slug]: "john-doe",
-      ...(auth.account.name ? { [auth.account.name]: "Jonh Doe" } : {}),
+      ...(auth.account.name ? { [auth.account.name]: "John Doe" } : {}),
     },
   });
 });

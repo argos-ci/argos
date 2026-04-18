@@ -122,7 +122,7 @@ function Avatar(props: { slug: string; className?: string }) {
   if (!data) {
     return (
       <InitialAvatar
-        aria-busy=""
+        aria-busy
         initial=""
         color="var(--mauve-3)"
         className="size-7"
