@@ -1,14 +1,21 @@
+import {
+  DeploymentEnvironmentSchema,
+  DeploymentStatusSchema,
+} from "@argos/schemas/deployment";
 import { z } from "zod";
 
 import type { Deployment } from "@/database/models";
 
+import { GitBranchSchema } from "./git";
+import { Sha256HashSchema } from "./sha";
+
 export const DeploymentSchema = z.object({
   id: z.string(),
-  status: z.enum(["pending", "ready", "error"]),
-  environment: z.enum(["preview", "production"]),
-  branch: z.string(),
-  commitSha: z.string(),
-  url: z.string(),
+  status: DeploymentStatusSchema,
+  environment: DeploymentEnvironmentSchema,
+  branch: GitBranchSchema,
+  commitSha: Sha256HashSchema,
+  url: z.url(),
   createdAt: z.string(),
 });
 
