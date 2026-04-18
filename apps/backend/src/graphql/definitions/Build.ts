@@ -165,13 +165,21 @@ export const typeDefs = gql`
   }
 `;
 
-const getCompareScreenshotBucket = async (ctx: Context, build: Build) => {
+async function getBuildCommit(ctx: Context, build: Build) {
+  if (build.prHeadCommit) {
+    return build.prHeadCommit;
+  }
+  const compareBucket = await getCompareScreenshotBucket(ctx, build);
+  return compareBucket.commit;
+}
+
+async function getCompareScreenshotBucket(ctx: Context, build: Build) {
   const bucket = await ctx.loaders.ScreenshotBucket.load(
     build.compareScreenshotBucketId,
   );
   invariant(bucket, "bucket not found");
   return bucket;
-};
+}
 
 export const resolvers: IResolvers = {
   Build: {
@@ -232,18 +240,14 @@ export const resolvers: IResolvers = {
       }
     },
     deployment: async (build, _args, ctx) => {
-      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      const commitSha = await getBuildCommit(ctx, build);
       return ctx.loaders.LatestDeploymentByProjectAndCommit.load({
         projectId: build.projectId,
-        commitSha: compareBucket.commit,
+        commitSha,
       });
     },
     commit: async (build, _args, ctx) => {
-      if (build.prHeadCommit) {
-        return build.prHeadCommit;
-      }
-      const compareBucket = await getCompareScreenshotBucket(ctx, build);
-      return compareBucket.commit;
+      return getBuildCommit(ctx, build);
     },
     branch: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);

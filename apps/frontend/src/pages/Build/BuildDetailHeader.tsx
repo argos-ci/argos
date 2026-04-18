@@ -434,9 +434,6 @@ function resolvePreviewUrlFromDeployment(input: {
 
   const screenshotUrl = new URL(url);
   const deployment = new URL(deploymentUrl);
-  screenshotUrl.protocol = deployment.protocol;
-  screenshotUrl.username = deployment.username;
-  screenshotUrl.password = deployment.password;
   screenshotUrl.host = deployment.host;
   return screenshotUrl.toString();
 }
