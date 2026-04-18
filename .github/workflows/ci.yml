@@ -117,7 +117,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: pnpm run test:integration run --shard=${{ matrix.shard }}/2
+        run: pnpm run test:integration -- --shard=${{ matrix.shard }}/2
 
   e2e-test:
     runs-on: ubuntu-latest
@@ -183,3 +183,19 @@ jobs:
           REDIS_URL: redis://redis:6379/1
           DATABASE_URL: postgresql://postgres@postgres/test
           AMQP_URL: amqp://rabbitmq
+
+  test-gate:
+    name: test
+    runs-on: ubuntu-latest
+    needs: [unit-test, integration-test, e2e-test]
+    if: ${{ always() }}
+
+    steps:
+      - name: Fail if any test job failed or was cancelled
+        run: |
+          if [ "${{ needs.unit-test.result }}" != "success" ] || \
+             [ "${{ needs.integration-test.result }}" != "success" ] || \
+             [ "${{ needs.e2e-test.result }}" != "success" ]; then
+            echo "At least one test job did not succeed"
+            exit 1
+          fi
