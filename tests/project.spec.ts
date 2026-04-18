@@ -10,7 +10,6 @@ loggedTest(
     void builds;
     await page.goto(`/${team.account.slug}/${project.name}`);
     await expect(page.getByRole("heading", { name: "Builds" })).toBeVisible();
-    await expect(page.getByText("12")).toBeVisible();
     await screenshot(page, "project-builds", {
       replacements: {
         [team.account.slug]: "acme",

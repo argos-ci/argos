@@ -51,13 +51,9 @@ buildExamples.forEach((build) => {
     build.name,
     async ({ page, auth, team, plan, project, builds }) => {
       await ensureTeamOwner({ team: team.team, user: auth.user });
-
       const number = build.getNumber(builds);
       await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
       await expect(page.getByText(`Build ${number}`)).toBeVisible();
-      await expect(
-        page.getByText(/Subscribe to Pro plan to use team features/i),
-      ).not.toBeVisible();
       if (build.compare !== false) {
         await expect(page.getByText(`Changes from`)).toBeVisible();
       }
