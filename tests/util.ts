@@ -157,7 +157,7 @@ export async function screenshot(
       }
     },
     argosCSS: `
-    [data-testid="avatar] {
+    [data-testid="avatar"] {
       background-color: #4527a0 !important;
     }
     ${otherOptions.argosCSS ?? ""}  
