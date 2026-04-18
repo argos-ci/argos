@@ -30,7 +30,7 @@ type WorkerFixtures = {
 };
 
 function getShortTestId(testId: string) {
-  return createHash("sha256").update(testId).digest("hex").slice(0, 10);
+  return createHash("sha256").update(testId).digest("hex").slice(0, 6);
 }
 
 export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
@@ -70,11 +70,10 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     });
     await use(team);
   },
-  project: async ({ team }, use, testInfo) => {
-    const id = getShortTestId(testInfo.testId);
+  project: async ({ team }, use) => {
     const project = await createProject({
       accountId: team.account.id,
-      name: `sparkle-${id}`,
+      name: "sparkle",
     });
     await use(project);
   },
