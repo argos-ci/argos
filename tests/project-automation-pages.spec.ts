@@ -8,20 +8,25 @@ loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
 
-loggedTest("project settings page", async ({ page, team, plan, project }) => {
-  await page.goto(`/${team.account.slug}/${project.name}/settings`);
-  await expect(
-    page.getByRole("heading", { name: "Project Settings" }),
-  ).toBeVisible();
-  await expect(page.getByText("Upload token")).toBeVisible();
-  await screenshot(page, "project-settings", {
-    replacements: {
-      [team.account.slug]: "acme",
-      [getPlanLabel(plan.name)]: "Pro",
-      [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    },
-  });
-});
+loggedTest(
+  "project settings page",
+  async ({ page, team, plan, auth, project }) => {
+    await page.goto(`/${team.account.slug}/${project.name}/settings`);
+    await expect(
+      page.getByRole("heading", { name: "Project Settings" }),
+    ).toBeVisible();
+    await expect(page.getByText("Upload token")).toBeVisible();
+    await screenshot(page, "project-settings", {
+      replacements: {
+        [team.account.slug]: "acme",
+        [getPlanLabel(plan.name)]: "Pro",
+        [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        [auth.account.slug]: "john-doe",
+        ...(auth.account.name ? { [auth.account.name]: "Jonh Doe" } : {}),
+      },
+    });
+  },
+);
 
 loggedTest(
   "project automations page",
