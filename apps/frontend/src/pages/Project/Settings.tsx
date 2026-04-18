@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { useFlag } from "@reflag/react-sdk";
 import { Heading, Text } from "react-aria-components";
 
 import { SettingsPage } from "@/containers/Layout";
@@ -10,6 +11,7 @@ import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
+import { ProjectDomain } from "@/containers/Project/Domain";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
@@ -46,6 +48,7 @@ const ProjectQuery = graphql(`
       id
       ...ProjectBadge_Project
       ...ProjectChangeName_Project
+      ...ProjectDomain_Project
       ...ProjectToken_Project
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
@@ -101,6 +104,7 @@ export function Component() {
 
 function PageContent(props: { accountSlug: string; projectName: string }) {
   const { permissions } = useProjectOutletContext();
+  const deploymentsFlag = useFlag("deployments");
   const {
     data: { account, project },
   } = useSuspenseQuery(ProjectQuery, {
@@ -128,6 +132,9 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       {hasReviewPermission && <ProjectToken project={project} />}
       {hasAdminPermission && <ProjectGitRepository project={project} />}
       {hasAdminPermission && <ProjectBranches project={project} />}
+      {hasAdminPermission && deploymentsFlag.isEnabled && (
+        <ProjectDomain project={project} />
+      )}
       {hasAdminPermission && <ProjectStatusChecks project={project} />}
       {hasAdminPermission && <ProjectAutoIgnore project={project} />}
       <ProjectBadge project={project} />

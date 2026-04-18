@@ -7,6 +7,8 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import type { Account, Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { DeploymentAlias } from "@/database/models/DeploymentAlias";
+import { ProjectDomain } from "@/database/models/ProjectDomain";
+import { ensureProductionInternalProjectDomain } from "@/database/services/project-domain";
 import {
   findInternalDeploymentAlias,
   getDeploymentAliases,
@@ -146,12 +148,14 @@ async function updateDeploymentAliases(input: {
   deployment: Deployment;
   project: Project;
   account: Account;
+  projectDomains: ProjectDomain[];
 }): Promise<ReturnType<typeof getDeploymentAliases>> {
-  const { deployment, project, account } = input;
+  const { deployment, project, account, projectDomains } = input;
   const aliases = getDeploymentAliases({
     accountSlug: account.slug,
     projectName: project.name,
     deployment,
+    projectDomains,
   });
   const internalAlias = findInternalDeploymentAlias(aliases);
   if (internalAlias) {
@@ -238,10 +242,21 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     const { account } = project;
     invariant(account, "Account relation not fetched");
 
+    const projectDomains =
+      deployment.environment === "production"
+        ? [
+            await ensureProductionInternalProjectDomain({
+              projectId: project.id,
+              projectName: project.name,
+            }),
+          ]
+        : [];
+
     const aliases = await updateDeploymentAliases({
       deployment,
       project,
       account,
+      projectDomains,
     });
 
     await Promise.all(

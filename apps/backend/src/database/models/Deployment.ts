@@ -2,12 +2,15 @@ import type { RelationMappings } from "objection";
 
 import { getDeploymentUrl } from "@/deployment/url";
 
+import {
+  deploymentEnvironmentJsonSchema,
+  type DeploymentEnvironment,
+} from "../util/deployment-environment";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Project } from "./Project";
 
 type DeploymentStatus = "pending" | "ready" | "error";
-type DeploymentEnvironment = "preview" | "production";
 
 export class Deployment extends Model {
   static override tableName = "deployments";
@@ -31,10 +34,7 @@ export class Deployment extends Model {
             type: "string",
             enum: ["pending", "ready", "error"],
           },
-          environment: {
-            type: "string",
-            enum: ["preview", "production"],
-          },
+          environment: deploymentEnvironmentJsonSchema,
           branch: { type: "string" },
           commitSha: { type: "string" },
           slug: { type: "string" },

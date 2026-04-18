@@ -6,16 +6,30 @@ const CloudflarePurgeResponseSchema = z.object({
   success: z.literal(true),
 });
 
-function getResolveDeploymentDomainUrls(alias: string): string[] {
-  const apiBaseUrl = config.get("api.baseUrl");
-  const baseDomain = config.get("deployments.baseDomain");
-  const encodedAlias = encodeURIComponent(alias);
-  const encodedDomain = encodeURIComponent(`${alias}.${baseDomain}`);
+function getDeploymentDomainCandidates(aliasOrDomain: string): string[] {
+  const value = aliasOrDomain.trim().toLowerCase();
+  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
+  const suffix = `.${baseDomain}`;
+  const candidates = new Set<string>([value]);
 
-  return [
-    `${apiBaseUrl}/v2/deployments/resolve/${encodedAlias}`,
-    `${apiBaseUrl}/v2/deployments/resolve/${encodedDomain}`,
-  ];
+  if (value.endsWith(suffix)) {
+    const alias = value.slice(0, -suffix.length);
+    if (alias) {
+      candidates.add(alias);
+    }
+  } else {
+    candidates.add(`${value}.${baseDomain}`);
+  }
+
+  return Array.from(candidates);
+}
+
+function getResolveDeploymentDomainUrls(aliasOrDomain: string): string[] {
+  const apiBaseUrl = config.get("api.baseUrl");
+  return getDeploymentDomainCandidates(aliasOrDomain).map(
+    (candidate) =>
+      `${apiBaseUrl}/v2/deployments/resolve/${encodeURIComponent(candidate)}`,
+  );
 }
 
 /**
