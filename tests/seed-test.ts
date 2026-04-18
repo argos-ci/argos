@@ -17,26 +17,28 @@ import {
   createUserAccount,
 } from "../apps/backend/src/database/seeds";
 
-type WorkerFixtures = {
+type TestFixtures = {
   user: { user: User; account: Account };
-  plan: Plan;
   team: { team: Team; account: Account };
   project: Project;
   builds: BuildScenario;
 };
 
-export const seedTest = base.extend<object, WorkerFixtures>({
-  user: [
-    async ({}, use, workerInfo) => {
-      const user = await createUserAccount({
-        email: `kyle-${workerInfo.workerIndex}@acme.com`,
-        name: "Kyle Bertolino",
-        slug: `kyle-${workerInfo.workerIndex}`,
-      });
-      await use(user);
-    },
-    { scope: "worker" },
-  ],
+type WorkerFixtures = {
+  plan: Plan;
+};
+
+export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
+  user: async ({}, use, testInfo) => {
+    const id = testInfo.testId;
+    console.log("TEEST ID", id);
+    const user = await createUserAccount({
+      email: `kyle-${id}@acme.com`,
+      name: "Kyle Bertolino",
+      slug: `kyle-${id}`,
+    });
+    await use(user);
+  },
   plan: [
     async ({}, use, workerInfo) => {
       const plan = await PlanModel.query().insertAndFetch({
@@ -54,38 +56,27 @@ export const seedTest = base.extend<object, WorkerFixtures>({
     },
     { scope: "worker" },
   ],
-  team: [
-    async ({ plan }, use, workerInfo) => {
-      const slug = `acme-${workerInfo.workerIndex}`;
-      const team = await createTeamAccount({
-        slug,
-        name: "Acme",
-        forcedPlanId: plan.id,
-      });
-      await use(team);
-    },
-    { scope: "worker" },
-  ],
-
-  project: [
-    async ({ team }, use) => {
-      const project = await createProject({
-        accountId: team.account.id,
-        name: "sparkle",
-      });
-      await use(project);
-    },
-    { scope: "worker" },
-  ],
-
-  builds: [
-    async ({ project }, use, workerInfo) => {
-      const builds = await createBuildScenario({
-        projectId: project.id,
-        keyPrefix: `w${workerInfo.workerIndex}-`,
-      });
-      await use(builds);
-    },
-    { scope: "worker" },
-  ],
+  team: async ({ plan }, use, testInfo) => {
+    const slug = `acme-${testInfo.testId}`;
+    const team = await createTeamAccount({
+      slug,
+      name: "Acme",
+      forcedPlanId: plan.id,
+    });
+    await use(team);
+  },
+  project: async ({ team }, use, testInfo) => {
+    const project = await createProject({
+      accountId: team.account.id,
+      name: `sparkle-${testInfo.testId}`,
+    });
+    await use(project);
+  },
+  builds: async ({ project }, use, testInfo) => {
+    const builds = await createBuildScenario({
+      projectId: project.id,
+      keyPrefix: `${testInfo.testId}-`,
+    });
+    await use(builds);
+  },
 });
