@@ -1,16 +1,16 @@
-import type { RelationMappings } from "objection";
+import {
+  DeploymentEnvironmentSchema,
+  DeploymentStatusSchema,
+  type DeploymentEnvironment,
+  type DeploymentStatus,
+} from "@argos/schemas/deployment";
+import type { JSONSchema, RelationMappings } from "objection";
 
 import { getDeploymentUrl } from "@/deployment/url";
 
-import {
-  deploymentEnvironmentJsonSchema,
-  type DeploymentEnvironment,
-} from "../util/deployment-environment";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Project } from "./Project";
-
-type DeploymentStatus = "pending" | "ready" | "error";
 
 export class Deployment extends Model {
   static override tableName = "deployments";
@@ -30,11 +30,8 @@ export class Deployment extends Model {
         ],
         properties: {
           projectId: { type: "string" },
-          status: {
-            type: "string",
-            enum: ["pending", "ready", "error"],
-          },
-          environment: deploymentEnvironmentJsonSchema,
+          status: DeploymentStatusSchema.toJSONSchema() as JSONSchema,
+          environment: DeploymentEnvironmentSchema.toJSONSchema() as JSONSchema,
           branch: { type: "string" },
           commitSha: { type: "string" },
           slug: { type: "string" },

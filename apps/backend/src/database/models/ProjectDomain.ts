@@ -1,9 +1,9 @@
-import type { RelationMappings } from "objection";
-
 import {
-  deploymentEnvironmentJsonSchema,
+  DeploymentEnvironmentSchema,
   type DeploymentEnvironment,
-} from "../util/deployment-environment";
+} from "@argos/schemas/deployment";
+import type { JSONSchema, RelationMappings } from "objection";
+
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Project } from "./Project";
@@ -19,7 +19,7 @@ export class ProjectDomain extends Model {
         required: ["domain", "environment", "projectId", "internal"],
         properties: {
           domain: { type: "string" },
-          environment: deploymentEnvironmentJsonSchema,
+          environment: DeploymentEnvironmentSchema.toJSONSchema() as JSONSchema,
           branch: { type: ["string", "null"] },
           projectId: { type: "string" },
           internal: { type: "boolean" },
