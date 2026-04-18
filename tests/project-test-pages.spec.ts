@@ -31,15 +31,15 @@ loggedTest(
     void builds;
     await page.goto(`/${team.account.slug}/${project.name}/tests`);
     await page.getByRole("link", { name: /penelope-argos\.jpg/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "penelope-argos.jpg" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Changes/ })).toBeVisible();
     const match = page.url().match(/\/tests\/([^/?#]+)/);
     if (!match?.[1]) {
       throw new Error("Test ID should be present in the URL");
     }
     const testId = match[1];
-    await expect(
-      page.getByRole("heading", { name: "penelope-argos.jpg" }),
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Changes/ })).toBeVisible();
     await screenshot(page, "test-detail", {
       replacements: {
         [team.account.slug]: "acme",
