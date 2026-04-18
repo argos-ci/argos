@@ -76,6 +76,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   repoUrl: string | null;
   baseBranch: string | null;
   compareBranch: string | null | undefined;
+  deploymentUrl: string | null;
   prMerged: boolean;
   buildType: BuildType | null;
   isSubsetBuild: boolean;
@@ -86,6 +87,7 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
     baseBranch,
     compareBranch,
     repoUrl,
+    deploymentUrl,
     prMerged,
     buildType,
     isSubsetBuild,
@@ -94,7 +96,12 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
   const automationLibrary = metadata?.automationLibrary ?? null;
   const sdk = metadata?.sdk ?? null;
   const url = metadata?.url ?? null;
-  const previewUrl = metadata?.previewUrl ?? null;
+  const previewUrl =
+    metadata?.previewUrl ??
+    resolvePreviewUrlFromDeployment({
+      url,
+      deploymentUrl,
+    });
   const mediaType = metadata?.mediaType ?? null;
   const storyId = metadata?.story?.id ?? null;
   const storyPlay = metadata?.story?.play ?? null;
@@ -409,6 +416,27 @@ export const BuildDetailHeader = memo(function BuildDetailHeader(props: {
     </div>
   );
 });
+
+function resolvePreviewUrlFromDeployment(input: {
+  url: string | null;
+  deploymentUrl: string | null;
+}) {
+  const { url, deploymentUrl } = input;
+
+  if (
+    !url ||
+    !deploymentUrl ||
+    !canParseURL(url) ||
+    !canParseURL(deploymentUrl)
+  ) {
+    return null;
+  }
+
+  const screenshotUrl = new URL(url);
+  const deployment = new URL(deploymentUrl);
+  screenshotUrl.host = deployment.host;
+  return screenshotUrl.toString();
+}
 
 function BuildDetailIgnoreButton(props: { diff: Diff }) {
   const { diff } = props;

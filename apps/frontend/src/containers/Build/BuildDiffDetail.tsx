@@ -89,6 +89,10 @@ const _BuildFragment = graphql(`
       createdAt
       commit
     }
+    deployment {
+      id
+      url
+    }
     pullRequest {
       merged
     }
