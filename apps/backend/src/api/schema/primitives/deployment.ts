@@ -6,9 +6,9 @@ export const DeploymentSchema = z.object({
   id: z.string(),
   status: z.enum(["pending", "ready", "error"]),
   environment: z.enum(["preview", "production"]),
-  branch: z.string().nullable(),
-  commitSha: z.string().nullable(),
-  url: z.string().nullable(),
+  branch: z.string(),
+  commitSha: z.string(),
+  url: z.string(),
   createdAt: z.string(),
 });
 
