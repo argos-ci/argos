@@ -143,8 +143,19 @@ export async function screenshot(
   } = {},
 ) {
   const { replacements, ...otherOptions } = options;
-  const restore = replacements ? await replaceText(page, replacements) : null;
+  const ctx: { restore: (() => Promise<void>) | null } = { restore: null };
   await argosScreenshot(page, name, {
+    beforeScreenshot: async () => {
+      if (replacements) {
+        ctx.restore = await replaceText(page, replacements);
+      }
+    },
+    afterScreenshot: async () => {
+      if (ctx.restore) {
+        await ctx.restore();
+        ctx.restore = null;
+      }
+    },
     argosCSS: `
     [data-testid="avatar] {
       background-color: #4527a0 !important;
@@ -153,5 +164,4 @@ export async function screenshot(
     `,
     ...otherOptions,
   });
-  await restore?.();
 }
