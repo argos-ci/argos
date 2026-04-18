@@ -21,7 +21,12 @@ import {
   checkProjectName,
   resolveProjectName,
 } from "@/database/services/project";
+import {
+  getProductionInternalProjectDomain,
+  upsertProductionInternalProjectDomain,
+} from "@/database/services/project-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
+import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
@@ -171,6 +176,8 @@ export const typeDefs = gql`
     ): TestConnection!
     "Deployments associated to the project"
     deployments(after: Int = 0, first: Int = 30): DeploymentConnection!
+    "Production deployment domain"
+    domain: String
   }
 
   extend type Query {
@@ -245,6 +252,11 @@ export const typeDefs = gql`
     level: ProjectUserLevel!
   }
 
+  input UpdateProjectDomainInput {
+    projectId: ID!
+    domain: String!
+  }
+
   input RemoveContributorFromProjectInput {
     projectId: ID!
     userAccountId: ID!
@@ -281,6 +293,8 @@ export const typeDefs = gql`
     addOrUpdateProjectContributor(
       input: AddContributorToProjectInput!
     ): ProjectContributor!
+    "Update the production deployment domain"
+    updateProjectDomain(input: UpdateProjectDomainInput!): Project!
     removeContributorFromProject(
       input: RemoveContributorFromProjectInput!
     ): RemoveContributorFromProjectPayload!
@@ -717,6 +731,10 @@ export const resolvers: IResolvers = {
 
       return paginateResult({ result, first, after });
     },
+    domain: async (project) => {
+      const domain = await getProductionInternalProjectDomain(project.id);
+      return domain?.domain ?? null;
+    },
     permissions: async (project, _args, ctx) => {
       const permissions = await project.$getPermissions(ctx.auth?.user ?? null);
       return permissions as IProjectPermission[];
@@ -1097,6 +1115,42 @@ export const resolvers: IResolvers = {
         userId: userAccount.userId,
         userLevel: args.input.level,
       });
+    },
+    updateProjectDomain: async (_root, args, ctx) => {
+      const project = await getAdminProject({
+        id: args.input.projectId,
+        user: ctx.auth?.user,
+      });
+
+      let result;
+      try {
+        result = await upsertProductionInternalProjectDomain({
+          projectId: project.id,
+          domain: args.input.domain,
+        });
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          if (
+            error.message === "Invalid domain" ||
+            error.message === "Only internal domains are supported"
+          ) {
+            throw badUserInput(error.message, { field: "domain" });
+          }
+        }
+        throw error;
+      }
+
+      await Promise.all(
+        [result.previousAlias, result.nextAlias]
+          .filter((alias): alias is string => Boolean(alias))
+          .map((alias) =>
+            invalidateDeploymentCache(alias).catch(() => {
+              // Non-blocking — best effort
+            }),
+          ),
+      );
+
+      return project;
     },
     removeContributorFromProject: async (_root, args, ctx) => {
       if (!ctx.auth) {

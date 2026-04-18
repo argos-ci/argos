@@ -27,6 +27,7 @@ export * from "./NotificationWorkflow";
 export * from "./NotificationWorkflowRecipient";
 export * from "./Plan";
 export * from "./Project";
+export * from "./ProjectDomain";
 export * from "./ProjectUser";
 export * from "./Screenshot";
 export * from "./ScreenshotBucket";

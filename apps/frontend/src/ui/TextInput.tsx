@@ -82,7 +82,7 @@ export function TextInputAddon(props: ComponentPropsWithRef<"div">) {
     <div
       {...props}
       className={clsx(
-        "addon bg-ui text-low flex items-center justify-center border px-1 text-sm select-none",
+        "addon bg-ui text-low flex items-center justify-center border px-2 text-sm whitespace-nowrap select-none",
         "first:rounded-l first:border-r-0 last:rounded-r last:border-l-0",
         props.className,
       )}

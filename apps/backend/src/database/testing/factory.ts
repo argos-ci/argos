@@ -149,6 +149,17 @@ export const Project = defineFactory(models.Project, () => ({
   githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));
 
+export const ProjectDomain = defineFactory(models.ProjectDomain, () => ({
+  domain: FactoryGirl.sequence(
+    "projectDomain.domain",
+    (n) => `project-domain-${n}.dev.argos-ci.live`,
+  ),
+  environment: "production" as const,
+  branch: null,
+  projectId: Project.associate("id") as unknown as string,
+  internal: true,
+}));
+
 export const Deployment = defineFactory(models.Deployment, () => ({
   projectId: Project.associate("id") as unknown as string,
   status: "ready" as const,

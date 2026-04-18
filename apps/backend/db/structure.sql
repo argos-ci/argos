@@ -1315,6 +1315,47 @@ ALTER SEQUENCE public.plans_id_seq OWNED BY public.plans.id;
 
 
 --
+-- Name: project_domains; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_domains (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    domain character varying(255) NOT NULL,
+    environment text NOT NULL,
+    branch character varying(255),
+    "projectId" bigint NOT NULL,
+    internal boolean DEFAULT false NOT NULL,
+    CONSTRAINT project_domains_environment_check CHECK ((environment = ANY (ARRAY['preview'::text, 'production'::text]))),
+    CONSTRAINT project_domains_preview_branch_check CHECK ((((environment = 'preview'::text) AND (branch IS NOT NULL)) OR (environment = 'production'::text)))
+);
+
+
+ALTER TABLE public.project_domains OWNER TO postgres;
+
+--
+-- Name: project_domains_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_domains_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_domains_id_seq OWNER TO postgres;
+
+--
+-- Name: project_domains_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_domains_id_seq OWNED BY public.project_domains.id;
+
+
+--
 -- Name: project_users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2239,6 +2280,13 @@ ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_
 
 
 --
+-- Name: project_domains id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_domains ALTER COLUMN id SET DEFAULT nextval('public.project_domains_id_seq'::regclass);
+
+
+--
 -- Name: project_users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2693,6 +2741,22 @@ ALTER TABLE ONLY public.notification_workflows
 
 ALTER TABLE ONLY public.plans
     ADD CONSTRAINT plans_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_domains project_domains_domain_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_domains
+    ADD CONSTRAINT project_domains_domain_unique UNIQUE (domain);
+
+
+--
+-- Name: project_domains project_domains_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_domains
+    ADD CONSTRAINT project_domains_pkey PRIMARY KEY (id);
 
 
 --
@@ -3184,6 +3248,13 @@ CREATE INDEX notification_workflow_recipients_workflowid_index ON public.notific
 --
 
 CREATE INDEX plans_githubid_index ON public.plans USING btree ("githubPlanId");
+
+
+--
+-- Name: project_domains_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX project_domains_projectid_index ON public.project_domains USING btree ("projectId");
 
 
 --
@@ -3774,6 +3845,14 @@ ALTER TABLE ONLY public.notification_workflow_recipients
 
 
 --
+-- Name: project_domains project_domains_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_domains
+    ADD CONSTRAINT project_domains_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
 -- Name: project_users project_users_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4258,3 +4337,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026032
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260401084427_user_access_tokens.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260409120000_storybook_deployments.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260413145758_deployment_aliases.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260418120000_project_domains.js', 1, NOW());
