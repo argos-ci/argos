@@ -104,6 +104,8 @@ export const typeDefs = gql`
     stats: BuildStats
     "Build type"
     type: BuildType
+    "Latest deployment matching the build commit"
+    deployment: Deployment
     "Pull request head commit"
     prHeadCommit: String
     "Commit"
@@ -228,6 +230,13 @@ export const resolvers: IResolvers = {
         default:
           assertNever(status);
       }
+    },
+    deployment: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      return ctx.loaders.LatestDeploymentByProjectAndCommit.load({
+        projectId: build.projectId,
+        commitSha: compareBucket.commit,
+      });
     },
     commit: async (build, _args, ctx) => {
       if (build.prHeadCommit) {

@@ -166,6 +166,7 @@ function BuildDetail(props: {
               repoUrl={props.repoUrl}
               baseBranch={build.baseBranch ?? null}
               compareBranch={build.branch}
+              deploymentUrl={build.deployment?.url ?? null}
               prMerged={build.pullRequest?.merged ?? false}
               buildType={build.type ?? null}
               isSubsetBuild={build.subset}

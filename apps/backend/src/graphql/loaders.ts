@@ -13,6 +13,7 @@ import {
   AutomationRun,
   Build,
   BuildReview,
+  Deployment,
   File,
   GithubAccount,
   GithubAccountMember,
@@ -93,6 +94,70 @@ function createLatestProjectBuildLoader() {
     }
     return projectIds.map((id) => latestBuildsMap[id] ?? null);
   });
+}
+
+function createLatestDeploymentByProjectAndCommitLoader() {
+  return new DataLoader<
+    { projectId: string; commitSha: string },
+    Deployment | null,
+    string
+  >(
+    async (keys) => {
+      if (keys.length === 0) {
+        return [];
+      }
+
+      const valuesSql = keys.map(() => "(?::bigint, ?::text)").join(", ");
+      const bindings = keys.flatMap((key) => [key.projectId, key.commitSha]);
+
+      const rows = await Deployment.query()
+        .select(
+          Deployment.raw(`lookup."projectId" as "lookupProjectId"`),
+          Deployment.raw(`lookup."commitSha" as "lookupCommitSha"`),
+          "deployments.*",
+        )
+        .from(
+          Deployment.raw(
+            `(values ${valuesSql}) as lookup("projectId", "commitSha")`,
+            bindings,
+          ),
+        )
+        .joinRaw(
+          `
+            join lateral (
+              select *
+              from "deployments"
+              where "deployments"."projectId" = lookup."projectId"
+                and "deployments"."commitSha" = lookup."commitSha"
+              order by "deployments"."createdAt" desc, "deployments"."id" desc
+              limit 1
+            ) as deployments on true
+          `,
+        );
+
+      const deploymentsByKey = new Map<string, Deployment>();
+      for (const row of rows as Array<
+        Deployment & {
+          lookupProjectId: string | number;
+          lookupCommitSha: string;
+        }
+      >) {
+        deploymentsByKey.set(
+          `${String(row.lookupProjectId)}:${row.lookupCommitSha}`,
+          row,
+        );
+      }
+
+      return keys.map((key) => {
+        return (
+          deploymentsByKey.get(`${key.projectId}:${key.commitSha}`) ?? null
+        );
+      });
+    },
+    {
+      cacheKeyFn: (key) => `${key.projectId}:${key.commitSha}`,
+    },
+  );
 }
 
 function createAccountFromRelationLoader() {
@@ -915,6 +980,8 @@ export const createLoaders = () => ({
   GitlabProject: createModelLoader(GitlabProject),
   IgnoredChangeLoader: createIgnoredChangeLoader(),
   LatestAutomationRun: createLatestAutomationRunLoader(),
+  LatestDeploymentByProjectAndCommit:
+    createLatestDeploymentByProjectAndCommitLoader(),
   LatestProjectBuild: createLatestProjectBuildLoader(),
   LatestCompareScreenshotLoader: createLatestCompareScreenshotLoader(),
   Plan: createModelLoader(Plan),
