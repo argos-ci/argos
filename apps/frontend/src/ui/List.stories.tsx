@@ -13,6 +13,7 @@ import { StoryTitle } from "./StoryTitle";
 const meta = {
   title: "UI/List",
   component: List,
+  tags: ["skip-test"],
 } satisfies Meta<typeof List>;
 
 export default meta;

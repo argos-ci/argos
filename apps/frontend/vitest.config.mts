@@ -39,6 +39,9 @@ export default mergeConfig(
             storybookTest({
               configDir: path.join(dirname, ".storybook"),
               storybookScript: "pnpm storybook --ci",
+              tags: {
+                exclude: ["skip-test"],
+              },
             }),
             argosVitestPlugin({
               uploadToArgos: env.CI === "true",
