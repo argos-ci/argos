@@ -50,10 +50,10 @@ function ProjectTabs(props: {
     <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
+        <TabLink href="tests">Tests</TabLink>
         {showDeploymentsTab && (
           <TabLink href="deployments">Deployments</TabLink>
         )}
-        <TabLink href="tests">Tests</TabLink>
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
         )}
