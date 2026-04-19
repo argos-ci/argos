@@ -98,7 +98,7 @@ function createLatestProjectBuildLoader() {
 
 function createLatestDeploymentByProjectAndCommitLoader() {
   return new DataLoader<
-    { projectId: string; commitSha: string },
+    { projectId: string; commitShas: string[] },
     Deployment | null,
     string
   >(
@@ -107,18 +107,18 @@ function createLatestDeploymentByProjectAndCommitLoader() {
         return [];
       }
 
-      const valuesSql = keys.map(() => "(?::bigint, ?::text)").join(", ");
-      const bindings = keys.flatMap((key) => [key.projectId, key.commitSha]);
+      const valuesSql = keys.map(() => "(?::bigint, ?::text[])").join(", ");
+      const bindings = keys.flatMap((key) => [key.projectId, key.commitShas]);
 
       const rows = await Deployment.query()
         .select(
           Deployment.raw(`lookup."projectId" as "lookupProjectId"`),
-          Deployment.raw(`lookup."commitSha" as "lookupCommitSha"`),
+          Deployment.raw(`lookup."commitShas" as "lookupCommitShas"`),
           "deployments.*",
         )
         .from(
           Deployment.raw(
-            `(values ${valuesSql}) as lookup("projectId", "commitSha")`,
+            `(values ${valuesSql}) as lookup("projectId", "commitShas")`,
             bindings,
           ),
         )
@@ -128,7 +128,7 @@ function createLatestDeploymentByProjectAndCommitLoader() {
               select *
               from "deployments"
               where "deployments"."projectId" = lookup."projectId"
-                and "deployments"."commitSha" = lookup."commitSha"
+                and "deployments"."commitSha" = any(lookup."commitShas")
               order by "deployments"."createdAt" desc, "deployments"."id" desc
               limit 1
             ) as deployments on true
@@ -139,23 +139,25 @@ function createLatestDeploymentByProjectAndCommitLoader() {
       for (const row of rows as Array<
         Deployment & {
           lookupProjectId: string | number;
-          lookupCommitSha: string;
+          lookupCommitShas: string[];
         }
       >) {
         deploymentsByKey.set(
-          `${String(row.lookupProjectId)}:${row.lookupCommitSha}`,
+          `${String(row.lookupProjectId)}:${row.lookupCommitShas.join(",")}`,
           row,
         );
       }
 
       return keys.map((key) => {
         return (
-          deploymentsByKey.get(`${key.projectId}:${key.commitSha}`) ?? null
+          deploymentsByKey.get(
+            `${key.projectId}:${key.commitShas.join(",")}`,
+          ) ?? null
         );
       });
     },
     {
-      cacheKeyFn: (key) => `${key.projectId}:${key.commitSha}`,
+      cacheKeyFn: (key) => `${key.projectId}:${key.commitShas.join(",")}`,
     },
   );
 }

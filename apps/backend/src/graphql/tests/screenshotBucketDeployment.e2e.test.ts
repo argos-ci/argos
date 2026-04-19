@@ -93,4 +93,65 @@ describe("GraphQL Build.deployment", () => {
       url: latestDeployment.url,
     });
   });
+
+  it("returns the latest deployment matching any build commit sha", async () => {
+    const screenshotCommitSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const prHeadCommitSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      commit: screenshotCommitSha,
+    });
+    await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareScreenshotBucket.id,
+      prHeadCommit: prHeadCommitSha,
+    });
+
+    const latestDeployment = await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: screenshotCommitSha,
+      slug: "deployment-latest",
+      createdAt: "2026-04-11T10:00:00.000Z",
+    });
+
+    await factory.Deployment.create({
+      projectId: project.id,
+      commitSha: prHeadCommitSha,
+      slug: "deployment-older",
+      createdAt: "2026-04-10T10:00:00.000Z",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: userAccount.user!,
+        account: userAccount,
+      },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `{
+          project(accountSlug: "${userAccount.slug}", projectName: "${project.name}") {
+            build(number: 1) {
+              deployment {
+                id
+                commitSha
+                url
+              }
+            }
+          }
+        }`,
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.status).toBe(200);
+    expect(res.body.data.project.build.deployment).toEqual({
+      id: latestDeployment.id,
+      commitSha: screenshotCommitSha,
+      url: latestDeployment.url,
+    });
+  });
 });

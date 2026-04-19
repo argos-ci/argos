@@ -432,10 +432,11 @@ function resolvePreviewUrlFromDeployment(input: {
     return null;
   }
 
-  const screenshotUrl = new URL(url);
-  const deployment = new URL(deploymentUrl);
-  screenshotUrl.host = deployment.host;
-  return screenshotUrl.toString();
+  const urlObj = new URL(url);
+  const result = new URL(deploymentUrl);
+  result.pathname = urlObj.pathname;
+  result.search = urlObj.search;
+  return result.toString();
 }
 
 function BuildDetailIgnoreButton(props: { diff: Diff }) {
