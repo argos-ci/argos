@@ -3,24 +3,26 @@ import { fileURLToPath } from "node:url";
 import { argosVitestPlugin } from "@argos-ci/storybook/vitest-plugin";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { playwright } from "@vitest/browser-playwright";
+import type { UserConfig } from "vite";
 import { defineConfig, mergeConfig } from "vitest/config";
+import type { BrowserProviderOption } from "vitest/node";
 
-import frontendViteConfig from "./vite.config.mts";
+import frontendViteConfig from "./vite.config.mjs";
 
 const env = globalThis.process?.env ?? {};
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function resolveFrontendViteConfig() {
+async function resolveFrontendViteConfig(): Promise<UserConfig> {
   if (typeof frontendViteConfig === "function") {
-    return frontendViteConfig({
+    return (await frontendViteConfig({
       command: "serve",
-      mode: "development",
+      mode: "production",
       isPreview: false,
       isSsrBuild: false,
-    });
+    })) as UserConfig;
   }
 
-  return frontendViteConfig;
+  return frontendViteConfig as UserConfig;
 }
 
 export default mergeConfig(
@@ -28,7 +30,6 @@ export default mergeConfig(
   defineConfig({
     server: {
       host: "127.0.0.1",
-      https: false,
     },
     test: {
       projects: [
@@ -47,10 +48,8 @@ export default mergeConfig(
             name: "storybook",
             browser: {
               enabled: true,
-              api: {
-                host: "127.0.0.1",
-              },
-              provider: playwright(),
+              provider:
+                playwright() as unknown as BrowserProviderOption<object>,
               headless: true,
               instances: [{ browser: "chromium" }],
             },

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "tags": ["-utility", "-graphqlType"],
   "workspaces": {
     "apps/backend": {
@@ -17,17 +17,7 @@
     "infra": {
       "entry": ["scripts/app.ts", "lambda/*.ts"]
     },
-    "apps/frontend": {
-      "ignore": ["vite.config.mts"],
-      "ignoreDependencies": [
-        "@vitejs/plugin-react",
-        "@sentry/vite-plugin",
-        "@tailwindcss/vite"
-      ],
-      "vite": {
-        "config": []
-      }
-    }
+    "apps/frontend": {}
   },
   "ignore": [
     "playwright.config.mts",
@@ -35,5 +25,5 @@
     "vitest/vitest.e2e.config.mts",
     "vitest/vitest.unit.config.mts"
   ],
-  "ignoreBinaries": ["stripe", "ngrok", "op", "tsx"]
+  "ignoreBinaries": ["stripe", "ngrok", "op"]
 }
