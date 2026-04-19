@@ -5,6 +5,7 @@ import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
+import { formatDeploymentId } from "../services/deployment";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
@@ -88,7 +89,7 @@ describe("GraphQL Build.deployment", () => {
     expectNoGraphQLError(res);
     expect(res.status).toBe(200);
     expect(res.body.data.project.build.deployment).toEqual({
-      id: latestDeployment.id,
+      id: formatDeploymentId(latestDeployment.id),
       commitSha,
       url: latestDeployment.url,
     });
@@ -149,7 +150,7 @@ describe("GraphQL Build.deployment", () => {
     expectNoGraphQLError(res);
     expect(res.status).toBe(200);
     expect(res.body.data.project.build.deployment).toEqual({
-      id: latestDeployment.id,
+      id: formatDeploymentId(latestDeployment.id),
       commitSha: screenshotCommitSha,
       url: latestDeployment.url,
     });

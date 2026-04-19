@@ -5,6 +5,7 @@ import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
+import { formatDeploymentId } from "../services/deployment";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
@@ -103,7 +104,7 @@ describe("GraphQL queryDeployments", () => {
       },
       edges: [
         {
-          id: deployment.id,
+          id: formatDeploymentId(deployment.id),
           status: "pending",
           environment: "production",
           branch: "feat/deployments",
@@ -112,7 +113,7 @@ describe("GraphQL queryDeployments", () => {
           createdAt: "2017-02-05T17:14:28.167Z",
         },
         {
-          id: olderDeployment.id,
+          id: formatDeploymentId(olderDeployment.id),
           status: "ready",
           environment: "preview",
           branch: "main",
