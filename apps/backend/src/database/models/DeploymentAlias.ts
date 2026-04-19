@@ -12,10 +12,11 @@ export class DeploymentAlias extends Model {
       timestampsSchema,
       {
         type: "object" as const,
-        required: ["deploymentId", "alias"],
+        required: ["deploymentId", "alias", "type"],
         properties: {
           deploymentId: { type: "string" },
           alias: { type: "string" },
+          type: { type: "string", enum: ["branch", "domain"] },
         },
       },
     ],
@@ -36,6 +37,7 @@ export class DeploymentAlias extends Model {
 
   deploymentId!: string;
   alias!: string;
+  type!: "branch" | "domain";
 
   deployment?: Deployment;
 }

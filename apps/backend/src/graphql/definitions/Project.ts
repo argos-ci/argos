@@ -9,6 +9,7 @@ import {
   AutomationRule,
   Build,
   BUILD_EXPIRATION_DELAY_MS,
+  Deployment,
   GithubInstallation,
   GitlabProject,
   Project,
@@ -40,7 +41,6 @@ import {
   IProjectUserLevel,
   IResolvers,
 } from "../__generated__/resolver-types";
-import { listProjectDeployments } from "../services/deployment";
 import { deleteProject, getAdminProject } from "../services/project";
 import { safeParseTestId } from "../services/test";
 import { badUserInput, forbidden, unauthenticated } from "../util";
@@ -724,11 +724,13 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     deployments: async (project, { first, after }) => {
-      const result = await listProjectDeployments({
-        projectId: project.id,
-        first,
-        after,
-      });
+      const result = await Deployment.query()
+        .where("projectId", project.id)
+        .orderBy([
+          { column: "createdAt", order: "desc" },
+          { column: "id", order: "desc" },
+        ])
+        .range(after, after + first - 1);
 
       return paginateResult({ result, first, after });
     },

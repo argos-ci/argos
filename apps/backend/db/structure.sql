@@ -535,7 +535,8 @@ CREATE TABLE public.deployment_aliases (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     "deploymentId" bigint NOT NULL,
-    alias character varying(255) NOT NULL
+    alias character varying(255) NOT NULL,
+    type character varying(255) NOT NULL
 );
 
 
@@ -3139,6 +3140,13 @@ CREATE INDEX deployment_aliases_deploymentid_index ON public.deployment_aliases 
 
 
 --
+-- Name: deployments_projectid_commitsha_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX deployments_projectid_commitsha_index ON public.deployments USING btree ("projectId", "commitSha");
+
+
+--
 -- Name: deployments_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4338,3 +4346,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026040
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260409120000_storybook_deployments.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260413145758_deployment_aliases.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260418120000_project_domains.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260418123000_deployment_project_commit_index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260419110000_deployment_alias_type.js', 1, NOW());

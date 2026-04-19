@@ -3,12 +3,14 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useFlag } from "@reflag/react-sdk";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { BoxesIcon, GlobeIcon, RocketIcon } from "lucide-react";
+import clsx from "clsx";
+import { BoxesIcon, GlobeIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
+import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
+import type { DeploymentEnvironment, DeploymentStatus } from "@/gql/graphql";
 import { LinkButton } from "@/ui/Button";
-import { Chip } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -23,7 +25,9 @@ import { List, ListRow, ListRowLoader } from "@/ui/List";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
+import { bgSolidColorClassNames, type UIColor } from "@/util/colors";
 
+import { getBuildURL } from "../Build/BuildParams";
 import { NotFound } from "../NotFound";
 import { ProjectBranchLink, ProjectCommitLink } from "./ProjectGitLink";
 import { useProjectParams } from "./ProjectParams";
@@ -56,6 +60,14 @@ const ProjectDeploymentsQuery = graphql(`
           branch
           commitSha
           url
+          pullRequest {
+            id
+            ...PullRequestButton_PullRequest
+          }
+          build {
+            id
+            number
+          }
         }
       }
     }
@@ -67,29 +79,16 @@ type Project = NonNullable<ProjectDeploymentsDocument["project"]>;
 type Deployments = Project["deployments"];
 type Deployment = Deployments["edges"][0];
 
-function getDeploymentStatusColor(status: Deployment["status"]) {
-  switch (status) {
-    case "pending":
-      return "pending";
-    case "ready":
-      return "success";
-    case "error":
-      return "danger";
-    default:
-      return "neutral";
-  }
-}
+const EnvironmentLabel: Record<DeploymentEnvironment, string> = {
+  preview: "Preview",
+  production: "Production",
+};
 
-function getDeploymentEnvironmentColor(environment: Deployment["environment"]) {
-  switch (environment) {
-    case "preview":
-      return "info";
-    case "production":
-      return "primary";
-    default:
-      return "neutral";
-  }
-}
+const StatusDef: Record<DeploymentStatus, { label: string; color: UIColor }> = {
+  error: { label: "Error", color: "danger" },
+  pending: { label: "Pending", color: "pending" },
+  ready: { label: "Ready", color: "success" },
+};
 
 function DeploymentRow(props: {
   deployment: Deployment;
@@ -97,51 +96,75 @@ function DeploymentRow(props: {
   style: React.CSSProperties;
 }) {
   const { deployment, project, style } = props;
+  const params = useProjectParams();
+  invariant(params, "it is a project route");
+  const statusDef = StatusDef[deployment.status];
+
   return (
-    <ListRow className="flex items-center gap-6 p-4 text-sm" style={style}>
-      <div className="flex w-40 shrink-0 flex-col items-start gap-2">
-        <Chip
-          icon={RocketIcon}
-          color={getDeploymentStatusColor(deployment.status)}
-          scale="sm"
-        >
-          {deployment.status}
-        </Chip>
-        <Chip
-          icon={GlobeIcon}
-          color={getDeploymentEnvironmentColor(deployment.environment)}
-          scale="sm"
-        >
-          {deployment.environment}
-        </Chip>
+    <ListRow className="flex items-start gap-6 p-4 text-sm" style={style}>
+      <div className="flex w-28 shrink-0 flex-col items-start gap-1">
+        <div className="font-medium">{deployment.id}</div>
+        <div className="text-low">
+          {EnvironmentLabel[deployment.environment]}
+        </div>
       </div>
-      <div className="min-w-0 grow">
-        <div className="flex flex-col gap-1 text-xs">
-          <div>
-            <ProjectBranchLink
-              className="inline-flex max-w-full items-center"
-              repository={project.repository}
-              branch={deployment.branch}
-            />
-          </div>
-          <div>
-            <ProjectCommitLink
-              className="inline-flex max-w-full items-center"
-              repository={project.repository}
-              commit={deployment.commitSha}
-            />
-          </div>
-          <div className="text-low flex items-center gap-[0.4em]">
-            <GlobeIcon className="size-3 shrink-0" />
-            <Link
-              className="inline-flex max-w-full min-w-0 items-center"
-              variant="neutral"
-              target="_blank"
-              href={deployment.url}
-            >
-              <Truncable>{deployment.url}</Truncable>
-            </Link>
-          </div>
+      <div className="text-low flex w-28 items-center gap-2">
+        <div
+          className={clsx(
+            "size-2.5 rounded-full",
+            bgSolidColorClassNames[statusDef.color],
+          )}
+        />
+        {statusDef.label}
+      </div>
+      <div className="w-28 shrink-0">
+        {deployment.build ? (
+          <Link
+            variant="neutral"
+            href={getBuildURL({
+              ...params,
+              buildNumber: deployment.build.number,
+            })}
+          >
+            Build #{deployment.build.number}
+          </Link>
+        ) : null}
+      </div>
+      <div className="text-low flex flex-1 items-center gap-[0.4em]">
+        <GlobeIcon className="size-3 shrink-0" />
+        <Link
+          className="inline-flex max-w-full min-w-0 items-center"
+          variant="neutral"
+          target="_blank"
+          href={deployment.url}
+        >
+          <Truncable>{deployment.url}</Truncable>
+        </Link>
+      </div>
+      <div>
+        {deployment.pullRequest && (
+          <PullRequestButton
+            size="small"
+            pullRequest={deployment.pullRequest}
+            className="max-w-full"
+            target="_blank"
+          />
+        )}
+      </div>
+      <div className="flex w-40 flex-col gap-1 text-xs">
+        <div>
+          <ProjectBranchLink
+            className="inline-flex max-w-full items-center"
+            repository={project.repository}
+            branch={deployment.branch}
+          />
+        </div>
+        <div>
+          <ProjectCommitLink
+            className="inline-flex max-w-full items-center"
+            repository={project.repository}
+            commit={deployment.commitSha}
+          />
         </div>
       </div>
       <div

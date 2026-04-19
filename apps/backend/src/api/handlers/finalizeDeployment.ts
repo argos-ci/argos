@@ -170,6 +170,7 @@ async function updateDeploymentAliases(input: {
       aliases.map((alias) => ({
         alias: alias.alias,
         deploymentId: deployment.id,
+        type: alias.type,
         createdAt: now,
         updatedAt: now,
       })),
@@ -177,6 +178,7 @@ async function updateDeploymentAliases(input: {
     .onConflict("alias")
     .merge({
       deploymentId: deployment.id,
+      type: DeploymentAlias.raw(`excluded.type`),
       updatedAt: now,
     });
 

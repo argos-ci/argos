@@ -182,6 +182,7 @@ async function syncProductionDomainAlias(input: {
     await existingAlias.$query(input.trx).patch({
       alias: input.nextDomain,
       deploymentId: deployment.id,
+      type: "domain",
     });
     return {
       previousAlias: input.previousDomain,
@@ -193,10 +194,12 @@ async function syncProductionDomainAlias(input: {
     .insert({
       alias: input.nextDomain,
       deploymentId: deployment.id,
+      type: "domain",
     })
     .onConflict("alias")
     .merge({
       deploymentId: deployment.id,
+      type: "domain",
       updatedAt: new Date().toISOString(),
     });
 
