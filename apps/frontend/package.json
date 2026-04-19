@@ -15,6 +15,7 @@
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^4.1.7",
+    "@argos-ci/cli": "canary",
     "@argos-ci/storybook": "^5.3.2",
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
