@@ -30,7 +30,7 @@ loggedTest(
       `/${team.account.slug}/${project.name}/builds/14`,
     );
     await expect(page.getByText("preview-main", { exact: true })).toBeVisible();
-    await expect(page.getByText("Production")).toBeVisible();
+    await expect(page.getByText("Production", { exact: true })).toBeVisible();
 
     await screenshot(page, "project-deployments", {
       replacements: {

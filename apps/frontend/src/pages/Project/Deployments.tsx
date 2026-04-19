@@ -1,6 +1,7 @@
 import { useEffect, useRef, useTransition } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
+import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useFlag } from "@reflag/react-sdk";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
@@ -60,6 +61,11 @@ const ProjectDeploymentsQuery = graphql(`
           branch
           commitSha
           url
+          aliases {
+            id
+            type
+            url
+          }
           pullRequest {
             id
             ...PullRequestButton_PullRequest
@@ -90,18 +96,51 @@ const StatusDef: Record<DeploymentStatus, { label: string; color: UIColor }> = {
   ready: { label: "Ready", color: "success" },
 };
 
+function DeploymentTargetLink(props: {
+  href: string;
+  children: React.ReactNode;
+  type: "deployment" | Deployment["aliases"][number]["type"];
+}) {
+  const { href, children, type } = props;
+
+  return (
+    <div className="text-low flex items-center gap-[0.4em]">
+      {type === "deployment" ? (
+        <GitCommitIcon className="size-3 shrink-0" />
+      ) : type === "branch" ? (
+        <GitBranchIcon className="size-3 shrink-0" />
+      ) : (
+        <GlobeIcon className="size-3 shrink-0" />
+      )}
+      <Link
+        className="inline-flex max-w-full min-w-0 items-center"
+        variant="neutral"
+        target="_blank"
+        href={href}
+      >
+        <Truncable>{children}</Truncable>
+      </Link>
+    </div>
+  );
+}
+
 function DeploymentRow(props: {
   deployment: Deployment;
   project: Project;
-  style: React.CSSProperties;
+  index: number;
+  measureElement?: (element: HTMLDivElement | null) => void;
 }) {
-  const { deployment, project, style } = props;
+  const { deployment, project, index, measureElement } = props;
   const params = useProjectParams();
   invariant(params, "it is a project route");
   const statusDef = StatusDef[deployment.status];
 
   return (
-    <ListRow className="flex items-start gap-6 p-4 text-sm" style={style}>
+    <ListRow
+      ref={measureElement}
+      data-index={index}
+      className="flex items-start gap-6 p-4 text-sm"
+    >
       <div className="flex w-28 shrink-0 flex-col items-start gap-1">
         <div className="font-medium">{deployment.id}</div>
         <div className="text-low">
@@ -130,16 +169,19 @@ function DeploymentRow(props: {
           </Link>
         ) : null}
       </div>
-      <div className="text-low flex flex-1 items-center gap-[0.4em]">
-        <GlobeIcon className="size-3 shrink-0" />
-        <Link
-          className="inline-flex max-w-full min-w-0 items-center"
-          variant="neutral"
-          target="_blank"
-          href={deployment.url}
-        >
-          <Truncable>{deployment.url}</Truncable>
-        </Link>
+      <div className="flex flex-1 flex-col gap-1">
+        <DeploymentTargetLink href={deployment.url} type="deployment">
+          {deployment.url}
+        </DeploymentTargetLink>
+        {deployment.aliases.map((alias) => (
+          <DeploymentTargetLink
+            key={alias.id}
+            href={alias.url}
+            type={alias.type}
+          >
+            {alias.url}
+          </DeploymentTargetLink>
+        ))}
       </div>
       <div>
         {deployment.pullRequest && (
@@ -189,13 +231,18 @@ function DeploymentsList(props: {
   const displayCount = deployments.edges.length;
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? displayCount + 1 : displayCount,
-    estimateSize: () => 88,
+    estimateSize: () => 120,
     getScrollElement: () => parentRef.current,
     overscan: 20,
+    getItemKey: (index) => {
+      const deployment = deployments.edges[index];
+      return deployment?.id ?? "loader";
+    },
   });
 
   const virtualItems = rowVirtualizer.getVirtualItems();
   const lastItem = virtualItems[virtualItems.length - 1];
+  const firstItem = virtualItems[0];
 
   useEffect(() => {
     if (
@@ -220,43 +267,33 @@ function DeploymentsList(props: {
           height: rowVirtualizer.getTotalSize(),
         }}
       >
-        {virtualItems.map((virtualRow) => {
-          const deployment = deployments.edges[virtualRow.index];
+        <div
+          style={{
+            transform: `translateY(${firstItem?.start ?? 0}px)`,
+          }}
+        >
+          {virtualItems.map((virtualRow) => {
+            const deployment = deployments.edges[virtualRow.index];
 
-          if (!deployment) {
+            if (!deployment) {
+              return (
+                <ListRowLoader key={`loader-${virtualRow.index}`}>
+                  Fetching deployments...
+                </ListRowLoader>
+              );
+            }
+
             return (
-              <ListRowLoader
-                key={`loader-${virtualRow.index}`}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: virtualRow.size,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                Fetching deployments...
-              </ListRowLoader>
+              <DeploymentRow
+                key={virtualRow.key}
+                deployment={deployment}
+                project={project}
+                index={virtualRow.index}
+                measureElement={rowVirtualizer.measureElement}
+              />
             );
-          }
-
-          return (
-            <DeploymentRow
-              key={`deployment-${deployment.id}`}
-              deployment={deployment}
-              project={project}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: virtualRow.size,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            />
-          );
-        })}
+          })}
+        </div>
       </div>
     </List>
   );
