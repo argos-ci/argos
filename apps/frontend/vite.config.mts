@@ -77,17 +77,7 @@ export default defineConfig((args) => {
         ? {
             host: "app.argos-ci.dev",
             port: 4002,
-            https: {
-              key: readFileSync(
-                join(
-                  import.meta.dirname,
-                  "../../_wildcard.argos-ci.dev-key.pem",
-                ),
-              ),
-              cert: readFileSync(
-                join(import.meta.dirname, "../../_wildcard.argos-ci.dev.pem"),
-              ),
-            },
+            https: getHTTPSConfig(),
             proxy: {
               "/graphql": {
                 target: "https://app.argos-ci.dev:4001",
@@ -107,3 +97,18 @@ export default defineConfig((args) => {
         : undefined,
   };
 });
+
+function getHTTPSConfig() {
+  try {
+    return {
+      key: readFileSync(
+        join(import.meta.dirname, "../../_wildcard.argos-ci.dev-key.pem"),
+      ),
+      cert: readFileSync(
+        join(import.meta.dirname, "../../_wildcard.argos-ci.dev.pem"),
+      ),
+    };
+  } catch {
+    return undefined;
+  }
+}

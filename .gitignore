@@ -24,6 +24,7 @@ src/graphql/__generated__
 /playwright-report/
 /playwright/.cache/
 /screenshots
+/apps/frontend/screenshots
 # Turborepo
 .turbo
 # TypeScript logs
