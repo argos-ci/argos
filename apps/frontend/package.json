@@ -10,7 +10,8 @@
     "lint": "eslint --max-warnings 0 .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "vitest --config ./vitest.config.mjs --project storybook"
+    "test-storybook": "vitest --config ./vitest.config.mjs --project storybook",
+    "deploy-storybook": "argos argos publish storybook-static"
   },
   "sideEffects": false,
   "devDependencies": {

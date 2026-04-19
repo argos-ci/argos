@@ -57,6 +57,7 @@ jobs:
     timeout-minutes: 15
     env:
       NODE_ENV: test
+      TZ: utc
       ARGOS_TOKEN: ${{ secrets.ARGOS_STORYBOOK_TOKEN }}
 
     steps:
@@ -99,7 +100,7 @@ jobs:
         run: pnpm --dir apps/frontend run build-storybook
 
       - name: Publish Storybook to Argos
-        run: pnpm --dir apps/frontend exec argos publish storybook-static
+        run: pnpm --dir apps/frontend run deploy-storybook
 
   integration-test:
     runs-on: ubuntu-latest
