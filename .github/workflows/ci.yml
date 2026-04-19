@@ -68,6 +68,11 @@ jobs:
       - name: Setup Node.js & install dependencies
         uses: ./.github/actions/setup-deps
 
+      - name: Setup
+        run: pnpm run build
+        env:
+          BUILD_MODE: production
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
