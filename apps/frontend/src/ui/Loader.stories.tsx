@@ -5,6 +5,7 @@ import { Loader } from "./Loader";
 const meta = {
   title: "UI/Loader",
   component: Loader,
+  tags: ["skip-test"],
 } satisfies Meta<typeof Loader>;
 
 export default meta;

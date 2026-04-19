@@ -165,14 +165,6 @@ export const typeDefs = gql`
   }
 `;
 
-async function getBuildCommit(ctx: Context, build: Build) {
-  if (build.prHeadCommit) {
-    return build.prHeadCommit;
-  }
-  const compareBucket = await getCompareScreenshotBucket(ctx, build);
-  return compareBucket.commit;
-}
-
 async function getCompareScreenshotBucket(ctx: Context, build: Build) {
   const bucket = await ctx.loaders.ScreenshotBucket.load(
     build.compareScreenshotBucketId,
@@ -240,14 +232,22 @@ export const resolvers: IResolvers = {
       }
     },
     deployment: async (build, _args, ctx) => {
-      const commitSha = await getBuildCommit(ctx, build);
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      const commitShas: string[] = [compareBucket.commit];
+      if (build.prHeadCommit) {
+        commitShas.push(build.prHeadCommit);
+      }
       return ctx.loaders.LatestDeploymentByProjectAndCommit.load({
         projectId: build.projectId,
-        commitSha,
+        commitShas,
       });
     },
     commit: async (build, _args, ctx) => {
-      return getBuildCommit(ctx, build);
+      if (build.prHeadCommit) {
+        return build.prHeadCommit;
+      }
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      return compareBucket.commit;
     },
     branch: async (build, _args, ctx) => {
       const compareBucket = await getCompareScreenshotBucket(ctx, build);

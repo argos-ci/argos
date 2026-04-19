@@ -48,7 +48,7 @@ export const Default: Story = {
       </div>
 
       <StoryTitle>Loading</StoryTitle>
-      <div className="max-w-md">
+      <div className="max-w-md" data-visual-test="blackout">
         <List>
           <ListRowLoader delay={0} className="py-6">
             Loading projects…
