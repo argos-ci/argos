@@ -63,8 +63,12 @@ describe("subdomain", () => {
 
   it("calls handler when selfHosted is true regardless of subdomain", () => {
     vi.spyOn(config, "get").mockImplementation((key: string) => {
-      if (key === "selfHosted") return true;
-      if (key === "env") return "production";
+      if (key === "selfHosted") {
+        return true;
+      }
+      if (key === "env") {
+        return "production";
+      }
       return undefined;
     });
 
