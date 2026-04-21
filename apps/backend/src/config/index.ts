@@ -149,6 +149,12 @@ export function createConfig() {
         default: "argos-ci-development",
         env: "AWS_SCREENSHOTS_BUCKET",
       },
+      region: {
+        doc: "AWS region for the S3 screenshots bucket",
+        format: String,
+        default: "eu-west-1",
+        env: "S3_REGION",
+      },
       publicImageBaseUrl: {
         doc: "Public URL for screenshots",
         format: String,
