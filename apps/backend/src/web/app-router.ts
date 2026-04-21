@@ -230,6 +230,13 @@ export const installAppRouter = async (app: express.Application) => {
     res.sendFile(join(distDir, "index.html"));
   });
 
+  // Express 5 {*splat} requires at least one path segment, so "/" does not
+  // match the catch-all above. Add an explicit root handler so that "/"
+  // serves the SPA shell (needed for single-domain deployments).
+  router.get("/", (_req, res) => {
+    res.sendFile(join(distDir, "index.html"));
+  });
+
   app.use(subdomain(router, "app"));
 };
 
