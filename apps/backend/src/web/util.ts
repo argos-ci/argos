@@ -35,7 +35,9 @@ export const subdomain =
       matchSubdomain(req.subdomains) ||
       matchSubdomain(getHostHeaderSubdomains(req.headers.host)) ||
       // Allow localhost for testing
-      (config.get("env") === "test" && req.hostname === "localhost")
+      (config.get("env") === "test" && req.hostname === "localhost") ||
+      // Self-hosted deployments use a single domain without subdomains
+      config.get("selfHosted")
     ) {
       requestHandler(...args);
       return;

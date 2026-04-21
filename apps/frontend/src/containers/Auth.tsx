@@ -23,8 +23,14 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const COOKIE_NAME = "argos_jwt";
-const COOKIE_DOMAIN =
-  process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
+const COOKIE_DOMAIN = (() => {
+  // Self-hosted deployments use a single domain; no cross-subdomain cookie needed.
+  const clientConfig = (window as any).clientData?.config;
+  if (clientConfig?.selfHosted) {
+    return "";
+  }
+  return process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
+})();
 
 export const readAuthTokenCookie = () => {
   return Cookie.get(COOKIE_NAME) ?? null;
