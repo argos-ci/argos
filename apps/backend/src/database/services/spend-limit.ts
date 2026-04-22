@@ -48,8 +48,8 @@ export async function getSpendLimitThreshold(input: {
       if (
         // The highest threshold is reached.
         (acc === null || acc < threshold) &&
-        (previousUsageCost === null || previousUsageCost <= limitAtThreshold) &&
-        currentCost > limitAtThreshold
+        (previousUsageCost === null || previousUsageCost < limitAtThreshold) &&
+        currentCost >= limitAtThreshold
       ) {
         return threshold;
       }
@@ -75,5 +75,5 @@ export async function checkIsBlockedBySpendLimit(
   }
 
   const currentCost = await manager.getAdditionalScreenshotCost();
-  return currentCost > account.meteredSpendLimitByPeriod;
+  return currentCost >= account.meteredSpendLimitByPeriod;
 }

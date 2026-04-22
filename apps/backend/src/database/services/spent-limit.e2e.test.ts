@@ -118,6 +118,19 @@ describe("spent limit", () => {
           expect(isOverLimit).toBe(true);
         });
       });
+
+      describe("with usage exactly at the spend limit", () => {
+        beforeEach(async () => {
+          await account.$query().patchAndFetch({
+            meteredSpendLimitByPeriod: 251,
+          });
+        });
+
+        it("returns true", async () => {
+          const isOverLimit = await checkIsBlockedBySpendLimit(account);
+          expect(isOverLimit).toBe(true);
+        });
+      });
     });
 
     describe("without spend limit", () => {
@@ -143,6 +156,30 @@ describe("spent limit", () => {
           comparePreviousUsage: true,
         });
         expect(threshold).toBe(50);
+      });
+    });
+
+    describe("when usage exactly reaches a threshold", () => {
+      beforeEach(async () => {
+        await account.$query().patchAndFetch({
+          meteredSpendLimitByPeriod: 1000,
+        });
+        await factory.ScreenshotBucket.createMany(2, [
+          {
+            createdAt: new Date(now.getTime() - 3000).toISOString(),
+            projectId: project.id,
+            complete: true,
+            screenshotCount: 998,
+          },
+        ]);
+      });
+
+      it("returns the reached threshold", async () => {
+        const threshold = await getSpendLimitThreshold({
+          account,
+          comparePreviousUsage: true,
+        });
+        expect(threshold).toBe(75);
       });
     });
 

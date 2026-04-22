@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import { NotificationMessage } from "@/database/models";
+import { NotificationMessage, User } from "@/database/models";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core";
 import { notificationHandlers } from "@/notification/handlers";
@@ -16,17 +16,18 @@ async function processMessage(message: NotificationMessage) {
     throw new Error("Only email channel is supported");
   }
 
-  await message.$fetchGraph("[workflow, user.account]");
+  await message.$fetchGraph("[workflow, user.[account, emails]]");
   invariant(message.workflow, "workflow should be fetched");
   invariant(message.user, "user should be fetched");
   invariant(message.user.account, "user.account should be fetched");
 
   // At this point, the user could have changed their email address.
-  if (!message.user.email) {
+  const emailAddress = User.getNotificationEmailAddress(message.user);
+  if (!emailAddress) {
     return;
   }
 
-  const to = [message.user.email];
+  const to = [emailAddress];
   const type = message.workflow.type;
   const handler = notificationHandlers.find((h) => h.type === type);
   if (!handler) {

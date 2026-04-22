@@ -10,6 +10,11 @@ import { TeamInvite } from "./TeamInvite";
 import { UserAccessToken } from "./UserAccessToken";
 import { UserEmail } from "./UserEmail";
 
+type NotificationEmailCandidate = {
+  email: string | null;
+  emails?: Array<{ email: string; verified: boolean }> | undefined;
+};
+
 export class User extends Model {
   static override tableName = "users";
 
@@ -141,5 +146,19 @@ export class User extends Model {
       return ALL_ACCOUNT_PERMISSIONS;
     }
     return [];
+  }
+
+  /**
+   * Resolve the best email address to use for notifications.
+   */
+  static getNotificationEmailAddress(
+    user: NotificationEmailCandidate,
+  ): string | null {
+    if (user.email) {
+      return user.email;
+    }
+
+    const verifiedEmail = user.emails?.find((email) => email.verified);
+    return verifiedEmail?.email ?? null;
   }
 }

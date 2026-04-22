@@ -80,6 +80,19 @@ export const handler = defineNotificationHandler({
                       </Link>
                       .
                     </Paragraph>
+                    {props.blockWhenSpendLimitIsReached ? (
+                      <Paragraph>
+                        Because automatic pause is enabled,{" "}
+                        <strong>all builds will be paused</strong> once your
+                        team reaches <strong>100%</strong> of the spend limit.
+                      </Paragraph>
+                    ) : (
+                      <Paragraph>
+                        Automatic pause is disabled, so{" "}
+                        <strong>builds will continue</strong> even if your team
+                        goes above <strong>100%</strong> of the spend limit.
+                      </Paragraph>
+                    )}
                   </>
                 );
               }

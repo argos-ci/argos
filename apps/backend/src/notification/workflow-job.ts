@@ -1,6 +1,10 @@
 import { invariant } from "@argos/util/invariant";
 
-import { NotificationMessage, NotificationWorkflow } from "@/database/models";
+import {
+  NotificationMessage,
+  NotificationWorkflow,
+  User,
+} from "@/database/models";
 import { createModelJob } from "@/job-core";
 
 import { notificationMessageJob } from "./message-job";
@@ -12,13 +16,13 @@ export const notificationWorkflowJob = createModelJob(
 );
 
 async function processWorkflow(workflow: NotificationWorkflow) {
-  await workflow.$fetchGraph("recipients.user");
+  await workflow.$fetchGraph("recipients.[user.emails]");
   invariant(workflow.recipients, "recipients must be fetched");
 
   const emailMessages = workflow.recipients
     .map((recipient) => {
       invariant(recipient.user, "user must be fetched");
-      if (!recipient.user.email) {
+      if (!User.getNotificationEmailAddress(recipient.user)) {
         return null;
       }
       return {
