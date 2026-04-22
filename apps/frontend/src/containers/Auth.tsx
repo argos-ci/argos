@@ -11,6 +11,8 @@ import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 
+import { config } from "@/config";
+
 const JWT_VERSION = 2;
 
 type AuthToken = null | string;
@@ -25,8 +27,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const COOKIE_NAME = "argos_jwt";
 const COOKIE_DOMAIN = (() => {
   // Self-hosted deployments use a single domain; no cross-subdomain cookie needed.
-  const clientConfig = (window as any).clientData?.config;
-  if (clientConfig?.selfHosted) {
+  if (config.selfHosted) {
     return "";
   }
   return process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
