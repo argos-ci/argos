@@ -167,7 +167,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Test
-        run: pnpm run test:integration -- --shard=${{ matrix.shard }}/2
+        run: pnpm run test:integration --shard=${{ matrix.shard }}/2
 
   e2e-test:
     runs-on: ubuntu-latest

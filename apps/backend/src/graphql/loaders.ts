@@ -14,6 +14,7 @@ import {
   Build,
   BuildReview,
   Deployment,
+  DeploymentAlias,
   File,
   GithubAccount,
   GithubAccountMember,
@@ -160,6 +161,31 @@ function createLatestDeploymentByProjectAndCommitLoader() {
       cacheKeyFn: (key) => `${key.projectId}:${key.commitShas.join(",")}`,
     },
   );
+}
+
+function createDeploymentAliasesByDeploymentIdLoader() {
+  return new DataLoader<string, DeploymentAlias[]>(async (deploymentIds) => {
+    const aliases = await DeploymentAlias.query()
+      .whereIn("deploymentId", deploymentIds as string[])
+      .orderBy([
+        { column: "deploymentId", order: "asc" },
+        { column: "type", order: "asc" },
+        { column: "alias", order: "asc" },
+      ]);
+
+    const aliasesByDeploymentId = aliases.reduce<
+      Record<string, DeploymentAlias[]>
+    >((map, alias) => {
+      return {
+        ...map,
+        [alias.deploymentId]: [...(map[alias.deploymentId] ?? []), alias],
+      };
+    }, {});
+
+    return deploymentIds.map((deploymentId) => {
+      return aliasesByDeploymentId[deploymentId] ?? [];
+    });
+  });
 }
 
 function createAccountFromRelationLoader() {
@@ -971,6 +997,8 @@ export const createLoaders = () => ({
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
+  DeploymentAliasesByDeploymentId:
+    createDeploymentAliasesByDeploymentIdLoader(),
   getChangesOccurrencesLoader: createChangeOccurrencesLoader(),
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),

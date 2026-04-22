@@ -175,6 +175,7 @@ export const Deployment = defineFactory(models.Deployment, () => ({
 export const DeploymentAlias = defineFactory(models.DeploymentAlias, () => ({
   deploymentId: Deployment.associate("id") as unknown as string,
   alias: FactoryGirl.sequence("deploymentAlias.alias", (n) => `alias-${n}`),
+  type: "branch" as const,
 }));
 
 export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({

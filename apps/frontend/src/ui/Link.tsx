@@ -80,7 +80,7 @@ function getLinkClassName(props: Pick<LinkProps, "variant">) {
   return clsx(
     "rac-focus no-underline",
     "not-data-disabled:hover:underline no-data-disabled:cursor-pointer",
-    { neutral: "text-low", primary: "text-primary-low" }[variant],
+    { neutral: "text-default", primary: "text-primary-low" }[variant],
   );
 }
 
@@ -162,5 +162,7 @@ function FakeLink({
 }
 
 function ExternalIndicator() {
-  return <ExternalLinkIcon className="mb-0.5 ml-[0.4em] inline size-[1em]" />;
+  return (
+    <ExternalLinkIcon className="mb-0.5 ml-[0.4em] inline size-[1em] shrink-0" />
+  );
 }

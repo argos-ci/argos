@@ -5,11 +5,10 @@ import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
-import { formatDeploymentId } from "../services/deployment";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
-describe("GraphQL Build.deployment", () => {
+describe("GraphQL Deployment.build", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
@@ -25,40 +24,49 @@ describe("GraphQL Build.deployment", () => {
     });
   });
 
-  it("returns the latest deployment matching the build commit", async () => {
+  it("returns the latest build matching the deployment commit", async () => {
     const commitSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+    const olderCompareScreenshotBucket = await factory.ScreenshotBucket.create({
       projectId: project.id,
       commit: commitSha,
     });
     await factory.Build.create({
       projectId: project.id,
-      compareScreenshotBucketId: compareScreenshotBucket.id,
-    });
-
-    await factory.Deployment.create({
-      projectId: project.id,
-      commitSha,
-      slug: "deployment-older",
+      compareScreenshotBucketId: olderCompareScreenshotBucket.id,
+      number: 1,
       createdAt: "2026-04-10T10:00:00.000Z",
     });
-    const latestDeployment = await factory.Deployment.create({
+
+    const latestCompareScreenshotBucket = await factory.ScreenshotBucket.create(
+      {
+        projectId: project.id,
+        commit: commitSha,
+      },
+    );
+    const latestBuild = await factory.Build.create({
       projectId: project.id,
-      commitSha,
-      slug: "deployment-latest",
+      compareScreenshotBucketId: latestCompareScreenshotBucket.id,
+      number: 2,
       createdAt: "2026-04-11T10:00:00.000Z",
     });
 
-    await factory.Deployment.create({
+    await factory.Build.create({
       projectId: project.id,
-      commitSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      slug: "deployment-other-commit",
+      prHeadCommit: commitSha,
+      number: 3,
+      createdAt: "2026-04-09T10:00:00.000Z",
+    });
+
+    await factory.Build.create({
+      projectId: project.id,
+      number: 4,
       createdAt: "2026-04-12T10:00:00.000Z",
     });
+
     await factory.Deployment.create({
+      projectId: project.id,
       commitSha,
-      slug: "deployment-other-project",
-      createdAt: "2026-04-13T10:00:00.000Z",
+      slug: "deployment-latest-build",
     });
 
     const app = await createApolloServerApp(
@@ -75,11 +83,13 @@ describe("GraphQL Build.deployment", () => {
       .send({
         query: `{
           project(accountSlug: "${userAccount.slug}", projectName: "${project.name}") {
-            build(number: 1) {
-              deployment {
-                id
+            deployments {
+              edges {
                 commitSha
-                url
+                build {
+                  id
+                  number
+                }
               }
             }
           }
@@ -88,38 +98,35 @@ describe("GraphQL Build.deployment", () => {
 
     expectNoGraphQLError(res);
     expect(res.status).toBe(200);
-    expect(res.body.data.project.build.deployment).toEqual({
-      id: formatDeploymentId(latestDeployment.id),
+    expect(res.body.data.project.deployments.edges[0]).toMatchObject({
       commitSha,
-      url: latestDeployment.url,
+      build: {
+        id: latestBuild.id,
+        number: 2,
+      },
     });
   });
 
-  it("returns the latest deployment matching any build commit sha", async () => {
-    const screenshotCommitSha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const prHeadCommitSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const compareScreenshotBucket = await factory.ScreenshotBucket.create({
+  it("matches builds by prHeadCommit when needed", async () => {
+    const commitSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const latestBuild = await factory.Build.create({
       projectId: project.id,
-      commit: screenshotCommitSha,
-    });
-    await factory.Build.create({
-      projectId: project.id,
-      compareScreenshotBucketId: compareScreenshotBucket.id,
-      prHeadCommit: prHeadCommitSha,
+      prHeadCommit: commitSha,
+      number: 1,
+      createdAt: "2026-04-11T10:00:00.000Z",
     });
 
-    const latestDeployment = await factory.Deployment.create({
+    await factory.Build.create({
       projectId: project.id,
-      commitSha: screenshotCommitSha,
-      slug: "deployment-latest",
-      createdAt: "2026-04-11T10:00:00.000Z",
+      prHeadCommit: commitSha,
+      number: 2,
+      createdAt: "2026-04-10T10:00:00.000Z",
     });
 
     await factory.Deployment.create({
       projectId: project.id,
-      commitSha: prHeadCommitSha,
-      slug: "deployment-older",
-      createdAt: "2026-04-10T10:00:00.000Z",
+      commitSha,
+      slug: "deployment-pr-head-commit",
     });
 
     const app = await createApolloServerApp(
@@ -136,11 +143,12 @@ describe("GraphQL Build.deployment", () => {
       .send({
         query: `{
           project(accountSlug: "${userAccount.slug}", projectName: "${project.name}") {
-            build(number: 1) {
-              deployment {
-                id
-                commitSha
-                url
+            deployments {
+              edges {
+                build {
+                  id
+                  number
+                }
               }
             }
           }
@@ -149,10 +157,9 @@ describe("GraphQL Build.deployment", () => {
 
     expectNoGraphQLError(res);
     expect(res.status).toBe(200);
-    expect(res.body.data.project.build.deployment).toEqual({
-      id: formatDeploymentId(latestDeployment.id),
-      commitSha: screenshotCommitSha,
-      url: latestDeployment.url,
+    expect(res.body.data.project.deployments.edges[0].build).toEqual({
+      id: latestBuild.id,
+      number: 1,
     });
   });
 });

@@ -6,6 +6,8 @@ import { UserEmail } from "./models";
 import { Account } from "./models/Account";
 import { Build } from "./models/Build";
 import { BuildReview } from "./models/BuildReview";
+import { Deployment } from "./models/Deployment";
+import { DeploymentAlias } from "./models/DeploymentAlias";
 import { File } from "./models/File";
 import { GithubAccount } from "./models/GithubAccount";
 import { GithubInstallation } from "./models/GithubInstallation";
@@ -13,6 +15,7 @@ import { GithubRepository } from "./models/GithubRepository";
 import { GithubRepositoryInstallation } from "./models/GithubRepositoryInstallation";
 import { Plan } from "./models/Plan";
 import { Project } from "./models/Project";
+import { ProjectDomain } from "./models/ProjectDomain";
 import { Screenshot } from "./models/Screenshot";
 import { ScreenshotBucket } from "./models/ScreenshotBucket";
 import { ScreenshotDiff } from "./models/ScreenshotDiff";
@@ -494,6 +497,121 @@ export async function createBuildScenario(input: {
   };
 }
 
+export async function createDeploymentScenario(input: {
+  projectId: string;
+  accountSlug: string;
+  projectName: string;
+}) {
+  const { projectId, accountSlug, projectName } = input;
+  const readyPreviewTs = "2026-04-18T10:00:00.000Z";
+  const readyProductionTs = "2026-04-18T12:00:00.000Z";
+  const pendingPreviewTs = "2026-04-19T08:00:00.000Z";
+  const errorPreviewTs = "2026-04-19T07:00:00.000Z";
+
+  const productionDomain = await ProjectDomain.query().insertAndFetch({
+    projectId,
+    domain: `${projectName}-${accountSlug}.dev.argos-ci.live`,
+    environment: "production",
+    branch: null,
+    internal: true,
+  });
+
+  const [
+    readyPreviewDeployment,
+    readyProductionDeployment,
+    pendingPreviewDeployment,
+    errorPreviewDeployment,
+  ] = await Deployment.query().insertAndFetch([
+    {
+      projectId,
+      status: "ready",
+      environment: "preview",
+      branch: "preview-main",
+      commitSha: "5a23b6f173d9596a09a73864ab051ea5972e8804",
+      slug: `${projectName}-${accountSlug}-preview-main`,
+      createdAt: readyPreviewTs,
+      updatedAt: readyPreviewTs,
+      githubPullRequestId: null,
+    },
+    {
+      projectId,
+      status: "ready",
+      environment: "production",
+      branch: "main",
+      commitSha: "029b662f3ae57bae7a215301067262c1e95bbc95",
+      slug: `${projectName}-${accountSlug}-production`,
+      createdAt: readyProductionTs,
+      updatedAt: readyProductionTs,
+      githubPullRequestId: null,
+    },
+    {
+      projectId,
+      status: "pending",
+      environment: "preview",
+      branch: "list-item-text-inset-prop",
+      commitSha: "1ffac615b85e8a63424252768d21b62381f1b44e",
+      slug: `${projectName}-${accountSlug}-list-item-text-inset-prop-pending`,
+      createdAt: pendingPreviewTs,
+      updatedAt: pendingPreviewTs,
+      githubPullRequestId: null,
+    },
+    {
+      projectId,
+      status: "error",
+      environment: "preview",
+      branch: "list-item-text-inset-prop",
+      commitSha: "852cffe72a964f3783631a0ddc0b51484831363f",
+      slug: `${projectName}-${accountSlug}-list-item-text-inset-prop-error`,
+      createdAt: errorPreviewTs,
+      updatedAt: errorPreviewTs,
+      githubPullRequestId: null,
+    },
+  ]);
+
+  invariant(readyPreviewDeployment, "readyPreviewDeployment not found");
+  invariant(readyProductionDeployment, "readyProductionDeployment not found");
+  invariant(pendingPreviewDeployment, "pendingPreviewDeployment not found");
+  invariant(errorPreviewDeployment, "errorPreviewDeployment not found");
+
+  await DeploymentAlias.query().insert([
+    {
+      deploymentId: readyPreviewDeployment.id,
+      alias: `${projectName}-preview-main-${accountSlug}`,
+      type: "branch",
+      createdAt: readyPreviewTs,
+      updatedAt: readyPreviewTs,
+    },
+    {
+      deploymentId: readyProductionDeployment.id,
+      alias: `${projectName}-main-${accountSlug}`,
+      type: "branch",
+      createdAt: readyProductionTs,
+      updatedAt: readyProductionTs,
+    },
+    {
+      deploymentId: readyProductionDeployment.id,
+      alias: productionDomain.domain,
+      type: "domain",
+      createdAt: readyProductionTs,
+      updatedAt: readyProductionTs,
+    },
+    {
+      deploymentId: pendingPreviewDeployment.id,
+      alias: `${projectName}-list-item-text-inset-prop-${accountSlug}`,
+      type: "branch",
+      createdAt: pendingPreviewTs,
+      updatedAt: pendingPreviewTs,
+    },
+    {
+      deploymentId: errorPreviewDeployment.id,
+      alias: `${projectName}-list-item-text-inset-prop-failed-${accountSlug}`,
+      type: "branch",
+      createdAt: errorPreviewTs,
+      updatedAt: errorPreviewTs,
+    },
+  ]);
+}
+
 export async function seed() {
   const plans = await Plan.query().insert([
     {
@@ -650,5 +768,11 @@ export async function seed() {
   await createBuildScenario({
     projectId: bigProject.id,
     userId: greg.user.id,
+  });
+
+  await createDeploymentScenario({
+    projectId: bigProject.id,
+    accountSlug: smoothAccount.slug,
+    projectName: bigProject.name,
   });
 }
