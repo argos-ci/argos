@@ -1,6 +1,5 @@
 import gqlTag from "graphql-tag";
 
-import { Build } from "@/database/models";
 import { getDeploymentUrl } from "@/deployment/url";
 
 import {
@@ -72,21 +71,11 @@ export const resolvers: IResolvers = {
             : getDeploymentUrl(alias.alias),
       }));
     },
-    build: async (deployment) => {
-      const build = await Build.query()
-        .joinRelated("compareScreenshotBucket")
-        .where("builds.projectId", deployment.projectId)
-        .where((query) => {
-          query
-            .where("builds.prHeadCommit", deployment.commitSha)
-            .orWhere("compareScreenshotBucket.commit", deployment.commitSha);
-        })
-        .orderBy([
-          { column: "builds.createdAt", order: "desc" },
-          { column: "builds.id", order: "desc" },
-        ])
-        .first();
-      return build ?? null;
+    build: async (deployment, _args, ctx) => {
+      return ctx.loaders.LatestBuildByProjectAndCommit.load({
+        projectId: deployment.projectId,
+        commitSha: deployment.commitSha,
+      });
     },
     pullRequest: async (deployment, _args, ctx) => {
       if (!deployment.githubPullRequestId) {

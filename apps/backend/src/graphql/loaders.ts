@@ -173,19 +173,82 @@ function createDeploymentAliasesByDeploymentIdLoader() {
         { column: "alias", order: "asc" },
       ]);
 
-    const aliasesByDeploymentId = aliases.reduce<
-      Record<string, DeploymentAlias[]>
-    >((map, alias) => {
-      return {
-        ...map,
-        [alias.deploymentId]: [...(map[alias.deploymentId] ?? []), alias],
-      };
-    }, {});
+    const aliasesByDeploymentId: Record<string, DeploymentAlias[]> = {};
+    for (const alias of aliases) {
+      const deploymentAliases =
+        aliasesByDeploymentId[alias.deploymentId] ??
+        (aliasesByDeploymentId[alias.deploymentId] = []);
+      deploymentAliases.push(alias);
+    }
 
     return deploymentIds.map((deploymentId) => {
       return aliasesByDeploymentId[deploymentId] ?? [];
     });
   });
+}
+
+function createLatestBuildByProjectAndCommitLoader() {
+  return new DataLoader<
+    { projectId: string; commitSha: string },
+    Build | null,
+    string
+  >(
+    async (keys) => {
+      if (keys.length === 0) {
+        return [];
+      }
+
+      const valuesSql = keys.map(() => "(?::bigint, ?::text)").join(", ");
+      const bindings = keys.flatMap((key) => [key.projectId, key.commitSha]);
+
+      const rows = await Build.query()
+        .select(
+          Build.raw(`lookup."projectId" as "lookupProjectId"`),
+          Build.raw(`lookup."commitSha" as "lookupCommitSha"`),
+          "builds.*",
+        )
+        .from(
+          Build.raw(
+            `(values ${valuesSql}) as lookup("projectId", "commitSha")`,
+            bindings,
+          ),
+        )
+        .joinRaw(
+          `
+            join lateral (
+              select "builds".*
+              from "builds"
+              left join "screenshot_buckets" as "compareScreenshotBucket"
+                on "compareScreenshotBucket"."id" = "builds"."compareScreenshotBucketId"
+              where "builds"."projectId" = lookup."projectId"
+                and (
+                  "builds"."prHeadCommit" = lookup."commitSha"
+                  or "compareScreenshotBucket"."commit" = lookup."commitSha"
+                )
+              order by "builds"."createdAt" desc, "builds"."id" desc
+              limit 1
+            ) as builds on true
+          `,
+        );
+
+      const buildsByKey = new Map<string, Build>();
+      for (const row of rows as Array<
+        Build & { lookupProjectId: string | number; lookupCommitSha: string }
+      >) {
+        buildsByKey.set(
+          `${String(row.lookupProjectId)}:${row.lookupCommitSha}`,
+          row,
+        );
+      }
+
+      return keys.map((key) => {
+        return buildsByKey.get(`${key.projectId}:${key.commitSha}`) ?? null;
+      });
+    },
+    {
+      cacheKeyFn: (key) => `${key.projectId}:${key.commitSha}`,
+    },
+  );
 }
 
 function createAccountFromRelationLoader() {
@@ -999,6 +1062,7 @@ export const createLoaders = () => ({
   BuildUniqueReviews: createBuildUniqueReviewsLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),
+  LatestBuildByProjectAndCommit: createLatestBuildByProjectAndCommitLoader(),
   getChangesOccurrencesLoader: createChangeOccurrencesLoader(),
   File: createModelLoader(File),
   GhApiInstallation: createGhApiInstallationLoader(),
