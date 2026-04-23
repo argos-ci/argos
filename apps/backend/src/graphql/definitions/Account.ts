@@ -567,7 +567,7 @@ export const resolvers: IResolvers = {
       }
 
       const previousAccount = account.$clone();
-      await account.$query().patchAndFetch(data);
+      const updatedAccount = await account.$query().patchAndFetch(data);
 
       // If the spend limit has been updated, we may need to notify.
       if (
@@ -579,7 +579,7 @@ export const resolvers: IResolvers = {
         await (async () => {
           const [threshold, previousThreshold] = await Promise.all([
             getSpendLimitThreshold({
-              account,
+              account: updatedAccount,
               comparePreviousUsage: false,
             }),
             getSpendLimitThreshold({
@@ -598,14 +598,14 @@ export const resolvers: IResolvers = {
             return;
           }
 
-          const owners = await account.$getOwnerIds();
+          const owners = await updatedAccount.$getOwnerIds();
           await sendNotification({
             type: "spend_limit",
             data: {
-              accountName: account.name,
-              accountSlug: account.slug,
+              accountName: updatedAccount.name,
+              accountSlug: updatedAccount.slug,
               blockWhenSpendLimitIsReached:
-                account.blockWhenSpendLimitIsReached,
+                updatedAccount.blockWhenSpendLimitIsReached,
               threshold,
             },
             recipients: owners,
@@ -613,7 +613,7 @@ export const resolvers: IResolvers = {
         })();
       }
 
-      return account;
+      return updatedAccount;
     },
     uninstallSlack: async (_root, args, ctx) => {
       const { accountId } = args.input;
