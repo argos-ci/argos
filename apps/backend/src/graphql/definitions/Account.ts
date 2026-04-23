@@ -588,28 +588,26 @@ export const resolvers: IResolvers = {
             }),
           ]);
 
-          // If there is threshold, we don't need to notify the user.
+          // If there is threshold, we don't need to notify.
           if (!threshold) {
             return;
           }
 
-          // If it's the same threshold, we don't need to notify the user.
-          if (threshold === previousThreshold) {
-            return;
+          // If the threshold is above the previous one, we notify.
+          if (previousThreshold === null || threshold > previousThreshold) {
+            const owners = await updatedAccount.$getOwnerIds();
+            await sendNotification({
+              type: "spend_limit",
+              data: {
+                accountName: updatedAccount.name,
+                accountSlug: updatedAccount.slug,
+                blockWhenSpendLimitIsReached:
+                  updatedAccount.blockWhenSpendLimitIsReached,
+                threshold,
+              },
+              recipients: owners,
+            });
           }
-
-          const owners = await updatedAccount.$getOwnerIds();
-          await sendNotification({
-            type: "spend_limit",
-            data: {
-              accountName: updatedAccount.name,
-              accountSlug: updatedAccount.slug,
-              blockWhenSpendLimitIsReached:
-                updatedAccount.blockWhenSpendLimitIsReached,
-              threshold,
-            },
-            recipients: owners,
-          });
         })();
       }
 
