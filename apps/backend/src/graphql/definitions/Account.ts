@@ -567,7 +567,7 @@ export const resolvers: IResolvers = {
       }
 
       const previousAccount = account.$clone();
-      await account.$query().patchAndFetch(data);
+      const updatedAccount = await account.$query().patchAndFetch(data);
 
       // If the spend limit has been updated, we may need to notify.
       if (
@@ -579,7 +579,7 @@ export const resolvers: IResolvers = {
         await (async () => {
           const [threshold, previousThreshold] = await Promise.all([
             getSpendLimitThreshold({
-              account,
+              account: updatedAccount,
               comparePreviousUsage: false,
             }),
             getSpendLimitThreshold({
@@ -588,32 +588,30 @@ export const resolvers: IResolvers = {
             }),
           ]);
 
-          // If there is threshold, we don't need to notify the user.
+          // If there is threshold, we don't need to notify.
           if (!threshold) {
             return;
           }
 
-          // If it's the same threshold, we don't need to notify the user.
-          if (threshold === previousThreshold) {
-            return;
+          // If the threshold is above the previous one, we notify.
+          if (previousThreshold === null || threshold > previousThreshold) {
+            const owners = await updatedAccount.$getOwnerIds();
+            await sendNotification({
+              type: "spend_limit",
+              data: {
+                accountName: updatedAccount.name,
+                accountSlug: updatedAccount.slug,
+                blockWhenSpendLimitIsReached:
+                  updatedAccount.blockWhenSpendLimitIsReached,
+                threshold,
+              },
+              recipients: owners,
+            });
           }
-
-          const owners = await account.$getOwnerIds();
-          await sendNotification({
-            type: "spend_limit",
-            data: {
-              accountName: account.name,
-              accountSlug: account.slug,
-              blockWhenSpendLimitIsReached:
-                account.blockWhenSpendLimitIsReached,
-              threshold,
-            },
-            recipients: owners,
-          });
         })();
       }
 
-      return account;
+      return updatedAccount;
     },
     uninstallSlack: async (_root, args, ctx) => {
       const { accountId } = args.input;
