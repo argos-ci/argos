@@ -77,12 +77,16 @@ loggedTest("team settings members page", async ({ page, team, auth, plan }) => {
   await expect(
     page.getByRole("heading", { name: "Default access role" }),
   ).toBeVisible();
+  if (!auth.account.name) {
+    throw new Error("Account name not found");
+  }
+  await expect(page.getByText(auth.account.name)).toBeVisible();
   await screenshot(page, "team-settings-members", {
     replacements: {
       [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
       [auth.account.slug]: "john-doe",
-      ...(auth.account.name ? { [auth.account.name]: "John Doe" } : {}),
+      [auth.account.name]: "John Doe",
     },
   });
 });
