@@ -191,7 +191,7 @@ export async function createBuild(params: {
           await BuildMergeQueueGhPullRequest.query(trx).insert(
             mergeQueuePullRequests.map((pullRequest) => ({
               buildId: build.id,
-              githubPullRequestId: pullRequest.id,
+              githubPullRequestId: String(pullRequest.id),
             })),
           );
         }
