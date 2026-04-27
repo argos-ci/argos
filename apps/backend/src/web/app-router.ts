@@ -30,7 +30,10 @@ export const installAppRouter = async (app: express.Application) => {
 
   router.use(limiter);
 
+  const samlTeamSlugValue = config.get("samlTeamSlug");
   const clientConfig: ClientConfig = {
+    selfHosted: config.get("selfHosted"),
+    samlTeamSlug: samlTeamSlugValue || null,
     sentry: {
       environment: config.get("sentry.environment"),
       clientDsn: config.get("sentry.clientDsn"),

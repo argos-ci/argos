@@ -43,6 +43,12 @@ export function createConfig() {
       default: false,
       env: "SELF_HOSTED",
     },
+    samlTeamSlug: {
+      doc: "For self-hosted instances: the team account slug to auto-redirect to on login. Enables SSO-only login flow.",
+      format: String,
+      default: "",
+      env: "SAML_TEAM_SLUG",
+    },
     server: {
       port: {
         doc: "The server port number",

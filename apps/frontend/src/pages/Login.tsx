@@ -8,6 +8,7 @@ import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 import { Link } from "@/ui/Link";
+import { config } from "@/config";
 import { redirectToSAMLLogin } from "@/util/saml";
 
 export function Component() {
@@ -20,6 +21,12 @@ export function Component() {
 
   if (samlTeamSlug) {
     return <RedirectToSAMLLogin teamSlug={samlTeamSlug} redirect={redirect} />;
+  }
+
+  // Self-hosted: skip the login form and redirect straight to SSO.
+  // Uses the samlTeamSlug from server config so the operator controls which team.
+  if (config.selfHosted && config.samlTeamSlug && !error) {
+    return <RedirectToSAMLLogin teamSlug={config.samlTeamSlug} redirect={redirect} />;
   }
 
   if (loggedIn) {

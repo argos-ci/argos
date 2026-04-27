@@ -2,6 +2,10 @@
  * Client config types shared between frontend and backend.
  */
 export interface ClientConfig {
+  /** Whether this is a self-hosted instance. */
+  selfHosted: boolean;
+  /** For self-hosted instances: auto-redirect login to this team's SSO. Null on cloud. */
+  samlTeamSlug: string | null;
   sentry: {
     environment: string;
     clientDsn: string;
