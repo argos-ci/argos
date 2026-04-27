@@ -4,7 +4,7 @@ import { useAssertAuthToken } from "@/containers/Auth";
 import { fetchApi } from "@/util/api";
 
 import { Button, ButtonProps } from "./Button";
-import { Link } from "./Link";
+import { LinkButton } from "./Link";
 import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({
@@ -76,14 +76,13 @@ export function StripePortalLink({
       {children}
     </Button>
   ) : (
-    <Link
+    <LinkButton
       isDisabled={disabled}
       className="inline-flex cursor-pointer items-center"
       onPress={handlePress}
-      external
     >
       {children}
-    </Link>
+    </LinkButton>
   );
 }
 

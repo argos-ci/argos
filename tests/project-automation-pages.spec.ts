@@ -16,6 +16,7 @@ loggedTest(
       page.getByRole("heading", { name: "Project Settings" }),
     ).toBeVisible();
     await expect(page.getByText("Upload token")).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
     await screenshot(page, "project-settings", {
       replacements: {
         [team.account.slug]: "acme",
@@ -56,6 +57,7 @@ loggedTest(
     await expect(
       page.getByRole("link", { name: /Notify visual changes/ }),
     ).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
     await screenshot(page, "project-automations", {
       replacements: {
         [team.account.slug]: "acme",
