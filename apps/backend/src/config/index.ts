@@ -73,6 +73,12 @@ export function createConfig() {
       default: true,
       env: "TRACK_NPM_PACKAGE_VERSIONS",
     },
+    samlTeamSlug: {
+      doc: "The team account slug to auto-redirect to on login. Enables SSO-only login flow. Useful only for self-hosted.",
+      format: String,
+      default: "",
+      env: "SAML_TEAM_SLUG",
+    },
     server: {
       port: {
         doc: "The server port number",

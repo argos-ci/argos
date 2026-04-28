@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
+import { config } from "@/config";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginOptions } from "@/containers/LoginOptions";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
@@ -24,6 +25,13 @@ export function Component() {
 
   if (loggedIn) {
     return <Navigate to="/" replace />;
+  }
+
+  // Skip the login form and redirect straight to SSO.
+  if (config.samlTeamSlug && !error) {
+    return (
+      <RedirectToSAMLLogin teamSlug={config.samlTeamSlug} redirect={redirect} />
+    );
   }
 
   return (
