@@ -373,6 +373,7 @@ export function useGoToPreviousDiff() {
 function useExpandedState(initial: string[]) {
   const [expanded, setExpanded] = useState<string[]>(initial);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpanded(initial);
   }, [initial]);
   const toggleGroup = useCallback((name: string, value?: boolean) => {

@@ -9,6 +9,7 @@ loggedTest(
     await ensureTeamOwner({ team: team.team, user: auth.user });
     void builds;
     await page.goto(`/${team.account.slug}/${project.name}`);
+    await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Builds" })).toBeVisible();
     await screenshot(page, "project-builds", {
       replacements: {
