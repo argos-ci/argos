@@ -195,7 +195,7 @@ export const installAppRouter = async (app: express.Application) => {
             // ImageKit images
             "https://files.argos-ci.com",
             // S3 images
-            `https://${config.get("s3.screenshotsBucket")}.s3.eu-west-1.amazonaws.com`,
+            `https://${config.get("s3.screenshotsBucket")}.s3.${config.get("s3.region")}.amazonaws.com`,
             // GitHub and GitLab avatars
             "https://github.com",
             "https://avatars.githubusercontent.com",

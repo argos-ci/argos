@@ -1,11 +1,11 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { memoize } from "lodash-es";
 
+import config from "@/config";
+
 export type { S3Client } from "@aws-sdk/client-s3";
 
-type S3Region = "eu-west-1" | "us-east-1";
-
-function getS3ClientBase(region: S3Region = "eu-west-1") {
+function getS3ClientBase(region: string = config.get("s3.region")) {
   return new S3Client({ region });
 }
 
