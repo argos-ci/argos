@@ -69,6 +69,7 @@ loggedTest(
 
 loggedTest("new automation page", async ({ page, team, plan, project }) => {
   await page.goto(`/${team.account.slug}/${project.name}/automations/new`);
+  await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "New Automation Rule" }),
   ).toBeVisible();
