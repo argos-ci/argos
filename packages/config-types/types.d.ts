@@ -2,10 +2,12 @@
  * Client config types shared between frontend and backend.
  */
 export interface ClientConfig {
-  selfHosted: boolean;
   sentry: {
     environment: string;
     clientDsn: string;
+  };
+  session: {
+    domain: string;
   };
   releaseVersion: string;
   contactEmail: string;

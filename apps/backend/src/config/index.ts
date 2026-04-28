@@ -18,6 +18,36 @@ const workers = 5;
 const maxConnectionsAllowed = 20;
 const freeConnectionsForThirdTools = 2;
 
+const toStringArray = (value: string | string[]) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value === "") {
+    return null;
+  }
+
+  return value.split(",");
+};
+
+convict.addFormat({
+  name: "string-array",
+  validate: (value) => {
+    if (value === null) {
+      return;
+    }
+    if (!Array.isArray(value)) {
+      throw new Error("must be an array");
+    }
+    for (const item of value) {
+      if (typeof item !== "string") {
+        throw new Error("must be an array of strings");
+      }
+    }
+  },
+  coerce: toStringArray,
+});
+
 /**
  * Create the configuration object.
  */
@@ -37,11 +67,11 @@ export function createConfig() {
       doc: "The contact email",
       default: "contact@argos-ci.com",
     },
-    selfHosted: {
-      doc: "Whether the instance is self-hosted. Disables features that require external network access (e.g. npm registry lookups).",
+    trackNpmPackagesVersions: {
+      doc: "Whether to track npm package versions.",
       format: Boolean,
-      default: false,
-      env: "SELF_HOSTED",
+      default: true,
+      env: "TRACK_NPM_PACKAGE_VERSIONS",
     },
     server: {
       port: {
@@ -61,12 +91,6 @@ export function createConfig() {
         default: "https://app.argos-ci.dev",
         env: "SERVER_URL",
       },
-      sessionSecret: {
-        doc: "This is the secret used to sign the session ID cookie.",
-        format: String,
-        default: "keyboard cat",
-        env: "SERVER_SESSION_SECRET",
-      },
       secure: {
         doc: "Specify if the server is using https or not.",
         format: Boolean,
@@ -76,6 +100,26 @@ export function createConfig() {
         doc: "Specify if an https redirection should occur.",
         format: Boolean,
         default: false,
+      },
+      wildcardDomains: {
+        doc: "Domains that matches api and app.",
+        format: "string-array",
+        default: [] as string[],
+        env: "WILDCARD_DOMAINS",
+      },
+    },
+    session: {
+      domain: {
+        doc: "The domain where the cookie session is set.",
+        format: String,
+        default: "",
+        env: "SESSION_DOMAIN",
+      },
+      secret: {
+        doc: "This is the secret used to sign the session ID cookie.",
+        format: String,
+        default: "keyboard cat",
+        env: "SERVER_SESSION_SECRET",
       },
     },
     csp: {

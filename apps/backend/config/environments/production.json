@@ -26,5 +26,8 @@
   },
   "bucket": {
     "publishableKey": "pub_prod_6wTn7ig9Xc44FccXBc2uc9"
+  },
+  "session": {
+    "domain": ".argos-ci.com"
   }
 }

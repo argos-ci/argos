@@ -25,13 +25,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const COOKIE_NAME = "argos_jwt";
-const COOKIE_DOMAIN = (() => {
-  // Self-hosted deployments use a single domain; no cross-subdomain cookie needed.
-  if (config.selfHosted) {
-    return "";
-  }
-  return process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
-})();
 
 export const readAuthTokenCookie = () => {
   return Cookie.get(COOKIE_NAME) ?? null;
@@ -39,13 +32,13 @@ export const readAuthTokenCookie = () => {
 
 const removeAuthTokenCookie = () => {
   Cookie.remove(COOKIE_NAME, {
-    domain: COOKIE_DOMAIN,
+    domain: config.session.domain,
   });
 };
 
 const setAuthTokenCookie = (token: string) => {
   Cookie.set(COOKIE_NAME, token, {
-    domain: COOKIE_DOMAIN,
+    domain: config.session.domain,
     expires: 60,
   });
 };
