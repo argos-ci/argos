@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 
+import { config } from "@/config";
 import { useIsLoggedIn } from "@/containers/Auth";
 import { LoginOptions } from "@/containers/LoginOptions";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { BrandShield } from "@/ui/BrandShield";
 import { Container } from "@/ui/Container";
 import { Link } from "@/ui/Link";
-import { config } from "@/config";
 import { redirectToSAMLLogin } from "@/util/saml";
 
 export function Component() {
@@ -25,8 +25,10 @@ export function Component() {
 
   // Self-hosted: skip the login form and redirect straight to SSO.
   // Uses the samlTeamSlug from server config so the operator controls which team.
-  if (config.selfHosted && config.samlTeamSlug && !error) {
-    return <RedirectToSAMLLogin teamSlug={config.samlTeamSlug} redirect={redirect} />;
+  if (config.selfHosted && config.samlTeamSlug && !error && !loggedIn) {
+    return (
+      <RedirectToSAMLLogin teamSlug={config.samlTeamSlug} redirect={redirect} />
+    );
   }
 
   if (loggedIn) {
