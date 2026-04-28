@@ -3,7 +3,8 @@
     "logFormat": "",
     "url": "http://localhost:3000",
     "secure": false,
-    "port": 3000
+    "port": 3000,
+    "wildcardDomains": ["localhost"]
   },
   "logLevel": "silent",
   "s3": {

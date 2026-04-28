@@ -34,8 +34,7 @@ export const subdomain =
     if (
       matchSubdomain(req.subdomains) ||
       matchSubdomain(getHostHeaderSubdomains(req.headers.host)) ||
-      // Allow localhost for testing
-      (config.get("env") === "test" && req.hostname === "localhost")
+      config.get("server.wildcardDomains").includes(req.hostname)
     ) {
       requestHandler(...args);
       return;

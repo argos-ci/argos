@@ -11,6 +11,8 @@ import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 
+import { config } from "@/config";
+
 const JWT_VERSION = 2;
 
 type AuthToken = null | string;
@@ -23,8 +25,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const COOKIE_NAME = "argos_jwt";
-const COOKIE_DOMAIN =
-  process.env["NODE_ENV"] === "production" ? ".argos-ci.com" : "";
 
 export const readAuthTokenCookie = () => {
   return Cookie.get(COOKIE_NAME) ?? null;
@@ -32,13 +32,13 @@ export const readAuthTokenCookie = () => {
 
 const removeAuthTokenCookie = () => {
   Cookie.remove(COOKIE_NAME, {
-    domain: COOKIE_DOMAIN,
+    domain: config.session.domain,
   });
 };
 
 const setAuthTokenCookie = (token: string) => {
   Cookie.set(COOKIE_NAME, token, {
-    domain: COOKIE_DOMAIN,
+    domain: config.session.domain,
     expires: 60,
   });
 };

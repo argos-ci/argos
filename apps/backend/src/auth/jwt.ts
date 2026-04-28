@@ -24,7 +24,7 @@ type JWTData = {
 };
 
 export function createJWT(data: JWTData) {
-  return jwt.sign(data, config.get("server.sessionSecret"), {
+  return jwt.sign(data, config.get("session.secret"), {
     expiresIn: "60d",
     encoding: "utf-8",
   });
@@ -32,7 +32,7 @@ export function createJWT(data: JWTData) {
 
 export function verifyJWT(token: string): JWTData | null {
   try {
-    const payload = jwt.verify(token, config.get("server.sessionSecret"));
+    const payload = jwt.verify(token, config.get("session.secret"));
     if (typeof payload !== "object" || payload["version"] !== JWT_VERSION) {
       return null;
     }

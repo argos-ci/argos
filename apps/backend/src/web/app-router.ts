@@ -31,9 +31,13 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(limiter);
 
   const clientConfig: ClientConfig = {
+    samlTeamSlug: config.get("samlTeamSlug"),
     sentry: {
       environment: config.get("sentry.environment"),
       clientDsn: config.get("sentry.clientDsn"),
+    },
+    session: {
+      domain: config.get("session.domain"),
     },
     releaseVersion: config.get("releaseVersion"),
     contactEmail: config.get("contactEmail"),

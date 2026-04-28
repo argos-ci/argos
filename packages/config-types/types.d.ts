@@ -6,6 +6,10 @@ export interface ClientConfig {
     environment: string;
     clientDsn: string;
   };
+  session: {
+    domain: string;
+  };
+  samlTeamSlug: string;
   releaseVersion: string;
   contactEmail: string;
   github: {

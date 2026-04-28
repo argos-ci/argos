@@ -162,7 +162,7 @@ export const resolvers: IResolvers = {
   },
   ScreenshotMetadataSDK: {
     async latestVersion(sdk) {
-      if (config.get("selfHosted")) {
+      if (!config.get("trackNpmPackagesVersions")) {
         return null;
       }
       if (!checkIsTrustedNpmPackage(sdk.name)) {

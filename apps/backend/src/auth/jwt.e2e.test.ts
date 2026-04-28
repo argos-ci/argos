@@ -63,7 +63,7 @@ describe("verifyJWT", () => {
           name: userAccount.name,
         },
       },
-      config.get("server.sessionSecret"),
+      config.get("session.secret"),
     );
 
     expect(verifyJWT(token)).toBeNull();
