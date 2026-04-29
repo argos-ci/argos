@@ -4,6 +4,7 @@ import { slugJsonSchema } from "@argos/util/slug";
 import { memoize } from "lodash-es";
 import type { Pojo, RelationMappings } from "objection";
 
+import config from "@/config";
 import { computeAdditionalScreenshots } from "../services/additional-screenshots";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
@@ -277,6 +278,15 @@ export class Account extends Model {
       return new Map();
     }
 
+    // Self-hosted mode: all accounts are "active".
+    if (config.get("selfHosted")) {
+      const result = new Map<string, AccountSubscriptionStatus | null>();
+      for (const account of accounts) {
+        result.set(account.id, "active");
+      }
+      return result;
+    }
+
     const result = new Map<string, AccountSubscriptionStatus | null>();
     const accountsNeedingSubscriptions: Account[] = [];
 
@@ -378,6 +388,46 @@ export class Account extends Model {
   $getSubscriptionManager(): AccountSubscriptionManager {
     if (this._cachedSubscriptionManager) {
       return this._cachedSubscriptionManager;
+    }
+
+    // Self-hosted mode: bypass all billing/plan restrictions.
+    // Returns an "enterprise" style manager with unlimited capacity.
+    if (config.get("selfHosted")) {
+      const selfHostedManager: AccountSubscriptionManager = {
+        getActiveSubscription: async () => null,
+        getPlan: async () =>
+          ({
+            id: "self-hosted",
+            name: "enterprise",
+            displayName: "Enterprise",
+            includedScreenshots: 2_147_483_647,
+            usageBased: false,
+            githubSsoIncluded: true,
+            fineGrainedAccessControlIncluded: true,
+            samlIncluded: true,
+            interval: "year" as const,
+            githubPlanId: null,
+            stripeProductId: null,
+          }) as unknown as Plan,
+        checkIsUsageBasedPlan: async () => false,
+        getCurrentPeriodStartDate: async () =>
+          new Date(new Date().getFullYear(), 0, 1),
+        getCurrentPeriodEndDate: async () =>
+          new Date(new Date().getFullYear() + 1, 0, 1),
+        getCurrentPeriodScreenshots: async () => ({
+          all: 0,
+          neutral: 0,
+          storybook: 0,
+        }),
+        getAdditionalScreenshotCost: async () => 0,
+        getCurrentPeriodConsumptionRatio: async () => 0,
+        checkIsOutOfCapacity: async () => null,
+        getIncludedScreenshots: async () => 2_147_483_647,
+        getSubscriptionStatus: async () => "active",
+        checkCanExtendTrial: async () => false,
+      };
+      this._cachedSubscriptionManager = selfHostedManager;
+      return selfHostedManager;
     }
 
     const getActiveSubscription = memoize(async () => {
