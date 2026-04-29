@@ -30,6 +30,16 @@ export const installAppRouter = async (app: express.Application) => {
 
   router.use(limiter);
 
+  // In self-hosted mode, both app and API routers accept all requests
+  // (subdomain check bypassed). The app router runs first, so its catch-all
+  // would intercept API GET requests (e.g., GET /v2/project).
+  // Skip /v2/ paths so the API router handles them.
+  if (config.get("selfHosted")) {
+    router.use("/v2", (_req, _res, next) => {
+      next("router");
+    });
+  }
+
   const clientConfig: ClientConfig = {
     samlTeamSlug: config.get("samlTeamSlug"),
     sentry: {

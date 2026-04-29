@@ -73,6 +73,12 @@ export function createConfig() {
       default: true,
       env: "TRACK_NPM_PACKAGE_VERSIONS",
     },
+    selfHosted: {
+      doc: "Whether this is a self-hosted instance. Disables cloud-only features (billing, npm version tracking, etc.).",
+      format: Boolean,
+      default: false,
+      env: "SELF_HOSTED",
+    },
     samlTeamSlug: {
       doc: "The team account slug to auto-redirect to on login. Enables SSO-only login flow. Useful only for self-hosted.",
       format: String,
