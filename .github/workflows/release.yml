@@ -32,6 +32,14 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v6
 
+      - name: Notify deployment start
+        uses: ./.github/actions/notify-discord
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          title: "Production deployment started"
+          description: "[GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -267,3 +275,45 @@ jobs:
           service: ${{ matrix.service }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+  notify-migration-failure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: migrate
+    if: ${{ always() && needs.migrate.result == 'failure' }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+
+      - name: Notify migration failure
+        uses: ./.github/actions/notify-discord
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          title: "Production deployment failed"
+          description: "Migration failed - [GitHub Actions logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          color: "15548997"
+
+  notify-success:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: deploy
+    if: ${{ needs.deploy.result == 'success' }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+
+      - name: Notify deployment success
+        uses: ./.github/actions/notify-discord
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          title: "Production deployment succeeded"
+          description: "[GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          color: "5763719"
