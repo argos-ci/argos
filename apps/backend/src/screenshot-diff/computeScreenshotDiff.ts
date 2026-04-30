@@ -149,37 +149,33 @@ export async function computeScreenshotDiff(
     }
   }
 
-  // Unlink files
-  await Promise.all([baseFileHandle?.unlink(), headFileHandle.unlink()]);
-
-  // It is problematic to have to do that to conclude the build
-  // we should never have to patch jobStatus to complete while the job is not complete
-  // we should probably use another key to check if the diff has been computed.
+  // Update screenshot diff
   await ScreenshotDiff.query()
-    .findById(screenshotDiff.id)
+    .where("id", screenshotDiff.id)
     .patch({
       score: result?.score ?? null,
       ignored,
       s3Id: diffFile ? diffFile.file.key : null,
       fileId: diffFile ? diffFile.file.id : null,
       fingerprint: diffFile ? diffFile.fingerprint : null,
-      jobStatus: "complete",
     });
 
   await Promise.all([
+    // Unlink files
+    baseFileHandle?.unlink(),
+    headFileHandle.unlink(),
     // Conclude the build
-    concludeBuild({ build }),
+    concludeBuild({ build, completedScreenshotDiffIds: [screenshotDiff.id] }),
     // Group similar diffs
-    (async () => {
-      if (diffFile) {
-        await redisLock.acquire(["diff-group", diffFile.file.key], async () => {
+    diffFile
+      ? redisLock.acquire(["diff-group", diffFile.file.key], async () => {
           await groupSimilarDiffs({
             fingerprint: diffFile.fingerprint,
             buildId,
+            screenshotDiffId: screenshotDiff.id,
           });
-        });
-      }
-    })(),
+        })
+      : null,
   ]);
 }
 
@@ -302,20 +298,22 @@ async function processDiffResultFile(
 async function groupSimilarDiffs(input: {
   fingerprint: string;
   buildId: string;
+  screenshotDiffId: string;
 }) {
-  const { fingerprint, buildId } = input;
-  const similarDiffs = await ScreenshotDiff.query().where({
-    buildId,
-    group: null,
-    fingerprint,
-  });
+  const { fingerprint, buildId, screenshotDiffId } = input;
+  const similarDiffs = await ScreenshotDiff.query()
+    .select("id")
+    .where({
+      buildId,
+      group: null,
+      fingerprint,
+    })
+    .whereNot("id", screenshotDiffId);
 
   // Patch group on screenshot diffs
-  if (similarDiffs.length > 1) {
-    const diffIds = similarDiffs.map(({ id }) => id);
-
+  if (similarDiffs.length > 0) {
+    const diffIds = [screenshotDiffId, ...similarDiffs.map(({ id }) => id)];
     const diffIdsChunks = chunk(diffIds, 50);
-
     for (const diffIdsChunk of diffIdsChunks) {
       // Update diffs
       // We don't do the where in this query because of deadlock issues
@@ -324,11 +322,7 @@ async function groupSimilarDiffs(input: {
         .whereIn("id", diffIdsChunk)
         .patch({ group: fingerprint });
     }
-
-    return fingerprint;
   }
-
-  return null;
 }
 
 /**

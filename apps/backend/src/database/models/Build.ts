@@ -276,11 +276,24 @@ export class Build extends Model {
   /**
    * Get screenshot diffs statuses for each build.
    */
-  static async getScreenshotDiffsStatuses(buildIds: string[]) {
+  static async getScreenshotDiffsStatuses(
+    buildIds: string[],
+    options?: {
+      /**
+       * If provided, we consider these screenshot diffs as completed.
+       */
+      completedScreenshotDiffIds?: string[] | undefined;
+    },
+  ) {
     const screenshotDiffs = buildIds.length
       ? await ScreenshotDiff.query()
           .select("buildId", "jobStatus")
           .whereIn("buildId", buildIds)
+          .where((qb) => {
+            if (options?.completedScreenshotDiffIds?.length) {
+              qb.whereNotIn("id", options.completedScreenshotDiffIds);
+            }
+          })
           .groupBy("buildId", "jobStatus")
       : [];
 

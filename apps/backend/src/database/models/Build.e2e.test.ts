@@ -235,6 +235,54 @@ describe("models/Build", () => {
     });
   });
 
+  describe("#getScreenshotDiffsStatuses", () => {
+    it("should return ordered statuses for build ids", async () => {
+      const completeBuild = await factory.Build.create();
+      const progressBuild = await factory.Build.create();
+      const errorBuild = await factory.Build.create();
+      const emptyBuild = await factory.Build.create();
+
+      await factory.ScreenshotDiff.createMany(2, [
+        { buildId: completeBuild.id, jobStatus: "complete" },
+        { buildId: completeBuild.id, jobStatus: "complete" },
+      ]);
+      await factory.ScreenshotDiff.createMany(2, [
+        { buildId: progressBuild.id, jobStatus: "complete" },
+        { buildId: progressBuild.id, jobStatus: "pending" },
+      ]);
+      await factory.ScreenshotDiff.createMany(2, [
+        { buildId: errorBuild.id, jobStatus: "complete" },
+        { buildId: errorBuild.id, jobStatus: "error" },
+      ]);
+
+      const statuses = await Build.getScreenshotDiffsStatuses([
+        progressBuild.id,
+        emptyBuild.id,
+        errorBuild.id,
+        completeBuild.id,
+      ]);
+
+      expect(statuses).toEqual(["progress", "complete", "error", "complete"]);
+    });
+
+    it("should consider completedScreenshotDiffIds as complete", async () => {
+      const build = await factory.Build.create();
+      const screenshotDiff = await factory.ScreenshotDiff.create({
+        buildId: build.id,
+        jobStatus: "pending",
+      });
+
+      await expect(
+        Build.getScreenshotDiffsStatuses([build.id]),
+      ).resolves.toEqual(["progress"]);
+      await expect(
+        Build.getScreenshotDiffsStatuses([build.id], {
+          completedScreenshotDiffIds: [screenshotDiff.id],
+        }),
+      ).resolves.toEqual(["complete"]);
+    });
+  });
+
   describe("#computeConclusion", () => {
     it("should return 'no-changes' when empty", async () => {
       const build = await factory.Build.create({
