@@ -1,0 +1,55 @@
+name: "Notify Discord"
+description: "Send a short Discord webhook notification"
+inputs:
+  webhook-url:
+    description: "Discord webhook URL"
+    required: true
+  title:
+    description: "Notification title"
+    required: true
+  description:
+    description: "Notification description"
+    required: false
+    default: ""
+  color:
+    description: "Discord embed color"
+    required: false
+    default: "5793266"
+runs:
+  using: "composite"
+  steps:
+    - name: Send Discord notification
+      shell: bash
+      env:
+        COLOR: ${{ inputs.color }}
+        DESCRIPTION: ${{ inputs.description }}
+        TITLE: ${{ inputs.title }}
+        WEBHOOK_URL: ${{ inputs.webhook-url }}
+      run: |
+        set -euo pipefail
+
+        if [ -z "$WEBHOOK_URL" ]; then
+          echo "::warning::Discord webhook URL is empty; skipping notification."
+          exit 0
+        fi
+
+        payload=$(jq -n \
+          --arg title "$TITLE" \
+          --arg description "$DESCRIPTION" \
+          --arg color "$COLOR" \
+          '{
+            embeds: [
+              ({
+                title: $title,
+                color: (($color | tonumber?) // 5793266)
+              } + if $description == "" then {} else {description: $description} end)
+            ]
+          }')
+
+        curl --fail-with-body --silent --show-error \
+          --max-time 30 \
+          --retry 3 \
+          --retry-all-errors \
+          --header "Content-Type: application/json" \
+          --data "$payload" \
+          "$WEBHOOK_URL"
