@@ -285,24 +285,22 @@ export class Build extends Model {
       completedScreenshotDiffIds?: string[] | undefined;
     },
   ) {
-    const completedScreenshotDiffIds = new Set(
-      options?.completedScreenshotDiffIds ?? [],
-    );
     const screenshotDiffs = buildIds.length
       ? await ScreenshotDiff.query()
-          .select("buildId", "jobStatus", "id")
+          .select("buildId", "jobStatus")
           .whereIn("buildId", buildIds)
+          .where((qb) => {
+            if (options?.completedScreenshotDiffIds?.length) {
+              qb.whereNotIn("id", options.completedScreenshotDiffIds);
+            }
+          })
+          .groupBy("buildId", "jobStatus")
       : [];
 
     return buildIds.map((buildId) => {
       const diffJobStatuses = screenshotDiffs
         .filter((screenshotDiff) => screenshotDiff.buildId === buildId)
-        .map((screenshotDiff) => {
-          if (completedScreenshotDiffIds.has(screenshotDiff.id)) {
-            return "complete";
-          }
-          return screenshotDiff.jobStatus;
-        });
+        .map(({ jobStatus }) => jobStatus);
 
       if (diffJobStatuses.includes("error")) {
         return "error";
@@ -310,7 +308,7 @@ export class Build extends Model {
 
       if (
         diffJobStatuses.length === 0 ||
-        diffJobStatuses.every((status) => status === "complete")
+        (diffJobStatuses.length === 1 && diffJobStatuses[0] === "complete")
       ) {
         return "complete";
       }
