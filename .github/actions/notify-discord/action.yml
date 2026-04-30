@@ -36,17 +36,20 @@ runs:
         payload=$(jq -n \
           --arg title "$TITLE" \
           --arg description "$DESCRIPTION" \
-          --argjson color "$COLOR" \
+          --arg color "$COLOR" \
           '{
             embeds: [
               ({
                 title: $title,
-                color: $color
+                color: (($color | tonumber?) // 5793266)
               } + if $description == "" then {} else {description: $description} end)
             ]
           }')
 
         curl --fail-with-body --silent --show-error \
+          --max-time 30 \
+          --retry 3 \
+          --retry-all-errors \
           --header "Content-Type: application/json" \
           --data "$payload" \
           "$WEBHOOK_URL"

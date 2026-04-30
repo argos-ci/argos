@@ -293,8 +293,29 @@ jobs:
         continue-on-error: true
         with:
           webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
-          title: "Production deployment failed"
+          title: "Production migration failed"
           description: "Migration failed - [GitHub Actions logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          color: "15548997"
+
+  notify-deploy-failure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: deploy
+    if: ${{ always() && needs.deploy.result == 'failure' }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+
+      - name: Notify deployment failure
+        uses: ./.github/actions/notify-discord
+        continue-on-error: true
+        with:
+          webhook-url: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+          title: "Production deployment failed"
+          description: "Deploy failed - [GitHub Actions logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
           color: "15548997"
 
   notify-success:
