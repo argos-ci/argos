@@ -158,7 +158,6 @@ export async function diffImages(
 
   const diffConfig = getConfiguration(threshold);
 
-  // Compute diffs (sequentially to avoid memory issues)
   const [baseScore, colorSensitiveScore] = await Promise.all([
     computeDiff({
       basePath,

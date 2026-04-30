@@ -149,20 +149,21 @@ export async function computeScreenshotDiff(
     }
   }
 
+  // Update screenshot diff
+  await ScreenshotDiff.query()
+    .where("id", screenshotDiff.id)
+    .patch({
+      score: result?.score ?? null,
+      ignored,
+      s3Id: diffFile ? diffFile.file.key : null,
+      fileId: diffFile ? diffFile.file.id : null,
+      fingerprint: diffFile ? diffFile.fingerprint : null,
+    });
+
   await Promise.all([
     // Unlink files
     baseFileHandle?.unlink(),
     headFileHandle.unlink(),
-    // Update screenshot diff
-    ScreenshotDiff.query()
-      .where("id", screenshotDiff.id)
-      .patch({
-        score: result?.score ?? null,
-        ignored,
-        s3Id: diffFile ? diffFile.file.key : null,
-        fileId: diffFile ? diffFile.file.id : null,
-        fingerprint: diffFile ? diffFile.fingerprint : null,
-      }),
     // Conclude the build
     concludeBuild({ build, completedScreenshotDiffIds: [screenshotDiff.id] }),
     // Group similar diffs
@@ -311,7 +312,7 @@ async function groupSimilarDiffs(input: {
 
   // Patch group on screenshot diffs
   if (similarDiffs.length > 0) {
-    const diffIds = [screenshotDiffId, similarDiffs.map(({ id }) => id)];
+    const diffIds = [screenshotDiffId, ...similarDiffs.map(({ id }) => id)];
     const diffIdsChunks = chunk(diffIds, 50);
     for (const diffIdsChunk of diffIdsChunks) {
       // Update diffs
