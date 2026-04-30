@@ -53,7 +53,7 @@ export const handler = defineNotificationHandler({
           </Section>
           <Section className="my-8">
             <H2>
-              <Link href="https://youtu.be/QiJk2ZViN7c">
+              <Link href="https://www.youtube.com/watch?v=QiJk2ZViN7c">
                 Demo Video: Review changes in Argos →
               </Link>
             </H2>
