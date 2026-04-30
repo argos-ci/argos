@@ -13,8 +13,19 @@ import { redisLock } from "@/util/redis";
  * Concludes the build by updating the conclusion and the stats.
  * Called when all diffs are processed.
  */
-export async function concludeBuild(input: { build: Build; notify?: boolean }) {
-  const { build, notify = true } = input;
+export async function concludeBuild(input: {
+  build: Build;
+  /**
+   * Create a build notification.
+   * @default true
+   */
+  notify?: boolean;
+  /**
+   * If provided, we consider these screenshot diffs as completed.
+   */
+  completedScreenshotDiffIds?: string[];
+}) {
+  const { build, completedScreenshotDiffIds, notify = true } = input;
   const buildId = build.id;
   return redisLock.acquire(["conclude-build", buildId], async () => {
     const existingBuild = await Build.query()
@@ -25,7 +36,9 @@ export async function concludeBuild(input: { build: Build; notify?: boolean }) {
       // If the build is already concluded, we don't want to update it.
       return;
     }
-    const [status] = await Build.getScreenshotDiffsStatuses([buildId]);
+    const [status] = await Build.getScreenshotDiffsStatuses([buildId], {
+      completedScreenshotDiffIds,
+    });
     invariant(status !== undefined, "status should exist for build");
 
     const [conclusion, [stats]] = await Promise.all([

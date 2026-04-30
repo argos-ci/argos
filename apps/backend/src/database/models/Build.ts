@@ -276,18 +276,33 @@ export class Build extends Model {
   /**
    * Get screenshot diffs statuses for each build.
    */
-  static async getScreenshotDiffsStatuses(buildIds: string[]) {
+  static async getScreenshotDiffsStatuses(
+    buildIds: string[],
+    options?: {
+      /**
+       * If provided, we consider these screenshot diffs as completed.
+       */
+      completedScreenshotDiffIds?: string[] | undefined;
+    },
+  ) {
+    const completedScreenshotDiffIds = new Set(
+      options?.completedScreenshotDiffIds ?? [],
+    );
     const screenshotDiffs = buildIds.length
       ? await ScreenshotDiff.query()
-          .select("buildId", "jobStatus")
+          .select("buildId", "jobStatus", "id")
           .whereIn("buildId", buildIds)
-          .groupBy("buildId", "jobStatus")
       : [];
 
     return buildIds.map((buildId) => {
       const diffJobStatuses = screenshotDiffs
         .filter((screenshotDiff) => screenshotDiff.buildId === buildId)
-        .map(({ jobStatus }) => jobStatus);
+        .map((screenshotDiff) => {
+          if (completedScreenshotDiffIds.has(screenshotDiff.id)) {
+            return "complete";
+          }
+          return screenshotDiff.jobStatus;
+        });
 
       if (diffJobStatuses.includes("error")) {
         return "error";
@@ -295,7 +310,7 @@ export class Build extends Model {
 
       if (
         diffJobStatuses.length === 0 ||
-        (diffJobStatuses.length === 1 && diffJobStatuses[0] === "complete")
+        diffJobStatuses.every((status) => status === "complete")
       ) {
         return "complete";
       }
