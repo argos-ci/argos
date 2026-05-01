@@ -1,3 +1,7 @@
+import {
+  DeploymentEnvironmentSchema,
+  type DeploymentEnvironment,
+} from "@argos/schemas/deployment";
 import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
@@ -39,10 +43,10 @@ const RequestBodySchema = z.object({
   prNumber: GitPRNumberSchema.nullish().meta({
     description: "The pull request number",
   }),
-  environment: z
-    .enum(["preview", "production"])
-    .optional()
-    .meta({ description: "The deployment environment" }),
+  environment: DeploymentEnvironmentSchema.optional().meta({
+    description:
+      "The deployment environment. When omitted, it is inferred from `branch`: branches matching the configured production-branch glob are treated as `production`; all others default to `preview`.",
+  }),
   files: z
     .array(FileEntrySchema)
     .min(1)
@@ -312,7 +316,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
 async function getEnvironmentFromBranch(args: {
   project: Project;
   branch: string;
-}): Promise<Deployment["environment"]> {
+}): Promise<DeploymentEnvironment> {
   const { project, branch } = args;
   const glob = await project.$getDeploymentProductionBranchGlob();
   if (minimatch(branch, glob)) {
