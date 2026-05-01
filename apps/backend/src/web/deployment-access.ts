@@ -115,7 +115,8 @@ router.get(
       `${returnTo.pathname}${returnTo.search}${returnTo.hash}`,
     );
 
-    // Don't let the browser cache this redirect — the token is one-shot.
+    // Don't let the browser cache this redirect because it carries a sensitive
+    // deployment-access token that remains valid until it expires.
     res.set("Cache-Control", "no-store");
     res.redirect(callbackUrl.toString());
   }),

@@ -231,7 +231,14 @@ async function resolveAlias(
 function isSafeReturnTo(value: string): boolean {
   // Only allow same-host relative paths to prevent open-redirect via the
   // callback. Must start with "/" but not "//" (protocol-relative).
-  return value.startsWith("/") && !value.startsWith("//");
+  // Also reject control characters so the value is safe to use in a
+  // Location header.
+  return (
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    // eslint-disable-next-line no-control-regex
+    !/[\x00-\x1F\x7F]/.test(value)
+  );
 }
 
 function handleAuthCallback(
@@ -297,7 +304,7 @@ export const handler = async (
     return notFoundResponse();
   }
 
-  if (deployment.environment === "production") {
+  if (deployment.environment === "preview") {
     const cookieValue = getCookie(
       request.headers,
       cookieName(deployment.projectId),

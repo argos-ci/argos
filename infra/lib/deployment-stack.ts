@@ -19,10 +19,10 @@ import { z } from "zod";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const ArgosDeploymentStackPropsSchema = z.object({
-  stage: z.enum(["development", "production"]).default("development"),
+  stage: z.enum(["development", "production"]),
   hostedZoneId: z.string(),
-  apiBaseUrl: z.url().default("https://foal-great-publicly.ngrok-free.app"),
-  appUrl: z.url().default("https://app.argos-ci.dev:4002"),
+  apiBaseUrl: z.url(),
+  appUrl: z.url(),
   accessTokenSecret: z.string().min(1),
   appUserArns: z.array(z.string()).min(1),
 });
