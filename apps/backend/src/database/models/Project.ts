@@ -96,22 +96,17 @@ export class Project extends Model {
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
-    if (json["name"]) {
-      json["name"] = json["name"].trim();
-    }
 
-    if (json["defaultBaseBranch"]) {
-      json["defaultBaseBranch"] = json["defaultBaseBranch"].trim();
-    }
-
-    if (json["autoApprovedBranchGlob"]) {
-      json["autoApprovedBranchGlob"] = json["autoApprovedBranchGlob"].trim();
-    }
-
-    if (json["deploymentProdBranchGlob"]) {
-      json["deploymentProdBranchGlob"] =
-        json["deploymentProdBranchGlob"].trim();
-    }
+    [
+      "name",
+      "defaultBaseBranch",
+      "autoApprovedBranchGlob",
+      "deploymentProdBranchGlob",
+    ].forEach((value) => {
+      if (typeof json[value] === "string") {
+        json[value] = json[value].trim() || null;
+      }
+    });
 
     return json;
   }
