@@ -144,6 +144,10 @@ export const typeDefs = gql`
     autoApprovedBranchGlob: String!
     "Glob pattern for auto-approved branches edited by the user"
     customAutoApprovedBranchGlob: String
+    "Glob pattern for production deployment branches"
+    deploymentProductionBranchGlob: String!
+    "Glob pattern for production deployment branches edited by the user"
+    customDeploymentProductionBranchGlob: String
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -209,6 +213,7 @@ export const typeDefs = gql`
     id: ID!
     defaultBaseBranch: String
     autoApprovedBranchGlob: String
+    deploymentProductionBranchGlob: String
     private: Boolean
     name: String
     summaryCheck: SummaryCheck
@@ -768,6 +773,12 @@ export const resolvers: IResolvers = {
     customAutoApprovedBranchGlob: (project) => {
       return project.autoApprovedBranchGlob;
     },
+    deploymentProductionBranchGlob: async (project) => {
+      return project.$getDeploymentProductionBranchGlob();
+    },
+    customDeploymentProductionBranchGlob: (project) => {
+      return project.deploymentProdBranchGlob;
+    },
     public: async (project, _args, ctx) => {
       project.githubRepository = project.githubRepositoryId
         ? await ctx.loaders.GithubRepository.load(project.githubRepositoryId)
@@ -936,6 +947,11 @@ export const resolvers: IResolvers = {
 
       if (args.input.autoApprovedBranchGlob !== undefined) {
         data.autoApprovedBranchGlob = args.input.autoApprovedBranchGlob ?? null;
+      }
+
+      if (args.input.deploymentProductionBranchGlob !== undefined) {
+        data.deploymentProdBranchGlob =
+          args.input.deploymentProductionBranchGlob ?? null;
       }
 
       if (args.input.private !== undefined) {

@@ -115,7 +115,7 @@ export const ProjectBranches = (props: {
           <CardParagraph>
             Choose Argos default base branch and auto-approved branches used in{" "}
             <Link external href="https://argos-ci.com/docs/monitoring-mode">
-              Continous Integration (CI) builds
+              Continuous Integration (CI) builds
             </Link>
             .
           </CardParagraph>

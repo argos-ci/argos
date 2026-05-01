@@ -1414,6 +1414,7 @@ CREATE TABLE public.projects (
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
     "autoIgnore" jsonb,
+    "deploymentProdBranchGlob" character varying(255),
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
@@ -4370,3 +4371,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260418123000_deployment_project_commit_index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260419110000_deployment_alias_type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260430120000_build_sibling_commit_indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260501085754_deployment-production-branch-glob.js', 1, NOW());
