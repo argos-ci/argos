@@ -57,7 +57,7 @@ const UpdateProjectDeploymentBranchMutation = graphql(`
 `);
 
 type Inputs = {
-  slug: string;
+  domain: string;
   noCustomDeploymentProductionBranchGlob: boolean;
   deploymentProductionBranchGlob: string;
 };
@@ -83,7 +83,7 @@ export const ProjectDomain = (props: {
     props.project.repository?.defaultBranch || "main";
   const form = useForm<Inputs>({
     defaultValues: {
-      slug: getDomainSlug(props.project.domain),
+      domain: getDomainSlug(props.project.domain),
       noCustomDeploymentProductionBranchGlob:
         props.project.customDeploymentProductionBranchGlob === null,
       deploymentProductionBranchGlob:
@@ -93,7 +93,7 @@ export const ProjectDomain = (props: {
   });
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    const domain = `${data.slug}.${INTERNAL_DOMAIN_SUFFIX}`;
+    const domain = `${data.domain}.${INTERNAL_DOMAIN_SUFFIX}`;
 
     const result = await client.mutate({
       mutation: UpdateProjectDomainMutation,
@@ -118,7 +118,7 @@ export const ProjectDomain = (props: {
 
     form.reset({
       ...data,
-      slug: getDomainSlug(result.data?.updateProjectDomain.domain),
+      domain: getDomainSlug(result.data?.updateProjectDomain.domain),
     });
   };
 
@@ -147,7 +147,7 @@ export const ProjectDomain = (props: {
             </p>
             <FormTextInput
               control={form.control}
-              {...form.register("slug", {
+              {...form.register("domain", {
                 required: "Please enter a domain slug",
                 maxLength: {
                   value: 48,
