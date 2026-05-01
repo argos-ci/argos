@@ -11,6 +11,8 @@ import { DEFAULT_ERROR_MESSAGE } from "@/util/error";
 
 import { ModalActionContext } from "./Modal";
 
+const ROOT_FIELD = "root.serverError";
+
 function unwrapErrors(error: unknown) {
   if (CombinedGraphQLErrors.is(error) && error.errors.length > 0) {
     return error.errors.map((error) => {
@@ -28,12 +30,12 @@ function unwrapErrors(error: unknown) {
           code,
         };
       }
-      return { field: "root.serverError", message: error.message, code };
+      return { field: ROOT_FIELD, message: error.message, code };
     });
   }
   return [
     {
-      field: "root.serverError",
+      field: ROOT_FIELD,
       message: DEFAULT_ERROR_MESSAGE,
       code: null,
     },
@@ -79,17 +81,27 @@ export function Form<
  * Handle form errors by unwrapping them and setting them in the form state.
  */
 export function handleFormError(
-  form: Pick<UseFormReturn<any, any, any>, "setError">,
+  form: Pick<UseFormReturn<any, any, any>, "setError" | "setFocus">,
   error: unknown,
 ) {
   const errors = unwrapErrors(error);
+  let hasBeenFocused = false;
   errors.forEach((error) => {
     const fields = error.fields ?? [error.field];
     fields.forEach((field) => {
-      form.setError(field, {
-        type: error.code ?? "manual",
-        message: error.message,
-      });
+      form.setError(
+        field,
+        {
+          type: error.code ?? "manual",
+          message: error.message,
+        },
+        { shouldFocus: false },
+      );
+      if (hasBeenFocused === false && field !== ROOT_FIELD) {
+        // Defer the focus, else it does not work in the submit handler.
+        setTimeout(() => form.setFocus(field));
+        hasBeenFocused = true;
+      }
     });
   });
 }
