@@ -79,17 +79,27 @@ export function Form<
  * Handle form errors by unwrapping them and setting them in the form state.
  */
 export function handleFormError(
-  form: Pick<UseFormReturn<any, any, any>, "setError">,
+  form: Pick<UseFormReturn<any, any, any>, "setError" | "setFocus">,
   error: unknown,
 ) {
   const errors = unwrapErrors(error);
+  let focused = false;
   errors.forEach((error) => {
     const fields = error.fields ?? [error.field];
     fields.forEach((field) => {
-      form.setError(field, {
-        type: error.code ?? "manual",
-        message: error.message,
-      });
+      form.setError(
+        field,
+        {
+          type: error.code ?? "manual",
+          message: error.message,
+        },
+        { shouldFocus: focused === false },
+      );
+      // Focus the first field
+      if (focused === false) {
+        setTimeout(() => form.setFocus(field));
+        focused = true;
+      }
     });
   });
 }
