@@ -38,6 +38,7 @@ export function FormTextInput<
   TContext = any,
   TTransformedValues = TFieldValues,
 >({
+  ref,
   label,
   id: idProp,
   hiddenLabel = false,
@@ -49,7 +50,7 @@ export function FormTextInput<
   orientation = "vertical",
   inline = false,
   control,
-  ...props
+  ...otherProps
 }: FormTextInputProps<TFieldValues, TContext, TTransformedValues>) {
   const { isSubmitting } = useFormState({ control });
   const { error } = control.getFieldState(name);
@@ -58,13 +59,14 @@ export function FormTextInput<
   const invalid = Boolean(error);
   const input = (
     <TextInput
+      ref={ref}
       id={id}
       name={name}
       aria-invalid={invalid ? "true" : undefined}
       aria-label={hiddenLabel && typeof label === "string" ? label : undefined}
       disabled={disabled || isSubmitting}
       autoComplete="off"
-      {...props}
+      {...otherProps}
     />
   );
   return (
