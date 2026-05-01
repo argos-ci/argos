@@ -10,7 +10,9 @@ const app = new cdk.App();
 const props = ArgosDeploymentStackPropsSchema.parse({
   stage: app.node.tryGetContext("stage"),
   apiBaseUrl: app.node.tryGetContext("apiBaseUrl"),
+  appUrl: app.node.tryGetContext("appUrl"),
   hostedZoneId: app.node.tryGetContext("hostedZoneId"),
+  accessTokenSecret: app.node.tryGetContext("accessTokenSecret"),
   appUserArns: (app.node.tryGetContext("appUserArns") ?? "")
     .split(",")
     .map((s: string) => s.trim())

@@ -29,6 +29,7 @@ const test = base.extend<{
 
 describe("resolveDeploymentDomain", () => {
   test("resolves a deployment alias from a hostname", async ({
+    deployment,
     deploymentAlias,
   }) => {
     await request(app)
@@ -40,6 +41,8 @@ describe("resolveDeploymentDomain", () => {
         );
         expect(res.body).toEqual({
           deploymentId: deploymentAlias.deploymentId,
+          projectId: deployment.projectId,
+          environment: deployment.environment,
         });
       });
   });
@@ -56,6 +59,8 @@ describe("resolveDeploymentDomain", () => {
       .expect((res) => {
         expect(res.body).toEqual({
           deploymentId: deployment.id,
+          projectId: deployment.projectId,
+          environment: deployment.environment,
         });
       });
   });
@@ -72,6 +77,8 @@ describe("resolveDeploymentDomain", () => {
       .expect((res) => {
         expect(res.body).toEqual({
           deploymentId: deployment.id,
+          projectId: deployment.projectId,
+          environment: deployment.environment,
         });
       });
   });
@@ -86,6 +93,8 @@ describe("resolveDeploymentDomain", () => {
         );
         expect(res.body).toEqual({
           deploymentId: deployment.id,
+          projectId: deployment.projectId,
+          environment: deployment.environment,
         });
       });
   });

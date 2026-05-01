@@ -539,6 +539,12 @@ export function createConfig() {
           env: "DEPLOYMENTS_CLOUDFLARE_API_TOKEN",
         },
       },
+      accessTokenSecret: {
+        doc: "Shared secret used to sign deployment access JWTs (must match the value bundled into the alias edge lambda).",
+        format: String,
+        default: "",
+        env: "DEPLOYMENTS_ACCESS_TOKEN_SECRET",
+      },
     },
     dynamodb: {
       endpoint: {

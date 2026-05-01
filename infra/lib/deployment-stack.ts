@@ -22,6 +22,8 @@ export const ArgosDeploymentStackPropsSchema = z.object({
   stage: z.enum(["development", "production"]).default("development"),
   hostedZoneId: z.string(),
   apiBaseUrl: z.url().default("https://foal-great-publicly.ngrok-free.app"),
+  appUrl: z.url().default("https://app.argos-ci.dev:4002"),
+  accessTokenSecret: z.string().min(1),
   appUserArns: z.array(z.string()).min(1),
 });
 
@@ -45,7 +47,14 @@ export class ArgosDeploymentStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage, hostedZoneId, apiBaseUrl, appUserArns = [] } = props;
+    const {
+      stage,
+      hostedZoneId,
+      apiBaseUrl,
+      appUrl,
+      accessTokenSecret,
+      appUserArns = [],
+    } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
     const filesOriginAuthHeaderName = "x-argos-internal-auth";
@@ -144,6 +153,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
         target: "es2022",
         define: {
           "process.env.API_BASEURL": JSON.stringify(apiBaseUrl),
+          "process.env.APP_URL": JSON.stringify(appUrl),
+          "process.env.BASE_DOMAIN": JSON.stringify(baseDomain),
+          "process.env.ACCESS_TOKEN_SECRET": JSON.stringify(accessTokenSecret),
         },
       },
     });
