@@ -54,6 +54,7 @@ export class Project extends Model {
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },
           autoApprovedBranchGlob: { type: ["null", "string"] },
+          deploymentProdBranchGlob: { type: ["null", "string"] },
           accountId: { type: "string" },
           githubRepositoryId: { type: ["null", "string"] },
           gitlabProjectId: { type: ["null", "string"] },
@@ -91,6 +92,7 @@ export class Project extends Model {
   summaryCheck!: "always" | "never" | "auto";
   defaultUserLevel!: UserLevel | null;
   autoIgnore!: ProjectAutoIgnore | null;
+  deploymentProdBranchGlob!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);
@@ -104,6 +106,11 @@ export class Project extends Model {
 
     if (json["autoApprovedBranchGlob"]) {
       json["autoApprovedBranchGlob"] = json["autoApprovedBranchGlob"].trim();
+    }
+
+    if (json["deploymentProdBranchGlob"]) {
+      json["deploymentProdBranchGlob"] =
+        json["deploymentProdBranchGlob"].trim();
     }
 
     return json;
@@ -277,15 +284,9 @@ export class Project extends Model {
   }
 
   /**
-   * Get the default base branch for the project.
-   * It's the branch used by default as base if other strategies are not available.
-   * A `defaultBaseBranch` that is null means that the default
-   * branch of the repository should be used.
+   * Get the default repository branch or fallback to "main".
    */
-  async $getDefaultBaseBranch() {
-    if (this.defaultBaseBranch) {
-      return this.defaultBaseBranch;
-    }
+  async $getDefaultGitRepoBranch() {
     await this.$fetchGraph("[githubRepository, gitlabProject]", {
       skipFetched: true,
     });
@@ -299,6 +300,19 @@ export class Project extends Model {
   }
 
   /**
+   * Get the default base branch for the project.
+   * It's the branch used by default as base if other strategies are not available.
+   * A `defaultBaseBranch` that is null means that the default
+   * branch of the repository should be used.
+   */
+  async $getDefaultBaseBranch() {
+    if (this.defaultBaseBranch) {
+      return this.defaultBaseBranch;
+    }
+    return this.$getDefaultGitRepoBranch();
+  }
+
+  /**
    * Get the auto-approved branch glob for the project.
    * All branches that match this will be considered as auto-approved branches.
    * A `autoApprovedBranchGlob` that is null means that the default
@@ -309,6 +323,18 @@ export class Project extends Model {
       return this.autoApprovedBranchGlob;
     }
     return this.$getDefaultBaseBranch();
+  }
+
+  /**
+   * Get the production branch glob for the project.
+   * All branches that match this will be automatically marked as a production deployment.
+   * It falls back to the repo branch if not found.
+   */
+  async $getDeploymentProductionBranchGlob() {
+    if (this.deploymentProdBranchGlob) {
+      return this.deploymentProdBranchGlob;
+    }
+    return this.$getDefaultGitRepoBranch();
   }
 
   async getUrl() {

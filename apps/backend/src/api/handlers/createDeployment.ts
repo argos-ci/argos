@@ -2,11 +2,13 @@ import { invariant } from "@argos/util/invariant";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { minimatch } from "minimatch";
 import pRetry from "p-retry";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import config from "@/config";
+import type { Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 import { generateDeploymentSlug } from "@/deployment/slug";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
@@ -39,7 +41,7 @@ const RequestBodySchema = z.object({
   }),
   environment: z
     .enum(["preview", "production"])
-    .default("preview")
+    .optional()
     .meta({ description: "The deployment environment" }),
   files: z
     .array(FileEntrySchema)
@@ -233,12 +235,20 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
 
     invariant(project.account, "Account relation is not loaded");
 
+    const branch = body.branch;
+    const environment =
+      body.environment ??
+      (await getEnvironmentFromBranch({
+        project,
+        branch,
+      }));
+
     // Create the deployment row in PostgreSQL
     const deployment = await Deployment.query().insertAndFetch({
       projectId: project.id,
       status: "pending",
-      environment: body.environment,
-      branch: body.branch,
+      environment,
+      branch,
       commitSha: body.commit,
       slug: generateDeploymentSlug({
         accountSlug: project.account.slug,
@@ -295,3 +305,18 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
     });
   });
 };
+
+/**
+ * Get the default environment from the branch.
+ */
+async function getEnvironmentFromBranch(args: {
+  project: Project;
+  branch: string;
+}): Promise<Deployment["environment"]> {
+  const { project, branch } = args;
+  const glob = await project.$getDeploymentProductionBranchGlob();
+  if (minimatch(branch, glob)) {
+    return "production";
+  }
+  return "preview";
+}

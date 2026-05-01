@@ -52,14 +52,13 @@ function getInternalDeploymentDomainSlug(name: string, index = 0) {
 
 async function resolveInternalDeploymentDomain(
   name: string,
-  trx?: TransactionOrKnex,
   index = 0,
 ): Promise<string> {
   const domain = getInternalDeploymentDomain(
     getInternalDeploymentDomainSlug(name, index),
   );
 
-  const existingDomain = await ProjectDomain.query(trx)
+  const existingDomain = await ProjectDomain.query()
     .select("id")
     .findOne({ domain });
 
@@ -67,7 +66,7 @@ async function resolveInternalDeploymentDomain(
     return domain;
   }
 
-  return resolveInternalDeploymentDomain(name, trx, index + 1);
+  return resolveInternalDeploymentDomain(name, index + 1);
 }
 
 /**
@@ -93,12 +92,10 @@ export async function getProductionInternalProjectDomain(
 export async function ensureProductionInternalProjectDomain(input: {
   projectId: string;
   projectName: string;
-  trx?: TransactionOrKnex;
   index?: number;
 }) {
   const existingDomain = await getProductionInternalProjectDomain(
     input.projectId,
-    input.trx,
   );
 
   if (existingDomain) {
@@ -107,12 +104,11 @@ export async function ensureProductionInternalProjectDomain(input: {
 
   const domain = await resolveInternalDeploymentDomain(
     input.projectName,
-    input.trx,
     input.index ?? 0,
   );
 
   try {
-    return await ProjectDomain.query(input.trx).insertAndFetch({
+    return await ProjectDomain.query().insertAndFetch({
       domain,
       environment: "production",
       branch: null,
@@ -126,7 +122,6 @@ export async function ensureProductionInternalProjectDomain(input: {
 
     const concurrentDomain = await getProductionInternalProjectDomain(
       input.projectId,
-      input.trx,
     );
 
     if (concurrentDomain) {

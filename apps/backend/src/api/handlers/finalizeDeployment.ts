@@ -261,25 +261,24 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
       projectDomains,
     });
 
-    await Promise.all(
-      aliases.map((alias) =>
+    await Promise.all([
+      ...aliases.map((alias) =>
         invalidateDeploymentCache(alias.alias).catch(() => {
           // Non-blocking — best effort
         }),
       ),
-    );
-
-    // Post GitHub commit status
-    await postDeploymentCommitStatus({
-      project: auth.project,
-      deployment: {
-        commitSha: deployment.commitSha,
-        status: "ready" as const,
-        url: deployment.url,
-      },
-    }).catch(() => {
-      // Non-blocking — best effort
-    });
+      // Post commit status
+      postDeploymentCommitStatus({
+        project: auth.project,
+        deployment: {
+          commitSha: deployment.commitSha,
+          status: "ready" as const,
+          url: deployment.url,
+        },
+      }).catch(() => {
+        // Non-blocking — best effort
+      }),
+    ]);
 
     res.send(serializeDeployment(deployment));
   });
