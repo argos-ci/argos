@@ -3119,10 +3119,31 @@ CREATE INDEX builds_project_type_name_createdat_id_idx ON public.builds USING bt
 
 
 --
+-- Name: builds_projectid_comparescreenshotbucketid_name_createdat_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_projectid_comparescreenshotbucketid_name_createdat_idx ON public.builds USING btree ("projectId", "compareScreenshotBucketId", name, "createdAt" DESC) INCLUDE (id, "prHeadCommit");
+
+
+--
 -- Name: builds_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX builds_projectid_index ON public.builds USING btree ("projectId");
+
+
+--
+-- Name: builds_projectid_name_createdat_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_projectid_name_createdat_idx ON public.builds USING btree ("projectId", name, "createdAt" DESC) INCLUDE (id, "prHeadCommit", "compareScreenshotBucketId");
+
+
+--
+-- Name: builds_projectid_prheadcommit_name_createdat_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_projectid_prheadcommit_name_createdat_idx ON public.builds USING btree ("projectId", "prHeadCommit", name, "createdAt" DESC) INCLUDE (id, "compareScreenshotBucketId") WHERE ("prHeadCommit" IS NOT NULL);
 
 
 --
@@ -4348,3 +4369,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260418120000_project_domains.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260418123000_deployment_project_commit_index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260419110000_deployment_alias_type.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260430120000_build_sibling_commit_indexes.js', 1, NOW());
