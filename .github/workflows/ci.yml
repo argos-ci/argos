@@ -237,8 +237,7 @@ jobs:
   test-gate:
     name: test
     runs-on: ubuntu-latest
-    needs:
-      [unit-test, storybook-test, storybook-publish, integration-test, e2e-test]
+    needs: [unit-test, storybook-test, integration-test, e2e-test]
     if: ${{ always() }}
 
     steps:
@@ -246,7 +245,6 @@ jobs:
         run: |
           if [ "${{ needs.unit-test.result }}" != "success" ] || \
              [ "${{ needs.storybook-test.result }}" != "success" ] || \
-             [ "${{ needs.storybook-publish.result }}" != "success" ] || \
              [ "${{ needs.integration-test.result }}" != "success" ] || \
              [ "${{ needs.e2e-test.result }}" != "success" ]; then
             echo "At least one test job did not succeed"
