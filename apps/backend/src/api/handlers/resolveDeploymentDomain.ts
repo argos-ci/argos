@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import config from "@/config";
-import { Deployment } from "@/database/models/Deployment";
+import {
+  getDeploymentAliasCandidates,
+  resolveDeploymentByDomain,
+} from "@/deployment/resolve";
 import { boom } from "@/util/error";
 
 import { invalidParameters, notFound, serverError } from "../schema/util/error";
@@ -10,38 +12,12 @@ import { CreateAPIHandler } from "../util";
 
 const ResponseSchema = z.object({
   deploymentId: z.string(),
+  projectId: z.string(),
+  environment: z.enum(["preview", "production"]),
 });
 
 const CACHE_CONTROL =
   "public, max-age=0, s-maxage=60, stale-while-revalidate=300";
-
-function getAliasCandidates(domain: string): string[] {
-  const value = domain.trim().toLowerCase();
-  if (!value) {
-    return [];
-  }
-
-  let hostname = value;
-  if (value.includes("://")) {
-    try {
-      hostname = new URL(value).hostname.toLowerCase();
-    } catch {
-      return [];
-    }
-  }
-
-  const candidates = new Set<string>([hostname]);
-  const baseDomain = config.get("deployments.baseDomain").toLowerCase();
-  const suffix = `.${baseDomain}`;
-  if (hostname.endsWith(suffix)) {
-    const alias = hostname.slice(0, -suffix.length);
-    if (alias) {
-      candidates.add(alias);
-    }
-  }
-
-  return Array.from(candidates);
-}
 
 export const resolveDeploymentDomainOperation = {
   operationId: "resolveDeploymentDomain",
@@ -69,25 +45,12 @@ export const resolveDeploymentDomainOperation = {
 export const resolveDeploymentDomain: CreateAPIHandler = ({ get }) => {
   return get("/deployments/resolve/{domain}", async (req, res) => {
     const { domain } = req.ctx.params;
-    const aliases = getAliasCandidates(domain);
 
-    if (aliases.length === 0) {
+    if (getDeploymentAliasCandidates(domain).length === 0) {
       throw boom(400, "Invalid deployment domain");
     }
 
-    const deployment = await Deployment.query()
-      .select("deployments.id")
-      .leftJoin(
-        "deployment_aliases",
-        "deployment_aliases.deploymentId",
-        "deployments.id",
-      )
-      .where((query) => {
-        query
-          .whereIn("deployment_aliases.alias", aliases)
-          .orWhereIn("deployments.slug", aliases);
-      })
-      .first();
+    const deployment = await resolveDeploymentByDomain(domain);
 
     if (!deployment) {
       throw boom(404, "Deployment domain not found");
@@ -97,6 +60,8 @@ export const resolveDeploymentDomain: CreateAPIHandler = ({ get }) => {
     res.set("CDN-Cache-Control", CACHE_CONTROL);
     res.send({
       deploymentId: deployment.id,
+      projectId: deployment.projectId,
+      environment: deployment.environment,
     });
   });
 };

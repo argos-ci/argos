@@ -15,7 +15,8 @@
       "ignoreDependencies": ["@argos/knex-scripts", "moment"]
     },
     "infra": {
-      "entry": ["scripts/app.ts", "lambda/*.ts"]
+      "entry": ["scripts/app.ts", "lambda/*.ts"],
+      "ignore": ["cloudfront-functions/**/*"]
     },
     "apps/frontend": {}
   },

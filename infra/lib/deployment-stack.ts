@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cdk from "aws-cdk-lib";
@@ -18,9 +19,11 @@ import { z } from "zod";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const ArgosDeploymentStackPropsSchema = z.object({
-  stage: z.enum(["development", "production"]).default("development"),
+  stage: z.enum(["development", "production"]),
   hostedZoneId: z.string(),
-  apiBaseUrl: z.url().default("https://foal-great-publicly.ngrok-free.app"),
+  apiBaseUrl: z.url(),
+  appUrl: z.url(),
+  accessTokenSecret: z.string().min(1),
   appUserArns: z.array(z.string()).min(1),
 });
 
@@ -44,7 +47,14 @@ export class ArgosDeploymentStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ArgosDeploymentStackProps) {
     super(scope, id, props);
 
-    const { stage, hostedZoneId, apiBaseUrl, appUserArns = [] } = props;
+    const {
+      stage,
+      hostedZoneId,
+      apiBaseUrl,
+      appUrl,
+      accessTokenSecret,
+      appUserArns = [],
+    } = props;
     const isProduction = stage === "production";
     const baseDomain = STAGE_DOMAINS[stage];
     const filesOriginAuthHeaderName = "x-argos-internal-auth";
@@ -143,6 +153,9 @@ export class ArgosDeploymentStack extends cdk.Stack {
         target: "es2022",
         define: {
           "process.env.API_BASEURL": JSON.stringify(apiBaseUrl),
+          "process.env.APP_URL": JSON.stringify(appUrl),
+          "process.env.BASE_DOMAIN": JSON.stringify(baseDomain),
+          "process.env.ACCESS_TOKEN_SECRET": JSON.stringify(accessTokenSecret),
         },
       },
     });
@@ -201,59 +214,34 @@ export class ArgosDeploymentStack extends cdk.Stack {
     });
 
     // ----------------------------------------------------------------
-    // Lambda@Edge — VIEWER_REQUEST (files distribution)
+    // CloudFront Function — VIEWER_REQUEST (files distribution)
     // Rejects direct public access unless the request carries the
     // internal auth header injected by the alias distribution.
     // ----------------------------------------------------------------
-    const protectFilesViewerRequestFn = new nodejs.NodejsFunction(
-      this,
-      "ProtectFilesViewerRequestFn",
-      {
-        entry: path.join(
+    const protectFilesFnSource = fs
+      .readFileSync(
+        path.join(
           __dirname,
-          "../lambda/protect-files-viewer-request.ts",
+          "../cloudfront-functions/protect-files-viewer-request.js",
         ),
-        handler: "handler",
-        runtime: lambda.Runtime.NODEJS_24_X,
-        memorySize: 128,
-        timeout: cdk.Duration.seconds(5),
-        logGroup: new cdk.aws_logs.LogGroup(
-          this,
-          "ProtectFilesViewerRequestFnLogGroup",
-          {
-            retention: cdk.aws_logs.RetentionDays.ONE_MONTH,
-          },
-        ),
-        bundling: {
-          minify: true,
-          sourceMap: false,
-          target: "es2022",
-          define: {
-            "process.env.INTERNAL_AUTH_HEADER_NAME": JSON.stringify(
-              filesOriginAuthHeaderName,
-            ),
-            "process.env.INTERNAL_AUTH_HEADER_VALUE": JSON.stringify(
-              filesOriginAuthHeaderValue,
-            ),
-          },
-        },
-      },
-    );
+        "utf-8",
+      )
+      .replace(
+        '"__INTERNAL_AUTH_HEADER_NAME__"',
+        JSON.stringify(filesOriginAuthHeaderName),
+      )
+      .replace(
+        '"__INTERNAL_AUTH_HEADER_VALUE__"',
+        JSON.stringify(filesOriginAuthHeaderValue),
+      );
 
-    const protectFilesViewerRequestRole = protectFilesViewerRequestFn.role as
-      | iam.Role
-      | undefined;
-    protectFilesViewerRequestRole?.assumeRolePolicy?.addStatements(
-      new iam.PolicyStatement({
-        principals: [new iam.ServicePrincipal("edgelambda.amazonaws.com")],
-        actions: ["sts:AssumeRole"],
-      }),
-    );
-    protectFilesViewerRequestFn.currentVersion.addPermission(
-      "AllowCloudFrontProtectFilesViewerInvoke",
+    const protectFilesViewerRequestFn = new cloudfront.Function(
+      this,
+      "ProtectFilesViewerRequestCfFn",
       {
-        principal: new iam.ServicePrincipal("edgelambda.amazonaws.com"),
-        action: "lambda:InvokeFunction",
+        code: cloudfront.FunctionCode.fromInline(protectFilesFnSource),
+        runtime: cloudfront.FunctionRuntime.JS_2_0,
+        comment: "Reject requests without the internal auth header",
       },
     );
 
@@ -278,12 +266,14 @@ export class ArgosDeploymentStack extends cdk.Stack {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           edgeLambdas: [
             {
-              eventType: cloudfront.LambdaEdgeEventType.VIEWER_REQUEST,
-              functionVersion: protectFilesViewerRequestFn.currentVersion,
-            },
-            {
               eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
               functionVersion: originRequestFn.currentVersion,
+            },
+          ],
+          functionAssociations: [
+            {
+              eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+              function: protectFilesViewerRequestFn,
             },
           ],
           cachePolicy,
