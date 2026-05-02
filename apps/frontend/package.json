@@ -11,12 +11,12 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test-storybook": "vitest --config ./vitest.config.mjs --project storybook",
-    "deploy-storybook": "argos publish storybook-static"
+    "deploy-storybook": "argos deploy storybook-static"
   },
   "sideEffects": false,
   "devDependencies": {
     "@apollo/client": "^4.1.9",
-    "@argos-ci/cli": "canary",
+    "@argos-ci/cli": "^4.3.0",
     "@argos-ci/storybook": "^5.3.2",
     "@argos/config-types": "workspace:*",
     "@argos/error-types": "workspace:*",
