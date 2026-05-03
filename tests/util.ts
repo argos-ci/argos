@@ -2,7 +2,7 @@ import {
   argosScreenshot,
   type ArgosScreenshotOptions,
 } from "@argos-ci/playwright";
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import {
   TeamUser,
@@ -38,6 +38,7 @@ async function replaceText(
   }, storeKey);
 
   for (const [search, replace] of Object.entries(replacements)) {
+    await expect(page.getByText(search, { exact: false })).toBeVisible();
     await page.getByText(search, { exact: false }).evaluateAll(
       (elements, { search, replace, storeKey }) => {
         type TextMod = { type: "text"; node: Text; original: string };
