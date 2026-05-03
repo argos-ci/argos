@@ -19,7 +19,6 @@ loggedTest(
     await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
     await screenshot(page, "project-settings", {
       replacements: {
-        [team.account.slug]: "acme",
         [getPlanLabel(plan.name)]: "Pro",
         [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
         [auth.account.slug]: "john-doe",
@@ -60,7 +59,6 @@ loggedTest(
     await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
     await screenshot(page, "project-automations", {
       replacements: {
-        [team.account.slug]: "acme",
         [getPlanLabel(plan.name)]: "Pro",
       },
     });
@@ -76,7 +74,6 @@ loggedTest("new automation page", async ({ page, team, plan, project }) => {
   await expect(page.getByText("Build Completed")).toBeVisible();
   await screenshot(page, "project-automation-new", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });

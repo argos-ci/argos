@@ -18,7 +18,6 @@ loggedTest(
     ).toBeVisible();
     await screenshot(page, "project-tests", {
       replacements: {
-        [team.account.slug]: "acme",
         [getPlanLabel(plan.name)]: "Pro",
       },
     });
@@ -42,7 +41,6 @@ loggedTest(
     const testId = match[1];
     await screenshot(page, "test-detail", {
       replacements: {
-        [team.account.slug]: "acme",
         [testId]: "SPARKLE-XXX",
         [getPlanLabel(plan.name)]: "Pro",
       },

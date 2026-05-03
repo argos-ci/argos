@@ -34,7 +34,6 @@ loggedTest(
 
     await screenshot(page, "project-deployments", {
       replacements: {
-        [team.account.slug]: "acme",
         [getPlanLabel(plan.name)]: "Pro",
       },
     });

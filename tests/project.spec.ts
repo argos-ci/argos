@@ -13,7 +13,6 @@ loggedTest(
     await expect(page.getByRole("heading", { name: "Builds" })).toBeVisible();
     await screenshot(page, "project-builds", {
       replacements: {
-        [team.account.slug]: "acme",
         [getPlanLabel(plan.name)]: "Pro",
       },
     });

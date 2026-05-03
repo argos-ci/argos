@@ -13,7 +13,6 @@ loggedTest("team projects page", async ({ page, team, plan, project }) => {
   await expect(page.getByRole("link", { name: project.name })).toBeVisible();
   await screenshot(page, "account-projects", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
@@ -26,7 +25,6 @@ loggedTest("new project page", async ({ page, team, plan }) => {
   ).toBeVisible();
   await screenshot(page, "account-new-project", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
@@ -38,7 +36,6 @@ loggedTest("account analytics page", async ({ page, team, plan }) => {
   await expect(page.getByText("Screenshots by Project")).toBeVisible();
   await screenshot(page, "account-analytics", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
@@ -53,7 +50,6 @@ loggedTest("team settings general page", async ({ page, team, plan }) => {
   await page.getByLabel("URL namespace").fill("acme");
   await screenshot(page, "team-settings-general", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
@@ -65,7 +61,6 @@ loggedTest("team settings billing page", async ({ page, team, plan }) => {
   await expect(page.getByText("Current period")).toBeVisible();
   await screenshot(page, "team-settings-billing", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
@@ -83,7 +78,6 @@ loggedTest("team settings members page", async ({ page, team, auth, plan }) => {
   await expect(page.getByText(auth.account.name)).toBeVisible();
   await screenshot(page, "team-settings-members", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
       [auth.account.slug]: "john-doe",
       [auth.account.name]: "John Doe",
@@ -97,7 +91,6 @@ loggedTest("team settings integrations page", async ({ page, team, plan }) => {
   await expect(page.getByRole("heading", { name: "GitLab" })).toBeVisible();
   await screenshot(page, "team-settings-integrations", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
@@ -110,7 +103,6 @@ loggedTest("team settings security page", async ({ page, team, plan }) => {
   ).toBeVisible();
   await screenshot(page, "team-settings-security", {
     replacements: {
-      [team.account.slug]: "acme",
       [getPlanLabel(plan.name)]: "Pro",
     },
   });
