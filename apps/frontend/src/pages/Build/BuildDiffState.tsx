@@ -183,7 +183,7 @@ export type DiffResult = MatchData<Diff>;
 type BuildDiffContextValue = {
   diffs: Diff[];
   allDiffs: Diff[];
-  groups: DiffGroup[];
+  groups: DiffGroup<Diff>[];
   expanded: string[];
   toggleGroup: (name: string, value?: boolean) => void;
   activeDiff: Diff | null;
@@ -487,24 +487,23 @@ function useDataState(props: {
 function groupDiffs(
   diffs: Diff[],
   reviewStatuses: Record<string, EvaluationStatus>,
-): DiffGroup[] {
-  const diffByGroups = diffs.reduce<Partial<Record<DiffGroupName, DiffGroup>>>(
-    (groups, diff) => {
-      const reviewStatus = reviewStatuses[diff.id] ?? EvaluationStatus.Pending;
-      const diffGroupName =
-        reviewStatus === EvaluationStatus.Pending ? diff.status : reviewStatus;
-      if (checkIsDiffGroupName(diffGroupName)) {
-        const group = groups[diffGroupName] ?? {
-          name: diffGroupName,
-          diffs: [],
-        };
-        groups[diffGroupName] = group;
-        group.diffs.push(diff);
-      }
-      return groups;
-    },
-    {},
-  );
+): DiffGroup<Diff>[] {
+  const diffByGroups = diffs.reduce<
+    Partial<Record<DiffGroupName, DiffGroup<Diff>>>
+  >((groups, diff) => {
+    const reviewStatus = reviewStatuses[diff.id] ?? EvaluationStatus.Pending;
+    const diffGroupName =
+      reviewStatus === EvaluationStatus.Pending ? diff.status : reviewStatus;
+    if (checkIsDiffGroupName(diffGroupName)) {
+      const group = groups[diffGroupName] ?? {
+        name: diffGroupName,
+        diffs: [],
+      };
+      groups[diffGroupName] = group;
+      group.diffs.push(diff);
+    }
+    return groups;
+  }, {});
   return DIFF_GROUPS.map((groupName) => diffByGroups[groupName] ?? null).filter(
     (x) => x !== null,
   );
@@ -707,7 +706,7 @@ export function BuildDiffProvider(props: {
     }
     const group = groups.find((group) =>
       group.diffs.includes(diff),
-    ) as DiffGroup;
+    ) as DiffGroup<Diff>;
     return group;
   });
 

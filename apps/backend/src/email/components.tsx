@@ -1,4 +1,5 @@
 import * as React from "react";
+import clsx from "clsx";
 import {
   Body,
   Container,
@@ -15,8 +16,7 @@ import {
   Tailwind,
   Text,
   type ButtonProps,
-} from "@react-email/components";
-import clsx from "clsx";
+} from "react-email";
 import { z } from "zod";
 
 import config from "@/config";

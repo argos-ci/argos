@@ -45,7 +45,9 @@ export function removeContributor(
       projectId: data.projectId,
     },
     data: {
+      __typename: "User",
       projectsContributedOn: {
+        __typename: "ProjectContributorConnection",
         edges: [],
       },
     },
@@ -100,6 +102,7 @@ export function addContributor(
     fragment: ProjectContributedOnFragment,
     variables: { projectId: data.projectId },
     data: {
+      __typename: "User",
       projectsContributedOn: {
         __typename: "ProjectContributorConnection",
         edges: [

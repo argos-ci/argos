@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { testAutomation } from "@/automation";
 import type { AutomationActionTypeDef } from "@/automation/actions";
+import { automationAction } from "@/automation/actions/sendSlackMessage";
 import {
   AutomationActionRun,
   AutomationRule,
@@ -392,8 +393,11 @@ export const resolvers: IResolvers = {
     actionPayload: async (action) => {
       switch (action.action) {
         case "sendSlackMessage": {
+          const payload = automationAction.payloadSchema.parse(
+            action.actionPayload,
+          );
           const slackChannel = await SlackChannel.query().findOne({
-            slackId: action.actionPayload.channelId,
+            slackId: payload.channelId,
           });
           if (!slackChannel) {
             return {

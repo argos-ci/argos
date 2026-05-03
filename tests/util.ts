@@ -1,8 +1,9 @@
+import { createHash } from "node:crypto";
 import {
   argosScreenshot,
   type ArgosScreenshotOptions,
 } from "@argos-ci/playwright";
-import { type Page } from "@playwright/test";
+import { expect, type Page, type TestInfo } from "@playwright/test";
 
 import {
   TeamUser,
@@ -27,6 +28,20 @@ export async function ensureTeamOwner({
     .ignore();
 }
 
+/**
+ * Get a unique test identifier across retries.
+ */
+export function getUniqueTestIdentifier(testInfo: TestInfo) {
+  const shortId = createHash("sha256")
+    .update(testInfo.testId)
+    .digest("hex")
+    .slice(0, 6);
+  if (testInfo.retry > 0) {
+    return `${shortId}-${testInfo.retry}`;
+  }
+  return shortId;
+}
+
 async function replaceText(
   page: Page,
   replacements: Record<string, string>,
@@ -38,6 +53,10 @@ async function replaceText(
   }, storeKey);
 
   for (const [search, replace] of Object.entries(replacements)) {
+    // Expect that at least one text is visible.
+    await expect(
+      page.getByText(search, { exact: false }).first(),
+    ).toBeVisible();
     await page.getByText(search, { exact: false }).evaluateAll(
       (elements, { search, replace, storeKey }) => {
         type TextMod = { type: "text"; node: Text; original: string };

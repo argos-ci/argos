@@ -36,9 +36,9 @@ export const DIFF_STATS_GROUPS = DIFF_GROUPS.filter(
 export type DiffGroupName = (typeof DIFF_GROUPS)[number];
 export type DiffStatusGroupName = (typeof DIFF_STATS_GROUPS)[number];
 
-export interface DiffGroup {
+export interface DiffGroup<TDiff = BuildDiffDetailDocument> {
   name: DiffGroupName;
-  diffs: (BuildDiffDetailDocument | null)[];
+  diffs: (TDiff | null)[];
 }
 
 export function checkIsDiffGroupName(value: unknown): value is DiffGroupName {

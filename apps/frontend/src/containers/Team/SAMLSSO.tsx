@@ -144,8 +144,8 @@ export function TeamSAMLSSO(props: {
       },
       optimisticResponse: {
         configureTeamSaml: {
-          __typename: "TeamSamlConfig",
           ...team.samlSso,
+          __typename: "TeamSamlConfig",
           enabled,
         },
       },
@@ -255,8 +255,8 @@ export function TeamSAMLSSO(props: {
                       },
                       optimisticResponse: {
                         configureTeamSaml: {
-                          __typename: "TeamSamlConfig",
                           ...team.samlSso,
+                          __typename: "TeamSamlConfig",
                           enforced: isSelected,
                         },
                       },

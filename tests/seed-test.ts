@@ -1,5 +1,4 @@
 /* eslint-disable no-empty-pattern */
-import { createHash } from "node:crypto";
 import { test as base } from "@playwright/test";
 
 import type {
@@ -17,6 +16,7 @@ import {
   createTeamAccount,
   createUserAccount,
 } from "../apps/backend/src/database/seeds";
+import { getUniqueTestIdentifier } from "./util";
 
 type TestFixtures = {
   user: { user: User; account: Account };
@@ -29,13 +29,9 @@ type WorkerFixtures = {
   plan: Plan;
 };
 
-function getShortTestId(testId: string) {
-  return createHash("sha256").update(testId).digest("hex").slice(0, 6);
-}
-
 export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
   user: async ({}, use, testInfo) => {
-    const id = getShortTestId(testInfo.testId);
+    const id = getUniqueTestIdentifier(testInfo);
     const user = await createUserAccount({
       email: `kyle-${id}@acme.com`,
       name: "Kyle Bertolino",
@@ -61,7 +57,7 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     { scope: "worker" },
   ],
   team: async ({ plan }, use, testInfo) => {
-    const id = getShortTestId(testInfo.testId);
+    const id = getUniqueTestIdentifier(testInfo);
     const slug = `acme-${id}`;
     const team = await createTeamAccount({
       slug,
@@ -78,7 +74,7 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     await use(project);
   },
   builds: async ({ project }, use, testInfo) => {
-    const id = getShortTestId(testInfo.testId);
+    const id = getUniqueTestIdentifier(testInfo);
     const builds = await createBuildScenario({
       projectId: project.id,
       keyPrefix: `${id}-`,
