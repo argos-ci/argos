@@ -1,5 +1,5 @@
-import { render } from "@react-email/render";
 import { Request as ExpressRequest } from "express";
+import { render } from "react-email";
 
 /**
  * Convert query string by supporting num:x and bool:x.

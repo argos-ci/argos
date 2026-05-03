@@ -1,4 +1,4 @@
-import { Heading, Section } from "@react-email/components";
+import { Heading, Section } from "react-email";
 import { z } from "zod";
 
 import {

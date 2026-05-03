@@ -1,4 +1,4 @@
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { Resend } from "resend";
 
 import config from "@/config";

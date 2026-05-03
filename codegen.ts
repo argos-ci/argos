@@ -1,7 +1,13 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
-  schema: "apps/backend/src/graphql/definitions/*.ts",
+  schema: [
+    {
+      "apps/backend/src/graphql/definitions/*.ts": {
+        noRequire: true,
+      },
+    },
+  ],
   documents: ["apps/frontend/src/**/*.tsx", "apps/frontend/src/**/*.ts"],
   ignoreNoDocuments: true, // for better experience with the watcher
   generates: {
