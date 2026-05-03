@@ -392,8 +392,13 @@ export const resolvers: IResolvers = {
     actionPayload: async (action) => {
       switch (action.action) {
         case "sendSlackMessage": {
+          const payload = z
+            .object({
+              channelId: z.string(),
+            })
+            .parse(action.actionPayload);
           const slackChannel = await SlackChannel.query().findOne({
-            slackId: action.actionPayload.channelId,
+            slackId: payload.channelId,
           });
           if (!slackChannel) {
             return {

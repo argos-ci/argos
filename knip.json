@@ -26,5 +26,6 @@
     "vitest/vitest.e2e.config.mts",
     "vitest/vitest.unit.config.mts"
   ],
-  "ignoreBinaries": ["stripe", "ngrok", "op"]
+  "ignoreBinaries": ["stripe", "ngrok", "op"],
+  "ignoreDependencies": ["@graphql-codegen/add"]
 }
