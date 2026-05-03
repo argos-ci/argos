@@ -1,6 +1,6 @@
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
 
-import { checkErrorStatus } from "@/github";
+import { checkOctokitErrorStatus } from "@/github";
 import { redisLock } from "@/util/redis";
 
 /**
@@ -18,12 +18,12 @@ export async function createGhCommitStatus(
       } catch (error) {
         // It happens if a push-force occurs before sending the notification, it is not considered as an error
         // No commit found for SHA: xxx
-        if (checkErrorStatus(422, error)) {
+        if (checkOctokitErrorStatus(422, error)) {
           return;
         }
 
         // It happens if the repository is archived and read-only.
-        if (checkErrorStatus(403, error)) {
+        if (checkOctokitErrorStatus(403, error)) {
           return;
         }
 

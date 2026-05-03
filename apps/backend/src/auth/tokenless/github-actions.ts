@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import pRetry from "p-retry";
 
 import { GithubRepository, Project } from "@/database/models";
-import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { boom } from "@/util/error";
 
 const marker = "tokenless-github-";
@@ -93,7 +93,7 @@ export const tokenlessGitHubActionsStrategy = {
           });
           return result;
         } catch (error) {
-          if (checkErrorStatus(404, error)) {
+          if (checkOctokitErrorStatus(404, error)) {
             return null;
           }
           throw error;

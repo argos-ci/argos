@@ -35,7 +35,11 @@ import {
   Test,
   User,
 } from "@/database/models";
-import { checkErrorStatus, getAppOctokit, GhApiInstallation } from "@/github";
+import {
+  checkOctokitErrorStatus,
+  getAppOctokit,
+  GhApiInstallation,
+} from "@/github";
 import { getTestAllMetrics } from "@/metrics/test";
 
 import { ITestStatus } from "./__generated__/resolver-types";
@@ -570,7 +574,7 @@ function createGhApiInstallationLoader() {
             }
             return result.data;
           } catch (error) {
-            if (checkErrorStatus(404, error)) {
+            if (checkOctokitErrorStatus(404, error)) {
               return null;
             }
             throw error;

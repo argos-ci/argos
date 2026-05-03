@@ -3,7 +3,7 @@ import { PartialModelObject } from "objection";
 
 import { GithubPullRequest } from "@/database/models/GithubPullRequest";
 import {
-  checkErrorStatus,
+  checkOctokitErrorStatus,
   Octokit,
   RestEndpointMethodTypes,
 } from "@/github/client";
@@ -26,7 +26,7 @@ export async function fetchPullRequest(
     const { data } = await octokit.rest.pulls.get(params);
     return data;
   } catch (error) {
-    if (checkErrorStatus(404, error)) {
+    if (checkOctokitErrorStatus(404, error)) {
       return null;
     }
     throw error;

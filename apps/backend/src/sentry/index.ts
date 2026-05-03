@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/node";
 
 import config from "@/config";
+import { checkOctokitErrorStatus } from "@/github";
 
 export function setup() {
   Sentry.init({
@@ -20,6 +21,11 @@ export function setup() {
           event.level = "info";
           return event;
         }
+      }
+      // If it's a 504 from GitHub, we can't do anything, so use info.
+      if (checkOctokitErrorStatus(504, error)) {
+        event.level = "info";
+        return event;
       }
       return event;
     },

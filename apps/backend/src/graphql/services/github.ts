@@ -8,7 +8,7 @@ import {
   GithubRepository,
   TeamUser,
 } from "@/database/models";
-import { checkErrorStatus, getTokenOctokit, Octokit } from "@/github";
+import { checkOctokitErrorStatus, getTokenOctokit, Octokit } from "@/github";
 
 import { notFound } from "../util";
 
@@ -202,7 +202,7 @@ export async function getOrCreateGithubRepository(args: {
     })
     .then((res) => res.data)
     .catch((error: unknown) => {
-      if (checkErrorStatus(404, error)) {
+      if (checkOctokitErrorStatus(404, error)) {
         return null;
       }
       throw error;
