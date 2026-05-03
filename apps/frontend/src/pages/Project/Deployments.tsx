@@ -5,13 +5,14 @@ import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
 import { useFlag } from "@reflag/react-sdk";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
-import { BoxesIcon, GlobeIcon } from "lucide-react";
+import { BoxesIcon, CircleArrowUpIcon, GlobeIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
 import type { DeploymentEnvironment, DeploymentStatus } from "@/gql/graphql";
 import { LinkButton } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -24,6 +25,7 @@ import {
 import { Link } from "@/ui/Link";
 import { List, ListRow, ListRowLoader } from "@/ui/List";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { bgSolidColorClassNames, type UIColor } from "@/util/colors";
@@ -63,6 +65,7 @@ const ProjectDeploymentsQuery = graphql(`
           url
           aliases {
             id
+            updatedAt
             type
             url
           }
@@ -124,6 +127,37 @@ function DeploymentTargetLink(props: {
   );
 }
 
+function CurrentDeploymentBadge(props: { updatedAt: string }) {
+  return (
+    <Tooltip
+      content={
+        <div className="flex flex-col items-center gap-1 px-0.5 py-1 text-center">
+          <div>
+            Promoted <Time date={props.updatedAt} tooltip="none" /> to serve
+            production traffic
+          </div>
+          <div className="text-low">
+            <Time
+              date={props.updatedAt}
+              format="D MMM YYYY [at] HH:mm:ss"
+              tooltip="none"
+            />
+          </div>
+        </div>
+      }
+    >
+      <Chip
+        color="primary"
+        scale="xs"
+        icon={CircleArrowUpIcon}
+        className="shrink-0"
+      >
+        Current
+      </Chip>
+    </Tooltip>
+  );
+}
+
 function DeploymentRow(props: {
   deployment: Deployment;
   project: Project;
@@ -134,6 +168,9 @@ function DeploymentRow(props: {
   const params = useProjectParams();
   invariant(params, "it is a project route");
   const statusDef = StatusDef[deployment.status];
+  const domainAlias = deployment.aliases.find((alias) => {
+    return alias.type === "domain";
+  });
 
   return (
     <ListRow
@@ -141,13 +178,16 @@ function DeploymentRow(props: {
       data-index={index}
       className="flex items-start gap-6 p-4 text-sm"
     >
-      <div className="flex w-28 shrink-0 flex-col items-start gap-1">
+      <div className="flex w-40 shrink-0 flex-col items-start gap-1">
         <div className="font-medium">{deployment.id}</div>
-        <div className="text-low">
-          {EnvironmentLabel[deployment.environment]}
+        <div className="text-low flex max-w-full flex-wrap items-center gap-1">
+          <span>{EnvironmentLabel[deployment.environment]}</span>
+          {domainAlias ? (
+            <CurrentDeploymentBadge updatedAt={domainAlias.updatedAt} />
+          ) : null}
         </div>
       </div>
-      <div className="text-low flex w-28 items-center gap-2">
+      <div className="text-low flex w-28 shrink-0 items-center gap-2">
         <div
           className={clsx(
             "size-2.5 rounded-full",
@@ -169,10 +209,7 @@ function DeploymentRow(props: {
           </Link>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1">
-        <DeploymentTargetLink href={deployment.url} type="deployment">
-          {deployment.url}
-        </DeploymentTargetLink>
+      <div className="flex flex-1 flex-col gap-1 truncate">
         {deployment.aliases.map((alias) => (
           <DeploymentTargetLink
             key={alias.id}
@@ -182,8 +219,11 @@ function DeploymentRow(props: {
             {alias.url}
           </DeploymentTargetLink>
         ))}
+        <DeploymentTargetLink href={deployment.url} type="deployment">
+          {deployment.url}
+        </DeploymentTargetLink>
       </div>
-      <div>
+      <div className="flex w-70 shrink-0">
         {deployment.pullRequest && (
           <PullRequestButton
             size="small"
@@ -193,7 +233,7 @@ function DeploymentRow(props: {
           />
         )}
       </div>
-      <div className="flex w-40 flex-col gap-1 text-xs">
+      <div className="flex w-40 shrink-0 flex-col gap-1 text-xs">
         <div>
           <ProjectBranchLink
             className="inline-flex max-w-full items-center"

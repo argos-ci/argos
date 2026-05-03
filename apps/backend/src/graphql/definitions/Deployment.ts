@@ -29,6 +29,7 @@ export const typeDefs = gql`
 
   type DeploymentAlias {
     id: ID!
+    updatedAt: DateTime!
     type: DeploymentAliasType!
     url: String!
   }
@@ -61,6 +62,7 @@ export const resolvers: IResolvers = {
       );
       return aliases.map((alias) => ({
         id: alias.id,
+        updatedAt: new Date(alias.updatedAt),
         type:
           alias.type === "domain"
             ? IDeploymentAliasType.Domain
