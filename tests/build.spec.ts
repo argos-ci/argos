@@ -55,6 +55,10 @@ buildExamples.forEach((build) => {
     if (build.compare !== false) {
       await expect(page.getByText(`Changes from`)).toBeVisible();
     }
-    await screenshot(page, `build-${build.name}`);
+    await screenshot(page, `build-${build.name}`, {
+      replacements: {
+        [team.account.slug]: "acme",
+      },
+    });
   });
 });

@@ -1,44 +1,41 @@
 import { expect } from "@playwright/test";
 
 import { loggedTest } from "./logged-test";
-import { screenshot } from "./util";
+import { ensureTeamOwner, getPlanLabel, screenshot } from "./util";
 
-loggedTest("personal settings - name", async ({ page, auth }) => {
-  await page.goto(`/${auth.account.slug}/settings`);
-  const region = page.getByRole("region", { name: "Your Name" });
-  const textbox = region.getByRole("textbox", {
-    name: "Name",
-    exact: true,
+loggedTest("account projects", async ({ page, team, plan, project, auth }) => {
+  await ensureTeamOwner({ team: team.team, user: auth.user });
+  await page.goto(`/${team.account.slug}`);
+  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+  await expect(page.getByRole("link", { name: project.name })).toBeVisible();
+  await screenshot(page, "account-projects", {
+    replacements: {
+      [getPlanLabel(plan.name)]: "Pro",
+    },
   });
-  expect(await textbox.inputValue()).toBe(auth.account.name);
-  await textbox.fill("James Bond");
-  await region.getByRole("button", { name: "Save" }).click();
-  await expect(region.getByText("Saved")).toBeVisible();
-  await page.reload();
-  expect(await textbox.inputValue()).toBe("James Bond");
-  await screenshot(page, "settings/name", { element: region });
 });
 
-loggedTest("personal settings - username", async ({ page, auth }) => {
-  await page.goto(`/${auth.account.slug}/settings`);
-  const region = page.getByRole("region", { name: "Your Username" });
-  const textbox = region.getByRole("textbox", {
-    name: "URL namespace",
-    exact: true,
-  });
-  const saveButton = region.getByRole("button", { name: "Save" });
-
-  expect(await textbox.inputValue()).toBe(auth.account.slug);
-  // Test with a "-" at the end to trigger an error
-  await textbox.fill("invalid-");
-  await saveButton.click();
+loggedTest("new project", async ({ page, team, plan, auth }) => {
+  await ensureTeamOwner({ team: team.team, user: auth.user });
+  await page.goto(`/${team.account.slug}/new`);
   await expect(
-    region.getByText(/ending with an alphanumeric character/),
+    page.getByRole("heading", { name: "Create a new Project" }),
   ).toBeVisible();
-  await screenshot(page, "settings/username", { element: region });
-  const newSlug = `${auth.account.slug}-x`;
-  await textbox.fill(newSlug);
-  await saveButton.click();
-  await page.waitForURL(`/${newSlug}/settings`);
-  expect(await textbox.inputValue()).toBe(newSlug);
+  await screenshot(page, "account-new-project", {
+    replacements: {
+      [getPlanLabel(plan.name)]: "Pro",
+    },
+  });
+});
+
+loggedTest("account analytics", async ({ page, team, plan, auth }) => {
+  await ensureTeamOwner({ team: team.team, user: auth.user });
+  await page.goto(`/${team.account.slug}/~/analytics`);
+  await expect(page.getByRole("heading", { name: "Analytics" })).toBeVisible();
+  await expect(page.getByText("Screenshots by Project")).toBeVisible();
+  await screenshot(page, "account-analytics", {
+    replacements: {
+      [getPlanLabel(plan.name)]: "Pro",
+    },
+  });
 });
