@@ -4,7 +4,7 @@ import type { GithubPullRequest } from "@/database/models";
 import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
-import { checkErrorStatus } from "./client";
+import { checkOctokitErrorStatus } from "./client";
 
 async function getOrCreatePullRequestComment({
   owner,
@@ -69,9 +69,9 @@ export async function commentGithubPr({
       });
     }
   } catch (error: unknown) {
-    if (checkErrorStatus(404, error)) {
+    if (checkOctokitErrorStatus(404, error)) {
       await pullRequest.$clone().$query().patch({ commentDeleted: true });
-    } else if (checkErrorStatus(403, error)) {
+    } else if (checkOctokitErrorStatus(403, error)) {
       logger.info({ error }, "GitHub PR comment update forbidden (403)");
     } else {
       console.error("Error while updating comment", error);

@@ -6,7 +6,7 @@ import {
   GithubRepository,
   Project,
 } from "@/database/models";
-import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { UnretryableError } from "@/job-core";
 
 import { MergeBaseStrategy } from "../types";
@@ -73,7 +73,7 @@ export const GithubStrategy: MergeBaseStrategy<{
           return data.merge_base_commit.sha;
         } catch (error) {
           // If we can't find the base commit, then we can't give a bucket
-          if (checkErrorStatus(404, error)) {
+          if (checkOctokitErrorStatus(404, error)) {
             return null;
           }
 
@@ -103,10 +103,10 @@ export const GithubStrategy: MergeBaseStrategy<{
       return response.data.map((commit) => commit.sha);
     } catch (error) {
       // 409 = Git Repository is empty.
-      if (checkErrorStatus(409, error)) {
+      if (checkOctokitErrorStatus(409, error)) {
         return [];
       }
-      if (checkErrorStatus(404, error)) {
+      if (checkOctokitErrorStatus(404, error)) {
         const notFoundError = new Error(
           `"${args.sha}" not found on repository "${args.ctx.repo}"`,
         ) as Error & { retryable: boolean };

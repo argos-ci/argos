@@ -15,7 +15,7 @@ import {
   sendVerificationEmail,
 } from "@/database/services/user-email";
 import { sendEmailTemplate } from "@/email/send-email-template";
-import { checkErrorStatus, getTokenOctokit } from "@/github";
+import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { deleteAccount } from "../services/account";
@@ -334,7 +334,7 @@ export const resolvers: IResolvers = {
         };
       } catch (error) {
         // If the token has been revoked, we should return an empty list.
-        if (checkErrorStatus(401, error)) {
+        if (checkOctokitErrorStatus(401, error)) {
           return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
         }
 

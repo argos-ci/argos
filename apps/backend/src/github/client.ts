@@ -2,6 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { createAppAuth } from "@octokit/auth-app";
 import type { OctokitOptions } from "@octokit/core";
 import { retry } from "@octokit/plugin-retry";
+import { RequestError } from "@octokit/request-error";
 import { Octokit } from "@octokit/rest";
 import { memoize } from "lodash-es";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
@@ -182,7 +183,7 @@ async function checkTokenValidity(octokit: Octokit): Promise<boolean> {
     await octokit.rest.rateLimit.get();
     return true;
   } catch (error) {
-    if (checkErrorStatus(401, error)) {
+    if (checkOctokitErrorStatus(401, error)) {
       return false;
     }
     throw error;
@@ -213,29 +214,22 @@ async function authInstallation(args: {
     const parsed = AuthInstallationResultSchema.parse(result);
     return { status: "authenticated", ...parsed };
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "status" in error &&
-      typeof error.status === "number"
-    ) {
-      switch (error.status) {
-        case 404:
-          return { status: "deleted" };
-        case 403: {
-          // If error is a 403 and the error message is not about a suspended
-          // installation, we want to know what is it.
-          if (error.message.includes("This installation has been suspended")) {
-            throw boom(
-              403,
-              "Installation suspended. Please unsuspend it in GitHub settings.",
-              {
-                cause: error,
-                code: "GITHUB_INSTALLATION_SUSPENDED",
-                retryable: false,
-              },
-            );
-          }
-        }
+    if (checkOctokitErrorStatus(404, error)) {
+      return { status: "deleted" };
+    }
+    if (checkOctokitErrorStatus(403, error)) {
+      // If error is a 403 and the error message is not about a suspended
+      // installation, we want to know what is it.
+      if (error.message.includes("This installation has been suspended")) {
+        throw boom(
+          403,
+          "Installation suspended. Please unsuspend it in GitHub settings.",
+          {
+            cause: error,
+            code: "GITHUB_INSTALLATION_SUSPENDED",
+            retryable: false,
+          },
+        );
       }
     }
     throw error;
@@ -243,18 +237,21 @@ async function authInstallation(args: {
 }
 
 /**
- * Check the error status.
+ * Get the status code from an Octokit RequestError.
  */
-export function checkErrorStatus(
+function getOctokitErrorStatus(error: unknown) {
+  if (error instanceof RequestError) {
+    return error.status;
+  }
+  return null;
+}
+
+/**
+ * Check the status code from an Octokit RequestError.
+ */
+export function checkOctokitErrorStatus(
   status: number,
   error: unknown,
-): error is Error {
-  if (
-    error instanceof Error &&
-    "status" in error &&
-    typeof error.status === "number"
-  ) {
-    return error.status === status;
-  }
-  return false;
+): error is RequestError {
+  return getOctokitErrorStatus(error) === status;
 }

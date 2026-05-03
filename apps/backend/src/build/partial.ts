@@ -10,7 +10,7 @@ import {
   Project,
   Screenshot,
 } from "@/database/models";
-import { checkErrorStatus, getInstallationOctokit } from "@/github";
+import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import logger from "@/logger";
 
 import { finalizeBuild } from "./finalizeBuild";
@@ -95,7 +95,7 @@ export async function checkIsPartialBuild(input: {
         );
         return null;
       }
-      if (checkErrorStatus(404, error)) {
+      if (checkOctokitErrorStatus(404, error)) {
         return null;
       }
 
