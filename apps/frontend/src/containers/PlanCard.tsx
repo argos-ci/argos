@@ -426,6 +426,7 @@ export function PlanCard(props: {
 }) {
   const { account } = props;
   const { plan, projects, periodStartDate, periodEndDate } = account;
+  const hasPeriod = periodStartDate && periodEndDate;
 
   return (
     <Card>
@@ -435,7 +436,9 @@ export function PlanCard(props: {
         {plan && (
           <>
             <CardSeparator className="my-6" />
-            <Period start={periodStartDate} end={periodEndDate} />
+            {hasPeriod && (
+              <Period start={periodStartDate} end={periodEndDate} />
+            )}
             <div className="mt-4">
               <ConsumptionBlock
                 projects={projects.edges}

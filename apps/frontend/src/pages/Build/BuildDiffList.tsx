@@ -82,11 +82,11 @@ const DIFF_IMAGE_CONFIG = {
 interface ListHeaderRow {
   key: string;
   type: "header";
-  name: DiffGroup["name"];
+  name: DiffGroup<Diff>["name"];
   count: number;
   expanded: boolean;
   borderBottom: boolean;
-  group: DiffGroup;
+  group: DiffGroup<Diff>;
 }
 
 interface ListItemRow {
@@ -113,7 +113,7 @@ interface ListGroupItemRow {
 type ListRow = ListHeaderRow | ListItemRow | ListGroupItemRow;
 
 function createHeaderRow(input: {
-  group: DiffGroup;
+  group: DiffGroup<Diff>;
   expanded: boolean;
   borderBottom: boolean;
 }): ListHeaderRow {
@@ -190,7 +190,7 @@ const memoCreateGroupItemRow = memoize(createGroupItemRow, {
 });
 
 function getRows(
-  groups: DiffGroup[],
+  groups: DiffGroup<Diff>[],
   expandedGroups: string[],
   results: DiffResult[],
   searchMode: boolean,
@@ -825,7 +825,7 @@ const InternalBuildDiffList = memo(() => {
   });
 
   const openGroup = useCallback(
-    (name: DiffGroup["name"]) => {
+    (name: DiffGroup<Diff>["name"]) => {
       const group = groups.find((g) => g.name === name);
       const firstDiff = group?.diffs[0];
       if (firstDiff) {

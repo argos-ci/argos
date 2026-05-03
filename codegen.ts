@@ -1,5 +1,19 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
+const frontendConfig = {
+  dedupeFragments: true,
+  enumType: "native",
+  nonOptionalTypename: true,
+  skipTypeNameForRoot: true,
+  scalars: {
+    Date: "string",
+    DateTime: "string",
+    JSONObject: "any",
+    Time: "string",
+    Timestamp: "number",
+  },
+};
+
 const config: CodegenConfig = {
   schema: {
     "apps/backend/src/graphql/definitions/*.ts": {
@@ -70,13 +84,14 @@ const config: CodegenConfig = {
         },
       },
     },
+    "apps/frontend/src/gql/schema.ts": {
+      plugins: ["typescript"],
+      config: frontendConfig,
+    },
     "apps/frontend/src/gql/": {
       preset: "client",
-      plugins: [],
-      config: {
-        dedupeFragments: true,
-        enumType: "native",
-      },
+      plugins: [{ add: { content: 'export * from "./schema";' } }],
+      config: frontendConfig,
       presetConfig: {
         fragmentMasking: false,
       },
