@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 
 import config from "@/config";
-import { checkOctokitErrorStatus, getOctokitErrorStatus } from "@/github";
+import { getOctokitErrorStatus } from "@/github";
 import { isHttp2GoAwayCode0Error } from "@/util/error";
 
 export function setup() {
