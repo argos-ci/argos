@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 
 import config from "@/config";
-import { checkOctokitErrorStatus } from "@/github";
+import { checkOctokitErrorStatus, getOctokitErrorStatus } from "@/github";
 import { isHttp2GoAwayCode0Error } from "@/util/error";
 
 export function setup() {
@@ -23,11 +23,16 @@ export function setup() {
           return event;
         }
       }
-      // If it's a 504 from GitHub, we can't do anything, so use info.
-      if (checkOctokitErrorStatus(504, error)) {
+
+      const octokitErrorStatus = getOctokitErrorStatus(error);
+
+      // 5xx from GitHub are set to info level
+      if (typeof octokitErrorStatus === "number" && octokitErrorStatus >= 500) {
         event.level = "info";
         return event;
       }
+
+      // GitHub can return random "GOAWAY"
       if (isHttp2GoAwayCode0Error(error)) {
         event.level = "info";
         return event;
