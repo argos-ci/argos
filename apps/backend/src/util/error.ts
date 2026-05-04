@@ -3,6 +3,9 @@ import type { ErrorCode } from "@argos/error-types";
 
 export const retryableSymbol = Symbol("retryable");
 
+const HTTP2_GOAWAY_CODE_0_MESSAGE =
+  'HTTP/2: "GOAWAY" frame received with code 0';
+
 /**
  * Check if an error is retryable.
  */
@@ -53,4 +56,32 @@ export function boom(
   options?: HttpErrorOptions,
 ) {
   return new HTTPError(statusCode, message, options);
+}
+
+export function isHttp2GoAwayCode0Error(error: unknown): boolean {
+  return hasHttp2GoAwayCode0Error(error, new Set());
+}
+
+function hasHttp2GoAwayCode0Error(error: unknown, seen: Set<unknown>): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  if (seen.has(error)) {
+    return false;
+  }
+  seen.add(error);
+
+  if (error.message.includes(HTTP2_GOAWAY_CODE_0_MESSAGE)) {
+    return true;
+  }
+
+  if ("cause" in error && hasHttp2GoAwayCode0Error(error.cause, seen)) {
+    return true;
+  }
+
+  if ("errors" in error && Array.isArray(error.errors)) {
+    return error.errors.some((child) => hasHttp2GoAwayCode0Error(child, seen));
+  }
+
+  return false;
 }
