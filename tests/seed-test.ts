@@ -40,9 +40,9 @@ export const seedTest = base.extend<TestFixtures, WorkerFixtures>({
     await use(user);
   },
   plan: [
-    async ({}, use, workerInfo) => {
+    async ({}, use) => {
       const plan = await PlanModel.query().insertAndFetch({
-        name: `pro-${workerInfo.workerIndex}`,
+        name: "Pro",
         includedScreenshots: 15000,
         githubPlanId: null,
         stripeProductId: null,

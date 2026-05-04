@@ -73,14 +73,14 @@ describe("GraphQL Deployment.aliases", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.project.deployments.edges[0].aliases).toEqual([
       {
-        id: branchAlias.id,
-        type: "branch",
-        url: "https://sparkle-main-acme.dev.argos-ci.live/",
-      },
-      {
         id: domainAlias.id,
         type: "domain",
         url: "https://sparkle-acme.dev.argos-ci.live/",
+      },
+      {
+        id: branchAlias.id,
+        type: "branch",
+        url: "https://sparkle-main-acme.dev.argos-ci.live/",
       },
     ]);
   });

@@ -171,11 +171,11 @@ function createDeploymentAliasesByDeploymentIdLoader() {
   return new DataLoader<string, DeploymentAlias[]>(async (deploymentIds) => {
     const aliases = await DeploymentAlias.query()
       .whereIn("deploymentId", deploymentIds as string[])
-      .orderBy([
-        { column: "deploymentId", order: "asc" },
-        { column: "type", order: "asc" },
-        { column: "alias", order: "asc" },
-      ]);
+      .orderBy("deploymentId", "asc")
+      .orderByRaw(
+        `case "type" when 'domain' then 0 when 'branch' then 1 end asc`,
+      )
+      .orderBy("alias", "asc");
 
     const aliasesByDeploymentId: Record<string, DeploymentAlias[]> = {};
     for (const alias of aliases) {
