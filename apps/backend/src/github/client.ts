@@ -239,7 +239,7 @@ async function authInstallation(args: {
 /**
  * Get the status code from an Octokit RequestError.
  */
-function getOctokitErrorStatus(error: unknown) {
+export function getOctokitErrorStatus(error: unknown) {
   if (error instanceof RequestError) {
     return error.status;
   }

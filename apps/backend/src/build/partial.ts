@@ -85,7 +85,7 @@ export async function checkIsPartialBuild(input: {
       );
     } catch (error) {
       if (error instanceof TimeoutError) {
-        logger.error(
+        logger.info(
           {
             runId,
             runAttempt: attempt,
