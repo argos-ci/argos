@@ -23,10 +23,7 @@ import {
   checkProjectName,
   resolveProjectName,
 } from "@/database/services/project";
-import {
-  getProductionInternalProjectDomain,
-  upsertProductionInternalProjectDomain,
-} from "@/database/services/project-domain";
+import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { notifyDiscord } from "@/discord";
@@ -744,8 +741,11 @@ export const resolvers: IResolvers = {
 
       return paginateResult({ result, first, after });
     },
-    domain: async (project) => {
-      const domain = await getProductionInternalProjectDomain(project.id);
+    domain: async (project, _args, ctx) => {
+      const domain =
+        await ctx.loaders.ProductionInternalProjectDomainByProject.load(
+          project.id,
+        );
       return domain?.domain ?? null;
     },
     permissions: async (project, _args, ctx) => {
@@ -1166,6 +1166,10 @@ export const resolvers: IResolvers = {
         }
         throw error;
       }
+
+      ctx.loaders.ProductionInternalProjectDomainByProject.clear(
+        project.id,
+      ).prime(project.id, result.projectDomain);
 
       await Promise.all(
         [result.previousAlias, result.nextAlias]

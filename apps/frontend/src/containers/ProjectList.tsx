@@ -4,8 +4,9 @@ import { FolderIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
+import { DeploymentStatus } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-import { Chip, ChipLink } from "@/ui/Chip";
+import { ChipLink } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -78,12 +79,17 @@ function ProjectCard({ project }: { project: Project }) {
       key={project.id}
       className="bg-app hover:border-hover relative flex min-w-0 flex-col items-start gap-2 rounded-md border p-5 pt-4"
     >
-      <HeadlessLink className="absolute inset-0" href={`/${project.slug}`} />
+      <HeadlessLink
+        aria-label={`Visit ${project.name}`}
+        className="absolute inset-0"
+        href={`/${project.slug}`}
+      />
       <div className="min-w-0">
         <div className="truncate font-medium">{project.name}</div>
         {deploymentsFlag.isEnabled && (
           <div className="text-low relative mt-1 truncate text-sm">
-            {project.latestProductionDeployment && project.domain ? (
+            {project.latestProductionDeployment?.status ===
+              DeploymentStatus.Ready && project.domain ? (
               <Link
                 variant="neutral"
                 href={`https://${project.domain}`}

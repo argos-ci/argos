@@ -26,6 +26,7 @@ import {
   Model,
   Plan,
   Project,
+  ProjectDomain,
   Screenshot,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -116,6 +117,22 @@ function createLatestProductionDeploymentByProjectLoader() {
       latestDeploymentsMap[deployment.projectId] = deployment;
     }
     return projectIds.map((id) => latestDeploymentsMap[id] ?? null);
+  });
+}
+
+function createProductionInternalProjectDomainByProjectLoader() {
+  return new DataLoader<string, ProjectDomain | null>(async (projectIds) => {
+    const projectDomains = await ProjectDomain.query()
+      .whereIn("projectId", projectIds as string[])
+      .where({
+        environment: "production",
+        internal: true,
+      });
+    const projectDomainsMap: Record<string, ProjectDomain> = {};
+    for (const projectDomain of projectDomains) {
+      projectDomainsMap[projectDomain.projectId] = projectDomain;
+    }
+    return projectIds.map((id) => projectDomainsMap[id] ?? null);
   });
 }
 
@@ -1104,6 +1121,8 @@ export const createLoaders = () => ({
   LatestCompareScreenshotLoader: createLatestCompareScreenshotLoader(),
   Plan: createModelLoader(Plan),
   Project: createModelLoader(Project),
+  ProductionInternalProjectDomainByProject:
+    createProductionInternalProjectDomainByProjectLoader(),
   SlackInstallation: createModelLoader(SlackInstallation),
   Screenshot: createModelLoader(Screenshot),
   ScreenshotBucket: createModelLoader(ScreenshotBucket),
