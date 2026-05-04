@@ -11,10 +11,6 @@ import {
   type User,
 } from "../apps/backend/src/database/models";
 
-export function getPlanLabel(name: string) {
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
 export async function ensureTeamOwner({
   team,
   user,

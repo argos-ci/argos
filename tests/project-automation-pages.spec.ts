@@ -2,13 +2,13 @@ import { expect } from "@playwright/test";
 
 import { AutomationRule } from "../apps/backend/src/database/models";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, getPlanLabel, screenshot } from "./util";
+import { ensureTeamOwner, screenshot } from "./util";
 
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
 
-loggedTest("automations", async ({ page, team, plan, project }) => {
+loggedTest("automations", async ({ page, team, project }) => {
   await AutomationRule.query().insert({
     active: true,
     name: "Notify visual changes",
@@ -35,23 +35,15 @@ loggedTest("automations", async ({ page, team, plan, project }) => {
     page.getByRole("link", { name: /Notify visual changes/ }),
   ).toBeVisible();
   await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
-  await screenshot(page, "project-automations", {
-    replacements: {
-      [getPlanLabel(plan.name)]: "Pro",
-    },
-  });
+  await screenshot(page, "project-automations");
 });
 
-loggedTest("new automation", async ({ page, team, plan, project }) => {
+loggedTest("new automation", async ({ page, team, project }) => {
   await page.goto(`/${team.account.slug}/${project.name}/automations/new`);
   await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "New Automation Rule" }),
   ).toBeVisible();
   await expect(page.getByText("Build Completed")).toBeVisible();
-  await screenshot(page, "project-automation-new", {
-    replacements: {
-      [getPlanLabel(plan.name)]: "Pro",
-    },
-  });
+  await screenshot(page, "project-automation-new");
 });

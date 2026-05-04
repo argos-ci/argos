@@ -2,13 +2,13 @@ import { expect } from "@playwright/test";
 
 import { createDeploymentScenario } from "../apps/backend/src/database/seeds";
 import { loggedTest } from "./logged-test";
-import { ensureTeamOwner, getPlanLabel, screenshot } from "./util";
+import { ensureTeamOwner, screenshot } from "./util";
 
 loggedTest.beforeEach(async ({ auth, team }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
 });
 
-loggedTest("deployments", async ({ page, team, plan, project, builds }) => {
+loggedTest("deployments", async ({ page, team, project, builds }) => {
   void builds;
 
   await createDeploymentScenario({
@@ -33,7 +33,6 @@ loggedTest("deployments", async ({ page, team, plan, project, builds }) => {
   await screenshot(page, "project-deployments", {
     replacements: {
       [team.account.slug]: "acme",
-      [getPlanLabel(plan.name)]: "Pro",
     },
   });
 });
