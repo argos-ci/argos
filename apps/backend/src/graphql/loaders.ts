@@ -101,6 +101,24 @@ function createLatestProjectBuildLoader() {
   });
 }
 
+function createLatestProductionDeploymentByProjectLoader() {
+  return new DataLoader<string, Deployment | null>(async (projectIds) => {
+    const latestDeployments = await Deployment.query()
+      .select("*")
+      .whereIn("projectId", projectIds as string[])
+      .where("environment", "production")
+      .distinctOn("projectId")
+      .orderBy("projectId")
+      .orderBy("createdAt", "desc")
+      .orderBy("id", "desc");
+    const latestDeploymentsMap: Record<string, Deployment> = {};
+    for (const deployment of latestDeployments) {
+      latestDeploymentsMap[deployment.projectId] = deployment;
+    }
+    return projectIds.map((id) => latestDeploymentsMap[id] ?? null);
+  });
+}
+
 function createLatestDeploymentByProjectAndCommitLoader() {
   return new DataLoader<
     { projectId: string; commitShas: string[] },
@@ -1080,6 +1098,8 @@ export const createLoaders = () => ({
   LatestAutomationRun: createLatestAutomationRunLoader(),
   LatestDeploymentByProjectAndCommit:
     createLatestDeploymentByProjectAndCommitLoader(),
+  LatestProductionDeploymentByProject:
+    createLatestProductionDeploymentByProjectLoader(),
   LatestProjectBuild: createLatestProjectBuildLoader(),
   LatestCompareScreenshotLoader: createLatestCompareScreenshotLoader(),
   Plan: createModelLoader(Plan),

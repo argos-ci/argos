@@ -130,6 +130,8 @@ export const typeDefs = gql`
     latestAutoApprovedBuild: Build
     "Latest build"
     latestBuild: Build
+    "Latest production deployment"
+    latestProductionDeployment: Deployment
     "Determine permissions of the current user"
     permissions: [ProjectPermission!]!
     "Owner of the project"
@@ -499,6 +501,9 @@ export const resolvers: IResolvers = {
     },
     latestBuild: async (project, _args, ctx) => {
       return ctx.loaders.LatestProjectBuild.load(project.id);
+    },
+    latestProductionDeployment: async (project, _args, ctx) => {
+      return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
       const result = await Build.query()

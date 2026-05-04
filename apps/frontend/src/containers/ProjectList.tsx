@@ -1,9 +1,11 @@
+import { GitBranchIcon } from "@primer/octicons-react";
+import { useFlag } from "@reflag/react-sdk";
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-import { Chip } from "@/ui/Chip";
+import { Chip, ChipLink } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -28,11 +30,18 @@ const _ProjectFragment = graphql(`
       __typename
       id
       fullName
+      url
     }
     latestBuild {
       id
       number
       createdAt
+    }
+    latestProductionDeployment {
+      id
+      createdAt
+      status
+      branch
     }
   }
 `);
@@ -50,33 +59,61 @@ function RepositoryBadge(props: { repository: Project["repository"] }) {
   }
 
   return (
-    <Chip scale="sm" icon={<RepositoryIcon />}>
+    <ChipLink
+      className="relative"
+      href={props.repository.url}
+      target="_blank"
+      scale="sm"
+      icon={<RepositoryIcon />}
+    >
       {props.repository.fullName}
-    </Chip>
+    </ChipLink>
   );
 }
 
 function ProjectCard({ project }: { project: Project }) {
+  const deploymentsFlag = useFlag("deployments");
   return (
     <div
       key={project.id}
-      className="bg-app hover:border-hover relative flex min-h-44 min-w-0 flex-col items-start gap-3 rounded-md border p-5"
+      className="bg-app hover:border-hover relative flex min-w-0 flex-col items-start gap-2 rounded-md border p-5 pt-4"
     >
       <HeadlessLink className="absolute inset-0" href={`/${project.slug}`} />
       <div className="min-w-0">
         <div className="truncate font-medium">{project.name}</div>
-        <div className="text-low mt-1 truncate text-sm">
-          {project.domain ?? "—"}
-        </div>
+        {deploymentsFlag.isEnabled && (
+          <div className="text-low relative mt-1 truncate text-sm">
+            {project.latestProductionDeployment && project.domain ? (
+              <Link
+                variant="neutral"
+                href={`https://${project.domain}`}
+                target="_blank"
+                external={false}
+              >
+                {project.domain}
+              </Link>
+            ) : (
+              "Not deployed"
+            )}
+          </div>
+        )}
       </div>
       <RepositoryBadge repository={project.repository} />
-      <div className="text-low text-xs">
+      {deploymentsFlag.isEnabled && project.latestProductionDeployment ? (
+        <div className="text-low relative text-xs">
+          Deployed <Time date={project.latestProductionDeployment.createdAt} />{" "}
+          on <GitBranchIcon className="inline size-3 align-middle" />{" "}
+          <span className="truncate">
+            {project.latestProductionDeployment.branch}
+          </span>
+        </div>
+      ) : null}
+      <div className="text-low relative text-xs">
         {project.latestBuild ? (
           <>
             Last build{" "}
             <Link
               variant="neutral"
-              className="relative"
               href={`/${project.slug}/builds/${project.latestBuild.number}`}
             >
               #{project.latestBuild.number}
