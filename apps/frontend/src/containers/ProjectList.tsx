@@ -1,9 +1,9 @@
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
+import { Chip } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -13,7 +13,7 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { HeadlessLink } from "@/ui/Link";
+import { HeadlessLink, Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";
@@ -23,14 +23,7 @@ const _ProjectFragment = graphql(`
     id
     name
     slug
-    account {
-      id
-      slug
-      name
-      avatar {
-        ...AccountAvatarFragment
-      }
-    }
+    domain
     repository {
       __typename
       id
@@ -38,6 +31,7 @@ const _ProjectFragment = graphql(`
     }
     latestBuild {
       id
+      number
       createdAt
     }
   }
@@ -45,42 +39,55 @@ const _ProjectFragment = graphql(`
 
 type Project = DocumentType<typeof _ProjectFragment>;
 
-function ProjectCard({ project }: { project: Project }) {
-  const repositoryType = project.repository?.__typename;
+function RepositoryBadge(props: { repository: Project["repository"] }) {
+  const repositoryType = props.repository?.__typename;
   const RepositoryIcon = repositoryType
     ? RepositoryIcons[repositoryType]
     : null;
+
+  if (!props.repository || !RepositoryIcon) {
+    return null;
+  }
+
   return (
-    <HeadlessLink
+    <Chip scale="sm" icon={<RepositoryIcon />}>
+      {props.repository.fullName}
+    </Chip>
+  );
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  return (
+    <div
       key={project.id}
-      href={`/${project.slug}`}
-      className="bg-app hover:border-hover flex flex-col gap-4 rounded-md border p-4"
+      className="bg-app hover:border-hover relative flex min-h-44 min-w-0 flex-col items-start gap-3 rounded-md border p-5"
     >
-      <div className="flex min-w-0 justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <AccountAvatar
-            avatar={project.account.avatar}
-            className="size-8 shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-medium">{project.name}</div>
-            <div className="text-low truncate text-sm">
-              {project.repository?.fullName ?? "-"}
-            </div>
-          </div>
+      <HeadlessLink className="absolute inset-0" href={`/${project.slug}`} />
+      <div className="min-w-0">
+        <div className="truncate font-medium">{project.name}</div>
+        <div className="text-low mt-1 truncate text-sm">
+          {project.domain ?? "—"}
         </div>
-        {RepositoryIcon && <RepositoryIcon className="size-6 shrink-0" />}
       </div>
-      <div className="text-low text-sm">
+      <RepositoryBadge repository={project.repository} />
+      <div className="text-low text-xs">
         {project.latestBuild ? (
           <>
-            Last build <Time date={project.latestBuild.createdAt} />
+            Last build{" "}
+            <Link
+              variant="neutral"
+              className="relative"
+              href={`/${project.slug}/builds/${project.latestBuild.number}`}
+            >
+              #{project.latestBuild.number}
+            </Link>{" "}
+            <Time date={project.latestBuild.createdAt} />
           </>
         ) : (
-          "-"
+          "No build yet"
         )}
       </div>
-    </HeadlessLink>
+    </div>
   );
 }
 
@@ -150,7 +157,7 @@ export function ProjectList(props: {
           </PageHeaderActions>
         )}
       </PageHeader>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
