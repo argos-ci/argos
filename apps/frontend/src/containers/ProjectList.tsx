@@ -1,9 +1,12 @@
+import { GitBranchIcon } from "@primer/octicons-react";
+import { useFlag } from "@reflag/react-sdk";
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
+import { DeploymentStatus } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
+import { ChipLink } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -13,7 +16,7 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { HeadlessLink } from "@/ui/Link";
+import { HeadlessLink, Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
 
 import { RepositoryIcons } from "./Repository";
@@ -23,64 +26,111 @@ const _ProjectFragment = graphql(`
     id
     name
     slug
-    account {
-      id
-      slug
-      name
-      avatar {
-        ...AccountAvatarFragment
-      }
-    }
+    domain
     repository {
       __typename
       id
       fullName
+      url
     }
     latestBuild {
       id
+      number
       createdAt
+    }
+    latestProductionDeployment {
+      id
+      createdAt
+      status
+      branch
     }
   }
 `);
 
 type Project = DocumentType<typeof _ProjectFragment>;
 
-function ProjectCard({ project }: { project: Project }) {
-  const repositoryType = project.repository?.__typename;
+function RepositoryBadge(props: { repository: Project["repository"] }) {
+  const repositoryType = props.repository?.__typename;
   const RepositoryIcon = repositoryType
     ? RepositoryIcons[repositoryType]
     : null;
+
+  if (!props.repository || !RepositoryIcon) {
+    return null;
+  }
+
   return (
-    <HeadlessLink
-      key={project.id}
-      href={`/${project.slug}`}
-      className="bg-app hover:border-hover flex flex-col gap-4 rounded-md border p-4"
+    <ChipLink
+      className="relative"
+      href={props.repository.url}
+      target="_blank"
+      scale="sm"
+      icon={<RepositoryIcon />}
     >
-      <div className="flex min-w-0 justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <AccountAvatar
-            avatar={project.account.avatar}
-            className="size-8 shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-medium">{project.name}</div>
-            <div className="text-low truncate text-sm">
-              {project.repository?.fullName ?? "-"}
-            </div>
+      {props.repository.fullName}
+    </ChipLink>
+  );
+}
+
+function ProjectCard({ project }: { project: Project }) {
+  const deploymentsFlag = useFlag("deployments");
+  return (
+    <div
+      key={project.id}
+      className="bg-app hover:border-hover relative flex min-w-0 flex-col items-start gap-2 rounded-md border p-5 pt-4"
+    >
+      <HeadlessLink
+        aria-label={`Visit ${project.name}`}
+        className="absolute inset-0"
+        href={`/${project.slug}`}
+      />
+      <div className="min-w-0">
+        <div className="truncate font-medium">{project.name}</div>
+        {deploymentsFlag.isEnabled && (
+          <div className="text-low relative mt-1 truncate text-sm">
+            {project.latestProductionDeployment?.status ===
+              DeploymentStatus.Ready && project.domain ? (
+              <Link
+                variant="neutral"
+                href={`https://${project.domain}`}
+                target="_blank"
+                external={false}
+              >
+                {project.domain}
+              </Link>
+            ) : (
+              "Not deployed"
+            )}
           </div>
-        </div>
-        {RepositoryIcon && <RepositoryIcon className="size-6 shrink-0" />}
-      </div>
-      <div className="text-low text-sm">
-        {project.latestBuild ? (
-          <>
-            Last build <Time date={project.latestBuild.createdAt} />
-          </>
-        ) : (
-          "-"
         )}
       </div>
-    </HeadlessLink>
+      <RepositoryBadge repository={project.repository} />
+      {deploymentsFlag.isEnabled && project.latestProductionDeployment ? (
+        <div className="text-low relative text-xs">
+          Deployed <Time date={project.latestProductionDeployment.createdAt} />{" "}
+          on <GitBranchIcon className="inline size-3 align-middle" />{" "}
+          <span className="truncate">
+            {project.latestProductionDeployment.branch}
+          </span>
+        </div>
+      ) : null}
+      <div className="text-low relative text-xs">
+        {project.latestBuild ? (
+          <>
+            Last build{" "}
+            <Link
+              variant="neutral"
+              href={`/${project.slug}/builds/${project.latestBuild.number}`}
+            >
+              #{project.latestBuild.number}
+            </Link>{" "}
+            <Time date={project.latestBuild.createdAt} />
+          </>
+        ) : (
+          "No build yet"
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -150,7 +200,7 @@ export function ProjectList(props: {
           </PageHeaderActions>
         )}
       </PageHeader>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}

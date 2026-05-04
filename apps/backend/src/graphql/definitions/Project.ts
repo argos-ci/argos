@@ -23,10 +23,7 @@ import {
   checkProjectName,
   resolveProjectName,
 } from "@/database/services/project";
-import {
-  getProductionInternalProjectDomain,
-  upsertProductionInternalProjectDomain,
-} from "@/database/services/project-domain";
+import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { notifyDiscord } from "@/discord";
@@ -130,6 +127,8 @@ export const typeDefs = gql`
     latestAutoApprovedBuild: Build
     "Latest build"
     latestBuild: Build
+    "Latest production deployment"
+    latestProductionDeployment: Deployment
     "Determine permissions of the current user"
     permissions: [ProjectPermission!]!
     "Owner of the project"
@@ -500,6 +499,9 @@ export const resolvers: IResolvers = {
     latestBuild: async (project, _args, ctx) => {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
+    latestProductionDeployment: async (project, _args, ctx) => {
+      return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
+    },
     builds: async (project, { first, after, filters }) => {
       const result = await Build.query()
         .where({ projectId: project.id })
@@ -739,8 +741,11 @@ export const resolvers: IResolvers = {
 
       return paginateResult({ result, first, after });
     },
-    domain: async (project) => {
-      const domain = await getProductionInternalProjectDomain(project.id);
+    domain: async (project, _args, ctx) => {
+      const domain =
+        await ctx.loaders.ProductionInternalProjectDomainByProject.load(
+          project.id,
+        );
       return domain?.domain ?? null;
     },
     permissions: async (project, _args, ctx) => {
@@ -1161,6 +1166,10 @@ export const resolvers: IResolvers = {
         }
         throw error;
       }
+
+      ctx.loaders.ProductionInternalProjectDomainByProject.clear(
+        project.id,
+      ).prime(project.id, result.projectDomain);
 
       await Promise.all(
         [result.previousAlias, result.nextAlias]

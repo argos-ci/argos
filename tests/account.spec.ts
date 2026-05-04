@@ -7,7 +7,9 @@ loggedTest("account projects", async ({ page, team, project, auth }) => {
   await ensureTeamOwner({ team: team.team, user: auth.user });
   await page.goto(`/${team.account.slug}`);
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-  await expect(page.getByRole("link", { name: project.name })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: `Visit ${project.name}` }),
+  ).toBeVisible();
   await screenshot(page, "account-projects");
 });
 
