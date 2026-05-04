@@ -60,7 +60,6 @@ describe("GraphQL Deployment.aliases", () => {
               edges {
                 aliases {
                   id
-                  updatedAt
                   type
                   url
                 }
@@ -75,13 +74,11 @@ describe("GraphQL Deployment.aliases", () => {
     expect(res.body.data.project.deployments.edges[0].aliases).toEqual([
       {
         id: domainAlias.id,
-        updatedAt: new Date(domainAlias.updatedAt).toISOString(),
         type: "domain",
         url: "https://sparkle-acme.dev.argos-ci.live/",
       },
       {
         id: branchAlias.id,
-        updatedAt: new Date(branchAlias.updatedAt).toISOString(),
         type: "branch",
         url: "https://sparkle-main-acme.dev.argos-ci.live/",
       },

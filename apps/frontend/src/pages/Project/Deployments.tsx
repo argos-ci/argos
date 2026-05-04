@@ -65,7 +65,6 @@ const ProjectDeploymentsQuery = graphql(`
           url
           aliases {
             id
-            updatedAt
             type
             url
           }
@@ -127,18 +126,18 @@ function DeploymentTargetLink(props: {
   );
 }
 
-function CurrentDeploymentBadge(props: { updatedAt: string }) {
+function CurrentDeploymentBadge(props: { createdAt: string }) {
   return (
     <Tooltip
       content={
         <div className="flex flex-col items-center gap-1 px-0.5 py-1 text-center">
           <div>
-            Promoted <Time date={props.updatedAt} tooltip="none" /> to serve
+            Promoted <Time date={props.createdAt} tooltip="none" /> to serve
             production traffic
           </div>
           <div className="text-low">
             <Time
-              date={props.updatedAt}
+              date={props.createdAt}
               format="D MMM YYYY [at] HH:mm:ss"
               tooltip="none"
             />
@@ -183,7 +182,7 @@ function DeploymentRow(props: {
         <div className="text-low flex max-w-full flex-wrap items-center gap-1">
           <span>{EnvironmentLabel[deployment.environment]}</span>
           {domainAlias ? (
-            <CurrentDeploymentBadge updatedAt={domainAlias.updatedAt} />
+            <CurrentDeploymentBadge createdAt={deployment.createdAt} />
           ) : null}
         </div>
       </div>
