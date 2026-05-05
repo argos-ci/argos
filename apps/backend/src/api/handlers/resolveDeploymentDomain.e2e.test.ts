@@ -48,7 +48,7 @@ describe("resolveDeploymentDomain", () => {
       .expect(200)
       .expect((res) => {
         expect(res.headers["cache-control"]).toBe(
-          "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+          "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
         );
         expect(res.body).toEqual({
           deploymentId: deploymentAlias.deploymentId,

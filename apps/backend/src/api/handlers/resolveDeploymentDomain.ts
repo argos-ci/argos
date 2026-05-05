@@ -18,7 +18,7 @@ const ResponseSchema = z.object({
 });
 
 const CACHE_CONTROL =
-  "public, max-age=0, s-maxage=60, stale-while-revalidate=300";
+  "public, max-age=0, s-maxage=300, stale-while-revalidate=600";
 
 export const resolveDeploymentDomainOperation = {
   operationId: "resolveDeploymentDomain",
@@ -53,12 +53,12 @@ export const resolveDeploymentDomain: CreateAPIHandler = ({ get }) => {
 
     const deployment = await resolveDeploymentByDomain(domain);
 
+    res.set("Cache-Control", CACHE_CONTROL);
+
     if (!deployment) {
       throw boom(404, "Deployment domain not found");
     }
 
-    res.set("Cache-Control", CACHE_CONTROL);
-    res.set("CDN-Cache-Control", CACHE_CONTROL);
     res.send({
       deploymentId: deployment.id,
       projectId: deployment.projectId,
