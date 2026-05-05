@@ -6,7 +6,7 @@ import { Heading, Text } from "react-aria-components";
 import { DocumentType, graphql } from "@/gql";
 import { DeploymentStatus } from "@/gql/graphql";
 import { ButtonIcon, LinkButton, LinkButtonProps } from "@/ui/Button";
-import { ChipLink } from "@/ui/Chip";
+import { Chip } from "@/ui/Chip";
 import {
   EmptyState,
   EmptyStateActions,
@@ -49,7 +49,7 @@ const _ProjectFragment = graphql(`
 
 type Project = DocumentType<typeof _ProjectFragment>;
 
-function RepositoryBadge(props: { repository: Project["repository"] }) {
+function RepositoryChip(props: { repository: Project["repository"] }) {
   const repositoryType = props.repository?.__typename;
   const RepositoryIcon = repositoryType
     ? RepositoryIcons[repositoryType]
@@ -60,15 +60,9 @@ function RepositoryBadge(props: { repository: Project["repository"] }) {
   }
 
   return (
-    <ChipLink
-      className="relative"
-      href={props.repository.url}
-      target="_blank"
-      scale="sm"
-      icon={<RepositoryIcon />}
-    >
+    <Chip scale="sm" color="neutral" icon={<RepositoryIcon />}>
       {props.repository.fullName}
-    </ChipLink>
+    </Chip>
   );
 }
 
@@ -87,10 +81,11 @@ function ProjectCard({ project }: { project: Project }) {
       <div className="min-w-0">
         <div className="truncate font-medium">{project.name}</div>
         {deploymentsFlag.isEnabled && (
-          <div className="text-low relative mt-1 truncate text-sm">
+          <div className="text-low mt-1 truncate text-sm">
             {project.latestProductionDeployment?.status ===
               DeploymentStatus.Ready && project.domain ? (
               <Link
+                className="relative"
                 variant="neutral"
                 href={`https://${project.domain}`}
                 target="_blank"
@@ -104,7 +99,7 @@ function ProjectCard({ project }: { project: Project }) {
           </div>
         )}
       </div>
-      <RepositoryBadge repository={project.repository} />
+      <RepositoryChip repository={project.repository} />
       {deploymentsFlag.isEnabled && project.latestProductionDeployment ? (
         <div className="text-low relative text-xs">
           Deployed <Time date={project.latestProductionDeployment.createdAt} />{" "}
