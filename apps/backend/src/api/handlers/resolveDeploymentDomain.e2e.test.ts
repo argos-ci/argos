@@ -11,14 +11,25 @@ const app = createTestHandlerApp(resolveDeploymentDomain);
 
 const test = base.extend<{
   deployment: Deployment;
+  prodDeployment: Deployment;
   deploymentAlias: DeploymentAlias;
+  factory: typeof factory;
 }>({
-  deployment: async ({}, use) => {
+  factory: async ({}, use) => {
     await setupDatabase();
+    await use(factory);
+  },
+  deployment: async ({ factory }, use) => {
     const deployment = await factory.Deployment.create();
     await use(deployment);
   },
-  deploymentAlias: async ({ deployment }, use) => {
+  prodDeployment: async ({ factory }, use) => {
+    const deployment = await factory.Deployment.create({
+      environment: "production",
+    });
+    await use(deployment);
+  },
+  deploymentAlias: async ({ deployment, factory }, use) => {
     const deploymentAlias = await factory.DeploymentAlias.create({
       deploymentId: deployment.id,
       alias: "preview-alias",
@@ -43,14 +54,16 @@ describe("resolveDeploymentDomain", () => {
           deploymentId: deploymentAlias.deploymentId,
           projectId: deployment.projectId,
           environment: deployment.environment,
+          visibility: "private",
         });
       });
   });
 
-  test("resolves a full domain alias", async ({ deployment }) => {
+  test("resolves a full domain alias", async ({ prodDeployment }) => {
     await factory.DeploymentAlias.create({
-      deploymentId: deployment.id,
+      deploymentId: prodDeployment.id,
       alias: "docs.dev.argos-ci.live",
+      type: "domain",
     });
 
     await request(app)
@@ -58,9 +71,10 @@ describe("resolveDeploymentDomain", () => {
       .expect(200)
       .expect((res) => {
         expect(res.body).toEqual({
-          deploymentId: deployment.id,
-          projectId: deployment.projectId,
-          environment: deployment.environment,
+          deploymentId: prodDeployment.id,
+          projectId: prodDeployment.projectId,
+          environment: prodDeployment.environment,
+          visibility: "public",
         });
       });
   });
@@ -79,6 +93,7 @@ describe("resolveDeploymentDomain", () => {
           deploymentId: deployment.id,
           projectId: deployment.projectId,
           environment: deployment.environment,
+          visibility: "private",
         });
       });
   });
@@ -95,6 +110,7 @@ describe("resolveDeploymentDomain", () => {
           deploymentId: deployment.id,
           projectId: deployment.projectId,
           environment: deployment.environment,
+          visibility: "private",
         });
       });
   });

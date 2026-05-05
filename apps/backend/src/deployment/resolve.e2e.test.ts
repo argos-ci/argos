@@ -56,6 +56,7 @@ describe("resolveDeploymentByDomain", () => {
       id: deploymentAlias.deploymentId,
       projectId: deployment.projectId,
       environment: deployment.environment,
+      type: "branch",
     });
   });
 
@@ -70,6 +71,7 @@ describe("resolveDeploymentByDomain", () => {
       id: deployment.id,
       projectId: deployment.projectId,
       environment: deployment.environment,
+      type: "slug",
     });
   });
 
