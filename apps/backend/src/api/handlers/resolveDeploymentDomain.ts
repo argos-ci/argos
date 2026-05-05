@@ -14,6 +14,7 @@ const ResponseSchema = z.object({
   deploymentId: z.string(),
   projectId: z.string(),
   environment: z.enum(["preview", "production"]),
+  visibility: z.enum(["private", "public"]),
 });
 
 const CACHE_CONTROL =
@@ -62,6 +63,10 @@ export const resolveDeploymentDomain: CreateAPIHandler = ({ get }) => {
       deploymentId: deployment.id,
       projectId: deployment.projectId,
       environment: deployment.environment,
+      visibility:
+        deployment.environment === "production" && deployment.type === "domain"
+          ? "public"
+          : "private",
     });
   });
 };

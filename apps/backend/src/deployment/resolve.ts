@@ -1,4 +1,6 @@
 import config from "@/config";
+import { knex } from "@/database";
+import type { DeploymentAlias } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
 
 /**
@@ -34,23 +36,31 @@ export function getDeploymentAliasCandidates(domain: string): string[] {
   return Array.from(candidates);
 }
 
+type ResolvedDeploymentResult = {
+  id: string;
+  projectId: string;
+  environment: Deployment["environment"];
+  type: DeploymentAlias["type"] | "slug";
+};
+
 /**
  * Resolve a deployment from a domain or URL. Returns null if no deployment
  * matches any of the candidate aliases.
  */
 export async function resolveDeploymentByDomain(
   domain: string,
-): Promise<Pick<Deployment, "id" | "projectId" | "environment"> | null> {
+): Promise<ResolvedDeploymentResult | null> {
   const aliases = getDeploymentAliasCandidates(domain);
   if (aliases.length === 0) {
     return null;
   }
 
-  const deployment = await Deployment.query()
+  const result = (await knex("deployments")
     .select(
       "deployments.id",
       "deployments.projectId",
       "deployments.environment",
+      "deployment_aliases.type",
     )
     .leftJoin(
       "deployment_aliases",
@@ -62,7 +72,21 @@ export async function resolveDeploymentByDomain(
         .whereIn("deployment_aliases.alias", aliases)
         .orWhereIn("deployments.slug", aliases);
     })
-    .first();
+    .first()) as
+    | {
+        id: string;
+        projectId: string;
+        environment: Deployment["environment"];
+        type: DeploymentAlias["type"] | null;
+      }
+    | undefined;
 
-  return deployment ?? null;
+  return result
+    ? {
+        id: result.id,
+        projectId: result.projectId,
+        environment: result.environment,
+        type: result.type ?? "slug",
+      }
+    : null;
 }

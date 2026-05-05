@@ -17,6 +17,7 @@ type ResolvedDeployment = {
   deploymentId: string;
   projectId: string;
   environment: "preview" | "production";
+  visibility: "private" | "public";
 };
 
 function plainResponse(
@@ -217,7 +218,8 @@ async function resolveAlias(
     !body.deploymentId ||
     typeof body.projectId !== "string" ||
     !body.projectId ||
-    (body.environment !== "preview" && body.environment !== "production")
+    (body.environment !== "preview" && body.environment !== "production") ||
+    (body.visibility !== "private" && body.visibility !== "public")
   ) {
     throw new Error(`Invalid deployment payload for domain "${domain}"`);
   }
@@ -225,6 +227,7 @@ async function resolveAlias(
     deploymentId: body.deploymentId,
     projectId: body.projectId,
     environment: body.environment,
+    visibility: body.visibility,
   };
 }
 
@@ -304,7 +307,7 @@ export const handler = async (
     return notFoundResponse();
   }
 
-  if (deployment.environment === "preview") {
+  if (deployment.visibility === "private") {
     const cookieValue = getCookie(
       request.headers,
       cookieName(deployment.projectId),
