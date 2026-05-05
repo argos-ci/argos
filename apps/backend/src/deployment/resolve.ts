@@ -1,7 +1,7 @@
 import config from "@/config";
 import { knex } from "@/database";
 import type { DeploymentAlias } from "@/database/models";
-import { Deployment } from "@/database/models/Deployment";
+import type { Deployment } from "@/database/models/Deployment";
 
 /**
  * Build the candidate aliases that resolve a deployment from a domain or URL.
