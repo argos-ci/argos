@@ -25,7 +25,10 @@ import {
 } from "@/database/services/project";
 import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
-import { invalidateDeploymentCache } from "@/deployment/invalidate";
+import {
+  invalidateDeploymentCache,
+  invalidateProjectDeploymentCache,
+} from "@/deployment/invalidate";
 import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
@@ -147,6 +150,8 @@ export const typeDefs = gql`
     deploymentProductionBranchGlob: String!
     "Glob pattern for production deployment branches edited by the user"
     customDeploymentProductionBranchGlob: String
+    "Whether deployments are accessible"
+    deploymentEnabled: Boolean!
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -300,6 +305,10 @@ export const typeDefs = gql`
     ): ProjectContributor!
     "Update the production deployment domain"
     updateProjectDomain(input: UpdateProjectDomainInput!): Project!
+    "Enable project deployments"
+    enableProjectDeployments(projectId: ID!): Project!
+    "Disable project deployments"
+    disableProjectDeployments(projectId: ID!): Project!
     removeContributorFromProject(
       input: RemoveContributorFromProjectInput!
     ): RemoveContributorFromProjectPayload!
@@ -468,6 +477,30 @@ function createProject(
     // Automatically enable auto-ignore
     autoIgnore: { changes: 3 },
   });
+}
+
+async function setProjectDeploymentEnabled(input: {
+  projectId: string;
+  user: User | null | undefined;
+  enabled: boolean;
+}) {
+  const project = await getAdminProject({
+    id: input.projectId,
+    user: input.user,
+  });
+
+  const updatedProject =
+    project.deploymentEnabled === input.enabled
+      ? project
+      : await project.$query().patchAndFetch({
+          deploymentEnabled: input.enabled,
+        });
+
+  await invalidateProjectDeploymentCache(project.id).catch(() => {
+    // Non-blocking — best effort
+  });
+
+  return updatedProject;
 }
 
 export const resolvers: IResolvers = {
@@ -1182,6 +1215,20 @@ export const resolvers: IResolvers = {
       );
 
       return project;
+    },
+    enableProjectDeployments: async (_root, args, ctx) => {
+      return setProjectDeploymentEnabled({
+        projectId: args.projectId,
+        user: ctx.auth?.user,
+        enabled: true,
+      });
+    },
+    disableProjectDeployments: async (_root, args, ctx) => {
+      return setProjectDeploymentEnabled({
+        projectId: args.projectId,
+        user: ctx.auth?.user,
+        enabled: false,
+      });
     },
     removeContributorFromProject: async (_root, args, ctx) => {
       if (!ctx.auth) {

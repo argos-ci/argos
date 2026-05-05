@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import config from "@/config";
+import { knex } from "@/database";
 
 const CloudflarePurgeResponseSchema = z.object({
   success: z.literal(true),
@@ -30,6 +31,32 @@ function getResolveDeploymentDomainUrls(aliasOrDomain: string): string[] {
     (candidate) =>
       `${apiBaseUrl}/v2/deployments/resolve/${encodeURIComponent(candidate)}`,
   );
+}
+
+async function getProjectDeploymentCacheAliases(
+  projectId: string,
+): Promise<string[]> {
+  const rows = (await knex("deployments")
+    .select("deployments.slug", "deployment_aliases.alias")
+    .leftJoin(
+      "deployment_aliases",
+      "deployment_aliases.deploymentId",
+      "deployments.id",
+    )
+    .where("deployments.projectId", projectId)) as {
+    slug: string;
+    alias: string | null;
+  }[];
+
+  const aliases = new Set<string>();
+  rows.forEach((row) => {
+    aliases.add(row.slug);
+    if (row.alias) {
+      aliases.add(row.alias);
+    }
+  });
+
+  return Array.from(aliases);
 }
 
 /**
@@ -72,4 +99,16 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
       `Cloudflare purge returned an invalid response for alias "${alias}"`,
     );
   }
+}
+
+export async function invalidateProjectDeploymentCache(
+  projectId: string,
+): Promise<void> {
+  const aliases = await getProjectDeploymentCacheAliases(projectId);
+
+  await Promise.all(
+    aliases.map((alias) => {
+      return invalidateDeploymentCache(alias);
+    }),
+  );
 }

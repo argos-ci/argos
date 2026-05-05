@@ -1,7 +1,8 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { DeploymentAlias, ProjectDomain } from "@/database/models";
+import { DeploymentAlias, Project, ProjectDomain } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -191,6 +192,111 @@ describe("GraphQL projectDomain", () => {
     expect(res.body.errors[0].extensions).toMatchObject({
       code: "BAD_USER_INPUT",
       field: "domain",
+    });
+  });
+
+  it("disables project deployments", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const teamAccount = await factory.TeamAccount.create();
+    const project = await factory.Project.create({
+      accountId: teamAccount.id,
+    });
+    invariant(userAccount.user, "user not fetched");
+    invariant(userAccount.userId, "user account has no user");
+    invariant(teamAccount.teamId, "team account has no team");
+    await factory.TeamUser.create({
+      teamId: teamAccount.teamId,
+      userId: userAccount.userId,
+      userLevel: "owner",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: userAccount.user,
+        account: userAccount,
+      },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation DisableProjectDeployments($projectId: ID!) {
+            disableProjectDeployments(projectId: $projectId) {
+              id
+              deploymentEnabled
+            }
+          }
+        `,
+        variables: {
+          projectId: project.id,
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.disableProjectDeployments).toEqual({
+      id: project.id,
+      deploymentEnabled: false,
+    });
+
+    await expect(Project.query().findById(project.id)).resolves.toMatchObject({
+      deploymentEnabled: false,
+    });
+  });
+
+  it("enables project deployments", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const teamAccount = await factory.TeamAccount.create();
+    const project = await factory.Project.create({
+      accountId: teamAccount.id,
+      deploymentEnabled: false,
+    });
+    invariant(userAccount.user, "user not fetched");
+    invariant(userAccount.userId, "user account has no user");
+    invariant(teamAccount.teamId, "team account has no team");
+    await factory.TeamUser.create({
+      teamId: teamAccount.teamId,
+      userId: userAccount.userId,
+      userLevel: "owner",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: userAccount.user,
+        account: userAccount,
+      },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation EnableProjectDeployments($projectId: ID!) {
+            enableProjectDeployments(projectId: $projectId) {
+              id
+              deploymentEnabled
+            }
+          }
+        `,
+        variables: {
+          projectId: project.id,
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.enableProjectDeployments).toEqual({
+      id: project.id,
+      deploymentEnabled: true,
+    });
+
+    await expect(Project.query().findById(project.id)).resolves.toMatchObject({
+      deploymentEnabled: true,
     });
   });
 });

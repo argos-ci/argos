@@ -104,7 +104,7 @@ describe("resolveDeploymentDomain", () => {
       .expect(200)
       .expect((res) => {
         expect(res.headers["cache-control"]).toBe(
-          "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+          "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
         );
         expect(res.body).toEqual({
           deploymentId: deployment.id,
@@ -118,6 +118,28 @@ describe("resolveDeploymentDomain", () => {
   test("returns 404 when the domain is unknown", async () => {
     await request(app)
       .get("/deployments/resolve/unknown.dev.argos-ci.live")
+      .expect(404)
+      .expect((res) => {
+        expect(res.body.error).toBe("Deployment domain not found");
+      });
+  });
+
+  test("returns 404 when deployments are disabled on the project", async ({
+    factory,
+  }) => {
+    const project = await factory.Project.create({
+      deploymentEnabled: false,
+    });
+    const deployment = await factory.Deployment.create({
+      projectId: project.id,
+    });
+    await factory.DeploymentAlias.create({
+      deploymentId: deployment.id,
+      alias: "disabled-preview",
+    });
+
+    await request(app)
+      .get("/deployments/resolve/disabled-preview.dev.argos-ci.live")
       .expect(404)
       .expect((res) => {
         expect(res.body.error).toBe("Deployment domain not found");

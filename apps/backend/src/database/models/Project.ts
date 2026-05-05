@@ -59,6 +59,7 @@ export class Project extends Model {
           githubRepositoryId: { type: ["null", "string"] },
           gitlabProjectId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
+          deploymentEnabled: { type: "boolean" },
           summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
@@ -89,6 +90,7 @@ export class Project extends Model {
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
   prCommentEnabled!: boolean;
+  deploymentEnabled!: boolean;
   summaryCheck!: "always" | "never" | "auto";
   defaultUserLevel!: UserLevel | null;
   autoIgnore!: ProjectAutoIgnore | null;
