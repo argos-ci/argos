@@ -94,7 +94,8 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
 
 /**
  * Invalidates the deployment cache for a project.
- * We invalidates only the production domain, other will decache at some point.
+ * We invalidate only the production domain; others will expire from cache at
+ * some point.
  */
 export async function invalidateProjectDeploymentCache(
   projectId: string,

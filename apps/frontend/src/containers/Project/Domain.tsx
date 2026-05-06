@@ -111,7 +111,7 @@ type Inputs = {
   deploymentProductionBranchGlob: string;
 };
 
-export function ProjectDeploymentsEnabled(props: {
+function ProjectDeploymentsEnabled(props: {
   project: DocumentType<typeof _ProjectFragment>;
 }) {
   const { project } = props;
@@ -293,7 +293,7 @@ function getDomainSlug(domain: string | null | undefined) {
   return domain.slice(0, -suffix.length);
 }
 
-export function ProjectDeploymentsDisabled(props: {
+function ProjectDeploymentsDisabled(props: {
   project: DocumentType<typeof _ProjectFragment>;
 }) {
   const { project } = props;
@@ -350,12 +350,13 @@ function DisableProjectDeploymentsButton(props: { projectId: string }) {
           <DialogBody>
             <DialogTitle>Disable Deployments</DialogTitle>
             <DialogText>
-              Every deployment URL for this project will be made inaccessible
-              until deployments are enabled again.
+              Deployment URLs for this project will become inaccessible after
+              deployments are disabled, although some existing links may
+              continue to work briefly while cached resolutions expire.
             </DialogText>
             <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
-              <strong>Warning:</strong> This immediately affects existing
-              deployment links.
+              <strong>Warning:</strong> Existing deployment links may remain
+              accessible briefly until cached resolutions expire.
             </div>
           </DialogBody>
           <DialogFooter>

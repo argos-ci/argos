@@ -65,7 +65,7 @@ async function resolveInternalDeploymentDomain(
     INTERNAL_DOMAINS.has(domain) ||
     Boolean(await ProjectDomain.query().select("id").findOne({ domain }));
 
-  if (isExisting) {
+  if (!isExisting) {
     return domain;
   }
 
