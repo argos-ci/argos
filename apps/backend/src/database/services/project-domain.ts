@@ -8,7 +8,10 @@ import { isUniqueViolationError } from "../error";
 import { Deployment, DeploymentAlias, ProjectDomain } from "../models";
 import { transaction, type TransactionOrKnex } from "../transaction";
 
-const INTERNAL_DOMAINS = new Set(["dev"]);
+/**
+ * Domains reserved for internal usage.
+ */
+const INTERNAL_DOMAIN_SLUGS = new Set(["dev"]);
 
 const DOMAIN_REGEX =
   /^(?=.{1,255}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -57,12 +60,11 @@ async function resolveInternalDeploymentDomain(
   name: string,
   index = 0,
 ): Promise<string> {
-  const domain = getInternalDeploymentDomain(
-    getInternalDeploymentDomainSlug(name, index),
-  );
+  const slug = getInternalDeploymentDomainSlug(name, index);
+  const domain = getInternalDeploymentDomain(slug);
 
   const isExisting =
-    INTERNAL_DOMAINS.has(domain) ||
+    INTERNAL_DOMAIN_SLUGS.has(slug) ||
     Boolean(await ProjectDomain.query().select("id").findOne({ domain }));
 
   if (!isExisting) {

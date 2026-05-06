@@ -173,6 +173,12 @@ async function getCompareScreenshotBucket(ctx: Context, build: Build) {
   return bucket;
 }
 
+async function getProject(ctx: Context, build: Build) {
+  const project = await ctx.loaders.Project.load(build.projectId);
+  invariant(project, "project not found");
+  return project;
+}
+
 export const resolvers: IResolvers = {
   Build: {
     screenshotDiffs: async (build, { first, after }) => {
@@ -232,7 +238,13 @@ export const resolvers: IResolvers = {
       }
     },
     deployment: async (build, _args, ctx) => {
-      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      const [compareBucket, project] = await Promise.all([
+        getCompareScreenshotBucket(ctx, build),
+        getProject(ctx, build),
+      ]);
+      if (!project.deploymentEnabled) {
+        return null;
+      }
       const commitShas: string[] = [compareBucket.commit];
       if (build.prHeadCommit) {
         commitShas.push(build.prHeadCommit);

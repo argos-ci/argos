@@ -489,18 +489,17 @@ async function setProjectDeploymentEnabled(input: {
     user: input.user,
   });
 
-  const updatedProject =
-    project.deploymentEnabled === input.enabled
-      ? project
-      : await project.$query().patchAndFetch({
-          deploymentEnabled: input.enabled,
-        });
+  if (project.deploymentEnabled === input.enabled) {
+    const updatedProject = await project.$query().patchAndFetch({
+      deploymentEnabled: input.enabled,
+    });
+    await invalidateProjectDeploymentCache(project.id).catch(() => {
+      // Non-blocking — best effort
+    });
+    return updatedProject;
+  }
 
-  await invalidateProjectDeploymentCache(project.id).catch(() => {
-    // Non-blocking — best effort
-  });
-
-  return updatedProject;
+  return project;
 }
 
 export const resolvers: IResolvers = {
@@ -533,6 +532,9 @@ export const resolvers: IResolvers = {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
     latestProductionDeployment: async (project, _args, ctx) => {
+      if (!project.deploymentEnabled) {
+        return null;
+      }
       return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
@@ -775,6 +777,9 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     domain: async (project, _args, ctx) => {
+      if (!project.deploymentEnabled) {
+        return null;
+      }
       const domain =
         await ctx.loaders.ProductionInternalProjectDomainByProject.load(
           project.id,

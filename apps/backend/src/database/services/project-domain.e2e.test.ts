@@ -96,6 +96,22 @@ describe("project-domain service", () => {
       });
     });
 
+    it("protects the reserved dev internal domain slug", async () => {
+      const project = await factory.Project.create({ name: "dev" });
+
+      const domain = await ensureProductionInternalProjectDomain({
+        projectId: project.id,
+        projectName: project.name,
+      });
+
+      expect(domain).toMatchObject({
+        projectId: project.id,
+        domain: "dev-1.dev.argos-ci.live",
+        environment: "production",
+        internal: true,
+      });
+    });
+
     it("retries with a new suffix after a concurrent unique-constraint failure", async () => {
       const project = await factory.Project.create({ name: "docs" });
       const otherProject = await factory.Project.create({ name: "other-docs" });
