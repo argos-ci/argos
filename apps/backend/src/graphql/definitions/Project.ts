@@ -489,7 +489,7 @@ async function setProjectDeploymentEnabled(input: {
     user: input.user,
   });
 
-  if (project.deploymentEnabled === input.enabled) {
+  if (project.deploymentEnabled !== input.enabled) {
     const updatedProject = await project.$query().patchAndFetch({
       deploymentEnabled: input.enabled,
     });
