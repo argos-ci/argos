@@ -10,6 +10,7 @@ import { getDeploymentUrl } from "@/deployment/url";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
+import { DeploymentAlias } from "./DeploymentAlias";
 import { Project } from "./Project";
 
 export class Deployment extends Model {
@@ -49,6 +50,14 @@ export class Deployment extends Model {
         join: {
           from: "deployments.projectId",
           to: "projects.id",
+        },
+      },
+      aliases: {
+        relation: Model.HasManyRelation,
+        modelClass: DeploymentAlias,
+        join: {
+          from: "deployments.id",
+          to: "deployment_aliases.deploymentId",
         },
       },
     };

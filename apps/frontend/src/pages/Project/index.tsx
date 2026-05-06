@@ -22,6 +22,7 @@ const ProjectQuery = graphql(`
       id
       permissions
       name
+      deploymentEnabled
       account {
         id
         ...PaymentBanner_Account
@@ -35,25 +36,21 @@ type Account = NonNullable<
 >;
 
 function ProjectTabs(props: {
+  deploymentEnabled: boolean;
   permissions: ProjectPermission[];
   account: Account;
   children: React.ReactNode;
 }) {
-  const { account, children, permissions } = props;
-  const deploymentsFlag = useFlag("deployments");
+  const { account, children, permissions, deploymentEnabled } = props;
   const isTeam = account.__typename === "Team";
   const showAutomationsTab =
     isTeam && permissions.includes(ProjectPermission.ViewSettings);
-  const showDeploymentsTab =
-    !deploymentsFlag.isLoading && deploymentsFlag.isEnabled;
   return (
     <TabsLink className="flex min-h-0 flex-1 flex-col">
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
-        {showDeploymentsTab && (
-          <TabLink href="deployments">Deployments</TabLink>
-        )}
+        {deploymentEnabled && <DeploymentsTab />}
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
         )}
@@ -68,6 +65,14 @@ function ProjectTabs(props: {
       </TabLinkPanel>
     </TabsLink>
   );
+}
+
+function DeploymentsTab() {
+  const deploymentsFlag = useFlag("deployments");
+  if (!deploymentsFlag.isEnabled) {
+    return null;
+  }
+  return <TabLink href="deployments">Deployments</TabLink>;
 }
 
 function Project(props: { params: ProjectParams }) {
@@ -86,7 +91,11 @@ function Project(props: { params: ProjectParams }) {
   }
 
   return (
-    <ProjectTabs account={project.account} permissions={project.permissions}>
+    <ProjectTabs
+      account={project.account}
+      permissions={project.permissions}
+      deploymentEnabled={project.deploymentEnabled}
+    >
       <Suspense fallback={<PageLoader />}>
         <Outlet
           context={

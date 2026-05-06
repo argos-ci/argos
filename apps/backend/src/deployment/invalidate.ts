@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import config from "@/config";
-import { knex } from "@/database";
+import { DeploymentAlias } from "@/database/models";
 
 const CloudflarePurgeResponseSchema = z.object({
   success: z.literal(true),
@@ -33,30 +33,21 @@ function getResolveDeploymentDomainUrls(aliasOrDomain: string): string[] {
   );
 }
 
-async function getProjectDeploymentCacheAliases(
+/**
+ * Get the alias of a deployment in production.
+ */
+async function getProductionDeploymentAlias(
   projectId: string,
-): Promise<string[]> {
-  const rows = (await knex("deployments")
-    .select("deployments.slug", "deployment_aliases.alias")
-    .leftJoin(
-      "deployment_aliases",
-      "deployment_aliases.deploymentId",
-      "deployments.id",
-    )
-    .where("deployments.projectId", projectId)) as {
-    slug: string;
-    alias: string | null;
-  }[];
+): Promise<string | null> {
+  const latestProductionAlias = await DeploymentAlias.query()
+    .joinRelated("deployment")
+    .where("deployment.projectId", projectId)
+    .where("deployment.environment", "production")
+    .where("type", "domain")
+    .orderBy("deployment.createdAt", "desc")
+    .first();
 
-  const aliases = new Set<string>();
-  rows.forEach((row) => {
-    aliases.add(row.slug);
-    if (row.alias) {
-      aliases.add(row.alias);
-    }
-  });
-
-  return Array.from(aliases);
+  return latestProductionAlias?.alias ?? null;
 }
 
 /**
@@ -101,14 +92,16 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
   }
 }
 
+/**
+ * Invalidates the deployment cache for a project.
+ * We invalidates only the production domain, other will decache at some point.
+ */
 export async function invalidateProjectDeploymentCache(
   projectId: string,
 ): Promise<void> {
-  const aliases = await getProjectDeploymentCacheAliases(projectId);
+  const alias = await getProductionDeploymentAlias(projectId);
 
-  await Promise.all(
-    aliases.map((alias) => {
-      return invalidateDeploymentCache(alias);
-    }),
-  );
+  if (alias) {
+    await invalidateDeploymentCache(alias);
+  }
 }
