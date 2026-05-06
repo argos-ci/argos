@@ -11,16 +11,18 @@ export function FormCardFooter<
   TTransformedValues = TFieldValues,
 >(props: {
   children?: React.ReactNode;
+  actions?: React.ReactNode;
   isDisabled?: boolean;
   isSuccessful?: boolean;
   control: Control<TFieldValues, TContext, TTransformedValues>;
 }) {
-  const { control, children, isDisabled, isSuccessful } = props;
+  const { control, children, actions, isDisabled, isSuccessful } = props;
   return (
     <CardFooter className="flex items-center justify-between gap-4">
       <div>{children}</div>
       <div className="flex items-center justify-end gap-4">
         <FormRootError control={control} />
+        {actions}
         <FormSuccess control={control} isSuccessful={isSuccessful}>
           Saved
         </FormSuccess>

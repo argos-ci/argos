@@ -2,10 +2,16 @@ import { slugify } from "@argos/util/slug";
 import type { PartialModelObject } from "objection";
 
 import config from "@/config";
+import { boom } from "@/util/error";
 
 import { isUniqueViolationError } from "../error";
 import { Deployment, DeploymentAlias, ProjectDomain } from "../models";
 import { transaction, type TransactionOrKnex } from "../transaction";
+
+/**
+ * Domains reserved for internal usage.
+ */
+const INTERNAL_DOMAIN_SLUGS = new Set(["dev"]);
 
 const DOMAIN_REGEX =
   /^(?=.{1,255}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -18,7 +24,7 @@ function validateDomain(domain: string) {
   const normalizedDomain = normalizeDomain(domain);
 
   if (!DOMAIN_REGEX.test(normalizedDomain)) {
-    throw new Error("Invalid domain");
+    throw boom(400, "Invalid domain");
   }
 
   return normalizedDomain;
@@ -54,15 +60,14 @@ async function resolveInternalDeploymentDomain(
   name: string,
   index = 0,
 ): Promise<string> {
-  const domain = getInternalDeploymentDomain(
-    getInternalDeploymentDomainSlug(name, index),
-  );
+  const slug = getInternalDeploymentDomainSlug(name, index);
+  const domain = getInternalDeploymentDomain(slug);
 
-  const existingDomain = await ProjectDomain.query()
-    .select("id")
-    .findOne({ domain });
+  const isExisting =
+    INTERNAL_DOMAIN_SLUGS.has(slug) ||
+    Boolean(await ProjectDomain.query().select("id").findOne({ domain }));
 
-  if (!existingDomain) {
+  if (!isExisting) {
     return domain;
   }
 

@@ -25,7 +25,10 @@ import {
 } from "@/database/services/project";
 import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
-import { invalidateDeploymentCache } from "@/deployment/invalidate";
+import {
+  invalidateDeploymentCache,
+  invalidateProjectDeploymentCache,
+} from "@/deployment/invalidate";
 import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
@@ -147,6 +150,8 @@ export const typeDefs = gql`
     deploymentProductionBranchGlob: String!
     "Glob pattern for production deployment branches edited by the user"
     customDeploymentProductionBranchGlob: String
+    "Whether deployments are accessible"
+    deploymentEnabled: Boolean!
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -300,6 +305,10 @@ export const typeDefs = gql`
     ): ProjectContributor!
     "Update the production deployment domain"
     updateProjectDomain(input: UpdateProjectDomainInput!): Project!
+    "Enable project deployments"
+    enableProjectDeployments(projectId: ID!): Project!
+    "Disable project deployments"
+    disableProjectDeployments(projectId: ID!): Project!
     removeContributorFromProject(
       input: RemoveContributorFromProjectInput!
     ): RemoveContributorFromProjectPayload!
@@ -470,6 +479,29 @@ function createProject(
   });
 }
 
+async function setProjectDeploymentEnabled(input: {
+  projectId: string;
+  user: User | null | undefined;
+  enabled: boolean;
+}) {
+  const project = await getAdminProject({
+    id: input.projectId,
+    user: input.user,
+  });
+
+  if (project.deploymentEnabled !== input.enabled) {
+    const updatedProject = await project.$query().patchAndFetch({
+      deploymentEnabled: input.enabled,
+    });
+    await invalidateProjectDeploymentCache(project.id).catch(() => {
+      // Non-blocking — best effort
+    });
+    return updatedProject;
+  }
+
+  return project;
+}
+
 export const resolvers: IResolvers = {
   Project: {
     buildsCount: async (project, _args, ctx) => {
@@ -500,6 +532,9 @@ export const resolvers: IResolvers = {
       return ctx.loaders.LatestProjectBuild.load(project.id);
     },
     latestProductionDeployment: async (project, _args, ctx) => {
+      if (!project.deploymentEnabled) {
+        return null;
+      }
       return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
@@ -742,6 +777,9 @@ export const resolvers: IResolvers = {
       return paginateResult({ result, first, after });
     },
     domain: async (project, _args, ctx) => {
+      if (!project.deploymentEnabled) {
+        return null;
+      }
       const domain =
         await ctx.loaders.ProductionInternalProjectDomainByProject.load(
           project.id,
@@ -1182,6 +1220,20 @@ export const resolvers: IResolvers = {
       );
 
       return project;
+    },
+    enableProjectDeployments: async (_root, args, ctx) => {
+      return setProjectDeploymentEnabled({
+        projectId: args.projectId,
+        user: ctx.auth?.user,
+        enabled: true,
+      });
+    },
+    disableProjectDeployments: async (_root, args, ctx) => {
+      return setProjectDeploymentEnabled({
+        projectId: args.projectId,
+        user: ctx.auth?.user,
+        enabled: false,
+      });
     },
     removeContributorFromProject: async (_root, args, ctx) => {
       if (!ctx.auth) {

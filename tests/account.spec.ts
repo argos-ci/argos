@@ -10,6 +10,7 @@ loggedTest("account projects", async ({ page, team, project, auth }) => {
   await expect(
     page.getByRole("link", { name: `Visit ${project.name}` }),
   ).toBeVisible();
+  await expect(page.getByText("Not deployed")).toBeVisible();
   await screenshot(page, "account-projects");
 });
 

@@ -67,6 +67,8 @@ export async function resolveDeploymentByDomain(
       "deployment_aliases.deploymentId",
       "deployments.id",
     )
+    .join("projects", "projects.id", "deployments.projectId")
+    .where("projects.deploymentEnabled", true)
     .where((query) => {
       query
         .whereIn("deployment_aliases.alias", aliases)

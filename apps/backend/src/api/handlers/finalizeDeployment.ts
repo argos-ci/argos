@@ -9,10 +9,7 @@ import { Deployment } from "@/database/models/Deployment";
 import { DeploymentAlias } from "@/database/models/DeploymentAlias";
 import { ProjectDomain } from "@/database/models/ProjectDomain";
 import { ensureProductionInternalProjectDomain } from "@/database/services/project-domain";
-import {
-  findInternalDeploymentAlias,
-  getDeploymentAliases,
-} from "@/deployment/alias";
+import { getDeploymentAliases } from "@/deployment/alias";
 import { postDeploymentCommitStatus } from "@/deployment/github-status";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
@@ -157,13 +154,6 @@ async function updateDeploymentAliases(input: {
     deployment,
     projectDomains,
   });
-  const internalAlias = findInternalDeploymentAlias(aliases);
-  if (internalAlias) {
-    throw boom(
-      400,
-      `Deployment alias "${internalAlias.alias}" is reserved for internal use`,
-    );
-  }
   const now = new Date().toISOString();
   await DeploymentAlias.query()
     .insert(

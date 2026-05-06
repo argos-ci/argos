@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import config from "@/config";
+import { DeploymentAlias } from "@/database/models";
 
 const CloudflarePurgeResponseSchema = z.object({
   success: z.literal(true),
@@ -30,6 +31,23 @@ function getResolveDeploymentDomainUrls(aliasOrDomain: string): string[] {
     (candidate) =>
       `${apiBaseUrl}/v2/deployments/resolve/${encodeURIComponent(candidate)}`,
   );
+}
+
+/**
+ * Get the alias of a deployment in production.
+ */
+async function getProductionDeploymentAlias(
+  projectId: string,
+): Promise<string | null> {
+  const latestProductionAlias = await DeploymentAlias.query()
+    .joinRelated("deployment")
+    .where("deployment.projectId", projectId)
+    .where("deployment.environment", "production")
+    .where("type", "domain")
+    .orderBy("deployment.createdAt", "desc")
+    .first();
+
+  return latestProductionAlias?.alias ?? null;
 }
 
 /**
@@ -71,5 +89,20 @@ export async function invalidateDeploymentCache(alias: string): Promise<void> {
     throw new Error(
       `Cloudflare purge returned an invalid response for alias "${alias}"`,
     );
+  }
+}
+
+/**
+ * Invalidates the deployment cache for a project.
+ * We invalidate only the production domain; others will expire from cache at
+ * some point.
+ */
+export async function invalidateProjectDeploymentCache(
+  projectId: string,
+): Promise<void> {
+  const alias = await getProductionDeploymentAlias(projectId);
+
+  if (alias) {
+    await invalidateDeploymentCache(alias);
   }
 }

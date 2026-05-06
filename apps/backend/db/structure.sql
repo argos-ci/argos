@@ -1415,6 +1415,7 @@ CREATE TABLE public.projects (
     "defaultUserLevel" text,
     "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
+    "deploymentEnabled" boolean DEFAULT true NOT NULL,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
@@ -3155,10 +3156,10 @@ CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
 
 
 --
--- Name: deployment_aliases_deploymentid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: deployment_aliases_deploymentid_type_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX deployment_aliases_deploymentid_index ON public.deployment_aliases USING btree ("deploymentId");
+CREATE INDEX deployment_aliases_deploymentid_type_index ON public.deployment_aliases USING btree ("deploymentId", type);
 
 
 --
@@ -3169,10 +3170,10 @@ CREATE INDEX deployments_projectid_commitsha_index ON public.deployments USING b
 
 
 --
--- Name: deployments_projectid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: deployments_projectid_environment_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX deployments_projectid_index ON public.deployments USING btree ("projectId");
+CREATE INDEX deployments_projectid_environment_index ON public.deployments USING btree ("projectId", environment);
 
 
 --
@@ -4372,3 +4373,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260419110000_deployment_alias_type.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260430120000_build_sibling_commit_indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260501085754_deployment-production-branch-glob.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260505120000_project-deployment-enabled.js', 1, NOW());

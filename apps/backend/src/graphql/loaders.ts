@@ -105,8 +105,7 @@ function createLatestProjectBuildLoader() {
 function createLatestProductionDeploymentByProjectLoader() {
   return new DataLoader<string, Deployment | null>(async (projectIds) => {
     const latestDeployments = await Deployment.query()
-      .select("*")
-      .whereIn("projectId", projectIds as string[])
+      .whereIn("projectId", projectIds)
       .where("environment", "production")
       .distinctOn("projectId")
       .orderBy("projectId")
