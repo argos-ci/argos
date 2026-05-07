@@ -17,7 +17,7 @@ export function App() {
         <ColorModeProvider>
           <AuthContextProvider>
             <ApolloInitializer>
-              <RouterProvider router={router} unstable_useTransitions={false} />
+              <RouterProvider router={router} useTransitions={false} />
               <Toaster />
             </ApolloInitializer>
           </AuthContextProvider>
