@@ -17,8 +17,8 @@ catalog:
   minimatch: ^10.2.5
   react: ^19.2.5
   react-dom: ^19.2.5
-  undici: 8.1.0
-  zod: ^4.4.2
+  undici: 8.2.0
+  zod: ^4.4.3
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - "@argos-ci/*"
