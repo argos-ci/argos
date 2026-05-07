@@ -34,6 +34,7 @@ import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
 import { getStartDateFromPeriod } from "@/metrics/test";
+import { HTTPError } from "@/util/error";
 
 import {
   IBuildStatus,
@@ -223,6 +224,7 @@ export const typeDefs = gql`
     summaryCheck: SummaryCheck
     defaultUserLevel: ProjectUserLevel
     autoIgnore: AutoIgnoreSettingsInput
+    deploymentEnabled: Boolean
   }
 
   input TransferProjectInput {
@@ -305,10 +307,6 @@ export const typeDefs = gql`
     ): ProjectContributor!
     "Update the production deployment domain"
     updateProjectDomain(input: UpdateProjectDomainInput!): Project!
-    "Enable project deployments"
-    enableProjectDeployments(projectId: ID!): Project!
-    "Disable project deployments"
-    disableProjectDeployments(projectId: ID!): Project!
     removeContributorFromProject(
       input: RemoveContributorFromProjectInput!
     ): RemoveContributorFromProjectPayload!
@@ -477,29 +475,6 @@ function createProject(
     // Automatically enable auto-ignore
     autoIgnore: { changes: 3 },
   });
-}
-
-async function setProjectDeploymentEnabled(input: {
-  projectId: string;
-  user: User | null | undefined;
-  enabled: boolean;
-}) {
-  const project = await getAdminProject({
-    id: input.projectId,
-    user: input.user,
-  });
-
-  if (project.deploymentEnabled !== input.enabled) {
-    const updatedProject = await project.$query().patchAndFetch({
-      deploymentEnabled: input.enabled,
-    });
-    await invalidateProjectDeploymentCache(project.id).catch(() => {
-      // Non-blocking — best effort
-    });
-    return updatedProject;
-  }
-
-  return project;
 }
 
 export const resolvers: IResolvers = {
@@ -1013,6 +988,13 @@ export const resolvers: IResolvers = {
         data.autoIgnore = args.input.autoIgnore;
       }
 
+      if (
+        typeof args.input.deploymentEnabled === "boolean" &&
+        project.deploymentEnabled !== args.input.deploymentEnabled
+      ) {
+        data.deploymentEnabled = args.input.deploymentEnabled;
+      }
+
       if (args.input.name != null && project.name !== args.input.name) {
         await checkGqlProjectName({
           name: args.input.name,
@@ -1021,7 +1003,20 @@ export const resolvers: IResolvers = {
         data.name = args.input.name;
       }
 
-      return project.$query().patchAndFetch(data);
+      if (Object.keys(data).length === 0) {
+        return project;
+      }
+
+      const updated = await project.$query().patchAndFetch(data);
+
+      // If "deploymentEnabled" changed, invalidate the project deployment cache.
+      if ("deploymentEnabled" in data) {
+        await invalidateProjectDeploymentCache(project.id).catch(() => {
+          // Non-blocking — best effort
+        });
+      }
+
+      return updated;
     },
     linkGithubRepository: async (_root, args, ctx) => {
       if (!ctx.auth) {
@@ -1191,17 +1186,26 @@ export const resolvers: IResolvers = {
           domain: args.input.domain,
         });
       } catch (error: unknown) {
-        if (error instanceof Error) {
-          if (
-            error.message === "Invalid domain" ||
-            error.message === "Only internal domains are supported"
-          ) {
-            throw badUserInput(error.message, { field: "domain" });
+        if (error instanceof HTTPError) {
+          if (error.code === "PROJECT_DOMAIN_INVALID") {
+            throw badUserInput("Invalid domain", {
+              field: "domain",
+              code: error.code,
+            });
+          }
+
+          if (error.code === "PROJECT_DOMAIN_INTERNAL_SLUG") {
+            throw badUserInput("Domain already in use", {
+              field: "domain",
+              code: error.code,
+            });
           }
         }
+
         if (isUniqueViolationError(error)) {
           throw badUserInput("Domain already in use", { field: "domain" });
         }
+
         throw error;
       }
 
@@ -1220,20 +1224,6 @@ export const resolvers: IResolvers = {
       );
 
       return project;
-    },
-    enableProjectDeployments: async (_root, args, ctx) => {
-      return setProjectDeploymentEnabled({
-        projectId: args.projectId,
-        user: ctx.auth?.user,
-        enabled: true,
-      });
-    },
-    disableProjectDeployments: async (_root, args, ctx) => {
-      return setProjectDeploymentEnabled({
-        projectId: args.projectId,
-        user: ctx.auth?.user,
-        enabled: false,
-      });
     },
     removeContributorFromProject: async (_root, args, ctx) => {
       if (!ctx.auth) {

@@ -47,24 +47,6 @@ const _ProjectFragment = graphql(`
   }
 `);
 
-const EnableProjectDeploymentsMutation = graphql(`
-  mutation ProjectDomain_enableProjectDeployments($projectId: ID!) {
-    enableProjectDeployments(projectId: $projectId) {
-      id
-      deploymentEnabled
-    }
-  }
-`);
-
-const DisableProjectDeploymentsMutation = graphql(`
-  mutation ProjectDomain_disableProjectDeployments($projectId: ID!) {
-    disableProjectDeployments(projectId: $projectId) {
-      id
-      deploymentEnabled
-    }
-  }
-`);
-
 const UpdateProjectDomainMutation = graphql(`
   mutation ProjectDomain_updateProjectDomain(
     $input: UpdateProjectDomainInput!
@@ -76,19 +58,22 @@ const UpdateProjectDomainMutation = graphql(`
   }
 `);
 
-const UpdateProjectDeploymentBranchMutation = graphql(`
+const UpdateProjectMutation = graphql(`
   mutation ProjectDomain_updateProject(
-    $id: ID!
+    $projectId: ID!
     $deploymentProductionBranchGlob: String
+    $deploymentEnabled: Boolean
   ) {
     updateProject(
       input: {
-        id: $id
+        id: $projectId
         deploymentProductionBranchGlob: $deploymentProductionBranchGlob
+        deploymentEnabled: $deploymentEnabled
       }
     ) {
       id
       customDeploymentProductionBranchGlob
+      deploymentEnabled
     }
   }
 `);
@@ -132,31 +117,29 @@ function ProjectDeploymentsEnabled(props: {
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     const domain = `${data.domain}.${INTERNAL_DOMAIN_SUFFIX}`;
 
-    const result = await client.mutate({
-      mutation: UpdateProjectDomainMutation,
-      variables: {
-        input: {
-          projectId: project.id,
-          domain,
+    await Promise.all([
+      client.mutate({
+        mutation: UpdateProjectDomainMutation,
+        variables: {
+          input: {
+            projectId: project.id,
+            domain,
+          },
         },
-      },
-    });
+      }),
+      client.mutate({
+        mutation: UpdateProjectMutation,
+        variables: {
+          projectId: project.id,
+          deploymentProductionBranchGlob:
+            data.noCustomDeploymentProductionBranchGlob
+              ? null
+              : data.deploymentProductionBranchGlob,
+        },
+      }),
+    ]);
 
-    await client.mutate({
-      mutation: UpdateProjectDeploymentBranchMutation,
-      variables: {
-        id: project.id,
-        deploymentProductionBranchGlob:
-          data.noCustomDeploymentProductionBranchGlob
-            ? null
-            : data.deploymentProductionBranchGlob,
-      },
-    });
-
-    form.reset({
-      ...data,
-      domain: getDomainSlug(result.data?.updateProjectDomain.domain),
-    });
+    form.reset(data);
   };
 
   const noCustomDeploymentProductionBranchGlob = form.watch(
@@ -327,9 +310,10 @@ function DisableProjectDeploymentsConfirmButton(props: { projectId: string }) {
       variant="destructive"
       onAction={async () => {
         await client.mutate({
-          mutation: DisableProjectDeploymentsMutation,
+          mutation: UpdateProjectMutation,
           variables: {
             projectId,
+            deploymentEnabled: false,
           },
         });
         state.close();
@@ -377,9 +361,10 @@ function EnableProjectDeploymentsButton(props: { projectId: string }) {
     <Button
       onAction={async () => {
         await client.mutate({
-          mutation: EnableProjectDeploymentsMutation,
+          mutation: UpdateProjectMutation,
           variables: {
             projectId,
+            deploymentEnabled: true,
           },
         });
       }}
