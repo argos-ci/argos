@@ -177,6 +177,12 @@ export function createConfig() {
         default: "amqp://localhost",
         env: "AMQP_URL",
       },
+      queuePrefix: {
+        doc: "Queue prefix",
+        format: String,
+        default: "",
+        env: "AMQP_QUEUE_PREFIX",
+      },
     },
     resend: {
       apiKey: {
