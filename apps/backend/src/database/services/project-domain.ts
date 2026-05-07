@@ -24,7 +24,9 @@ function validateDomain(domain: string) {
   const normalizedDomain = normalizeDomain(domain);
 
   if (!DOMAIN_REGEX.test(normalizedDomain)) {
-    throw boom(400, "Invalid domain");
+    throw boom(400, "Invalid domain", {
+      code: "PROJECT_DOMAIN_INVALID",
+    });
   }
 
   return normalizedDomain;
@@ -35,7 +37,20 @@ function validateInternalDomain(domain: string) {
   const suffix = `.${getInternalDeploymentBaseDomain()}`;
 
   if (!normalizedDomain.endsWith(suffix)) {
-    throw new Error("Only internal domains are supported");
+    throw boom(400, "Only internal domains are supported", {
+      code: "PROJECT_DOMAIN_ONLY_INTERNAL",
+    });
+  }
+
+  const slug = normalizedDomain.slice(
+    0,
+    normalizedDomain.length - suffix.length,
+  );
+
+  if (INTERNAL_DOMAIN_SLUGS.has(slug)) {
+    throw boom(400, "Internal slug not available", {
+      code: "PROJECT_DOMAIN_INTERNAL_SLUG",
+    });
   }
 
   return normalizedDomain;
