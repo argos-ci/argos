@@ -23,6 +23,7 @@ import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
 
 type ProjectPermission = "admin" | "review" | "view_settings" | "view";
+export type DeploymentAuth = "public" | "domain-private" | "private";
 export type ProjectAutoIgnore = {
   changes: number;
 };
@@ -60,6 +61,10 @@ export class Project extends Model {
           gitlabProjectId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
           deploymentEnabled: { type: "boolean" },
+          deploymentAuth: {
+            type: "string",
+            enum: ["public", "domain-private", "private"],
+          },
           summaryCheck: { type: "string", enum: ["always", "never", "auto"] },
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
@@ -91,6 +96,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   prCommentEnabled!: boolean;
   deploymentEnabled!: boolean;
+  deploymentAuth!: DeploymentAuth;
   summaryCheck!: "always" | "never" | "auto";
   defaultUserLevel!: UserLevel | null;
   autoIgnore!: ProjectAutoIgnore | null;

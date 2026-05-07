@@ -9,6 +9,28 @@ import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
+async function createTeamProjectOwner() {
+  const userAccount = await factory.UserAccount.create();
+  await userAccount.$fetchGraph("user");
+  invariant(userAccount.user, "user not fetched");
+  invariant(userAccount.userId, "user account has no user");
+
+  const teamAccount = await factory.TeamAccount.create();
+  invariant(teamAccount.teamId, "team account has no team");
+
+  const project = await factory.Project.create({
+    accountId: teamAccount.id,
+  });
+
+  await factory.TeamUser.create({
+    teamId: teamAccount.teamId,
+    userId: userAccount.userId,
+    userLevel: "owner",
+  });
+
+  return { userAccount, teamAccount, project, user: userAccount.user };
+}
+
 describe("GraphQL projectDomain", () => {
   beforeEach(async () => {
     await setupDatabase();
@@ -303,6 +325,113 @@ describe("GraphQL projectDomain", () => {
 
     await expect(Project.query().findById(project.id)).resolves.toMatchObject({
       deploymentEnabled: true,
+    });
+  });
+
+  it("updates deployment authentication for team projects", async () => {
+    const { userAccount, teamAccount, project, user } =
+      await createTeamProjectOwner();
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user,
+        account: userAccount,
+      },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation UpdateProjectDeploymentAuth($input: UpdateProjectInput!) {
+            updateProject(input: $input) {
+              id
+              deploymentAuth
+            }
+          }
+        `,
+        variables: {
+          input: {
+            id: project.id,
+            deploymentAuth: "private",
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.body.data.updateProject).toEqual({
+      id: project.id,
+      deploymentAuth: "private",
+    });
+
+    await expect(Project.query().findById(project.id)).resolves.toMatchObject({
+      deploymentAuth: "private",
+    });
+
+    const queryRes = await request(app)
+      .post("/graphql")
+      .send({
+        query: `{
+          project(accountSlug: "${teamAccount.slug}", projectName: "${project.name}") {
+            id
+            deploymentAuth
+          }
+        }`,
+      });
+
+    expectNoGraphQLError(queryRes);
+    expect(queryRes.body.data.project).toEqual({
+      id: project.id,
+      deploymentAuth: "private",
+    });
+  });
+
+  it("rejects all deployments authentication for personal projects", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    invariant(userAccount.user, "user not fetched");
+
+    const project = await factory.Project.create({
+      accountId: userAccount.id,
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: userAccount.user,
+        account: userAccount,
+      },
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation UpdateProjectDeploymentAuth($input: UpdateProjectInput!) {
+            updateProject(input: $input) {
+              id
+            }
+          }
+        `,
+        variables: {
+          input: {
+            id: project.id,
+            deploymentAuth: "private",
+          },
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.errors).toHaveLength(1);
+    expect(res.body.errors[0].message).toBe(
+      "All deployments protection requires a team.",
+    );
+    expect(res.body.errors[0].extensions).toMatchObject({
+      code: "BAD_USER_INPUT",
+      field: "deploymentAuth",
     });
   });
 });

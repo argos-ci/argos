@@ -115,6 +115,84 @@ describe("resolveDeploymentDomain", () => {
       });
   });
 
+  test("keeps a production deployment slug private with standard protection", async ({
+    prodDeployment,
+  }) => {
+    await factory.DeploymentAlias.create({
+      deploymentId: prodDeployment.id,
+      alias: "docs.dev.argos-ci.live",
+      type: "domain",
+    });
+
+    await request(app)
+      .get(`/deployments/resolve/${prodDeployment.slug}.dev.argos-ci.live`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          deploymentId: prodDeployment.id,
+          projectId: prodDeployment.projectId,
+          environment: prodDeployment.environment,
+          visibility: "private",
+        });
+      });
+  });
+
+  test("resolves public visibility when deployment auth is public", async ({
+    factory,
+  }) => {
+    const project = await factory.Project.create({
+      deploymentAuth: "public",
+    });
+    const deployment = await factory.Deployment.create({
+      projectId: project.id,
+    });
+    await factory.DeploymentAlias.create({
+      deploymentId: deployment.id,
+      alias: "public-preview",
+    });
+
+    await request(app)
+      .get("/deployments/resolve/public-preview.dev.argos-ci.live")
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          deploymentId: deployment.id,
+          projectId: project.id,
+          environment: deployment.environment,
+          visibility: "public",
+        });
+      });
+  });
+
+  test("resolves private visibility when deployment auth is private", async ({
+    factory,
+  }) => {
+    const project = await factory.Project.create({
+      deploymentAuth: "private",
+    });
+    const deployment = await factory.Deployment.create({
+      projectId: project.id,
+      environment: "production",
+    });
+    await factory.DeploymentAlias.create({
+      deploymentId: deployment.id,
+      alias: "private-docs.dev.argos-ci.live",
+      type: "domain",
+    });
+
+    await request(app)
+      .get("/deployments/resolve/private-docs.dev.argos-ci.live")
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          deploymentId: deployment.id,
+          projectId: project.id,
+          environment: deployment.environment,
+          visibility: "private",
+        });
+      });
+  });
+
   test("returns 404 when the domain is unknown", async () => {
     await request(app)
       .get("/deployments/resolve/unknown.dev.argos-ci.live")

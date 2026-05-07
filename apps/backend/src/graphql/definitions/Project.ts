@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
@@ -38,6 +39,7 @@ import { HTTPError } from "@/util/error";
 
 import {
   IBuildStatus,
+  IDeploymentAuth,
   IProjectPermission,
   IProjectUserLevel,
   IResolvers,
@@ -54,6 +56,12 @@ export const typeDefs = gql`
     always
     never
     auto
+  }
+
+  enum DeploymentAuth {
+    public
+    domainPrivate
+    private
   }
 
   enum GitHubAppType {
@@ -153,6 +161,8 @@ export const typeDefs = gql`
     customDeploymentProductionBranchGlob: String
     "Whether deployments are accessible"
     deploymentEnabled: Boolean!
+    "Deployment authentication policy"
+    deploymentAuth: DeploymentAuth!
     "Check if the project is public or not"
     public: Boolean!
     "Override repository's Github privacy"
@@ -225,6 +235,7 @@ export const typeDefs = gql`
     defaultUserLevel: ProjectUserLevel
     autoIgnore: AutoIgnoreSettingsInput
     deploymentEnabled: Boolean
+    deploymentAuth: DeploymentAuth
   }
 
   input TransferProjectInput {
@@ -475,6 +486,36 @@ function createProject(
     // Automatically enable auto-ignore
     autoIgnore: { changes: 3 },
   });
+}
+
+function toGraphQLDeploymentAuth(
+  deploymentAuth: Project["deploymentAuth"],
+): IDeploymentAuth {
+  switch (deploymentAuth) {
+    case "public":
+      return IDeploymentAuth.Public;
+    case "domain-private":
+      return IDeploymentAuth.DomainPrivate;
+    case "private":
+      return IDeploymentAuth.Private;
+    default:
+      assertNever(deploymentAuth);
+  }
+}
+
+function fromGraphQLDeploymentAuth(
+  deploymentAuth: IDeploymentAuth,
+): Project["deploymentAuth"] {
+  switch (deploymentAuth) {
+    case IDeploymentAuth.Public:
+      return "public";
+    case IDeploymentAuth.DomainPrivate:
+      return "domain-private";
+    case IDeploymentAuth.Private:
+      return "private";
+    default:
+      assertNever(deploymentAuth);
+  }
 }
 
 export const resolvers: IResolvers = {
@@ -797,6 +838,9 @@ export const resolvers: IResolvers = {
     customDeploymentProductionBranchGlob: (project) => {
       return project.deploymentProdBranchGlob;
     },
+    deploymentAuth: (project) => {
+      return toGraphQLDeploymentAuth(project.deploymentAuth);
+    },
     public: async (project, _args, ctx) => {
       project.githubRepository = project.githubRepositoryId
         ? await ctx.loaders.GithubRepository.load(project.githubRepositoryId)
@@ -995,6 +1039,26 @@ export const resolvers: IResolvers = {
         data.deploymentEnabled = args.input.deploymentEnabled;
       }
 
+      if (args.input.deploymentAuth != null) {
+        const deploymentAuth = fromGraphQLDeploymentAuth(
+          args.input.deploymentAuth,
+        );
+
+        if (deploymentAuth === "private") {
+          await project.$fetchGraph("account", { skipFetched: true });
+          invariant(project.account, "account not fetched");
+          if (project.account.type !== "team") {
+            throw badUserInput("All deployments protection requires a team.", {
+              field: "deploymentAuth",
+            });
+          }
+        }
+
+        if (project.deploymentAuth !== deploymentAuth) {
+          data.deploymentAuth = deploymentAuth;
+        }
+      }
+
       if (args.input.name != null && project.name !== args.input.name) {
         await checkGqlProjectName({
           name: args.input.name,
@@ -1009,8 +1073,8 @@ export const resolvers: IResolvers = {
 
       const updated = await project.$query().patchAndFetch(data);
 
-      // If "deploymentEnabled" changed, invalidate the project deployment cache.
-      if ("deploymentEnabled" in data) {
+      // If deployment access changed, invalidate the project deployment cache.
+      if ("deploymentEnabled" in data || "deploymentAuth" in data) {
         await invalidateProjectDeploymentCache(project.id).catch(() => {
           // Non-blocking — best effort
         });

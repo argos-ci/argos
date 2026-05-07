@@ -38,11 +38,11 @@ export function ListBoxItem(
       className={clsx(
         className,
         "group/item",
-        "text-default data-focused:bg-active data-pressed:bg-active data-disabled:opacity-disabled flex flex-wrap items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition select-none focus:outline-hidden",
+        "text-default data-focused:bg-active data-pressed:bg-active data-disabled:opacity-disabled flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition select-none focus:outline-hidden",
       )}
       {...restProps}
     >
-      <CheckIcon className="size-4 opacity-0 not-in-[[role=listbox]]:hidden group-aria-selected/item:opacity-100" />
+      <CheckIcon className="size-4 shrink-0 opacity-0 not-in-[[role=listbox]]:hidden group-aria-selected/item:opacity-100" />
       <div className="flex items-center whitespace-nowrap has-[[slot=description]]:flex-wrap">
         {children}
       </div>
