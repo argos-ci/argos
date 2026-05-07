@@ -32,5 +32,8 @@
     "rateLimit": {
       "limit": 10000
     }
+  },
+  "amqp": {
+    "queuePrefix": "test:"
   }
 }

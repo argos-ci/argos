@@ -10,6 +10,7 @@ export * from "./BuildReview";
 export * from "./BuildShard";
 export * from "./Deployment";
 export * from "./DeploymentAlias";
+export * from "./DeploymentNotification";
 export * from "./File";
 export * from "./GithubAccount";
 export * from "./GithubAccountMember";

@@ -9,8 +9,8 @@ import { Deployment } from "@/database/models/Deployment";
 import { DeploymentAlias } from "@/database/models/DeploymentAlias";
 import { ProjectDomain } from "@/database/models/ProjectDomain";
 import { ensureProductionInternalProjectDomain } from "@/database/services/project-domain";
+import { pushDeploymentNotification } from "@/deployment-notification";
 import { getDeploymentAliases } from "@/deployment/alias";
-import { postDeploymentCommitStatus } from "@/deployment/github-status";
 import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
@@ -257,16 +257,9 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
           // Non-blocking — best effort
         }),
       ),
-      // Post commit status
-      postDeploymentCommitStatus({
-        project: auth.project,
-        deployment: {
-          commitSha: deployment.commitSha,
-          status: "ready" as const,
-          url: deployment.url,
-        },
-      }).catch(() => {
-        // Non-blocking — best effort
+      pushDeploymentNotification({
+        deploymentId: deployment.id,
+        type: "success",
       }),
     ]);
 

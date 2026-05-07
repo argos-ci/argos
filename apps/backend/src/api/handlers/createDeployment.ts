@@ -14,6 +14,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import config from "@/config";
 import type { Project } from "@/database/models";
 import { Deployment } from "@/database/models/Deployment";
+import { pushDeploymentNotification } from "@/deployment-notification";
 import { generateDeploymentSlug } from "@/deployment/slug";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
@@ -261,8 +262,15 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       githubPullRequestId: pullRequest?.id ?? null,
     });
 
-    // Insert all files into DynamoDB deployment_files table
-    await writeDeploymentFiles(deployment.id, body.files);
+    await Promise.all([
+      // Mark the deployment as in progress
+      pushDeploymentNotification({
+        deploymentId: deployment.id,
+        type: "progress",
+      }),
+      // Insert all files into DynamoDB deployment_files table
+      writeDeploymentFiles(deployment.id, body.files),
+    ]);
 
     // Check which files already exist in the files table
     const uniqueHashes = new Set(body.files.map((f) => f.hash));

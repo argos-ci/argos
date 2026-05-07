@@ -11,6 +11,8 @@ import { getDeploymentUrl } from "@/deployment/url";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { DeploymentAlias } from "./DeploymentAlias";
+import { DeploymentNotification } from "./DeploymentNotification";
+import { GithubPullRequest } from "./GithubPullRequest";
 import { Project } from "./Project";
 
 export class Deployment extends Model {
@@ -60,6 +62,22 @@ export class Deployment extends Model {
           to: "deployment_aliases.deploymentId",
         },
       },
+      notifications: {
+        relation: Model.HasManyRelation,
+        modelClass: DeploymentNotification,
+        join: {
+          from: "deployments.id",
+          to: "deployment_notifications.deploymentId",
+        },
+      },
+      pullRequest: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: GithubPullRequest,
+        join: {
+          from: "deployments.githubPullRequestId",
+          to: "github_pull_requests.id",
+        },
+      },
     };
   }
 
@@ -74,6 +92,8 @@ export class Deployment extends Model {
   githubPullRequestId!: string | null;
 
   project?: Project;
+  notifications?: DeploymentNotification[];
+  pullRequest?: GithubPullRequest | null;
 
   get url() {
     return getDeploymentUrl(this.slug);

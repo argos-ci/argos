@@ -1,6 +1,7 @@
 import pMemoize from "p-memoize";
 import pRetry from "p-retry";
 
+import config from "@/config";
 import parentLogger from "@/logger";
 import { checkIsRetryable } from "@/util/error";
 import { redisLock } from "@/util/redis";
@@ -70,6 +71,7 @@ export const createJob = <TValue extends string | number>(
   },
   { prefetch = 1, timeout = 20_000 }: JobParams = {},
 ): Job<TValue> => {
+  queue = config.get("amqp.queuePrefix") + queue;
   const logger = parentLogger.child({ module: "job", queue });
   const cache = new Map();
   const getChannel = pMemoize(

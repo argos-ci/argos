@@ -564,6 +564,44 @@ ALTER SEQUENCE public.deployment_aliases_id_seq OWNED BY public.deployment_alias
 
 
 --
+-- Name: deployment_notifications; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.deployment_notifications (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deploymentId" bigint NOT NULL,
+    type text NOT NULL,
+    "jobStatus" public.job_status NOT NULL,
+    CONSTRAINT deployment_notifications_type_check CHECK ((type = ANY (ARRAY['progress'::text, 'success'::text])))
+);
+
+
+ALTER TABLE public.deployment_notifications OWNER TO postgres;
+
+--
+-- Name: deployment_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.deployment_notifications_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.deployment_notifications_id_seq OWNER TO postgres;
+
+--
+-- Name: deployment_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.deployment_notifications_id_seq OWNED BY public.deployment_notifications.id;
+
+
+--
 -- Name: deployments; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2157,6 +2195,13 @@ ALTER TABLE ONLY public.deployment_aliases ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: deployment_notifications id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_notifications ALTER COLUMN id SET DEFAULT nextval('public.deployment_notifications_id_seq'::regclass);
+
+
+--
 -- Name: deployments id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2528,6 +2573,14 @@ ALTER TABLE ONLY public.deployment_aliases
 
 ALTER TABLE ONLY public.deployment_aliases
     ADD CONSTRAINT deployment_aliases_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deployment_notifications deployment_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_notifications
+    ADD CONSTRAINT deployment_notifications_pkey PRIMARY KEY (id);
 
 
 --
@@ -3163,6 +3216,13 @@ CREATE INDEX deployment_aliases_deploymentid_type_index ON public.deployment_ali
 
 
 --
+-- Name: deployment_notifications_deploymentid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX deployment_notifications_deploymentid_index ON public.deployment_notifications USING btree ("deploymentId");
+
+
+--
 -- Name: deployments_projectid_commitsha_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3745,6 +3805,14 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.deployment_aliases
     ADD CONSTRAINT deployment_aliases_deploymentid_foreign FOREIGN KEY ("deploymentId") REFERENCES public.deployments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: deployment_notifications deployment_notifications_deploymentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.deployment_notifications
+    ADD CONSTRAINT deployment_notifications_deploymentid_foreign FOREIGN KEY ("deploymentId") REFERENCES public.deployments(id) ON DELETE CASCADE;
 
 
 --
@@ -4374,3 +4442,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026041
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260430120000_build_sibling_commit_indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260501085754_deployment-production-branch-glob.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260505120000_project-deployment-enabled.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260507120000_deployment-notifications.js', 1, NOW());
