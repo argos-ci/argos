@@ -2,6 +2,7 @@ import config from "@/config";
 import { knex } from "@/database";
 import type { DeploymentAlias } from "@/database/models";
 import type { Deployment } from "@/database/models/Deployment";
+import type { Project } from "@/database/models/Project";
 
 /**
  * Build the candidate aliases that resolve a deployment from a domain or URL.
@@ -41,7 +42,32 @@ type ResolvedDeploymentResult = {
   projectId: string;
   environment: Deployment["environment"];
   type: DeploymentAlias["type"] | "slug";
+  project: Pick<Project, "deploymentAuth">;
 };
+
+type ResolvedDeploymentRow = {
+  id: string;
+  projectId: string;
+  environment: Deployment["environment"];
+  type: DeploymentAlias["type"];
+  deploymentAuth: Project["deploymentAuth"];
+};
+
+function serializeResolvedDeploymentRow(
+  result: Omit<ResolvedDeploymentRow, "type"> & {
+    type: DeploymentAlias["type"] | "slug";
+  },
+): ResolvedDeploymentResult {
+  return {
+    id: result.id,
+    projectId: result.projectId,
+    environment: result.environment,
+    type: result.type,
+    project: {
+      deploymentAuth: result.deploymentAuth,
+    },
+  };
+}
 
 /**
  * Resolve a deployment from a domain or URL. Returns null if no deployment
@@ -55,40 +81,45 @@ export async function resolveDeploymentByDomain(
     return null;
   }
 
-  const result = (await knex("deployments")
+  const orderByAliasPriority = aliases
+    .map(() => "when deployment_aliases.alias = ? then ?")
+    .join(" ");
+
+  const aliasResult = (await knex("deployment_aliases")
     .select(
       "deployments.id",
       "deployments.projectId",
       "deployments.environment",
       "deployment_aliases.type",
+      "projects.deploymentAuth",
     )
-    .leftJoin(
-      "deployment_aliases",
-      "deployment_aliases.deploymentId",
+    .join("deployments", "deployments.id", "deployment_aliases.deploymentId")
+    .join("projects", "projects.id", "deployments.projectId")
+    .where("projects.deploymentEnabled", true)
+    .whereIn("deployment_aliases.alias", aliases)
+    .orderByRaw(`case ${orderByAliasPriority} else ? end`, [
+      ...aliases.flatMap((alias, index) => [alias, index]),
+      aliases.length,
+    ])
+    .first()) as ResolvedDeploymentRow | undefined;
+
+  if (aliasResult) {
+    return serializeResolvedDeploymentRow(aliasResult);
+  }
+
+  const slugResult = (await knex("deployments")
+    .select(
       "deployments.id",
+      "deployments.projectId",
+      "deployments.environment",
+      "projects.deploymentAuth",
     )
     .join("projects", "projects.id", "deployments.projectId")
     .where("projects.deploymentEnabled", true)
-    .where((query) => {
-      query
-        .whereIn("deployment_aliases.alias", aliases)
-        .orWhereIn("deployments.slug", aliases);
-    })
-    .first()) as
-    | {
-        id: string;
-        projectId: string;
-        environment: Deployment["environment"];
-        type: DeploymentAlias["type"] | null;
-      }
-    | undefined;
+    .whereIn("deployments.slug", aliases)
+    .first()) as Omit<ResolvedDeploymentRow, "type"> | undefined;
 
-  return result
-    ? {
-        id: result.id,
-        projectId: result.projectId,
-        environment: result.environment,
-        type: result.type ?? "slug",
-      }
+  return slugResult
+    ? serializeResolvedDeploymentRow({ ...slugResult, type: "slug" })
     : null;
 }

@@ -133,7 +133,7 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
       {hasAdminPermission && <ProjectGitRepository project={project} />}
       {hasAdminPermission && <ProjectBranches project={project} />}
       {hasAdminPermission && deploymentsFlag.isEnabled && (
-        <ProjectDomain project={project} />
+        <ProjectDomain project={project} isTeam={isTeam} />
       )}
       {hasAdminPermission && <ProjectStatusChecks project={project} />}
       {hasAdminPermission && <ProjectAutoIgnore project={project} />}

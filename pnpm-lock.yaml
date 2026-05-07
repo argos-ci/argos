@@ -592,7 +592,7 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(react@19.2.5)
       react-hook-form:
-        specifier: ^7.75.0
+        specifier: 7.75.0
         version: 7.75.0(react@19.2.5)
       react-router-dom:
         specifier: ^7.15.0

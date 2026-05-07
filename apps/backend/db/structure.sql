@@ -1454,7 +1454,9 @@ CREATE TABLE public.projects (
     "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
+    "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
+    CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
 );
 
@@ -4443,3 +4445,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026043
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260501085754_deployment-production-branch-glob.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260505120000_project-deployment-enabled.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260507120000_deployment-notifications.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260507130000_project-deployment-auth.js', 1, NOW());

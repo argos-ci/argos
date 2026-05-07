@@ -5,6 +5,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 
 import { config } from "@/config";
 import { DocumentType, graphql } from "@/gql";
+import { DeploymentAuth } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -23,21 +24,34 @@ import {
   DialogTitle,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
+import { FieldError } from "@/ui/FieldError";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { FormTextInput } from "@/ui/FormTextInput";
+import {
+  ListBox,
+  ListBoxItem,
+  ListBoxItemDescription,
+  ListBoxItemLabel,
+} from "@/ui/ListBox";
 import { Modal } from "@/ui/Modal";
+import { Popover } from "@/ui/Popover";
+import { SelectButton, SelectField } from "@/ui/Select";
 
 import { getRepositoryLabel } from "../Repository";
 
 const INTERNAL_DOMAIN_SUFFIX = config.deployments.baseDomain;
+type DeploymentAuthLevel =
+  | DeploymentAuth.DomainPrivate
+  | DeploymentAuth.Private;
 
 const _ProjectFragment = graphql(`
   fragment ProjectDomain_Project on Project {
     id
     domain
     deploymentEnabled
+    deploymentAuth
     customDeploymentProductionBranchGlob
     repository {
       __typename
@@ -63,28 +77,32 @@ const UpdateProjectMutation = graphql(`
     $projectId: ID!
     $deploymentProductionBranchGlob: String
     $deploymentEnabled: Boolean
+    $deploymentAuth: DeploymentAuth
   ) {
     updateProject(
       input: {
         id: $projectId
         deploymentProductionBranchGlob: $deploymentProductionBranchGlob
         deploymentEnabled: $deploymentEnabled
+        deploymentAuth: $deploymentAuth
       }
     ) {
       id
       customDeploymentProductionBranchGlob
       deploymentEnabled
+      deploymentAuth
     }
   }
 `);
 
 export function ProjectDomain(props: {
   project: DocumentType<typeof _ProjectFragment>;
+  isTeam: boolean;
 }) {
-  const { project } = props;
+  const { project, isTeam } = props;
 
   if (project.deploymentEnabled) {
-    return <ProjectDeploymentsEnabled project={project} />;
+    return <ProjectDeploymentsEnabled project={project} isTeam={isTeam} />;
   }
 
   return <ProjectDeploymentsDisabled project={project} />;
@@ -94,12 +112,15 @@ type Inputs = {
   domain: string;
   noCustomDeploymentProductionBranchGlob: boolean;
   deploymentProductionBranchGlob: string;
+  deploymentAuthEnabled: boolean;
+  deploymentAuth: DeploymentAuthLevel;
 };
 
 function ProjectDeploymentsEnabled(props: {
   project: DocumentType<typeof _ProjectFragment>;
+  isTeam: boolean;
 }) {
-  const { project } = props;
+  const { project, isTeam } = props;
   const client = useApolloClient();
   const defaultDeploymentProductionBranchGlob =
     project.repository?.defaultBranch || "main";
@@ -111,11 +132,16 @@ function ProjectDeploymentsEnabled(props: {
       deploymentProductionBranchGlob:
         project.customDeploymentProductionBranchGlob ||
         defaultDeploymentProductionBranchGlob,
+      deploymentAuthEnabled: project.deploymentAuth !== DeploymentAuth.Public,
+      deploymentAuth: getDeploymentAuthLevel(project.deploymentAuth, isTeam),
     },
   });
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     const domain = `${data.domain}.${INTERNAL_DOMAIN_SUFFIX}`;
+    const savedDeploymentAuth = data.deploymentAuthEnabled
+      ? data.deploymentAuth
+      : DeploymentAuth.Public;
 
     await Promise.all([
       client.mutate({
@@ -135,6 +161,7 @@ function ProjectDeploymentsEnabled(props: {
             data.noCustomDeploymentProductionBranchGlob
               ? null
               : data.deploymentProductionBranchGlob,
+          deploymentAuth: savedDeploymentAuth,
         },
       }),
     ]);
@@ -145,6 +172,9 @@ function ProjectDeploymentsEnabled(props: {
   const noCustomDeploymentProductionBranchGlob = form.watch(
     "noCustomDeploymentProductionBranchGlob",
   );
+  const deploymentAuthEnabled = form.watch("deploymentAuthEnabled");
+  const deploymentAuth = form.watch("deploymentAuth");
+  const deploymentAuthDef = DEPLOYMENT_AUTH_DEFS[deploymentAuth];
   const deploymentProductionBranchGlobFieldProps = form.register(
     "deploymentProductionBranchGlob",
     {
@@ -161,96 +191,142 @@ function ProjectDeploymentsEnabled(props: {
             <CardParagraph>
               Choose how Argos identifies and serves production deployments.
             </CardParagraph>
-            <div className="flex flex-col gap-4">
-              <Card>
-                <CardBody>
-                  <h3 className="mb-1 font-semibold">Production domain</h3>
-                  <p className="text-low mb-4 text-sm">
-                    Internal domain used to serve your production deployment.
-                  </p>
-                  <FormTextInput
+            <div className="rounded-sm border">
+              <section className="p-4">
+                <h3 className="mb-1 font-semibold">
+                  Deployment authentication
+                </h3>
+                <div className="flex flex-col gap-10 sm:flex-row sm:items-center">
+                  <FormSwitch
                     control={form.control}
-                    {...form.register("domain", {
-                      required: "Please enter a domain slug",
-                      maxLength: {
-                        value: 48,
-                        message: "Domain slugs must be 48 characters or less",
-                      },
-                      pattern: {
-                        value: SLUG_REGEX,
-                        message:
-                          "Domain slugs must be lowercase, start and end with an alphanumeric character, and may contain dashes in the middle.",
-                      },
-                    })}
-                    label="Production domain"
-                    hiddenLabel
-                    addon={`.${INTERNAL_DOMAIN_SUFFIX}`}
-                    className="max-w-md"
+                    name="deploymentAuthEnabled"
+                    label="Log in protection"
                   />
-                </CardBody>
-              </Card>
-              <Card>
-                <CardBody>
-                  <h3 className="mb-1 font-semibold">
-                    Production deployment branch
-                  </h3>
-                  <p className="text-low text-sm">
-                    Any deployment from a branch that matches the specified
-                    pattern will be treated as a production deployment.
-                  </p>
-                  <div className="mt-4">
-                    <FormSwitch
+                  {deploymentAuthEnabled && (
+                    <SelectField
                       control={form.control}
-                      name="noCustomDeploymentProductionBranchGlob"
-                      label={
-                        project.repository ? (
-                          <>
-                            Use{" "}
-                            {getRepositoryLabel(project.repository.__typename)}{" "}
-                            repository's default branch:{" "}
-                            <Code>{defaultDeploymentProductionBranchGlob}</Code>
-                          </>
-                        ) : (
-                          <>
-                            Use <Code>main</Code> as production deployment
-                            branch
-                          </>
-                        )
-                      }
-                    />
-                    {!noCustomDeploymentProductionBranchGlob && (
-                      <>
-                        <FormTextInput
-                          control={form.control}
-                          {...deploymentProductionBranchGlobFieldProps}
-                          ref={(element) => {
-                            deploymentProductionBranchGlobFieldProps.ref(
-                              element,
-                            );
-                            if (element) {
-                              if (
-                                !noCustomDeploymentProductionBranchGlob &&
-                                form.formState.defaultValues
-                                  ?.noCustomDeploymentProductionBranchGlob !==
-                                  noCustomDeploymentProductionBranchGlob
-                              ) {
-                                element.focus();
-                              }
+                      name="deploymentAuth"
+                      aria-label="Deployment authentication level"
+                      className="sm:w-80"
+                    >
+                      <SelectButton className="w-full">
+                        {deploymentAuthDef.label}
+                      </SelectButton>
+                      <FieldError />
+                      <Popover className="max-w-sm">
+                        <ListBox>
+                          <ListBoxItem
+                            id={DeploymentAuth.DomainPrivate}
+                            textValue="Standard protection"
+                          >
+                            <ListBoxItemLabel>
+                              Standard protection
+                            </ListBoxItemLabel>
+                            <ListBoxItemDescription>
+                              Protect all except production custom domains for
+                              your project.
+                            </ListBoxItemDescription>
+                          </ListBoxItem>
+                          <ListBoxItem
+                            id={DeploymentAuth.Private}
+                            textValue="All deployments"
+                            isDisabled={!isTeam}
+                          >
+                            <ListBoxItemLabel>All deployments</ListBoxItemLabel>
+                            <ListBoxItemDescription>
+                              {isTeam
+                                ? "Protect all domains."
+                                : "Requires a team."}
+                            </ListBoxItemDescription>
+                          </ListBoxItem>
+                        </ListBox>
+                      </Popover>
+                    </SelectField>
+                  )}
+                </div>
+              </section>
+              <section className="border-t p-4">
+                <h3 className="mb-1 font-semibold">Production domain</h3>
+                <p className="text-low mb-4 text-sm">
+                  Internal domain used to serve your production deployment.
+                </p>
+                <FormTextInput
+                  control={form.control}
+                  {...form.register("domain", {
+                    required: "Please enter a domain slug",
+                    maxLength: {
+                      value: 48,
+                      message: "Domain slugs must be 48 characters or less",
+                    },
+                    pattern: {
+                      value: SLUG_REGEX,
+                      message:
+                        "Domain slugs must be lowercase, start and end with an alphanumeric character, and may contain dashes in the middle.",
+                    },
+                  })}
+                  label="Production domain"
+                  hiddenLabel
+                  addon={`.${INTERNAL_DOMAIN_SUFFIX}`}
+                  className="max-w-md"
+                />
+              </section>
+              <section className="border-t p-4">
+                <h3 className="mb-1 font-semibold">
+                  Production deployment branch
+                </h3>
+                <p className="text-low text-sm">
+                  Any deployment from a branch that matches the specified
+                  pattern will be treated as a production deployment.
+                </p>
+                <div className="mt-4">
+                  <FormSwitch
+                    control={form.control}
+                    name="noCustomDeploymentProductionBranchGlob"
+                    label={
+                      project.repository ? (
+                        <>
+                          Use{" "}
+                          {getRepositoryLabel(project.repository.__typename)}{" "}
+                          repository's default branch:{" "}
+                          <Code>{defaultDeploymentProductionBranchGlob}</Code>
+                        </>
+                      ) : (
+                        <>
+                          Use <Code>main</Code> as production deployment branch
+                        </>
+                      )
+                    }
+                  />
+                  {!noCustomDeploymentProductionBranchGlob && (
+                    <>
+                      <FormTextInput
+                        control={form.control}
+                        {...deploymentProductionBranchGlobFieldProps}
+                        ref={(element) => {
+                          deploymentProductionBranchGlobFieldProps.ref(element);
+                          if (element) {
+                            if (
+                              !noCustomDeploymentProductionBranchGlob &&
+                              form.formState.defaultValues
+                                ?.noCustomDeploymentProductionBranchGlob !==
+                                noCustomDeploymentProductionBranchGlob
+                            ) {
+                              element.focus();
                             }
-                          }}
-                          label="Production deployment branch pattern"
-                          className="mt-4"
-                        />
-                        <p className="text-low mt-2 text-sm">
-                          Use patterns like <Code>main</Code>,{" "}
-                          <Code>{`{main,production}`}</Code>, or{" "}
-                          <Code>release/**</Code>.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
+                          }
+                        }}
+                        label="Production deployment branch pattern"
+                        className="mt-4"
+                      />
+                      <p className="text-low mt-2 text-sm">
+                        Use patterns like <Code>main</Code>,{" "}
+                        <Code>{`{main,production}`}</Code>, or{" "}
+                        <Code>release/**</Code>.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </section>
             </div>
           </CardBody>
           <FormCardFooter
@@ -261,6 +337,20 @@ function ProjectDeploymentsEnabled(props: {
       </Card>
     </>
   );
+}
+
+const DEPLOYMENT_AUTH_DEFS: Record<DeploymentAuthLevel, { label: string }> = {
+  [DeploymentAuth.DomainPrivate]: { label: "Standard protection" },
+  [DeploymentAuth.Private]: { label: "All deployments" },
+};
+
+function getDeploymentAuthLevel(
+  deploymentAuth: DeploymentAuth,
+  isTeam: boolean,
+): DeploymentAuthLevel {
+  return isTeam && deploymentAuth === DeploymentAuth.Private
+    ? DeploymentAuth.Private
+    : DeploymentAuth.DomainPrivate;
 }
 
 function getDomainSlug(domain: string | null | undefined) {

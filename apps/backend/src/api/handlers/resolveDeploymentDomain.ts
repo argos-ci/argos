@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
+import { getDeploymentVisibility } from "@/deployment/auth";
 import {
   getDeploymentAliasCandidates,
   resolveDeploymentByDomain,
@@ -63,10 +64,10 @@ export const resolveDeploymentDomain: CreateAPIHandler = ({ get }) => {
       deploymentId: deployment.id,
       projectId: deployment.projectId,
       environment: deployment.environment,
-      visibility:
-        deployment.environment === "production" && deployment.type === "domain"
-          ? "public"
-          : "private",
+      visibility: getDeploymentVisibility({
+        deployment,
+        project: deployment.project,
+      }),
     });
   });
 };

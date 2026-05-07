@@ -77,7 +77,7 @@
     "react-dom": "^19.2.5",
     "react-dropzone": "^15.0.0",
     "react-helmet": "^6.1.0",
-    "react-hook-form": "^7.75.0",
+    "react-hook-form": "7.75.0",
     "react-router-dom": "^7.15.0",
     "react-stately": "^3.46.0",
     "react-twc": "^1.5.1",
