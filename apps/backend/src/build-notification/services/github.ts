@@ -1,11 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 
 import { GithubPullRequest, GithubRepository } from "@/database/models";
+import { getCommentBody } from "@/git-platform/comment";
 import { commentGithubPr, getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
 import { UnretryableError } from "@/job-core";
 
-import { getCommentBody } from "../comment";
 import type { SendNotificationContext } from "../context";
 
 /**

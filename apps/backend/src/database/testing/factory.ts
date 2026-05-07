@@ -178,6 +178,15 @@ export const DeploymentAlias = defineFactory(models.DeploymentAlias, () => ({
   type: "branch" as const,
 }));
 
+export const DeploymentNotification = defineFactory(
+  models.DeploymentNotification,
+  () => ({
+    deploymentId: Deployment.associate("id") as unknown as string,
+    jobStatus: "complete" as const,
+    type: "success" as const,
+  }),
+);
+
 export const ScreenshotBucket = defineFactory(models.ScreenshotBucket, () => ({
   name: "default",
   commit: bytesToString(randomBytes(20)),

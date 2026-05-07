@@ -1,12 +1,5 @@
 import request from "supertest";
-import {
-  test as base,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  vi,
-} from "vitest";
+import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import { DeploymentAlias, ProjectDomain } from "@/database/models";
@@ -15,25 +8,6 @@ import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { finalizeDeployment } from "./finalizeDeployment";
-
-const { dynamoSendMock } = vi.hoisted(() => ({
-  dynamoSendMock: vi.fn(),
-}));
-
-vi.mock("@/storage/dynamodb", () => ({
-  getDynamoDBClient: () => ({
-    send: dynamoSendMock,
-  }),
-  getTableName: (name: string) => name,
-}));
-
-vi.mock("@/deployment/invalidate", () => ({
-  invalidateDeploymentCache: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("@/deployment/github-status", () => ({
-  postDeploymentCommitStatus: vi.fn().mockResolvedValue(undefined),
-}));
 
 const app = createTestHandlerApp(finalizeDeployment);
 
@@ -68,14 +42,6 @@ const test = base.extend<{
 describe("finalizeDeployment", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
-  });
-
-  beforeEach(() => {
-    dynamoSendMock.mockReset();
-    dynamoSendMock.mockResolvedValue({
-      Items: [],
-      LastEvaluatedKey: undefined,
-    });
   });
 
   test("creates an internal project domain and aliases it for production deployments", async ({
