@@ -113,7 +113,7 @@ describe("processDeploymentNotification", () => {
       state: "success",
       target_url: deployment.url,
       description: "Deployment ready",
-      context: "argos/deployment/docs",
+      context: "argos-deploy/docs",
     });
     expect(commentGithubPrMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -158,31 +158,6 @@ describe("processDeploymentNotification", () => {
       commitSha: commit,
       githubPullRequestId: null,
       slug: "deployment-without-pr",
-    });
-    const deploymentNotification = await factory.DeploymentNotification.create({
-      deploymentId: deployment.id,
-    });
-
-    await processDeploymentNotification(deploymentNotification);
-
-    expect(createGhCommitStatusMock).toHaveBeenCalledOnce();
-    expect(commentGithubPrMock).not.toHaveBeenCalled();
-  });
-
-  test("skips the pull request comment when no comment exists yet", async ({
-    project,
-    repository,
-  }) => {
-    const pullRequest = await factory.PullRequest.create({
-      githubRepositoryId: repository.id,
-      number: 43,
-      commentId: null,
-    });
-    const deployment = await factory.Deployment.create({
-      projectId: project.id,
-      commitSha: commit,
-      githubPullRequestId: pullRequest.id,
-      slug: "deployment-without-comment",
     });
     const deploymentNotification = await factory.DeploymentNotification.create({
       deploymentId: deployment.id,

@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 
 import type { DeploymentNotification, Project } from "@/database/models";
 
-export type DeploymentNotificationPayload = {
+type DeploymentNotificationPayload = {
   description: string;
   context: string;
   github: {
