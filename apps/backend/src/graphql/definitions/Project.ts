@@ -307,10 +307,6 @@ export const typeDefs = gql`
     ): ProjectContributor!
     "Update the production deployment domain"
     updateProjectDomain(input: UpdateProjectDomainInput!): Project!
-    "Enable project deployments"
-    enableProjectDeployments(projectId: ID!): Project!
-    "Disable project deployments"
-    disableProjectDeployments(projectId: ID!): Project!
     removeContributorFromProject(
       input: RemoveContributorFromProjectInput!
     ): RemoveContributorFromProjectPayload!
@@ -1190,18 +1186,23 @@ export const resolvers: IResolvers = {
           domain: args.input.domain,
         });
       } catch (error: unknown) {
-        if (
-          error instanceof HTTPError &&
-          error.code === "PROJECT_DOMAIN_INVALID"
-        ) {
-          throw badUserInput("Invalid domain", { field: "domain" });
+        if (error instanceof HTTPError) {
+          if (error.code === "PROJECT_DOMAIN_INVALID") {
+            throw badUserInput("Invalid domain", {
+              field: "domain",
+              code: error.code,
+            });
+          }
+
+          if (error.code === "PROJECT_DOMAIN_INTERNAL_SLUG") {
+            throw badUserInput("Domain already in use", {
+              field: "domain",
+              code: error.code,
+            });
+          }
         }
 
-        if (
-          (error instanceof HTTPError &&
-            error.code === "PROJECT_DOMAIN_INTERNAL_SLUG") ||
-          isUniqueViolationError(error)
-        ) {
+        if (isUniqueViolationError(error)) {
           throw badUserInput("Domain already in use", { field: "domain" });
         }
 

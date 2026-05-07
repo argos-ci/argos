@@ -224,20 +224,23 @@ describe("GraphQL projectDomain", () => {
       .post("/graphql")
       .send({
         query: `
-          mutation DisableProjectDeployments($projectId: ID!) {
-            disableProjectDeployments(projectId: $projectId) {
+          mutation DisableProjectDeployments($input: UpdateProjectInput!) {
+            updateProject(input: $input) {
               id
               deploymentEnabled
             }
           }
         `,
         variables: {
-          projectId: project.id,
+          input: {
+            id: project.id,
+            deploymentEnabled: false,
+          },
         },
       });
 
     expectNoGraphQLError(res);
-    expect(res.body.data.disableProjectDeployments).toEqual({
+    expect(res.body.data.updateProject).toEqual({
       id: project.id,
       deploymentEnabled: false,
     });
@@ -277,20 +280,23 @@ describe("GraphQL projectDomain", () => {
       .post("/graphql")
       .send({
         query: `
-          mutation EnableProjectDeployments($projectId: ID!) {
-            enableProjectDeployments(projectId: $projectId) {
+          mutation EnableProjectDeployments($input: UpdateProjectInput!) {
+            updateProject(input: $input) {
               id
               deploymentEnabled
             }
           }
         `,
         variables: {
-          projectId: project.id,
+          input: {
+            id: project.id,
+            deploymentEnabled: true,
+          },
         },
       });
 
     expectNoGraphQLError(res);
-    expect(res.body.data.enableProjectDeployments).toEqual({
+    expect(res.body.data.updateProject).toEqual({
       id: project.id,
       deploymentEnabled: true,
     });
