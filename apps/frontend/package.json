@@ -57,7 +57,7 @@
     "d3-zoom": "^3.0.0",
     "eslint": "catalog:",
     "fast-fuzzy": "^1.12.0",
-    "graphql": "^16.13.2",
+    "graphql": "^16.14.0",
     "input-otp": "^1.4.2",
     "jotai": "^2.20.0",
     "jotai-family": "^1.0.1",
@@ -71,10 +71,10 @@
     "moment": "^2.30.1",
     "nuqs": "^2.8.9",
     "p-retry": "^8.0.0",
-    "react": "^19.2.5",
+    "react": "^19.2.6",
     "react-aria": "^3.48.0",
     "react-aria-components": "^1.17.0",
-    "react-dom": "^19.2.5",
+    "react-dom": "^19.2.6",
     "react-dropzone": "^15.0.0",
     "react-helmet": "^6.1.0",
     "react-hook-form": "7.75.0",
@@ -89,7 +89,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-clipboard-copy": "^0.2.0",
     "use-debounce": "^10.1.1",
-    "vite": "^8.0.10",
+    "vite": "^8.0.11",
     "zod": "catalog:"
   }
 }
