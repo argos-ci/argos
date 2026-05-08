@@ -14,7 +14,7 @@ COPY pnpm-lock.yaml /app
 RUN pnpm fetch
 
 COPY . /app
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --offline --frozen-lockfile --config.confirmModulesPurge=false
 RUN --mount=type=secret,id=TURBO_TOKEN \
   TURBO_TOKEN="$(cat /run/secrets/TURBO_TOKEN)" BUILD_MODE=production pnpm run build
 RUN pnpm run clean-deps
