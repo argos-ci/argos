@@ -10,7 +10,7 @@ FROM base AS build
 ARG TURBO_TEAM
 ENV TURBO_TEAM=$TURBO_TEAM
 WORKDIR /app
-COPY package.json pnpm-lock.yaml /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml /app
 RUN pnpm fetch
 
 COPY . /app
