@@ -32,7 +32,7 @@ overrides:
   react: ^19.2.6
   react-dom: ^19.2.6
   uuid: ^14.0.0
-  undici: 8.2.0
+  undici: 8.1.0
 
 importers:
 
@@ -321,8 +321,8 @@ importers:
         specifier: ^0.2.5
         version: 0.2.5
       undici:
-        specifier: 8.2.0
-        version: 8.2.0
+        specifier: 8.1.0
+        version: 8.1.0
       yaml:
         specifier: ^2.8.4
         version: 2.8.4
@@ -8065,8 +8065,8 @@ packages:
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
-  undici@8.2.0:
-    resolution: {integrity: sha512-Z+4Hx9GE26Lh9Upwfnc8C7SsrpBPGaM/Gm6kMFtiG7c+5IvQKlXi/t+9x9DrrCh29cww5TSP9YdVaBcnLDs5fQ==}
+  undici@8.1.0:
+    resolution: {integrity: sha512-E9MkTS4xXLnRPYqxH2e6Hr2/49e7WFDKczKcCaFH4VaZs2iNvHMqeIkyUAD9vM8kujy9TjVrRlQ5KkdEJxB2pw==}
     engines: {node: '>=22.19.0'}
 
   unicode-trie@2.0.0:
@@ -9361,7 +9361,7 @@ snapshots:
       discord-api-types: 0.38.47
       magic-bytes.js: 1.13.0
       tslib: 2.8.1
-      undici: 8.2.0
+      undici: 8.1.0
 
   '@discordjs/util@1.2.0':
     dependencies:
@@ -13348,7 +13348,7 @@ snapshots:
       lodash.snakecase: 4.1.1
       magic-bytes.js: 1.13.0
       tslib: 2.8.1
-      undici: 8.2.0
+      undici: 8.1.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -15744,7 +15744,7 @@ snapshots:
   smee-client@5.0.0:
     dependencies:
       eventsource: 4.1.0
-      undici: 8.2.0
+      undici: 8.1.0
 
   smol-toml@1.6.1: {}
 
@@ -16147,7 +16147,7 @@ snapshots:
 
   undici-types@7.16.0: {}
 
-  undici@8.2.0: {}
+  undici@8.1.0: {}
 
   unicode-trie@2.0.0:
     dependencies:
