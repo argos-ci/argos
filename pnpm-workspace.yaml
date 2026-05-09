@@ -17,7 +17,7 @@ catalog:
   minimatch: ^10.2.5
   react: ^19.2.6
   react-dom: ^19.2.6
-  undici: 8.2.0
+  undici: 8.1.0
   zod: ^4.4.3
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
