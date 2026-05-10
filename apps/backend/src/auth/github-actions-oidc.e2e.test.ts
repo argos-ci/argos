@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 
+import config from "@/config";
 import { setupRedis } from "@/util/redis/testing";
 
 import { verifyGitHubActionsOidcToken } from "./github-actions-oidc";
@@ -27,7 +28,7 @@ describe("verifyGitHubActionsOidcToken", () => {
     const claims = await verifyGitHubActionsOidcToken(signGitHubActionsToken());
 
     expect(claims).toMatchObject({
-      aud: "https://argos-ci.com",
+      aud: config.get("api.baseUrl"),
       iss: "https://token.actions.githubusercontent.com",
       repository: "argos-ci/argos",
       repository_id: "123",
