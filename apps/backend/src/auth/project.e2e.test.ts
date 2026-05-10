@@ -1,10 +1,19 @@
-import { test as base, beforeEach, describe, expect, vi } from "vitest";
+import {
+  afterAll,
+  test as base,
+  beforeEach,
+  describe,
+  expect,
+  vi,
+} from "vitest";
 
 import type { Project as ProjectModel } from "@/database/models";
 import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { closeRedis } from "@/util/redis/client";
 
 import { getAuthProjectPayloadFromBearerToken } from "./project";
+import { createShortLivedProjectToken } from "./short-lived-project-token";
 import { tokenlessGitHubActionsStrategy } from "./tokenless/github-actions";
 
 const test = base.extend<{
@@ -21,6 +30,10 @@ const test = base.extend<{
     });
     await use(project);
   },
+});
+
+afterAll(async () => {
+  await closeRedis();
 });
 
 describe("getAuthProjectPayloadFromBearerToken", () => {
@@ -54,6 +67,27 @@ describe("getAuthProjectPayloadFromBearerToken", () => {
       project: {
         id: project.id,
         token: "project-token",
+      },
+    });
+  });
+
+  test("returns the auth payload for a matching short-lived project token", async ({
+    project,
+  }) => {
+    await project.$query().patch({
+      githubActionsOidcEnabled: true,
+    });
+    const { token } = await createShortLivedProjectToken({
+      projectId: project.id,
+      source: "github-actions-oidc",
+    });
+
+    const payload = await getAuthProjectPayloadFromBearerToken(token);
+
+    expect(payload).toMatchObject({
+      type: "project",
+      project: {
+        id: project.id,
       },
     });
   });

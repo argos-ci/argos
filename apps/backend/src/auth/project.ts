@@ -2,6 +2,10 @@ import type { AuthProjectPayload } from "@/auth/payload";
 import { Project, UserAccessToken } from "@/database/models";
 import { boom } from "@/util/error";
 
+import {
+  getProjectFromShortLivedProjectToken,
+  isShortLivedProjectToken,
+} from "./short-lived-project-token";
 import { tokenlessStrategies } from "./tokenless";
 
 /**
@@ -14,6 +18,19 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
       401,
       "This endpoint is not accessible with a user access token, only with a an Argos project token.",
     );
+  }
+
+  if (isShortLivedProjectToken(bearer)) {
+    const project = await getProjectFromShortLivedProjectToken(bearer);
+
+    if (!project) {
+      throw boom(401, "Short-lived project token has expired or is invalid.");
+    }
+
+    return {
+      type: "project",
+      project,
+    } satisfies AuthProjectPayload;
   }
 
   const strategy =
