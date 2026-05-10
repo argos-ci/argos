@@ -30,7 +30,7 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@10.33.3+sha512.a19744364a7e248b92657a4ca5973f9354d21caf982579674b1c539f32c7420c47138ad8b1254df07aba9bc782d9b3029e3db34d5dbff974326eb74dac8ff489",
+  "packageManager": "pnpm@11.0.9+sha512.34ce82e6780233cf9cad8685029a8f81d2e06196c5a9bad98879f7424940c6817c4e4524fb7d38b8553ceed48b9758b8ebaf1abd3600c232c4c8cf7366086f38",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.4",
     "@argos-ci/playwright": "^6.6.4",
@@ -56,33 +56,5 @@
     "turbo": "^2.9.9",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@apollo/protobufjs",
-      "@parcel/watcher",
-      "@sentry/cli",
-      "@swc/core",
-      "@tailwindcss/oxide",
-      "esbuild",
-      "odiff-bin",
-      "oxc-resolver",
-      "sharp"
-    ],
-    "overrides": {
-      "@types/express": "catalog:",
-      "@types/express-serve-static-core": "catalog:",
-      "dompurify": "^3.4.0",
-      "express": "catalog:",
-      "file-type": "^21.3.2",
-      "ip-address": "^10.1.1",
-      "lodash": "catalog:",
-      "lodash-es": "catalog:",
-      "minimatch": "catalog:",
-      "react": "catalog:",
-      "react-dom": "catalog:",
-      "uuid": "^14.0.0",
-      "undici": "catalog:"
-    }
   }
 }

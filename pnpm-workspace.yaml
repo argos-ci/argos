@@ -19,6 +19,34 @@ catalog:
   react-dom: ^19.2.6
   undici: 8.1.0
   zod: ^4.4.3
+
+overrides:
+  "@types/express": "catalog:"
+  "@types/express-serve-static-core": "catalog:"
+  dompurify: ^3.4.0
+  express: "catalog:"
+  file-type: ^21.3.2
+  ip-address: ^10.1.1
+  lodash: "catalog:"
+  lodash-es: "catalog:"
+  minimatch: "catalog:"
+  react: "catalog:"
+  react-dom: "catalog:"
+  uuid: ^14.0.0
+  undici: "catalog:"
+
+allowBuilds:
+  "@apollo/protobufjs": true
+  "@parcel/watcher": true
+  "@sentry/cli": true
+  "@swc/core": true
+  "@tailwindcss/oxide": true
+  esbuild: true
+  msw: true
+  odiff-bin: true
+  oxc-resolver: true
+  sharp: true
+
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - "@argos-ci/*"
