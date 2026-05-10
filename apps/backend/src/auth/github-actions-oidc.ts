@@ -3,12 +3,13 @@ import type { JsonWebKey } from "node:crypto";
 import jwt from "jsonwebtoken";
 import z from "zod";
 
+import config from "@/config";
 import { boom } from "@/util/error";
 import { redisCache } from "@/util/redis";
 
-const githubActionsIssuer = "https://token.actions.githubusercontent.com";
-const githubActionsAudience = "https://argos-ci.com";
-const githubActionsJwksUrl =
+const GITHUB_ACTIONS_ISSUER = "https://token.actions.githubusercontent.com";
+const GITHUB_ACTIONS_AUDIENCE = config.get("api.baseUrl");
+const GITHUB_ACTIONS_JWKS_URL =
   "https://token.actions.githubusercontent.com/.well-known/jwks";
 
 const JsonWebKeySchema = z.object({
@@ -71,7 +72,7 @@ const gitHubActionsJwksCache = redisCache.createStore({
   maxAge: 5 * 60 * 1000,
   timeout: 10 * 1000,
   fetch: async () => {
-    const response = await fetch(githubActionsJwksUrl);
+    const response = await fetch(GITHUB_ACTIONS_JWKS_URL);
 
     if (!response.ok) {
       throw boom(401, "Unable to verify GitHub Actions OIDC token.");
@@ -112,8 +113,8 @@ export async function verifyGitHubActionsOidcToken(
   try {
     const signingKey = await getGitHubActionsSigningKey(token);
     const payload = jwt.verify(token, signingKey, {
-      issuer: githubActionsIssuer,
-      audience: githubActionsAudience,
+      issuer: GITHUB_ACTIONS_ISSUER,
+      audience: GITHUB_ACTIONS_AUDIENCE,
       algorithms: ["RS256"],
     });
 

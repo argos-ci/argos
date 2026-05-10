@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 
+import config from "@/config";
+
 const { privateKey, publicKey } = generateKeyPairSync("rsa", {
   modulusLength: 2048,
 });
@@ -34,7 +36,7 @@ export const defaultGitHubActionsPayload = {
 export function signGitHubActionsToken(options?: { audience?: string }) {
   return jwt.sign(defaultGitHubActionsPayload, privateKey, {
     algorithm: "RS256",
-    audience: options?.audience ?? "https://argos-ci.com",
+    audience: options?.audience ?? config.get("api.baseUrl"),
     expiresIn: "5m",
     issuer: "https://token.actions.githubusercontent.com",
     keyid: "test-key",
