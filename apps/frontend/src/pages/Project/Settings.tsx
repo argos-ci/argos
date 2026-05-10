@@ -1,17 +1,24 @@
-import { Suspense } from "react";
+import {
+  Children,
+  Fragment,
+  isValidElement,
+  Suspense,
+  type ReactNode,
+} from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useFlag } from "@reflag/react-sdk";
 import { Heading, Text } from "react-aria-components";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-import { SettingsPage } from "@/containers/Layout";
+import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { ProjectAutoIgnore } from "@/containers/Project/AutoIgnore";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
-import { ProjectDomain } from "@/containers/Project/Domain";
+import { ProjectDeployments } from "@/containers/Project/Deployments/Deployments";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
@@ -26,10 +33,12 @@ import {
   PageHeader,
   PageHeaderContent,
 } from "@/ui/Layout";
+import { Nav, NavLink, NavList, NavListItem } from "@/ui/Nav";
 import { PageLoader } from "@/ui/PageLoader";
+import { useScrollToHash } from "@/ui/useScrollToHash";
 
 import { useProjectOutletContext } from "./ProjectOutletContext";
-import { useProjectParams } from "./ProjectParams";
+import { getProjectURL, useProjectParams } from "./ProjectParams";
 import { ProjectTitle } from "./ProjectTitle";
 
 const ProjectQuery = graphql(`
@@ -48,7 +57,7 @@ const ProjectQuery = graphql(`
       id
       ...ProjectBadge_Project
       ...ProjectChangeName_Project
-      ...ProjectDomain_Project
+      ...ProjectDeployments_Project
       ...ProjectToken_Project
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
@@ -65,7 +74,6 @@ const ProjectQuery = graphql(`
 export function Component() {
   const params = useProjectParams();
   invariant(params, "it is a project route");
-  const { accountSlug, projectName } = params;
   const { permissions } = useProjectOutletContext();
 
   const hasViewSettingsPermission = permissions.includes(
@@ -95,24 +103,25 @@ export function Component() {
             </SettingsPage>
           }
         >
-          <PageContent accountSlug={accountSlug} projectName={projectName} />
+          <PageContent />
         </Suspense>
       </PageContainer>
     </Page>
   );
 }
 
-function PageContent(props: { accountSlug: string; projectName: string }) {
+function PageContent() {
+  const params = useProjectParams();
+  invariant(params, "it is a project route");
+  const { accountSlug, projectName } = params;
   const { permissions } = useProjectOutletContext();
   const deploymentsFlag = useFlag("deployments");
   const {
     data: { account, project },
   } = useSuspenseQuery(ProjectQuery, {
-    variables: {
-      accountSlug: props.accountSlug,
-      projectName: props.projectName,
-    },
+    variables: { accountSlug, projectName },
   });
+  useScrollToHash();
 
   if (!project || !account) {
     return <NotFound />;
@@ -126,24 +135,117 @@ function PageContent(props: { accountSlug: string; projectName: string }) {
     isTeam && account.plan?.fineGrainedAccessControlIncluded,
   );
 
-  return (
-    <SettingsPage>
-      {hasAdminPermission && <ProjectChangeName project={project} />}
-      {hasReviewPermission && <ProjectToken project={project} />}
-      {hasAdminPermission && <ProjectGitRepository project={project} />}
-      {hasAdminPermission && <ProjectBranches project={project} />}
-      {hasAdminPermission && deploymentsFlag.isEnabled && (
-        <ProjectDomain project={project} isTeam={isTeam} />
-      )}
-      {hasAdminPermission && <ProjectStatusChecks project={project} />}
-      {hasAdminPermission && <ProjectAutoIgnore project={project} />}
-      <ProjectBadge project={project} />
-      {hasAdminPermission && <ProjectVisibility project={project} />}
-      {fineGrainedAccessControlIncluded && (
-        <ProjectContributors project={project} />
-      )}
-      {hasAdminPermission && <ProjectTransfer project={project} />}
-      {hasAdminPermission && <ProjectDelete project={project} />}
-    </SettingsPage>
+  const settingsUrl = `${getProjectURL(params)}/settings`;
+
+  const routes = [
+    {
+      name: "General",
+      slug: "",
+      element: (
+        <>
+          {hasAdminPermission && <ProjectChangeName project={project} />}
+          <ProjectBadge project={project} />
+          {hasAdminPermission && <ProjectTransfer project={project} />}
+          {hasAdminPermission && <ProjectDelete project={project} />}
+        </>
+      ),
+    },
+    {
+      name: "Authentication",
+      slug: "authentication",
+      element: hasReviewPermission && <ProjectToken project={project} />,
+    },
+    {
+      name: "Access management",
+      slug: "access-management",
+      element: (
+        <>
+          {hasAdminPermission && <ProjectVisibility project={project} />}
+          {fineGrainedAccessControlIncluded && (
+            <ProjectContributors project={project} />
+          )}
+        </>
+      ),
+    },
+    {
+      name: "Git",
+      slug: "git",
+      element: hasAdminPermission && (
+        <>
+          <ProjectGitRepository project={project} />
+          <ProjectStatusChecks project={project} />
+        </>
+      ),
+    },
+    {
+      name: "Baseline builds",
+      slug: "baseline-builds",
+      element: hasAdminPermission && <ProjectBranches project={project} />,
+    },
+    {
+      name: "Flaky detection",
+      slug: "flaky-detection",
+      element: hasAdminPermission && <ProjectAutoIgnore project={project} />,
+    },
+    {
+      name: "Deployments",
+      slug: "deployments",
+      element: hasAdminPermission && deploymentsFlag.isEnabled && (
+        <ProjectDeployments project={project} isTeam={isTeam} />
+      ),
+    },
+  ];
+
+  const matchedRoutes = routes.filter((route) =>
+    checkIsNonEmptyElement(route.element),
   );
+
+  return (
+    <SettingsLayout>
+      <Nav>
+        <NavList>
+          {matchedRoutes.map((route, index) => (
+            <NavListItem key={route.slug}>
+              <NavLink
+                to={`${settingsUrl}${index > 0 && route.slug ? `/${route.slug}` : ""}`}
+                end
+              >
+                {route.name}
+              </NavLink>
+            </NavListItem>
+          ))}
+        </NavList>
+      </Nav>
+      <SettingsPage>
+        <Routes>
+          {matchedRoutes.map((route, index) => {
+            return (
+              <Route
+                key={route.slug}
+                index={index === 0}
+                path={index === 0 ? "" : route.slug}
+                element={route.element}
+              />
+            );
+          })}
+          <Route path="*" element={<Navigate to={settingsUrl} replace />} />
+        </Routes>
+      </SettingsPage>
+    </SettingsLayout>
+  );
+}
+
+function checkIsNonEmptyElement(element: ReactNode): boolean {
+  if (!element) {
+    return false;
+  }
+  if (
+    isValidElement<{ children?: ReactNode }>(element) &&
+    element.type === Fragment
+  ) {
+    return Children.toArray(element.props.children).some(
+      checkIsNonEmptyElement,
+    );
+  }
+  return true;
 }

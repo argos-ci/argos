@@ -57,7 +57,7 @@ export function ProjectToken(props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Upload token</CardTitle>
+        <CardTitle>Project token</CardTitle>
         <CardParagraph>
           Use this <Code>ARGOS_TOKEN</Code> to authenticate your project when
           you send screenshots to Argos.

@@ -32,13 +32,6 @@ const UpdateBranchesMutation = graphql(`
   }
 `);
 
-type Inputs = {
-  noCustomDefaultBaseBranch: boolean;
-  defaultBaseBranch: string;
-  noCustomApprovedBranchGlob: boolean;
-  autoApprovedBranchGlob: string;
-};
-
 const _ProjectFragment = graphql(`
   fragment ProjectBranches_Project on Project {
     id
@@ -52,27 +45,53 @@ const _ProjectFragment = graphql(`
   }
 `);
 
-export const ProjectBranches = (props: {
-  project: DocumentType<typeof _ProjectFragment>;
-}) => {
-  const { project } = props;
-  const defaultDefaultBaseBranch =
+type Project = DocumentType<typeof _ProjectFragment>;
+
+function getEffectiveDefaultBaseBranch(project: Project): string {
+  return (
     project.customDefaultBaseBranch ||
     project.repository?.defaultBranch ||
-    "main";
-  const form = useForm<Inputs>({
+    "main"
+  );
+}
+
+const LearnMoreFooter = () => (
+  <>
+    Learn more about{" "}
+    <Link href="https://argos-ci.com/docs/baseline-build" target="_blank">
+      baseline builds
+    </Link>
+    .
+  </>
+);
+
+export const ProjectBranches = (props: { project: Project }) => {
+  return (
+    <>
+      <DefaultBaseBranchCard project={props.project} />
+      <AutoApprovedBranchesCard project={props.project} />
+    </>
+  );
+};
+
+type DefaultBaseBranchInputs = {
+  noCustomDefaultBaseBranch: boolean;
+  defaultBaseBranch: string;
+};
+
+function DefaultBaseBranchCard(props: { project: Project }) {
+  const { project } = props;
+  const effectiveDefaultBaseBranch = getEffectiveDefaultBaseBranch(project);
+  const form = useForm<DefaultBaseBranchInputs>({
     defaultValues: {
       noCustomDefaultBaseBranch: project.customDefaultBaseBranch === null,
-      defaultBaseBranch: defaultDefaultBaseBranch,
-      noCustomApprovedBranchGlob: project.customAutoApprovedBranchGlob === null,
-      autoApprovedBranchGlob:
-        project.customAutoApprovedBranchGlob || defaultDefaultBaseBranch,
+      defaultBaseBranch: effectiveDefaultBaseBranch,
     },
   });
 
   const client = useApolloClient();
 
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+  const onSubmit: SubmitHandler<DefaultBaseBranchInputs> = async (data) => {
     await client.mutate({
       mutation: UpdateBranchesMutation,
       variables: {
@@ -80,6 +99,96 @@ export const ProjectBranches = (props: {
         defaultBaseBranch: data.noCustomDefaultBaseBranch
           ? null
           : data.defaultBaseBranch,
+      },
+    });
+    form.reset(data);
+  };
+
+  const noCustomDefaultBaseBranch = form.watch("noCustomDefaultBaseBranch");
+
+  const defaultBaseBranchFieldProps = form.register("defaultBaseBranch", {
+    required: { message: "Branch required", value: true },
+  });
+
+  return (
+    <Card>
+      <Form form={form} onSubmit={onSubmit}>
+        <CardBody>
+          <CardTitle>Default base branch</CardTitle>
+          <CardParagraph>
+            Argos will find the first ancestor commit on base branch in Git
+            history. It uses pull-request base branch if available, else it
+            defaults to the project default branch specified here.
+          </CardParagraph>
+          <FormSwitch
+            control={form.control}
+            name="noCustomDefaultBaseBranch"
+            label={
+              project.repository ? (
+                <>
+                  Use {getRepositoryLabel(project.repository.__typename)}{" "}
+                  repository's default branch:{" "}
+                  <Code>{project.repository.defaultBranch}</Code>
+                </>
+              ) : (
+                <>
+                  Use <Code>main</Code> as default base branch
+                </>
+              )
+            }
+          />
+          {!noCustomDefaultBaseBranch && (
+            <FormTextInput
+              control={form.control}
+              {...defaultBaseBranchFieldProps}
+              ref={(element) => {
+                defaultBaseBranchFieldProps.ref(element);
+                if (element) {
+                  if (
+                    !noCustomDefaultBaseBranch &&
+                    form.formState.defaultValues?.noCustomDefaultBaseBranch !==
+                      noCustomDefaultBaseBranch
+                  ) {
+                    element.focus();
+                  }
+                }
+              }}
+              label="Default base branch"
+              className="mt-4"
+            />
+          )}
+        </CardBody>
+        <FormCardFooter control={form.control}>
+          <LearnMoreFooter />
+        </FormCardFooter>
+      </Form>
+    </Card>
+  );
+}
+
+type AutoApprovedBranchesInputs = {
+  noCustomApprovedBranchGlob: boolean;
+  autoApprovedBranchGlob: string;
+};
+
+function AutoApprovedBranchesCard(props: { project: Project }) {
+  const { project } = props;
+  const effectiveDefaultBaseBranch = getEffectiveDefaultBaseBranch(project);
+  const form = useForm<AutoApprovedBranchesInputs>({
+    defaultValues: {
+      noCustomApprovedBranchGlob: project.customAutoApprovedBranchGlob === null,
+      autoApprovedBranchGlob:
+        project.customAutoApprovedBranchGlob || effectiveDefaultBaseBranch,
+    },
+  });
+
+  const client = useApolloClient();
+
+  const onSubmit: SubmitHandler<AutoApprovedBranchesInputs> = async (data) => {
+    await client.mutate({
+      mutation: UpdateBranchesMutation,
+      variables: {
+        id: project.id,
         autoApprovedBranchGlob: data.noCustomApprovedBranchGlob
           ? null
           : data.autoApprovedBranchGlob,
@@ -88,13 +197,7 @@ export const ProjectBranches = (props: {
     form.reset(data);
   };
 
-  const defaultBaseBranch = form.watch("defaultBaseBranch");
-  const noCustomDefaultBaseBranch = form.watch("noCustomDefaultBaseBranch");
   const noCustomApprovedBranchGlob = form.watch("noCustomApprovedBranchGlob");
-
-  const defaultBaseBranchFieldProps = form.register("defaultBaseBranch", {
-    required: { message: "Branch required", value: true },
-  });
 
   const autoApprovedBranchGlobFieldProps = form.register(
     "autoApprovedBranchGlob",
@@ -103,130 +206,61 @@ export const ProjectBranches = (props: {
     },
   );
 
-  const dynamicDefaultBaseBranch = noCustomDefaultBaseBranch
-    ? defaultDefaultBaseBranch
-    : defaultBaseBranch;
-
   return (
     <Card>
       <Form form={form} onSubmit={onSubmit}>
         <CardBody>
-          <CardTitle>Branches</CardTitle>
+          <CardTitle>Auto-approved branches</CardTitle>
           <CardParagraph>
-            Choose Argos default base branch and auto-approved branches used in{" "}
-            <Link external href="https://argos-ci.com/docs/monitoring-mode">
-              Continuous Integration (CI) builds
-            </Link>
-            .
+            Any branch that matches the specified pattern will be automatically
+            approved and have a success status check.
           </CardParagraph>
-          <div className="mb-4 rounded-sm border p-4">
-            <h3 className="mb-1 font-semibold">Default base branch</h3>
-            <p className="text-low text-sm">
-              Argos will find the first ancestor commit on base branch in Git
-              history. It uses pull-request base branch if avalaible, else it
-              defaults to the project default branch specified here.
-            </p>
-            <div className="mt-4">
-              <FormSwitch
-                control={form.control}
-                name="noCustomDefaultBaseBranch"
-                label={
-                  project.repository ? (
-                    <>
-                      Use {getRepositoryLabel(project.repository.__typename)}{" "}
-                      repository's default branch:{" "}
-                      <Code>{project.repository.defaultBranch}</Code>
-                    </>
-                  ) : (
-                    <>
-                      Use <Code>main</Code> as default base branch
-                    </>
-                  )
-                }
-              />
-              {!noCustomDefaultBaseBranch && (
-                <FormTextInput
-                  control={form.control}
-                  {...defaultBaseBranchFieldProps}
-                  ref={(element) => {
-                    defaultBaseBranchFieldProps.ref(element);
-                    if (element) {
-                      if (
-                        !noCustomDefaultBaseBranch &&
-                        form.formState.defaultValues
-                          ?.noCustomDefaultBaseBranch !==
-                          noCustomDefaultBaseBranch
-                      ) {
-                        element.focus();
-                      }
-                    }
-                  }}
-                  label="Default base branch"
-                  className="mt-4"
-                />
-              )}
-            </div>
-          </div>
-          <div className="rounded-sm border p-4">
-            <h3 className="mb-1 font-semibold">Auto-approved branches</h3>
-            <p className="text-low text-sm">
-              Any branch that matches the specified pattern will be
-              automatically approved and have a success status check.
-            </p>
-            <div className="mt-4">
-              <FormSwitch
-                control={form.control}
-                name="noCustomApprovedBranchGlob"
-                label={
-                  dynamicDefaultBaseBranch ? (
-                    <>
-                      Auto-approve only the default base branch:{" "}
-                      <Code>{dynamicDefaultBaseBranch}</Code>
-                    </>
-                  ) : (
-                    "Auto-approve only the default base branch"
-                  )
-                }
-              />
-              {!noCustomApprovedBranchGlob && (
+          <FormSwitch
+            control={form.control}
+            name="noCustomApprovedBranchGlob"
+            label={
+              effectiveDefaultBaseBranch ? (
                 <>
-                  <FormTextInput
-                    control={form.control}
-                    {...autoApprovedBranchGlobFieldProps}
-                    ref={(element) => {
-                      autoApprovedBranchGlobFieldProps.ref(element);
-                      if (element) {
-                        if (
-                          !noCustomApprovedBranchGlob &&
-                          form.formState.defaultValues
-                            ?.noCustomApprovedBranchGlob !==
-                            noCustomApprovedBranchGlob
-                        ) {
-                          element.focus();
-                        }
-                      }
-                    }}
-                    label="Auto-approved branch pattern"
-                    className="mt-4"
-                  />
-                  <p className="text-low mt-2 text-sm">
-                    Use patterns like <Code>main</Code>,{" "}
-                    <Code>{`{main,production}`}</Code>, or{" "}
-                    <Code>release/**</Code>.
-                  </p>
+                  Auto-approve only the default base branch:{" "}
+                  <Code>{effectiveDefaultBaseBranch}</Code>
                 </>
-              )}
-            </div>
-          </div>
+              ) : (
+                "Auto-approve only the default base branch"
+              )
+            }
+          />
+          {!noCustomApprovedBranchGlob && (
+            <>
+              <FormTextInput
+                control={form.control}
+                {...autoApprovedBranchGlobFieldProps}
+                ref={(element) => {
+                  autoApprovedBranchGlobFieldProps.ref(element);
+                  if (element) {
+                    if (
+                      !noCustomApprovedBranchGlob &&
+                      form.formState.defaultValues
+                        ?.noCustomApprovedBranchGlob !==
+                        noCustomApprovedBranchGlob
+                    ) {
+                      element.focus();
+                    }
+                  }
+                }}
+                label="Auto-approved branch pattern"
+                className="mt-4"
+              />
+              <p className="text-low mt-2 text-sm">
+                Use patterns like <Code>main</Code>,{" "}
+                <Code>{`{main,production}`}</Code>, or <Code>release/**</Code>.
+              </p>
+            </>
+          )}
         </CardBody>
         <FormCardFooter control={form.control}>
-          Learn more about{" "}
-          <Link href="https://argos-ci.com/docs/baseline-build" target="_blank">
-            baseline builds
-          </Link>
-          .
+          <LearnMoreFooter />
         </FormCardFooter>
       </Form>
     </Card>
   );
-};
+}

@@ -257,7 +257,7 @@ export const ProjectGitRepository = (props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Connect Git Repository</CardTitle>
+        <CardTitle>Connected Git Repository</CardTitle>
         <CardParagraph>
           Connect a Git provider to your project to enable status checks on pull
           requests.
