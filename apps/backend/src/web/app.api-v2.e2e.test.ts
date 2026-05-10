@@ -11,7 +11,7 @@ import { Build, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { quitAmqp } from "@/job-core";
 import { getS3Client } from "@/storage";
-import { closeRedis } from "@/util/redis/client";
+import { setupRedis } from "@/util/redis/testing";
 
 import { createApp } from "./app";
 
@@ -20,13 +20,15 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 describe("api v2", () => {
   let app: Express;
 
+  setupRedis();
+
   beforeAll(async () => {
     z.globalRegistry.clear();
     app = await createApp();
   });
 
   afterAll(async () => {
-    await Promise.all([closeRedis(), getS3Client().destroy(), quitAmqp()]);
+    await Promise.all([getS3Client().destroy(), quitAmqp()]);
   });
 
   beforeEach(async () => {

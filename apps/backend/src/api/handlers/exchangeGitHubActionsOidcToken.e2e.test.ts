@@ -1,7 +1,3 @@
-import { generateKeyPairSync } from "node:crypto";
-import jwt from "jsonwebtoken";
-import { http, HttpResponse } from "msw";
-import { setupServer } from "msw/node";
 import type { PartialModelObject } from "objection";
 import request from "supertest";
 import {
@@ -13,58 +9,22 @@ import {
   expect,
 } from "vitest";
 
+import {
+  defaultGitHubActionsPayload,
+  githubActionsOidcServer,
+  signGitHubActionsToken,
+} from "@/auth/github-actions-oidc.test-util";
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import type { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { closeRedis } from "@/util/redis/client";
+import { setupRedis } from "@/util/redis/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { exchangeGitHubActionsOidcToken } from "./exchangeGitHubActionsOidcToken";
 
-const { privateKey, publicKey } = generateKeyPairSync("rsa", {
-  modulusLength: 2048,
-});
-
-const jwk = {
-  ...publicKey.export({ format: "jwk" }),
-  alg: "RS256",
-  kid: "test-key",
-  use: "sig",
-};
-
-const server = setupServer(
-  http.get("https://token.actions.githubusercontent.com/.well-known/jwks", () =>
-    HttpResponse.json({ keys: [jwk] }),
-  ),
-);
-
-const sha = "b6bf264029c03888b7fb7e6db7386f3b245b77b0";
-
-function signGitHubActionsToken(overrides: Record<string, unknown> = {}) {
-  return jwt.sign(
-    {
-      sub: "repo:argos-ci/argos:ref:refs/heads/main",
-      repository: "argos-ci/argos",
-      repository_id: "123",
-      repository_owner: "argos-ci",
-      repository_owner_id: "456",
-      ref: "refs/heads/main",
-      ref_type: "branch",
-      sha,
-      ...overrides,
-    },
-    privateKey,
-    {
-      algorithm: "RS256",
-      audience: "https://argos-ci.com",
-      expiresIn: "5m",
-      issuer: "https://token.actions.githubusercontent.com",
-      keyid: "test-key",
-    },
-  );
-}
-
 const app = createTestHandlerApp(exchangeGitHubActionsOidcToken);
+
+const sha = defaultGitHubActionsPayload.sha;
 
 type LinkedProject = {
   project: Project;
@@ -102,17 +62,18 @@ const test = base.extend<{
   },
 });
 
+setupRedis();
+
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: "bypass" });
+  githubActionsOidcServer.listen({ onUnhandledRequest: "bypass" });
 });
 
 afterEach(() => {
-  server.resetHandlers();
+  githubActionsOidcServer.resetHandlers();
 });
 
-afterAll(async () => {
-  server.close();
-  await closeRedis();
+afterAll(() => {
+  githubActionsOidcServer.close();
 });
 
 describe("exchangeGitHubActionsOidcToken", () => {

@@ -1,8 +1,8 @@
-import { afterAll, test as base, describe, expect } from "vitest";
+import { test as base, describe, expect } from "vitest";
 
 import type { Project as ProjectModel } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { closeRedis } from "@/util/redis/client";
+import { setupRedis } from "@/util/redis/testing";
 
 import {
   createShortLivedProjectToken,
@@ -22,9 +22,7 @@ const test = base.extend<{
   },
 });
 
-afterAll(async () => {
-  await closeRedis();
-});
+setupRedis();
 
 describe("short-lived project token", () => {
   test("creates a temporary token and resolves its project", async ({

@@ -1,16 +1,9 @@
-import {
-  afterAll,
-  test as base,
-  beforeEach,
-  describe,
-  expect,
-  vi,
-} from "vitest";
+import { test as base, beforeEach, describe, expect, vi } from "vitest";
 
 import type { Project as ProjectModel } from "@/database/models";
 import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { closeRedis } from "@/util/redis/client";
+import { setupRedis } from "@/util/redis/testing";
 
 import { getAuthProjectPayloadFromBearerToken } from "./project";
 import { createShortLivedProjectToken } from "./short-lived-project-token";
@@ -32,9 +25,7 @@ const test = base.extend<{
   },
 });
 
-afterAll(async () => {
-  await closeRedis();
-});
+setupRedis();
 
 describe("getAuthProjectPayloadFromBearerToken", () => {
   beforeEach(() => {

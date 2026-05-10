@@ -1,12 +1,12 @@
 import type { RedisClientType } from "redis";
 
 import { hashCacheKey } from "./cache-key";
-import { getRedisClient } from "./client";
 import { createRedisLockClient } from "./lock";
 
 export function createRedisCacheClient(clientOptions: {
   getRedisClient: () => Promise<RedisClientType>;
 }) {
+  const { getRedisClient } = clientOptions;
   const lock = createRedisLockClient(clientOptions);
   return {
     /**
