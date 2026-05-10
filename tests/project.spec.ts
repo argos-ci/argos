@@ -46,10 +46,18 @@ loggedTest("project settings", async ({ page, team, auth, project }) => {
     { name: "Deployments", id: "deployments" },
   ];
 
+  const settingsUrl = `/${team.account.slug}/${project.name}/settings`;
+
   for (const section of sections) {
     await page
       .getByRole("link", { name: section.name, exact: true })
       .click();
+    const expectedUrl =
+      section.id === "general" ? settingsUrl : `${settingsUrl}/${section.id}`;
+    await page.waitForURL(expectedUrl);
+    await expect(
+      page.getByRole("link", { name: section.name, exact: true }),
+    ).toHaveAttribute("aria-current", "page");
     await screenshot(page, `project-settings-${section.id}`, {
       replacements: section.replacements,
     });

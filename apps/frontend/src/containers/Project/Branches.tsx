@@ -117,7 +117,7 @@ function DefaultBaseBranchCard(props: { project: Project }) {
           <CardTitle>Default base branch</CardTitle>
           <CardParagraph>
             Argos will find the first ancestor commit on base branch in Git
-            history. It uses pull-request base branch if avalaible, else it
+            history. It uses pull-request base branch if available, else it
             defaults to the project default branch specified here.
           </CardParagraph>
           <FormSwitch

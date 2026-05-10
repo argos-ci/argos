@@ -9,7 +9,7 @@ import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useFlag } from "@reflag/react-sdk";
 import { Heading, Text } from "react-aria-components";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { ProjectAutoIgnore } from "@/containers/Project/AutoIgnore";
@@ -228,6 +228,7 @@ function PageContent() {
               />
             );
           })}
+          <Route path="*" element={<Navigate to={settingsUrl} replace />} />
         </Routes>
       </SettingsPage>
     </SettingsLayout>
