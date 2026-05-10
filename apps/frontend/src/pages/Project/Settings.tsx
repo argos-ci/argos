@@ -18,7 +18,7 @@ import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
-import { ProjectDomain } from "@/containers/Project/Domain";
+import { ProjectDeployments } from "@/containers/Project/Deployments/Deployments";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
@@ -57,7 +57,7 @@ const ProjectQuery = graphql(`
       id
       ...ProjectBadge_Project
       ...ProjectChangeName_Project
-      ...ProjectDomain_Project
+      ...ProjectDeployments_Project
       ...ProjectToken_Project
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
@@ -145,7 +145,6 @@ function PageContent() {
         <>
           {hasAdminPermission && <ProjectChangeName project={project} />}
           <ProjectBadge project={project} />
-          {hasAdminPermission && <ProjectVisibility project={project} />}
           {hasAdminPermission && <ProjectTransfer project={project} />}
           {hasAdminPermission && <ProjectDelete project={project} />}
         </>
@@ -159,20 +158,28 @@ function PageContent() {
     {
       name: "Access management",
       slug: "access-management",
-      element: fineGrainedAccessControlIncluded && (
-        <ProjectContributors project={project} />
+      element: (
+        <>
+          {hasAdminPermission && <ProjectVisibility project={project} />}
+          {fineGrainedAccessControlIncluded && (
+            <ProjectContributors project={project} />
+          )}
+        </>
       ),
     },
     {
       name: "Git",
       slug: "git",
       element: hasAdminPermission && (
-        <ProjectGitRepository project={project} />
+        <>
+          <ProjectGitRepository project={project} />
+          <ProjectStatusChecks project={project} />
+        </>
       ),
     },
     {
-      name: "Branches",
-      slug: "branches",
+      name: "Baseline builds",
+      slug: "baseline-builds",
       element: hasAdminPermission && <ProjectBranches project={project} />,
     },
     {
@@ -181,15 +188,10 @@ function PageContent() {
       element: hasAdminPermission && <ProjectAutoIgnore project={project} />,
     },
     {
-      name: "Notifications",
-      slug: "notifications",
-      element: hasAdminPermission && <ProjectStatusChecks project={project} />,
-    },
-    {
       name: "Deployments",
       slug: "deployments",
       element: hasAdminPermission && deploymentsFlag.isEnabled && (
-        <ProjectDomain project={project} isTeam={isTeam} />
+        <ProjectDeployments project={project} isTeam={isTeam} />
       ),
     },
   ];

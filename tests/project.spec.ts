@@ -18,14 +18,40 @@ loggedTest("project settings", async ({ page, team, auth, project }) => {
   await expect(
     page.getByRole("heading", { name: "Project Settings" }),
   ).toBeVisible();
-  await expect(page.getByText("Upload token")).toBeVisible();
   await expect(page.getByRole("tab", { name: "Deployments" })).toBeVisible();
-  await screenshot(page, "project-settings", {
-    replacements: {
-      [team.account.slug]: "acme",
-      [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      [auth.account.slug]: "john-doe",
-      ...(auth.account.name ? { [auth.account.name]: "John Doe" } : {}),
+
+  void auth;
+
+  const sections: {
+    name: string;
+    id: string;
+    replacements?: Record<string, string>;
+  }[] = [
+    {
+      name: "General",
+      id: "general",
+      replacements: { [team.account.slug]: "acme" },
     },
-  });
+    {
+      name: "Authentication",
+      id: "authentication",
+      replacements: {
+        [project.token]: "arp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      },
+    },
+    { name: "Access management", id: "access-management" },
+    { name: "Git", id: "git" },
+    { name: "Baseline builds", id: "baseline-builds" },
+    { name: "Flaky detection", id: "flaky-detection" },
+    { name: "Deployments", id: "deployments" },
+  ];
+
+  for (const section of sections) {
+    await page
+      .getByRole("link", { name: section.name, exact: true })
+      .click();
+    await screenshot(page, `project-settings-${section.id}`, {
+      replacements: section.replacements,
+    });
+  }
 });

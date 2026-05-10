@@ -38,7 +38,7 @@ export function ProjectContributors(props: {
   return (
     <Card>
       <CardBody>
-        <CardTitle>Access management</CardTitle>
+        <CardTitle>Project members</CardTitle>
         <CardParagraph>
           Select which team members can access this project and determine their
           level of access.
