@@ -3,11 +3,13 @@ import type { JsonWebKey } from "node:crypto";
 import jwt from "jsonwebtoken";
 import z from "zod";
 
+import config from "@/config";
 import { boom } from "@/util/error";
+import { redisCache } from "@/util/redis";
 
-const githubActionsIssuer = "https://token.actions.githubusercontent.com";
-const githubActionsAudience = "https://argos-ci.com";
-const githubActionsJwksUrl =
+const GITHUB_ACTIONS_ISSUER = "https://token.actions.githubusercontent.com";
+const GITHUB_ACTIONS_AUDIENCE = config.get("api.baseUrl");
+const GITHUB_ACTIONS_JWKS_URL =
   "https://token.actions.githubusercontent.com/.well-known/jwks";
 
 const JsonWebKeySchema = z.object({
@@ -66,16 +68,21 @@ function toJsonWebKey(jwk: z.infer<typeof JsonWebKeySchema>): JsonWebKey {
   return key;
 }
 
-async function fetchGitHubActionsJwks() {
-  const response = await fetch(githubActionsJwksUrl);
+const gitHubActionsJwksCache = redisCache.createStore({
+  maxAge: 5 * 60 * 1000,
+  timeout: 10 * 1000,
+  fetch: async () => {
+    const response = await fetch(GITHUB_ACTIONS_JWKS_URL);
 
-  if (!response.ok) {
-    throw boom(401, "Unable to verify GitHub Actions OIDC token.");
-  }
+    if (!response.ok) {
+      throw boom(401, "Unable to verify GitHub Actions OIDC token.");
+    }
 
-  const jwks = JsonWebKeySetSchema.parse(await response.json());
-  return jwks.keys;
-}
+    const jwks = JsonWebKeySetSchema.parse(await response.json());
+    return jwks.keys;
+  },
+  getCacheKey: () => ["github-actions-jwks"],
+});
 
 async function getGitHubActionsSigningKey(token: string) {
   const decoded = jwt.decode(token, { complete: true });
@@ -90,7 +97,7 @@ async function getGitHubActionsSigningKey(token: string) {
     throw boom(401, "Invalid GitHub Actions OIDC token.");
   }
 
-  const keys = await fetchGitHubActionsJwks();
+  const keys = await gitHubActionsJwksCache.get();
   const jwk = keys.find((key) => key.kid === kid);
 
   if (!jwk) {
@@ -106,8 +113,8 @@ export async function verifyGitHubActionsOidcToken(
   try {
     const signingKey = await getGitHubActionsSigningKey(token);
     const payload = jwt.verify(token, signingKey, {
-      issuer: githubActionsIssuer,
-      audience: githubActionsAudience,
+      issuer: GITHUB_ACTIONS_ISSUER,
+      audience: GITHUB_ACTIONS_AUDIENCE,
       algorithms: ["RS256"],
     });
 
