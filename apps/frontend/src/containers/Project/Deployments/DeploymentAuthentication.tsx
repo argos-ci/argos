@@ -33,9 +33,7 @@ const UpdateProjectMutation = graphql(`
     $projectId: ID!
     $deploymentAuth: DeploymentAuth
   ) {
-    updateProject(
-      input: { id: $projectId, deploymentAuth: $deploymentAuth }
-    ) {
+    updateProject(input: { id: $projectId, deploymentAuth: $deploymentAuth }) {
       id
       deploymentAuth
     }

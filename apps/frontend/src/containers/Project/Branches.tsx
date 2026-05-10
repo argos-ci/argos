@@ -252,8 +252,7 @@ function AutoApprovedBranchesCard(props: { project: Project }) {
               />
               <p className="text-low mt-2 text-sm">
                 Use patterns like <Code>main</Code>,{" "}
-                <Code>{`{main,production}`}</Code>, or{" "}
-                <Code>release/**</Code>.
+                <Code>{`{main,production}`}</Code>, or <Code>release/**</Code>.
               </p>
             </>
           )}

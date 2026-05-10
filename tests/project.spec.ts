@@ -49,9 +49,7 @@ loggedTest("project settings", async ({ page, team, auth, project }) => {
   const settingsUrl = `/${team.account.slug}/${project.name}/settings`;
 
   for (const section of sections) {
-    await page
-      .getByRole("link", { name: section.name, exact: true })
-      .click();
+    await page.getByRole("link", { name: section.name, exact: true }).click();
     const expectedUrl =
       section.id === "general" ? settingsUrl : `${settingsUrl}/${section.id}`;
     await page.waitForURL(expectedUrl);

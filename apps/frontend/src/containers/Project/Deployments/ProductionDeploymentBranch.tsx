@@ -92,8 +92,8 @@ export function ProductionDeploymentBranch(props: {
         <CardBody>
           <CardTitle>Production deployment branch</CardTitle>
           <CardParagraph>
-            Any deployment from a branch that matches the specified pattern
-            will be treated as a production deployment.
+            Any deployment from a branch that matches the specified pattern will
+            be treated as a production deployment.
           </CardParagraph>
           <FormSwitch
             control={form.control}
