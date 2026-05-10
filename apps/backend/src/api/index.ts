@@ -7,6 +7,7 @@ import { createBuild } from "./handlers/createBuild";
 import { createDeployment } from "./handlers/createDeployment";
 import { createReview } from "./handlers/createReview";
 import { exchangeCliToken } from "./handlers/exchangeCliToken";
+import { exchangeGitHubActionsOidcToken } from "./handlers/exchangeGitHubActionsOidcToken";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
 import { finalizeDeployment } from "./handlers/finalizeDeployment";
 import { getAuthProject } from "./handlers/getAuthProject";
@@ -48,6 +49,7 @@ router.get(
 registerHandler(router, createBuild);
 registerHandler(router, createReview);
 registerHandler(router, exchangeCliToken);
+registerHandler(router, exchangeGitHubActionsOidcToken);
 registerHandler(router, createDeployment);
 registerHandler(router, finalizeBuilds);
 registerHandler(router, finalizeDeployment);

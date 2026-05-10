@@ -124,6 +124,7 @@
     "eslint": "catalog:",
     "factory-girl-ts": "^2.3.1",
     "moment": "^2.30.1",
+    "msw": "^2.14.5",
     "openapi3-ts": "^4.5.0",
     "pino-pretty": "^13.1.3",
     "supertest": "^7.2.2"

@@ -60,6 +60,7 @@ export class Project extends Model {
           githubRepositoryId: { type: ["null", "string"] },
           gitlabProjectId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
+          githubActionsOidcEnabled: { type: "boolean" },
           deploymentEnabled: { type: "boolean" },
           deploymentAuth: {
             type: "string",
@@ -95,6 +96,7 @@ export class Project extends Model {
   githubRepositoryId!: string | null;
   gitlabProjectId!: string | null;
   prCommentEnabled!: boolean;
+  githubActionsOidcEnabled!: boolean;
   deploymentEnabled!: boolean;
   deploymentAuth!: DeploymentAuth;
   summaryCheck!: "always" | "never" | "auto";

@@ -175,6 +175,8 @@ export const typeDefs = gql`
     slug: String!
     "Pull request comment enabled"
     prCommentEnabled: Boolean!
+    "GitHub Actions OIDC authentication enabled"
+    githubActionsOidcEnabled: Boolean!
     "Summary check"
     summaryCheck: SummaryCheck!
     "Build names"
@@ -236,6 +238,7 @@ export const typeDefs = gql`
     autoIgnore: AutoIgnoreSettingsInput
     deploymentEnabled: Boolean
     deploymentAuth: DeploymentAuth
+    githubActionsOidcEnabled: Boolean
   }
 
   input TransferProjectInput {
@@ -1037,6 +1040,13 @@ export const resolvers: IResolvers = {
         project.deploymentEnabled !== args.input.deploymentEnabled
       ) {
         data.deploymentEnabled = args.input.deploymentEnabled;
+      }
+
+      if (
+        typeof args.input.githubActionsOidcEnabled === "boolean" &&
+        project.githubActionsOidcEnabled !== args.input.githubActionsOidcEnabled
+      ) {
+        data.githubActionsOidcEnabled = args.input.githubActionsOidcEnabled;
       }
 
       if (args.input.deploymentAuth != null) {
