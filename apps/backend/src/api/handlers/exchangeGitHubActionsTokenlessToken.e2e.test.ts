@@ -152,7 +152,7 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toBe(
-          "No Argos project is linked to this GitHub Actions workflow run.",
+          "Unable to resolve the GitHub Actions workflow run context. No Argos project may be linked to this workflow run, or the GitHub installation required to access it may be missing or disabled.",
         );
       });
   });
