@@ -49,9 +49,11 @@ export type TokenlessGitHubActionsContext = {
 
 /**
  * Resolve the Argos project and GitHub workflow run associated with a tokenless
- * GitHub Actions bearer token. Returns `null` when the token does not match a
- * known project so the strategy can fall back to other auth methods. Throws on
- * unrecoverable errors (invalid run, multiple projects, etc.).
+ * GitHub Actions bearer token. Returns `null` only when the token has no
+ * matching Argos project (invalid payload, unknown repository, or no linked
+ * project). Throws boom errors for unrecoverable failures (missing GitHub
+ * installation, GitHub API failure, multiple linked projects, run not found,
+ * run not in progress).
  */
 export async function resolveTokenlessGitHubActionsContext(
   bearerToken: string,
@@ -90,13 +92,19 @@ export async function resolveTokenlessGitHubActionsContext(
   const installation = GithubRepository.pickBestInstallation(repository);
 
   if (!installation) {
-    return null;
+    throw boom(
+      401,
+      "The Argos GitHub App is no longer installed on this repository. Reinstall the app or use a project token.",
+    );
   }
 
   const octokit = await getInstallationOctokit(installation);
 
   if (!octokit) {
-    return null;
+    throw boom(
+      503,
+      "Unable to authenticate with GitHub for this installation. Please retry.",
+    );
   }
 
   const githubRun = await pRetry(
