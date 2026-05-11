@@ -5,6 +5,7 @@ import {
   ArgosDeploymentStack,
   ArgosDeploymentStackPropsSchema,
 } from "../lib/deployment-stack.ts";
+import { ArgosReplicaStack } from "../lib/replica-stack.ts";
 
 const app = new cdk.App();
 
@@ -69,12 +70,31 @@ const rawProps =
 
 const props = ArgosDeploymentStackPropsSchema.parse(rawProps);
 
-new ArgosDeploymentStack(app, `argos-deployment-${props.stage}`, {
-  ...props,
-  env: {
-    account: process.env["CDK_DEFAULT_ACCOUNT"],
-    region: "us-east-1",
+const deploymentStack = new ArgosDeploymentStack(
+  app,
+  `argos-deployment-${props.stage}`,
+  {
+    ...props,
+    env: {
+      account: process.env["CDK_DEFAULT_ACCOUNT"],
+      region: "us-east-1",
+    },
   },
-});
+);
+
+if (props.stage === "production") {
+  const replicaStack = new ArgosReplicaStack(
+    app,
+    `argos-deployment-${props.stage}-replica`,
+    {
+      stage: props.stage,
+      env: {
+        account: process.env["CDK_DEFAULT_ACCOUNT"],
+        region: "eu-west-1",
+      },
+    },
+  );
+  deploymentStack.addDependency(replicaStack);
+}
 
 app.synth();
