@@ -69,11 +69,69 @@ export class ArgosDeploymentStack extends cdk.Stack {
       bucketName: `argos-deployments-${stage}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: isProduction,
       removalPolicy: isProduction
         ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: !isProduction,
     });
+
+    // ----------------------------------------------------------------
+    // S3 Cross-Region Replication — production only.
+    // Replicates to a bucket in eu-west-1 managed by ArgosReplicaStack.
+    // ----------------------------------------------------------------
+    if (isProduction) {
+      const replicaBucketArn = `arn:aws:s3:::argos-deployments-${stage}-replica`;
+
+      const replicationRole = new iam.Role(this, "ReplicationRole", {
+        assumedBy: new iam.ServicePrincipal("s3.amazonaws.com"),
+      });
+
+      replicationRole.addToPolicy(
+        new iam.PolicyStatement({
+          actions: ["s3:GetReplicationConfiguration", "s3:ListBucket"],
+          resources: [this.bucket.bucketArn],
+        }),
+      );
+      replicationRole.addToPolicy(
+        new iam.PolicyStatement({
+          actions: [
+            "s3:GetObjectVersionForReplication",
+            "s3:GetObjectVersionAcl",
+            "s3:GetObjectVersionTagging",
+          ],
+          resources: [`${this.bucket.bucketArn}/*`],
+        }),
+      );
+      replicationRole.addToPolicy(
+        new iam.PolicyStatement({
+          actions: [
+            "s3:ReplicateObject",
+            "s3:ReplicateDelete",
+            "s3:ReplicateTags",
+          ],
+          resources: [`${replicaBucketArn}/*`],
+        }),
+      );
+
+      const cfnBucket = this.bucket.node.defaultChild as s3.CfnBucket;
+      cfnBucket.replicationConfiguration = {
+        role: replicationRole.roleArn,
+        rules: [
+          {
+            id: "ReplicateAllToEuWest1",
+            status: "Enabled",
+            priority: 0,
+            deleteMarkerReplication: { status: "Enabled" },
+            filter: {},
+            destination: {
+              bucket: replicaBucketArn,
+              storageClass: "STANDARD",
+            },
+          },
+        ],
+      };
+    }
 
     // ----------------------------------------------------------------
     // DynamoDB — files table (content hash → S3 key)
