@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import z from "zod";
 
 import { Project } from "@/database/models";
@@ -9,7 +10,7 @@ const SHORT_LIVED_PROJECT_TOKEN_TTL_MS = 10 * 60 * 1000;
 
 const ShortLivedProjectTokenPayloadSchema = z.object({
   projectId: z.string(),
-  source: z.literal("github-actions-oidc"),
+  source: z.enum(["github-actions-oidc", "github-actions-tokenless"]),
 });
 
 type ShortLivedProjectTokenPayload = z.infer<
@@ -86,9 +87,16 @@ export async function getProjectFromShortLivedProjectToken(
 
   const project = await Project.query().findById(result.data.projectId);
 
-  if (!project?.githubActionsOidcEnabled) {
+  if (!project) {
     return null;
   }
 
-  return project;
+  switch (result.data.source) {
+    case "github-actions-oidc":
+      return project.githubActionsOidcEnabled ? project : null;
+    case "github-actions-tokenless":
+      return project.tokenlessAuthEnabled ? project : null;
+    default:
+      assertNever(result.data.source);
+  }
 }

@@ -67,4 +67,41 @@ describe("short-lived project token", () => {
       getProjectFromShortLivedProjectToken(token),
     ).resolves.toBeNull();
   });
+
+  test("resolves a project for a tokenless-sourced token", async ({
+    project,
+  }) => {
+    await project.$query().patch({
+      tokenlessAuthEnabled: true,
+    });
+
+    const { token } = await createShortLivedProjectToken({
+      projectId: project.id,
+      source: "github-actions-tokenless",
+    });
+
+    const resolvedProject = await getProjectFromShortLivedProjectToken(token);
+    expect(resolvedProject?.id).toBe(project.id);
+  });
+
+  test("returns null when tokenless auth is disabled after token creation", async ({
+    project,
+  }) => {
+    await project.$query().patch({
+      tokenlessAuthEnabled: true,
+    });
+
+    const { token } = await createShortLivedProjectToken({
+      projectId: project.id,
+      source: "github-actions-tokenless",
+    });
+
+    await project.$query().patch({
+      tokenlessAuthEnabled: false,
+    });
+
+    await expect(
+      getProjectFromShortLivedProjectToken(token),
+    ).resolves.toBeNull();
+  });
 });

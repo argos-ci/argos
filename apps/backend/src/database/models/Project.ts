@@ -61,6 +61,7 @@ export class Project extends Model {
           gitlabProjectId: { type: ["null", "string"] },
           prCommentEnabled: { type: "boolean" },
           githubActionsOidcEnabled: { type: "boolean" },
+          tokenlessAuthEnabled: { type: "boolean" },
           deploymentEnabled: { type: "boolean" },
           deploymentAuth: {
             type: "string",
@@ -97,6 +98,7 @@ export class Project extends Model {
   gitlabProjectId!: string | null;
   prCommentEnabled!: boolean;
   githubActionsOidcEnabled!: boolean;
+  tokenlessAuthEnabled!: boolean;
   deploymentEnabled!: boolean;
   deploymentAuth!: DeploymentAuth;
   summaryCheck!: "always" | "never" | "auto";

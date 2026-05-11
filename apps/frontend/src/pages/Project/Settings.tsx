@@ -23,6 +23,7 @@ import { ProjectGitHubActionsOIDC } from "@/containers/Project/GitHubActionsOIDC
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
+import { ProjectTokenlessAuth } from "@/containers/Project/TokenlessAuth";
 import { ProjectTransfer } from "@/containers/Project/Transfer";
 import { ProjectVisibility } from "@/containers/Project/Visibility";
 import { graphql } from "@/gql";
@@ -69,6 +70,7 @@ const ProjectQuery = graphql(`
       ...ProjectGitRepository_Project
       ...ProjectContributors_Project
       ...ProjectGitHubActionsOIDC_Project
+      ...ProjectTokenlessAuth_Project
     }
   }
 `);
@@ -158,6 +160,7 @@ function PageContent() {
       element: (
         <>
           {hasReviewPermission && <ProjectToken project={project} />}
+          {hasAdminPermission && <ProjectTokenlessAuth project={project} />}
           {hasAdminPermission && <ProjectGitHubActionsOIDC project={project} />}
         </>
       ),

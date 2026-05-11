@@ -1,11 +1,19 @@
 import { invariant } from "@argos/util/invariant";
 import pRetry from "p-retry";
+import z from "zod";
 
 import { GithubRepository, Project } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { boom } from "@/util/error";
 
 const marker = "tokenless-github-";
+
+const AuthTokenPayloadSchema = z.object({
+  owner: z.string(),
+  repository: z.string(),
+  jobId: z.string(),
+  runId: z.string(),
+});
 
 /**
  * Decode bearer token.
@@ -16,109 +24,136 @@ function decodeToken(bearerToken: string, marker: string) {
     const base64 = parts[1];
     invariant(base64, "missing marker");
     const payload = Buffer.from(base64, "base64").toString("utf-8");
-    return JSON.parse(payload);
+    const parsed = JSON.parse(payload);
+    return AuthTokenPayloadSchema.parse(parsed);
   } catch {
     throw boom(401, `Invalid token (token: "${bearerToken}")`);
   }
 }
 
-interface AuthData {
-  owner: string;
-  repository: string;
-  jobId: string;
-  runId: string;
-}
+type TokenlessGitHubActionsRun = {
+  status: string | null;
+  head_sha: string;
+  head_branch: string | null;
+};
+
+export type TokenlessGitHubActionsContext = {
+  project: Project;
+  run: TokenlessGitHubActionsRun;
+};
 
 /**
- * Validate auth data.
+ * Resolve the Argos project and GitHub workflow run associated with a tokenless
+ * GitHub Actions bearer token. Returns null if no project is linked to this repository.
  */
-function validateAuthData(infos: any): infos is AuthData {
-  return Boolean(infos.owner && infos.repository && infos.jobId && infos.runId);
+export async function resolveTokenlessGitHubActionsContext(
+  bearerToken: string,
+): Promise<TokenlessGitHubActionsContext | null> {
+  const authData = decodeToken(bearerToken, marker);
+
+  const repository = await GithubRepository.query()
+    .joinRelated("githubAccount")
+    .withGraphJoined("[repoInstallations.installation, projects]")
+    .where("githubAccount.login", authData.owner)
+    .findOne("github_repositories.name", authData.repository)
+    .orderBy("github_repositories.updatedAt", "desc")
+    .first();
+
+  if (!repository) {
+    return null;
+  }
+
+  invariant(repository.projects);
+
+  if (!repository.projects[0]) {
+    return null;
+  }
+
+  if (repository.projects.length > 1) {
+    throw boom(
+      400,
+      `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
+    );
+  }
+
+  const installation = GithubRepository.pickBestInstallation(repository);
+
+  if (!installation) {
+    throw boom(
+      401,
+      "The Argos GitHub App is no longer installed on this repository. Reinstall the app or use a project token.",
+    );
+  }
+
+  const octokit = await getInstallationOctokit(installation);
+
+  if (!octokit) {
+    throw boom(
+      503,
+      "Unable to authenticate with GitHub for this installation. Please retry.",
+    );
+  }
+
+  const githubRun = await pRetry(
+    async () => {
+      try {
+        const result = await octokit.actions.getWorkflowRun({
+          owner: authData.owner,
+          repo: authData.repository,
+          run_id: Number(authData.runId),
+          filter: "latest",
+        });
+        return result;
+      } catch (error) {
+        if (checkOctokitErrorStatus(404, error)) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    { retries: 3 },
+  );
+
+  if (!githubRun) {
+    throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
+  }
+
+  const isRunInProgress =
+    githubRun.data.status === "in_progress" ||
+    // For some reason GitHub sometimes considers the job "queued"
+    // It is not "unsafe" to allow this.
+    githubRun.data.status === "queued";
+
+  if (!isRunInProgress) {
+    throw boom(401, `GitHub job is not in progress (token: "${bearerToken}")`);
+  }
+
+  return {
+    project: repository.projects[0],
+    run: {
+      status: githubRun.data.status,
+      head_sha: githubRun.data.head_sha,
+      head_branch: githubRun.data.head_branch,
+    },
+  };
 }
 
 export const tokenlessGitHubActionsStrategy = {
   detect: (bearerToken: string) => bearerToken.startsWith(marker),
   getProject: async (bearerToken: string): Promise<Project | null> => {
-    const authData = decodeToken(bearerToken, marker);
+    const context = await resolveTokenlessGitHubActionsContext(bearerToken);
 
-    if (!validateAuthData(authData)) {
+    if (!context) {
       return null;
     }
 
-    const repository = await GithubRepository.query()
-      .joinRelated("githubAccount")
-      .withGraphJoined("[repoInstallations.installation, projects]")
-      .where("githubAccount.login", authData.owner)
-      .findOne("github_repositories.name", authData.repository)
-      .orderBy("github_repositories.updatedAt", "desc")
-      .first();
-
-    if (!repository) {
-      return null;
-    }
-
-    invariant(repository.projects);
-
-    if (!repository.projects[0]) {
-      return null;
-    }
-
-    const installation = GithubRepository.pickBestInstallation(repository);
-
-    if (!installation) {
-      return null;
-    }
-
-    if (repository.projects.length > 1) {
+    if (!context.project.tokenlessAuthEnabled) {
       throw boom(
-        400,
-        `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
+        403,
+        "Tokenless authentication is disabled for this project. Set the ARGOS_TOKEN environment variable to authenticate.",
       );
     }
 
-    const octokit = await getInstallationOctokit(installation);
-
-    if (!octokit) {
-      return null;
-    }
-
-    const githubRun = await pRetry(
-      async () => {
-        try {
-          const result = await octokit.actions.getWorkflowRun({
-            owner: authData.owner,
-            repo: authData.repository,
-            run_id: Number(authData.runId),
-            filter: "latest",
-          });
-          return result;
-        } catch (error) {
-          if (checkOctokitErrorStatus(404, error)) {
-            return null;
-          }
-          throw error;
-        }
-      },
-      { retries: 3 },
-    );
-
-    if (!githubRun) {
-      throw boom(404, `GitHub run not found (token: "${bearerToken}")`);
-    }
-
-    const isRunInProgress =
-      githubRun.data.status === "in_progress" ||
-      // For some reason GitHub sometimes considers the job "queued"
-      // It is not "unsafe" to allow this.
-      githubRun.data.status === "queued";
-
-    if (!isRunInProgress) {
-      throw boom(
-        401,
-        `GitHub job is not in progress (token: "${bearerToken}")`,
-      );
-    }
-
-    return repository.projects[0];
+    return context.project;
   },
 };

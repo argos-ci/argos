@@ -8,6 +8,7 @@ import { createDeploymentOperation } from "./handlers/createDeployment";
 import { createReviewOperation } from "./handlers/createReview";
 import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcTokenOperation } from "./handlers/exchangeGitHubActionsOidcToken";
+import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchangeGitHubActionsTokenlessToken";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { finalizeDeploymentOperation } from "./handlers/finalizeDeployment";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
@@ -66,6 +67,9 @@ export const zodSchema = {
     },
     "/auth/github-actions/oidc/exchange": {
       post: exchangeGitHubActionsOidcTokenOperation,
+    },
+    "/auth/github-actions/tokenless/exchange": {
+      post: exchangeGitHubActionsTokenlessTokenOperation,
     },
     "/project": {
       get: getAuthProjectOperation,

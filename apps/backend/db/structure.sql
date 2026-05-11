@@ -1456,6 +1456,7 @@ CREATE TABLE public.projects (
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
+    "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
@@ -4448,3 +4449,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260507120000_deployment-notifications.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260507130000_project-deployment-auth.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260510120000_project-github-actions-oidc.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260511120000_project-tokenless-auth.js', 1, NOW());
