@@ -7,7 +7,9 @@ import { Sha1HashSchema } from "../schema/primitives/sha";
 import {
   forbidden,
   invalidParameters,
+  notFound,
   serverError,
+  serviceUnavailable,
   unauthorized,
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
@@ -58,7 +60,9 @@ export const exchangeGitHubActionsTokenlessTokenOperation = {
     "400": invalidParameters,
     "401": unauthorized,
     "403": forbidden,
+    "404": notFound,
     "500": serverError,
+    "503": serviceUnavailable,
   },
 } satisfies ZodOpenApiOperationObject;
 

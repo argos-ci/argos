@@ -19,7 +19,7 @@ export async function exchangeGitHubActionsTokenlessToken(
   if (!context) {
     throw boom(
       401,
-      "Unable to resolve the GitHub Actions workflow run context. No Argos project may be linked to this workflow run, or the GitHub installation required to access it may be missing or disabled.",
+      "No project found. Tokenless authentication requires an Argos project to be linked to your GitHub repository.",
     );
   }
 

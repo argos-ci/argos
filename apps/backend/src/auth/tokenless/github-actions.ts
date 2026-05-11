@@ -1,11 +1,19 @@
 import { invariant } from "@argos/util/invariant";
 import pRetry from "p-retry";
+import z from "zod";
 
 import { GithubRepository, Project } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { boom } from "@/util/error";
 
 const marker = "tokenless-github-";
+
+const AuthTokenPayloadSchema = z.object({
+  owner: z.string(),
+  repository: z.string(),
+  jobId: z.string(),
+  runId: z.string(),
+});
 
 /**
  * Decode bearer token.
@@ -16,24 +24,11 @@ function decodeToken(bearerToken: string, marker: string) {
     const base64 = parts[1];
     invariant(base64, "missing marker");
     const payload = Buffer.from(base64, "base64").toString("utf-8");
-    return JSON.parse(payload);
+    const parsed = JSON.parse(payload);
+    return AuthTokenPayloadSchema.parse(parsed);
   } catch {
     throw boom(401, `Invalid token (token: "${bearerToken}")`);
   }
-}
-
-interface AuthData {
-  owner: string;
-  repository: string;
-  jobId: string;
-  runId: string;
-}
-
-/**
- * Validate auth data.
- */
-function validateAuthData(infos: any): infos is AuthData {
-  return Boolean(infos.owner && infos.repository && infos.jobId && infos.runId);
 }
 
 type TokenlessGitHubActionsRun = {
@@ -49,20 +44,12 @@ export type TokenlessGitHubActionsContext = {
 
 /**
  * Resolve the Argos project and GitHub workflow run associated with a tokenless
- * GitHub Actions bearer token. Returns `null` only when the token has no
- * matching Argos project (invalid payload, unknown repository, or no linked
- * project). Throws boom errors for unrecoverable failures (missing GitHub
- * installation, GitHub API failure, multiple linked projects, run not found,
- * run not in progress).
+ * GitHub Actions bearer token. Returns null if no project is linked to this repository.
  */
 export async function resolveTokenlessGitHubActionsContext(
   bearerToken: string,
 ): Promise<TokenlessGitHubActionsContext | null> {
   const authData = decodeToken(bearerToken, marker);
-
-  if (!validateAuthData(authData)) {
-    return null;
-  }
 
   const repository = await GithubRepository.query()
     .joinRelated("githubAccount")
