@@ -19,6 +19,7 @@ import { ProjectChangeName } from "@/containers/Project/ChangeName";
 import { ProjectContributors } from "@/containers/Project/Contributors";
 import { ProjectDelete } from "@/containers/Project/Delete";
 import { ProjectDeployments } from "@/containers/Project/Deployments/Deployments";
+import { ProjectGitHubActionsOIDC } from "@/containers/Project/GitHubActionsOIDC";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
@@ -67,6 +68,7 @@ const ProjectQuery = graphql(`
       ...ProjectDelete_Project
       ...ProjectGitRepository_Project
       ...ProjectContributors_Project
+      ...ProjectGitHubActionsOIDC_Project
     }
   }
 `);
@@ -153,7 +155,12 @@ function PageContent() {
     {
       name: "Authentication",
       slug: "authentication",
-      element: hasReviewPermission && <ProjectToken project={project} />,
+      element: (
+        <>
+          {hasReviewPermission && <ProjectToken project={project} />}
+          {hasAdminPermission && <ProjectGitHubActionsOIDC project={project} />}
+        </>
+      ),
     },
     {
       name: "Access management",
