@@ -177,6 +177,8 @@ export const typeDefs = gql`
     prCommentEnabled: Boolean!
     "GitHub Actions OIDC authentication enabled"
     githubActionsOidcEnabled: Boolean!
+    "Tokenless authentication enabled"
+    tokenlessAuthEnabled: Boolean!
     "Summary check"
     summaryCheck: SummaryCheck!
     "Build names"
@@ -239,6 +241,7 @@ export const typeDefs = gql`
     deploymentEnabled: Boolean
     deploymentAuth: DeploymentAuth
     githubActionsOidcEnabled: Boolean
+    tokenlessAuthEnabled: Boolean
   }
 
   input TransferProjectInput {
@@ -1047,6 +1050,13 @@ export const resolvers: IResolvers = {
         project.githubActionsOidcEnabled !== args.input.githubActionsOidcEnabled
       ) {
         data.githubActionsOidcEnabled = args.input.githubActionsOidcEnabled;
+      }
+
+      if (
+        typeof args.input.tokenlessAuthEnabled === "boolean" &&
+        project.tokenlessAuthEnabled !== args.input.tokenlessAuthEnabled
+      ) {
+        data.tokenlessAuthEnabled = args.input.tokenlessAuthEnabled;
       }
 
       if (args.input.deploymentAuth != null) {
