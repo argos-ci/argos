@@ -43,7 +43,7 @@ async function acquireLock({
                   "argos.lock.timeout_ms": timeout,
                   "argos.lock.retry_delay_min_ms": retryDelay.min,
                   "argos.lock.retry_delay_max_ms": retryDelay.max,
-                  "argos.lock.adjused_timeout": adjustedTimeout,
+                  "argos.lock.adjusted_timeout": adjustedTimeout,
                 },
               },
               (span) => {
