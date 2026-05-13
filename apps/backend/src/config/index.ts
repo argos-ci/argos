@@ -408,6 +408,12 @@ export function createConfig() {
         default: "",
         env: "SENTRY_SERVER_DSN",
       },
+      tracesSampleRate: {
+        doc: "Sentry traces sample rate",
+        format: Number,
+        default: 0.1,
+        env: "SENTRY_TRACES_SAMPLE_RATE",
+      },
       cspReportUri: {
         doc: "CSP report URI",
         format: String,

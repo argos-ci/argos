@@ -1,6 +1,7 @@
 {
   "sentry": {
-    "serverDsn": ""
+    "serverDsn": "",
+    "tracesSampleRate": 1
   },
   "server": {
     "secure": true,

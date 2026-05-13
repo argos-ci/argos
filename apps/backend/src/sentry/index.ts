@@ -5,12 +5,11 @@ import { getOctokitErrorStatus } from "@/github/error";
 import { isHttp2GoAwayCode0Error } from "@/util/error";
 
 export function setup() {
-  console.log(config.get("sentry.serverDsn"));
   Sentry.init({
     dsn: config.get("sentry.serverDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
-    tracesSampleRate: 1,
+    tracesSampleRate: config.get("sentry.tracesSampleRate"),
     beforeSend(event, hint) {
       const error = hint.originalException;
       // Detect HTTP-like errors
