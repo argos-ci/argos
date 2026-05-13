@@ -15,6 +15,7 @@ describe("redis-lock", () => {
     await client.connect();
     await client.del("lock.x");
     await client.del("debounce.x");
+    await client.del("debounce-rerun.x");
   });
 
   afterEach(async () => {
@@ -91,6 +92,32 @@ describe("redis-lock", () => {
       expect(spy2).not.toHaveBeenCalled();
       p1.resolve("first");
       expect(await l1).toBe("first");
+    });
+
+    it("re-runs the task when a caller arrives during execution", async () => {
+      const lock = createRedisLockClient({
+        getRedisClient: async () => client,
+      });
+      const p1 = createResolvablePromise();
+      let callCount = 0;
+      const task = vi.fn(() => {
+        callCount++;
+        // First call blocks until p1 resolves; later calls return quickly.
+        return callCount === 1 ? p1 : Promise.resolve("rerun");
+      });
+      const l1 = lock.debounce(["x"], task, { delay: 10 });
+      // Wait until the task is running (past the delay).
+      await delay(30);
+      // Bailer arrives during the task — flags rerun and returns null.
+      const r2 = await lock.debounce(["x"], task, { delay: 10 });
+      expect(r2).toBeNull();
+      expect(task).toHaveBeenCalledOnce();
+      // Let the first task finish — runner should detect the rerun flag
+      // and run the task again.
+      p1.resolve("first");
+      const r1 = await l1;
+      expect(task).toHaveBeenCalledTimes(2);
+      expect(r1).toBe("rerun");
     });
 
     it("allows a new claim after the task completes", async () => {

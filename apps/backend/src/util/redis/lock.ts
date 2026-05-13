@@ -3,6 +3,24 @@ import type { RedisClientType } from "redis";
 
 import { hashCacheKey, type CacheKey } from "./cache-key";
 
+// Atomically decides whether the runner should loop again or release the
+// claim. If a "rerun" flag was set by a bailer, clear it and return
+// "continue". Otherwise release the claim (only if still owned by this
+// runner) and return "done". Atomicity closes the race between checking
+// the rerun flag and releasing the claim.
+const RELEASE_OR_CONTINUE_SCRIPT = `
+local rerun = redis.call("GET", KEYS[2])
+if rerun then
+  redis.call("DEL", KEYS[2])
+  return "continue"
+end
+local current = redis.call("GET", KEYS[1])
+if current == ARGV[1] then
+  redis.call("DEL", KEYS[1])
+end
+return "done"
+`;
+
 async function acquireLock({
   client,
   name,
@@ -70,15 +88,23 @@ export function createRedisLockClient(options: {
 }) {
   return {
     /**
-     * Coalesce a burst of calls into a single delayed execution.
+     * Coalesce a burst of calls into single-flight executions with a delay.
      *
-     * The first caller in the debounce window claims it, waits `delay` ms,
-     * then runs the task. Concurrent callers that arrive while the window is
-     * held return `null` immediately without running the task.
+     * The first caller claims the window, waits `delay` ms, then runs the
+     * task. Concurrent callers return `null` immediately; if they arrive
+     * *during* the running task, they flag a "rerun" so the runner repeats
+     * the task once more after its current pass — this captures work that
+     * became visible only after the task's read started.
      *
-     * Useful when many workers might trigger the same downstream action and
-     * only one execution is needed (e.g. concluding a build after a burst
-     * of screenshot diffs complete).
+     * The bailer always sets the rerun flag *before* trying to claim, and
+     * the runner uses a Lua script to atomically check-and-clear rerun or
+     * release the claim. Together these close the race where a bailer's
+     * signal could be lost between the runner's last check and its claim
+     * release.
+     *
+     * Trade-off: the runner may run the task one extra time (idempotent
+     * pass) rather than miss a signal — we err toward "run too many" over
+     * "skip a needed run".
      */
     async debounce<T>(
       key: CacheKey,
@@ -86,12 +112,14 @@ export function createRedisLockClient(options: {
       { delay, timeout = 20000 }: { delay: number; timeout?: number },
     ): Promise<T | null> {
       const hash = hashCacheKey(key);
-      const fullName = `debounce.${hash}`;
+      const claimKey = `debounce.${hash}`;
+      const rerunKey = `debounce-rerun.${hash}`;
+      const keyTtl = delay + timeout;
       return Sentry.startSpan(
         {
           name: "redis.debounce",
           attributes: {
-            "argos.debounce.name": fullName,
+            "argos.debounce.name": claimKey,
             "argos.debounce.hash": hash,
             "argos.debounce.delay_ms": delay,
             "argos.debounce.timeout_ms": timeout,
@@ -100,23 +128,35 @@ export function createRedisLockClient(options: {
         async () => {
           const client = await options.getRedisClient();
           const id = crypto.randomUUID();
-          const result = await client.set(fullName, id, {
-            expiration: { type: "PX", value: delay + timeout },
-            condition: "NX",
-          });
-          if (result !== "OK") {
-            return null;
-          }
-          let timer: NodeJS.Timeout | null = null;
-          try {
-            await new Promise<void>((resolve) => {
-              setTimeout(resolve, delay);
+
+          const tryClaim = () =>
+            client.set(claimKey, id, {
+              expiration: { type: "PX", value: keyTtl },
+              condition: "NX",
             });
-            const result = (await Sentry.startSpan(
+
+          let claimed = await tryClaim();
+          if (claimed !== "OK") {
+            // Set rerun *before* retrying the claim. This ordering closes
+            // the race: if the active runner is about to release, our
+            // retry will succeed and we become the new runner; otherwise
+            // the runner will see our rerun flag.
+            await client.set(rerunKey, "1", {
+              expiration: { type: "PX", value: keyTtl },
+            });
+            claimed = await tryClaim();
+            if (claimed !== "OK") {
+              return null;
+            }
+          }
+
+          const runTask = (): Promise<T> => {
+            let timer: NodeJS.Timeout | null = null;
+            return Sentry.startSpan(
               {
                 name: "redis.debounce.task",
                 attributes: {
-                  "argos.debounce.name": fullName,
+                  "argos.debounce.name": claimKey,
                   "argos.debounce.hash": hash,
                   "argos.debounce.timeout_ms": timeout,
                 },
@@ -124,7 +164,7 @@ export function createRedisLockClient(options: {
               () =>
                 Promise.race([
                   task(),
-                  new Promise((_resolve, reject) => {
+                  new Promise<never>((_resolve, reject) => {
                     timer = setTimeout(() => {
                       reject(
                         new Error(
@@ -133,17 +173,42 @@ export function createRedisLockClient(options: {
                       );
                     }, timeout);
                   }),
-                ]),
-            )) as T;
-            return result;
-          } finally {
-            if (timer) {
-              clearTimeout(timer);
-            }
-            const value = await client.get(fullName);
+                ]).finally(() => {
+                  if (timer) {
+                    clearTimeout(timer);
+                  }
+                }),
+            );
+          };
+
+          try {
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, delay);
+            });
+            let lastResult: T;
+            // Atomically check rerun-or-release after each task. The Lua
+            // script guarantees there is no window in which a bailer's
+            // signal can land between the check and the release.
+            let decision: unknown;
+            do {
+              // Clear rerun before running. Any bailer that arrives during
+              // the task will SET it again and trigger another iteration.
+              await client.del(rerunKey);
+              lastResult = await runTask();
+              decision = await client.eval(RELEASE_OR_CONTINUE_SCRIPT, {
+                keys: [claimKey, rerunKey],
+                arguments: [id],
+              });
+            } while (decision === "continue");
+            return lastResult;
+          } catch (err) {
+            // Task threw — release the claim explicitly. Any pending rerun
+            // signal is left in place so the next caller picks it up.
+            const value = await client.get(claimKey);
             if (value === id) {
-              await client.del(fullName);
+              await client.del(claimKey);
             }
+            throw err;
           }
         },
       );
