@@ -81,7 +81,7 @@ export function createRedisLockClient(options: {
       const fullName = `lock.${hash}`;
       return Sentry.startSpan(
         {
-          name: "redis.lock.task",
+          name: "redis.lock.acquire",
           attributes: {
             "argos.lock.name": fullName,
             "argos.lock.hash": hash,
