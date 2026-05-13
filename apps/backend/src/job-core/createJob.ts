@@ -146,7 +146,7 @@ export const createJob = <TValue extends string | number>(
       await Sentry.startSpan(
         {
           name: "job.run",
-          op: "queue.process",
+          op: "topic.process",
           attributes: {
             "job.queue": queue,
             "job.id": String(id),

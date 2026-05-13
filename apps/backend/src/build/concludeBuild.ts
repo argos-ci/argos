@@ -33,8 +33,8 @@ export async function concludeBuild(input: {
       name: "concludeBuild",
       attributes: {
         "argos.build.id": buildId,
-        "argos.build.notify": notify,
-        "argos.build.completed_screenshot_diff_count":
+        "argos.notify": notify,
+        "argos.completed_screenshot_diff_count":
           completedScreenshotDiffIds?.length ?? 0,
       },
     },

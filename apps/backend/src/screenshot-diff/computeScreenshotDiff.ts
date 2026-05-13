@@ -279,9 +279,7 @@ async function diffFiles(
       attributes: {
         "argos.base.key": base.getKey(),
         "argos.head.key": head.getKey(),
-        ...(options.threshold !== undefined
-          ? { "argos.diff.threshold": options.threshold }
-          : {}),
+        "argos.diff.threshold": options.threshold,
       },
     },
     async () => {
@@ -322,12 +320,8 @@ async function processDiffResultFile(
       attributes: {
         "argos.diff.path": resultFile.path,
         "argos.diff.content_type": resultFile.contentType,
-        ...(resultFile.width !== undefined
-          ? { "argos.diff.width": resultFile.width }
-          : {}),
-        ...(resultFile.height !== undefined
-          ? { "argos.diff.height": resultFile.height }
-          : {}),
+        "argos.diff.width": resultFile.width,
+        "argos.diff.height": resultFile.height,
       },
     },
     async () => {
@@ -433,9 +427,7 @@ async function ensureImageDimensions(args: {
       name: "ensureImageDimensions",
       attributes: {
         "argos.screenshot.id": args.screenshot.id,
-        ...(args.screenshot.fileId
-          ? { "argos.screenshot.file_id": args.screenshot.fileId }
-          : {}),
+        "argos.screenshot.file_id": args.screenshot.fileId ?? undefined,
         "argos.screenshot.has_dimensions":
           args.screenshot.file?.width != null &&
           args.screenshot.file?.height != null,
@@ -489,10 +481,8 @@ async function lockAndUploadDiffFile(args: {
       attributes: {
         "argos.diff.key": args.key,
         "argos.diff.content_type": args.contentType,
-        ...(args.width !== undefined ? { "argos.diff.width": args.width } : {}),
-        ...(args.height !== undefined
-          ? { "argos.diff.height": args.height }
-          : {}),
+        "argos.diff.width": args.width,
+        "argos.diff.height": args.height,
       },
     },
     () =>
