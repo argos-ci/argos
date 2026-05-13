@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import pMemoize from "p-memoize";
 import pRetry from "p-retry";
 
@@ -142,13 +143,25 @@ export const createJob = <TValue extends string | number>(
       });
     },
     async run(id: TValue) {
-      await redisLock.acquire(
-        [queue, id],
-        async () => {
-          await consumer.perform(id);
-          await consumer.complete?.(id);
+      await Sentry.startSpan(
+        {
+          name: `job.run.${queue}`,
+          op: "argos.job",
+          attributes: {
+            "argos.job.queue": queue,
+            "argos.job.id": String(id),
+            "argos.job.timeout_ms": timeout,
+          },
         },
-        { timeout },
+        () =>
+          redisLock.acquire(
+            [queue, id],
+            async () => {
+              await consumer.perform(id);
+              await consumer.complete?.(id);
+            },
+            { timeout },
+          ),
       );
     },
     process() {
