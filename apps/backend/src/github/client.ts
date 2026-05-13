@@ -2,7 +2,6 @@ import { assertNever } from "@argos/util/assertNever";
 import { createAppAuth } from "@octokit/auth-app";
 import type { OctokitOptions } from "@octokit/core";
 import { retry } from "@octokit/plugin-retry";
-import { RequestError } from "@octokit/request-error";
 import { Octokit } from "@octokit/rest";
 import { memoize } from "lodash-es";
 import { fetch, ProxyAgent, type RequestInit, type Response } from "undici";
@@ -11,6 +10,8 @@ import z from "zod";
 import config from "@/config";
 import { GithubInstallation } from "@/database/models";
 import { boom } from "@/util/error";
+
+import { checkOctokitErrorStatus } from "./error";
 
 export type { RestEndpointMethodTypes } from "@octokit/rest";
 
@@ -234,24 +235,4 @@ async function authInstallation(args: {
     }
     throw error;
   }
-}
-
-/**
- * Get the status code from an Octokit RequestError.
- */
-export function getOctokitErrorStatus(error: unknown) {
-  if (error instanceof RequestError) {
-    return error.status;
-  }
-  return null;
-}
-
-/**
- * Check the status code from an Octokit RequestError.
- */
-export function checkOctokitErrorStatus(
-  status: number,
-  error: unknown,
-): error is RequestError {
-  return getOctokitErrorStatus(error) === status;
 }
