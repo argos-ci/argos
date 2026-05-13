@@ -39,62 +39,74 @@ export async function concludeBuild(input: {
       },
     },
     () =>
-      redisLock.acquire(["conclude-build", buildId], async () => {
-        const existingBuild = await Build.query()
-          .findById(buildId)
-          .throwIfNotFound();
-
-        if (existingBuild.conclusion !== null) {
-          // If the build is already concluded, we don't want to update it.
-          return;
-        }
-        const [status] = await Build.getScreenshotDiffsStatuses([buildId], {
-          completedScreenshotDiffIds,
-        });
-        invariant(status !== undefined, "status should exist for build");
-
-        const [conclusion, [stats]] = await Promise.all([
-          status === "complete" ? Build.computeConclusion(existingBuild) : null,
-          Build.computeStats([buildId]),
-        ]);
-        invariant(stats !== undefined, "stats should exist for build");
-        // If the build is not yet concluded, we don't want to update it.
-        if (conclusion === null) {
-          return;
-        }
-        if (notify) {
-          const [updatedBuild, buildNotification] = await transaction(
-            async (trx) => {
-              return Promise.all([
-                Build.query(trx).patchAndFetchById(
-                  buildId,
-                  getBuildData({ conclusion, stats }),
-                ),
-                BuildNotification.query(trx).insert({
-                  buildId,
-                  type: getNotificationType(conclusion),
-                  jobStatus: "pending",
-                }),
-              ]);
-            },
-          );
-
-          await Promise.all([
-            buildNotificationJob.push(buildNotification.id),
-            triggerAndRunAutomation({
-              projectId: build.projectId,
-              message: {
-                event: AutomationEvents.BuildCompleted,
-                payload: { build: updatedBuild },
-              },
-            }),
-          ]);
-        } else {
-          await Build.query()
+      // Debounce instead of locking: coalesce a burst of completions
+      // (e.g. 100 screenshot diffs finishing in parallel) into a single
+      // execution. The first caller claims the window, waits briefly so
+      // concurrent callers can register their `complete` job handlers,
+      // then runs the conclude logic once. Other callers in the window
+      // bail immediately — they would only have been no-ops anyway.
+      redisLock.debounce(
+        ["conclude-build", buildId],
+        async () => {
+          const existingBuild = await Build.query()
             .findById(buildId)
-            .patch(getBuildData({ conclusion, stats }));
-        }
-      }),
+            .throwIfNotFound();
+
+          if (existingBuild.conclusion !== null) {
+            // If the build is already concluded, we don't want to update it.
+            return;
+          }
+          const [status] = await Build.getScreenshotDiffsStatuses([buildId], {
+            completedScreenshotDiffIds,
+          });
+          invariant(status !== undefined, "status should exist for build");
+
+          const [conclusion, [stats]] = await Promise.all([
+            status === "complete"
+              ? Build.computeConclusion(existingBuild)
+              : null,
+            Build.computeStats([buildId]),
+          ]);
+          invariant(stats !== undefined, "stats should exist for build");
+          // If the build is not yet concluded, we don't want to update it.
+          if (conclusion === null) {
+            return;
+          }
+          if (notify) {
+            const [updatedBuild, buildNotification] = await transaction(
+              async (trx) => {
+                return Promise.all([
+                  Build.query(trx).patchAndFetchById(
+                    buildId,
+                    getBuildData({ conclusion, stats }),
+                  ),
+                  BuildNotification.query(trx).insert({
+                    buildId,
+                    type: getNotificationType(conclusion),
+                    jobStatus: "pending",
+                  }),
+                ]);
+              },
+            );
+
+            await Promise.all([
+              buildNotificationJob.push(buildNotification.id),
+              triggerAndRunAutomation({
+                projectId: build.projectId,
+                message: {
+                  event: AutomationEvents.BuildCompleted,
+                  payload: { build: updatedBuild },
+                },
+              }),
+            ]);
+          } else {
+            await Build.query()
+              .findById(buildId)
+              .patch(getBuildData({ conclusion, stats }));
+          }
+        },
+        { delay: 300 },
+      ),
   );
 }
 
