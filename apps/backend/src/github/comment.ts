@@ -4,7 +4,7 @@ import type { GithubPullRequest } from "@/database/models";
 import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
-import { checkOctokitErrorStatus } from "./client";
+import { checkOctokitErrorStatus } from "./error";
 
 async function getOrCreatePullRequestComment({
   owner,

@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/node";
 
 import config from "@/config";
-import { getOctokitErrorStatus } from "@/github";
+import { getOctokitErrorStatus } from "@/github/error";
 import { isHttp2GoAwayCode0Error } from "@/util/error";
 
 export function setup() {
@@ -9,6 +9,7 @@ export function setup() {
     dsn: config.get("sentry.serverDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
+    tracesSampleRate: config.get("sentry.tracesSampleRate"),
     beforeSend(event, hint) {
       const error = hint.originalException;
       // Detect HTTP-like errors

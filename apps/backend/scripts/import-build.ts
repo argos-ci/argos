@@ -3,7 +3,8 @@ import Knex from "knex";
 import ora from "ora";
 
 import config, { createConfig } from "@/config";
-import { getKnexConfig, loadDatabaseConfigFromURL } from "@/config/database";
+import { getKnexConfig } from "@/config/database";
+import { loadDatabaseConfigFromURL } from "@/config/database-url";
 import {
   Build,
   File,

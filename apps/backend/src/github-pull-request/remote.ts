@@ -6,7 +6,7 @@ import {
   checkOctokitErrorStatus,
   Octokit,
   RestEndpointMethodTypes,
-} from "@/github/client";
+} from "@/github";
 
 type GitHubApiPullRequest =
   RestEndpointMethodTypes["pulls"]["get"]["response"]["data"];

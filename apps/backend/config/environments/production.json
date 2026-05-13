@@ -29,5 +29,8 @@
   },
   "session": {
     "domain": ".argos-ci.com"
+  },
+  "sentry": {
+    "tracesSampleRate": 0.01
   }
 }

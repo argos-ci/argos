@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import * as Sentry from "@sentry/node";
 import moment from "moment";
 
 import { knex } from "@/database";
@@ -32,46 +33,57 @@ export async function upsertTestStats(input: {
     fingerprint: string;
   } | null;
 }) {
-  const { date, change, testId } = input;
-  const promises: Promise<void>[] = [];
-  const dayISODate = moment(date).startOf("day").toDate().toISOString();
+  return Sentry.startSpan(
+    {
+      name: "upsertTestStats",
+      attributes: {
+        "argos.test.id": input.testId,
+        "argos.test_stats.has_change": Boolean(input.change),
+      },
+    },
+    async () => {
+      const { date, change, testId } = input;
+      const promises: Promise<void>[] = [];
+      const dayISODate = moment(date).startOf("day").toDate().toISOString();
 
-  if (change) {
-    promises.push(
-      (async () => {
-        await knex.raw(
-          `
+      if (change) {
+        promises.push(
+          (async () => {
+            await knex.raw(
+              `
             INSERT INTO test_stats_fingerprints ("testId", "fingerprint", "date", "value")
             VALUES (:testId, :fingerprint, :date, 1)
             ON CONFLICT ("testId", "fingerprint", "date") DO
             UPDATE SET value = test_stats_fingerprints.value + 1`,
-          {
-            testId,
-            fingerprint: change.fingerprint,
-            date: dayISODate,
-          },
+              {
+                testId,
+                fingerprint: change.fingerprint,
+                date: dayISODate,
+              },
+            );
+          })(),
         );
-      })(),
-    );
-  }
+      }
 
-  promises.push(
-    (async () => {
-      await knex.raw(
-        `
+      promises.push(
+        (async () => {
+          await knex.raw(
+            `
     INSERT INTO test_stats_builds ("testId", "date", "value")
     VALUES (:testId, :date, 1)
     ON CONFLICT ("testId", "date") DO
     UPDATE SET value = test_stats_builds.value + 1`,
-        {
-          testId,
-          date: dayISODate,
-        },
+            {
+              testId,
+              date: dayISODate,
+            },
+          );
+        })(),
       );
-    })(),
-  );
 
-  await Promise.all(promises);
+      await Promise.all(promises);
+    },
+  );
 }
 
 /**

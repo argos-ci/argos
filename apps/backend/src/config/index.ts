@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import convict from "convict";
 import dotenv from "dotenv";
 
-import { loadDatabaseConfigFromURL } from "./database";
+import { loadDatabaseConfigFromURL } from "./database-url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -407,6 +407,12 @@ export function createConfig() {
         format: String,
         default: "",
         env: "SENTRY_SERVER_DSN",
+      },
+      tracesSampleRate: {
+        doc: "Sentry traces sample rate",
+        format: Number,
+        default: 1,
+        env: "SENTRY_TRACES_SAMPLE_RATE",
       },
       cspReportUri: {
         doc: "CSP report URI",
