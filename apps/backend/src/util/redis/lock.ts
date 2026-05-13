@@ -6,20 +6,22 @@ import { hashCacheKey, type CacheKey } from "./cache-key";
 async function acquireLock({
   client,
   name,
+  hash,
   timeout,
   retryDelay,
 }: {
   client: RedisClientType;
   name: string;
+  hash: string;
   timeout: number;
   retryDelay: { min: number; max: number };
 }) {
   return Sentry.startSpan(
     {
       name: "redis.lock.wait",
-      op: "argos.redis-lock",
       attributes: {
         "argos.lock.name": name,
+        "argos.lock.hash": hash,
         "argos.lock.timeout_ms": timeout,
         "argos.lock.retry_delay_min_ms": retryDelay.min,
         "argos.lock.retry_delay_max_ms": retryDelay.max,
@@ -72,60 +74,47 @@ export function createRedisLockClient(options: {
     ) {
       const hash = hashCacheKey(key);
       const fullName = `lock.${hash}`;
-      return Sentry.startSpan(
-        {
-          name: "redis.lock.acquire",
-          op: "argos.redis-lock",
-          attributes: {
-            "argos.lock.hash": hash,
-            "argos.lock.timeout_ms": timeout,
-            "argos.lock.retry_delay_min_ms": retryDelay.min,
-            "argos.lock.retry_delay_max_ms": retryDelay.max,
+      const client = await options.getRedisClient();
+      const id = await acquireLock({
+        client,
+        name: fullName,
+        hash,
+        timeout,
+        retryDelay,
+      });
+      let timer: NodeJS.Timeout | null = null;
+      try {
+        const result = (await Sentry.startSpan(
+          {
+            name: "redis.lock.task",
+            attributes: {
+              "argos.lock.name": fullName,
+              "argos.lock.hash": hash,
+              "argos.lock.timeout_ms": timeout,
+            },
           },
-        },
-        async () => {
-          const client = await options.getRedisClient();
-          const id = await acquireLock({
-            client,
-            name: fullName,
-            timeout,
-            retryDelay,
-          });
-          let timer: NodeJS.Timeout | null = null;
-          try {
-            const result = (await Sentry.startSpan(
-              {
-                name: "redis.lock.task",
-                op: "argos.redis-lock",
-                attributes: {
-                  "argos.lock.hash": hash,
-                  "argos.lock.timeout_ms": timeout,
-                },
-              },
-              () =>
-                Promise.race([
-                  task(),
-                  new Promise((_resolve, reject) => {
-                    timer = setTimeout(() => {
-                      reject(
-                        new Error(`Lock timeout "${hash}" after ${timeout}ms`),
-                      );
-                    }, timeout);
-                  }),
-                ]),
-            )) as T;
-            return result;
-          } finally {
-            if (timer) {
-              clearTimeout(timer);
-            }
-            const value = await client.get(fullName);
-            if (value === id) {
-              await client.del(fullName);
-            }
-          }
-        },
-      );
+          () =>
+            Promise.race([
+              task(),
+              new Promise((_resolve, reject) => {
+                timer = setTimeout(() => {
+                  reject(
+                    new Error(`Lock timeout "${hash}" after ${timeout}ms`),
+                  );
+                }, timeout);
+              }),
+            ]),
+        )) as T;
+        return result;
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+        const value = await client.get(fullName);
+        if (value === id) {
+          await client.del(fullName);
+        }
+      }
     },
   };
 }

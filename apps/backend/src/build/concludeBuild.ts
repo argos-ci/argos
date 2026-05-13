@@ -2,6 +2,7 @@ import { AutomationEvents } from "@argos/schemas/automation-event";
 import type { BuildConclusion } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import * as Sentry from "@sentry/node";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { job as buildNotificationJob } from "@/build-notification/job";
@@ -27,62 +28,74 @@ export async function concludeBuild(input: {
 }) {
   const { build, completedScreenshotDiffIds, notify = true } = input;
   const buildId = build.id;
-  return redisLock.acquire(["conclude-build", buildId], async () => {
-    const existingBuild = await Build.query()
-      .findById(buildId)
-      .throwIfNotFound();
+  return Sentry.startSpan(
+    {
+      name: "concludeBuild",
+      attributes: {
+        "argos.build.id": buildId,
+        "argos.build.notify": notify,
+        "argos.build.completed_screenshot_diff_count":
+          completedScreenshotDiffIds?.length ?? 0,
+      },
+    },
+    () =>
+      redisLock.acquire(["conclude-build", buildId], async () => {
+        const existingBuild = await Build.query()
+          .findById(buildId)
+          .throwIfNotFound();
 
-    if (existingBuild.conclusion !== null) {
-      // If the build is already concluded, we don't want to update it.
-      return;
-    }
-    const [status] = await Build.getScreenshotDiffsStatuses([buildId], {
-      completedScreenshotDiffIds,
-    });
-    invariant(status !== undefined, "status should exist for build");
+        if (existingBuild.conclusion !== null) {
+          // If the build is already concluded, we don't want to update it.
+          return;
+        }
+        const [status] = await Build.getScreenshotDiffsStatuses([buildId], {
+          completedScreenshotDiffIds,
+        });
+        invariant(status !== undefined, "status should exist for build");
 
-    const [conclusion, [stats]] = await Promise.all([
-      status === "complete" ? Build.computeConclusion(existingBuild) : null,
-      Build.computeStats([buildId]),
-    ]);
-    invariant(stats !== undefined, "stats should exist for build");
-    // If the build is not yet concluded, we don't want to update it.
-    if (conclusion === null) {
-      return;
-    }
-    if (notify) {
-      const [updatedBuild, buildNotification] = await transaction(
-        async (trx) => {
-          return Promise.all([
-            Build.query(trx).patchAndFetchById(
-              buildId,
-              getBuildData({ conclusion, stats }),
-            ),
-            BuildNotification.query(trx).insert({
-              buildId,
-              type: getNotificationType(conclusion),
-              jobStatus: "pending",
+        const [conclusion, [stats]] = await Promise.all([
+          status === "complete" ? Build.computeConclusion(existingBuild) : null,
+          Build.computeStats([buildId]),
+        ]);
+        invariant(stats !== undefined, "stats should exist for build");
+        // If the build is not yet concluded, we don't want to update it.
+        if (conclusion === null) {
+          return;
+        }
+        if (notify) {
+          const [updatedBuild, buildNotification] = await transaction(
+            async (trx) => {
+              return Promise.all([
+                Build.query(trx).patchAndFetchById(
+                  buildId,
+                  getBuildData({ conclusion, stats }),
+                ),
+                BuildNotification.query(trx).insert({
+                  buildId,
+                  type: getNotificationType(conclusion),
+                  jobStatus: "pending",
+                }),
+              ]);
+            },
+          );
+
+          await Promise.all([
+            buildNotificationJob.push(buildNotification.id),
+            triggerAndRunAutomation({
+              projectId: build.projectId,
+              message: {
+                event: AutomationEvents.BuildCompleted,
+                payload: { build: updatedBuild },
+              },
             }),
           ]);
-        },
-      );
-
-      await Promise.all([
-        buildNotificationJob.push(buildNotification.id),
-        triggerAndRunAutomation({
-          projectId: build.projectId,
-          message: {
-            event: AutomationEvents.BuildCompleted,
-            payload: { build: updatedBuild },
-          },
-        }),
-      ]);
-    } else {
-      await Build.query()
-        .findById(buildId)
-        .patch(getBuildData({ conclusion, stats }));
-    }
-  });
+        } else {
+          await Build.query()
+            .findById(buildId)
+            .patch(getBuildData({ conclusion, stats }));
+        }
+      }),
+  );
 }
 
 function getBuildData(args: {

@@ -411,7 +411,7 @@ export function createConfig() {
       tracesSampleRate: {
         doc: "Sentry traces sample rate",
         format: Number,
-        default: 0.1,
+        default: 1,
         env: "SENTRY_TRACES_SAMPLE_RATE",
       },
       cspReportUri: {

@@ -145,12 +145,12 @@ export const createJob = <TValue extends string | number>(
     async run(id: TValue) {
       await Sentry.startSpan(
         {
-          name: `job.run.${queue}`,
-          op: "argos.job",
+          name: "job.run",
+          op: "queue.process",
           attributes: {
-            "argos.job.queue": queue,
-            "argos.job.id": String(id),
-            "argos.job.timeout_ms": timeout,
+            "job.queue": queue,
+            "job.id": String(id),
+            "job.timeout_ms": timeout,
           },
         },
         () =>

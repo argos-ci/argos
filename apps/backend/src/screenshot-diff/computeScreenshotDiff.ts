@@ -30,31 +30,6 @@ type ComputeDiffContext = {
   bucket: string;
 };
 
-type SpanAttributeValue = string | number | boolean;
-
-function traceScreenshotDiffStep<T>(
-  name: string,
-  attributes: Record<string, SpanAttributeValue | undefined>,
-  callback: () => PromiseLike<T> | T,
-) {
-  const spanAttributes = Object.fromEntries(
-    Object.entries(attributes).filter(
-      (entry): entry is [string, SpanAttributeValue] => {
-        return entry[1] !== undefined;
-      },
-    ),
-  );
-
-  return Sentry.startSpan(
-    {
-      name,
-      op: "argos.screenshot-diff",
-      attributes: spanAttributes,
-    },
-    callback,
-  );
-}
-
 /**
  * Computes the screenshot difference
  */
@@ -66,226 +41,148 @@ export async function computeScreenshotDiff(
     return;
   }
 
-  await traceScreenshotDiffStep(
-    "computeScreenshotDiff",
-    {
-      "argos.screenshot_diff.id": poorScreenshotDiff.id,
-      "argos.screenshot_diff.build_id": poorScreenshotDiff.buildId,
-      "argos.screenshot_diff.job_status": poorScreenshotDiff.jobStatus,
-    },
-    async () => {
-      const screenshotDiff = await traceScreenshotDiffStep(
-        "computeScreenshotDiff.loadGraph",
-        { "argos.screenshot_diff.id": poorScreenshotDiff.id },
-        () =>
-          poorScreenshotDiff
-            .$query()
-            .withGraphFetched(
-              "[build.project, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
-            ),
-      );
+  const screenshotDiff = await poorScreenshotDiff
+    .$query()
+    .withGraphFetched(
+      "[build.project, baseScreenshot.file, compareScreenshot.[file, screenshotBucket]]",
+    );
 
-      const {
-        baseScreenshot,
-        compareScreenshot: headScreenshot,
-        build,
-      } = screenshotDiff;
-      const { testId } = screenshotDiff;
+  const {
+    baseScreenshot,
+    compareScreenshot: headScreenshot,
+    build,
+  } = screenshotDiff;
+  const { testId } = screenshotDiff;
 
-      invariant(build, "no build");
-      invariant(headScreenshot, "no head screenshot");
-      invariant(testId, "no testId on screenshotDiff");
+  invariant(build, "no build");
+  invariant(headScreenshot, "no head screenshot");
+  invariant(testId, "no testId on screenshotDiff");
 
-      const baseFileHandle = baseScreenshot
-        ? new S3FileHandle({
-            ...context,
-            key: baseScreenshot.s3Id,
-            contentType: baseScreenshot.file?.contentType ?? "image/png",
-          })
-        : null;
-
-      const headFileHandle = new S3FileHandle({
+  const baseFileHandle = baseScreenshot
+    ? new S3FileHandle({
         ...context,
-        key: headScreenshot.s3Id,
-        contentType: headScreenshot.file?.contentType ?? "image/png",
-      });
+        key: baseScreenshot.s3Id,
+        contentType: baseScreenshot.file?.contentType ?? "image/png",
+      })
+    : null;
 
-      const baseImage = baseFileHandle?.getImageHandle();
-      const headImage = headFileHandle.getImageHandle();
+  const headFileHandle = new S3FileHandle({
+    ...context,
+    key: headScreenshot.s3Id,
+    contentType: headScreenshot.file?.contentType ?? "image/png",
+  });
 
-      const { buildId } = screenshotDiff;
+  const baseImage = baseFileHandle?.getImageHandle();
+  const headImage = headFileHandle.getImageHandle();
 
-      // Patching cannot be done in parallel since the file can be the same and must be created only
-      if (baseImage) {
-        invariant(baseScreenshot, "no base screenshot");
-        await ensureImageDimensions({
-          screenshot: baseScreenshot,
-          imageHandle: baseImage,
-        });
-      }
+  const { buildId } = screenshotDiff;
 
-      if (headImage) {
-        await ensureImageDimensions({
-          screenshot: headScreenshot,
-          imageHandle: headImage,
-        });
-      }
+  // Patching cannot be done in parallel since the file can be the same and must be created only
+  if (baseImage) {
+    invariant(baseScreenshot, "no base screenshot");
+    await ensureImageDimensions({
+      screenshot: baseScreenshot,
+      imageHandle: baseImage,
+    });
+  }
 
-      const result = baseFileHandle
-        ? await traceScreenshotDiffStep(
-            "computeScreenshotDiff.diffFiles",
-            {
-              "argos.screenshot_diff.id": screenshotDiff.id,
-              "argos.screenshot_diff.has_base": true,
-              "argos.screenshot_diff.threshold":
-                headScreenshot.threshold ?? undefined,
-            },
-            () =>
-              diffFiles(baseFileHandle, headFileHandle, {
-                threshold: headScreenshot.threshold ?? undefined,
-              }),
-          )
-        : null;
+  if (headImage) {
+    await ensureImageDimensions({
+      screenshot: headScreenshot,
+      imageHandle: headImage,
+    });
+  }
 
-      const resultFile = result?.file;
-      const diffFile = resultFile
-        ? await traceScreenshotDiffStep(
-            "computeScreenshotDiff.processDiffResultFile",
-            {
-              "argos.screenshot_diff.id": screenshotDiff.id,
-              "argos.diff.content_type": resultFile.contentType,
-            },
-            () => processDiffResultFile(resultFile, context),
-          )
-        : null;
+  const result = baseFileHandle
+    ? await diffFiles(baseFileHandle, headFileHandle, {
+        threshold: headScreenshot.threshold ?? undefined,
+      })
+    : null;
 
-      const ignoredChange =
-        diffFile && !diffFile.isCreated
-          ? await traceScreenshotDiffStep(
-              "computeScreenshotDiff.findIgnoredChange",
-              {
-                "argos.screenshot_diff.id": screenshotDiff.id,
-                "argos.diff.fingerprint": diffFile.fingerprint,
-              },
-              () =>
-                IgnoredChange.query().select("fingerprint").findOne({
-                  projectId: build.projectId,
-                  testId: screenshotDiff.testId,
-                  fingerprint: diffFile.fingerprint,
-                }),
-            )
-          : null;
-      let ignored = Boolean(ignoredChange);
+  const resultFile = result?.file;
+  const diffFile = resultFile
+    ? await processDiffResultFile(resultFile, context)
+    : null;
 
-      if (build.type === "reference") {
-        await traceScreenshotDiffStep(
-          "computeScreenshotDiff.upsertTestStats",
-          {
-            "argos.screenshot_diff.id": screenshotDiff.id,
-            "argos.diff.has_file": Boolean(diffFile),
-          },
-          () =>
-            upsertTestStats({
-              testId,
-              date: new Date(screenshotDiff.createdAt),
-              change: diffFile
-                ? {
-                    fileId: diffFile.file.id,
-                    fingerprint: diffFile.fingerprint,
-                  }
-                : null,
-            }),
-        );
+  const ignoredChange =
+    diffFile && !diffFile.isCreated
+      ? await IgnoredChange.query().select("fingerprint").findOne({
+          projectId: build.projectId,
+          testId: screenshotDiff.testId,
+          fingerprint: diffFile.fingerprint,
+        })
+      : null;
+  let ignored = Boolean(ignoredChange);
 
-        const autoIgnore = build.project?.autoIgnore;
-        if (!ignored && diffFile && autoIgnore) {
-          const [shouldIgnore, latestActionIsManualUnignore] =
-            await traceScreenshotDiffStep(
-              "computeScreenshotDiff.autoIgnoreChecks",
-              {
-                "argos.screenshot_diff.id": screenshotDiff.id,
-                "argos.diff.fingerprint": diffFile.fingerprint,
-                "argos.project.auto_ignore_changes": autoIgnore.changes,
-              },
-              () =>
-                Promise.all([
-                  shouldAutoIgnoreChange({
-                    autoIgnore,
-                    testId,
-                    projectId: build.projectId,
-                    fingerprint: diffFile.fingerprint,
-                  }),
-                  getLatestActionIsManualUnignore({
-                    projectId: build.projectId,
-                    testId,
-                    fingerprint: diffFile.fingerprint,
-                  }),
-                ]),
-            );
-
-          if (shouldIgnore && !latestActionIsManualUnignore) {
-            await insertAutoIgnoredChange({
-              projectId: build.projectId,
-              testId,
-              fingerprint: diffFile.fingerprint,
-            });
-            ignored = true;
+  if (build.type === "reference") {
+    await upsertTestStats({
+      testId,
+      date: new Date(screenshotDiff.createdAt),
+      change: diffFile
+        ? {
+            fileId: diffFile.file.id,
+            fingerprint: diffFile.fingerprint,
           }
-        }
+        : null,
+    });
+
+    const autoIgnore = build.project?.autoIgnore;
+    if (!ignored && diffFile && autoIgnore) {
+      const [shouldIgnore, latestActionIsManualUnignore] = await Promise.all([
+        shouldAutoIgnoreChange({
+          autoIgnore,
+          testId,
+          projectId: build.projectId,
+          fingerprint: diffFile.fingerprint,
+        }),
+        getLatestActionIsManualUnignore({
+          projectId: build.projectId,
+          testId,
+          fingerprint: diffFile.fingerprint,
+        }),
+      ]);
+
+      if (shouldIgnore && !latestActionIsManualUnignore) {
+        await insertAutoIgnoredChange({
+          projectId: build.projectId,
+          testId,
+          fingerprint: diffFile.fingerprint,
+        });
+        ignored = true;
       }
+    }
+  }
 
-      await traceScreenshotDiffStep(
-        "computeScreenshotDiff.patchScreenshotDiff",
-        {
-          "argos.screenshot_diff.id": screenshotDiff.id,
-          "argos.diff.ignored": ignored,
-          "argos.diff.has_file": Boolean(diffFile),
-        },
-        () =>
-          ScreenshotDiff.query()
-            .where("id", screenshotDiff.id)
-            .patch({
-              score: result?.score ?? null,
-              ignored,
-              s3Id: diffFile ? diffFile.file.key : null,
-              fileId: diffFile ? diffFile.file.id : null,
-              fingerprint: diffFile ? diffFile.fingerprint : null,
-            }),
-      );
+  await ScreenshotDiff.query()
+    .where("id", screenshotDiff.id)
+    .patch({
+      score: result?.score ?? null,
+      ignored,
+      s3Id: diffFile ? diffFile.file.key : null,
+      fileId: diffFile ? diffFile.file.id : null,
+      fingerprint: diffFile ? diffFile.fingerprint : null,
+    });
 
-      await traceScreenshotDiffStep(
-        "computeScreenshotDiff.finalize",
-        {
-          "argos.screenshot_diff.id": screenshotDiff.id,
-          "argos.diff.has_file": Boolean(diffFile),
-        },
-        () =>
-          Promise.all([
-            // Unlink files
-            baseFileHandle?.unlink(),
-            headFileHandle.unlink(),
-            // Conclude the build
-            concludeBuild({
-              build,
-              completedScreenshotDiffIds: [screenshotDiff.id],
-            }),
-            // Group similar diffs
-            diffFile
-              ? redisLock.acquire(
-                  ["diff-group", diffFile.file.key],
-                  async () => {
-                    await groupSimilarDiffs({
-                      fingerprint: diffFile.fingerprint,
-                      buildId,
-                      screenshotDiffId: screenshotDiff.id,
-                    });
-                  },
-                )
-              : null,
-          ]),
-      );
-    },
-  );
+  await Promise.all([
+    // Unlink files
+    baseFileHandle?.unlink(),
+    headFileHandle.unlink(),
+    // Conclude the build
+    concludeBuild({
+      build,
+      completedScreenshotDiffIds: [screenshotDiff.id],
+    }),
+    // Group similar diffs
+    diffFile
+      ? redisLock.acquire(["diff-group", diffFile.file.key], async () => {
+          await groupSimilarDiffs({
+            fingerprint: diffFile.fingerprint,
+            buildId,
+            screenshotDiffId: screenshotDiff.id,
+          });
+        })
+      : null,
+  ]);
 }
 
 async function shouldAutoIgnoreChange(args: {
@@ -294,26 +191,15 @@ async function shouldAutoIgnoreChange(args: {
   testId: string;
   fingerprint: string;
 }) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.shouldAutoIgnoreChange",
-    {
-      "argos.project.id": args.projectId,
-      "argos.test.id": args.testId,
-      "argos.diff.fingerprint": args.fingerprint,
-      "argos.project.auto_ignore_changes": args.autoIgnore.changes,
-    },
-    async () => {
-      const result = await knex("test_stats_fingerprints")
-        .where("testId", args.testId)
-        .where("fingerprint", args.fingerprint)
-        .where("date", ">=", knex.raw("now() - interval '7 days'"))
-        .sum<{ total: string | number | null }>({ total: "value" })
-        .first();
+  const result = await knex("test_stats_fingerprints")
+    .where("testId", args.testId)
+    .where("fingerprint", args.fingerprint)
+    .where("date", ">=", knex.raw("now() - interval '7 days'"))
+    .sum<{ total: string | number | null }>({ total: "value" })
+    .first();
 
-      const totalChanges = Number(result?.total ?? 0);
-      return totalChanges >= args.autoIgnore.changes;
-    },
-  );
+  const totalChanges = Number(result?.total ?? 0);
+  return totalChanges >= args.autoIgnore.changes;
 }
 
 async function getLatestActionIsManualUnignore(args: {
@@ -321,30 +207,20 @@ async function getLatestActionIsManualUnignore(args: {
   testId: string;
   fingerprint: string;
 }) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.getLatestActionIsManualUnignore",
-    {
-      "argos.project.id": args.projectId,
-      "argos.test.id": args.testId,
-      "argos.diff.fingerprint": args.fingerprint,
-    },
-    async () => {
-      const latestAction = await knex("audit_trails")
-        .join("users", "users.id", "audit_trails.userId")
-        .select("audit_trails.action", "users.type as userType")
-        .where("audit_trails.projectId", args.projectId)
-        .where("audit_trails.testId", args.testId)
-        .where("audit_trails.fingerprint", args.fingerprint)
-        .whereIn("audit_trails.action", ["files.ignored", "files.unignored"])
-        .orderBy("audit_trails.date", "desc")
-        .orderBy("audit_trails.id", "desc")
-        .first<{ action: AuditTrail["action"]; userType: "user" | "bot" }>();
+  const latestAction = await knex("audit_trails")
+    .join("users", "users.id", "audit_trails.userId")
+    .select("audit_trails.action", "users.type as userType")
+    .where("audit_trails.projectId", args.projectId)
+    .where("audit_trails.testId", args.testId)
+    .where("audit_trails.fingerprint", args.fingerprint)
+    .whereIn("audit_trails.action", ["files.ignored", "files.unignored"])
+    .orderBy("audit_trails.date", "desc")
+    .orderBy("audit_trails.id", "desc")
+    .first<{ action: AuditTrail["action"]; userType: "user" | "bot" }>();
 
-      return (
-        latestAction?.action === "files.unignored" &&
-        latestAction.userType === "user"
-      );
-    },
+  return (
+    latestAction?.action === "files.unignored" &&
+    latestAction.userType === "user"
   );
 }
 
@@ -353,12 +229,14 @@ async function insertAutoIgnoredChange(args: {
   testId: string;
   fingerprint: string;
 }) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.insertAutoIgnoredChange",
+  return Sentry.startSpan(
     {
-      "argos.project.id": args.projectId,
-      "argos.test.id": args.testId,
-      "argos.diff.fingerprint": args.fingerprint,
+      name: "insertAutoIgnoredChange",
+      attributes: {
+        "argos.project.id": args.projectId,
+        "argos.test.id": args.testId,
+        "argos.diff.fingerprint": args.fingerprint,
+      },
     },
     async () => {
       const botUserId = await getArgosBotUserId();
@@ -395,12 +273,16 @@ async function diffFiles(
   head: S3FileHandle,
   options: DiffOptions,
 ) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.diffFiles.inner",
+  return Sentry.startSpan(
     {
-      "argos.base.key": base.getKey(),
-      "argos.head.key": head.getKey(),
-      "argos.diff.threshold": options.threshold ?? undefined,
+      name: "diffFiles",
+      attributes: {
+        "argos.base.key": base.getKey(),
+        "argos.head.key": head.getKey(),
+        ...(options.threshold !== undefined
+          ? { "argos.diff.threshold": options.threshold }
+          : {}),
+      },
     },
     async () => {
       if (base.getKey() === head.getKey()) {
@@ -434,13 +316,19 @@ async function processDiffResultFile(
   resultFile: NonNullable<DiffResult["file"]>,
   context: ComputeDiffContext,
 ): Promise<{ file: File; isCreated: boolean; fingerprint: string }> {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.processDiffResultFile.inner",
+  return Sentry.startSpan(
     {
-      "argos.diff.path": resultFile.path,
-      "argos.diff.content_type": resultFile.contentType,
-      "argos.diff.width": resultFile.width ?? undefined,
-      "argos.diff.height": resultFile.height ?? undefined,
+      name: "processDiffResultFile",
+      attributes: {
+        "argos.diff.path": resultFile.path,
+        "argos.diff.content_type": resultFile.contentType,
+        ...(resultFile.width !== undefined
+          ? { "argos.diff.width": resultFile.width }
+          : {}),
+        ...(resultFile.height !== undefined
+          ? { "argos.diff.height": resultFile.height }
+          : {}),
+      },
     },
     async () => {
       const key = await hashFileSha256(resultFile.path);
@@ -454,6 +342,19 @@ async function processDiffResultFile(
   );
 }
 
+async function computeDiffFingerprint(args: { key: string; path: string }) {
+  return Sentry.startSpan(
+    {
+      name: "fingerprintDiff",
+      attributes: {
+        "argos.diff.key": args.key,
+        "argos.diff.path": args.path,
+      },
+    },
+    () => fingerprintDiff(args.path),
+  );
+}
+
 /**
  * Group similar diffs by file key.
  */
@@ -462,12 +363,14 @@ async function groupSimilarDiffs(input: {
   buildId: string;
   screenshotDiffId: string;
 }) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.groupSimilarDiffs",
+  return Sentry.startSpan(
     {
-      "argos.diff.fingerprint": input.fingerprint,
-      "argos.screenshot_diff.build_id": input.buildId,
-      "argos.screenshot_diff.id": input.screenshotDiffId,
+      name: "groupSimilarDiffs",
+      attributes: {
+        "argos.diff.fingerprint": input.fingerprint,
+        "argos.screenshot_diff.build_id": input.buildId,
+        "argos.screenshot_diff.id": input.screenshotDiffId,
+      },
     },
     async () => {
       const { fingerprint, buildId, screenshotDiffId } = input;
@@ -525,14 +428,18 @@ async function ensureImageDimensions(args: {
   imageHandle: ImageHandle;
   screenshot: Screenshot;
 }) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.ensureImageDimensions",
+  return Sentry.startSpan(
     {
-      "argos.screenshot.id": args.screenshot.id,
-      "argos.screenshot.file_id": args.screenshot.fileId ?? undefined,
-      "argos.screenshot.has_dimensions":
-        args.screenshot.file?.width != null &&
-        args.screenshot.file?.height != null,
+      name: "ensureImageDimensions",
+      attributes: {
+        "argos.screenshot.id": args.screenshot.id,
+        ...(args.screenshot.fileId
+          ? { "argos.screenshot.file_id": args.screenshot.fileId }
+          : {}),
+        "argos.screenshot.has_dimensions":
+          args.screenshot.file?.width != null &&
+          args.screenshot.file?.height != null,
+      },
     },
     async () => {
       const { imageHandle, screenshot } = args;
@@ -576,13 +483,17 @@ async function lockAndUploadDiffFile(args: {
   height: number | undefined;
   fingerprint: string;
 }) {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.lockAndUploadDiffFile",
+  return Sentry.startSpan(
     {
-      "argos.diff.key": args.key,
-      "argos.diff.content_type": args.contentType,
-      "argos.diff.width": args.width,
-      "argos.diff.height": args.height,
+      name: "lockAndUploadDiffFile",
+      attributes: {
+        "argos.diff.key": args.key,
+        "argos.diff.content_type": args.contentType,
+        ...(args.width !== undefined ? { "argos.diff.width": args.width } : {}),
+        ...(args.height !== undefined
+          ? { "argos.diff.height": args.height }
+          : {}),
+      },
     },
     () =>
       redisLock.acquire(["diff-upload", args.key], async () => {
@@ -617,11 +528,13 @@ async function getOrCreateDiffFile(args: {
   resultFile: NonNullable<DiffResult["file"]>;
   context: ComputeDiffContext;
 }): Promise<{ isCreated: boolean; file: File; fingerprint: string }> {
-  return traceScreenshotDiffStep(
-    "computeScreenshotDiff.getOrCreateDiffFile",
+  return Sentry.startSpan(
     {
-      "argos.diff.key": args.key,
-      "argos.diff.content_type": args.resultFile.contentType,
+      name: "getOrCreateDiffFile",
+      attributes: {
+        "argos.diff.key": args.key,
+        "argos.diff.content_type": args.resultFile.contentType,
+      },
     },
     async () => {
       const { key, resultFile, context } = args;
@@ -633,7 +546,8 @@ async function getOrCreateDiffFile(args: {
       });
       const existing = await File.query().findOne({ key });
       const fingerprint =
-        existing?.fingerprint ?? (await fingerprintDiff(resultFile.path));
+        existing?.fingerprint ??
+        (await computeDiffFingerprint({ key, path: resultFile.path }));
       const { file, isCreated } = await (async () => {
         if (!existing) {
           const file = await lockAndUploadDiffFile({
