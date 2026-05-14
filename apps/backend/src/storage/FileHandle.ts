@@ -1,21 +1,13 @@
 import { unlink } from "node:fs/promises";
-import { promisify } from "node:util";
 import { invariant } from "@argos/util/invariant";
 import type { S3Client } from "@aws-sdk/client-s3";
 import mime from "mime";
-import { tmpName as cbTmpName } from "tmp";
-import type { TmpNameCallback, TmpNameOptions } from "tmp";
 
 import { download as s3Download } from "./download";
 import { get as s3Get } from "./get";
 import { ImageHandle } from "./ImageHandle";
+import { tmpName } from "./tmp";
 import { uploadFromBuffer, uploadFromFilePath } from "./upload";
-
-export const tmpName = promisify(
-  (options: TmpNameOptions, cb: TmpNameCallback) => {
-    cbTmpName(options, cb);
-  },
-);
 
 export interface FileHandle {
   getFilepath(): Promise<string>;

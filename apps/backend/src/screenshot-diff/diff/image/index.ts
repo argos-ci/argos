@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { compare } from "odiff-bin";
 
 import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
@@ -51,6 +52,34 @@ function getConfiguration(threshold: number) {
 }
 
 /**
+ * Wrap odiff `compare` with tracing.
+ */
+async function odiffCompare(args: {
+  basePath: string;
+  headPath: string;
+  diffPath: string;
+  threshold: number;
+}) {
+  return Sentry.startSpan(
+    {
+      name: "odiff.compare",
+      attributes: {
+        "argos.diff.base_path": args.basePath,
+        "argos.diff.head_path": args.headPath,
+        "argos.diff.diff_path": args.diffPath,
+        "argos.diff.threshold": args.threshold,
+      },
+    },
+    () =>
+      compare(args.basePath, args.headPath, args.diffPath, {
+        outputDiffMask: true,
+        threshold: args.threshold,
+        antialiasing: true,
+      }),
+  );
+}
+
+/**
  * Compute the diff between two images and returns the score.
  */
 async function computeDiff(args: {
@@ -59,11 +88,7 @@ async function computeDiff(args: {
   diffPath: string;
   threshold: number;
 }): Promise<number> {
-  const result = await compare(args.basePath, args.headPath, args.diffPath, {
-    outputDiffMask: true,
-    threshold: args.threshold,
-    antialiasing: true,
-  });
+  const result = await odiffCompare(args);
 
   if (result.match) {
     return 0;
@@ -144,71 +169,84 @@ export async function diffImages(
   head: ImageHandle,
   options: DiffOptions,
 ): Promise<DiffResult> {
-  const { threshold = DEFAULT_THRESHOLD } = options;
-  // Get dimensions and diff paths
-  const [maxDimensions, baseDiffPath, colorDiffPath] = await Promise.all([
-    getMaxDimensions(base, head),
-    tmpName({ postfix: ".png" }),
-    tmpName({ postfix: ".png" }),
-  ]);
+  return Sentry.startSpan(
+    {
+      name: "diffImages",
+      attributes: {
+        "argos.diff.threshold": options.threshold ?? DEFAULT_THRESHOLD,
+      },
+    },
+    async () => {
+      const { threshold = DEFAULT_THRESHOLD } = options;
+      // Get dimensions and diff paths
+      const [maxDimensions, baseDiffPath, colorDiffPath] = await Promise.all([
+        getMaxDimensions(base, head),
+        tmpName({ postfix: ".png" }),
+        tmpName({ postfix: ".png" }),
+      ]);
 
-  // Resize images to the maximum dimensions (sequentially to avoid memory issues)
-  const basePath = await base.enlarge(maxDimensions);
-  const headPath = await head.enlarge(maxDimensions);
+      // Resize images to the maximum dimensions (sequentially to avoid memory issues)
+      const basePath = await base.enlarge(maxDimensions);
+      const headPath = await head.enlarge(maxDimensions);
 
-  const diffConfig = getConfiguration(threshold);
+      const diffConfig = getConfiguration(threshold);
 
-  const [baseScore, colorSensitiveScore] = await Promise.all([
-    computeDiff({
-      basePath,
-      headPath,
-      diffPath: baseDiffPath,
-      threshold: diffConfig.baseThreshold,
-    }),
-    computeDiff({
-      basePath,
-      headPath,
-      diffPath: colorDiffPath,
-      threshold: diffConfig.colorSensitiveThreshold,
-    }),
-  ]);
+      const [baseScore, colorSensitiveScore] = await Promise.all([
+        computeDiff({
+          basePath,
+          headPath,
+          diffPath: baseDiffPath,
+          threshold: diffConfig.baseThreshold,
+        }),
+        computeDiff({
+          basePath,
+          headPath,
+          diffPath: colorDiffPath,
+          threshold: diffConfig.colorSensitiveThreshold,
+        }),
+      ]);
 
-  const maxBaseScore = Math.min(
-    diffConfig.baseMaxScore,
-    diffConfig.maximumPixelsToIgnore /
-      (maxDimensions.width * maxDimensions.height),
+      const maxBaseScore = Math.min(
+        diffConfig.baseMaxScore,
+        diffConfig.maximumPixelsToIgnore /
+          (maxDimensions.width * maxDimensions.height),
+      );
+      const adjustedBaseScore = baseScore < maxBaseScore ? 0 : baseScore;
+
+      const adjustedSensitiveScore =
+        colorSensitiveScore < diffConfig.colorSensitiveMaxScore
+          ? 0
+          : colorSensitiveScore;
+
+      if (
+        adjustedBaseScore > 0 &&
+        adjustedBaseScore >= adjustedSensitiveScore
+      ) {
+        return {
+          score: adjustedBaseScore,
+          file: {
+            path: baseDiffPath,
+            contentType: "image/png",
+            ...maxDimensions,
+          },
+        };
+      }
+
+      if (
+        adjustedSensitiveScore > 0 &&
+        adjustedSensitiveScore > adjustedBaseScore
+      ) {
+        return {
+          score: adjustedSensitiveScore,
+          file: {
+            path: colorDiffPath,
+            contentType: "image/png",
+            ...maxDimensions,
+          },
+        };
+      }
+
+      return { score: 0 };
+    },
   );
-  const adjustedBaseScore = baseScore < maxBaseScore ? 0 : baseScore;
-
-  const adjustedSensitiveScore =
-    colorSensitiveScore < diffConfig.colorSensitiveMaxScore
-      ? 0
-      : colorSensitiveScore;
-
-  if (adjustedBaseScore > 0 && adjustedBaseScore >= adjustedSensitiveScore) {
-    return {
-      score: adjustedBaseScore,
-      file: {
-        path: baseDiffPath,
-        contentType: "image/png",
-        ...maxDimensions,
-      },
-    };
-  }
-
-  if (
-    adjustedSensitiveScore > 0 &&
-    adjustedSensitiveScore > adjustedBaseScore
-  ) {
-    return {
-      score: adjustedSensitiveScore,
-      file: {
-        path: colorDiffPath,
-        contentType: "image/png",
-        ...maxDimensions,
-      },
-    };
-  }
-
-  return { score: 0 };
 }

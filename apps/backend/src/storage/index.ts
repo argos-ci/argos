@@ -7,3 +7,4 @@ export * from "./signed-url";
 export * from "./FileHandle";
 export * from "./ImageHandle";
 export * from "./s3";
+export * from "./tmp";
