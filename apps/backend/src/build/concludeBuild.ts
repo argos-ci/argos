@@ -9,6 +9,17 @@ import { job as buildNotificationJob } from "@/build-notification/job";
 import { transaction } from "@/database";
 import { Build, BuildNotification } from "@/database/models";
 import { redisLock } from "@/util/redis";
+import { getRedisClient } from "@/util/redis/client";
+
+// Diff IDs published by each caller are pooled in this Redis set so the
+// single coalesced execution can treat all callers' diffs as completed,
+// not just the winner's. Bailed callers would otherwise drop their IDs
+// and the runner could see their diffs as still in progress (their
+// `complete` job hook hasn't fired yet — see computeScreenshotDiff).
+const COMPLETED_IDS_TTL_MS = 60_000;
+function getCompletedIdsKey(buildId: string) {
+  return `conclude-build-completed-ids:${buildId}`;
+}
 
 /**
  * Concludes the build by updating the conclusion and the stats.
@@ -28,6 +39,7 @@ export async function concludeBuild(input: {
 }) {
   const { build, completedScreenshotDiffIds, notify = true } = input;
   const buildId = build.id;
+  const completedIdsKey = getCompletedIdsKey(buildId);
   return Sentry.startSpan(
     {
       name: "concludeBuild",
@@ -38,7 +50,18 @@ export async function concludeBuild(input: {
           completedScreenshotDiffIds?.length ?? 0,
       },
     },
-    () =>
+    async () => {
+      // Pool this caller's completed diff IDs in Redis *before* entering
+      // coalesce. If we lose the claim and return null, our IDs are still
+      // available to the winning runner — otherwise the runner would only
+      // know about its own diff and could see ours as still in progress
+      // (the job framework hasn't fired our `complete` hook yet).
+      if (completedScreenshotDiffIds && completedScreenshotDiffIds.length) {
+        const redis = await getRedisClient();
+        await redis.sAdd(completedIdsKey, completedScreenshotDiffIds);
+        await redis.pExpire(completedIdsKey, COMPLETED_IDS_TTL_MS);
+      }
+
       // Coalesce a burst of completions (e.g. 100 screenshot diffs
       // finishing in parallel) into a single execution. The first caller
       // claims the window, waits briefly so concurrent callers can register
@@ -46,7 +69,7 @@ export async function concludeBuild(input: {
       // Other callers in the window bail immediately — they would only
       // have been no-ops anyway. The rerun flag captures any caller that
       // arrives during execution so its work isn't dropped.
-      redisLock.coalesce(
+      return redisLock.coalesce(
         ["conclude-build", buildId],
         async () => {
           const existingBuild = await Build.query()
@@ -57,8 +80,13 @@ export async function concludeBuild(input: {
             // If the build is already concluded, we don't want to update it.
             return;
           }
+          // Read the pooled IDs (winner + every bailer that contributed
+          // before us). Each rerun iteration re-reads so later bailers
+          // are included too.
+          const redis = await getRedisClient();
+          const pooledIds = await redis.sMembers(completedIdsKey);
           const [status] = await Build.getScreenshotDiffsStatuses([buildId], {
-            completedScreenshotDiffIds,
+            completedScreenshotDiffIds: pooledIds,
           });
           invariant(status !== undefined, "status should exist for build");
 
@@ -107,7 +135,8 @@ export async function concludeBuild(input: {
           }
         },
         { delay: 30 },
-      ),
+      );
+    },
   );
 }
 

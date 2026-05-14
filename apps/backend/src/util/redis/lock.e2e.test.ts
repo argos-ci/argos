@@ -158,6 +158,95 @@ describe("redis-lock", () => {
       });
       expect(r2).toBe("second");
     });
+
+    it("does not delete a successor's claim when the task throws", async () => {
+      // Simulates: our TTL expired, another caller acquired, then our task
+      // errored. The atomic compare-and-delete in the error path must NOT
+      // remove the successor's claim.
+      const lock = createRedisLockClient({
+        getRedisClient: async () => client,
+      });
+      await expect(() =>
+        lock.coalesce(["x"], async () => {
+          // Overwrite the claim with a foreign id before throwing.
+          await client.set("coalesce.x", "stranger");
+          throw new Error("boom");
+        }),
+      ).rejects.toThrow("boom");
+      expect(await client.get("coalesce.x")).toBe("stranger");
+    });
+
+    it("refreshes the claim TTL on each rerun iteration", async () => {
+      // With a short timeout, a first task that consumes most of it would
+      // leave little or no TTL for the rerun. The script's PEXPIRE on
+      // "continue" must restore the full timeout before the next iteration.
+      const lock = createRedisLockClient({
+        getRedisClient: async () => client,
+      });
+      const timeout = 2000;
+      let callCount = 0;
+      let pttlBeforeRerun = 0;
+      let pttlAfterRerun = 0;
+      const task = vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          // Burn most of the timeout.
+          await delay(timeout - 500);
+          pttlBeforeRerun = await client.pTTL("coalesce.x");
+          // Trigger a rerun.
+          await client.set("coalesce-rerun.x", "1");
+          return "first";
+        }
+        pttlAfterRerun = await client.pTTL("coalesce.x");
+        return "second";
+      });
+      const result = await lock.coalesce(["x"], task, { timeout });
+      expect(callCount).toBe(2);
+      expect(result).toBe("second");
+      // Before the rerun, TTL is close to expiring.
+      expect(pttlBeforeRerun).toBeLessThan(700);
+      // After the script's PEXPIRE, TTL is back near the full timeout.
+      expect(pttlAfterRerun).toBeGreaterThan(timeout - 200);
+    });
+
+    it("stops looping when claim ownership is lost", async () => {
+      // If the claim's TTL expires and another caller acquires it, the
+      // script returns "lost". The runner must exit without clobbering the
+      // new owner's keys.
+      const lock = createRedisLockClient({
+        getRedisClient: async () => client,
+      });
+      let callCount = 0;
+      const task = vi.fn(async () => {
+        callCount++;
+        // Take over the claim and signal a rerun. The script should detect
+        // the ownership loss first and refuse to clear rerun or delete the
+        // claim.
+        await client.set("coalesce.x", "stranger");
+        await client.set("coalesce-rerun.x", "1");
+        return "first";
+      });
+      const result = await lock.coalesce(["x"], task);
+      expect(callCount).toBe(1);
+      expect(result).toBe("first");
+      // The new owner's claim and the rerun signal are intact.
+      expect(await client.get("coalesce.x")).toBe("stranger");
+      expect(await client.get("coalesce-rerun.x")).toBe("1");
+    });
+  });
+
+  it("does not delete a successor's claim when acquire's task throws", async () => {
+    // Simulates: our lock TTL expired, another caller acquired, then our
+    // task errored. The atomic compare-and-delete in the finally must NOT
+    // remove the successor's claim.
+    const lock = createRedisLockClient({ getRedisClient: async () => client });
+    await expect(() =>
+      lock.acquire(["x"], async () => {
+        await client.set("lock.x", "stranger");
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
+    expect(await client.get("lock.x")).toBe("stranger");
   });
 
   it("handles errors", async () => {
