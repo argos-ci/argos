@@ -58,8 +58,14 @@ export async function concludeBuild(input: {
       // (the job framework hasn't fired our `complete` hook yet).
       if (completedScreenshotDiffIds && completedScreenshotDiffIds.length) {
         const redis = await getRedisClient();
-        await redis.sAdd(completedIdsKey, completedScreenshotDiffIds);
-        await redis.pExpire(completedIdsKey, COMPLETED_IDS_TTL_MS);
+        // Pool IDs and refresh TTL atomically so a crash between the two
+        // commands can never leave a set without an expiration (which
+        // would leak in Redis forever).
+        await redis
+          .multi()
+          .sAdd(completedIdsKey, completedScreenshotDiffIds)
+          .pExpire(completedIdsKey, COMPLETED_IDS_TTL_MS)
+          .exec();
       }
 
       // Coalesce a burst of completions (e.g. 100 screenshot diffs
