@@ -387,7 +387,7 @@ export function createConfig() {
       doc: "Sentry release version",
       format: String,
       default: "dev",
-      env: "HEROKU_SLUG_COMMIT",
+      env: "SENTRY_RELEASE_VERSION",
     },
     sentry: {
       environment: {
