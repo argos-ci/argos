@@ -9,7 +9,17 @@ export function setup() {
     dsn: config.get("sentry.serverDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
-    tracesSampleRate: config.get("sentry.tracesSampleRate"),
+    tracesSampler(samplingContext) {
+      const attrs = samplingContext.attributes ?? {};
+      const method = attrs["http.request.method"];
+      const route = attrs["http.route"] ?? attrs["url.path"];
+      if (method === "POST" && route === "/github/event-handler") {
+        return samplingContext.inheritOrSampleWith(0.0001);
+      }
+      return samplingContext.inheritOrSampleWith(
+        config.get("sentry.tracesSampleRate"),
+      );
+    },
     beforeSend(event, hint) {
       const error = hint.originalException;
       // Detect HTTP-like errors
