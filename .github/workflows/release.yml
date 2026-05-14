@@ -226,6 +226,7 @@ jobs:
             NODE_ENV=production
             API_BASE_URL=https://api.argos-ci.com
             SERVER_URL=https://app.argos-ci.com
+            SENTRY_RELEASE_VERSION=${{ github.sha }}
           secrets: |
             AMQP_URL=/production/amqp_url
             AWS_ACCESS_KEY_ID=/production/aws_access_key_id
