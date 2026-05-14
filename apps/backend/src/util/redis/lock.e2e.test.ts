@@ -14,8 +14,8 @@ describe("redis-lock", () => {
     client = createClient({ url: config.get("redis.url") });
     await client.connect();
     await client.del("lock.x");
-    await client.del("debounce.x");
-    await client.del("debounce-rerun.x");
+    await client.del("coalesce.x");
+    await client.del("coalesce-rerun.x");
   });
 
   afterEach(async () => {
@@ -46,14 +46,22 @@ describe("redis-lock", () => {
     await l2;
   });
 
-  describe("debounce", () => {
+  describe("coalesce", () => {
+    it("runs the task without a delay by default", async () => {
+      const lock = createRedisLockClient({
+        getRedisClient: async () => client,
+      });
+      const result = await lock.coalesce(["x"], async () => "value");
+      expect(result).toBe("value");
+    });
+
     it("runs the task after the delay and returns its result", async () => {
       const lock = createRedisLockClient({
         getRedisClient: async () => client,
       });
       const spy = vi.fn(async () => "value");
       const start = Date.now();
-      const result = await lock.debounce(["x"], spy, { delay: 50 });
+      const result = await lock.coalesce(["x"], spy, { delay: 50 });
       const elapsed = Date.now() - start;
       expect(result).toBe("value");
       expect(spy).toHaveBeenCalledOnce();
@@ -66,9 +74,9 @@ describe("redis-lock", () => {
       });
       const spy = vi.fn(async () => "value");
       const [r1, r2, r3] = await Promise.all([
-        lock.debounce(["x"], spy, { delay: 50 }),
-        lock.debounce(["x"], spy, { delay: 50 }),
-        lock.debounce(["x"], spy, { delay: 50 }),
+        lock.coalesce(["x"], spy, { delay: 50 }),
+        lock.coalesce(["x"], spy, { delay: 50 }),
+        lock.coalesce(["x"], spy, { delay: 50 }),
       ]);
       expect(spy).toHaveBeenCalledOnce();
       const results = [r1, r2, r3];
@@ -83,11 +91,11 @@ describe("redis-lock", () => {
       const p1 = createResolvablePromise();
       const spy1 = vi.fn(() => p1);
       const spy2 = vi.fn(async () => "second");
-      const l1 = lock.debounce(["x"], spy1, { delay: 10 });
+      const l1 = lock.coalesce(["x"], spy1, { delay: 10 });
       await delay(30);
       // First caller is past the delay, now executing task. Second caller
       // arrives — should return null without running.
-      const r2 = await lock.debounce(["x"], spy2, { delay: 10 });
+      const r2 = await lock.coalesce(["x"], spy2, { delay: 10 });
       expect(r2).toBeNull();
       expect(spy2).not.toHaveBeenCalled();
       p1.resolve("first");
@@ -105,11 +113,11 @@ describe("redis-lock", () => {
         // First call blocks until p1 resolves; later calls return quickly.
         return callCount === 1 ? p1 : Promise.resolve("rerun");
       });
-      const l1 = lock.debounce(["x"], task, { delay: 10 });
+      const l1 = lock.coalesce(["x"], task, { delay: 10 });
       // Wait until the task is running (past the delay).
       await delay(30);
       // Bailer arrives during the task — flags rerun and returns null.
-      const r2 = await lock.debounce(["x"], task, { delay: 10 });
+      const r2 = await lock.coalesce(["x"], task, { delay: 10 });
       expect(r2).toBeNull();
       expect(task).toHaveBeenCalledOnce();
       // Let the first task finish — runner should detect the rerun flag
@@ -124,8 +132,8 @@ describe("redis-lock", () => {
       const lock = createRedisLockClient({
         getRedisClient: async () => client,
       });
-      const r1 = await lock.debounce(["x"], async () => "first", { delay: 10 });
-      const r2 = await lock.debounce(["x"], async () => "second", {
+      const r1 = await lock.coalesce(["x"], async () => "first", { delay: 10 });
+      const r2 = await lock.coalesce(["x"], async () => "second", {
         delay: 10,
       });
       expect(r1).toBe("first");
@@ -137,7 +145,7 @@ describe("redis-lock", () => {
         getRedisClient: async () => client,
       });
       await expect(() =>
-        lock.debounce(
+        lock.coalesce(
           ["x"],
           async () => {
             throw new Error("boom");
@@ -145,7 +153,7 @@ describe("redis-lock", () => {
           { delay: 10 },
         ),
       ).rejects.toThrow("boom");
-      const r2 = await lock.debounce(["x"], async () => "second", {
+      const r2 = await lock.coalesce(["x"], async () => "second", {
         delay: 10,
       });
       expect(r2).toBe("second");

@@ -88,41 +88,47 @@ export function createRedisLockClient(options: {
 }) {
   return {
     /**
-     * Coalesce a burst of calls into single-flight executions with a delay.
+     * Coalesce a burst of calls into single-flight executions.
      *
-     * The first caller claims the window, waits `delay` ms, then runs the
-     * task. Concurrent callers return `null` immediately; if they arrive
-     * *during* the running task, they flag a "rerun" so the runner repeats
-     * the task once more after its current pass — this captures work that
-     * became visible only after the task's read started.
+     * The first caller claims the window and runs the task. Concurrent
+     * callers return `null` immediately; if they arrive *during* the
+     * running task, they flag a "rerun" so the runner repeats the task
+     * once more after its current pass — this captures work that became
+     * visible only after the task's read started.
      *
-     * The bailer always sets the rerun flag *before* trying to claim, and
-     * the runner uses a Lua script to atomically check-and-clear rerun or
-     * release the claim. Together these close the race where a bailer's
-     * signal could be lost between the runner's last check and its claim
-     * release.
+     * Optionally takes a `delay` (default 0): the runner sleeps `delay`
+     * ms before its first task run, giving concurrent callers a window to
+     * accumulate so their work is captured in a single task run instead
+     * of via the rerun loop. Useful when the task is expensive and the
+     * burst is expected to spread over a known interval.
+     *
+     * The bailer always sets the rerun flag *before* retrying the claim,
+     * and the runner uses a Lua script to atomically check-and-clear
+     * rerun or release the claim. Together these close the race where a
+     * bailer's signal could be lost between the runner's last check and
+     * its claim release.
      *
      * Trade-off: the runner may run the task one extra time (idempotent
      * pass) rather than miss a signal — we err toward "run too many" over
      * "skip a needed run".
      */
-    async debounce<T>(
+    async coalesce<T>(
       key: CacheKey,
       task: () => Promise<T>,
-      { delay, timeout = 20000 }: { delay: number; timeout?: number },
+      { delay = 0, timeout = 20000 }: { delay?: number; timeout?: number } = {},
     ): Promise<T | null> {
       const hash = hashCacheKey(key);
-      const claimKey = `debounce.${hash}`;
-      const rerunKey = `debounce-rerun.${hash}`;
+      const claimKey = `coalesce.${hash}`;
+      const rerunKey = `coalesce-rerun.${hash}`;
       const keyTtl = delay + timeout;
       return Sentry.startSpan(
         {
-          name: "redis.debounce",
+          name: "redis.coalesce",
           attributes: {
-            "argos.debounce.name": claimKey,
-            "argos.debounce.hash": hash,
-            "argos.debounce.delay_ms": delay,
-            "argos.debounce.timeout_ms": timeout,
+            "argos.coalesce.name": claimKey,
+            "argos.coalesce.hash": hash,
+            "argos.coalesce.delay_ms": delay,
+            "argos.coalesce.timeout_ms": timeout,
           },
         },
         async () => {
@@ -154,11 +160,11 @@ export function createRedisLockClient(options: {
             let timer: NodeJS.Timeout | null = null;
             return Sentry.startSpan(
               {
-                name: "redis.debounce.task",
+                name: "redis.coalesce.task",
                 attributes: {
-                  "argos.debounce.name": claimKey,
-                  "argos.debounce.hash": hash,
-                  "argos.debounce.timeout_ms": timeout,
+                  "argos.coalesce.name": claimKey,
+                  "argos.coalesce.hash": hash,
+                  "argos.coalesce.timeout_ms": timeout,
                 },
               },
               () =>
@@ -168,7 +174,7 @@ export function createRedisLockClient(options: {
                     timer = setTimeout(() => {
                       reject(
                         new Error(
-                          `Debounce timeout "${hash}" after ${timeout}ms`,
+                          `Coalesce timeout "${hash}" after ${timeout}ms`,
                         ),
                       );
                     }, timeout);
@@ -182,9 +188,11 @@ export function createRedisLockClient(options: {
           };
 
           try {
-            await new Promise<void>((resolve) => {
-              setTimeout(resolve, delay);
-            });
+            if (delay > 0) {
+              await new Promise<void>((resolve) => {
+                setTimeout(resolve, delay);
+              });
+            }
             let lastResult: T;
             // Atomically check rerun-or-release after each task. The Lua
             // script guarantees there is no window in which a bailer's

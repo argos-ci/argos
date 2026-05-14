@@ -39,13 +39,14 @@ export async function concludeBuild(input: {
       },
     },
     () =>
-      // Debounce instead of locking: coalesce a burst of completions
-      // (e.g. 100 screenshot diffs finishing in parallel) into a single
-      // execution. The first caller claims the window, waits briefly so
-      // concurrent callers can register their `complete` job handlers,
-      // then runs the conclude logic once. Other callers in the window
-      // bail immediately — they would only have been no-ops anyway.
-      redisLock.debounce(
+      // Coalesce a burst of completions (e.g. 100 screenshot diffs
+      // finishing in parallel) into a single execution. The first caller
+      // claims the window, waits briefly so concurrent callers can register
+      // their `complete` job handlers, then runs the conclude logic once.
+      // Other callers in the window bail immediately — they would only
+      // have been no-ops anyway. The rerun flag captures any caller that
+      // arrives during execution so its work isn't dropped.
+      redisLock.coalesce(
         ["conclude-build", buildId],
         async () => {
           const existingBuild = await Build.query()
@@ -105,7 +106,7 @@ export async function concludeBuild(input: {
               .patch(getBuildData({ conclusion, stats }));
           }
         },
-        { delay: 300 },
+        { delay: 30 },
       ),
   );
 }
