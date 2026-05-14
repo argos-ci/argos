@@ -31,6 +31,6 @@
     "domain": ".argos-ci.com"
   },
   "sentry": {
-    "tracesSampleRate": 0.01
+    "tracesSampleRate": 0.003
   }
 }
