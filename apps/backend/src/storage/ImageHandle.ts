@@ -1,7 +1,8 @@
 import { invariant } from "@argos/util/invariant";
-import sharp from "sharp";
+import * as Sentry from "@sentry/node";
 
 import type { FileHandle } from "./FileHandle";
+import { getImageMetadata, resizeImage } from "./sharp";
 import { tmpName } from "./tmp";
 
 export interface Dimensions {
@@ -21,11 +22,18 @@ export class ImageHandle {
   /**
    * Measure the image dimensions.
    */
-  private async measure() {
-    const filepath = await this.#fileHandle.getFilepath();
-    const { width, height } = await sharp(filepath).metadata();
-    invariant(width && height, "unable to get image dimensions");
-    return { width, height };
+  private async measure(): Promise<Dimensions> {
+    return Sentry.startSpan(
+      {
+        name: "ImageHandle.measure",
+      },
+      async () => {
+        const filepath = await this.#fileHandle.getFilepath();
+        const { width, height } = await getImageMetadata({ filepath });
+        invariant(width && height, "unable to get image dimensions");
+        return { width, height };
+      },
+    );
   }
 
   /**
@@ -46,29 +54,38 @@ export class ImageHandle {
    * Enlarge the image to the target dimensions if needed.
    */
   async enlarge(targetDimensions: Dimensions): Promise<string> {
-    const [dimensions, filepath] = await Promise.all([
-      this.getDimensions(),
-      this.#fileHandle.getFilepath(),
-    ]);
+    return Sentry.startSpan(
+      {
+        name: "ImageHandle.enlarge",
+        attributes: {
+          "argos.image.target_width": targetDimensions.width,
+          "argos.image.target_height": targetDimensions.height,
+        },
+      },
+      async () => {
+        const [dimensions, filepath] = await Promise.all([
+          this.getDimensions(),
+          this.#fileHandle.getFilepath(),
+        ]);
 
-    if (
-      (dimensions.height === targetDimensions.height &&
-        dimensions.width === targetDimensions.width) ||
-      dimensions.width > targetDimensions.width ||
-      dimensions.height > targetDimensions.height
-    ) {
-      return filepath;
-    }
+        if (
+          (dimensions.height === targetDimensions.height &&
+            dimensions.width === targetDimensions.width) ||
+          dimensions.width > targetDimensions.width ||
+          dimensions.height > targetDimensions.height
+        ) {
+          return filepath;
+        }
 
-    const resultFilepath = await tmpName({ postfix: ".png" });
-    await sharp(filepath)
-      .resize({
-        ...targetDimensions,
-        fit: "contain",
-        position: "left top",
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      })
-      .toFile(resultFilepath);
-    return resultFilepath;
+        const resultFilepath = await tmpName({ postfix: ".png" });
+        await resizeImage({
+          inputPath: filepath,
+          outputPath: resultFilepath,
+          width: targetDimensions.width,
+          height: targetDimensions.height,
+        });
+        return resultFilepath;
+      },
+    );
   }
 }

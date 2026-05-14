@@ -273,38 +273,26 @@ async function diffFiles(
   head: S3FileHandle,
   options: DiffOptions,
 ) {
-  return Sentry.startSpan(
-    {
-      name: "diffFiles",
-      attributes: {
-        "argos.base.key": base.getKey(),
-        "argos.head.key": head.getKey(),
-        "argos.diff.threshold": options.threshold,
-      },
-    },
-    async () => {
-      if (base.getKey() === head.getKey()) {
-        return { score: 0 };
-      }
+  if (base.getKey() === head.getKey()) {
+    return { score: 0 };
+  }
 
-      const headImage = head.getImageHandle();
-      const baseImage = base.getImageHandle();
+  const headImage = head.getImageHandle();
+  const baseImage = base.getImageHandle();
 
-      // If the two types are different, then we consider there is a diff
-      if (Boolean(headImage) !== Boolean(baseImage)) {
-        return { score: 1 };
-      }
+  // If the two types are different, then we consider there is a diff
+  if (Boolean(headImage) !== Boolean(baseImage)) {
+    return { score: 1 };
+  }
 
-      // If we are comparing images.
-      if (headImage) {
-        invariant(baseImage, "baseImage should exist");
-        return diffImages(baseImage, headImage, options);
-      }
+  // If we are comparing images.
+  if (headImage) {
+    invariant(baseImage, "baseImage should exist");
+    return diffImages(baseImage, headImage, options);
+  }
 
-      // Else we compare files as text.
-      return diffTexts(base, head);
-    },
-  );
+  // Else we compare files as text.
+  return diffTexts(base, head);
 }
 
 /**
