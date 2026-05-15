@@ -172,15 +172,21 @@ export async function computeScreenshotDiff(
       build,
       completedScreenshotDiffIds: [screenshotDiff.id],
     }),
-    // Group similar diffs
+    // Group similar diffs. Coalesce because the task is idempotent and
+    // bailers' diffs are caught by the runner's fingerprint query — their
+    // fingerprints are already patched on their ScreenshotDiff rows before
+    // entering coalesce, so we only need one execution to group them all.
     diffFile
-      ? redisLock.acquire(["diff-group", diffFile.file.key], async () => {
-          await groupSimilarDiffs({
-            fingerprint: diffFile.fingerprint,
-            buildId,
-            screenshotDiffId: screenshotDiff.id,
-          });
-        })
+      ? redisLock.coalesce(
+          ["diff-group", diffFile.file.key, buildId],
+          async () => {
+            await groupSimilarDiffs({
+              fingerprint: diffFile.fingerprint,
+              buildId,
+              screenshotDiffId: screenshotDiff.id,
+            });
+          },
+        )
       : null,
   ]);
 }
