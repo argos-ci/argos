@@ -78,27 +78,27 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
     });
   };
 
-  await createGhCommitStatus(octokit, {
-    owner: githubAccount.login,
-    repo: githubRepository.name,
-    sha: commit,
-    state: notification.github.state,
-    target_url: ctx.buildUrl,
-    description: notification.description,
-    context: notification.context,
-  });
-
-  await createGhComment();
-
-  if (ctx.aggregatedNotification) {
-    await createGhCommitStatus(octokit, {
+  await Promise.all([
+    createGhCommitStatus(octokit, {
       owner: githubAccount.login,
       repo: githubRepository.name,
       sha: commit,
-      state: ctx.aggregatedNotification.github.state,
-      target_url: ctx.projectUrl,
-      description: ctx.aggregatedNotification.description,
-      context: ctx.aggregatedNotification.context,
-    });
-  }
+      state: notification.github.state,
+      target_url: ctx.buildUrl,
+      description: notification.description,
+      context: notification.context,
+    }),
+    createGhComment(),
+    ctx.aggregatedNotification
+      ? createGhCommitStatus(octokit, {
+          owner: githubAccount.login,
+          repo: githubRepository.name,
+          sha: commit,
+          state: ctx.aggregatedNotification.github.state,
+          target_url: ctx.projectUrl,
+          description: ctx.aggregatedNotification.description,
+          context: ctx.aggregatedNotification.context,
+        })
+      : null,
+  ]);
 }

@@ -8,10 +8,18 @@ import { redisLock } from "@/util/redis";
  */
 export async function createGhCommitStatus(
   octokit: Octokit,
-  params: RestEndpointMethodTypes["repos"]["createCommitStatus"]["parameters"],
+  params: RestEndpointMethodTypes["repos"]["createCommitStatus"]["parameters"] & {
+    context: string;
+  },
 ) {
   await redisLock.acquire(
-    ["create-github-commit-status", params.owner, params.repo, params.sha],
+    [
+      "create-github-commit-status",
+      params.owner,
+      params.repo,
+      params.sha,
+      params.context,
+    ],
     async () => {
       try {
         await octokit.repos.createCommitStatus(params);
