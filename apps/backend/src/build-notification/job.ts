@@ -10,11 +10,14 @@ export const job = createModelJob(
   "buildNotification",
   BuildNotification,
   async (buildNotification) => {
-    await redisLock.acquire(
+    await redisLock.coalesce(
       ["build-notification-process", buildNotification.buildId],
       async () => {
+        // Always process the latest notification for this build. Bailers'
+        // notifications are captured by this query, so a single execution
+        // covers the whole burst; the rerun loop catches any notification
+        // enqueued while the task is running.
         const latestBuildNotification = await BuildNotification.query()
-          .select("id")
           .where("buildId", buildNotification.buildId)
           .orderBy("id", "desc")
           .first();
@@ -24,12 +27,7 @@ export const job = createModelJob(
           "Latest build notification not found",
         );
 
-        // Process the build notification only if it is the latest one
-        // This prevents processing stale notifications
-        // that may have been created while the job was waiting for the lock.
-        if (latestBuildNotification.id === buildNotification.id) {
-          await processBuildNotification(buildNotification);
-        }
+        await processBuildNotification(latestBuildNotification);
       },
       { timeout: 20_000 },
     );
