@@ -1,7 +1,8 @@
 {
   "s3": {
-    "screenshotsBucket": "argos-ci-production",
-    "publicImageBaseUrl": "https://files.argos-ci.com/"
+    "screenshotsBucket": "argos-ci-production-us-east-1",
+    "publicImageBaseUrl": "https://files.argos-ci.com/",
+    "region": "us-east-1"
   },
   "deployments": {
     "bucketName": "argos-deployments-production",
