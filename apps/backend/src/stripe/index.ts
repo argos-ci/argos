@@ -513,6 +513,7 @@ export async function getStripeProPlanOrThrow(): Promise<Plan> {
 
 async function updateSubscriptionsFromCustomer(
   customerId: string,
+  options?: { allowNotFound?: boolean },
 ): Promise<void> {
   const stripeSubscriptions = await stripe.subscriptions.list({
     customer: customerId,
@@ -522,10 +523,15 @@ async function updateSubscriptionsFromCustomer(
   for (const stripeSubscription of stripeSubscriptions.data) {
     const argosSubscription =
       await getArgosSubscriptionFromStripeSubscriptionId(stripeSubscription.id);
-    invariant(
-      argosSubscription,
-      `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
-    );
+    if (!argosSubscription) {
+      if (options?.allowNotFound) {
+        continue;
+      } else {
+        throw new Error(
+          `no Argos subscription found for Stripe subscription id ${stripeSubscription.id}`,
+        );
+      }
+    }
     await updateArgosSubscriptionFromStripe(
       argosSubscription,
       stripeSubscription,
@@ -568,7 +574,10 @@ export async function handleStripeEvent({
         typeof paymentMethod.customer === "string",
         "customer is not a string",
       );
-      await updateSubscriptionsFromCustomer(paymentMethod.customer);
+      await updateSubscriptionsFromCustomer(paymentMethod.customer, {
+        // This event can be sent before the subscription is created in Argos.
+        allowNotFound: true,
+      });
       return;
     }
     case "customer.deleted": {
