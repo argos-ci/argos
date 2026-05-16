@@ -14,8 +14,8 @@ import {
   markEmailAsVerified,
   sendVerificationEmail,
 } from "@/database/services/user-email";
-import { sendEmailTemplate } from "@/email/send-email-template";
 import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
+import { sendNotification } from "@/notification";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { deleteAccount } from "../services/account";
@@ -154,16 +154,11 @@ export const resolvers: IResolvers = {
       });
 
       await Promise.all([
-        ctx.auth.user.email
-          ? sendEmailTemplate({
-              template: "email_added",
-              data: {
-                email,
-                name: ctx.auth.account.displayName,
-              },
-              to: [ctx.auth.user.email],
-            })
-          : null,
+        sendNotification({
+          type: "email_added",
+          data: { email },
+          recipients: [ctx.auth.user.id],
+        }),
         await sendVerificationEmail({ account: ctx.auth.account, email }),
       ]);
 
@@ -187,14 +182,11 @@ export const resolvers: IResolvers = {
         })
         .delete();
 
-      if (deleted === 1 && ctx.auth.user.email) {
-        await sendEmailTemplate({
-          template: "email_removed",
-          data: {
-            email,
-            name: ctx.auth.account.displayName,
-          },
-          to: [ctx.auth.user.email],
+      if (deleted === 1) {
+        await sendNotification({
+          type: "email_removed",
+          data: { email },
+          recipients: [ctx.auth.user.id],
         });
       }
 

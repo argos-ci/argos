@@ -9,21 +9,19 @@ import {
   InfoText,
   Paragraph,
   SafetyDisclaimer,
-} from "../components";
-import { defineEmailTemplate } from "../template";
+} from "../../email/components";
+import { defineNotificationHandler } from "../workflow-types";
 
-export const handler = defineEmailTemplate({
+export const handler = defineNotificationHandler({
   type: "email_added",
   schema: z.object({
-    name: z.string(),
     email: z.email(),
   }),
   previewData: {
-    name: "John Doe",
     email: "john.doe@example.com",
   },
   email: (props) => {
-    const { name, email } = props;
+    const { email, ctx } = props;
     return {
       subject: "Argos Email Added",
       body: (
@@ -32,14 +30,14 @@ export const handler = defineEmailTemplate({
           footer={false}
         >
           <H1>An email was added to your Argos account</H1>
-          <Hi name={name} />
+          <Hi name={ctx.user.name} />
           <Paragraph>
             The following email has been <strong>added</strong> to your account
             and is awaiting verification. Verify this email belongs to you by
             clicking on the link provided in the email sent to the newly added
             address.
           </Paragraph>
-          <HighlightBlock>{props.email}</HighlightBlock>
+          <HighlightBlock>{email}</HighlightBlock>
           <Hr />
           <InfoText>
             <SafetyDisclaimer />

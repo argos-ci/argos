@@ -9,21 +9,19 @@ import {
   InfoText,
   Paragraph,
   SafetyDisclaimer,
-} from "../components";
-import { defineEmailTemplate } from "../template";
+} from "../../email/components";
+import { defineNotificationHandler } from "../workflow-types";
 
-export const handler = defineEmailTemplate({
+export const handler = defineNotificationHandler({
   type: "email_removed",
   schema: z.object({
-    name: z.string(),
     email: z.email(),
   }),
   previewData: {
-    name: "John Doe",
     email: "john.doe@example.com",
   },
   email: (props) => {
-    const { name, email } = props;
+    const { email, ctx } = props;
     return {
       subject: "Argos Email Removed",
       body: (
@@ -32,12 +30,12 @@ export const handler = defineEmailTemplate({
           footer={false}
         >
           <H1>An email was removed from your Argos account</H1>
-          <Hi name={name} />
+          <Hi name={ctx.user.name} />
           <Paragraph>
             The following email has been <strong>removed</strong> from your
             account.
           </Paragraph>
-          <HighlightBlock>{props.email}</HighlightBlock>
+          <HighlightBlock>{email}</HighlightBlock>
           <Hr />
           <InfoText>
             <SafetyDisclaimer />
