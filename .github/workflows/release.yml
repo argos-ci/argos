@@ -187,12 +187,9 @@ jobs:
           - service: argos-app
             task-definition: aws/tasks/argos-app.json
             container-name: argos-app
-          - service: argos-worker-build-and-synchronize
-            task-definition: aws/tasks/argos-worker-build-and-synchronize.json
-            container-name: argos-worker-build-and-synchronize
-          - service: argos-worker-screenshot-diff
-            task-definition: aws/tasks/argos-worker-screenshot-diffs.json
-            container-name: argos-worker-screenshot-diff
+          - service: argos-worker
+            task-definition: aws/tasks/argos-worker.json
+            container-name: argos-worker
 
     steps:
       - name: Check out repository code
