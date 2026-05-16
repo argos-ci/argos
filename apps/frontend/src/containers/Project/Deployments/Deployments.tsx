@@ -6,6 +6,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
+import { Link } from "@/ui/Link";
 
 import { DeploymentAuthentication } from "./DeploymentAuthentication";
 import { ProductionDeploymentBranch } from "./ProductionDeploymentBranch";
@@ -95,7 +96,13 @@ function DeploymentsCard(props: {
             label="Enable deployments for this project"
           />
         </CardBody>
-        <FormCardFooter control={form.control} />
+        <FormCardFooter control={form.control}>
+          Learn more about{" "}
+          <Link href="https://argos-ci.com/docs/deployments" target="_blank">
+            deployments
+          </Link>
+          .
+        </FormCardFooter>
       </Form>
     </Card>
   );
