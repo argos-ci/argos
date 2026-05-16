@@ -1,4 +1,6 @@
 import type { NotificationHandler } from "../workflow-types";
+import * as email_added from "./email_added";
+import * as email_removed from "./email_removed";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as project_deleted from "./project_deleted";
 import * as saml_certificate_expiration from "./saml_certificate_expiration";
@@ -7,6 +9,8 @@ import * as spend_limit from "./spend_limit";
 import * as welcome from "./welcome";
 
 export const notificationHandlers = [
+  email_added.handler,
+  email_removed.handler,
   invalid_gitlab_token.handler,
   project_deleted.handler,
   saml_certificate_expiration.handler,
