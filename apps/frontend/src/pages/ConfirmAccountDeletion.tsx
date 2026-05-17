@@ -33,8 +33,9 @@ function InvalidLink() {
     <>
       <h2 className="text-3xl font-bold">Invalid confirmation link</h2>
       <p className="text-low">
-        The confirmation link is invalid. To delete your account, please go to
-        your <Link href="/">personal settings</Link> and request a new deletion.
+        The confirmation link is invalid. To delete your account, the{" "}
+        <Link href="/">home page</Link>, open your personal settings, and
+        request a new deletion link.
       </p>
     </>
   );
