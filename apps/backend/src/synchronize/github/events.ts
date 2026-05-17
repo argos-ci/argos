@@ -38,7 +38,6 @@ export async function handleGitHubEvents(
   { name, payload }: EmitterWebhookEvent,
 ) {
   const eventLogger = parentLogger.child({ module: "github-event", name });
-  eventLogger.info("Event received");
   switch (name) {
     case "marketplace_purchase": {
       if (app !== "main") {
