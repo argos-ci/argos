@@ -119,7 +119,7 @@ export const getOrCreateAccountFromEvent = async (
     fallbackEmail: payload.sender.email,
   });
   // Find or create the Argos account linked to the GitHub account of the sender (buyer)
-  const userAccount = await getOrCreateUserAccountFromGhAccount({
+  const { account: userAccount } = await getOrCreateUserAccountFromGhAccount({
     ghAccount: userGhAccount,
     attachToAccount: null,
   });

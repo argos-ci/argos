@@ -2,7 +2,7 @@ import { useMutation, useSuspenseQuery } from "@apollo/client/react";
 import { PlusCircleIcon } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Helmet } from "react-helmet";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard, RedirectToWebsite } from "@/containers/AuthGuard";
@@ -16,6 +16,19 @@ import { getAccountURL } from "./Account/AccountParams";
 
 const TeamsQuery = graphql(`
   query Teams_me {
+    autoInvites {
+      id
+      email
+      domain
+      team {
+        id
+        slug
+        name
+        avatar {
+          ...AccountAvatarFragment
+        }
+      }
+    }
     me {
       id
       teams {
@@ -48,10 +61,22 @@ const TeamsQuery = graphql(`
 
 function TeamsList() {
   const { data } = useSuspenseQuery(TeamsQuery);
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("r");
   if (!data.me) {
     return <RedirectToWebsite />;
   }
-  if (data.me.invites.length === 0 && data.me.teams.length === 0) {
+  const inviteTeamIds = new Set(
+    data.me.invites.map((invite) => invite.team.id),
+  );
+  const autoInvites = data.autoInvites.filter((autoInvite) => {
+    return !inviteTeamIds.has(autoInvite.team.id);
+  });
+  if (
+    data.me.invites.length === 0 &&
+    autoInvites.length === 0 &&
+    data.me.teams.length === 0
+  ) {
     return (
       <div className="text-center">
         <Heading className="mb-6">You’re not part of any team yet.</Heading>
@@ -105,8 +130,39 @@ function TeamsList() {
           ))}
         </List>
       ) : null}
+      {autoInvites.length > 0 ? (
+        <List>
+          <ListHeaderRow>Teams matching your email domain</ListHeaderRow>
+          {autoInvites.map((autoInvite) => (
+            <ListRow
+              key={autoInvite.id}
+              className="flex items-center justify-between gap-3 p-4 text-lg"
+            >
+              <div className="flex items-center gap-3">
+                <AccountAvatar
+                  avatar={autoInvite.team.avatar}
+                  className="size-11"
+                />
+                <div className="flex flex-col">
+                  <span>{autoInvite.team.name || autoInvite.team.slug}</span>
+                  <span className="text-low text-xs">
+                    {autoInvite.email} matches the {autoInvite.domain} team
+                    domain
+                  </span>
+                </div>
+              </div>
+              <JoinButton
+                teamAccountId={autoInvite.team.id}
+                redirect={redirect}
+              >
+                Join
+              </JoinButton>
+            </ListRow>
+          ))}
+        </List>
+      ) : null}
       <List>
-        {data.me.invites.length > 0 ? (
+        {data.me.invites.length > 0 || autoInvites.length > 0 ? (
           <ListHeaderRow>Teams</ListHeaderRow>
         ) : null}
         {data.me.teams.map((team) => (
@@ -141,23 +197,31 @@ const JoinMutation = graphql(`
 `);
 
 function JoinButton(
-  props: { teamAccountId: string } & Omit<ButtonProps, "onPress">,
+  props: { teamAccountId: string; redirect?: string | null } & Omit<
+    ButtonProps,
+    "onPress"
+  >,
 ) {
+  const { redirect, teamAccountId, ...buttonProps } = props;
   const navigate = useNavigate();
   const [accept, { data, loading }] = useMutation(JoinMutation, {
     variables: {
-      teamAccountId: props.teamAccountId,
+      teamAccountId,
     },
     onCompleted(data) {
       const team = data.joinTeam;
-      const redirectURL = getAccountURL({ accountSlug: team.slug });
-      navigate(redirectURL);
+      const redirectURL = redirect ?? getAccountURL({ accountSlug: team.slug });
+      if (redirectURL.startsWith("/")) {
+        navigate(redirectURL);
+      } else {
+        window.location.assign(redirectURL);
+      }
     },
   });
   return (
     <Button
-      {...props}
-      isDisabled={loading || !!data || props.isDisabled}
+      {...buttonProps}
+      isDisabled={loading || !!data || buttonProps.isDisabled}
       onPress={() => {
         accept().catch(() => {});
       }}

@@ -11,11 +11,13 @@ import {
 } from "@/auth/saml";
 import config from "@/config";
 import { transaction } from "@/database";
+import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
   GithubAccountMember,
   GithubInstallation,
   Team,
+  TeamDomain,
   TeamInvite,
   TeamSamlConfig,
   TeamUser,
@@ -26,6 +28,13 @@ import {
   createJWTFromAccount,
 } from "@/database/services/account";
 import { createTeamAccount } from "@/database/services/team";
+import {
+  findVerifiedEmailForDomain,
+  getAutoInvitesForUser,
+  hasAutoInviteForTeam,
+  normalizeTeamDomain,
+  type AutoInvite,
+} from "@/database/services/team-domain";
 import { notifyDiscord } from "@/discord";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
@@ -127,6 +136,7 @@ export const typeDefs = gql`
       search: String
     ): TeamInviteConnection
     inviteLink: String
+    teamDomains: [TeamDomain!]!
     ssoGithubAccount: GithubAccount
     samlSso: TeamSamlConfig
     samlSpEntityId: String!
@@ -223,6 +233,19 @@ export const typeDefs = gql`
     edges: [TeamInvite!]!
   }
 
+  type TeamDomain implements Node {
+    id: ID!
+    domain: String!
+    team: Team!
+  }
+
+  type AutoInvite implements Node {
+    id: ID!
+    email: String!
+    domain: String!
+    team: Team!
+  }
+
   type AcceptInvitePayload {
     jwt: String
     team: Team!
@@ -289,6 +312,15 @@ export const typeDefs = gql`
     level: TeamUserLevel!
   }
 
+  input AddTeamDomainInput {
+    teamAccountId: ID!
+    domain: String!
+  }
+
+  input RemoveTeamDomainInput {
+    teamDomainId: ID!
+  }
+
   type ImportTeamSamlMetadataResult {
     idpEntityId: String!
     ssoUrl: String!
@@ -302,6 +334,8 @@ export const typeDefs = gql`
     teamInvite(secret: String!): Team
     "List all teams (staff only)"
     staffTeams: [Team!]!
+    "List all teams the authenticated user can join based on verified email domains"
+    autoInvites: [AutoInvite!]!
   }
 
   extend type Mutation {
@@ -335,6 +369,10 @@ export const typeDefs = gql`
     inviteMembers(input: InviteMembersInput!): [TeamInvite!]!
     "Cancel a team invite"
     cancelInvite(teamInviteId: ID!): Team!
+    "Add a verified email domain to a team"
+    addTeamDomain(input: AddTeamDomainInput!): Team!
+    "Remove a verified email domain from a team"
+    removeTeamDomain(input: RemoveTeamDomainInput!): Team!
     "Extend trial period"
     extendTrial(teamAccountId: ID!): ExtendTrialResult!
     "Create or update team SAML settings"
@@ -580,6 +618,24 @@ export const resolvers: IResolvers = {
       const inviteLink = await team.$getInviteLink();
       return inviteLink;
     },
+    teamDomains: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      invariant(account.teamId, "not a team account");
+      const permissions = await Team.getPermissions(
+        account.teamId,
+        ctx.auth.user,
+      );
+      if (!permissions.includes("admin")) {
+        return [];
+      }
+
+      return TeamDomain.query()
+        .where("teamId", account.teamId)
+        .orderBy("domain", "asc");
+    },
     ssoGithubAccount: async (account, _args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -714,7 +770,32 @@ export const resolvers: IResolvers = {
       return new Date(teamInvite.expiresAt) < new Date();
     },
   },
+  TeamDomain: {
+    team: async (teamDomain, _args, ctx) => {
+      const teamAccount = await ctx.loaders.AccountFromRelation.load({
+        teamId: teamDomain.teamId,
+      });
+      invariant(teamAccount, "team account not found");
+      return teamAccount;
+    },
+  },
+  AutoInvite: {
+    team: async (autoInvite: AutoInvite, _args, ctx) => {
+      const teamAccount = await ctx.loaders.AccountFromRelation.load({
+        teamId: autoInvite.teamId,
+      });
+      invariant(teamAccount, "team account not found");
+      return teamAccount;
+    },
+  },
   Query: {
+    autoInvites: async (_root, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      return getAutoInvitesForUser({ userId: ctx.auth.user.id });
+    },
     staffTeams: async (_root, _args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -1144,36 +1225,55 @@ export const resolvers: IResolvers = {
       const { teamId } = teamAccount;
       invariant(teamId, "Account is not a team");
 
-      const teamInvite = await TeamInvite.query()
-        .whereRaw(`"expiresAt" > now()`)
-        .where("teamId", teamId)
-        .whereIn(
-          "email",
-          UserEmail.query()
-            .select("email")
-            .where("userId", auth.user.id)
-            .where("verified", true),
-        )
-        .first();
+      const [team, teamInvite, hasAutoInvite] = await Promise.all([
+        Team.query()
+          .select("id", "defaultUserLevel")
+          .findById(teamId)
+          .throwIfNotFound(),
+        TeamInvite.query()
+          .whereRaw(`"expiresAt" > now()`)
+          .where("teamId", teamId)
+          .whereIn(
+            "email",
+            UserEmail.query()
+              .select("email")
+              .where("userId", auth.user.id)
+              .where("verified", true),
+          )
+          .first(),
+        hasAutoInviteForTeam({
+          userId: auth.user.id,
+          teamId,
+        }),
+      ]);
 
-      if (!teamInvite) {
+      if (!teamInvite && !hasAutoInvite) {
         throw badUserInput("You don't have an invite for this team");
       }
 
+      const userLevel = teamInvite?.userLevel ?? team.defaultUserLevel;
+
       await transaction(async (trx) => {
-        await Promise.all([
+        const mutations: Array<PromiseLike<unknown>> = [
           // Add the user to the team.
           TeamUser.query(trx)
             .insert({
               userId: auth.user.id,
               teamId: teamId,
-              userLevel: teamInvite.userLevel,
+              userLevel,
             })
             .onConflict()
             .ignore(),
-          // Delete the invite.
-          teamInvite.$query(trx).delete(),
-        ]);
+        ];
+
+        if (teamInvite) {
+          mutations.push(
+            // Delete the invite.
+            teamInvite.$query(trx).delete(),
+          );
+        }
+
+        await Promise.all(mutations);
       });
 
       return teamAccount;
@@ -1524,6 +1624,91 @@ export const resolvers: IResolvers = {
       );
 
       return invites;
+    },
+    addTeamDomain: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      const domain = (() => {
+        try {
+          return normalizeTeamDomain(args.input.domain);
+        } catch {
+          throw badUserInput("Invalid domain", { field: "domain" });
+        }
+      })();
+
+      const verifiedEmail = await findVerifiedEmailForDomain({
+        userId: ctx.auth.user.id,
+        domain,
+      });
+      if (!verifiedEmail) {
+        throw badUserInput(
+          "You must have a verified email address matching this domain",
+          { field: "domain" },
+        );
+      }
+
+      const existingTeamDomain = await TeamDomain.query().findOne({
+        teamId: teamAccount.teamId,
+        domain,
+      });
+
+      if (existingTeamDomain) {
+        throw badUserInput("This domain is already linked to this team", {
+          field: "domain",
+        });
+      }
+
+      try {
+        await TeamDomain.query().insert({
+          teamId: teamAccount.teamId,
+          domain,
+        });
+      } catch (error: unknown) {
+        if (isUniqueViolationError(error)) {
+          throw badUserInput("This domain is already linked to this team", {
+            field: "domain",
+          });
+        }
+        throw error;
+      }
+
+      return teamAccount;
+    },
+    removeTeamDomain: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamDomain = await TeamDomain.query().findById(
+        args.input.teamDomainId,
+      );
+      if (!teamDomain) {
+        throw notFound("Team domain not found");
+      }
+
+      const teamAccount = await ctx.loaders.AccountFromRelation.load({
+        teamId: teamDomain.teamId,
+      });
+      if (!teamAccount) {
+        throw notFound("Team domain not found");
+      }
+
+      const permissions = await teamAccount.$getPermissions(ctx.auth.user);
+      if (!permissions.includes("admin")) {
+        throw forbidden("You don't have access to this team domain");
+      }
+
+      await teamDomain.$query().delete();
+
+      return teamAccount;
     },
     configureTeamSaml: async (_root, args, ctx) => {
       if (!ctx.auth) {

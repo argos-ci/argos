@@ -38,6 +38,7 @@ export * from "./SlackChannel";
 export * from "./SlackInstallation";
 export * from "./Subscription";
 export * from "./Team";
+export * from "./TeamDomain";
 export * from "./TeamInvite";
 export * from "./TeamSamlConfig";
 export * from "./TeamUser";

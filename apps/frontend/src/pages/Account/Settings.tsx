@@ -19,6 +19,7 @@ import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
 import { TeamDelete } from "@/containers/Team/Delete";
+import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
@@ -66,6 +67,7 @@ const AccountQuery = graphql(`
       ...AccountGitLab_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
+      ...TeamDomains_Team
       ...TeamAccessRole_Team
       ...TeamGitHubLight_Team
       ...UserAuth_Account
@@ -202,7 +204,14 @@ function PageContent() {
     {
       name: "Authentication",
       slug: "authentication",
-      element: isUser && hasAdminPermission && <UserAuth account={account} />,
+      element: (
+        <>
+          {isUser && hasAdminPermission && <UserAuth account={account} />}
+          {isTeam && hasAdminPermission && <TeamDomains team={account} />}
+          {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
+          {isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}
+        </>
+      ),
     },
     {
       name: "Tokens",
@@ -217,7 +226,6 @@ function PageContent() {
       element: (
         <>
           {isTeam && <TeamMembers team={account} />}
-          {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
           {isTeam && hasAdminPermission && fineGrainedAccessControlIncluded && (
             <TeamAccessRole team={account} />
           )}
@@ -233,13 +241,6 @@ function PageContent() {
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
         </>
-      ),
-    },
-    {
-      name: "Security and Privacy",
-      slug: "security-and-privacy",
-      element: (
-        <>{isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}</>
       ),
     },
   ];
