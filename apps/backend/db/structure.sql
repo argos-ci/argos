@@ -3622,6 +3622,13 @@ CREATE INDEX subscriptions_subscriberid_index ON public.subscriptions USING btre
 
 
 --
+-- Name: team_domains_domain_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_domains_domain_index ON public.team_domains USING btree (domain);
+
+
+--
 -- Name: team_users_teamid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 

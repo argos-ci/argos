@@ -42,8 +42,9 @@ export const LeaveTeamDialog = memo(
         <DialogBody confirm>
           <DialogTitle>Leave Team</DialogTitle>
           <DialogText>
-            You are about to leave {props.teamName}. In order to regain access
-            at a later time, a Team Owner must invite you.
+            You are about to leave <strong>{props.teamName}</strong>.<br />
+            In order to regain access at a later time, a Team Owner must invite
+            you.
           </DialogText>
           <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>

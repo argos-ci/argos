@@ -21,8 +21,8 @@ export class TeamDomain extends Model {
     ],
   };
 
-  declare teamId: string;
-  declare domain: string;
+  teamId!: string;
+  domain!: string;
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -37,5 +37,5 @@ export class TeamDomain extends Model {
     };
   }
 
-  declare team?: Team;
+  team?: Team;
 }

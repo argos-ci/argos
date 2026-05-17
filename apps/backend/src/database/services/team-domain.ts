@@ -76,7 +76,7 @@ export async function getAutoInvitesForUser(args: {
   const teamDomains = await TeamDomain.query(args.trx)
     .whereIn("domain", [...emailByDomain.keys()])
     .whereNotExists(
-      TeamUser.query()
+      TeamUser.query(args.trx)
         .select(1)
         .where("userId", args.userId)
         .whereRaw('team_users."teamId" = team_domains."teamId"'),

@@ -146,8 +146,8 @@ function TeamsList() {
                 <div className="flex flex-col">
                   <span>{autoInvite.team.name || autoInvite.team.slug}</span>
                   <span className="text-low text-xs">
-                    {autoInvite.email} matches the {autoInvite.domain} team
-                    domain
+                    <strong>{autoInvite.email}</strong> matches the{" "}
+                    <strong>{autoInvite.domain}</strong> team domain.
                   </span>
                 </div>
               </div>
@@ -211,11 +211,7 @@ function JoinButton(
     onCompleted(data) {
       const team = data.joinTeam;
       const redirectURL = redirect ?? getAccountURL({ accountSlug: team.slug });
-      if (redirectURL.startsWith("/")) {
-        navigate(redirectURL);
-      } else {
-        window.location.assign(redirectURL);
-      }
+      navigate(redirectURL);
     },
   });
   return (
