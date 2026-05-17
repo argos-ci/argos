@@ -142,13 +142,13 @@ export function useIsLoggedIn() {
   return useAuthTokenPayload() !== null;
 }
 
-function redirectToLogin() {
-  window.location.replace(
-    `/login?r=${encodeURIComponent(window.location.pathname)}`,
-  );
+function redirectToLogin(options?: { redirectTo?: string }) {
+  const redirectTo = options?.redirectTo ?? window.location.pathname;
+  const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
+  window.location.replace(`/login${search}`);
 }
 
-export function logout() {
+export function logout(options?: { redirectTo?: string }) {
   removeAuthTokenCookie();
-  redirectToLogin();
+  redirectToLogin(options);
 }

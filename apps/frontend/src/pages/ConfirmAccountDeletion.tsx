@@ -70,7 +70,7 @@ function ConfirmProcess(props: { token: string }) {
             variant="primary"
             size="large"
             onPress={() => {
-              logout();
+              logout({ redirectTo: "" });
             }}
           >
             Continue
