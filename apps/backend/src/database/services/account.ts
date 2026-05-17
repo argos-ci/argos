@@ -32,6 +32,10 @@ const RESERVED_SLUGS = [
   "vercel",
   "invite",
   "teams",
+  "verify",
+  "new",
+  "invites",
+  "account",
 ];
 
 type TeamUserAuthMethod = (typeof TeamUser.authMethods)[number];
@@ -178,11 +182,11 @@ export async function getOrCreateUserAccountFromSaml(input: {
   return account;
 }
 
-export async function checkAccountSlug(slug: string) {
+export async function checkAccountSlug(slug: string, trx?: TransactionOrKnex) {
   if (RESERVED_SLUGS.includes(slug)) {
     throw new Error("Slug is reserved for internal usage");
   }
-  const slugExists = await Account.query().findOne({ slug });
+  const slugExists = await Account.query(trx).findOne({ slug });
   if (slugExists) {
     throw new Error("Slug is already used by another account");
   }
@@ -190,16 +194,20 @@ export async function checkAccountSlug(slug: string) {
 
 /**
  * Resolve a unique account slug by appending a number if needed.
+ *
+ * Pass `trx` when called from inside an open transaction to avoid
+ * acquiring a second connection from the pool while one is held.
  */
 export async function resolveAccountSlug(
   slug: string,
   index: number = 0,
+  trx?: TransactionOrKnex,
 ): Promise<string> {
   const nextSlug = index ? `${slug}-${index}` : slug;
   try {
-    await checkAccountSlug(nextSlug);
+    await checkAccountSlug(nextSlug, trx);
   } catch {
-    return resolveAccountSlug(slug, index + 1);
+    return resolveAccountSlug(slug, index + 1, trx);
   }
 
   return nextSlug;

@@ -223,6 +223,11 @@ export const router: ReturnType<typeof createBrowserRouter> =
           lazy: () => import("./pages/VerifyEmail"),
         },
         {
+          path: "/account/delete",
+          HydrateFallback,
+          lazy: () => import("./pages/ConfirmAccountDeletion"),
+        },
+        {
           path: "/",
           HydrateFallback,
           lazy: () => import("./pages/Home"),
