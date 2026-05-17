@@ -6,6 +6,7 @@ import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { createModelJob, UnretryableError } from "@/job-core";
+import logger from "@/logger";
 import { sendNotification } from "@/notification";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { updateStripeUsage } from "@/stripe";
@@ -112,7 +113,9 @@ export async function performBuild(build: Build) {
   // Ensure that the GitHub pull request has been processed
   // to be sure we get the base branch name.
   if (build.githubPullRequestId) {
-    await githubPullRequestJob.run(build.githubPullRequestId);
+    await githubPullRequestJob.run(build.githubPullRequestId, {
+      logger: logger.child({ module: "perform-build" }),
+    });
   }
 
   const [project] = await Promise.all([

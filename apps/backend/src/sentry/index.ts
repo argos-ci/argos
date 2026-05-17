@@ -9,6 +9,8 @@ export function setup() {
     dsn: config.get("sentry.serverDsn"),
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
+    enableLogs: true,
+    integrations: [Sentry.pinoIntegration()],
     tracesSampler(samplingContext) {
       // Reduce sampling of "/github/event-handler", we have a ton.
       if (samplingContext.name === "POST /github/event-handler") {

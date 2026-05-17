@@ -3,7 +3,7 @@ import pMemoize from "p-memoize";
 import pRetry from "p-retry";
 
 import config from "@/config";
-import parentLogger from "@/logger";
+import parentLogger, { type Logger } from "@/logger";
 import { checkIsRetryable } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
@@ -41,7 +41,7 @@ export interface Job<TValue> {
   /**
    * Run a job on a single value.
    */
-  run: (value: TValue) => Promise<void>;
+  run: (value: TValue, ctx: JobContext) => Promise<void>;
   /**
    * Process all job.
    */
@@ -63,12 +63,20 @@ export interface JobParams {
   timeout?: number;
 }
 
+type JobContext = {
+  logger: Logger;
+};
+
 export const createJob = <TValue extends string | number>(
   queue: string,
   consumer: {
-    perform: (value: TValue) => void | Promise<void>;
-    complete?: (value: TValue) => void | Promise<void>;
-    error?: (value: TValue, error: unknown) => void | Promise<void>;
+    perform: (value: TValue, ctx: JobContext) => void | Promise<void>;
+    complete?: (value: TValue, ctx: JobContext) => void | Promise<void>;
+    error?: (
+      value: TValue,
+      error: unknown,
+      ctx: JobContext,
+    ) => void | Promise<void>;
   },
   { prefetch = 1, timeout = 20_000 }: JobParams = {},
 ): Job<TValue> => {
@@ -142,7 +150,7 @@ export const createJob = <TValue extends string | number>(
         sendAll();
       });
     },
-    async run(id: TValue) {
+    async run(id: TValue, ctx: JobContext) {
       await Sentry.startSpan(
         {
           name: "job.run",
@@ -157,8 +165,23 @@ export const createJob = <TValue extends string | number>(
           redisLock.acquire(
             [queue, id],
             async () => {
-              await consumer.perform(id);
-              await consumer.complete?.(id);
+              ctx.logger.info("Running");
+              const performStart = performance.now();
+              await consumer.perform(id, ctx);
+              const performEnd = performance.now();
+              const completeStart = performance.now();
+              await consumer.complete?.(id, ctx);
+              const completeEnd = performance.now();
+              const duration = performEnd - performStart;
+              const completingDuration = completeEnd - completeStart;
+              ctx.logger.info(
+                {
+                  duration,
+                  completingDuration,
+                  totalDuration: duration + completingDuration,
+                },
+                "Done",
+              );
             },
             { timeout },
           ),
@@ -216,10 +239,11 @@ export const createJob = <TValue extends string | number>(
                 return;
               }
 
-              const consumeLogger = logger.child({ payload });
-
+              const id = payload.args[0];
+              const consumeLogger = logger.child({ id });
+              const ctx = { logger: consumeLogger };
               try {
-                await this.run(payload.args[0]);
+                await this.run(id, ctx);
                 channel.ack(msg);
               } catch (error) {
                 if (checkIsRetryable(error) && payload.attempts < 2) {
@@ -240,7 +264,9 @@ export const createJob = <TValue extends string | number>(
 
                 channel.ack(msg);
                 consumeLogger.error({ error }, "Error while processing job");
-                await pRetry(() => consumer.error?.(payload.args[0], error));
+                await pRetry(() =>
+                  consumer.error?.(payload.args[0], error, ctx),
+                );
               }
             } catch (error) {
               logger.info({ error }, "Error when processing message");

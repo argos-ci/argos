@@ -17,7 +17,7 @@ export function scheduleCron(name: string, expression: string, func: TaskFn) {
     (context) => {
       Sentry.withScope((scope) => {
         scope.setTag("cron", name);
-        const markStart = performance.mark(`cron_task_${name}_start`);
+        const start = performance.now();
         logger.info("Start task");
         Sentry.startSpan(
           {
@@ -32,18 +32,9 @@ export function scheduleCron(name: string, expression: string, func: TaskFn) {
                 timeout: 55 * 60 * 1000,
               })
               .then(() => {
-                const markEnd = performance.mark(`cron_task_${name}_end`);
-                const measure = performance.measure(
-                  `cron_task_${name}`,
-                  markStart.name,
-                  markEnd.name,
-                );
-                logger.info(
-                  {
-                    duration: measure.duration,
-                  },
-                  `Task done in ${measure.duration}`,
-                );
+                const end = performance.now();
+                const duration = end - start;
+                logger.info({ duration }, "Task done");
               }),
         ).catch((error) => {
           logger.error({ error }, "Task error");

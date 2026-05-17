@@ -3,6 +3,8 @@ import pino from "pino";
 
 import config from "@/config";
 
+export type Logger = pino.Logger;
+
 const logger = pino({
   level: config.get("logLevel"),
   hooks: {

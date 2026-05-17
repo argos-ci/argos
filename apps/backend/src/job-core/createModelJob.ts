@@ -1,7 +1,5 @@
 import type { ModelClass } from "objection";
 
-import logger from "@/logger";
-
 import { createJob } from "./createJob";
 import type { JobParams } from "./createJob";
 
@@ -14,8 +12,7 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
   return createJob<string>(
     queue,
     {
-      perform: async (id) => {
-        logger.info(`Processing ${Model.name} ${id}`);
+      perform: async (id, { logger }) => {
         const model = await Model.query().findById(id);
 
         if (!model) {
@@ -23,7 +20,7 @@ export const createModelJob = <TModelConstructor extends ModelClass<any>>(
         }
 
         if (model.jobStatus === "complete") {
-          logger.info(`${Model.name} ${id} already complete`);
+          logger.info("Already complete");
           return;
         }
 
