@@ -20,6 +20,7 @@ import {
   sendVerificationEmail,
 } from "@/database/services/user-email";
 import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
+import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
 import type { IResolvers } from "../__generated__/resolver-types";
@@ -181,7 +182,11 @@ export const resolvers: IResolvers = {
       const displayName = account.displayName;
       await deleteAccount({ id: account.id, user });
       if (email) {
-        await sendAccountDeletedEmail({ name: displayName, email });
+        try {
+          await sendAccountDeletedEmail({ name: displayName, email });
+        } catch (error) {
+          logger.error({ error }, "Fail to send account deletion email");
+        }
       }
       return true;
     },
