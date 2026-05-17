@@ -62,7 +62,7 @@ const TeamsQuery = graphql(`
 function TeamsList() {
   const { data } = useSuspenseQuery(TeamsQuery);
   const [searchParams] = useSearchParams();
-  const redirect = searchParams.get("r");
+  const redirect = searchParams.get("r")?.trim() || null;
   if (!data.me) {
     return <RedirectToWebsite />;
   }
