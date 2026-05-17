@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import { test as base, beforeEach, describe, expect, vi } from "vitest";
 
+import * as models from "@/database/models";
 import type {
   Deployment,
   DeploymentNotification,
@@ -15,11 +16,13 @@ import { processDeploymentNotification } from "./notifications";
 const {
   commentGithubPrMock,
   createGhCommitStatusMock,
+  createGhRepositoryDispatchMock,
   getInstallationOctokitMock,
   octokitMock,
 } = vi.hoisted(() => ({
   commentGithubPrMock: vi.fn(),
   createGhCommitStatusMock: vi.fn(),
+  createGhRepositoryDispatchMock: vi.fn(),
   getInstallationOctokitMock: vi.fn(),
   octokitMock: {},
 }));
@@ -31,6 +34,10 @@ vi.mock("@/github", () => ({
 
 vi.mock("@/github/commit-status", () => ({
   createGhCommitStatus: createGhCommitStatusMock,
+}));
+
+vi.mock("@/github/repository-dispatch", () => ({
+  createGhRepositoryDispatch: createGhRepositoryDispatchMock,
 }));
 
 const commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -92,6 +99,7 @@ describe("processDeploymentNotification", () => {
   beforeEach(() => {
     commentGithubPrMock.mockReset();
     createGhCommitStatusMock.mockReset();
+    createGhRepositoryDispatchMock.mockReset();
     getInstallationOctokitMock.mockReset();
     getInstallationOctokitMock.mockResolvedValue(octokitMock);
   });
@@ -123,6 +131,67 @@ describe("processDeploymentNotification", () => {
         octokit: octokitMock,
       }),
     );
+  });
+
+  test("triggers a repository dispatch event for the main app", async ({
+    repository,
+    project,
+    deployment,
+    deploymentNotification,
+    pullRequest,
+  }) => {
+    const githubAccount = await repository.$relatedQuery("githubAccount");
+    invariant(githubAccount, "github account should exist");
+
+    await processDeploymentNotification(deploymentNotification);
+
+    expect(createGhRepositoryDispatchMock).toHaveBeenCalledWith(octokitMock, {
+      owner: githubAccount.login,
+      repo: repository.name,
+      event_type: "argos.deployment.success",
+      client_payload: {
+        argos: {
+          type: "deployment",
+          action: "success",
+          deployment: {
+            id: deployment.id,
+            status: "ready",
+            url: deployment.url,
+            environment: "preview",
+            branch: "main",
+            commit,
+            prNumber: pullRequest.number,
+          },
+          project: {
+            id: project.id,
+            name: project.name,
+          },
+        },
+      },
+    });
+  });
+
+  test("skips the repository dispatch event for the light app", async ({
+    project,
+    deploymentNotification,
+  }) => {
+    // Replace the main installation with a light one.
+    const lightInstallation = await factory.GithubInstallation.create({
+      app: "light",
+    });
+    invariant(project.githubRepositoryId, "githubRepositoryId should exist");
+    await models.GithubRepositoryInstallation.query()
+      .where("githubRepositoryId", project.githubRepositoryId)
+      .delete();
+    await factory.GithubRepositoryInstallation.create({
+      githubRepositoryId: project.githubRepositoryId,
+      githubInstallationId: lightInstallation.id,
+    });
+
+    await processDeploymentNotification(deploymentNotification);
+
+    expect(createGhCommitStatusMock).toHaveBeenCalled();
+    expect(createGhRepositoryDispatchMock).not.toHaveBeenCalled();
   });
 
   test("posts a pending status for progress notifications", async ({

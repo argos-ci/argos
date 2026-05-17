@@ -4,9 +4,11 @@ import { GithubPullRequest, GithubRepository } from "@/database/models";
 import { getCommentBody } from "@/git-platform/comment";
 import { commentGithubPr, getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
+import { createGhRepositoryDispatch } from "@/github/repository-dispatch";
 import { UnretryableError } from "@/job-core";
 
 import type { SendNotificationContext } from "../context";
+import { getBuildRepositoryDispatch } from "../repository-dispatch";
 
 /**
  * Send a notification to GitHub.
@@ -78,6 +80,21 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
     });
   };
 
+  const dispatchRepositoryEvent = async () => {
+    // Only the main app has the `contents: write` permission required by the
+    // GitHub repository dispatch API.
+    if (installation.app !== "main") {
+      return;
+    }
+    const dispatch = await getBuildRepositoryDispatch(ctx);
+    await createGhRepositoryDispatch(octokit, {
+      owner: githubAccount.login,
+      repo: githubRepository.name,
+      event_type: dispatch.event_type,
+      client_payload: dispatch.client_payload,
+    });
+  };
+
   await Promise.all([
     createGhCommitStatus(octokit, {
       owner: githubAccount.login,
@@ -89,6 +106,7 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
       context: notification.context,
     }),
     createGhComment(),
+    dispatchRepositoryEvent(),
     ctx.aggregatedNotification
       ? createGhCommitStatus(octokit, {
           owner: githubAccount.login,

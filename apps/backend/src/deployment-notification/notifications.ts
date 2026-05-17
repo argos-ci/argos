@@ -4,11 +4,13 @@ import { DeploymentNotification, GithubRepository } from "@/database/models";
 import { getCommentBody } from "@/git-platform/comment";
 import { commentGithubPr, getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
+import { createGhRepositoryDispatch } from "@/github/repository-dispatch";
 import { UnretryableError } from "@/job-core";
 import parentLogger from "@/logger";
 
 import { job as deploymentNotificationJob } from "./job";
 import { getDeploymentNotificationPayload } from "./notification";
+import { getDeploymentRepositoryDispatch } from "./repository-dispatch";
 
 export async function pushDeploymentNotification({
   type,
@@ -108,6 +110,26 @@ export async function processDeploymentNotification(
     });
   };
 
+  const dispatchRepositoryEvent = async () => {
+    // Only the main app has the `contents: write` permission required by the
+    // GitHub repository dispatch API.
+    if (installation.app !== "main") {
+      logger.info("Installation app is not main, skipping repository dispatch");
+      return;
+    }
+    const dispatch = getDeploymentRepositoryDispatch({
+      deploymentNotification,
+      deployment,
+      project,
+    });
+    await createGhRepositoryDispatch(octokit, {
+      owner: githubAccount.login,
+      repo: githubRepository.name,
+      event_type: dispatch.event_type,
+      client_payload: dispatch.client_payload,
+    });
+  };
+
   logger.info("Creating status and comment");
   await Promise.all([
     createGhCommitStatus(octokit, {
@@ -120,5 +142,6 @@ export async function processDeploymentNotification(
       context: notification.context,
     }),
     updatePullRequestComment(),
+    dispatchRepositoryEvent(),
   ]);
 }
