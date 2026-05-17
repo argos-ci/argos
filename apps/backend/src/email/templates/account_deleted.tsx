@@ -6,6 +6,7 @@ import {
   Hi,
   Hr,
   InfoText,
+  Link,
   Paragraph,
   SafetyDisclaimer,
 } from "../components";
@@ -40,7 +41,8 @@ export const handler = defineEmailTemplate({
           </Paragraph>
           <Hr />
           <InfoText>
-            If you didn't request this deletion, please <SafetyDisclaimer />
+            If you didn't request this deletion, please{" "}
+            <Link href="https://argos-ci.com/docs/contact-us">contact us</Link>.
           </InfoText>
         </EmailLayout>
       ),
