@@ -10,12 +10,17 @@ export function setup() {
     environment: config.get("sentry.environment"),
     release: config.get("releaseVersion"),
     tracesSampler(samplingContext) {
-      const attrs = samplingContext.attributes ?? {};
-      const method = attrs["http.request.method"];
-      const route = attrs["http.route"] ?? attrs["url.path"];
-      if (method === "POST" && route === "/github/event-handler") {
+      // Reduce sampling of "/github/event-handler", we have a ton.
+      if (samplingContext.name === "POST /github/event-handler") {
         return samplingContext.inheritOrSampleWith(0.0001);
       }
+
+      // We want to log every cron, they don't run often.
+      if (samplingContext.name === "cron.run") {
+        return samplingContext.inheritOrSampleWith(1);
+      }
+
+      // Else use the default sample rate.
       return samplingContext.inheritOrSampleWith(
         config.get("sentry.tracesSampleRate"),
       );
