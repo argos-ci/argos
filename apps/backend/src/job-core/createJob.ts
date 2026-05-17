@@ -165,27 +165,23 @@ export const createJob = <TValue extends string | number>(
           redisLock.acquire(
             [queue, id],
             async () => {
-              try {
-                ctx.logger.info("Running");
-                const performStart = performance.now();
-                await consumer.perform(id, ctx);
-                const performEnd = performance.now();
-                const completeStart = performance.now();
-                await consumer.complete?.(id, ctx);
-                const completeEnd = performance.now();
-                const duration = performEnd - performStart;
-                const completingDuration = completeStart - completeEnd;
-                ctx.logger.info(
-                  {
-                    duration,
-                    completingDuration,
-                    totalDuration: duration + completingDuration,
-                  },
-                  "Done",
-                );
-              } finally {
-                performance.clearMarks("");
-              }
+              ctx.logger.info("Running");
+              const performStart = performance.now();
+              await consumer.perform(id, ctx);
+              const performEnd = performance.now();
+              const completeStart = performance.now();
+              await consumer.complete?.(id, ctx);
+              const completeEnd = performance.now();
+              const duration = performEnd - performStart;
+              const completingDuration = completeEnd - completeStart;
+              ctx.logger.info(
+                {
+                  duration,
+                  completingDuration,
+                  totalDuration: duration + completingDuration,
+                },
+                "Done",
+              );
             },
             { timeout },
           ),
