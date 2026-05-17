@@ -20,8 +20,7 @@
     "db:migrate:rollback": "knex migrate:rollback",
     "db:migrate:make": "knex migrate:make",
     "db:reset": "pnpm run db:drop && pnpm run db:create && pnpm run db:load",
-    "watch-server-build-and-synchronize": "node --watch ./dist/processes/proc/build-and-synchronize.js | pino-pretty",
-    "watch-server-screenshot-diff": "node --watch ./dist/processes/proc/screenshot-diff.js | pino-pretty",
+    "watch-server-worker": "node --watch ./dist/processes/proc/worker.js | pino-pretty",
     "watch-server-web": "node --watch ./dist/processes/proc/web.js | pino-pretty",
     "watch-server": "concurrently \"npm:watch-server-*\"",
     "lint": "eslint . --max-warnings 0"

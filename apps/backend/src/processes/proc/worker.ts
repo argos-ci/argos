@@ -9,6 +9,7 @@ import { githubPullRequestJob } from "@/github-pull-request/job";
 import { createJobWorker } from "@/job-core";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
+import { job as screenshotDiffJob } from "@/screenshot-diff";
 import { job as synchronizeJob } from "@/synchronize";
 import { scheduleCron } from "@/util/cron";
 
@@ -25,4 +26,5 @@ createJobWorker(
   notificationMessageJob,
   notificationWorkflowJob,
   synchronizeJob,
+  screenshotDiffJob,
 );
