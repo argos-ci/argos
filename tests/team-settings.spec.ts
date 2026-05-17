@@ -49,10 +49,22 @@ loggedTest("team settings - integrations", async ({ page, team }) => {
   await screenshot(page, "team-settings-integrations");
 });
 
-loggedTest("team settings - security", async ({ page, team }) => {
-  await page.goto(`/${team.account.slug}/settings/security-and-privacy`);
+loggedTest("team settings - authentication", async ({ page, team }) => {
+  await page.goto(`/${team.account.slug}/settings/authentication`);
+  await expect(
+    page.getByRole("heading", { name: "Team domains" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "SAML Single Sign-On" }),
   ).toBeVisible();
-  await screenshot(page, "team-settings-security");
+  await expect(
+    page.getByRole("heading").filter({
+      hasText: /^(Team domains|GitHub Single Sign-On|SAML Single Sign-On)$/,
+    }),
+  ).toHaveText([
+    "Team domains",
+    "GitHub Single Sign-On",
+    "SAML Single Sign-On",
+  ]);
+  await screenshot(page, "team-settings-authentication");
 });
