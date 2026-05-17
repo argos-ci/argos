@@ -8,6 +8,7 @@ import {
 } from "@/database/models";
 import { checkOctokitErrorStatus, getInstallationOctokit } from "@/github";
 import { UnretryableError } from "@/job-core";
+import { boom } from "@/util/error";
 
 import { MergeBaseStrategy } from "../types";
 
@@ -107,11 +108,11 @@ export const GithubStrategy: MergeBaseStrategy<{
         return [];
       }
       if (checkOctokitErrorStatus(404, error)) {
-        const notFoundError = new Error(
+        throw boom(
+          404,
           `"${args.sha}" not found on repository "${args.ctx.repo}"`,
-        ) as Error & { retryable: boolean };
-        notFoundError.retryable = false;
-        throw notFoundError;
+          { retryable: false },
+        );
       }
       throw error;
     }
