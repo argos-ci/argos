@@ -8,7 +8,6 @@ import {
   InfoText,
   Link,
   Paragraph,
-  SafetyDisclaimer,
 } from "../components";
 import { defineEmailTemplate } from "../template";
 
