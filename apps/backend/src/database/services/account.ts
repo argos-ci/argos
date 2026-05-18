@@ -35,6 +35,10 @@ const RESERVED_SLUGS = [
 ];
 
 type TeamUserAuthMethod = (typeof TeamUser.authMethods)[number];
+type AccountAuthResult = {
+  account: Account;
+  creation: boolean;
+};
 
 export async function markUserLastAuthMethod(args: {
   userId: string;
@@ -208,7 +212,7 @@ export async function resolveAccountSlug(
 export async function getOrCreateUserAccountFromGhAccount(input: {
   ghAccount: GithubAccount;
   attachToAccount: Account | null;
-}): Promise<Account> {
+}): Promise<AccountAuthResult> {
   const { ghAccount, attachToAccount } = input;
 
   return getOrCreateUserAccountFromThirdParty({
@@ -235,7 +239,7 @@ export async function getOrCreateUserAccountFromGhAccount(input: {
 export async function getOrCreateUserAccountFromGitlabUser(input: {
   gitlabUser: GitlabUser;
   attachToAccount: Account | null;
-}): Promise<Account> {
+}): Promise<AccountAuthResult> {
   const { gitlabUser, attachToAccount } = input;
   return getOrCreateUserAccountFromThirdParty({
     provider: "GitLab",
@@ -258,7 +262,7 @@ export async function getOrCreateUserAccountFromGitlabUser(input: {
 export async function getOrCreateUserAccountFromGoogleUser(input: {
   googleUser: GoogleUser;
   attachToAccount: Account | null;
-}): Promise<Account> {
+}): Promise<AccountAuthResult> {
   const { googleUser, attachToAccount } = input;
   return getOrCreateUserAccountFromThirdParty({
     provider: "Google",
@@ -388,7 +392,7 @@ async function getOrCreateUserAccountFromThirdParty<
       }
     }
 
-    return attachToAccount;
+    return { account: attachToAccount, creation: false };
   }
 
   const potentialEmails = getPotentialEmails(model).map(sanitizeEmail);
@@ -495,7 +499,7 @@ async function getOrCreateUserAccountFromThirdParty<
       ]);
     });
 
-    return existingUser.account;
+    return { account: existingUser.account, creation: false };
   }
 
   if (!email) {
@@ -523,7 +527,7 @@ async function getOrCreateUserAccountFromThirdParty<
     },
   });
 
-  return account;
+  return { account, creation: true };
 }
 
 /**

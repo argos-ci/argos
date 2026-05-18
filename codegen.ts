@@ -41,6 +41,7 @@ const config: CodegenConfig = {
         mappers: {
           AccountAvatar: "../../database/models/index.js#AccountAvatar",
           AccountSubscription: "../../database/models/index.js#Subscription",
+          AutoInvite: "../../database/services/team-domain.js#AutoInvite",
           AuditTrail: "../../database/models/index.js#AuditTrail",
           AutomationRule: "../../database/models/index.js#AutomationRule",
           AutomationRun: "../../database/models/index.js#AutomationRun",
@@ -71,6 +72,7 @@ const config: CodegenConfig = {
           SlackInstallation: "../../database/models/index.js#SlackInstallation",
           Project: "../../database/models/index.js#Project",
           Team: "../../database/models/index.js#Account",
+          TeamDomain: "../../database/models/index.js#TeamDomain",
           TeamInvite: "../../database/models/index.js#TeamInvite",
           TeamSamlConfig: "../../database/models/index.js#TeamSamlConfig",
           TeamMember: "../../database/models/index.js#TeamUser",

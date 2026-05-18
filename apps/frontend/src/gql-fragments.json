@@ -25,6 +25,7 @@
     "Node": [
       "AccountSubscription",
       "AuditTrail",
+      "AutoInvite",
       "AutomationActionRun",
       "AutomationRule",
       "AutomationRun",
@@ -51,6 +52,7 @@
       "ScreenshotDiff",
       "SlackInstallation",
       "Team",
+      "TeamDomain",
       "TeamGithubMember",
       "TeamInvite",
       "TeamMember",

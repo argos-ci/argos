@@ -1,4 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
+import { invariant } from "@argos/util/invariant";
 import { GitbeakerRequestError } from "@gitbeaker/rest";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
@@ -15,6 +16,7 @@ import {
   requestEmailSignup,
 } from "@/database/services/account";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
+import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
 import {
@@ -179,6 +181,7 @@ export const typeDefs = gql`
   type AuthPayload {
     jwt: String!
     creation: Boolean!
+    hasAutoInvite: Boolean!
   }
 
   extend type Query {
@@ -679,7 +682,18 @@ export const resolvers: IResolvers = {
           code,
         });
 
-        return { jwt: createJWTFromAccount(account), creation };
+        invariant(account.userId, "Expected account to have userId");
+        const hasAutoInvite = creation
+          ? await hasAutoInviteForUser({
+              userId: account.userId,
+            })
+          : false;
+
+        return {
+          jwt: createJWTFromAccount(account),
+          creation,
+          hasAutoInvite,
+        };
       } catch (error) {
         if (
           error instanceof HTTPError &&

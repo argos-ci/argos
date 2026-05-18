@@ -11,6 +11,7 @@ import { Alert, AlertActions, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import { Container } from "@/ui/Container";
 import { APIError, fetchApi } from "@/util/api";
+import { getAutoInviteTeamsURL } from "@/util/auto-invite";
 import {
   AuthProvider,
   checkIsAuthProvider,
@@ -56,22 +57,33 @@ function AuthCallback(props: { provider: AuthProvider }) {
   const { setToken, token } = useAuth();
   const [initialToken] = useState(token);
   const [authError, setAuthError] = useState<Error | null>(null);
+  const [targetRedirectUri, setTargetRedirectUri] = useState<string | null>(
+    null,
+  );
   useEffect(() => {
-    if (!code) {
+    if (!code || !redirectUri) {
       return;
     }
 
-    fetchApi<{ jwt: string }>(`/auth/${provider}`, {
-      data: { code },
-      token: initialToken ?? undefined,
-    })
+    fetchApi<{ jwt: string; creation: boolean; hasAutoInvite: boolean }>(
+      `/auth/${provider}`,
+      {
+        data: { code },
+        token: initialToken ?? undefined,
+      },
+    )
       .then((data) => {
+        setTargetRedirectUri(
+          data.creation && data.hasAutoInvite
+            ? getAutoInviteTeamsURL(redirectUri)
+            : redirectUri,
+        );
         setToken(data.jwt);
       })
       .catch((error) => {
         setAuthError(error);
       });
-  }, [code, setToken, initialToken, provider]);
+  }, [code, setToken, initialToken, provider, redirectUri]);
 
   // If a authError is thrown, it will be caught by the ErrorBoundary.
   if (authError) {
@@ -89,7 +101,7 @@ function AuthCallback(props: { provider: AuthProvider }) {
 
   // If the token changes, redirect to the original page.
   if (token && initialToken !== token) {
-    return <UniversalNavigate to={redirectUri} replace />;
+    return <UniversalNavigate to={targetRedirectUri ?? redirectUri} replace />;
   }
 
   return null;

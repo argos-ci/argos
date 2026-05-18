@@ -58,6 +58,12 @@ export const User = defineFactory(models.User, () => ({
   email: FactoryGirl.sequence("user.email", (n) => `user-${n}@email.com`),
 }));
 
+export const UserEmail = defineFactory(models.UserEmail, () => ({
+  userId: User.associate("id") as unknown as string,
+  email: FactoryGirl.sequence("userEmail.email", (n) => `user-${n}@email.com`),
+  verified: true,
+}));
+
 export const UserAccessToken = defineFactory(models.UserAccessToken, () => ({
   userId: User.associate("id") as unknown as string,
   name: FactoryGirl.sequence("userAccessToken.name", (n) => `token-${n}`),
@@ -234,6 +240,11 @@ export const TeamUser = defineFactory(models.TeamUser, () => ({
   userId: User.associate("id") as unknown as string,
   teamId: Team.associate("id") as unknown as string,
   userLevel: "owner" as const,
+}));
+
+export const TeamDomain = defineFactory(models.TeamDomain, () => ({
+  teamId: Team.associate("id") as unknown as string,
+  domain: FactoryGirl.sequence("teamDomain.domain", (n) => `domain-${n}.com`),
 }));
 
 export const ScreenshotDiff = defineFactory(models.ScreenshotDiff, () => ({

@@ -7,6 +7,7 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { LinkButton } from "@/ui/Link";
 import { Loader } from "@/ui/Loader";
 import { OTPInput } from "@/ui/OTPInput";
+import { getAutoInviteTeamsURL } from "@/util/auto-invite";
 import { checkIsErrorCode, getErrorMessage } from "@/util/error";
 
 import { useAuth } from "./Auth";
@@ -19,6 +20,7 @@ const AuthenticateWithEmailMutation = graphql(`
     authenticateWithEmail(input: { email: $email, code: $code }) {
       jwt
       creation
+      hasAutoInvite
     }
   }
 `);
@@ -27,7 +29,7 @@ export function AuthWithEmail(props: {
   email: string;
   onSuccess?: () => void;
   onBack: () => void;
-  redirect: string | undefined;
+  redirect: string | null | undefined;
 }) {
   const { email, onBack, redirect, onSuccess } = props;
   const { setToken } = useAuth();
@@ -36,11 +38,17 @@ export function AuthWithEmail(props: {
     {
       onCompleted: (data) => {
         onSuccess?.();
-        if (data.authenticateWithEmail.creation && redirect) {
+        const redirectToAutoInvite =
+          data.authenticateWithEmail.creation &&
+          data.authenticateWithEmail.hasAutoInvite;
+        const targetRedirect = redirectToAutoInvite
+          ? getAutoInviteTeamsURL(redirect)
+          : redirect;
+        if (data.authenticateWithEmail.creation && targetRedirect) {
           setToken(data.authenticateWithEmail.jwt, {
             silent: true,
           });
-          window.location.replace(redirect);
+          window.location.replace(targetRedirect);
         } else {
           setToken(data.authenticateWithEmail.jwt);
         }

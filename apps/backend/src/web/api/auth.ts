@@ -20,6 +20,7 @@ import {
 import { getOrCreateGhAccountFromGhProfile } from "@/database/services/github";
 import { getOrCreateGitlabUser } from "@/database/services/gitlabUser";
 import { getOrCreateGoogleUser } from "@/database/services/googleUser";
+import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import {
   getTokenOctokit,
   retrieveOAuthToken as retrieveGithubOAuthToken,
@@ -46,6 +47,10 @@ const SamlBodySchema = z.object({
 });
 
 type OAuthBody = z.infer<typeof OAuthBodySchema>;
+type OAuthResult = {
+  account: Account;
+  creation: boolean;
+};
 
 /**
  * Create an OAuth handler.
@@ -54,7 +59,7 @@ function withOAuth(
   retrieveAccount: (
     body: OAuthBody,
     auth: AuthJWTPayload | null,
-  ) => Promise<Account>,
+  ) => Promise<OAuthResult>,
 ): express.RequestHandler[] {
   return [
     allowApp,
@@ -64,8 +69,20 @@ function withOAuth(
       const auth = await safeJwtAuthFromExpressReq(req);
       try {
         const parsed = OAuthBodySchema.parse(req.body);
-        const account = await retrieveAccount(parsed, auth ?? null);
-        res.send({ jwt: createJWTFromAccount(account) });
+        const { account, creation } = await retrieveAccount(
+          parsed,
+          auth ?? null,
+        );
+        invariant(account.userId, "Expected account to have userId");
+        const hasAutoInvite =
+          !auth && creation
+            ? await hasAutoInviteForUser({ userId: account.userId })
+            : false;
+        res.send({
+          jwt: createJWTFromAccount(account),
+          creation,
+          hasAutoInvite,
+        });
       } catch (error) {
         if (error instanceof axios.AxiosError && error.response) {
           res.status(error.response.status);
@@ -104,7 +121,7 @@ router.use(
         scope: result.scope,
       },
     );
-    const account = await getOrCreateUserAccountFromGhAccount({
+    const { account, creation } = await getOrCreateUserAccountFromGhAccount({
       ghAccount,
       attachToAccount: auth?.account ?? null,
     });
@@ -119,7 +136,7 @@ router.use(
         method: "github",
       });
     }
-    return account;
+    return { account, creation };
   }),
 );
 
@@ -141,7 +158,7 @@ router.use(
       refreshToken: response.refresh_token,
       lastLoggedAt: new Date().toISOString(),
     });
-    const account = await getOrCreateUserAccountFromGitlabUser({
+    const { account, creation } = await getOrCreateUserAccountFromGitlabUser({
       gitlabUser,
       attachToAccount: auth?.account ?? null,
     });
@@ -152,7 +169,7 @@ router.use(
         method: "gitlab",
       });
     }
-    return account;
+    return { account, creation };
   }),
 );
 
@@ -169,7 +186,7 @@ router.use(
     const googleUser = await getOrCreateGoogleUser(profile, {
       lastLoggedAt: new Date().toISOString(),
     });
-    const account = await getOrCreateUserAccountFromGoogleUser({
+    const { account, creation } = await getOrCreateUserAccountFromGoogleUser({
       googleUser,
       attachToAccount: auth?.account ?? null,
     });
@@ -180,7 +197,7 @@ router.use(
         method: "google",
       });
     }
-    return account;
+    return { account, creation };
   }),
 );
 

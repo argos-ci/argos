@@ -1786,6 +1786,42 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
+-- Name: team_domains; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.team_domains (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" bigint NOT NULL,
+    domain character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.team_domains OWNER TO postgres;
+
+--
+-- Name: team_domains_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.team_domains_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.team_domains_id_seq OWNER TO postgres;
+
+--
+-- Name: team_domains_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.team_domains_id_seq OWNED BY public.team_domains.id;
+
+
+--
 -- Name: team_invites; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2395,6 +2431,13 @@ ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: team_domains id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_domains ALTER COLUMN id SET DEFAULT nextval('public.team_domains_id_seq'::regclass);
+
+
+--
 -- Name: team_saml_configs id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2921,6 +2964,22 @@ ALTER TABLE ONLY public.subscriptions
 
 ALTER TABLE ONLY public.subscriptions
     ADD CONSTRAINT subscriptions_stripesubscriptionid_unique UNIQUE ("stripeSubscriptionId");
+
+
+--
+-- Name: team_domains team_domains_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_domains
+    ADD CONSTRAINT team_domains_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_domains team_domains_teamid_domain_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_domains
+    ADD CONSTRAINT team_domains_teamid_domain_unique UNIQUE ("teamId", domain);
 
 
 --
@@ -3563,6 +3622,13 @@ CREATE INDEX subscriptions_subscriberid_index ON public.subscriptions USING btre
 
 
 --
+-- Name: team_domains_domain_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX team_domains_domain_index ON public.team_domains USING btree (domain);
+
+
+--
 -- Name: team_users_teamid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4132,6 +4198,14 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: team_domains team_domains_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.team_domains
+    ADD CONSTRAINT team_domains_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
 -- Name: team_invites team_invites_invitedbyid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4450,3 +4524,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260507130000_project-deployment-auth.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260510120000_project-github-actions-oidc.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260511120000_project-tokenless-auth.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260517120000_team_domains.js', 1, NOW());

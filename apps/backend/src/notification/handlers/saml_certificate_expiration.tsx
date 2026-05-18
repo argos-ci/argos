@@ -36,7 +36,7 @@ export const handler = defineNotificationHandler({
   email: (props) => {
     const accountName = props.accountName || props.accountSlug;
     const settingsHref = new URL(
-      `/${props.accountSlug}/settings/security-and-privacy`,
+      `/${props.accountSlug}/settings/authentication`,
       baseUrl,
     ).href;
     return {
