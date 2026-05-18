@@ -14,10 +14,6 @@ dotenv.config({
   quiet: true,
 });
 
-const workers = 5;
-const maxConnectionsAllowed = 20;
-const freeConnectionsForThirdTools = 2;
-
 const toStringArray = (value: string | string[]) => {
   if (Array.isArray(value)) {
     return value;
@@ -434,13 +430,13 @@ export function createConfig() {
           doc: "Minimum connections per pool",
           format: Number,
           default: 2,
+          env: "PG_POOL_MIN",
         },
         max: {
           doc: "Maximum connections per pool",
           format: Number,
-          default: Math.floor(
-            (maxConnectionsAllowed - freeConnectionsForThirdTools) / workers,
-          ),
+          default: 10,
+          env: "PG_POOL_MAX",
         },
       },
       connection: {
