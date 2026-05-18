@@ -11,14 +11,20 @@ import {
   UserEmail,
 } from "@/database/models";
 import {
+  consumeAccountDeletionToken,
+  sendAccountDeletedEmail,
+  sendAccountDeletionRequestEmail,
+} from "@/database/services/account-deletion";
+import {
   markEmailAsVerified,
   sendVerificationEmail,
 } from "@/database/services/user-email";
 import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
+import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
 import type { IResolvers } from "../__generated__/resolver-types";
-import { deleteAccount } from "../services/account";
+import { deleteAccount, getAdminAccount } from "../services/account";
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { commonAccountResolvers } from "./Account";
 import { paginateResult } from "./PageInfo";
@@ -90,13 +96,19 @@ export const typeDefs = gql`
     me: User
   }
 
-  input DeleteUserInput {
+  input RequestAccountDeletionInput {
     accountId: ID!
   }
 
+  input ConfirmAccountDeletionInput {
+    token: String!
+  }
+
   extend type Mutation {
-    "Delete user and all its projects"
-    deleteUser(input: DeleteUserInput!): Boolean!
+    "Request the deletion of a user account. Sends a confirmation email."
+    requestAccountDeletion(input: RequestAccountDeletionInput!): Boolean!
+    "Confirm the deletion of a user account using the token from the email."
+    confirmAccountDeletion(input: ConfirmAccountDeletionInput!): Boolean!
     "Add a user email"
     addUserEmail(email: String!): User!
     "Delete a user email"
@@ -117,8 +129,65 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
-    deleteUser: async (_root, args, ctx) => {
-      await deleteAccount({ id: args.input.accountId, user: ctx.auth?.user });
+    requestAccountDeletion: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const account = await getAdminAccount({
+        id: args.input.accountId,
+        user: ctx.auth.user,
+      });
+      if (account.type !== "user") {
+        throw badUserInput(
+          "Account deletion request is only available for user accounts",
+        );
+      }
+      // The user MUST be the account owner — guard against admins (e.g. staff)
+      // triggering deletion emails for another user's account.
+      if (account.userId !== ctx.auth.user.id) {
+        throw forbidden();
+      }
+      const email = ctx.auth.user.email;
+      if (!email) {
+        throw badUserInput(
+          "Your account has no primary email — cannot send confirmation",
+        );
+      }
+      await sendAccountDeletionRequestEmail({ account, email });
+      return true;
+    },
+    confirmAccountDeletion: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      const { account, user } = ctx.auth;
+      // The token must belong to the authenticated user's account.
+      // We check the auth account is a user account *and* matches the auth user
+      // before consuming, to prevent token enumeration against other accounts.
+      if (account.type !== "user" || account.userId !== user.id) {
+        throw forbidden();
+      }
+      const valid = await consumeAccountDeletionToken({
+        token: args.input.token,
+        accountId: account.id,
+      });
+      if (!valid) {
+        throw badUserInput(
+          "The confirmation link has expired or is invalid. Please request a new account deletion from your personal settings.",
+          { code: "ACCOUNT_DELETION_TOKEN_INVALID" },
+        );
+      }
+      // Capture the email *before* deletion — afterwards the user is nulled.
+      const email = user.email;
+      const displayName = account.displayName;
+      await deleteAccount({ id: account.id, user });
+      if (email) {
+        try {
+          await sendAccountDeletedEmail({ name: displayName, email });
+        } catch (error) {
+          logger.error({ error }, "Fail to send account deletion email");
+        }
+      }
       return true;
     },
     addUserEmail: async (_root, args, ctx) => {

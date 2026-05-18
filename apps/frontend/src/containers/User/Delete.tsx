@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
@@ -25,12 +26,11 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Modal } from "@/ui/Modal";
 
-import { logout } from "../Auth";
-
 const _UserFragment = graphql(`
   fragment UserDelete_User on User {
     id
     slug
+    email
     subscription {
       id
       status
@@ -44,9 +44,11 @@ type ConfirmDeleteInputs = {
   verify: string;
 };
 
-const DeleteUserMutation = graphql(`
-  mutation DeleteUserMutation($userAccountId: ID!) {
-    deleteUser(input: { accountId: $userAccountId })
+const RequestAccountDeletionMutation = graphql(`
+  mutation RequestAccountDeletionMutation(
+    $input: RequestAccountDeletionInput!
+  ) {
+    requestAccountDeletion(input: $input)
   }
 `);
 
@@ -61,6 +63,7 @@ function DeleteButton(props: Omit<ButtonProps, "variant" | "children">) {
 type DeleteUserButtonProps = {
   userAccountId: string;
   userSlug: string;
+  userEmail: string | null;
 };
 
 function DeleteUserButton(props: DeleteUserButtonProps) {
@@ -76,6 +79,7 @@ function DeleteUserButton(props: DeleteUserButtonProps) {
 
 function UserDeleteDialog(props: DeleteUserButtonProps) {
   const client = useApolloClient();
+  const [emailSent, setEmailSent] = useState(false);
   const form = useForm<ConfirmDeleteInputs>({
     defaultValues: {
       slugConfirm: "",
@@ -84,13 +88,42 @@ function UserDeleteDialog(props: DeleteUserButtonProps) {
   });
   const onSubmit: SubmitHandler<ConfirmDeleteInputs> = async () => {
     await client.mutate({
-      mutation: DeleteUserMutation,
+      mutation: RequestAccountDeletionMutation,
       variables: {
-        userAccountId: props.userAccountId,
+        input: { accountId: props.userAccountId },
       },
     });
-    logout();
+    setEmailSent(true);
   };
+
+  if (emailSent) {
+    return (
+      <Dialog size="medium">
+        <DialogBody>
+          <DialogTitle>Check your inbox</DialogTitle>
+          <DialogText>
+            {props.userEmail ? (
+              <>
+                We've sent a confirmation link to{" "}
+                <strong>{props.userEmail}</strong>. Follow it to permanently
+                delete your account.
+              </>
+            ) : (
+              <>
+                We've sent a confirmation link to your email. Follow it to
+                permanently delete your account.
+              </>
+            )}
+          </DialogText>
+          <DialogText>The link expires in 15 minutes.</DialogText>
+        </DialogBody>
+        <DialogFooter>
+          <DialogDismiss>Close</DialogDismiss>
+        </DialogFooter>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog size="medium">
       <Form form={form} onSubmit={onSubmit}>
@@ -104,6 +137,10 @@ function UserDeleteDialog(props: DeleteUserButtonProps) {
           <DialogText>
             Argos recommends that you transfer projects you want to keep to a
             Team before deleting this Account.
+          </DialogText>
+          <DialogText>
+            For security, we'll send a confirmation link to your email. You'll
+            need to click it and confirm again to complete the deletion.
           </DialogText>
           <div className="bg-danger-hover text-danger-low my-4 rounded-sm p-2">
             <strong>Warning:</strong> This action is not reversible. Please be
@@ -149,7 +186,7 @@ function UserDeleteDialog(props: DeleteUserButtonProps) {
           <FormRootError control={form.control} />
           <DialogDismiss>Cancel</DialogDismiss>
           <FormSubmit control={form.control} variant="destructive">
-            Delete
+            Send confirmation email
           </FormSubmit>
         </DialogFooter>
       </Form>
@@ -172,7 +209,11 @@ export function UserDelete(props: {
         </CardParagraph>
       </CardBody>
       <CardFooter className="flex items-center justify-end">
-        <DeleteUserButton userAccountId={user.id} userSlug={user.slug} />
+        <DeleteUserButton
+          userAccountId={user.id}
+          userSlug={user.slug}
+          userEmail={user.email ?? null}
+        />
       </CardFooter>
     </Card>
   );

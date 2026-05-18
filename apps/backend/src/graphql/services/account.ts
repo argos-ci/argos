@@ -19,12 +19,15 @@ import {
 } from "@/database/models";
 import { resolveAccountSlug } from "@/database/services/account";
 import { transaction } from "@/database/transaction";
+import parentLogger from "@/logger";
 import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
 import { cancelStripeSubscription } from "@/stripe";
 
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { unsafe_deleteProject } from "./project";
+
+const logger = parentLogger.child({ module: "graphql/services/account" });
 
 async function deleteUserAccessTokensByUserId(args: {
   userId: string;
@@ -135,9 +138,11 @@ export async function deleteAccount(args: {
         trx,
       }),
     ]);
+    logger.info({ accountId: account.id }, "deleting account row");
 
     // Delete the account
     await account.$query(trx).delete();
+    logger.info({ accountId: account.id }, "account row deleted");
 
     // Delete the account's associated user or team
     switch (account.type) {
@@ -211,6 +216,11 @@ export async function deleteAccount(args: {
                 })
             : null,
         ]);
+        const resolvedSlug = await resolveAccountSlug(
+          `deleted-user-${userId}`,
+          0,
+          trx,
+        );
 
         await Promise.all([
           User.query(trx).where("id", userId).patch({
@@ -219,16 +229,14 @@ export async function deleteAccount(args: {
             googleUserId: null,
             email: null,
           }),
-          Account.query(trx)
-            .where("userId", userId)
-            .patch({
-              stripeCustomerId: null,
-              githubAccountId: null,
-              name: "Deleted user",
-              slug: await resolveAccountSlug(`deleted-user-${userId}`),
-              gitlabAccessToken: null,
-              gitlabBaseUrl: null,
-            }),
+          Account.query(trx).where("userId", userId).patch({
+            stripeCustomerId: null,
+            githubAccountId: null,
+            name: "Deleted user",
+            slug: resolvedSlug,
+            gitlabAccessToken: null,
+            gitlabBaseUrl: null,
+          }),
         ]);
 
         await Promise.all([
