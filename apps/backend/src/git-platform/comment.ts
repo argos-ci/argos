@@ -125,7 +125,7 @@ export async function getCommentBody(props: {
     Build.query()
       .distinctOn("builds.name", "builds.projectId")
       .joinRelated("compareScreenshotBucket")
-      .withGraphFetched("project")
+      .withGraphFetched("project.account")
       .where("compareScreenshotBucket.commit", props.commit)
       .orderBy([
         { column: "builds.name", order: "desc" },
