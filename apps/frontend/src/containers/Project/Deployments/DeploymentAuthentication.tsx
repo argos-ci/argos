@@ -8,6 +8,7 @@ import { FieldError } from "@/ui/FieldError";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
+import { Link } from "@/ui/Link";
 import {
   ListBox,
   ListBoxItem,
@@ -127,7 +128,16 @@ export function DeploymentAuthentication(props: {
             )}
           </div>
         </CardBody>
-        <FormCardFooter control={form.control} />
+        <FormCardFooter control={form.control}>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/deployments/authentication"
+            target="_blank"
+          >
+            deployment access protection
+          </Link>
+          .
+        </FormCardFooter>
       </Form>
     </Card>
   );

@@ -8,6 +8,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Link } from "@/ui/Link";
 
 import { getRepositoryLabel } from "../../Repository";
 
@@ -140,7 +141,16 @@ export function ProductionDeploymentBranch(props: {
             </>
           )}
         </CardBody>
-        <FormCardFooter control={form.control} />
+        <FormCardFooter control={form.control}>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/deployments/environments"
+            target="_blank"
+          >
+            deployment environments
+          </Link>
+          .
+        </FormCardFooter>
       </Form>
     </Card>
   );

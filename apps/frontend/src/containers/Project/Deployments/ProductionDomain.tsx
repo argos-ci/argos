@@ -8,6 +8,7 @@ import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { Link } from "@/ui/Link";
 
 const INTERNAL_DOMAIN_SUFFIX = config.deployments.baseDomain;
 
@@ -85,7 +86,16 @@ export function ProductionDomain(props: {
             className="max-w-md"
           />
         </CardBody>
-        <FormCardFooter control={form.control} />
+        <FormCardFooter control={form.control}>
+          Learn more about{" "}
+          <Link
+            href="https://argos-ci.com/docs/deployments/urls"
+            target="_blank"
+          >
+            deployment URLs and domains
+          </Link>
+          .
+        </FormCardFooter>
       </Form>
     </Card>
   );
