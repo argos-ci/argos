@@ -276,6 +276,17 @@ export const createJob = <TValue extends string | number>(
 
           let consumerTag: string | null = null;
 
+          // Lets the consume callback signal a fatal per-consumer error to the
+          // outer loop without taking down the shared channel. Racing this
+          // against channel termination ensures `runForever` re-registers a
+          // fresh consumer for this queue after a cancel.
+          let signalConsumerFault!: (error: unknown) => void;
+          const consumerFault = new Promise<never>((_, reject) => {
+            signalConsumerFault = reject;
+          });
+          // Prevent an unhandled rejection if the channel terminates first.
+          consumerFault.catch(() => undefined);
+
           const { consumerTag: tag } = await runConsumerSetup(
             channel,
             async () => {
@@ -344,16 +355,20 @@ export const createJob = <TValue extends string | number>(
                       );
                     }
                   }
+                  signalConsumerFault(error);
                 }
               });
             },
           );
           consumerTag = tag;
 
-          // Resolves on channel close, rejects on channel error. Either way
-          // pRetry / runForever will re-enter and re-register the consumer on
-          // the next shared channel.
-          await observeChannelTermination(channel);
+          // Resolves on channel close, rejects on channel error or on a
+          // per-consumer fault signalled from the consume callback. Either
+          // way pRetry / runForever re-enters and re-registers the consumer.
+          await Promise.race([
+            observeChannelTermination(channel),
+            consumerFault,
+          ]);
         },
         {
           onError: (error) => {
