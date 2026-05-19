@@ -232,7 +232,7 @@ export async function handleGitHubEvents(
           repo: payload.repository.name,
           octokit,
           body: getPendingCommentBody(),
-          pullRequest: pr,
+          pullRequestId: pr.id,
         });
       }
 

@@ -1,109 +1,59 @@
 import { invariant } from "@argos/util/invariant";
-import { GitbeakerRequestError } from "@gitbeaker/rest";
+import type { Gitlab } from "@gitbeaker/rest";
 
-import { getGitlabClientFromAccount, type GitlabClient } from "@/gitlab";
+import type { GitlabProject } from "@/database/models";
+import { getGitlabClientFromAccount } from "@/gitlab";
+import { setGitLabCommitStatus } from "@/gitlab/commit-status";
 import { UnretryableError } from "@/job-core";
-import { redisLock } from "@/util/redis";
 
 import type { SendNotificationContext } from "../context";
-import { NotificationPayload } from "../notification";
+import type { NotificationPayload } from "../notification";
+
+export type SendGitLabNotificationContext = SendNotificationContext & {
+  gitlabClient: Gitlab<false>;
+  gitlabProject: GitlabProject;
+};
 
 /**
- * Set the commit status on GitLab.
- * Handle errors that occur if the status is already in "running" state.
- * Could happen if a build fails.
+ * Get a context for sending GitLab notifications.
  */
-async function setGitLabCommitStatus(input: {
-  client: GitlabClient;
-  gitlabProjectId: number;
-  sha: string;
-  state: NotificationPayload["gitlab"]["state"];
-  context: string;
-  targetUrl: string;
-  description: string;
-}) {
-  await redisLock.acquire(
-    ["create-gitlab-commit-status", input.gitlabProjectId, input.sha],
-    async () => {
-      try {
-        await input.client.Commits.editStatus(
-          input.gitlabProjectId,
-          input.sha,
-          input.state,
-          {
-            context: input.context,
-            targetUrl: input.targetUrl,
-            description: input.description,
-          },
-        );
-      } catch (error) {
-        if (
-          error instanceof GitbeakerRequestError &&
-          error.message.startsWith(
-            "Cannot transition status via :run from :running",
-          )
-        ) {
-          // If the status is already running, we can safely ignore this error
-          return;
-        }
-      }
-    },
-  );
-}
-
-/**
- * Send a notification to GitLab.
- */
-export async function sendGitLabNotification(ctx: SendNotificationContext) {
-  const { build, notification } = ctx;
-  invariant(build, "no build found", UnretryableError);
-
-  const { project, compareScreenshotBucket } = build;
-
-  invariant(
-    compareScreenshotBucket,
-    "no compare screenshot bucket found",
-    UnretryableError,
-  );
-  invariant(project, "no project found", UnretryableError);
+export async function getGitLabNotificationContext(
+  ctx: SendNotificationContext,
+): Promise<SendGitLabNotificationContext | null> {
+  const { project } = ctx;
 
   const { gitlabProject, account } = project;
 
   invariant(account, "no account found", UnretryableError);
 
-  if (!account.gitlabAccessToken) {
-    return;
+  if (!account.gitlabAccessToken || !gitlabProject) {
+    return null;
   }
 
-  if (!gitlabProject) {
-    return;
+  const gitlabClient = await getGitlabClientFromAccount(account);
+
+  if (!gitlabClient) {
+    return null;
   }
 
-  const client = await getGitlabClientFromAccount(account);
+  return { ...ctx, gitlabClient, gitlabProject };
+}
 
-  if (!client) {
-    return;
-  }
-
+/**
+ * Post the GitLab notification commit status.
+ */
+export async function postGitLabNotificationCommitStatus(
+  ctx: SendGitLabNotificationContext,
+  notification: NotificationPayload,
+) {
+  const { gitlabClient, gitlabProject, commit } = ctx;
   await setGitLabCommitStatus({
-    client,
+    client: gitlabClient,
     gitlabProjectId: gitlabProject.gitlabId,
-    sha: ctx.commit,
+    sha: commit,
     state: notification.gitlab.state,
     context: notification.context,
-    targetUrl: ctx.buildUrl,
+    targetUrl: notification.url,
     description: notification.description,
   });
-
-  if (ctx.aggregatedNotification) {
-    await setGitLabCommitStatus({
-      client,
-      gitlabProjectId: gitlabProject.gitlabId,
-      sha: ctx.commit,
-      state: ctx.aggregatedNotification.gitlab.state,
-      context: ctx.aggregatedNotification.context,
-      targetUrl: ctx.projectUrl,
-      description: ctx.aggregatedNotification.description,
-    });
-  }
 }

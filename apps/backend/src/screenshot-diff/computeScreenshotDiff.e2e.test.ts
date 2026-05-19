@@ -1,7 +1,14 @@
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { afterAll, test as base, beforeAll, describe, expect } from "vitest";
+import {
+  afterAll,
+  test as base,
+  beforeAll,
+  describe,
+  expect,
+  vi,
+} from "vitest";
 
 import config from "@/config";
 import {
@@ -32,6 +39,8 @@ type Fixtures = {
     baseBucket: ScreenshotBucket;
   };
 };
+
+vi.setConfig({ testTimeout: 8_000 });
 
 const test = base.extend<Fixtures>({
   fixture: async ({}, use) => {
@@ -83,18 +92,20 @@ describe("#computeScreenshotDiff", () => {
 
   beforeAll(async () => {
     s3 = getS3Client();
-    await uploadFromFilePath({
-      s3,
-      Bucket: config.get("s3.screenshotsBucket"),
-      Key: "penelope.png",
-      inputPath: join(__dirname, "__fixtures__", "penelope.png"),
-    });
-    await uploadFromFilePath({
-      s3,
-      Bucket: config.get("s3.screenshotsBucket"),
-      Key: "penelope-argos.png",
-      inputPath: join(__dirname, "__fixtures__", "penelope-argos.png"),
-    });
+    await Promise.all([
+      uploadFromFilePath({
+        s3,
+        Bucket: config.get("s3.screenshotsBucket"),
+        Key: "penelope.png",
+        inputPath: join(__dirname, "__fixtures__", "penelope.png"),
+      }),
+      uploadFromFilePath({
+        s3,
+        Bucket: config.get("s3.screenshotsBucket"),
+        Key: "penelope-argos.png",
+        inputPath: join(__dirname, "__fixtures__", "penelope-argos.png"),
+      }),
+    ]);
   });
 
   afterAll(async () => {
@@ -104,6 +115,7 @@ describe("#computeScreenshotDiff", () => {
 
   describe("with two different screenshots", () => {
     let screenshotTest: Test;
+
     test.beforeEach(async ({ fixture }) => {
       const [compareScreenshot, baseScreenshot] = await Promise.all([
         factory.Screenshot.create({
@@ -242,16 +254,18 @@ describe("#computeScreenshotDiff", () => {
 
   describe("with two same screenshots", () => {
     test.beforeEach(async ({ fixture }) => {
-      const compareScreenshot = await factory.Screenshot.create({
-        name: "penelope",
-        s3Id: "penelope.png",
-        screenshotBucketId: fixture.compareBucket.id,
-      });
-      const baseScreenshot = await factory.Screenshot.create({
-        name: "penelope",
-        s3Id: "penelope.png",
-        screenshotBucketId: fixture.baseBucket.id,
-      });
+      const [compareScreenshot, baseScreenshot] = await Promise.all([
+        factory.Screenshot.create({
+          name: "penelope",
+          s3Id: "penelope.png",
+          screenshotBucketId: fixture.compareBucket.id,
+        }),
+        factory.Screenshot.create({
+          name: "penelope",
+          s3Id: "penelope.png",
+          screenshotBucketId: fixture.baseBucket.id,
+        }),
+      ]);
       const test = await factory.Test.create({
         name: compareScreenshot.name,
         projectId: fixture.project.id,

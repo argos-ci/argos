@@ -112,6 +112,7 @@ describe("getBuild", () => {
             context: "argos",
             github: { state: "success" },
             gitlab: { state: "success" },
+            url: "http://localhost:3000/acme/web/builds/1",
           },
           conclusion: "no-changes",
           metadata: null,

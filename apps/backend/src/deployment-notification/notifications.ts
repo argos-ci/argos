@@ -1,8 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 
 import { DeploymentNotification, GithubRepository } from "@/database/models";
-import { getCommentBody } from "@/git-platform/comment";
-import { commentGithubPr, getInstallationOctokit } from "@/github";
+import { postGitHubComment } from "@/git-platform/github";
+import { getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
 import { UnretryableError } from "@/job-core";
 import parentLogger from "@/logger";
@@ -35,7 +35,7 @@ export async function processDeploymentNotification(
   });
 
   await deploymentNotification.$fetchGraph(
-    "deployment.[project.[githubRepository.[githubAccount,repoInstallations.installation]], pullRequest]",
+    "deployment.[project.[githubRepository.[githubAccount,repoInstallations.installation]]]",
   );
 
   invariant(
@@ -56,7 +56,7 @@ export async function processDeploymentNotification(
     return;
   }
 
-  const githubAccount = githubRepository.githubAccount;
+  const { githubAccount } = githubRepository;
 
   invariant(githubAccount, "No github account found", UnretryableError);
 
@@ -79,32 +79,23 @@ export async function processDeploymentNotification(
     project,
   });
 
-  const updatePullRequestComment = async () => {
+  const comment = async () => {
     if (!project.prCommentEnabled) {
       logger.info("PR comment disabled, skipping");
       return;
     }
 
-    if (!deployment.pullRequest) {
+    if (!deployment.githubPullRequestId) {
       logger.info("No pull request, skipping");
       return;
     }
 
-    if (deployment.pullRequest.commentDeleted) {
-      logger.info("Comment deleted, skipping");
-      return;
-    }
-
-    const body = await getCommentBody({
-      commit: deployment.commitSha,
-    });
-
-    await commentGithubPr({
+    await postGitHubComment({
       owner: githubAccount.login,
       repo: githubRepository.name,
-      body,
       octokit,
-      pullRequest: deployment.pullRequest,
+      commit: deployment.commitSha,
+      githubPullRequestId: deployment.githubPullRequestId,
     });
   };
 
@@ -119,6 +110,6 @@ export async function processDeploymentNotification(
       description: notification.description,
       context: notification.context,
     }),
-    updatePullRequestComment(),
+    comment(),
   ]);
 }

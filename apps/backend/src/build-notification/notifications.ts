@@ -2,13 +2,23 @@ import { invariant } from "@argos/util/invariant";
 
 import { BuildNotification } from "@/database/models";
 import { UnretryableError } from "@/job-core";
+import { redisLock } from "@/util/redis";
 
-import { getAggregatedNotification } from "./aggregated";
+import { getAggregatedNotificationPayload } from "./aggregated";
 import type { SendNotificationContext } from "./context";
 import { job as buildNotificationJob } from "./job";
 import { getNotificationPayload } from "./notification";
-import { sendGitHubNotification } from "./services/github";
-import { sendGitLabNotification } from "./services/gitlab";
+import {
+  getGitHubNotificationContext,
+  postGitHubNotificationComment,
+  postGitHubNotificationCommitStatus,
+  type SendGitHubNotificationContext,
+} from "./services/github";
+import {
+  getGitLabNotificationContext,
+  postGitLabNotificationCommitStatus,
+  type SendGitLabNotificationContext,
+} from "./services/gitlab";
 
 export async function pushBuildNotification({
   type,
@@ -33,57 +43,95 @@ export async function processBuildNotification(
     `build.[project.[gitlabProject, githubRepository.[githubAccount,repoInstallations.installation], account], compareScreenshotBucket]`,
   );
 
-  invariant(buildNotification.build, "No build found", UnretryableError);
+  const { build } = buildNotification;
+  invariant(build, "No build found", UnretryableError);
+
+  const { project, compareScreenshotBucket } = build;
   invariant(
-    buildNotification.build.compareScreenshotBucket,
-    "No compareScreenshotBucket found",
+    compareScreenshotBucket,
+    "No compare screenshot bucket found",
     UnretryableError,
   );
-  invariant(
-    buildNotification.build.project,
-    "No project found",
-    UnretryableError,
-  );
+  invariant(project, "No project found", UnretryableError);
 
   const commit = (() => {
     // In merge queue, we never notify the PR head commit but the merge queue itself.
-    if (
-      !buildNotification.build.mergeQueue &&
-      buildNotification.build.prHeadCommit
-    ) {
-      return buildNotification.build.prHeadCommit;
+    if (!build.mergeQueue && build.prHeadCommit) {
+      return build.prHeadCommit;
     }
-    return buildNotification.build.compareScreenshotBucket.commit;
+    return compareScreenshotBucket.commit;
   })();
-
-  const summaryCheckConfig = buildNotification.build.project.summaryCheck;
-
-  const [buildUrl, projectUrl, notification, aggregatedNotification] =
-    await Promise.all([
-      buildNotification.build.getUrl(),
-      buildNotification.build.project.getUrl(),
-      getNotificationPayload({
-        buildNotification,
-        build: buildNotification.build,
-      }),
-      getAggregatedNotification({
-        projectId: buildNotification.build.projectId,
-        commit,
-        buildType: buildNotification.build.type,
-        summaryCheckConfig,
-      }),
-    ]);
 
   const ctx: SendNotificationContext = {
     buildNotification,
+    build,
+    compareScreenshotBucket,
+    project,
     commit,
-    build: buildNotification.build,
-    buildUrl,
-    projectUrl,
-    notification,
-    aggregatedNotification,
-    comment: !buildNotification.build.mergeQueue,
   };
 
-  await Promise.all([sendGitHubNotification(ctx), sendGitLabNotification(ctx)]);
+  const [notification, githubCtx, gitlabCtx] = await Promise.all([
+    getNotificationPayload({
+      buildNotification,
+      build,
+    }),
+    getGitHubNotificationContext(ctx),
+    getGitLabNotificationContext(ctx),
+  ]);
+
+  const shouldComment = !build.mergeQueue && project.prCommentEnabled;
+
+  await Promise.all([
+    ...(githubCtx
+      ? [
+          postGitHubNotificationCommitStatus(githubCtx, notification),
+          shouldComment && postGitHubNotificationComment(githubCtx),
+        ]
+      : []),
+    gitlabCtx && postGitLabNotificationCommitStatus(gitlabCtx, notification),
+    sendAggregatedNotification({ ctx, githubCtx, gitlabCtx }),
+  ]);
+}
+
+/**
+ * Send the aggregated notification that groups all notifications relative to this commit.
+ */
+async function sendAggregatedNotification(args: {
+  ctx: SendNotificationContext;
+  githubCtx: SendGitHubNotificationContext | null;
+  gitlabCtx: SendGitLabNotificationContext | null;
+}) {
+  const {
+    ctx: { project, commit, build },
+    githubCtx,
+    gitlabCtx,
+  } = args;
+
+  // If neither GitHub or GitLab is available.
+  if (!githubCtx && !gitlabCtx) {
+    return;
+  }
+
+  await redisLock.coalesce(
+    ["send-aggregated-notification", project.id, commit],
+    async () => {
+      const notification = await getAggregatedNotificationPayload({
+        project,
+        commit,
+        buildType: build.type,
+        summaryCheckConfig: project.summaryCheck,
+      });
+
+      if (!notification) {
+        return;
+      }
+
+      await Promise.all([
+        githubCtx &&
+          postGitHubNotificationCommitStatus(githubCtx, notification),
+        gitlabCtx &&
+          postGitLabNotificationCommitStatus(gitlabCtx, notification),
+      ]);
+    },
+  );
 }
