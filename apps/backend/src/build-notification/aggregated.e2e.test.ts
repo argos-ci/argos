@@ -73,6 +73,7 @@ describe("#getAggregatedNotificationPayload", () => {
         description: "No diff detected",
         github: { state: "success" },
         gitlab: { state: "success" },
+        url: await project.getUrl(),
       });
     });
   });
@@ -125,6 +126,7 @@ describe("#getAggregatedNotificationPayload", () => {
         description: "Diff detected",
         github: { state: "failure" },
         gitlab: { state: "failed" },
+        url: await project.getUrl(),
       });
     });
 
@@ -170,6 +172,7 @@ describe("#getAggregatedNotificationPayload", () => {
         description: "Diff detected",
         github: { state: "failure" },
         gitlab: { state: "failed" },
+        url: await project.getUrl(),
       });
     });
 
@@ -271,6 +274,7 @@ describe("#getAggregatedNotificationPayload", () => {
         description: "Diff accepted",
         github: { state: "success" },
         gitlab: { state: "success" },
+        url: await project.getUrl(),
       });
     });
   });

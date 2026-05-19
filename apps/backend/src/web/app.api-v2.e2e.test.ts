@@ -313,6 +313,7 @@ describe("api v2", () => {
               description: "Build is queued",
               github: { state: "pending" },
               gitlab: { state: "pending" },
+              url: "http://localhost:3000/argos-ci/argos/builds/1",
             },
           },
         });
@@ -425,6 +426,7 @@ describe("api v2", () => {
               description: "Build is queued",
               github: { state: "pending" },
               gitlab: { state: "pending" },
+              url: "http://localhost:3000/argos-ci/argos/builds/1",
             },
           },
         });
@@ -578,6 +580,7 @@ describe("api v2", () => {
                 description: "Build is queued",
                 github: { state: "pending" },
                 gitlab: { state: "pending" },
+                url: "http://localhost:3000/argos-ci/argos/builds/1",
               },
             },
           });
