@@ -21,12 +21,12 @@ async function getOrCreatePullRequestComment(args: {
 
     invariant(pullRequest, "Pull request not found", UnretryableError);
 
-    if (pullRequest.commentId) {
-      return pullRequest.commentId;
-    }
-
     if (pullRequest.commentDeleted) {
       return null;
+    }
+
+    if (pullRequest.commentId) {
+      return pullRequest.commentId;
     }
 
     const { data } = await octokit.issues.createComment({

@@ -79,7 +79,7 @@ export async function processBuildNotification(
     getGitLabNotificationContext(ctx),
   ]);
 
-  const shouldComment = !build.mergeQueue || !project.prCommentEnabled;
+  const shouldComment = !build.mergeQueue && project.prCommentEnabled;
 
   await Promise.all([
     ...(githubCtx

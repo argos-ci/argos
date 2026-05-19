@@ -44,6 +44,8 @@ export async function setGitLabCommitStatus(args: {
           // If the status is already running, we can safely ignore this error
           return;
         }
+
+        throw error;
       }
     },
   );
