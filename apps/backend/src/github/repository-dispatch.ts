@@ -1,6 +1,6 @@
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
 
-import logger from "@/logger";
+import parentLogger from "@/logger";
 
 import { checkOctokitErrorStatus } from "./error";
 
@@ -17,22 +17,37 @@ export async function createGhRepositoryDispatch(
   octokit: Octokit,
   params: RestEndpointMethodTypes["repos"]["createDispatchEvent"]["parameters"],
 ) {
+  const logger = parentLogger.child({
+    category: "github.repository-dispatch",
+    owner: params.owner,
+    repo: params.repo,
+    event_type: params.event_type,
+  });
+
+  logger.info("Creating GitHub repository dispatch event");
+
   try {
     await octokit.repos.createDispatchEvent(params);
+    logger.info("Created GitHub repository dispatch event");
   } catch (error) {
     // The repository is no longer accessible (deleted, transferred, renamed).
     if (checkOctokitErrorStatus(404, error)) {
+      logger.info(
+        { error },
+        "Skipped GitHub repository dispatch event (repository not found)",
+      );
       return;
     }
 
     // The repository is archived or the installation has no permission.
     if (checkOctokitErrorStatus(403, error)) {
+      logger.info(
+        { error },
+        "Skipped GitHub repository dispatch event (forbidden)",
+      );
       return;
     }
 
-    logger.warn(
-      { error, owner: params.owner, repo: params.repo },
-      "Failed to create GitHub repository dispatch event",
-    );
+    logger.warn({ error }, "Failed to create GitHub repository dispatch event");
   }
 }

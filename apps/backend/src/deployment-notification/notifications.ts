@@ -122,6 +122,14 @@ export async function processDeploymentNotification(
       deployment,
       project,
     });
+    logger.info(
+      {
+        owner: githubAccount.login,
+        repo: githubRepository.name,
+        event_type: dispatch.event_type,
+      },
+      "Triggering GitHub repository dispatch event for deployment",
+    );
     await createGhRepositoryDispatch(octokit, {
       owner: githubAccount.login,
       repo: githubRepository.name,

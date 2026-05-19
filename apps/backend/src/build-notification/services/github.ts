@@ -6,6 +6,7 @@ import { commentGithubPr, getInstallationOctokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
 import { createGhRepositoryDispatch } from "@/github/repository-dispatch";
 import { UnretryableError } from "@/job-core";
+import parentLogger from "@/logger";
 
 import type { SendNotificationContext } from "../context";
 import { getBuildRepositoryDispatch } from "../repository-dispatch";
@@ -14,7 +15,13 @@ import { getBuildRepositoryDispatch } from "../repository-dispatch";
  * Send a notification to GitHub.
  */
 export async function sendGitHubNotification(ctx: SendNotificationContext) {
-  const { build, notification, commit } = ctx;
+  const { build, buildNotification, notification, commit } = ctx;
+
+  const logger = parentLogger.child({
+    category: "build-notifications",
+    buildNotificationId: buildNotification.id,
+    buildId: buildNotification.buildId,
+  });
 
   invariant(build, "No build found", UnretryableError);
 
@@ -84,9 +91,18 @@ export async function sendGitHubNotification(ctx: SendNotificationContext) {
     // Only the main app has the `contents: write` permission required by the
     // GitHub repository dispatch API.
     if (installation.app !== "main") {
+      logger.info("Installation app is not main, skipping repository dispatch");
       return;
     }
     const dispatch = await getBuildRepositoryDispatch(ctx);
+    logger.info(
+      {
+        owner: githubAccount.login,
+        repo: githubRepository.name,
+        event_type: dispatch.event_type,
+      },
+      "Triggering GitHub repository dispatch event for build",
+    );
     await createGhRepositoryDispatch(octokit, {
       owner: githubAccount.login,
       repo: githubRepository.name,
