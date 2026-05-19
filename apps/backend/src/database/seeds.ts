@@ -752,7 +752,7 @@ export async function seed() {
       name: "argos-test-repository",
       private: false,
       defaultBranch: "main",
-      githubId: 123456789,
+      githubId: 82474570,
       githubAccountId: argosGhAccount!.id,
       createdAt: "2016-12-08T22:59:55Z",
       updatedAt: "2016-12-08T22:59:55Z",
