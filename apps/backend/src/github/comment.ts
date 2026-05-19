@@ -1,64 +1,57 @@
+import { invariant } from "@argos/util/invariant";
 import { Octokit } from "@octokit/rest";
 
-import type { GithubPullRequest } from "@/database/models";
+import { GithubPullRequest } from "@/database/models";
+import { UnretryableError } from "@/job-core";
 import logger from "@/logger";
 import { redisLock } from "@/util/redis";
 
 import { checkOctokitErrorStatus } from "./error";
 
-async function getOrCreatePullRequestComment({
-  owner,
-  repo,
-  body,
-  octokit,
-  pullRequest,
-}: {
+async function getOrCreatePullRequestComment(args: {
   owner: string;
   repo: string;
   body: string;
   octokit: Octokit;
-  pullRequest: GithubPullRequest;
+  pullRequestId: string;
 }) {
-  return redisLock.acquire(["create-pr-comment", pullRequest.id], async () => {
-    const freshPR = await pullRequest.$query();
-    if (freshPR.commentId) {
-      return freshPR.commentId;
+  const { pullRequestId, octokit, owner, repo, body } = args;
+  return redisLock.acquire(["create-pr-comment", pullRequestId], async () => {
+    const pullRequest = await GithubPullRequest.query().findById(pullRequestId);
+
+    invariant(pullRequest, "Pull request not found", UnretryableError);
+
+    if (pullRequest.commentId) {
+      return pullRequest.commentId;
+    }
+
+    if (pullRequest.commentDeleted) {
+      return null;
     }
 
     const { data } = await octokit.issues.createComment({
       owner,
       repo,
-      issue_number: freshPR.number,
+      issue_number: pullRequest.number,
       body,
     });
-    await freshPR.$query().patch({ commentId: String(data.id) });
+    await GithubPullRequest.query()
+      .findById(pullRequestId)
+      .patch({ commentId: String(data.id) });
     return null;
   });
 }
 
-export async function commentGithubPr({
-  owner,
-  repo,
-  body,
-  octokit,
-  pullRequest,
-}: {
+export async function commentGithubPr(args: {
   owner: string;
   repo: string;
   body: string;
   octokit: Octokit;
-  pullRequest: GithubPullRequest;
+  pullRequestId: string;
 }) {
+  const { octokit, repo, owner, body, pullRequestId } = args;
   try {
-    const commentId =
-      pullRequest.commentId ??
-      (await getOrCreatePullRequestComment({
-        owner,
-        repo,
-        body,
-        octokit,
-        pullRequest,
-      }));
+    const commentId = await getOrCreatePullRequestComment(args);
 
     if (commentId) {
       await octokit.issues.updateComment({
@@ -70,7 +63,9 @@ export async function commentGithubPr({
     }
   } catch (error: unknown) {
     if (checkOctokitErrorStatus(404, error)) {
-      await pullRequest.$clone().$query().patch({ commentDeleted: true });
+      await GithubPullRequest.query()
+        .findById(pullRequestId)
+        .patch({ commentDeleted: true });
     } else if (checkOctokitErrorStatus(403, error)) {
       logger.info({ error }, "GitHub PR comment update forbidden (403)");
     } else {

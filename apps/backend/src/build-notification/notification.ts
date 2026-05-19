@@ -17,6 +17,7 @@ export const NotificationPayloadSchema = z.object({
   gitlab: z.object({
     state: z.enum(["pending", "running", "success", "failed", "canceled"]),
   }),
+  url: z.url(),
 });
 export type NotificationPayload = z.infer<typeof NotificationPayloadSchema>;
 
@@ -190,19 +191,23 @@ function getNotificationDescription(input: {
 /**
  * Get the notification payload for each platform based on the build.
  */
-export async function getNotificationPayload(input: {
+export async function getNotificationPayload(args: {
   buildNotification: Pick<BuildNotification, "type">;
   build: Build;
 }): Promise<NotificationPayload> {
+  const { buildNotification, build } = args;
   const description = getNotificationDescription({
-    buildNotificationType: input.buildNotification.type,
-    build: input.build,
+    buildNotificationType: buildNotification.type,
+    build: build,
   });
   const states = getNotificationStates({
-    buildNotificationType: input.buildNotification.type,
-    buildType: input.build.type,
+    buildNotificationType: buildNotification.type,
+    buildType: build.type,
   });
-  const context = await getStatusContext(input.build);
+  const [context, buildUrl] = await Promise.all([
+    getStatusContext(build),
+    build.getUrl(),
+  ]);
 
   return {
     description,
@@ -213,5 +218,6 @@ export async function getNotificationPayload(input: {
     gitlab: {
       state: states.gitlab,
     },
+    url: buildUrl,
   };
 }

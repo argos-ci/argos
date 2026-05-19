@@ -9,31 +9,34 @@ import {
   type NotificationPayload,
 } from "./notification";
 
-export async function getAggregatedNotification(args: {
-  projectId: string;
+export async function getAggregatedNotificationPayload(args: {
+  project: Project;
   commit: string;
   buildType: Build["type"];
   summaryCheckConfig: Project["summaryCheck"];
 }): Promise<NotificationPayload | null> {
-  const { commit, projectId, buildType, summaryCheckConfig } = args;
+  const { commit, project, buildType, summaryCheckConfig } = args;
 
   if (summaryCheckConfig === "never") {
     return null;
   }
 
-  const siblingBuilds = await Build.query()
-    .select("builds.id")
-    .joinRelated("compareScreenshotBucket")
-    .where("builds.projectId", projectId)
-    .where((qb) => {
-      qb.where("builds.prHeadCommit", commit).orWhere(
-        "compareScreenshotBucket.commit",
-        commit,
-      );
-    })
-    .distinctOn("builds.name")
-    .orderBy("builds.name")
-    .orderBy("builds.createdAt", "desc");
+  const [siblingBuilds, projectUrl] = await Promise.all([
+    Build.query()
+      .select("builds.id")
+      .joinRelated("compareScreenshotBucket")
+      .where("builds.projectId", project.id)
+      .where((qb) => {
+        qb.where("builds.prHeadCommit", commit).orWhere(
+          "compareScreenshotBucket.commit",
+          commit,
+        );
+      })
+      .distinctOn("builds.name")
+      .orderBy("builds.name")
+      .orderBy("builds.createdAt", "desc"),
+    project.getUrl(),
+  ]);
 
   // If there is only one sibling build, then we don't need to aggregate notifications
   if (siblingBuilds.length <= 1 && summaryCheckConfig === "auto") {
@@ -90,6 +93,7 @@ export async function getAggregatedNotification(args: {
     gitlab: {
       state: states.gitlab,
     },
+    url: projectUrl,
   };
 
   const isAutoApproved = buildType === "reference";

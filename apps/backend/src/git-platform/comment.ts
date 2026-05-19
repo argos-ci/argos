@@ -121,12 +121,13 @@ function getDeploymentRows(input: {
 export async function getCommentBody(props: {
   commit: string;
 }): Promise<string> {
+  const { commit } = props;
   const [builds, deployments] = await Promise.all([
     Build.query()
       .distinctOn("builds.name", "builds.projectId")
       .joinRelated("compareScreenshotBucket")
       .withGraphFetched("project.account")
-      .where("compareScreenshotBucket.commit", props.commit)
+      .where("compareScreenshotBucket.commit", commit)
       .orderBy([
         { column: "builds.name", order: "desc" },
         { column: "builds.projectId", order: "desc" },
@@ -135,7 +136,7 @@ export async function getCommentBody(props: {
     Deployment.query()
       .distinctOn("deployments.projectId", "deployments.environment")
       .withGraphFetched("project")
-      .where("deployments.commitSha", props.commit)
+      .where("deployments.commitSha", commit)
       .orderBy([
         { column: "deployments.projectId", order: "desc" },
         { column: "deployments.environment", order: "desc" },

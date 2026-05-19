@@ -1,104 +1,96 @@
 import { invariant } from "@argos/util/invariant";
 
-import { GithubPullRequest, GithubRepository } from "@/database/models";
-import { getCommentBody } from "@/git-platform/comment";
-import { commentGithubPr, getInstallationOctokit } from "@/github";
+import { GithubRepository, type GithubAccount } from "@/database/models";
+import { postGitHubComment } from "@/git-platform/github";
+import { getInstallationOctokit, type Octokit } from "@/github";
 import { createGhCommitStatus } from "@/github/commit-status";
 import { UnretryableError } from "@/job-core";
 
 import type { SendNotificationContext } from "../context";
+import type { NotificationPayload } from "../notification";
+
+export type SendGitHubNotificationContext = SendNotificationContext & {
+  octokit: Octokit;
+  githubAccount: GithubAccount;
+  githubRepository: GithubRepository;
+};
 
 /**
- * Send a notification to GitHub.
+ * Get a context for sending GitHub notifications.
  */
-export async function sendGitHubNotification(ctx: SendNotificationContext) {
-  const { build, notification, commit } = ctx;
-
-  invariant(build, "No build found", UnretryableError);
-
-  const { project, compareScreenshotBucket } = build;
-
-  invariant(
-    compareScreenshotBucket,
-    "No compare screenshot bucket found",
-    UnretryableError,
-  );
-
-  invariant(project, "No project found", UnretryableError);
+export async function getGitHubNotificationContext(
+  ctx: SendNotificationContext,
+): Promise<SendGitHubNotificationContext | null> {
+  const { project } = ctx;
 
   const { githubRepository } = project;
 
   if (!githubRepository) {
-    return;
+    return null;
   }
 
-  const githubAccount = githubRepository.githubAccount;
+  const { githubAccount } = githubRepository;
 
   invariant(githubAccount, "No github account found", UnretryableError);
 
   const installation = GithubRepository.pickBestInstallation(githubRepository);
 
   if (!installation) {
-    return;
+    return null;
   }
 
   const octokit = await getInstallationOctokit(installation);
 
   if (!octokit) {
+    return null;
+  }
+
+  return { ...ctx, octokit, githubAccount, githubRepository };
+}
+
+/**
+ * Post the GitHub comment notification comment.
+ */
+export async function postGitHubNotificationComment(
+  ctx: SendGitHubNotificationContext,
+) {
+  const {
+    build,
+    compareScreenshotBucket,
+    octokit,
+    githubAccount,
+    githubRepository,
+  } = ctx;
+
+  if (!build.githubPullRequestId) {
     return;
   }
 
-  const createGhComment = async () => {
-    if (
-      !ctx.comment ||
-      !project.prCommentEnabled ||
-      !build.githubPullRequestId
-    ) {
-      return;
-    }
+  await postGitHubComment({
+    githubPullRequestId: build.githubPullRequestId,
+    commit: compareScreenshotBucket.commit,
+    octokit,
+    owner: githubAccount.login,
+    repo: githubRepository.name,
+  });
+}
 
-    const pullRequest = await GithubPullRequest.query().findById(
-      build.githubPullRequestId,
-    );
+/**
+ * Post the GitHub notification commit status.
+ */
+export async function postGitHubNotificationCommitStatus(
+  ctx: SendGitHubNotificationContext,
+  notification: NotificationPayload,
+) {
+  const { commit, octokit, githubAccount, githubRepository } = ctx;
 
-    if (!pullRequest || pullRequest.commentDeleted) {
-      return;
-    }
-
-    const body = await getCommentBody({
-      commit: compareScreenshotBucket.commit,
-    });
-
-    await commentGithubPr({
-      owner: githubAccount.login,
-      repo: githubRepository.name,
-      body,
-      octokit,
-      pullRequest,
-    });
-  };
-
-  await Promise.all([
-    createGhCommitStatus(octokit, {
-      owner: githubAccount.login,
-      repo: githubRepository.name,
-      sha: commit,
-      state: notification.github.state,
-      target_url: ctx.buildUrl,
-      description: notification.description,
-      context: notification.context,
-    }),
-    createGhComment(),
-    ctx.aggregatedNotification
-      ? createGhCommitStatus(octokit, {
-          owner: githubAccount.login,
-          repo: githubRepository.name,
-          sha: commit,
-          state: ctx.aggregatedNotification.github.state,
-          target_url: ctx.projectUrl,
-          description: ctx.aggregatedNotification.description,
-          context: ctx.aggregatedNotification.context,
-        })
-      : null,
-  ]);
+  await createGhCommitStatus(octokit, {
+    owner: githubAccount.login,
+    repo: githubRepository.name,
+    sha: commit,
+    state: notification.github.state,
+    target_url: notification.url,
+    description: notification.description,
+    context: notification.context,
+  });
 }

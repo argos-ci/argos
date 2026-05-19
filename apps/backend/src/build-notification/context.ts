@@ -1,6 +1,9 @@
-import type { Build, BuildNotification } from "@/database/models";
-
-import type { NotificationPayload } from "./notification";
+import type {
+  Build,
+  BuildNotification,
+  Project,
+  ScreenshotBucket,
+} from "@/database/models";
 
 /**
  * Context for sending notifications to integrated services.
@@ -9,12 +12,6 @@ export type SendNotificationContext = {
   buildNotification: BuildNotification;
   commit: string;
   build: Build;
-  buildUrl: string;
-  projectUrl: string;
-  notification: NotificationPayload;
-  aggregatedNotification: NotificationPayload | null;
-  /**
-   * Add a comment on the pull request.
-   */
-  comment: boolean;
+  project: Project;
+  compareScreenshotBucket: ScreenshotBucket;
 };
