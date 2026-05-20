@@ -11,11 +11,9 @@ const main = callbackify(async () => {
     .where({ jobStatus: "error" })
     .whereRaw(`"createdAt" > now() - interval '2 hour'`)
     .orderBy("id", "desc");
-  const buildIds = [...new Set(nodes.map((node) => node.buildId))];
-  await job.push(...buildIds);
-  logger.info(
-    `${nodes.length} errored notifications across ${buildIds.length} builds pushed in queue`,
-  );
+  const ids = nodes.map((node) => node.id);
+  await job.push(...ids);
+  logger.info(`${nodes.length} pushed in queue`);
 });
 
 main((err) => {
