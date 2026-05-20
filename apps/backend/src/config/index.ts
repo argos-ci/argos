@@ -58,6 +58,7 @@ export function createConfig() {
     logLevel: {
       doc: "Log level",
       default: "warn",
+      env: "LOG_LEVEL",
     },
     contactEmail: {
       doc: "The contact email",
