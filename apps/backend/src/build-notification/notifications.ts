@@ -32,7 +32,7 @@ export async function pushBuildNotification({
     type,
     jobStatus: "pending",
   });
-  await buildNotificationJob.push(buildNotification.id);
+  await buildNotificationJob.push(buildId);
   return buildNotification;
 }
 
