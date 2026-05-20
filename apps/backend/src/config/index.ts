@@ -435,7 +435,7 @@ export function createConfig() {
         max: {
           doc: "Maximum connections per pool",
           format: Number,
-          default: 10,
+          default: 6,
           env: "PG_POOL_MAX",
         },
       },
