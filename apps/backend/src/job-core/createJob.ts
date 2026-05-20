@@ -68,12 +68,14 @@ export interface JobParams {
    * message. The value itself is the dedupe key.
    *
    * How it works: at push time we take a Redis claim keyed by the value
-   * (`SET NX EX`). If the claim is taken, we enqueue the AMQP message;
-   * otherwise we skip — a worker is already on the way. The worker clears
-   * the claim right after acquiring its per-value lock and *before*
-   * running `perform`, so any push that lands during `perform` re-claims
-   * and enqueues a fresh message. That message blocks on the per-value
-   * lock until the current run finishes, then triggers another pass.
+   * (`SET NX PX`). If the claim is taken, we enqueue one AMQP message.
+   * If the claim is held by an active runner, we set a `rerun` flag and
+   * enqueue nothing — no second message is created. The worker holding
+   * the claim runs `perform` in a loop: at the end of each pass, a Lua
+   * script atomically checks the rerun flag, refreshing the claim TTL +
+   * continuing if set, or releasing the claim if not. This is what
+   * captures late-arriving work without piling messages on the per-value
+   * lock.
    *
    * Requirement for `perform`: read the "latest" state from a source of
    * truth (DB row, Redis key, …) instead of trusting the value to encode
@@ -186,6 +188,24 @@ function runConsumerSetup<T>(
   return next;
 }
 
+// Atomically decides whether the dedupe runner should loop again or
+// release the claim. If a "rerun" flag was set by a bailed push during
+// the run, clear it, refresh the claim TTL, and return "continue".
+// Otherwise release the claim and return "done".
+//
+// KEYS[1] = claim key, KEYS[2] = rerun key
+// ARGV[1] = TTL (ms) to apply on "continue"
+const DEDUPE_RELEASE_OR_CONTINUE_SCRIPT = `
+local rerun = redis.call("GET", KEYS[2])
+if rerun then
+  redis.call("DEL", KEYS[2])
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+  return "continue"
+end
+redis.call("DEL", KEYS[1])
+return "done"
+`;
+
 // One observer per shared channel exposes its terminal state as a promise
 // instead of each createJob attaching its own close/error listeners.
 const channelTerminations = new WeakMap<Channel, Promise<void>>();
@@ -235,6 +255,8 @@ export const createJob = <TValue extends string | number>(
       ? dedupe.ttl
       : Math.max(timeout * 2, 3_600_000);
   const dedupeClaimKey = (value: TValue) => `job-dedupe.${queue}.${value}`;
+  const dedupeRerunKey = (value: TValue) =>
+    `job-dedupe-rerun.${queue}.${value}`;
 
   return {
     queue,
@@ -254,10 +276,14 @@ export const createJob = <TValue extends string | number>(
           if (claimed === "OK") {
             claimedValues.push(value);
           } else {
-            // A worker is already in flight (or about to be) for this
-            // value. It will clear the claim before running `perform`, so
-            // any state our caller wrote before this push will be visible
-            // to that worker.
+            // A worker is already in flight for this value. Set the
+            // rerun flag so it loops once more after its current perform
+            // pass, picking up the state change our caller just wrote.
+            // We do NOT enqueue a new AMQP message — that's what
+            // eliminates the lock-wait pileup that re-enqueueing caused.
+            await client.set(dedupeRerunKey(value), "1", {
+              expiration: { type: "PX", value: dedupeTtlMs },
+            });
             valuesSet.delete(value);
           }
         }
@@ -326,23 +352,45 @@ export const createJob = <TValue extends string | number>(
             [queue, id],
             async () => {
               ctx.logger.info("Running");
-              if (dedupeEnabled) {
-                // Clear the dedupe claim *before* perform. Any push that
-                // lands while perform runs will re-claim and enqueue a
-                // new message; that message waits on this same lock and
-                // triggers another pass once we release.
-                //
-                // Best-effort: we DEL without a token check. If our
-                // message sat in the queue long enough for the claim to
-                // expire and a later push re-claimed, this DEL clears
-                // the newer claim. Worst case is one redundant message
-                // that acquires the lock, re-reads "latest" state, and
-                // exits — bounded, not a correctness issue.
-                const client = await getRedisClient();
-                await client.del(dedupeClaimKey(id));
-              }
               const performStart = performance.now();
-              await consumer.perform(id, ctx);
+              try {
+                if (dedupeEnabled) {
+                  // Coalesce loop. Each push that bailed during a
+                  // previous iteration set the rerun flag; the Lua
+                  // script atomically clears it and refreshes the claim
+                  // TTL so we loop once more, capturing late-arriving
+                  // work. The claim is held the whole time, so no other
+                  // push can enqueue a redundant AMQP message.
+                  const client = await getRedisClient();
+                  const claim = dedupeClaimKey(id);
+                  const rerun = dedupeRerunKey(id);
+                  let decision: unknown;
+                  do {
+                    await client.del(rerun);
+                    await consumer.perform(id, ctx);
+                    decision = await client.eval(
+                      DEDUPE_RELEASE_OR_CONTINUE_SCRIPT,
+                      {
+                        keys: [claim, rerun],
+                        arguments: [String(dedupeTtlMs)],
+                      },
+                    );
+                  } while (decision === "continue");
+                } else {
+                  await consumer.perform(id, ctx);
+                }
+              } catch (err) {
+                if (dedupeEnabled) {
+                  // Release the claim and rerun flag so the next push
+                  // can re-trigger work for this value.
+                  const client = await getRedisClient();
+                  await Promise.all([
+                    client.del(dedupeClaimKey(id)).catch(() => undefined),
+                    client.del(dedupeRerunKey(id)).catch(() => undefined),
+                  ]);
+                }
+                throw err;
+              }
               const performEnd = performance.now();
               const completeStart = performance.now();
               await consumer.complete?.(id, ctx);
