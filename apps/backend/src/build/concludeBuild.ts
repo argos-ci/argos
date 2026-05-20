@@ -108,22 +108,24 @@ export async function concludeBuild(input: {
             return;
           }
           if (notify) {
-            const [updatedBuild] = await transaction(async (trx) => {
-              return Promise.all([
-                Build.query(trx).patchAndFetchById(
-                  buildId,
-                  getBuildData({ conclusion, stats }),
-                ),
-                BuildNotification.query(trx).insert({
-                  buildId,
-                  type: getNotificationType(conclusion),
-                  jobStatus: "pending",
-                }),
-              ]);
-            });
+            const [updatedBuild, buildNotification] = await transaction(
+              async (trx) => {
+                return Promise.all([
+                  Build.query(trx).patchAndFetchById(
+                    buildId,
+                    getBuildData({ conclusion, stats }),
+                  ),
+                  BuildNotification.query(trx).insert({
+                    buildId,
+                    type: getNotificationType(conclusion),
+                    jobStatus: "pending",
+                  }),
+                ]);
+              },
+            );
 
             await Promise.all([
-              buildNotificationJob.push(buildId),
+              buildNotificationJob.push(buildNotification.id),
               triggerAndRunAutomation({
                 projectId: build.projectId,
                 message: {
