@@ -9,10 +9,22 @@ import { redisLock } from "@/util/redis";
 import { getRedisClient } from "@/util/redis/client";
 
 import { connect } from "./amqp";
+import {
+  createDedupeClient,
+  type DedupeClient,
+  type DedupeDecision,
+} from "./dedupe";
 
 interface Payload<TValue> {
   args: [TValue];
   attempts: number;
+  /**
+   * Per-message UUID stamped at push time when the job has `dedupe`
+   * enabled. The runner uses it as the claim value so the Lua scripts
+   * can verify ownership before refreshing or releasing the claim — see
+   * DEDUPE_RELEASE_OR_CONTINUE_SCRIPT.
+   */
+  token?: string;
 }
 
 const serializeMessage = <TValue>(payload: Payload<TValue>) =>
@@ -67,15 +79,20 @@ export interface JobParams {
    * Coalesce concurrent pushes for the same value into a single in-flight
    * message. The value itself is the dedupe key.
    *
-   * How it works: at push time we take a Redis claim keyed by the value
-   * (`SET NX PX`). If the claim is taken, we enqueue one AMQP message.
-   * If the claim is held by an active runner, we set a `rerun` flag and
-   * enqueue nothing — no second message is created. The worker holding
-   * the claim runs `perform` in a loop: at the end of each pass, a Lua
-   * script atomically checks the rerun flag, refreshing the claim TTL +
-   * continuing if set, or releasing the claim if not. This is what
-   * captures late-arriving work without piling messages on the per-value
-   * lock.
+   * How it works:
+   * - **Push** generates a UUID token, takes a Redis claim
+   *   (`SET NX PX <token>`) keyed by the value, and stamps the token in
+   *   the AMQP payload. If the claim is already held, it sets a `rerun`
+   *   flag and enqueues nothing — no second message is created.
+   * - **Run** wraps `perform` in a Lua-driven loop that atomically
+   *   verifies token ownership, checks the rerun flag, and either
+   *   refreshes the claim TTL + continues, releases the claim + exits,
+   *   or bails out as "lost" when a later push has taken over after a
+   *   TTL expiry.
+   *
+   * Result: at most one AMQP message exists per burst, and late-arriving
+   * pushes during a run trigger another `perform` pass without piling
+   * messages on the per-value lock.
    *
    * Requirement for `perform`: read the "latest" state from a source of
    * truth (DB row, Redis key, …) instead of trusting the value to encode
@@ -188,24 +205,6 @@ function runConsumerSetup<T>(
   return next;
 }
 
-// Atomically decides whether the dedupe runner should loop again or
-// release the claim. If a "rerun" flag was set by a bailed push during
-// the run, clear it, refresh the claim TTL, and return "continue".
-// Otherwise release the claim and return "done".
-//
-// KEYS[1] = claim key, KEYS[2] = rerun key
-// ARGV[1] = TTL (ms) to apply on "continue"
-const DEDUPE_RELEASE_OR_CONTINUE_SCRIPT = `
-local rerun = redis.call("GET", KEYS[2])
-if rerun then
-  redis.call("DEL", KEYS[2])
-  redis.call("PEXPIRE", KEYS[1], ARGV[1])
-  return "continue"
-end
-redis.call("DEL", KEYS[1])
-return "done"
-`;
-
 // One observer per shared channel exposes its terminal state as a promise
 // instead of each createJob attaching its own close/error listeners.
 const channelTerminations = new WeakMap<Channel, Promise<void>>();
@@ -247,16 +246,90 @@ export const createJob = <TValue extends string | number>(
   queue = config.get("amqp.queuePrefix") + queue;
   const logger = parentLogger.child({ module: "job", queue });
 
-  const dedupeEnabled = Boolean(dedupe);
-  // Claim TTL must outlive queue lag + worst-case processing. We default to
-  // 1h or twice the job timeout, whichever is larger.
-  const dedupeTtlMs =
-    dedupeEnabled && typeof dedupe === "object" && dedupe.ttl !== undefined
-      ? dedupe.ttl
-      : Math.max(timeout * 2, 3_600_000);
-  const dedupeClaimKey = (value: TValue) => `job-dedupe.${queue}.${value}`;
-  const dedupeRerunKey = (value: TValue) =>
-    `job-dedupe-rerun.${queue}.${value}`;
+  // Build a dedupe client when enabled. Claim TTL must outlive queue
+  // lag + worst-case processing; default to `max(timeout × 2, 1h)`.
+  const dedupeClient: DedupeClient<TValue> | null = dedupe
+    ? createDedupeClient<TValue>({
+        scope: queue,
+        ttlMs:
+          typeof dedupe === "object" && dedupe.ttl !== undefined
+            ? dedupe.ttl
+            : Math.max(timeout * 2, 3_600_000),
+        getRedisClient,
+      })
+    : null;
+
+  // Runs perform under the per-value redisLock. When `token` is provided
+  // (AMQP-driven invocations with `dedupe` enabled), wraps perform in a
+  // coalesce loop that re-runs whenever a bailed push has set the rerun
+  // flag. When `token` is undefined (public `run` calls), it's a single
+  // perform pass.
+  const runWithDedupeToken = async (
+    id: TValue,
+    ctx: JobContext,
+    token: string | undefined,
+  ): Promise<void> => {
+    await Sentry.startSpan(
+      {
+        name: "job.run",
+        op: "topic.process",
+        attributes: {
+          "job.queue": queue,
+          "job.id": String(id),
+          "job.timeout_ms": timeout,
+        },
+      },
+      () =>
+        redisLock.acquire(
+          [queue, id],
+          async () => {
+            ctx.logger.info("Running");
+            const performStart = performance.now();
+            try {
+              if (dedupeClient && token !== undefined) {
+                let decision: DedupeDecision = "continue";
+                while (decision === "continue") {
+                  await consumer.perform(id, ctx);
+                  decision = await dedupeClient.releaseOrContinue(id, token);
+                }
+                if (decision === "lost") {
+                  // Claim TTL expired and a later push took over. Stop
+                  // quietly — the new owner's runner will handle any
+                  // pending work.
+                  ctx.logger.warn(
+                    "Dedupe claim lost mid-run; another worker now owns it",
+                  );
+                }
+              } else {
+                await consumer.perform(id, ctx);
+              }
+            } catch (err) {
+              if (dedupeClient && token !== undefined) {
+                await dedupeClient
+                  .releaseIfOwned(id, token)
+                  .catch(() => undefined);
+              }
+              throw err;
+            }
+            const performEnd = performance.now();
+            const completeStart = performance.now();
+            await consumer.complete?.(id, ctx);
+            const completeEnd = performance.now();
+            const duration = performEnd - performStart;
+            const completingDuration = completeEnd - completeStart;
+            ctx.logger.info(
+              {
+                duration,
+                completingDuration,
+                totalDuration: duration + completingDuration,
+              },
+              "Done",
+            );
+          },
+          { timeout },
+        ),
+    );
+  };
 
   return {
     queue,
@@ -265,25 +338,20 @@ export const createJob = <TValue extends string | number>(
       await ensureQueueAsserted(channel, queue);
       const valuesSet = new Set(values);
 
-      const claimedValues: TValue[] = [];
-      if (dedupeEnabled) {
-        const client = await getRedisClient();
+      // Tokens stamped on the claim at push time so the runner can
+      // verify ownership before refreshing or releasing.
+      const claimedTokens = new Map<TValue, string>();
+      if (dedupeClient) {
         for (const value of [...valuesSet]) {
-          const claimed = await client.set(dedupeClaimKey(value), "1", {
-            condition: "NX",
-            expiration: { type: "PX", value: dedupeTtlMs },
-          });
-          if (claimed === "OK") {
-            claimedValues.push(value);
+          const token = await dedupeClient.tryClaim(value);
+          if (token !== undefined) {
+            claimedTokens.set(value, token);
           } else {
-            // A worker is already in flight for this value. Set the
-            // rerun flag so it loops once more after its current perform
-            // pass, picking up the state change our caller just wrote.
-            // We do NOT enqueue a new AMQP message — that's what
-            // eliminates the lock-wait pileup that re-enqueueing caused.
-            await client.set(dedupeRerunKey(value), "1", {
-              expiration: { type: "PX", value: dedupeTtlMs },
-            });
+            // A worker is already in flight for this value. `tryClaim`
+            // has set the rerun flag so that worker loops once more
+            // after its current perform pass; we do NOT enqueue a new
+            // AMQP message — that's what eliminates the lock-wait
+            // pileup that re-enqueueing caused.
             valuesSet.delete(value);
           }
         }
@@ -293,21 +361,25 @@ export const createJob = <TValue extends string | number>(
       }
 
       const releaseClaims = async () => {
-        if (claimedValues.length === 0) {
+        if (claimedTokens.size === 0 || !dedupeClient) {
           return;
         }
-        const client = await getRedisClient();
         await Promise.all(
-          claimedValues.map((value) => client.del(dedupeClaimKey(value))),
+          Array.from(claimedTokens, ([value, token]) =>
+            dedupeClient.releaseIfOwned(value, token),
+          ),
         );
       };
 
       const sendOne = (value: TValue) => {
-        return channel.sendToQueue(
-          queue,
-          serializeMessage({ args: [value], attempts: 0 }),
-          { persistent: true },
-        );
+        const payload: Payload<TValue> = { args: [value], attempts: 0 };
+        const token = claimedTokens.get(value);
+        if (token !== undefined) {
+          payload.token = token;
+        }
+        return channel.sendToQueue(queue, serializeMessage(payload), {
+          persistent: true,
+        });
       };
       try {
         await new Promise<void>((resolve, reject) => {
@@ -337,78 +409,11 @@ export const createJob = <TValue extends string | number>(
       }
     },
     async run(id: TValue, ctx: JobContext) {
-      await Sentry.startSpan(
-        {
-          name: "job.run",
-          op: "topic.process",
-          attributes: {
-            "job.queue": queue,
-            "job.id": String(id),
-            "job.timeout_ms": timeout,
-          },
-        },
-        () =>
-          redisLock.acquire(
-            [queue, id],
-            async () => {
-              ctx.logger.info("Running");
-              const performStart = performance.now();
-              try {
-                if (dedupeEnabled) {
-                  // Coalesce loop. Each push that bailed during a
-                  // previous iteration set the rerun flag; the Lua
-                  // script atomically clears it and refreshes the claim
-                  // TTL so we loop once more, capturing late-arriving
-                  // work. The claim is held the whole time, so no other
-                  // push can enqueue a redundant AMQP message.
-                  const client = await getRedisClient();
-                  const claim = dedupeClaimKey(id);
-                  const rerun = dedupeRerunKey(id);
-                  let decision: unknown;
-                  do {
-                    await client.del(rerun);
-                    await consumer.perform(id, ctx);
-                    decision = await client.eval(
-                      DEDUPE_RELEASE_OR_CONTINUE_SCRIPT,
-                      {
-                        keys: [claim, rerun],
-                        arguments: [String(dedupeTtlMs)],
-                      },
-                    );
-                  } while (decision === "continue");
-                } else {
-                  await consumer.perform(id, ctx);
-                }
-              } catch (err) {
-                if (dedupeEnabled) {
-                  // Release the claim and rerun flag so the next push
-                  // can re-trigger work for this value.
-                  const client = await getRedisClient();
-                  await Promise.all([
-                    client.del(dedupeClaimKey(id)).catch(() => undefined),
-                    client.del(dedupeRerunKey(id)).catch(() => undefined),
-                  ]);
-                }
-                throw err;
-              }
-              const performEnd = performance.now();
-              const completeStart = performance.now();
-              await consumer.complete?.(id, ctx);
-              const completeEnd = performance.now();
-              const duration = performEnd - performStart;
-              const completingDuration = completeEnd - completeStart;
-              ctx.logger.info(
-                {
-                  duration,
-                  completingDuration,
-                  totalDuration: duration + completingDuration,
-                },
-                "Done",
-              );
-            },
-            { timeout },
-          ),
-      );
+      // Public entry point — no dedupe token available, so callers get a
+      // single perform pass. The coalesce loop only runs when invoked
+      // from the AMQP consumer below, which threads the token from the
+      // message payload.
+      return runWithDedupeToken(id, ctx, undefined);
     },
     process() {
       return runForever(
@@ -456,7 +461,7 @@ export const createJob = <TValue extends string | number>(
                   const consumeLogger = logger.child({ id });
                   const ctx = { logger: consumeLogger };
                   try {
-                    await this.run(id, ctx);
+                    await runWithDedupeToken(id, ctx, payload.token);
                     channel.ack(msg);
                   } catch (error) {
                     if (checkIsRetryable(error) && payload.attempts < 2) {
@@ -465,13 +470,19 @@ export const createJob = <TValue extends string | number>(
                         "Error while processing job",
                       );
 
+                      const retryPayload: Payload<TValue> = {
+                        args: payload.args,
+                        attempts: payload.attempts + 1,
+                      };
+                      if (payload.token !== undefined) {
+                        retryPayload.token = payload.token;
+                      }
                       channel.sendToQueue(
                         queue,
-                        serializeMessage({
-                          args: payload.args,
-                          attempts: payload.attempts + 1,
-                        }),
-                        { persistent: true },
+                        serializeMessage(retryPayload),
+                        {
+                          persistent: true,
+                        },
                       );
 
                       channel.ack(msg);
