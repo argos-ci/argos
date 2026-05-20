@@ -79,6 +79,10 @@ export interface JobParams {
    * truth (DB row, Redis key, …) instead of trusting the value to encode
    * the work — the value is now a key into the work, not the work itself.
    *
+   * `ttl` (milliseconds) is the lifetime of the Redis claim. It must
+   * outlive worst-case queue lag + processing. Defaults to
+   * `max(timeout × 2, 1h)`.
+   *
    * @default false
    */
   dedupe?: boolean | { ttl?: number };
@@ -239,6 +243,7 @@ export const createJob = <TValue extends string | number>(
       await ensureQueueAsserted(channel, queue);
       const valuesSet = new Set(values);
 
+      const claimedValues: TValue[] = [];
       if (dedupeEnabled) {
         const client = await getRedisClient();
         for (const value of [...valuesSet]) {
@@ -246,7 +251,9 @@ export const createJob = <TValue extends string | number>(
             condition: "NX",
             expiration: { type: "PX", value: dedupeTtlMs },
           });
-          if (claimed !== "OK") {
+          if (claimed === "OK") {
+            claimedValues.push(value);
+          } else {
             // A worker is already in flight (or about to be) for this
             // value. It will clear the claim before running `perform`, so
             // any state our caller wrote before this push will be visible
@@ -259,6 +266,16 @@ export const createJob = <TValue extends string | number>(
         }
       }
 
+      const releaseClaims = async () => {
+        if (claimedValues.length === 0) {
+          return;
+        }
+        const client = await getRedisClient();
+        await Promise.all(
+          claimedValues.map((value) => client.del(dedupeClaimKey(value))),
+        );
+      };
+
       const sendOne = (value: TValue) => {
         return channel.sendToQueue(
           queue,
@@ -266,20 +283,32 @@ export const createJob = <TValue extends string | number>(
           { persistent: true },
         );
       };
-      return new Promise((resolve) => {
-        const sendAll = () => {
-          for (const value of valuesSet) {
-            const keepSending = sendOne(value);
-            valuesSet.delete(value);
-            if (!keepSending) {
-              channel.once("drain", sendAll);
-              return;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const sendAll = () => {
+            try {
+              for (const value of valuesSet) {
+                const keepSending = sendOne(value);
+                valuesSet.delete(value);
+                if (!keepSending) {
+                  channel.once("drain", sendAll);
+                  return;
+                }
+              }
+              resolve();
+            } catch (error) {
+              reject(error);
             }
-          }
-          resolve();
-        };
-        sendAll();
-      });
+          };
+          sendAll();
+        });
+      } catch (error) {
+        // Publish failed — release the dedupe claims we took so the next
+        // push can re-enqueue. Without this, the claim would survive its
+        // un-published message and silently drop pushes until the TTL.
+        await releaseClaims().catch(() => undefined);
+        throw error;
+      }
     },
     async run(id: TValue, ctx: JobContext) {
       await Sentry.startSpan(
@@ -302,6 +331,13 @@ export const createJob = <TValue extends string | number>(
                 // lands while perform runs will re-claim and enqueue a
                 // new message; that message waits on this same lock and
                 // triggers another pass once we release.
+                //
+                // Best-effort: we DEL without a token check. If our
+                // message sat in the queue long enough for the claim to
+                // expire and a later push re-claimed, this DEL clears
+                // the newer claim. Worst case is one redundant message
+                // that acquires the lock, re-reads "latest" state, and
+                // exits — bounded, not a correctness issue.
                 const client = await getRedisClient();
                 await client.del(dedupeClaimKey(id));
               }
