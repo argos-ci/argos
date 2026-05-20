@@ -6,6 +6,7 @@ import config from "@/config";
 import parentLogger, { type Logger } from "@/logger";
 import { checkIsRetryable } from "@/util/error";
 import { redisLock } from "@/util/redis";
+import { getRedisClient } from "@/util/redis/client";
 
 import { connect } from "./amqp";
 
@@ -61,6 +62,26 @@ export interface JobParams {
    * @default 20000 (20 seconds)
    */
   timeout?: number;
+
+  /**
+   * Coalesce concurrent pushes for the same value into a single in-flight
+   * message. The value itself is the dedupe key.
+   *
+   * How it works: at push time we take a Redis claim keyed by the value
+   * (`SET NX EX`). If the claim is taken, we enqueue the AMQP message;
+   * otherwise we skip — a worker is already on the way. The worker clears
+   * the claim right after acquiring its per-value lock and *before*
+   * running `perform`, so any push that lands during `perform` re-claims
+   * and enqueues a fresh message. That message blocks on the per-value
+   * lock until the current run finishes, then triggers another pass.
+   *
+   * Requirement for `perform`: read the "latest" state from a source of
+   * truth (DB row, Redis key, …) instead of trusting the value to encode
+   * the work — the value is now a key into the work, not the work itself.
+   *
+   * @default false
+   */
+  dedupe?: boolean | { ttl?: number };
 }
 
 type JobContext = {
@@ -197,16 +218,47 @@ export const createJob = <TValue extends string | number>(
       ctx: JobContext,
     ) => void | Promise<void>;
   },
-  { prefetch = 1, timeout = 20_000 }: JobParams = {},
+  { prefetch = 1, timeout = 20_000, dedupe }: JobParams = {},
 ): Job<TValue> => {
   queue = config.get("amqp.queuePrefix") + queue;
   const logger = parentLogger.child({ module: "job", queue });
+
+  const dedupeEnabled = Boolean(dedupe);
+  // Claim TTL must outlive queue lag + worst-case processing. We default to
+  // 1h or twice the job timeout, whichever is larger.
+  const dedupeTtlMs =
+    dedupeEnabled && typeof dedupe === "object" && dedupe.ttl !== undefined
+      ? dedupe.ttl
+      : Math.max(timeout * 2, 3_600_000);
+  const dedupeClaimKey = (value: TValue) => `job-dedupe.${queue}.${value}`;
+
   return {
     queue,
     async push(...values) {
       const channel = await getSharedChannel("publisher");
       await ensureQueueAsserted(channel, queue);
       const valuesSet = new Set(values);
+
+      if (dedupeEnabled) {
+        const client = await getRedisClient();
+        for (const value of [...valuesSet]) {
+          const claimed = await client.set(dedupeClaimKey(value), "1", {
+            condition: "NX",
+            expiration: { type: "PX", value: dedupeTtlMs },
+          });
+          if (claimed !== "OK") {
+            // A worker is already in flight (or about to be) for this
+            // value. It will clear the claim before running `perform`, so
+            // any state our caller wrote before this push will be visible
+            // to that worker.
+            valuesSet.delete(value);
+          }
+        }
+        if (valuesSet.size === 0) {
+          return;
+        }
+      }
+
       const sendOne = (value: TValue) => {
         return channel.sendToQueue(
           queue,
@@ -245,6 +297,14 @@ export const createJob = <TValue extends string | number>(
             [queue, id],
             async () => {
               ctx.logger.info("Running");
+              if (dedupeEnabled) {
+                // Clear the dedupe claim *before* perform. Any push that
+                // lands while perform runs will re-claim and enqueue a
+                // new message; that message waits on this same lock and
+                // triggers another pass once we release.
+                const client = await getRedisClient();
+                await client.del(dedupeClaimKey(id));
+              }
               const performStart = performance.now();
               await consumer.perform(id, ctx);
               const performEnd = performance.now();
