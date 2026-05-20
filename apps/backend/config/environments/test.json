@@ -1,6 +1,6 @@
 {
   "server": {
-    "logFormat": "",
+    "httpLogs": false,
     "url": "http://localhost:3000",
     "secure": false,
     "port": 3000,

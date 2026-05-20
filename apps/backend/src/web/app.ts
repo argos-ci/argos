@@ -2,9 +2,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Sentry from "@sentry/node";
 import express from "express";
-import morgan from "morgan";
+import { pinoHttp } from "pino-http";
 
 import config from "@/config";
+import logger from "@/logger";
 
 import { installApiRouter } from "./api";
 import { installAppRouter } from "./app-router";
@@ -51,8 +52,8 @@ export const createApp = async (): Promise<express.Express> => {
     next();
   });
 
-  if (config.get("server.logFormat")) {
-    app.use(morgan(config.get("server.logFormat")));
+  if (config.get("server.httpLogs")) {
+    app.use(pinoHttp({ logger }));
   }
 
   app.get("/health", (_req, res) => {

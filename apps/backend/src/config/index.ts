@@ -57,7 +57,7 @@ export function createConfig() {
     },
     logLevel: {
       doc: "Log level",
-      default: "info",
+      default: "warn",
     },
     contactEmail: {
       doc: "The contact email",
@@ -82,10 +82,10 @@ export function createConfig() {
         default: 4001,
         env: "PORT",
       },
-      logFormat: {
-        doc: "The morgan log format to use",
-        format: ["dev", "combined", "common", "short", "tiny", ""],
-        default: "dev",
+      httpLogs: {
+        doc: "Whether to log HTTP requests via pino-http",
+        format: Boolean,
+        default: true,
       },
       url: {
         doc: "The user public url",
