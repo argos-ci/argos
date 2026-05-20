@@ -46,7 +46,7 @@
     "@playwright/test": "^1.60.0",
     "@swc/cli": "^0.8.1",
     "@swc/core": "^1.15.33",
-    "@types/node": "^24.12.4",
+    "@types/node": "catalog:",
     "chokidar": "^5.0.0",
     "eslint": "catalog:",
     "knip": "^6.14.1",
