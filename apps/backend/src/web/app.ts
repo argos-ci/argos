@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Sentry from "@sentry/node";
@@ -53,7 +54,31 @@ export const createApp = async (): Promise<express.Express> => {
   });
 
   if (config.get("server.httpLogs")) {
-    app.use(pinoHttp({ logger }));
+    app.use(
+      pinoHttp({
+        logger,
+        customLogLevel: (_req: IncomingMessage, res: ServerResponse, err) => {
+          if (err || res.statusCode >= 500) {
+            return "error";
+          }
+          if (res.statusCode >= 400) {
+            return "warn";
+          }
+          return "debug";
+        },
+        customSuccessMessage: (req: IncomingMessage, res: ServerResponse) =>
+          `${req.method} ${req.url} ${res.statusCode}`,
+        customErrorMessage: (req: IncomingMessage, res: ServerResponse) =>
+          `${req.method} ${req.url} ${res.statusCode}`,
+        serializers: {
+          req: (req: IncomingMessage) => ({
+            method: req.method,
+            url: req.url,
+          }),
+          res: (res: ServerResponse) => ({ statusCode: res.statusCode }),
+        },
+      }),
+    );
   }
 
   app.get("/health", (_req, res) => {
