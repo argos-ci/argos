@@ -12,7 +12,7 @@
         "scripts/*.ts"
       ],
       "ignore": ["**/bin/**/*"],
-      "ignoreDependencies": ["@argos/knex-scripts", "moment"]
+      "ignoreDependencies": ["@argos/knex-scripts", "moment", "pino-pretty"]
     },
     "infra": {
       "entry": ["scripts/app.ts", "lambda/*.ts"],

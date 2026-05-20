@@ -7,6 +7,12 @@ export type Logger = pino.Logger;
 
 const logger = pino({
   level: config.get("logLevel"),
+  ...(config.get("env") === "development" && {
+    transport: {
+      target: "pino-pretty",
+      options: { translateTime: "SYS:HH:MM:ss" },
+    },
+  }),
   hooks: {
     logMethod(inputArgs, method, level) {
       const parsed = parseArgs(inputArgs);
