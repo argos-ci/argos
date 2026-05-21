@@ -7,6 +7,7 @@ import { redisLock } from "@/util/redis";
 import { getAggregatedNotificationPayload } from "./aggregated";
 import type { SendNotificationContext } from "./context";
 import { job as buildNotificationJob } from "./job";
+import { isLatestBuildNotification } from "./latest";
 import { getNotificationPayload } from "./notification";
 import {
   getGitHubNotificationContext,
@@ -80,6 +81,13 @@ export async function processBuildNotification(
   ]);
 
   const shouldComment = !build.mergeQueue && project.prCommentEnabled;
+
+  // Re-check just before posting: another notification may have been enqueued
+  // while we were preparing the payload. If so, bail out and let the newer
+  // notification's job post the up-to-date status.
+  if (!(await isLatestBuildNotification(buildNotification))) {
+    return;
+  }
 
   await Promise.all([
     ...(githubCtx
