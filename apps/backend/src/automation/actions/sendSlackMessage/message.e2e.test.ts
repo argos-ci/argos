@@ -38,7 +38,7 @@ describe("buildSlackMessage", () => {
         isTestMessage: false,
         message: {
           event: "build.completed",
-          payload: { build },
+          payload: { build, compareScreenshotBucket: bucket },
         },
       });
 
@@ -132,7 +132,7 @@ describe("buildSlackMessage", () => {
         isTestMessage: false,
         message: {
           event: "build.reviewed",
-          payload: { build, buildReview },
+          payload: { build, compareScreenshotBucket: bucket, buildReview },
         },
       });
 

@@ -7,11 +7,38 @@ import {
   AutomationRun,
   Build,
   Project,
+  ScreenshotBucket,
   SlackChannel,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { triggerAutomation } from "./triggerAutomation";
+import type { AutomationMessage } from "./types/events";
+
+async function getCompareScreenshotBucket(
+  build: Build,
+): Promise<ScreenshotBucket> {
+  const compareScreenshotBucket = await build.$relatedQuery(
+    "compareScreenshotBucket",
+  );
+  invariant(
+    compareScreenshotBucket,
+    `Compare screenshot bucket not found for build: ${build.id}`,
+  );
+  return compareScreenshotBucket;
+}
+
+async function getBuildCompletedMessage(
+  build: Build,
+): Promise<AutomationMessage> {
+  return {
+    event: AutomationEvents.BuildCompleted,
+    payload: {
+      build,
+      compareScreenshotBucket: await getCompareScreenshotBucket(build),
+    },
+  };
+}
 
 describe("automation/triggerAutomation", () => {
   let project: Project;
@@ -43,10 +70,7 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        message: {
-          event: AutomationEvents.BuildCompleted,
-          payload: { build },
-        },
+        message: await getBuildCompletedMessage(build),
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -100,10 +124,321 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        message: {
-          event: AutomationEvents.BuildCompleted,
-          payload: { build },
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(1);
+    });
+
+    it("should trigger if build mode condition matches", async () => {
+      const build = await factory.Build.create({
+        projectId: project.id,
+        mode: "monitoring",
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              type: "build-mode",
+              value: "monitoring",
+            },
+          ],
         },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(1);
+    });
+
+    it("should trigger if build branch glob condition matches", async () => {
+      const screenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "release/2026-05",
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: screenshotBucket.id,
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              glob: {
+                type: "build-branch",
+                value: "release/*",
+              },
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(1);
+    });
+
+    it("should not trigger if build branch glob condition does not match", async () => {
+      const screenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "feature/login",
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: screenshotBucket.id,
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              glob: {
+                type: "build-branch",
+                value: "release/*",
+              },
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(0);
+    });
+
+    it("should trigger if build branch glob not condition matches", async () => {
+      const screenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "feature/login",
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: screenshotBucket.id,
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              not: {
+                glob: {
+                  type: "build-branch",
+                  value: "release/*",
+                },
+              },
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(1);
+    });
+
+    it("should trigger if build branch exact condition matches", async () => {
+      const screenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "release/2026-05",
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: screenshotBucket.id,
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              type: "build-branch",
+              value: "release/2026-05",
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(1);
+    });
+
+    it("should not trigger if build branch exact condition does not match", async () => {
+      const screenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "release/2026-05",
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: screenshotBucket.id,
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              type: "build-branch",
+              value: "release/*",
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
+      });
+
+      const automationRuns = await AutomationRun.query().where({
+        automationRuleId: automationRule.id,
+        buildId: build.id,
+      });
+      expect(automationRuns).toHaveLength(0);
+    });
+
+    it("should trigger if build branch exact not condition matches", async () => {
+      const screenshotBucket = await factory.ScreenshotBucket.create({
+        projectId: project.id,
+        branch: "feature/login",
+      });
+      const build = await factory.Build.create({
+        projectId: project.id,
+        compareScreenshotBucketId: screenshotBucket.id,
+      });
+
+      const automationRule = await factory.AutomationRule.create({
+        projectId: project.id,
+        on: ["build.completed"],
+        if: {
+          all: [
+            {
+              not: {
+                type: "build-branch",
+                value: "release/2026-05",
+              },
+            },
+          ],
+        },
+        then: [
+          {
+            action: "sendSlackMessage",
+            actionPayload: {
+              type: "sendSlackMessage",
+              channelId: slackChannel.slackId,
+            },
+          },
+        ],
+      });
+
+      await triggerAutomation({
+        projectId: project.id,
+        message: await getBuildCompletedMessage(build),
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -145,10 +480,7 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        message: {
-          event: AutomationEvents.BuildCompleted,
-          payload: { build },
-        },
+        message: await getBuildCompletedMessage(build),
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -190,10 +522,7 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        message: {
-          event: AutomationEvents.BuildCompleted,
-          payload: { build },
-        },
+        message: await getBuildCompletedMessage(build),
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -233,10 +562,7 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        message: {
-          event: AutomationEvents.BuildCompleted,
-          payload: { build },
-        },
+        message: await getBuildCompletedMessage(build),
       });
 
       const automationRuns = await AutomationRun.query().where({
@@ -269,10 +595,7 @@ describe("automation/triggerAutomation", () => {
 
       await triggerAutomation({
         projectId: project.id,
-        message: {
-          event: AutomationEvents.BuildCompleted,
-          payload: { build },
-        },
+        message: await getBuildCompletedMessage(build),
       });
 
       const automationRuns = await AutomationRun.query().where({

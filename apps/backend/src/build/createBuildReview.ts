@@ -1,4 +1,5 @@
 import { AutomationEvents } from "@argos/schemas/automation-event";
+import { invariant } from "@argos/util/invariant";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
@@ -38,6 +39,14 @@ export async function createBuildReview(input: {
     return buildReview;
   });
 
+  const compareScreenshotBucket = await build.$relatedQuery(
+    "compareScreenshotBucket",
+  );
+  invariant(
+    compareScreenshotBucket,
+    `Compare screenshot bucket not found for build: ${build.id}`,
+  );
+
   await Promise.all([
     pushBuildNotification({
       buildId: build.id,
@@ -47,7 +56,7 @@ export async function createBuildReview(input: {
       projectId: build.projectId,
       message: {
         event: AutomationEvents.BuildReviewed,
-        payload: { build, buildReview },
+        payload: { build, compareScreenshotBucket, buildReview },
       },
     }),
   ]);

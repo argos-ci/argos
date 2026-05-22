@@ -124,13 +124,21 @@ export async function concludeBuild(input: {
               },
             );
 
+            const compareScreenshotBucket = await updatedBuild.$relatedQuery(
+              "compareScreenshotBucket",
+            );
+            invariant(
+              compareScreenshotBucket,
+              `Compare screenshot bucket not found for build: ${updatedBuild.id}`,
+            );
+
             await Promise.all([
               buildNotificationJob.push(buildNotification.id),
               triggerAndRunAutomation({
                 projectId: build.projectId,
                 message: {
                   event: AutomationEvents.BuildCompleted,
-                  payload: { build: updatedBuild },
+                  payload: { build: updatedBuild, compareScreenshotBucket },
                 },
               }),
             ]);

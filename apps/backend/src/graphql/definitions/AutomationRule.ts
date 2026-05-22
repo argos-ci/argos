@@ -557,6 +557,7 @@ export const resolvers: IResolvers = {
         case "build.completed": {
           const lastBuild = await project
             .$relatedQuery("builds")
+            .withGraphFetched("compareScreenshotBucket")
             .orderBy("id", "desc")
             .first();
 
@@ -565,6 +566,10 @@ export const resolvers: IResolvers = {
               "The project must have at least one build to test this automation.",
             );
           }
+          invariant(
+            lastBuild.compareScreenshotBucket,
+            "compareScreenshotBucket relation not found",
+          );
 
           await testAutomation({
             actions,
@@ -572,6 +577,7 @@ export const resolvers: IResolvers = {
               event: automationEvent,
               payload: {
                 build: lastBuild,
+                compareScreenshotBucket: lastBuild.compareScreenshotBucket,
               },
             },
           });
@@ -580,7 +586,7 @@ export const resolvers: IResolvers = {
         case "build.reviewed": {
           const lastBuildReview = await BuildReview.query()
             .joinRelated("build")
-            .withGraphFetched("build")
+            .withGraphFetched("build.compareScreenshotBucket")
             .where("build.projectId", project.id)
             .orderBy("build_reviews.createdAt", "desc")
             .first();
@@ -592,6 +598,10 @@ export const resolvers: IResolvers = {
           }
 
           invariant(lastBuildReview.build, "build relation not found");
+          invariant(
+            lastBuildReview.build.compareScreenshotBucket,
+            "compareScreenshotBucket relation not found",
+          );
 
           await testAutomation({
             actions,
@@ -599,6 +609,8 @@ export const resolvers: IResolvers = {
               event: automationEvent,
               payload: {
                 build: lastBuildReview.build,
+                compareScreenshotBucket:
+                  lastBuildReview.build.compareScreenshotBucket,
                 buildReview: lastBuildReview,
               },
             },
