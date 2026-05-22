@@ -49,6 +49,21 @@ function getCancelReason(
   return reasonCandidates[0];
 }
 
+function hasCancellationFeedbackUpdate(
+  previousAttributes: Stripe.Event.Data.PreviousAttributes | undefined,
+): boolean {
+  if (!previousAttributes || !("cancellation_details" in previousAttributes)) {
+    return false;
+  }
+
+  const cancellationDetails = previousAttributes.cancellation_details;
+  return (
+    typeof cancellationDetails === "object" &&
+    cancellationDetails !== null &&
+    "feedback" in cancellationDetails
+  );
+}
+
 export function encodeStripeClientReferenceId(
   payload: StripeClientReferenceIdPayload,
 ): string {
@@ -653,30 +668,27 @@ export async function handleStripeEvent({
           stripeSubscription,
         ),
         (async () => {
-          // The previous attributes includes "cancel_at", so we can detect
-          // if the subscription has been scheduled to be canceled.
-          if (
+          const hasCancelScheduledUpdate = Boolean(
             data.previous_attributes &&
-            "cancel_at" in data.previous_attributes
-          ) {
-            // If cancel_at was previously null and is now set, then the
-            // subscription has been scheduled to be canceled.
-            if (
-              !data.previous_attributes.cancel_at &&
-              stripeSubscription.cancel_at
-            ) {
-              // The subscription has been scheduled to be canceled
-              const account = await Account.query()
-                .findById(argosSubscription.accountId)
-                .throwIfNotFound();
-              await notifySubscriptionStatusUpdate({
-                provider: "stripe",
-                previousStatus: argosSubscription.status,
-                status: "cancel_scheduled",
-                account,
-                cancelReason: getCancelReason(stripeSubscription),
-              });
-            }
+            "cancel_at" in data.previous_attributes &&
+            !data.previous_attributes.cancel_at &&
+            stripeSubscription.cancel_at,
+          );
+          const hasCancellationFeedbackUpdated = hasCancellationFeedbackUpdate(
+            data.previous_attributes,
+          );
+
+          if (hasCancelScheduledUpdate || hasCancellationFeedbackUpdated) {
+            const account = await Account.query()
+              .findById(argosSubscription.accountId)
+              .throwIfNotFound();
+            await notifySubscriptionStatusUpdate({
+              provider: "stripe",
+              previousStatus: argosSubscription.status,
+              status: "cancel_scheduled",
+              account,
+              cancelReason: getCancelReason(stripeSubscription),
+            });
           }
         })(),
       ]);
