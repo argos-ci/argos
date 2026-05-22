@@ -2,6 +2,7 @@ import { AutomationSlackActionTypeSchema } from "@argos/schemas/automation-actio
 import {
   type AutomationInputBuildCondition,
   type AutomationInputCondition,
+  type AutomationInputGlobCondition,
   type AutomationInputNotCondition,
 } from "@argos/schemas/automation-condition";
 import { AutomationEvent } from "@argos/schemas/automation-event";
@@ -18,15 +19,27 @@ export function checkIsNotCondition(
 }
 
 /**
+ * Check if the condition is a "glob" one.
+ */
+export function checkIsGlobCondition(
+  condition: AutomationInputCondition | AutomationInputNotCondition["not"],
+): condition is AutomationInputGlobCondition {
+  return "glob" in condition && condition.glob !== undefined;
+}
+
+/**
  * Extract the build condition from an automation condition.
  * If the condition is a direct build condition, return it.
- * Otherwise, extract it from the `not` wrapper.
+ * Otherwise, extract it from the operator wrapper.
  */
 export function getBuildCondition(
   condition: AutomationInputCondition,
 ): AutomationInputBuildCondition {
   if (checkIsNotCondition(condition)) {
-    return condition.not;
+    return getBuildCondition(condition.not);
+  }
+  if (checkIsGlobCondition(condition)) {
+    return condition.glob;
   }
   return condition;
 }

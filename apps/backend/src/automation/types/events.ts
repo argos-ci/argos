@@ -1,12 +1,16 @@
 import type { AutomationEvent } from "@argos/schemas/automation-event";
 
-import { Build, BuildReview } from "@/database/models";
+import type { Build, BuildReview, ScreenshotBucket } from "@/database/models";
 
 type AutomationEventPayload<Event extends AutomationEvent> =
   Event extends "build.completed"
-    ? { build: Build }
+    ? { build: Build; compareScreenshotBucket: ScreenshotBucket }
     : Event extends "build.reviewed"
-      ? { build: Build; buildReview: BuildReview }
+      ? {
+          build: Build;
+          compareScreenshotBucket: ScreenshotBucket;
+          buildReview: BuildReview;
+        }
       : never;
 
 export type AutomationMessage = {

@@ -61,7 +61,7 @@ export const automationAction = defineAutomationAction({
   process: async (input) => {
     const message: AutomationMessage = await (async () => {
       const actionRun = await input.ctx.automationActionRun.$fetchGraph(
-        "automationRun.[build,buildReview]",
+        "automationRun.[build.compareScreenshotBucket,buildReview]",
       );
 
       invariant(
@@ -83,15 +83,29 @@ export const automationAction = defineAutomationAction({
             "build relation not found",
             UnretryableError,
           );
+          invariant(
+            actionRun.automationRun.build.compareScreenshotBucket,
+            "compareScreenshotBucket relation not found",
+            UnretryableError,
+          );
           return {
             event: actionRun.automationRun.event,
-            payload: { build: actionRun.automationRun.build },
+            payload: {
+              build: actionRun.automationRun.build,
+              compareScreenshotBucket:
+                actionRun.automationRun.build.compareScreenshotBucket,
+            },
           };
         }
         case "build.reviewed": {
           invariant(
             actionRun.automationRun.build,
             "build relation not found",
+            UnretryableError,
+          );
+          invariant(
+            actionRun.automationRun.build.compareScreenshotBucket,
+            "compareScreenshotBucket relation not found",
             UnretryableError,
           );
           invariant(
@@ -103,6 +117,8 @@ export const automationAction = defineAutomationAction({
             event: actionRun.automationRun.event,
             payload: {
               build: actionRun.automationRun.build,
+              compareScreenshotBucket:
+                actionRun.automationRun.build.compareScreenshotBucket,
               buildReview: actionRun.automationRun.buildReview,
             },
           };
