@@ -133,7 +133,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
           ) : (
             <>
               <RACTabList
-                className="flex flex-1 shrink-0 gap-2 py-2"
+                className="flex flex-1 shrink-0 gap-2 py-3"
                 aria-label="Build details"
               >
                 <Tab id="screenshots">Screenshots</Tab>

@@ -17,6 +17,7 @@ import { graphql, type DocumentType } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { HeadlessLink } from "@/ui/Link";
+import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { TooltipIndicator } from "@/ui/TooltipIndicator";
@@ -73,7 +74,7 @@ export function TestDetails(props: TestDetailsProps) {
   const lastIgnoredTrail =
     lastTrail?.action === "files.ignored" ? lastTrail : null;
   return (
-    <div className="divide-y-thin flex min-h-0 max-w-3xl flex-1 flex-col">
+    <>
       {change ? (
         <SidebarSection>
           <SidebarHeader>
@@ -221,7 +222,7 @@ export function TestDetails(props: TestDetailsProps) {
         <SidebarHeader>
           <SidebarHeading>Activity</SidebarHeading>
         </SidebarHeader>
-        <div className="px-3 pb-8">
+        <div className="px-3">
           <div className="relative px-1">
             <div className="w-thin absolute top-1 bottom-0 left-[10.5px] bg-(--mauve-6)" />
             <ul className="relative space-y-3 text-xs">
@@ -252,32 +253,8 @@ export function TestDetails(props: TestDetailsProps) {
           </div>
         </div>
       </SidebarSection>
-    </div>
+    </>
   );
-}
-
-function SidebarSection(props: { children: React.ReactNode }) {
-  return <div className="py-5">{props.children}</div>;
-}
-
-function SidebarHeader(props: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={clsx(
-        "mb-3 flex shrink-0 items-baseline justify-between gap-4 px-4",
-        props.className,
-      )}
-    >
-      {props.children}
-    </div>
-  );
-}
-
-function SidebarHeading(props: { children: React.ReactNode }) {
-  return <h2 className="text-low text-sm font-medium">{props.children}</h2>;
 }
 
 function InsightRow(props: { children: React.ReactNode }) {

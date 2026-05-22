@@ -49,7 +49,6 @@ import { useTextContent } from "@/util/text";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getDiffGroupDefinition } from "./BuildDiffGroup";
 import {
-  BuildDiffHighlighterProvider,
   Highlighter,
   useBuildDiffHighlighterContext,
 } from "./BuildDiffHighlighterContext";
@@ -67,12 +66,7 @@ import {
 } from "./OverlayStyle";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import { SnapshotLoader } from "./SnapshotLoader";
-import {
-  useZoomerSyncContext,
-  useZoomTransform,
-  ZoomerSyncProvider,
-  ZoomPane,
-} from "./Zoomer";
+import { useZoomerSyncContext, useZoomTransform, ZoomPane } from "./Zoomer";
 
 const _BuildFragment = graphql(`
   fragment BuildDiffDetail_Build on Build {
@@ -1483,10 +1477,9 @@ export function BuildDiffDetail(props: {
   diff: BuildDiffDetailDocument | null;
   repoUrl: string | null;
   className?: string;
-  header?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { build, diff, header, className, ref } = props;
+  const { build, diff, className, ref } = props;
   const containerRef = useObjectRef(ref);
   useScrollToTop(containerRef, diff);
   return (
@@ -1498,15 +1491,10 @@ export function BuildDiffDetail(props: {
       )}
     >
       {diff ? (
-        <ZoomerSyncProvider id={diff.id}>
-          <BuildDiffHighlighterProvider>
-            <div className="border-b-thin sticky top-0 z-20 shrink-0 p-4 transition-colors">
-              {header}
-            </div>
-            <BuildScreenshots build={build} diff={diff} />
-            <BuildDialogs build={build} />
-          </BuildDiffHighlighterProvider>
-        </ZoomerSyncProvider>
+        <>
+          <BuildScreenshots build={build} diff={diff} />
+          <BuildDialogs build={build} />
+        </>
       ) : build.type === BuildType.Skipped ? (
         <Centered>
           <SkippedBuildEmptyState />
