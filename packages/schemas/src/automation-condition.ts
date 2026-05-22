@@ -8,7 +8,7 @@ const BuildModeSchema = z.enum(["ci", "monitoring"]);
 const BuildConclusionConditionSchema = z.object({
   type: z.literal("build-conclusion"),
   value: BuildConclusionSchema.nullable().refine((val) => val !== null, {
-    message: "Required",
+    error: "Required",
   }),
 });
 
@@ -37,7 +37,7 @@ export type BuildBranchCondition = z.output<typeof BuildBranchConditionSchema>;
 const BuildModeConditionSchema = z.object({
   type: z.literal("build-mode"),
   value: BuildModeSchema.nullable().refine((val) => val !== null, {
-    message: "Required",
+    error: "Required",
   }),
 });
 
@@ -46,7 +46,7 @@ export type BuildModeCondition = z.output<typeof BuildModeConditionSchema>;
 const BuildTypeConditionSchema = z.object({
   type: z.literal("build-type"),
   value: BuildTypeSchema.nullable().refine((val) => val !== null, {
-    message: "Required",
+    error: "Required",
   }),
 });
 
