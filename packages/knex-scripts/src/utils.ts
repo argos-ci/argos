@@ -43,6 +43,12 @@ export function preventRunningInProduction() {
   if (getNodeEnv() === "production") {
     throw new Error("This command is not allowed in production.");
   }
+
+  if (process.env["DATABASE_URL"]) {
+    throw new Error(
+      "This command can't be used when a DATABASE_URL environment is set.",
+    );
+  }
 }
 
 /**
