@@ -15,7 +15,7 @@ function FilterIndicatorMenu({ isActive, onToggle }: FilterIndicatorMenuProps) {
   const [initialIsActive] = useState(isActive);
   const action = initialIsActive
     ? { icon: FunnelXIcon, label: "Remove filter" }
-    : { icon: FunnelPlusIcon, label: "Add filter" };
+    : { icon: FunnelPlusIcon, label: "View filtered snapshots" };
 
   return (
     <Menu autoFocus className="text-sm" aria-label="Actions">

@@ -111,8 +111,8 @@ export function BuildWorkspace(props: {
       <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <BuildDetailProviders>
-          <Toolbar build={build} repoUrl={repoUrl} />
-          <div className="flex min-h-0 flex-1">
+          <Toolbar build={build} />
+          <div className="bg-subtle flex min-h-0 flex-1">
             {(() => {
               switch (build.status) {
                 case BuildStatus.Aborted:
@@ -145,7 +145,13 @@ export function BuildWorkspace(props: {
                   );
               }
             })()}
-            <RightSidebar />
+            <RightSidebar
+              repoUrl={repoUrl}
+              baseBranch={build.baseBranch ?? null}
+              compareBranch={build.branch}
+              deploymentUrl={build.deployment?.url ?? null}
+              prMerged={build.pullRequest?.merged ?? false}
+            />
           </div>
         </BuildDetailProviders>
       </div>
@@ -166,12 +172,9 @@ function BuildDetailProviders(props: { children: React.ReactNode }) {
   );
 }
 
-function Toolbar(props: {
-  build: DocumentType<typeof _BuildFragment>;
-  repoUrl: string | null;
-}) {
-  const { build, repoUrl } = props;
-  const { activeDiff, siblingDiffs } = useBuildDiffState();
+function Toolbar(props: { build: DocumentType<typeof _BuildFragment> }) {
+  const { build } = props;
+  const { activeDiff } = useBuildDiffState();
   if (!activeDiff) {
     return null;
   }
@@ -179,12 +182,6 @@ function Toolbar(props: {
     <div className="border-b-thin sticky top-0 z-20 shrink-0 p-2">
       <BuildDetailHeader
         diff={activeDiff}
-        siblingDiffs={siblingDiffs}
-        repoUrl={repoUrl}
-        baseBranch={build.baseBranch ?? null}
-        compareBranch={build.branch}
-        deploymentUrl={build.deployment?.url ?? null}
-        prMerged={build.pullRequest?.merged ?? false}
         buildType={build.type ?? null}
         isSubsetBuild={build.subset}
       />
@@ -202,12 +199,7 @@ function BuildDetail(props: {
   const shownDiff = snapshotType === "aria" && ariaDiff ? ariaDiff : activeDiff;
   return (
     <div className="flex min-h-0 min-w-0 flex-1">
-      <BuildDiffDetail
-        build={build}
-        diff={shownDiff}
-        repoUrl={repoUrl}
-        className="bg-subtle"
-      />
+      <BuildDiffDetail build={build} diff={shownDiff} repoUrl={repoUrl} />
     </div>
   );
 }

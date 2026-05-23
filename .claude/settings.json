@@ -6,7 +6,8 @@
       "Bash(pnpm check-format *)",
       "Bash(pnpm format *)",
       "Bash(pnpm codegen *)",
-      "Bash(pnpm exec vitest *)"
+      "Bash(pnpm exec vitest *)",
+      "Bash(pnpm knip *)"
     ]
   },
   "hooks": {

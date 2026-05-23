@@ -4,7 +4,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 export interface LocationChipProps extends Pick<
   ChipProps,
-  "icon" | "scale" | "className" | "children"
+  "icon" | "scale" | "className" | "children" | "color"
 > {
   location: ScreenshotMetadataLocation | null | undefined;
   repoUrl: string | null | undefined;
