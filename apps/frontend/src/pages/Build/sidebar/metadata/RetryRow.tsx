@@ -17,7 +17,7 @@ export function RetryRow(props: { test: ScreenshotMetadataTest | null }) {
       <Tooltip
         content={`Attempt number ${retry + 1} out of a total of ${retries + 1}.`}
       >
-        <Chip icon={RotateCcwIcon} className="font-mono tabular-nums">
+        <Chip icon={RotateCcwIcon}>
           Retry {retry + 1} / {retries + 1}
         </Chip>
       </Tooltip>

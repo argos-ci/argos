@@ -13,7 +13,11 @@ import {
   LinkProps as RACLinkProps,
 } from "react-aria-components";
 
-import { lowTextColorClassNames, UIColor } from "@/util/colors";
+import {
+  lowTextColorClassNames,
+  textColorClassNames,
+  UIColor,
+} from "@/util/colors";
 
 export type ChipColor = UIColor | "blank";
 
@@ -116,7 +120,7 @@ function getChipClassName(props: {
       lowTextColorClassNames.success,
       "border-success bg-success-app",
     ),
-    neutral: clsx(lowTextColorClassNames.neutral, "border bg-app"),
+    neutral: clsx(lowTextColorClassNames.neutral, "border-default bg-app"),
     pending: clsx(
       lowTextColorClassNames.pending,
       "border-pending bg-pending-app",
@@ -130,7 +134,7 @@ function getChipClassName(props: {
       lowTextColorClassNames.storybook,
       "border-storybook bg-storybook-app",
     ),
-    blank: "border-transparent",
+    blank: clsx(textColorClassNames.neutral, "border-transparent bg-app"),
   };
   return clsx(
     colorClassNames[color],
@@ -142,7 +146,7 @@ function getChipClassName(props: {
     "group-[*]/button-group:rounded-none",
     "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:not-first:border-l-0",
     "group-[*]/button-group:last:rounded-r-lg",
-    "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border font-medium leading-4",
+    "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border-thin font-medium leading-4",
   );
 }
 

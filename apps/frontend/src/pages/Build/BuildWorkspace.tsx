@@ -25,6 +25,7 @@ const _BuildFragment = graphql(`
     ...BuildLeftSidebar_Build
     ...BuildStatusDescription_Build
     ...BuildDiffDetail_Build
+    ...RightSidebar_Build
     status
     subset
     parallel {
@@ -146,6 +147,7 @@ export function BuildWorkspace(props: {
               }
             })()}
             <RightSidebar
+              build={build}
               repoUrl={repoUrl}
               baseBranch={build.baseBranch ?? null}
               compareBranch={build.branch}
