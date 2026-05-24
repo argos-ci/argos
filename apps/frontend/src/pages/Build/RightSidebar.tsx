@@ -8,6 +8,7 @@ import {
   TabPanel,
   TabProps,
   Tabs,
+  type TabPanelProps,
 } from "react-aria-components";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -101,10 +102,7 @@ export function RightSidebar(
         <PillTab id="snapshot">Snapshot</PillTab>
         <PillTab id="review">Review</PillTab>
       </RACTabList>
-      <TabPanel
-        id="snapshot"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-2 empty:hidden"
-      >
+      <SidebarTabPanel id="snapshot">
         <MetadataSection
           diff={activeDiff}
           siblingDiffs={siblingDiffs}
@@ -126,15 +124,24 @@ export function RightSidebar(
             />
           </>
         ) : null}
-      </TabPanel>
-      <TabPanel
-        id="review"
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-2 empty:hidden"
-      >
+      </SidebarTabPanel>
+      <SidebarTabPanel id="review">
         <ReviewersSection build={build} />
         <ReviewActivitySection build={build} />
-      </TabPanel>
+      </SidebarTabPanel>
     </Tabs>
+  );
+}
+
+function SidebarTabPanel(props: TabPanelProps) {
+  return (
+    <TabPanel
+      {...props}
+      className={clsx(
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-4 empty:hidden",
+        props.className,
+      )}
+    />
   );
 }
 

@@ -124,6 +124,8 @@ export const typeDefs = gql`
     baseBranchResolvedFrom: BaseBranchResolution
     "Effective build reviews"
     reviews: [BuildReview!]!
+    "Comments posted on the build that are not part of a pending review"
+    comments: [Comment!]!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
     "Build is triggered in a merge queue"
@@ -310,6 +312,9 @@ export const resolvers: IResolvers = {
     },
     reviews: async (build, _args, ctx) => {
       return ctx.loaders.BuildUniqueReviews.load(build.id);
+    },
+    comments: async (build, _args, ctx) => {
+      return ctx.loaders.BuildPublishedComments.load(build.id);
     },
     stats: (build) => {
       return build.getStats();

@@ -12,7 +12,9 @@
       "Bash(pnpm db:check-structure)",
       "Bash(NODE_ENV=test pnpm db:reset)",
       "Bash(rtk vitest *)",
-      "Bash(rtk prettier *)"
+      "Bash(rtk prettier *)",
+      "Bash(pnpm -w run codegen)",
+      "Bash(pnpm -w run lint)"
     ]
   },
   "hooks": {

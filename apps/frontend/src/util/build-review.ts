@@ -28,7 +28,7 @@ export const buildReviewDescriptors: Record<
     textColor: "text-danger-low",
   },
   [ReviewState.Commented]: {
-    label: "Commented",
+    label: "Reviewed",
     icon: MessageCircleIcon,
     textColor: "text-info-low",
   },

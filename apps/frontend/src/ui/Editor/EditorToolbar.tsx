@@ -149,15 +149,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
         if (!editor.isEditable) {
           return false;
         }
-        const isEmptyTextBlock =
-          !pmState.doc.textBetween(from, to).length && pmState.selection.empty;
-        if (isEmptyTextBlock) {
-          return false;
+        const hasTextInSelection = pmState.doc.textBetween(from, to).length > 0;
+        if (!hasTextInSelection) {
+          return editor.isActive("link");
         }
-        if (!pmState.selection.empty) {
-          return true;
-        }
-        return editor.isActive("link");
+        return true;
       }}
     >
       {showLinkInput ? (
