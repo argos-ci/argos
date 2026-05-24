@@ -6,6 +6,7 @@ import { concludeBuild } from "@/build/concludeBuild";
 import {
   Build,
   BuildReview,
+  Comment,
   Project,
   ScreenshotBucket,
   ScreenshotDiff,
@@ -106,7 +107,7 @@ describe("createReview", () => {
     z.globalRegistry.clear();
   });
 
-  test("creates a review and returns it", async ({
+  test("creates a review and returns it (event)", async ({
     user,
     build,
     screenshotDiffs,
@@ -116,7 +117,7 @@ describe("createReview", () => {
       .post(`/projects/acme/web/builds/${build.number}/reviews`)
       .set("Authorization", `Bearer ${scopedPatToken}`)
       .send({
-        conclusion: "REQUEST_CHANGES",
+        event: "REJECT",
         snapshots: [
           {
             id: screenshotDiffs[0]!.id,
@@ -148,12 +149,102 @@ describe("createReview", () => {
     });
   });
 
+  test("creates a comment review with a body", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const body = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Looks good to me" }],
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        event: "COMMENT",
+        body,
+      })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      buildId: build.id,
+      state: "commented",
+    });
+
+    const comments = await Comment.query().where({
+      buildReviewId: res.body.id,
+    });
+    expect(comments).toHaveLength(1);
+    expect(comments[0]?.content).toEqual(body);
+  });
+
+  test("supports the deprecated conclusion field", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        conclusion: "APPROVE",
+        snapshots: [],
+      })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      buildId: build.id,
+      state: "approved",
+    });
+  });
+
+  test("maps deprecated REQUEST_CHANGES conclusion to rejected", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        conclusion: "REQUEST_CHANGES",
+        snapshots: [],
+      })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      buildId: build.id,
+      state: "rejected",
+    });
+  });
+
+  test("returns 400 when neither event nor conclusion is provided", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        snapshots: [],
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toContain(
+          "Either `event` or `conclusion` is required",
+        );
+      });
+  });
+
   test("rejects project tokens", async ({ build }) => {
     await request(app)
       .post(`/projects/acme/web/builds/${build.number}/reviews`)
       .set("Authorization", "Bearer the-awesome-token")
       .send({
-        conclusion: "APPROVE",
+        event: "APPROVE",
         snapshots: [],
       })
       .expect(401)

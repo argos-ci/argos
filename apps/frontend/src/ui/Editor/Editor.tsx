@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { clsx } from "clsx";
@@ -11,6 +12,8 @@ export interface EditorProps {
   value: EditorValue;
   onChange: (value: EditorValue) => void;
   className?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
   "aria-label"?: string;
 }
 
@@ -40,10 +43,12 @@ const EDITOR_CONTENT_CLASS = clsx(
   "[&_hr]:my-3 [&_hr]:border-t",
   // Links
   "[&_a]:text-primary-low [&_a]:underline [&_a]:underline-offset-2",
+  // Placeholder
+  "[&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_p.is-editor-empty:first-child]:before:text-low [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0",
 );
 
 export function Editor(props: EditorProps) {
-  const { value, onChange, className } = props;
+  const { value, onChange, className, placeholder, autoFocus } = props;
   const lastValueRef = useRef<EditorValue>(value);
   const editor = useEditor({
     extensions: [
@@ -53,8 +58,10 @@ export function Editor(props: EditorProps) {
           enableClickSelection: true,
         },
       }),
+      ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
     content: value,
+    autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
         class: EDITOR_CONTENT_CLASS,

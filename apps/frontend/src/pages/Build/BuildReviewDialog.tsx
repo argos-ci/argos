@@ -2,30 +2,25 @@ import { createContext, memo, use, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 
 import { DocumentType, graphql } from "@/gql";
-import { ReviewState } from "@/gql/graphql";
-import { Button } from "@/ui/Button";
+import { BuildReviewEvent } from "@/gql/graphql";
 import {
   Dialog,
   DialogBody,
   DialogDismiss,
-  DialogFooter,
   DialogText,
   DialogTitle,
-  useOverlayTriggerState,
 } from "@/ui/Dialog";
-import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Modal, ModalProps } from "@/ui/Modal";
-import { getErrorMessage } from "@/util/error";
 
-import { useReviewBuildMutation } from "./BuildReviewAction";
-import { BuildReviewButton } from "./BuildReviewButton";
+import { BuildReviewForm } from "./BuildReviewForm";
 import { useBuildReviewSummary } from "./BuildReviewState";
+import { EvaluationStatus } from "./EvaluationStatus";
 
 const _ProjectFragment = graphql(`
   fragment BuildReviewDialog_Project on Project {
-    ...BuildReviewButton_Project
     build(number: $buildNumber) {
       id
+      ...BuildReviewForm_Build
     }
   }
 `);
@@ -64,7 +59,6 @@ const BuildReviewModal = memo(function BuildReviewModal(props: {
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable>
       <BuildReviewDialog
-        project={project}
         build={project.build}
         onClose={() => onOpenChange(false)}
       />
@@ -73,80 +67,55 @@ const BuildReviewModal = memo(function BuildReviewModal(props: {
 });
 
 function BuildReviewDialog(props: {
-  project: DocumentType<typeof _ProjectFragment>;
   build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
   onClose: () => void;
 }) {
-  const { project, build, onClose } = props;
+  const { build, onClose } = props;
   const summary = useBuildReviewSummary();
   invariant(summary, "BuildReviewDialog requires a summary");
-  if (summary.rejected.length === 0 && summary.pending.length === 0) {
-    return <FinishReviewAcceptedDialog build={build} />;
-  }
-  return (
-    <Dialog size="medium">
-      <DialogBody>
-        <DialogTitle>Finish your review</DialogTitle>
-        <DialogText>
-          During your review,{" "}
-          {summary.rejected.length > 1 ? (
-            <strong>
-              {summary.rejected.length} changes have been marked as rejected
-            </strong>
-          ) : (
-            <strong>
-              {summary.rejected.length} change has been marked as rejected
-            </strong>
-          )}
-          .<br />
-          Approve or reject the changes to submit your review.
-        </DialogText>
-      </DialogBody>
-      <DialogFooter>
-        <DialogDismiss>Cancel</DialogDismiss>
-        <BuildReviewButton
-          project={project}
-          autoFocus
-          onCompleted={() => onClose()}
-        >
-          Submit review
-        </BuildReviewButton>
-      </DialogFooter>
-    </Dialog>
-  );
-}
+  const hasRejected = summary[EvaluationStatus.Rejected].length > 0;
+  const pendingCount = summary[EvaluationStatus.Pending].length;
+  const rejectedCount = summary[EvaluationStatus.Rejected].length;
 
-function FinishReviewAcceptedDialog(props: {
-  build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
-}) {
-  const { build } = props;
-  const [reviewBuild, { loading, error }] = useReviewBuildMutation(build);
-  const state = useOverlayTriggerState();
   return (
     <Dialog size="medium">
       <DialogBody>
-        <DialogTitle>Finish your review</DialogTitle>
+        <DialogTitle>Submit your review</DialogTitle>
         <DialogText>
-          <strong>All changes have been marked as accepted.</strong>
-          <br />
-          Approve the changes to submit your review.
+          {hasRejected ? (
+            <>
+              During your review,{" "}
+              <strong>
+                {rejectedCount === 1
+                  ? "1 change has been marked as rejected"
+                  : `${rejectedCount} changes have been marked as rejected`}
+              </strong>
+              .
+            </>
+          ) : pendingCount > 0 ? (
+            <>
+              <strong>
+                {pendingCount === 1
+                  ? "1 change is still pending review"
+                  : `${pendingCount} changes are still pending review`}
+              </strong>
+              .
+            </>
+          ) : (
+            <>
+              <strong>All changes have been marked as accepted.</strong>
+            </>
+          )}
         </DialogText>
       </DialogBody>
-      <DialogFooter>
-        {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
-        <DialogDismiss>Cancel</DialogDismiss>
-        <Button
-          isDisabled={loading}
-          variant="primary"
-          autoFocus
-          onPress={() => {
-            reviewBuild(ReviewState.Approved).catch(() => {});
-            state.close();
-          }}
-        >
-          Approve changes
-        </Button>
-      </DialogFooter>
+      <BuildReviewForm
+        build={build}
+        defaultEvent={
+          hasRejected ? BuildReviewEvent.Reject : BuildReviewEvent.Approve
+        }
+        onSubmitted={() => onClose()}
+        cancel={<DialogDismiss>Cancel</DialogDismiss>}
+      />
     </Dialog>
   );
 }

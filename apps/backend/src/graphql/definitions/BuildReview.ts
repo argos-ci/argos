@@ -1,3 +1,4 @@
+import type { BuildReviewEvent } from "@argos/schemas/build-review";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
@@ -10,6 +11,7 @@ import {
 import { Build } from "@/database/models/Build";
 
 import {
+  IBuildReviewEvent,
   IReviewState,
   IScreenshotDiffReviewState,
   type IResolvers,
@@ -36,6 +38,18 @@ export const typeDefs = gql`
   }
 
   """
+  The event used to submit a build review.
+  """
+  enum BuildReviewEvent {
+    "Approve the changes"
+    APPROVE
+    "Reject the changes"
+    REJECT
+    "Submit a neutral comment review"
+    COMMENT
+  }
+
+  """
   The state of an individual screenshot diff review.
   """
   enum ScreenshotDiffReviewState {
@@ -50,9 +64,10 @@ export const typeDefs = gql`
     state: ReviewState!
   }
 
-  input ReviewBuildInput {
+  input CreateBuildReviewInput {
     buildId: ID!
-    state: ReviewState!
+    event: BuildReviewEvent!
+    body: JSONObject
     screenshotDiffReviews: [ScreenshotDiffReviewInput!]!
   }
 
@@ -62,7 +77,7 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
-    reviewBuild(input: ReviewBuildInput!): Build!
+    createBuildReview(input: CreateBuildReviewInput!): Build!
   }
 `;
 
@@ -86,7 +101,7 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
-    reviewBuild: async (_root, args, ctx) => {
+    createBuildReview: async (_root, args, ctx) => {
       const { auth } = ctx;
       if (!auth) {
         throw unauthenticated();
@@ -113,7 +128,8 @@ export const resolvers: IResolvers = {
       await createBuildReview({
         build,
         userId: auth.user.id,
-        state: parseState(input.state),
+        event: parseEvent(input.event),
+        body: input.body ?? undefined,
         snapshotReviews: input.screenshotDiffReviews.map((diffReviewInput) => ({
           screenshotDiffId: diffReviewInput.screenshotDiffId,
           state: parseScreenshotDiffReviewState(diffReviewInput.state),
@@ -125,20 +141,16 @@ export const resolvers: IResolvers = {
   },
 };
 
-function parseState(state: IReviewState): ReviewState {
-  switch (state) {
-    case IReviewState.Approved:
-      return "approved";
-    case IReviewState.Rejected:
-      return "rejected";
-    case IReviewState.Commented:
-      return "commented";
-    case IReviewState.Dismissed:
-      return "dismissed";
-    case IReviewState.Pending:
-      return "pending";
+function parseEvent(event: IBuildReviewEvent): BuildReviewEvent {
+  switch (event) {
+    case IBuildReviewEvent.Approve:
+      return "APPROVE";
+    case IBuildReviewEvent.Reject:
+      return "REJECT";
+    case IBuildReviewEvent.Comment:
+      return "COMMENT";
     default:
-      assertNever(state);
+      assertNever(event);
   }
 }
 

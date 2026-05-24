@@ -81,7 +81,7 @@ const test = base.extend<Fixtures>({
   },
 });
 
-describe("GraphQL reviewBuild mutation", () => {
+describe("GraphQL createBuildReview mutation", () => {
   test("creates a review", async ({ fixture }) => {
     const app = await createApolloServerApp(
       apolloServer,
@@ -95,8 +95,8 @@ describe("GraphQL reviewBuild mutation", () => {
       .post("/graphql")
       .send({
         query: `
-            mutation ReviewBuild($input: ReviewBuildInput!) {
-              reviewBuild(
+            mutation CreateBuildReview($input: CreateBuildReviewInput!) {
+              createBuildReview(
                 input: $input
               ) {
                 status
@@ -106,7 +106,7 @@ describe("GraphQL reviewBuild mutation", () => {
         variables: {
           input: {
             buildId: fixture.build.id,
-            state: "REJECTED",
+            event: "REJECT",
             screenshotDiffReviews: [
               {
                 screenshotDiffId: fixture.screenshotDiffs[0]!.id,
@@ -116,7 +116,7 @@ describe("GraphQL reviewBuild mutation", () => {
           },
         },
       });
-    expect(mutationResult.body.data.reviewBuild.status).toBe("REJECTED");
+    expect(mutationResult.body.data.createBuildReview.status).toBe("REJECTED");
 
     const review = await BuildReview.query()
       .findOne({
@@ -169,8 +169,8 @@ describe("GraphQL reviewBuild mutation", () => {
       .post("/graphql")
       .send({
         query: `
-            mutation ReviewBuild($input: ReviewBuildInput!) {
-              reviewBuild(
+            mutation CreateBuildReview($input: CreateBuildReviewInput!) {
+              createBuildReview(
                 input: $input
               ) {
                 status
@@ -180,7 +180,7 @@ describe("GraphQL reviewBuild mutation", () => {
         variables: {
           input: {
             buildId: fixture.build.id,
-            state: "APPROVED",
+            event: "APPROVE",
             screenshotDiffReviews: [],
           },
         },

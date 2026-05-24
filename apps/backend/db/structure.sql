@@ -3251,10 +3251,10 @@ CREATE INDEX build_notifications_buildid_index ON public.build_notifications USI
 
 
 --
--- Name: build_reviews_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: build_reviews_buildid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX build_reviews_buildid_index ON public.build_reviews USING btree ("buildId");
+CREATE INDEX build_reviews_buildid_createdat_index ON public.build_reviews USING btree ("buildId", "createdAt" DESC);
 
 
 --
@@ -4659,3 +4659,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026051
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260511120000_project-tokenless-auth.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260517120000_team_domains.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260524210000_build-review-state-extra.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260524212300_build-reviews-buildid-createdat-index.js', 1, NOW());
