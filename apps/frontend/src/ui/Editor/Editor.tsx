@@ -46,7 +46,14 @@ export function Editor(props: EditorProps) {
   const { value, onChange, className } = props;
   const lastValueRef = useRef<EditorValue>(value);
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+          enableClickSelection: true,
+        },
+      }),
+    ],
     content: value,
     editorProps: {
       attributes: {

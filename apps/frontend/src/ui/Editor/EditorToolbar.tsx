@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { clsx } from "clsx";
@@ -9,7 +10,6 @@ import {
   LinkIcon,
   ListIcon,
   ListOrderedIcon,
-  MinusIcon,
   SquareCodeIcon,
   StrikethroughIcon,
   TextQuoteIcon,
@@ -22,6 +22,8 @@ import { IconButton } from "@/ui/IconButton";
 import { Kbd } from "@/ui/Kbd";
 import { Menu, MenuItem, MenuItemShortcut, MenuTrigger } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
+
+import { EditorToolbarLinkInput } from "./EditorToolbarLinkInput";
 
 export interface EditorToolbarProps {
   editor: Editor | null;
@@ -57,8 +59,10 @@ type ToolbarState = {
   canBulletList: boolean;
   isOrderedList: boolean;
   canOrderedList: boolean;
-  canHorizontalRule: boolean;
   headingLevel: number | null;
+  selectionFrom: number;
+  selectionTo: number;
+  selectionEmpty: boolean;
 };
 
 export function EditorToolbar(props: EditorToolbarProps) {
@@ -69,6 +73,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
       if (!editor) {
         return null;
       }
+      const { selection } = editor.state;
       return {
         isBold: editor.isActive("bold"),
         canBold: editor.can().toggleBold(),
@@ -92,36 +97,107 @@ export function EditorToolbar(props: EditorToolbarProps) {
         canBulletList: editor.can().toggleBulletList(),
         isOrderedList: editor.isActive("orderedList"),
         canOrderedList: editor.can().toggleOrderedList(),
-        canHorizontalRule: editor.can().setHorizontalRule(),
         headingLevel:
           ([1, 2, 3, 4, 5, 6] as const).find((level) =>
             editor.isActive("heading", { level }),
           ) ?? null,
+        selectionFrom: selection.from,
+        selectionTo: selection.to,
+        selectionEmpty: selection.empty,
       };
     },
   });
+
+  const [linkEditing, setLinkEditing] = useState(false);
+  const [prevSelectionKey, setPrevSelectionKey] = useState<string | null>(null);
+
+  const currentSelectionKey = state
+    ? `${state.selectionFrom}-${state.selectionTo}`
+    : null;
+  if (state && currentSelectionKey !== prevSelectionKey) {
+    setPrevSelectionKey(currentSelectionKey);
+    if (!state.isLink && linkEditing) {
+      setLinkEditing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    const dom = editor.view.dom;
+    const handleClick = (event: MouseEvent) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      const link = target.closest("a");
+      if (link && dom.contains(link)) {
+        setLinkEditing(true);
+      }
+    };
+    dom.addEventListener("click", handleClick);
+    return () => dom.removeEventListener("click", handleClick);
+  }, [editor]);
 
   if (!editor || !state) {
     return null;
   }
 
+  const showLinkInput = linkEditing;
+
   return (
     <BubbleMenu
       editor={editor}
       className={clsx(
-        "bg-subtle z-50 flex items-center gap-0.5 rounded-lg border bg-clip-padding p-1 shadow-md",
+        "bg-subtle border-thin z-50 flex items-center gap-0.5 rounded-lg bg-clip-padding p-1 shadow-sm",
       )}
       shouldShow={({ editor, state: pmState, from, to }) => {
-        const isEmptyTextBlock =
-          !pmState.doc.textBetween(from, to).length && pmState.selection.empty;
-        if (pmState.selection.empty || isEmptyTextBlock) {
+        if (!editor.isEditable) {
           return false;
         }
-        return editor.isEditable;
+        const isEmptyTextBlock =
+          !pmState.doc.textBetween(from, to).length && pmState.selection.empty;
+        if (isEmptyTextBlock) {
+          return false;
+        }
+        if (!pmState.selection.empty) {
+          return true;
+        }
+        return editor.isActive("link");
       }}
     >
+      {showLinkInput ? (
+        <EditorToolbarLinkInput
+          key={currentSelectionKey ?? ""}
+          editor={editor}
+          initialHref={state.linkHref ?? ""}
+          hasLink={state.isLink}
+          onDone={() => setLinkEditing(false)}
+        />
+      ) : (
+        <FormatToolbar
+          editor={editor}
+          state={state}
+          onEnterLinkMode={() => setLinkEditing(true)}
+        />
+      )}
+    </BubbleMenu>
+  );
+}
+
+function FormatToolbar(props: {
+  editor: Editor;
+  state: ToolbarState;
+  onEnterLinkMode: () => void;
+}) {
+  const { editor, state, onEnterLinkMode } = props;
+  return (
+    <>
       <HeadingMenu editor={editor} state={state} />
-      <ToolbarSeparator />
       <MarkButton
         editor={editor}
         label="Bold"
@@ -158,7 +234,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
         isDisabled={!state.canUnderline}
         onPress={(chain) => chain.toggleUnderline()}
       />
-      <LinkButton editor={editor} state={state} />
+      <LinkButton state={state} onEnterLinkMode={onEnterLinkMode} />
       <MarkButton
         editor={editor}
         label="Quote"
@@ -168,7 +244,6 @@ export function EditorToolbar(props: EditorToolbarProps) {
         isDisabled={!state.canBlockquote}
         onPress={(chain) => chain.toggleBlockquote()}
       />
-      <HorizontalRuleButton editor={editor} state={state} />
       <MarkButton
         editor={editor}
         label="Code"
@@ -188,12 +263,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
         onPress={(chain) => chain.toggleCodeBlock()}
       />
       <ListMenu editor={editor} state={state} />
-    </BubbleMenu>
+    </>
   );
-}
-
-function ToolbarSeparator() {
-  return <div className="mx-1 h-4 w-px shrink-0 bg-(--mauve-6)" />;
 }
 
 function MarkButton(props: {
@@ -221,24 +292,11 @@ function MarkButton(props: {
   );
 }
 
-function HorizontalRuleButton(props: { editor: Editor; state: ToolbarState }) {
-  const { editor, state } = props;
-  return (
-    <HotkeyTooltip description="Divider" keys={[]}>
-      <IconButton
-        size="small"
-        aria-label="Horizontal rule"
-        isDisabled={!state.canHorizontalRule}
-        onPress={() => editor.chain().focus().setHorizontalRule().run()}
-      >
-        <MinusIcon />
-      </IconButton>
-    </HotkeyTooltip>
-  );
-}
-
-function LinkButton(props: { editor: Editor; state: ToolbarState }) {
-  const { editor, state } = props;
+function LinkButton(props: {
+  state: ToolbarState;
+  onEnterLinkMode: () => void;
+}) {
+  const { state, onEnterLinkMode } = props;
   return (
     <HotkeyTooltip description="Link" keys={[]}>
       <IconButton
@@ -246,19 +304,7 @@ function LinkButton(props: { editor: Editor; state: ToolbarState }) {
         aria-label="Link"
         aria-pressed={state.isLink}
         isDisabled={!state.isLink && !state.canSetLink}
-        onPress={() => {
-          const previous = state.linkHref ?? "";
-          const url = window.prompt("Link URL", previous);
-          if (url === null) {
-            return;
-          }
-          const chain = editor.chain().focus().extendMarkRange("link");
-          if (url === "") {
-            chain.unsetLink().run();
-            return;
-          }
-          chain.setLink({ href: url }).run();
-        }}
+        onPress={onEnterLinkMode}
       >
         <LinkIcon />
       </IconButton>
@@ -300,7 +346,7 @@ function HeadingMenu(props: { editor: Editor; state: ToolbarState }) {
               chain.toggleHeading({ level }).run();
             }
           }}
-          className="min-w-52 p-1"
+          className="min-w-52"
         >
           {HEADING_OPTIONS.map((option) => (
             <MenuItem key={option.key} id={option.key} textValue={option.label}>
@@ -379,7 +425,7 @@ function ListMenu(props: { editor: Editor; state: ToolbarState }) {
               chain.toggleOrderedList().run();
             }
           }}
-          className="min-w-60 p-1"
+          className="min-w-60"
         >
           {LIST_OPTIONS.map((option) => (
             <MenuItem
@@ -416,10 +462,10 @@ function ToolbarMenuButton(
     <RACButton
       {...props}
       className={clsx(
-        "data-hovered:border-hover data-hovered:bg-ui text-low data-hovered:text-default bg-ui/60 data-focus-visible:ring-default data-pressed:bg-active data-pressed:text-default aria-pressed:bg-active aria-pressed:text-default aria-expanded:bg-active aria-expanded:text-default",
+        "data-hovered:border-hover text-low data-hovered:text-default data-focus-visible:ring-default data-pressed:bg-active data-pressed:text-default aria-pressed:bg-active aria-pressed:text-default aria-expanded:bg-active aria-expanded:text-default",
         "border border-transparent",
         "focus:outline-hidden data-focus-visible:ring-4",
-        "flex h-7 cursor-default items-center gap-0.5 rounded-md px-1.5 text-sm font-medium",
+        "flex h-6 cursor-default items-center gap-0.5 rounded-md px-1.5 text-sm font-medium",
         props.className,
       )}
     />

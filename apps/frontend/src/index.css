@@ -3,7 +3,9 @@
 @import "@radix-ui/colors/gray" layer(base);
 @import "@radix-ui/colors/gray-dark" layer(base);
 @import "@radix-ui/colors/mauve" layer(base);
+@import "@radix-ui/colors/mauve-alpha" layer(base);
 @import "@radix-ui/colors/mauve-dark" layer(base);
+@import "@radix-ui/colors/mauve-dark-alpha" layer(base);
 @import "@radix-ui/colors/pink" layer(base);
 @import "@radix-ui/colors/pink-dark" layer(base);
 @import "@radix-ui/colors/violet" layer(base);
