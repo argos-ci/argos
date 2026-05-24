@@ -394,7 +394,7 @@ CREATE TABLE public.build_reviews (
     "userId" bigint,
     "buildId" bigint NOT NULL,
     state text NOT NULL,
-    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text])))
+    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text, 'commented'::text, 'dismissed'::text, 'pending'::text])))
 );
 
 
@@ -524,6 +524,60 @@ ALTER SEQUENCE public.builds_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
+
+
+--
+-- Name: comment_reactions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.comment_reactions (
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "commentId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    emoji character varying(255) NOT NULL
+);
+
+
+ALTER TABLE public.comment_reactions OWNER TO postgres;
+
+--
+-- Name: comments; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.comments (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "userId" bigint NOT NULL,
+    "buildId" bigint NOT NULL,
+    "buildReviewId" bigint,
+    "threadId" bigint,
+    content jsonb NOT NULL
+);
+
+
+ALTER TABLE public.comments OWNER TO postgres;
+
+--
+-- Name: comments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.comments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.comments_id_seq OWNER TO postgres;
+
+--
+-- Name: comments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.comments_id_seq OWNED BY public.comments.id;
 
 
 --
@@ -2228,6 +2282,13 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
+-- Name: comments id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments ALTER COLUMN id SET DEFAULT nextval('public.comments_id_seq'::regclass);
+
+
+--
 -- Name: deployment_aliases id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2604,6 +2665,22 @@ ALTER TABLE ONLY public.build_shards
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: comment_reactions comment_reactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_reactions
+    ADD CONSTRAINT comment_reactions_pkey PRIMARY KEY ("commentId", "userId", emoji);
+
+
+--
+-- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
 
 
 --
@@ -3272,6 +3349,13 @@ CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
 
 
 --
+-- Name: comments_buildid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX comments_buildid_createdat_index ON public.comments USING btree ("buildId", "createdAt");
+
+
+--
 -- Name: deployment_aliases_deploymentid_type_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3867,6 +3951,54 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: comment_reactions comment_reactions_commentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_reactions
+    ADD CONSTRAINT comment_reactions_commentid_foreign FOREIGN KEY ("commentId") REFERENCES public.comments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_reactions comment_reactions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_reactions
+    ADD CONSTRAINT comment_reactions_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
+
+
+--
+-- Name: comments comments_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comments comments_buildreviewid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_buildreviewid_foreign FOREIGN KEY ("buildReviewId") REFERENCES public.build_reviews(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comments comments_threadid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_threadid_foreign FOREIGN KEY ("threadId") REFERENCES public.comments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comments comments_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id);
 
 
 --
@@ -4510,6 +4642,7 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026021
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260216200736_enforce-sso.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260219170000_project-auto-ignore.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260222100000_team-saml-expiration-check.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260313102517_comments.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260328120000_build-merge-queue-gh-pull-requests.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260401084427_user_access_tokens.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260409120000_storybook_deployments.js', 1, NOW());
@@ -4525,3 +4658,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026050
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260510120000_project-github-actions-oidc.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260511120000_project-tokenless-auth.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260517120000_team_domains.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260524210000_build-review-state-extra.js', 1, NOW());

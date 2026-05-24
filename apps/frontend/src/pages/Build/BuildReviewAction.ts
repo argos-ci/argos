@@ -6,6 +6,7 @@ import { DocumentType, graphql } from "@/gql";
 import {
   BuildStatus,
   ReviewState,
+  ScreenshotDiffReviewState,
   type BuildReviewAction_ReviewBuildMutation,
   type BuildReviewAction_ReviewBuildMutationVariables,
 } from "@/gql/graphql";
@@ -47,14 +48,15 @@ export function useReviewBuildMutation(
 ) {
   const api = useBuildReviewAPI();
   const [mutate, data] = useMutation(ReviewBuildMutation, {
-    optimisticResponse: (vars) => {
+    optimisticResponse: (vars, { IGNORE }) => {
+      const status = getOptimisticBuildStatus(vars.input.state);
+      if (!status) {
+        return IGNORE;
+      }
       return {
         reviewBuild: {
           ...build,
-          status: {
-            [ReviewState.Approved]: BuildStatus.Accepted,
-            [ReviewState.Rejected]: BuildStatus.Rejected,
-          }[vars.input.state],
+          status,
         },
       };
     },
@@ -116,15 +118,30 @@ function getDiffEvaluationStatus(
 
 function evaluationStatusToReviewState(
   status: EvaluationStatus,
-): ReviewState | null {
+): ScreenshotDiffReviewState | null {
   switch (status) {
     case EvaluationStatus.Accepted:
-      return ReviewState.Approved;
+      return ScreenshotDiffReviewState.Approved;
     case EvaluationStatus.Rejected:
-      return ReviewState.Rejected;
+      return ScreenshotDiffReviewState.Rejected;
     case EvaluationStatus.Pending:
       return null;
     default:
       assertNever(status);
+  }
+}
+
+function getOptimisticBuildStatus(state: ReviewState): BuildStatus | undefined {
+  switch (state) {
+    case ReviewState.Approved:
+      return BuildStatus.Accepted;
+    case ReviewState.Rejected:
+      return BuildStatus.Rejected;
+    case ReviewState.Commented:
+    case ReviewState.Dismissed:
+    case ReviewState.Pending:
+      return undefined;
+    default:
+      assertNever(state);
   }
 }

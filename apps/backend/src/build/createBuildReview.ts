@@ -6,7 +6,14 @@ import { pushBuildNotification } from "@/build-notification/notifications";
 import { Build, BuildReview, ScreenshotDiffReview } from "@/database/models";
 import { transaction } from "@/database/transaction";
 
-export type ReviewState = "approved" | "rejected";
+export type ReviewState =
+  | "approved"
+  | "rejected"
+  | "commented"
+  | "dismissed"
+  | "pending";
+
+export type ScreenshotDiffReviewState = "approved" | "rejected";
 
 export async function createBuildReview(input: {
   build: Build;
@@ -14,7 +21,7 @@ export async function createBuildReview(input: {
   state: ReviewState;
   snapshotReviews: {
     screenshotDiffId: string;
-    state: ReviewState;
+    state: ScreenshotDiffReviewState;
   }[];
 }): Promise<BuildReview> {
   const { build, userId, state, snapshotReviews } = input;

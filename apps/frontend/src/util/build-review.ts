@@ -1,4 +1,11 @@
-import { ThumbsDownIcon, ThumbsUpIcon, type LucideIcon } from "lucide-react";
+import {
+  BanIcon,
+  ClockIcon,
+  MessageCircleIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  type LucideIcon,
+} from "lucide-react";
 
 import { ReviewState } from "@/gql/graphql";
 
@@ -19,5 +26,20 @@ export const buildReviewDescriptors: Record<
     label: "Rejected",
     icon: ThumbsDownIcon,
     textColor: "text-danger-low",
+  },
+  [ReviewState.Commented]: {
+    label: "Commented",
+    icon: MessageCircleIcon,
+    textColor: "text-info-low",
+  },
+  [ReviewState.Dismissed]: {
+    label: "Dismissed",
+    icon: BanIcon,
+    textColor: "text-low",
+  },
+  [ReviewState.Pending]: {
+    label: "Pending",
+    icon: ClockIcon,
+    textColor: "text-low",
   },
 };

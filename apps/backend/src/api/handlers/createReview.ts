@@ -3,7 +3,11 @@ import { invariant } from "@argos/util/invariant";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { createBuildReview, ReviewState } from "@/build/createBuildReview";
+import {
+  createBuildReview,
+  ReviewState,
+  ScreenshotDiffReviewState,
+} from "@/build/createBuildReview";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
@@ -51,7 +55,13 @@ const CreateReviewBodySchema = z.object({
 const BuildReviewSchema = z
   .object({
     id: z.string(),
-    state: z.enum(["approved", "rejected"]),
+    state: z.enum([
+      "approved",
+      "rejected",
+      "commented",
+      "dismissed",
+      "pending",
+    ]),
   })
   .meta({ description: "Build review" });
 
@@ -106,7 +116,7 @@ const getBuildReviewState = (
 
 const getScreenshotReviewState = (
   conclusion: z.infer<typeof ReviewConclusionSchema>,
-): ReviewState => {
+): ScreenshotDiffReviewState => {
   switch (conclusion) {
     case "APPROVE":
       return "approved";

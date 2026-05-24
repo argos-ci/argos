@@ -631,6 +631,7 @@ function createBuildUniqueReviewsLoader() {
         BuildReview.query()
           .select("id")
           .whereIn("buildId", inputs as string[])
+          .whereNot("state", "pending")
           .distinctOn(["buildId", "userId"])
           .orderBy([
             { column: "buildId", order: "desc" },

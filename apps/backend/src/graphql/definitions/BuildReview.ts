@@ -2,16 +2,43 @@ import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { createBuildReview, ReviewState } from "@/build/createBuildReview";
+import {
+  createBuildReview,
+  ReviewState,
+  ScreenshotDiffReviewState,
+} from "@/build/createBuildReview";
 import { Build } from "@/database/models/Build";
 
-import { IReviewState, type IResolvers } from "../__generated__/resolver-types";
+import {
+  IReviewState,
+  IScreenshotDiffReviewState,
+  type IResolvers,
+} from "../__generated__/resolver-types";
 import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  """
+  The state of a build review.
+  """
   enum ReviewState {
+    "Reviewer approved the changes"
+    APPROVED
+    "Reviewer rejected changes"
+    REJECTED
+    "Reviewer left a neutral review comment"
+    COMMENTED
+    "The review was dismissed"
+    DISMISSED
+    "The review was created but not submitted yet"
+    PENDING
+  }
+
+  """
+  The state of an individual screenshot diff review.
+  """
+  enum ScreenshotDiffReviewState {
     APPROVED
     REJECTED
   }
@@ -31,7 +58,7 @@ export const typeDefs = gql`
 
   input ScreenshotDiffReviewInput {
     screenshotDiffId: ID!
-    state: ReviewState!
+    state: ScreenshotDiffReviewState!
   }
 
   extend type Mutation {
@@ -89,7 +116,7 @@ export const resolvers: IResolvers = {
         state: parseState(input.state),
         snapshotReviews: input.screenshotDiffReviews.map((diffReviewInput) => ({
           screenshotDiffId: diffReviewInput.screenshotDiffId,
-          state: parseState(diffReviewInput.state),
+          state: parseScreenshotDiffReviewState(diffReviewInput.state),
         })),
       });
 
@@ -104,6 +131,12 @@ function parseState(state: IReviewState): ReviewState {
       return "approved";
     case IReviewState.Rejected:
       return "rejected";
+    case IReviewState.Commented:
+      return "commented";
+    case IReviewState.Dismissed:
+      return "dismissed";
+    case IReviewState.Pending:
+      return "pending";
     default:
       assertNever(state);
   }
@@ -115,6 +148,25 @@ function formatState(state: ReviewState): IReviewState {
       return IReviewState.Approved;
     case "rejected":
       return IReviewState.Rejected;
+    case "commented":
+      return IReviewState.Commented;
+    case "dismissed":
+      return IReviewState.Dismissed;
+    case "pending":
+      return IReviewState.Pending;
+    default:
+      assertNever(state);
+  }
+}
+
+function parseScreenshotDiffReviewState(
+  state: IScreenshotDiffReviewState,
+): ScreenshotDiffReviewState {
+  switch (state) {
+    case IScreenshotDiffReviewState.Approved:
+      return "approved";
+    case IScreenshotDiffReviewState.Rejected:
+      return "rejected";
     default:
       assertNever(state);
   }

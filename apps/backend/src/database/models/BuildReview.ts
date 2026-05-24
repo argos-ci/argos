@@ -19,7 +19,10 @@ export class BuildReview extends Model {
         properties: {
           buildId: { type: "string" },
           userId: { type: ["string", "null"] },
-          state: { type: "string", enum: ["approved", "rejected"] },
+          state: {
+            type: "string",
+            enum: ["approved", "rejected", "commented", "dismissed", "pending"],
+          },
         },
       },
     ],
@@ -27,7 +30,7 @@ export class BuildReview extends Model {
 
   buildId!: string;
   userId!: string | null;
-  state!: "approved" | "rejected";
+  state!: "approved" | "rejected" | "commented" | "dismissed" | "pending";
 
   static override get relationMappings(): RelationMappings {
     return {

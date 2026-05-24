@@ -470,6 +470,10 @@ export class Build extends Model {
           return "accepted";
         case "rejected":
           return "rejected";
+        case "commented":
+        case "dismissed":
+        case "pending":
+          return null;
         default:
           assertNever(review.state);
       }
