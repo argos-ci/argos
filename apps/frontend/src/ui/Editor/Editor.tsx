@@ -88,6 +88,7 @@ export function Editor(props: EditorProps) {
 
   return (
     <div
+      data-hotkeys-disabled
       className={clsx(
         "bg-app focus-within:border-active rounded-md border text-sm",
         className,
