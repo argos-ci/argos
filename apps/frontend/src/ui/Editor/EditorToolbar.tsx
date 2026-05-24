@@ -36,6 +36,7 @@ const isMacOS =
 const MOD = isMacOS ? "⌘" : "Ctrl";
 const ALT = isMacOS ? "⌥" : "Alt";
 const SHIFT = isMacOS ? "⇧" : "Shift";
+const LINK_KEYS = [MOD, "K"];
 
 type ToolbarState = {
   isBold: boolean;
@@ -139,8 +140,27 @@ export function EditorToolbar(props: EditorToolbarProps) {
         setLinkEditing(true);
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.key.toLowerCase() !== "k") {
+        return;
+      }
+      const usingMod = isMacOS ? event.metaKey : event.ctrlKey;
+      if (!usingMod || event.altKey || event.shiftKey) {
+        return;
+      }
+      if (!canEditLink(editor)) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      setLinkEditing(true);
+    };
     dom.addEventListener("click", handleClick);
-    return () => dom.removeEventListener("click", handleClick);
+    dom.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      dom.removeEventListener("click", handleClick);
+      dom.removeEventListener("keydown", handleKeyDown, true);
+    };
   }, [editor]);
 
   if (!editor || !state) {
@@ -298,7 +318,7 @@ function LinkButton(props: {
 }) {
   const { state, onEnterLinkMode } = props;
   return (
-    <HotkeyTooltip description="Link" keys={[]}>
+    <HotkeyTooltip description="Link" keys={LINK_KEYS}>
       <IconButton
         size="small"
         aria-label="Link"
@@ -309,6 +329,14 @@ function LinkButton(props: {
         <LinkIcon />
       </IconButton>
     </HotkeyTooltip>
+  );
+}
+
+function canEditLink(editor: Editor) {
+  const { selection } = editor.state;
+  return (
+    editor.isActive("link") ||
+    (!selection.empty && editor.can().setLink({ href: "" }))
   );
 }
 
