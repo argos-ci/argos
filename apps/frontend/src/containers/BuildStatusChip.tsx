@@ -33,7 +33,7 @@ export function BuildStatusChip(props: {
 }) {
   const { build } = props;
   const descriptor = getBuildDescriptor(build.type, build.status);
-  const reviewWithUsers = build.reviews.filter((review) => review.user);
+  const reviewWithUsers = getLatestReviewByUser(build.reviews);
   return (
     <Tooltip variant="info" content={<BuildStatusDescription build={build} />}>
       <Chip icon={descriptor.icon} color={descriptor.color} scale={props.scale}>
@@ -62,6 +62,25 @@ function getChipLabel(build: DocumentType<typeof _BuildFragment>) {
   }
 }
 
+function getLatestReviewByUser(
+  reviews: DocumentType<typeof _BuildFragment>["reviews"],
+) {
+  const byUser = new Map<
+    string,
+    DocumentType<typeof _BuildFragment>["reviews"][number]
+  >();
+  for (const review of reviews) {
+    if (!review.user) {
+      continue;
+    }
+    const previous = byUser.get(review.user.id);
+    if (!previous || new Date(review.date) > new Date(previous.date)) {
+      byUser.set(review.user.id, review);
+    }
+  }
+  return Array.from(byUser.values());
+}
+
 /**
  * Get the reviewer list for a build.
  * @example by Greg Bergé, Jeremy Sfez and 2 others
@@ -69,7 +88,7 @@ function getChipLabel(build: DocumentType<typeof _BuildFragment>) {
 function getReviewerList(
   reviews: DocumentType<typeof _BuildFragment>["reviews"],
 ) {
-  const reviewerNames = reviews
+  const reviewerNames = getLatestReviewByUser(reviews)
     .map((review) => review.user?.name)
     .filter(Boolean) as string[];
   if (reviewerNames.length === 0) {

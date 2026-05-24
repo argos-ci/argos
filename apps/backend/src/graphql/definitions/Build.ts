@@ -122,7 +122,7 @@ export const typeDefs = gql`
     baseBranch: String
     "Base branch resolved from"
     baseBranchResolvedFrom: BaseBranchResolution
-    "Effective build reviews"
+    "Submitted build reviews"
     reviews: [BuildReview!]!
     "Comments posted on the build that are not part of a pending review"
     comments: [Comment!]!
@@ -311,7 +311,7 @@ export const resolvers: IResolvers = {
       }
     },
     reviews: async (build, _args, ctx) => {
-      return ctx.loaders.BuildUniqueReviews.load(build.id);
+      return ctx.loaders.BuildReviews.load(build.id);
     },
     comments: async (build, _args, ctx) => {
       return ctx.loaders.BuildPublishedComments.load(build.id);

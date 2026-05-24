@@ -650,22 +650,11 @@ function createBuildPublishedCommentsLoader() {
   });
 }
 
-function createBuildUniqueReviewsLoader() {
+function createBuildReviewsLoader() {
   return new DataLoader<string, BuildReview[]>(async (inputs) => {
     const reviews = await BuildReview.query()
-      .whereIn(
-        "id",
-        BuildReview.query()
-          .select("id")
-          .whereIn("buildId", inputs as string[])
-          .whereNot("state", "pending")
-          .distinctOn(["buildId", "userId"])
-          .orderBy([
-            { column: "buildId", order: "desc" },
-            { column: "userId", order: "desc" },
-            { column: "createdAt", order: "desc" },
-          ]),
-      )
+      .whereIn("buildId", inputs as string[])
+      .whereNot("state", "pending")
       .orderBy("createdAt", "desc");
     const reviewsMap = reviews.reduce<Record<string, BuildReview[]>>(
       (map, review) => {
@@ -1126,7 +1115,7 @@ export const createLoaders = () => ({
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
-  BuildUniqueReviews: createBuildUniqueReviewsLoader(),
+  BuildReviews: createBuildReviewsLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),
   LatestBuildByProjectAndCommit: createLatestBuildByProjectAndCommitLoader(),
