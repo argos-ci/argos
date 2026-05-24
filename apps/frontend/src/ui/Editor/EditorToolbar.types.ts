@@ -1,0 +1,27 @@
+export type ToolbarState = {
+  isBold: boolean;
+  canBold: boolean;
+  isItalic: boolean;
+  canItalic: boolean;
+  isStrike: boolean;
+  canStrike: boolean;
+  isUnderline: boolean;
+  canUnderline: boolean;
+  isCode: boolean;
+  canCode: boolean;
+  isCodeBlock: boolean;
+  canCodeBlock: boolean;
+  isBlockquote: boolean;
+  canBlockquote: boolean;
+  isLink: boolean;
+  linkHref: string | null;
+  canSetLink: boolean;
+  isBulletList: boolean;
+  canBulletList: boolean;
+  isOrderedList: boolean;
+  canOrderedList: boolean;
+  headingLevel: number | null;
+  selectionFrom: number;
+  selectionTo: number;
+  selectionEmpty: boolean;
+};

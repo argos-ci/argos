@@ -1,70 +1,38 @@
 import { useEffect, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
-import { BubbleMenu } from "@tiptap/react/menus";
 import { clsx } from "clsx";
 import {
   BoldIcon,
-  ChevronDownIcon,
   CodeIcon,
   ItalicIcon,
   LinkIcon,
-  ListIcon,
-  ListOrderedIcon,
   QuoteIcon,
   SquareCodeIcon,
   StrikethroughIcon,
   UnderlineIcon,
 } from "lucide-react";
-import { Button as RACButton } from "react-aria-components";
 
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
-import { Kbd } from "@/ui/Kbd";
-import { Menu, MenuItem, MenuItemShortcut, MenuTrigger } from "@/ui/Menu";
-import { Popover } from "@/ui/Popover";
 
+import { AnimatedBubbleMenu } from "./AnimatedBubbleMenu";
+import { ALT, isMacOS, LINK_KEYS, MOD, SHIFT } from "./EditorToolbar.shortcuts";
+import type { ToolbarState } from "./EditorToolbar.types";
 import { EditorToolbarLinkInput } from "./EditorToolbarLinkInput";
+import { HeadingMenu } from "./HeadingMenu";
+import { ListMenu } from "./ListMenu";
+import { MarkButton } from "./MarkButton";
 
 export interface EditorToolbarProps {
   editor: Editor | null;
 }
 
-const isMacOS =
-  typeof navigator !== "undefined" &&
-  navigator.platform.toUpperCase().includes("MAC");
-
-const MOD = isMacOS ? "⌘" : "Ctrl";
-const ALT = isMacOS ? "⌥" : "Alt";
-const SHIFT = isMacOS ? "⇧" : "Shift";
-const LINK_KEYS = [MOD, "K"];
-
-type ToolbarState = {
-  isBold: boolean;
-  canBold: boolean;
-  isItalic: boolean;
-  canItalic: boolean;
-  isStrike: boolean;
-  canStrike: boolean;
-  isUnderline: boolean;
-  canUnderline: boolean;
-  isCode: boolean;
-  canCode: boolean;
-  isCodeBlock: boolean;
-  canCodeBlock: boolean;
-  isBlockquote: boolean;
-  canBlockquote: boolean;
-  isLink: boolean;
-  linkHref: string | null;
-  canSetLink: boolean;
-  isBulletList: boolean;
-  canBulletList: boolean;
-  isOrderedList: boolean;
-  canOrderedList: boolean;
-  headingLevel: number | null;
-  selectionFrom: number;
-  selectionTo: number;
-  selectionEmpty: boolean;
-};
+const BUBBLE_MENU_ANIMATION_DURATION_MS = 100;
+const BUBBLE_MENU_ANIMATION_CLASS_NAME = clsx(
+  "origin-bottom fill-mode-forwards duration-100",
+  "data-[toolbar-animation=enter]:animate-in data-[toolbar-animation=enter]:fade-in",
+  "data-[toolbar-animation=exit]:animate-out data-[toolbar-animation=exit]:fade-out data-[toolbar-animation=exit]:zoom-out-95",
+);
 
 export function EditorToolbar(props: EditorToolbarProps) {
   const { editor } = props;
@@ -170,11 +138,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const showLinkInput = linkEditing;
 
   return (
-    <BubbleMenu
+    <AnimatedBubbleMenu
       editor={editor}
       className={clsx(
+        BUBBLE_MENU_ANIMATION_CLASS_NAME,
         "bg-subtle border-thin z-50 flex items-center gap-0.5 rounded-lg bg-clip-padding p-1 shadow-sm",
       )}
+      animationDurationMs={BUBBLE_MENU_ANIMATION_DURATION_MS}
       shouldShow={({ editor, state: pmState, from, to }) => {
         if (!editor.isEditable) {
           return false;
@@ -205,7 +175,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
           onEnterLinkMode={() => setLinkEditing(true)}
         />
       )}
-    </BubbleMenu>
+    </AnimatedBubbleMenu>
   );
 }
 
@@ -287,31 +257,6 @@ function FormatToolbar(props: {
   );
 }
 
-function MarkButton(props: {
-  editor: Editor;
-  label: string;
-  keys: string[];
-  icon: React.ReactElement;
-  isActive: boolean;
-  isDisabled: boolean;
-  onPress: (chain: ReturnType<Editor["chain"]>) => ReturnType<Editor["chain"]>;
-}) {
-  const { editor, label, keys, icon, isActive, isDisabled, onPress } = props;
-  return (
-    <HotkeyTooltip description={label} keys={keys}>
-      <IconButton
-        size="small"
-        aria-label={label}
-        aria-pressed={isActive}
-        isDisabled={isDisabled}
-        onPress={() => onPress(editor.chain().focus()).run()}
-      >
-        {icon}
-      </IconButton>
-    </HotkeyTooltip>
-  );
-}
-
 function LinkButton(props: {
   state: ToolbarState;
   onEnterLinkMode: () => void;
@@ -337,189 +282,5 @@ function canEditLink(editor: Editor) {
   return (
     editor.isActive("link") ||
     (!selection.empty && editor.can().setLink({ href: "" }))
-  );
-}
-
-const PARAGRAPH_HEADING_OPTION = {
-  key: "paragraph",
-  label: "Regular text",
-  keys: [MOD, ALT, "0"],
-};
-
-const HEADING_OPTIONS = [
-  PARAGRAPH_HEADING_OPTION,
-  { key: "1", label: "Heading 1", keys: [MOD, ALT, "1"] },
-  { key: "2", label: "Heading 2", keys: [MOD, ALT, "2"] },
-  { key: "3", label: "Heading 3", keys: [MOD, ALT, "3"] },
-  { key: "4", label: "Heading 4", keys: [MOD, ALT, "4"] },
-] as const;
-
-function HeadingMenu(props: { editor: Editor; state: ToolbarState }) {
-  const { editor, state } = props;
-  const selectedKey = state.headingLevel
-    ? String(state.headingLevel)
-    : "paragraph";
-  const selectedOption =
-    HEADING_OPTIONS.find((option) => option.key === selectedKey) ??
-    PARAGRAPH_HEADING_OPTION;
-  const tooltipKeys = [...selectedOption.keys];
-
-  return (
-    <MenuTrigger>
-      <HotkeyTooltip description={selectedOption.label} keys={tooltipKeys}>
-        <ToolbarMenuButton aria-label="Text style">
-          <span className="font-medium">Aa</span>
-          <ChevronDownIcon className="size-3" />
-        </ToolbarMenuButton>
-      </HotkeyTooltip>
-      <Popover>
-        <Menu
-          aria-label="Text style"
-          selectionMode="single"
-          selectedKeys={[selectedKey]}
-          onAction={(key) => {
-            const chain = editor.chain().focus();
-            if (key === "paragraph") {
-              chain.setParagraph().run();
-            } else {
-              const level = Number(key) as 1 | 2 | 3 | 4 | 5 | 6;
-              chain.toggleHeading({ level }).run();
-            }
-          }}
-          className="min-w-52"
-        >
-          {HEADING_OPTIONS.map((option) => (
-            <MenuItem key={option.key} id={option.key} textValue={option.label}>
-              <span className={getHeadingItemClassName(option.key)}>
-                {option.label}
-              </span>
-              <MenuItemShortcut>
-                {option.keys.map((key) => (
-                  <Kbd key={key} className="ml-0.5">
-                    {key}
-                  </Kbd>
-                ))}
-              </MenuItemShortcut>
-            </MenuItem>
-          ))}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
-  );
-}
-
-function getHeadingItemClassName(key: (typeof HEADING_OPTIONS)[number]["key"]) {
-  switch (key) {
-    case "1":
-      return "text-xl font-bold";
-    case "2":
-      return "text-lg font-bold";
-    case "3":
-      return "text-base font-semibold";
-    case "4":
-      return "text-sm font-semibold";
-    default:
-      return "";
-  }
-}
-
-const LIST_OPTIONS = [
-  {
-    key: "bulletList",
-    label: "Bullet list",
-    keys: [MOD, SHIFT, "8"],
-    icon: ListIcon,
-  },
-  {
-    key: "orderedList",
-    label: "Numbered list",
-    keys: [MOD, SHIFT, "7"],
-    icon: ListOrderedIcon,
-  },
-] as const;
-
-function ListMenu(props: { editor: Editor; state: ToolbarState }) {
-  const { editor, state } = props;
-  const selectedKey = state.isBulletList
-    ? "bulletList"
-    : state.isOrderedList
-      ? "orderedList"
-      : null;
-  const selectedOption = selectedKey
-    ? LIST_OPTIONS.find((option) => option.key === selectedKey)
-    : null;
-  const tooltipKeys = selectedOption ? [...selectedOption.keys] : [];
-
-  return (
-    <MenuTrigger>
-      <HotkeyTooltip
-        description={selectedOption?.label ?? "List"}
-        keys={tooltipKeys}
-      >
-        <ToolbarMenuButton
-          aria-label="Lists"
-          aria-pressed={selectedKey !== null}
-        >
-          <ListIcon className="size-4" />
-          <ChevronDownIcon className="size-3" />
-        </ToolbarMenuButton>
-      </HotkeyTooltip>
-      <Popover>
-        <Menu
-          aria-label="Lists"
-          selectionMode="single"
-          selectedKeys={selectedKey ? [selectedKey] : []}
-          onAction={(key) => {
-            const chain = editor.chain().focus();
-            if (key === "bulletList") {
-              chain.toggleBulletList().run();
-            } else if (key === "orderedList") {
-              chain.toggleOrderedList().run();
-            }
-          }}
-          className="min-w-60"
-        >
-          {LIST_OPTIONS.map((option) => (
-            <MenuItem
-              key={option.key}
-              id={option.key}
-              textValue={option.label}
-              isDisabled={
-                option.key === "bulletList"
-                  ? !state.canBulletList
-                  : !state.canOrderedList
-              }
-            >
-              <option.icon className="mr-2 size-4" />
-              {option.label}
-              <MenuItemShortcut>
-                {option.keys.map((key) => (
-                  <Kbd key={key} className="ml-0.5">
-                    {key}
-                  </Kbd>
-                ))}
-              </MenuItemShortcut>
-            </MenuItem>
-          ))}
-        </Menu>
-      </Popover>
-    </MenuTrigger>
-  );
-}
-
-function ToolbarMenuButton(
-  props: React.ComponentPropsWithRef<typeof RACButton>,
-) {
-  return (
-    <RACButton
-      {...props}
-      className={clsx(
-        "data-hovered:border-hover text-low data-hovered:text-default data-focus-visible:ring-default data-pressed:bg-active data-pressed:text-default aria-pressed:bg-active aria-pressed:text-default aria-expanded:bg-active aria-expanded:text-default",
-        "border border-transparent",
-        "focus:outline-hidden data-focus-visible:ring-4",
-        "flex h-6 cursor-default items-center gap-0.5 rounded-md px-1.5 text-sm font-medium",
-        props.className,
-      )}
-    />
   );
 }
