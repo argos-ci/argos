@@ -2,11 +2,15 @@ import clsx from "clsx";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
+import { BuildStatus, BuildType } from "@/gql/graphql";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { buildReviewDescriptors } from "@/util/build-review";
 
 const _BuildFragment = graphql(`
   fragment ReviewersSection_Build on Build {
+    status
+    type
+    mergeQueue
     reviews {
       id
       date
@@ -23,7 +27,8 @@ const _BuildFragment = graphql(`
   }
 `);
 
-type Review = DocumentType<typeof _BuildFragment>["reviews"][number];
+type Build = DocumentType<typeof _BuildFragment>;
+type Review = Build["reviews"][number];
 
 function getLatestReviewByUser(reviews: readonly Review[]): Review[] {
   const byUser = new Map<string, Review>();
@@ -39,9 +44,32 @@ function getLatestReviewByUser(reviews: readonly Review[]): Review[] {
   return Array.from(byUser.values());
 }
 
-export function ReviewersSection(props: {
-  build: DocumentType<typeof _BuildFragment>;
-}) {
+function getEmptyStateMessage(build: Build): string {
+  if (build.mergeQueue) {
+    return "This build was triggered in a merge queue and doesn't require a review.";
+  }
+  if (build.type === BuildType.Reference) {
+    return "This build was auto-approved, no review needed.";
+  }
+  if (build.type === BuildType.Skipped) {
+    return "This build was skipped, no review needed.";
+  }
+  switch (build.status) {
+    case BuildStatus.NoChanges:
+      return "No changes detected, no review needed.";
+    case BuildStatus.Pending:
+    case BuildStatus.Progress:
+      return "Build is still in progress.";
+    case BuildStatus.Aborted:
+    case BuildStatus.Error:
+    case BuildStatus.Expired:
+      return "This build can't be reviewed.";
+    default:
+      return "Waiting for review.";
+  }
+}
+
+export function ReviewersSection(props: { build: Build }) {
   const { build } = props;
   const reviewers = getLatestReviewByUser(build.reviews);
   return (
@@ -50,7 +78,9 @@ export function ReviewersSection(props: {
         <SidebarHeading>Reviewers</SidebarHeading>
       </SidebarHeader>
       {reviewers.length === 0 ? (
-        <div className="text-low px-4 text-xs">No reviewers yet.</div>
+        <div className="text-low px-4 text-xs">
+          {getEmptyStateMessage(build)}
+        </div>
       ) : (
         <ul className="flex flex-col">
           {reviewers.map((review) => {

@@ -89,7 +89,7 @@ function ActivityRow(props: { item: ActivityItem }) {
           <div className="bg-subtle mr-2 py-1">
             <MailCheckIcon className="size-3.5" />
           </div>
-          Ready for review
+          Build ready
           <span className="w-3 text-center">·</span>
           <Time date={item.date} />
         </li>
