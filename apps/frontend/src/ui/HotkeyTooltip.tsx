@@ -1,6 +1,7 @@
 import { cloneElement } from "react";
 import { FocusableOptions } from "react-aria";
 
+import { Kbd } from "./Kbd";
 import { Tooltip, TooltipProps } from "./Tooltip";
 
 export function HotkeyTooltip({
@@ -25,28 +26,25 @@ export function HotkeyTooltip({
   return (
     <Tooltip
       content={
-        !disabled && (
+        !disabled ? (
           <div className="flex items-center gap-1">
             <span>{description}</span>
-            {keysEnabled && (
+            {keysEnabled && keys.length > 0 ? (
               <>
                 <span className="text-low">·</span>
                 {keys.map((key) => (
-                  <kbd
-                    key={key}
-                    className="bg-active text-xxs text-default inline-flex h-4 min-w-4 items-center justify-center rounded-sm px-1"
-                  >
-                    {key}
-                  </kbd>
+                  <Kbd key={key}>{key}</Kbd>
                 ))}
               </>
-            )}
+            ) : null}
           </div>
-        )
+        ) : null
       }
       placement={placement}
     >
-      {cloneElement(children, { "aria-keyshortcuts": keys.join("+") })}
+      {cloneElement(children, {
+        "aria-keyshortcuts": keys.length > 0 ? keys.join("+") : undefined,
+      })}
     </Tooltip>
   );
 }
