@@ -10,9 +10,9 @@ import {
   LinkIcon,
   ListIcon,
   ListOrderedIcon,
+  QuoteIcon,
   SquareCodeIcon,
   StrikethroughIcon,
-  TextQuoteIcon,
   UnderlineIcon,
 } from "lucide-react";
 import { Button as RACButton } from "react-aria-components";
@@ -259,7 +259,7 @@ function FormatToolbar(props: {
         editor={editor}
         label="Quote"
         keys={[MOD, SHIFT, "B"]}
-        icon={<TextQuoteIcon />}
+        icon={<QuoteIcon />}
         isActive={state.isBlockquote}
         isDisabled={!state.canBlockquote}
         onPress={(chain) => chain.toggleBlockquote()}
@@ -340,8 +340,14 @@ function canEditLink(editor: Editor) {
   );
 }
 
+const PARAGRAPH_HEADING_OPTION = {
+  key: "paragraph",
+  label: "Regular text",
+  keys: [MOD, ALT, "0"],
+};
+
 const HEADING_OPTIONS = [
-  { key: "paragraph", label: "Regular text", keys: [MOD, ALT, "0"] },
+  PARAGRAPH_HEADING_OPTION,
   { key: "1", label: "Heading 1", keys: [MOD, ALT, "1"] },
   { key: "2", label: "Heading 2", keys: [MOD, ALT, "2"] },
   { key: "3", label: "Heading 3", keys: [MOD, ALT, "3"] },
@@ -353,13 +359,19 @@ function HeadingMenu(props: { editor: Editor; state: ToolbarState }) {
   const selectedKey = state.headingLevel
     ? String(state.headingLevel)
     : "paragraph";
+  const selectedOption =
+    HEADING_OPTIONS.find((option) => option.key === selectedKey) ??
+    PARAGRAPH_HEADING_OPTION;
+  const tooltipKeys = [...selectedOption.keys];
 
   return (
     <MenuTrigger>
-      <ToolbarMenuButton aria-label="Text style">
-        <span className="font-medium">Aa</span>
-        <ChevronDownIcon className="size-3" />
-      </ToolbarMenuButton>
+      <HotkeyTooltip description={selectedOption.label} keys={tooltipKeys}>
+        <ToolbarMenuButton aria-label="Text style">
+          <span className="font-medium">Aa</span>
+          <ChevronDownIcon className="size-3" />
+        </ToolbarMenuButton>
+      </HotkeyTooltip>
       <Popover>
         <Menu
           aria-label="Text style"
@@ -433,13 +445,25 @@ function ListMenu(props: { editor: Editor; state: ToolbarState }) {
     : state.isOrderedList
       ? "orderedList"
       : null;
+  const selectedOption = selectedKey
+    ? LIST_OPTIONS.find((option) => option.key === selectedKey)
+    : null;
+  const tooltipKeys = selectedOption ? [...selectedOption.keys] : [];
 
   return (
     <MenuTrigger>
-      <ToolbarMenuButton aria-label="Lists" aria-pressed={selectedKey !== null}>
-        <ListIcon className="size-4" />
-        <ChevronDownIcon className="size-3" />
-      </ToolbarMenuButton>
+      <HotkeyTooltip
+        description={selectedOption?.label ?? "List"}
+        keys={tooltipKeys}
+      >
+        <ToolbarMenuButton
+          aria-label="Lists"
+          aria-pressed={selectedKey !== null}
+        >
+          <ListIcon className="size-4" />
+          <ChevronDownIcon className="size-3" />
+        </ToolbarMenuButton>
+      </HotkeyTooltip>
       <Popover>
         <Menu
           aria-label="Lists"
