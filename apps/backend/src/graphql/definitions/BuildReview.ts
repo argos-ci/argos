@@ -11,6 +11,8 @@ import {
 } from "@/build/createBuildReview";
 import { Build } from "@/database/models/Build";
 import { BuildReview } from "@/database/models/BuildReview";
+import { User } from "@/database/models/User";
+import { sendNotification } from "@/notification";
 
 import {
   IBuildReviewEvent,
@@ -198,6 +200,12 @@ export const resolvers: IResolvers = {
         dismissedById: auth.user.id,
       });
 
+      await notifyReviewDismissed({
+        review,
+        build,
+        dismissedById: auth.user.id,
+      });
+
       return build;
     },
   },
@@ -242,4 +250,39 @@ function parseScreenshotDiffReviewState(
     default:
       assertNever(state);
   }
+}
+
+async function notifyReviewDismissed(input: {
+  review: BuildReview;
+  build: Build;
+  dismissedById: string;
+}): Promise<void> {
+  const { review, build, dismissedById } = input;
+  const { state } = review;
+  if (state !== "approved" && state !== "rejected" && state !== "commented") {
+    return;
+  }
+  if (!review.userId || review.userId === dismissedById) {
+    return;
+  }
+  const project = build.project;
+  invariant(project?.account, "project account not found");
+  const [dismissedBy, buildUrl] = await Promise.all([
+    User.query().findById(dismissedById).withGraphFetched("account"),
+    build.getUrl(),
+  ]);
+  const dismissedByName = dismissedBy?.account?.displayName ?? null;
+  await sendNotification({
+    type: "review_dismissed",
+    data: {
+      accountSlug: project.account.slug,
+      projectName: project.name,
+      buildNumber: build.number,
+      buildName: build.name,
+      buildUrl,
+      dismissedByName,
+      state,
+    },
+    recipients: [review.userId],
+  });
 }

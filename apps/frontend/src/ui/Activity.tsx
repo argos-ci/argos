@@ -4,7 +4,7 @@ export function Activity(props: { children: React.ReactNode }) {
   return (
     <div className="relative px-1">
       <div className="w-thin absolute top-1 bottom-0 left-[10.5px] bg-(--mauve-6)" />
-      <div className="relative space-y-3 text-xs">{props.children}</div>
+      <div className="relative space-y-4 text-xs">{props.children}</div>
     </div>
   );
 }

@@ -8,43 +8,29 @@ const reviewStateSchema = z.enum(["approved", "rejected", "commented"]);
 
 type ReviewState = z.infer<typeof reviewStateSchema>;
 
-function getActionLabel(state: ReviewState): string {
+function getReviewLabel(state: ReviewState): string {
   switch (state) {
     case "approved":
-      return "approved";
+      return "approval";
     case "rejected":
-      return "requested changes on";
+      return "change request";
     case "commented":
-      return "commented on";
-    default:
-      assertNever(state);
-  }
-}
-
-function getSubjectLabel(state: ReviewState): string {
-  switch (state) {
-    case "approved":
-      return "approved";
-    case "rejected":
-      return "changes requested on";
-    case "commented":
-      return "new comment on";
+      return "comment";
     default:
       assertNever(state);
   }
 }
 
 export const handler = defineNotificationHandler({
-  type: "review_submitted",
+  type: "review_dismissed",
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),
     buildNumber: z.number(),
     buildName: z.string().nullish(),
     buildUrl: z.url(),
-    reviewerName: z.string().nullish(),
+    dismissedByName: z.string().nullish(),
     state: reviewStateSchema,
-    bodyHtml: z.string().nullish(),
   }),
   previewData: {
     accountSlug: "argos",
@@ -52,9 +38,8 @@ export const handler = defineNotificationHandler({
     buildNumber: 42,
     buildName: "default",
     buildUrl: "https://app.argos-ci.com/argos/my-project/builds/42",
-    reviewerName: "Jane Doe",
+    dismissedByName: "Jane Doe",
     state: "approved",
-    bodyHtml: "<p>Looks good to me, thanks!</p>",
   },
   email: (props) => {
     const {
@@ -63,38 +48,30 @@ export const handler = defineNotificationHandler({
       buildNumber,
       buildName,
       buildUrl,
-      reviewerName,
+      dismissedByName,
       state,
-      bodyHtml,
       ctx,
     } = props;
     const buildLabel = buildName
       ? `${buildName} #${buildNumber}`
       : `#${buildNumber}`;
-    const reviewer = reviewerName || "Someone";
-    const action = getActionLabel(state);
-    const subjectLabel = getSubjectLabel(state);
+    const dismisser = dismissedByName || "Someone";
+    const reviewLabel = getReviewLabel(state);
     return {
-      subject: `[${accountSlug}/${projectName}] Build ${buildLabel} ${subjectLabel}`,
+      subject: `[${accountSlug}/${projectName}] Your review on build ${buildLabel} was dismissed`,
       body: (
         <EmailLayout
-          preview={`${reviewer} ${action} build ${buildLabel} on ${accountSlug}/${projectName}.`}
+          preview={`${dismisser} dismissed your ${reviewLabel} on build ${buildLabel}.`}
         >
-          <H1>Review submitted</H1>
+          <H1>Review dismissed</H1>
           <Hi name={ctx.user.name} />
           <Paragraph>
-            <strong>{reviewer}</strong> {action} build{" "}
+            <strong>{dismisser}</strong> dismissed your {reviewLabel} on build{" "}
             <Link href={buildUrl}>
               {accountSlug}/{projectName} {buildLabel}
             </Link>
             .
           </Paragraph>
-          {bodyHtml ? (
-            <div
-              className="my-4 rounded bg-[#f6f6f6] p-4 text-sm text-gray-950"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
-          ) : null}
           <Paragraph>
             <Link href={buildUrl}>View the build on Argos →</Link>
           </Paragraph>

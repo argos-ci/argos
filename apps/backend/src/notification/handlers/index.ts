@@ -3,6 +3,7 @@ import * as email_added from "./email_added";
 import * as email_removed from "./email_removed";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as project_deleted from "./project_deleted";
+import * as review_dismissed from "./review_dismissed";
 import * as review_submitted from "./review_submitted";
 import * as saml_certificate_expiration from "./saml_certificate_expiration";
 import * as slack_automation_action_unavailable from "./slack_automation_action_unavailable";
@@ -14,6 +15,7 @@ export const notificationHandlers = [
   email_removed.handler,
   invalid_gitlab_token.handler,
   project_deleted.handler,
+  review_dismissed.handler,
   review_submitted.handler,
   saml_certificate_expiration.handler,
   spend_limit.handler,
