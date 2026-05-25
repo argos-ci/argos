@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Placeholder } from "@tiptap/extensions";
-import { AllSelection, TextSelection } from "@tiptap/pm/state";
+import { AllSelection, Plugin, TextSelection } from "@tiptap/pm/state";
 import {
   EditorContent,
   Extension,
@@ -32,6 +32,34 @@ const CollapseAllSelectionDelete = Extension.create({
   },
 });
 
+const CollapseSelectionOnEscape = Extension.create({
+  name: "collapseSelectionOnEscape",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handleKeyDown(view, event) {
+            if (event.key !== "Escape") {
+              return false;
+            }
+            const { selection } = view.state;
+            if (selection.empty) {
+              return false;
+            }
+            const tr = view.state.tr.setSelection(
+              TextSelection.create(view.state.doc, selection.to),
+            );
+            view.dispatch(tr);
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+          },
+        },
+      }),
+    ];
+  },
+});
+
 export type EditorValue = JSONContent | null;
 
 export interface EditorProps {
@@ -59,9 +87,11 @@ export function Editor(props: EditorProps) {
         link: {
           openOnClick: false,
           enableClickSelection: true,
+          autolink: false,
         },
       }),
       CollapseAllSelectionDelete,
+      CollapseSelectionOnEscape,
       LinkEditTrigger,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
