@@ -225,7 +225,7 @@ function ReviewDescription(props: {
   const reviewers = getLatestActiveReviewByUser(build.reviews);
   const description = getReviewStatusDescription(build.status, reviewers);
   return (
-    <div className="max-w-sm">
+    <div className="max-w-xs">
       {description ? (
         <p className="mb-4">
           This build is <strong>{descriptor.label}</strong> {description}.
@@ -236,11 +236,12 @@ function ReviewDescription(props: {
         </div>
       ) : null}
       {reviewers.length > 0 ? (
-        <div className="rounded-sm border p-2">
+        <div className="rounded-sm border p-2 pb-1">
           <h3 className="mb-1 text-xs font-semibold">Reviewers</h3>
           <BuildReviewersStatusList
             reviews={reviewers}
-            itemClassName="py-2 text-xs"
+            className="gap-1"
+            itemClassName="text-xs"
             avatarClassName="size-4"
           />
         </div>

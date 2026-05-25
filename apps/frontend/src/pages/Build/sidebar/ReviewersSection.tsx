@@ -201,8 +201,8 @@ function DismissReviewDialog(props: {
       <DialogBody confirm>
         <DialogTitle>Dismiss review</DialogTitle>
         <DialogText>
-          Dismissing {reviewerName}&apos;s review can affect the status of this
-          build.
+          Dismissing <strong>{reviewerName}</strong>&apos;s review can affect
+          the status of this build.
         </DialogText>
         <DialogText>Are you sure you want to continue?</DialogText>
       </DialogBody>

@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { BanIcon } from "lucide-react";
 
 import type { ReviewState } from "@/gql/graphql";
+import { Tooltip } from "@/ui/Tooltip";
 import { buildReviewDescriptors } from "@/util/build-review";
 
 import { AccountAvatar } from "./AccountAvatar";
@@ -92,15 +93,9 @@ export function BuildReviewersStatusList<
             <strong className="flex-1 truncate font-medium">
               {review.user?.name || review.user?.slug}
             </strong>
-            <span
-              className={clsx(
-                "inline-flex items-center gap-1 text-xs",
-                descriptor.textColor,
-              )}
-            >
-              <Icon className="size-3 shrink-0" />
-              {descriptor.label}
-            </span>
+            <Tooltip content={descriptor.label}>
+              <Icon className={clsx("size-4 shrink-0", descriptor.textColor)} />
+            </Tooltip>
             {props.renderAction?.(review)}
           </li>
         );
