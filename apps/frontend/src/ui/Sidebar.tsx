@@ -3,9 +3,7 @@ import clsx from "clsx";
 export function Sidebar(props: { children: React.ReactNode }) {
   const { children } = props;
   return (
-    <div className="flex min-h-0 max-w-80 flex-1 flex-col gap-2 overflow-y-auto py-2 pr-2 empty:hidden">
-      {children}
-    </div>
+    <div className="flex min-h-0 max-w-80 flex-1 flex-col">{children}</div>
   );
 }
 

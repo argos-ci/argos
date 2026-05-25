@@ -32,8 +32,8 @@ export class BuildReview extends Model {
 
   buildId!: string;
   userId!: string | null;
-  declare dismissedAt: string | null;
-  declare dismissedById: string | null;
+  dismissedAt!: string | null;
+  dismissedById!: string | null;
   state!: "approved" | "rejected" | "commented" | "pending";
 
   static override get relationMappings(): RelationMappings {

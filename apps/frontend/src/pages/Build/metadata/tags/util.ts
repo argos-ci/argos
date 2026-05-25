@@ -1,6 +1,6 @@
 import type { ScreenshotMetadata } from "@/gql/graphql";
 
-export const TagSource = {
+const TagSource = {
   snapshot: "snapshot",
   story: "story",
   test: "test",

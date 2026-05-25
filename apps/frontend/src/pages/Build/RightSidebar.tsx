@@ -15,6 +15,7 @@ import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
+import { Sidebar } from "@/ui/Sidebar";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import {
@@ -27,7 +28,7 @@ import { TestActivitySection } from "./sidebar/TestActivitySection";
 import { TestChangeSection } from "./sidebar/TestChangeSection";
 import { TestInsightsSection } from "./sidebar/TestInsightsSection";
 
-export const rightSidebarOpenAtom = atomWithStorage<boolean>(
+const rightSidebarOpenAtom = atomWithStorage<boolean>(
   "build.rightSidebar.open",
   true,
 );
@@ -98,37 +99,41 @@ export function RightSidebar(
       onSelectionChange={(key) => setTab(key as RightSidebarTab)}
       className="flex min-h-0 max-w-80 flex-1 flex-col"
     >
-      <RACTabList aria-label="Sidebar" className="flex shrink-0 gap-2 py-2">
-        <PillTab id="snapshot">Snapshot</PillTab>
-        <PillTab id="review">Review</PillTab>
-      </RACTabList>
-      <SidebarTabPanel id="snapshot">
-        <MetadataSection
-          diff={activeDiff}
-          siblingDiffs={siblingDiffs}
-          {...context}
-        />
-        {activeDiff.test ? (
-          <>
-            {activeDiff.change ? (
-              <TestChangeSection
-                test={activeDiff.test}
-                change={activeDiff.change}
-                occurrences={activeDiff.last7daysOccurrences}
-              />
-            ) : null}
-            <TestInsightsSection test={activeDiff.test} />
-            <TestActivitySection
-              test={activeDiff.test}
-              change={activeDiff.change ?? null}
+      {() => (
+        <Sidebar>
+          <RACTabList aria-label="Sidebar" className="flex shrink-0 gap-2 py-2">
+            <PillTab id="snapshot">Snapshot</PillTab>
+            <PillTab id="review">Review</PillTab>
+          </RACTabList>
+          <SidebarTabPanel id="snapshot">
+            <MetadataSection
+              diff={activeDiff}
+              siblingDiffs={siblingDiffs}
+              {...context}
             />
-          </>
-        ) : null}
-      </SidebarTabPanel>
-      <SidebarTabPanel id="review">
-        <ReviewersSection build={build} />
-        <ReviewActivitySection build={build} />
-      </SidebarTabPanel>
+            {activeDiff.test ? (
+              <>
+                {activeDiff.change ? (
+                  <TestChangeSection
+                    test={activeDiff.test}
+                    change={activeDiff.change}
+                    occurrences={activeDiff.last7daysOccurrences}
+                  />
+                ) : null}
+                <TestInsightsSection test={activeDiff.test} />
+                <TestActivitySection
+                  test={activeDiff.test}
+                  change={activeDiff.change ?? null}
+                />
+              </>
+            ) : null}
+          </SidebarTabPanel>
+          <SidebarTabPanel id="review">
+            <ReviewersSection build={build} />
+            <ReviewActivitySection build={build} />
+          </SidebarTabPanel>
+        </Sidebar>
+      )}
     </Tabs>
   );
 }

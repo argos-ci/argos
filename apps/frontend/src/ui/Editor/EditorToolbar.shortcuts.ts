@@ -1,6 +1,4 @@
-export const isMacOS =
-  typeof navigator !== "undefined" &&
-  navigator.platform.toUpperCase().includes("MAC");
+import { isMacOS } from "@/util/os";
 
 export const MOD = isMacOS ? "⌘" : "Ctrl";
 export const ALT = isMacOS ? "⌥" : "Alt";

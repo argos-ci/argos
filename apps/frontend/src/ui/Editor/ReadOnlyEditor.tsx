@@ -25,7 +25,7 @@ type Node = {
   marks?: Mark[];
 };
 
-export type ReadOnlyEditorContent = Node | null | undefined;
+type ReadOnlyEditorContent = Node | null | undefined;
 
 export interface ReadOnlyEditorProps {
   content: ReadOnlyEditorContent;

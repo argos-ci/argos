@@ -6,6 +6,7 @@ import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
+import { isMacOS } from "@/util/os";
 
 import {
   HotkeysDialogState,
@@ -25,8 +26,6 @@ type HotkeyGroup = {
   name: string;
   hotkeys: Record<string, Hotkey>;
 };
-
-const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
 const hotkeyGroups = [
   {
