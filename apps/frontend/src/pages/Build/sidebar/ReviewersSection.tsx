@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@apollo/client/react";
+import clsx from "clsx";
 import { BanIcon, MoreVerticalIcon } from "lucide-react";
 
 import {
@@ -118,7 +119,7 @@ export function ReviewersSection(props: { build: Build }) {
         <BuildReviewersStatusList
           reviews={reviewers}
           className="gap-3"
-          itemClassName="px-4 pr-3"
+          itemClassName={clsx("px-4 has-data-actions-menu:pr-3")}
           renderAction={
             canDismissReview
               ? (review) => (
@@ -171,7 +172,7 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
 
   return (
     <MenuTrigger>
-      <IconButton size="small" aria-label="Review actions">
+      <IconButton data-actions-menu="" size="small" aria-label="Review actions">
         <MoreVerticalIcon />
       </IconButton>
       <Popover placement="bottom end">
@@ -205,7 +206,6 @@ function DismissReviewDialog(props: {
           Dismissing <strong>{reviewerName}</strong>&apos;s review can affect
           the status of this build.
         </DialogText>
-        <DialogText>Are you sure you want to continue?</DialogText>
       </DialogBody>
       <DialogFooter>
         {props.error ? (

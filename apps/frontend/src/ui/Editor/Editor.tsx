@@ -63,7 +63,7 @@ const CollapseSelectionOnEscape = Extension.create({
 export type EditorValue = JSONContent | null;
 
 export interface EditorProps {
-  value: EditorValue;
+  defaultValue?: EditorValue;
   onChange: (value: EditorValue) => void;
   onBlur?: () => void;
   ref?: React.Ref<HTMLElement>;
@@ -81,8 +81,15 @@ const EDITOR_CONTENT_CLASS = clsx(
 );
 
 export function Editor(props: EditorProps) {
-  const { value, onChange, onBlur, ref, className, placeholder, autoFocus } =
-    props;
+  const {
+    defaultValue,
+    onChange,
+    onBlur,
+    ref,
+    className,
+    placeholder,
+    autoFocus,
+  } = props;
 
   const onChangeRef = useRef(onChange);
   const onBlurRef = useRef(onBlur);
@@ -91,7 +98,6 @@ export function Editor(props: EditorProps) {
     onBlurRef.current = onBlur;
   });
 
-  const lastValueRef = useRef<EditorValue>(value);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -106,7 +112,7 @@ export function Editor(props: EditorProps) {
       LinkEditTrigger,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
-    content: value,
+    content: defaultValue,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
@@ -115,9 +121,7 @@ export function Editor(props: EditorProps) {
       },
     },
     onUpdate: ({ editor }) => {
-      const json = editor.getJSON();
-      lastValueRef.current = json;
-      onChangeRef.current(json);
+      onChangeRef.current(editor.getJSON());
     },
     onBlur: () => {
       onBlurRef.current?.();
@@ -141,17 +145,6 @@ export function Editor(props: EditorProps) {
       refObject.current = null;
     };
   }, [editor, ref]);
-
-  useEffect(() => {
-    if (!editor || editor.isFocused) {
-      return;
-    }
-    if (value === lastValueRef.current) {
-      return;
-    }
-    lastValueRef.current = value;
-    editor.commands.setContent(value, { emitUpdate: false });
-  }, [editor, value]);
 
   return (
     <div

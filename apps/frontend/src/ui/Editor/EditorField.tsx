@@ -11,7 +11,7 @@ import { Editor, type EditorProps, type EditorValue } from "./Editor";
 
 export type EditorFieldProps<TFieldValues extends FieldValues> = Omit<
   EditorProps,
-  "value" | "onChange"
+  "defaultValue" | "onChange"
 > & {
   control: Control<TFieldValues>;
   name: FieldPathByValue<TFieldValues, EditorValue>;
@@ -27,7 +27,7 @@ export function EditorField<TFieldValues extends FieldValues>(
   return (
     <Editor
       {...rest}
-      value={field.value as EditorValue}
+      defaultValue={field.value as EditorValue}
       onChange={(value) => {
         field.onChange(value);
         onChange?.(value);

@@ -63,7 +63,6 @@ export const LeaveProjectDialog = memo(
             {props.projectName}. In order to be able to access it again, you
             will need to be added back by another project admin.
           </DialogText>
-          <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>
         <DialogFooter>
           {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}

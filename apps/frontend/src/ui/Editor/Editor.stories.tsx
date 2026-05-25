@@ -10,7 +10,7 @@ const meta = {
   title: "UI/Editor",
   component: Editor,
   args: {
-    value: null,
+    defaultValue: null,
     onChange: () => {},
   },
 } satisfies Meta<typeof Editor>;
@@ -24,7 +24,11 @@ function ControlledEditor(props: { initialValue?: EditorValue }) {
     <div className="flex max-w-xl flex-col gap-4">
       <div>
         <Label>Comment</Label>
-        <Editor value={value} onChange={setValue} aria-label="Comment" />
+        <Editor
+          defaultValue={props.initialValue ?? null}
+          onChange={setValue}
+          aria-label="Comment"
+        />
       </div>
       <div>
         <Label>JSON output</Label>
