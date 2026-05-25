@@ -6,7 +6,7 @@ const TagSource = {
   test: "test",
 } as const;
 
-export type TagSource = keyof typeof TagSource;
+type TagSource = keyof typeof TagSource;
 
 export type TagWithSource = {
   name: string;
