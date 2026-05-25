@@ -1,5 +1,6 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import clsx from "clsx";
+import { BanIcon } from "lucide-react";
 
 import type { ReviewState } from "@/gql/graphql";
 import { buildReviewDescriptors } from "@/util/build-review";
@@ -10,6 +11,7 @@ type ReviewerStatusReview = {
   id: string;
   date: string;
   state: ReviewState;
+  dismissedAt?: string | null;
   user: {
     id: string;
     name: string | null;
@@ -36,11 +38,32 @@ export function getLatestReviewByUser<T extends ReviewerStatusReview>(
   );
 }
 
-export function BuildReviewersStatusList(props: {
-  reviews: readonly ReviewerStatusReview[];
+export function getLatestActiveReviewByUser<T extends ReviewerStatusReview>(
+  reviews: readonly T[],
+): T[] {
+  return getLatestReviewByUser(reviews).filter((review) => !review.dismissedAt);
+}
+
+const dismissedReviewDescriptor = {
+  label: "Dismissed",
+  icon: BanIcon,
+  textColor: "text-low",
+};
+
+function getReviewDescriptor(review: ReviewerStatusReview) {
+  return review.dismissedAt
+    ? dismissedReviewDescriptor
+    : buildReviewDescriptors[review.state];
+}
+
+export function BuildReviewersStatusList<
+  T extends ReviewerStatusReview,
+>(props: {
+  reviews: readonly T[];
   className?: string;
   itemClassName?: string;
   avatarClassName?: string;
+  renderAction?: (review: T) => ReactNode;
 }) {
   const reviewers = getLatestReviewByUser(props.reviews);
   if (reviewers.length === 0) {
@@ -49,7 +72,7 @@ export function BuildReviewersStatusList(props: {
   return (
     <ul className={clsx("flex flex-col", props.className)}>
       {reviewers.map((review) => {
-        const descriptor = buildReviewDescriptors[review.state];
+        const descriptor = getReviewDescriptor(review);
         const Icon = descriptor.icon;
         return (
           <li
@@ -78,6 +101,7 @@ export function BuildReviewersStatusList(props: {
               <Icon className="size-3 shrink-0" />
               {descriptor.label}
             </span>
+            {props.renderAction?.(review)}
           </li>
         );
       })}

@@ -394,7 +394,9 @@ CREATE TABLE public.build_reviews (
     "userId" bigint,
     "buildId" bigint NOT NULL,
     state text NOT NULL,
-    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text, 'commented'::text, 'dismissed'::text, 'pending'::text])))
+    "dismissedAt" timestamp with time zone,
+    "dismissedById" bigint,
+    CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text, 'commented'::text, 'pending'::text])))
 );
 
 
@@ -3258,6 +3260,13 @@ CREATE INDEX build_reviews_buildid_createdat_index ON public.build_reviews USING
 
 
 --
+-- Name: build_reviews_dismissedbyid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_reviews_dismissedbyid_index ON public.build_reviews USING btree ("dismissedById");
+
+
+--
 -- Name: build_reviews_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3903,6 +3912,14 @@ ALTER TABLE ONLY public.build_notifications
 
 ALTER TABLE ONLY public.build_reviews
     ADD CONSTRAINT build_reviews_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: build_reviews build_reviews_dismissedbyid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_reviews
+    ADD CONSTRAINT build_reviews_dismissedbyid_foreign FOREIGN KEY ("dismissedById") REFERENCES public.users(id);
 
 
 --

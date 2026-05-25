@@ -16,6 +16,8 @@ const _BuildFragment = graphql(`
     reviews {
       id
       date
+      state
+      dismissedAt
       user {
         id
         name
@@ -33,7 +35,7 @@ export function BuildStatusChip(props: {
 }) {
   const { build } = props;
   const descriptor = getBuildDescriptor(build.type, build.status);
-  const reviewWithUsers = getLatestReviewByUser(build.reviews);
+  const reviewWithUsers = getLatestActiveReviewByUser(build.reviews);
   return (
     <Tooltip variant="info" content={<BuildStatusDescription build={build} />}>
       <Chip icon={descriptor.icon} color={descriptor.color} scale={props.scale}>
@@ -81,6 +83,12 @@ function getLatestReviewByUser(
   return Array.from(byUser.values());
 }
 
+function getLatestActiveReviewByUser(
+  reviews: DocumentType<typeof _BuildFragment>["reviews"],
+) {
+  return getLatestReviewByUser(reviews).filter((review) => !review.dismissedAt);
+}
+
 /**
  * Get the reviewer list for a build.
  * @example by Greg Bergé, Jeremy Sfez and 2 others
@@ -88,7 +96,7 @@ function getLatestReviewByUser(
 function getReviewerList(
   reviews: DocumentType<typeof _BuildFragment>["reviews"],
 ) {
-  const reviewerNames = getLatestReviewByUser(reviews)
+  const reviewerNames = getLatestActiveReviewByUser(reviews)
     .map((review) => review.user?.name)
     .filter(Boolean) as string[];
   if (reviewerNames.length === 0) {

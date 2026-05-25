@@ -9,7 +9,7 @@ import { buildStatusDescriptors } from "@/util/build";
 
 import {
   BuildReviewersStatusList,
-  getLatestReviewByUser,
+  getLatestActiveReviewByUser,
 } from "./BuildReviewersStatusList";
 
 const _BuildFragment = graphql(`
@@ -203,6 +203,7 @@ const _ReviewDescriptionBuildFragment = graphql(`
       id
       date
       state
+      dismissedAt
       user {
         id
         name
@@ -221,7 +222,7 @@ function ReviewDescription(props: {
 }) {
   const { build, children } = props;
   const descriptor = buildStatusDescriptors[build.status];
-  const reviewers = getLatestReviewByUser(build.reviews);
+  const reviewers = getLatestActiveReviewByUser(build.reviews);
   const description = getReviewStatusDescription(build.status, reviewers);
   return (
     <div className="max-w-sm">

@@ -439,6 +439,55 @@ describe("models/Build", () => {
       expect(reviewStatuses).toEqual([null]);
     });
 
+    it("should ignore a user's dismissed latest review without restoring older reviews", async () => {
+      const build = await factory.Build.create({
+        conclusion: "changes-detected",
+      });
+      const reviewer = await factory.User.create();
+      const dismissedBy = await factory.User.create();
+      await factory.BuildReview.create({
+        buildId: build.id,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        state: "approved",
+        userId: reviewer.id,
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        createdAt: "2026-01-02T00:00:00.000Z",
+        dismissedAt: "2026-01-03T00:00:00.000Z",
+        dismissedById: dismissedBy.id,
+        state: "rejected",
+        userId: reviewer.id,
+      });
+
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual([null]);
+    });
+
+    it("should accept a build when the only latest rejection is dismissed", async () => {
+      const build = await factory.Build.create({
+        conclusion: "changes-detected",
+      });
+      const approvingUser = await factory.User.create();
+      const rejectingUser = await factory.User.create();
+      const dismissedBy = await factory.User.create();
+      await factory.BuildReview.create({
+        buildId: build.id,
+        state: "approved",
+        userId: approvingUser.id,
+      });
+      await factory.BuildReview.create({
+        buildId: build.id,
+        dismissedAt: "2026-01-03T00:00:00.000Z",
+        dismissedById: dismissedBy.id,
+        state: "rejected",
+        userId: rejectingUser.id,
+      });
+
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual(["accepted"]);
+    });
+
     it("should return null in other case", async () => {
       const build = await factory.Build.create({
         conclusion: "changes-detected",

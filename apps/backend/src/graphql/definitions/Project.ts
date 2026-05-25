@@ -104,6 +104,7 @@ export const typeDefs = gql`
   enum ProjectPermission {
     admin
     review
+    review_dismiss
     view_settings
     view
   }

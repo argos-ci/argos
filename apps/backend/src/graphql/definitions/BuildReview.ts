@@ -9,6 +9,7 @@ import {
   ScreenshotDiffReviewState,
 } from "@/build/createBuildReview";
 import { Build } from "@/database/models/Build";
+import { BuildReview } from "@/database/models/BuildReview";
 
 import {
   IBuildReviewEvent,
@@ -16,7 +17,7 @@ import {
   IScreenshotDiffReviewState,
   type IResolvers,
 } from "../__generated__/resolver-types";
-import { forbidden, notFound, unauthenticated } from "../util";
+import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 
@@ -31,8 +32,6 @@ export const typeDefs = gql`
     REJECTED
     "Reviewer left a neutral review comment"
     COMMENTED
-    "The review was dismissed"
-    DISMISSED
     "The review was created but not submitted yet"
     PENDING
   }
@@ -62,6 +61,8 @@ export const typeDefs = gql`
     date: DateTime!
     user: User
     state: ReviewState!
+    dismissedAt: DateTime
+    dismissedBy: User
   }
 
   input CreateBuildReviewInput {
@@ -71,6 +72,10 @@ export const typeDefs = gql`
     screenshotDiffReviews: [ScreenshotDiffReviewInput!]!
   }
 
+  input DismissReviewInput {
+    reviewId: ID!
+  }
+
   input ScreenshotDiffReviewInput {
     screenshotDiffId: ID!
     state: ScreenshotDiffReviewState!
@@ -78,6 +83,7 @@ export const typeDefs = gql`
 
   extend type Mutation {
     createBuildReview(input: CreateBuildReviewInput!): Build!
+    dismissReview(input: DismissReviewInput!): Build!
   }
 `;
 
@@ -85,6 +91,19 @@ export const resolvers: IResolvers = {
   BuildReview: {
     date: (review) => {
       return new Date(review.createdAt);
+    },
+    dismissedAt: (review) => {
+      return review.dismissedAt ? new Date(review.dismissedAt) : null;
+    },
+    dismissedBy: async (review, _, ctx) => {
+      if (!review.dismissedById) {
+        return null;
+      }
+      const account = await ctx.loaders.AccountFromRelation.load({
+        userId: review.dismissedById,
+      });
+      invariant(account, "Account not found");
+      return account;
     },
     state: (review) => {
       return formatState(review.state);
@@ -138,6 +157,48 @@ export const resolvers: IResolvers = {
 
       return build;
     },
+    dismissReview: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const review = await BuildReview.query()
+        .findById(args.input.reviewId)
+        .withGraphFetched("build.project.account");
+
+      if (!review) {
+        throw notFound("Review not found");
+      }
+
+      const { build } = review;
+      if (!build) {
+        throw notFound("Build not found");
+      }
+
+      invariant(build.project?.account);
+
+      const permissions = await build.project.$getPermissions(auth.user);
+
+      if (!permissions.includes("review_dismiss")) {
+        throw forbidden("You cannot dismiss this review");
+      }
+
+      if (review.state === "pending") {
+        throw badUserInput("You cannot dismiss a pending review");
+      }
+
+      if (review.dismissedAt) {
+        throw badUserInput("Review already dismissed");
+      }
+
+      await review.$query().patch({
+        dismissedAt: new Date().toISOString(),
+        dismissedById: auth.user.id,
+      });
+
+      return build;
+    },
   },
 };
 
@@ -162,8 +223,6 @@ function formatState(state: ReviewState): IReviewState {
       return IReviewState.Rejected;
     case "commented":
       return IReviewState.Commented;
-    case "dismissed":
-      return IReviewState.Dismissed;
     case "pending":
       return IReviewState.Pending;
     default:

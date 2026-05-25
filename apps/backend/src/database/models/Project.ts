@@ -22,7 +22,12 @@ import { ProjectUser } from "./ProjectUser";
 import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
 
-type ProjectPermission = "admin" | "review" | "view_settings" | "view";
+type ProjectPermission =
+  | "admin"
+  | "review"
+  | "review_dismiss"
+  | "view_settings"
+  | "view";
 export type DeploymentAuth = "public" | "domain-private" | "private";
 export type ProjectAutoIgnore = {
   changes: number;
@@ -31,6 +36,7 @@ export type ProjectAutoIgnore = {
 const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
   "admin",
   "review",
+  "review_dismiss",
   "view_settings",
   "view",
 ];

@@ -73,13 +73,7 @@ const CreateReviewBodySchema = z.object({
 const BuildReviewSchema = z
   .object({
     id: z.string(),
-    state: z.enum([
-      "approved",
-      "rejected",
-      "commented",
-      "dismissed",
-      "pending",
-    ]),
+    state: z.enum(["approved", "rejected", "commented", "pending"]),
   })
   .meta({ description: "Build review" });
 

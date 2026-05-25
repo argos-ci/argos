@@ -1,5 +1,4 @@
 import {
-  BanIcon,
   ClockIcon,
   MessageCircleIcon,
   ThumbsDownIcon,
@@ -31,11 +30,6 @@ export const buildReviewDescriptors: Record<
     label: "Reviewed",
     icon: MessageCircleIcon,
     textColor: "text-info-low",
-  },
-  [ReviewState.Dismissed]: {
-    label: "Dismissed",
-    icon: BanIcon,
-    textColor: "text-low",
   },
   [ReviewState.Pending]: {
     label: "Pending",

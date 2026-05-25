@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { FileUpIcon, MailCheckIcon } from "lucide-react";
+import { BanIcon, FileUpIcon, MailCheckIcon } from "lucide-react";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
@@ -17,6 +17,15 @@ const _BuildFragment = graphql(`
       id
       date
       state
+      dismissedAt
+      dismissedBy {
+        id
+        name
+        slug
+        avatar {
+          ...AccountAvatarFragment
+        }
+      }
       user {
         id
         name
@@ -48,6 +57,11 @@ type ActivityEntry =
   | { kind: "created"; date: string }
   | { kind: "ready"; date: string }
   | { kind: "review"; date: string; review: Build["reviews"][number] }
+  | {
+      kind: "review-dismissed";
+      date: string;
+      review: Build["reviews"][number];
+    }
   | { kind: "comment"; date: string; comment: Build["comments"][number] };
 
 function getActivityEntries(build: Build): ActivityEntry[] {
@@ -57,6 +71,13 @@ function getActivityEntries(build: Build): ActivityEntry[] {
   }
   for (const review of build.reviews) {
     entries.push({ kind: "review", date: review.date, review });
+    if (review.dismissedAt) {
+      entries.push({
+        kind: "review-dismissed",
+        date: review.dismissedAt,
+        review,
+      });
+    }
   }
   for (const comment of build.comments) {
     entries.push({ kind: "comment", date: comment.date, comment });
@@ -117,6 +138,32 @@ function ActivityEntryRow(props: { entry: ActivityEntry }) {
               </span>
             </>
           )}
+          {" · "}
+          <Time date={entry.date} />
+        </ActivityItem>
+      );
+    }
+    case "review-dismissed": {
+      const { review } = entry;
+      return (
+        <ActivityItem icon={<BanIcon className="text-low size-3.5" />}>
+          <span className="font-medium">Review dismissed</span>
+          {review.dismissedBy ? (
+            <>
+              {" by "}
+              <span className="text-default font-medium">
+                {review.dismissedBy.name || review.dismissedBy.slug}
+              </span>
+            </>
+          ) : null}
+          {review.user ? (
+            <>
+              {" for "}
+              <span className="text-default font-medium">
+                {review.user.name || review.user.slug}
+              </span>
+            </>
+          ) : null}
           {" · "}
           <Time date={entry.date} />
         </ActivityItem>

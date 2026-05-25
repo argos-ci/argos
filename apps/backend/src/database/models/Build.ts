@@ -444,7 +444,7 @@ export class Build extends Model {
 
     const reviews = diffDetectedBuildIds.length
       ? await BuildReview.query()
-          .select("buildId", "state")
+          .select("buildId", "dismissedAt", "state")
           .whereIn("buildId", diffDetectedBuildIds)
           .distinctOn(["buildId", "userId"])
           .orderBy("buildId")
@@ -456,6 +456,10 @@ export class Build extends Model {
     const reviewStatusByBuildId = reviews.reduce<
       Map<string, BuildReviewStatus>
     >((map, review) => {
+      if (review.dismissedAt) {
+        return map;
+      }
+
       const currentStatus = map.get(review.buildId);
       if (currentStatus === "rejected") {
         return map;
@@ -471,7 +475,6 @@ export class Build extends Model {
           }
           break;
         case "commented":
-        case "dismissed":
         case "pending":
           break;
         default:
@@ -547,23 +550,22 @@ export class Build extends Model {
    * To be used in a `Build.query().whereExists` clause.
    */
   static submittedReviewQuery() {
-    return Build.latestUserReviewsQuery().whereIn("build_reviews.state", [
-      "approved",
-      "rejected",
-    ]);
+    return Build.latestUserReviewsQuery()
+      .whereNull("build_reviews.dismissedAt")
+      .whereIn("build_reviews.state", ["approved", "rejected"]);
   }
 
   static acceptedReviewQuery() {
     return Build.latestUserReviewsQuery()
+      .whereNull("build_reviews.dismissedAt")
       .where("build_reviews.state", "approved")
       .whereNotExists(Build.rejectedReviewQuery());
   }
 
   static rejectedReviewQuery() {
-    return Build.latestUserReviewsQuery().where(
-      "build_reviews.state",
-      "rejected",
-    );
+    return Build.latestUserReviewsQuery()
+      .whereNull("build_reviews.dismissedAt")
+      .where("build_reviews.state", "rejected");
   }
 
   static latestUserReviewsQuery() {

@@ -19,9 +19,11 @@ export class BuildReview extends Model {
         properties: {
           buildId: { type: "string" },
           userId: { type: ["string", "null"] },
+          dismissedAt: { type: ["string", "null"] },
+          dismissedById: { type: ["string", "null"] },
           state: {
             type: "string",
-            enum: ["approved", "rejected", "commented", "dismissed", "pending"],
+            enum: ["approved", "rejected", "commented", "pending"],
           },
         },
       },
@@ -30,7 +32,9 @@ export class BuildReview extends Model {
 
   buildId!: string;
   userId!: string | null;
-  state!: "approved" | "rejected" | "commented" | "dismissed" | "pending";
+  declare dismissedAt: string | null;
+  declare dismissedById: string | null;
+  state!: "approved" | "rejected" | "commented" | "pending";
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -47,6 +51,14 @@ export class BuildReview extends Model {
         modelClass: User,
         join: {
           from: "build_reviews.userId",
+          to: "users.id",
+        },
+      },
+      dismissedBy: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: User,
+        join: {
+          from: "build_reviews.dismissedById",
           to: "users.id",
         },
       },
@@ -71,6 +83,7 @@ export class BuildReview extends Model {
 
   build?: Build;
   user?: User;
+  dismissedBy?: User | null;
   screenshotDiffReviews?: ScreenshotDiffReview[];
   comments?: Comment[];
 }

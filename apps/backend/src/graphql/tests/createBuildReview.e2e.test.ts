@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { test as base, describe, expect } from "vitest";
 
@@ -189,5 +190,120 @@ describe("GraphQL createBuildReview mutation", () => {
     expect(res.body.errors[0].message).toBe(
       "You cannot approve or reject this build",
     );
+  });
+
+  test("dismisses a review", async ({ fixture }) => {
+    const reviewer = fixture.userAccount.user;
+    invariant(reviewer, "fixture user should be fetched");
+    const review = await factory.BuildReview.create({
+      buildId: fixture.build.id,
+      userId: reviewer.id,
+      state: "rejected",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: reviewer,
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation DismissReview($input: DismissReviewInput!) {
+            dismissReview(input: $input) {
+              status
+              reviews {
+                id
+                state
+                dismissedAt
+                dismissedBy {
+                  id
+                  slug
+                }
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            reviewId: review.id,
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    expect(res.status).toBe(200);
+    expect(res.body.data.dismissReview.status).toBe("CHANGES_DETECTED");
+    expect(res.body.data.dismissReview.reviews).toContainEqual({
+      id: review.id,
+      state: "REJECTED",
+      dismissedAt: expect.any(String),
+      dismissedBy: {
+        id: fixture.userAccount.id,
+        slug: fixture.userAccount.slug,
+      },
+    });
+
+    const refreshed = await BuildReview.query().findById(review.id);
+    invariant(refreshed, "review should exist");
+    expect(refreshed.dismissedAt).toEqual(expect.any(Date));
+    expect(refreshed.dismissedById).toBe(reviewer.id);
+  });
+
+  test("returns an error if the user cannot dismiss reviews", async ({
+    fixture,
+  }) => {
+    const owner = fixture.userAccount.user;
+    invariant(owner, "fixture user should be fetched");
+    const review = await factory.BuildReview.create({
+      buildId: fixture.build.id,
+      userId: owner.id,
+      state: "rejected",
+    });
+    const reviewerAccount = await factory.UserAccount.create();
+    await reviewerAccount.$fetchGraph("user");
+    const reviewer = reviewerAccount.user;
+    invariant(reviewer, "reviewer user should be fetched");
+    const teamId = fixture.teamAccount.teamId;
+    invariant(teamId, "fixture team should exist");
+    await Promise.all([
+      fixture.project.$query().patch({ defaultUserLevel: "reviewer" }),
+      factory.TeamUser.create({
+        teamId,
+        userId: reviewer.id,
+        userLevel: "contributor",
+      }),
+    ]);
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: reviewer,
+        account: reviewerAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          mutation DismissReview($input: DismissReviewInput!) {
+            dismissReview(input: $input) {
+              status
+            }
+          }
+        `,
+        variables: {
+          input: {
+            reviewId: review.id,
+          },
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.errors[0].message).toBe("You cannot dismiss this review");
   });
 });

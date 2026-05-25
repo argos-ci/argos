@@ -15,12 +15,7 @@ import {
 } from "@/database/models";
 import { transaction } from "@/database/transaction";
 
-export type ReviewState =
-  | "approved"
-  | "rejected"
-  | "commented"
-  | "dismissed"
-  | "pending";
+export type ReviewState = "approved" | "rejected" | "commented" | "pending";
 
 export type ScreenshotDiffReviewState = "approved" | "rejected";
 
