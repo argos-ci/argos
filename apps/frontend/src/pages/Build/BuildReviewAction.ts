@@ -5,7 +5,6 @@ import { invariant } from "@argos/util/invariant";
 import { DocumentType, graphql } from "@/gql";
 import {
   BuildReviewEvent,
-  BuildStatus,
   ScreenshotDiffReviewState,
   type BuildReviewAction_CreateBuildReviewMutation,
   type BuildReviewAction_CreateBuildReviewMutationVariables,
@@ -66,18 +65,6 @@ export function useCreateBuildReviewMutation(
 ) {
   const api = useBuildReviewAPI();
   const [mutate, data] = useMutation(CreateBuildReviewMutation, {
-    optimisticResponse: (vars, { IGNORE }) => {
-      const status = getOptimisticBuildStatus(vars.input.event);
-      if (!status) {
-        return IGNORE;
-      }
-      return {
-        createBuildReview: {
-          ...build,
-          status,
-        },
-      };
-    },
     ...options,
   });
 
@@ -149,20 +136,5 @@ function evaluationStatusToReviewState(
       return null;
     default:
       assertNever(status);
-  }
-}
-
-function getOptimisticBuildStatus(
-  event: BuildReviewEvent,
-): BuildStatus | undefined {
-  switch (event) {
-    case BuildReviewEvent.Approve:
-      return BuildStatus.Accepted;
-    case BuildReviewEvent.Reject:
-      return BuildStatus.Rejected;
-    case BuildReviewEvent.Comment:
-      return undefined;
-    default:
-      assertNever(event);
   }
 }

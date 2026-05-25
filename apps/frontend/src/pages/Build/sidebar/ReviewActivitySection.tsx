@@ -106,16 +106,7 @@ function ActivityEntryRow(props: { entry: ActivityEntry }) {
       const Icon = descriptor.icon;
       return (
         <ActivityItem
-          icon={
-            review.user ? (
-              <AccountAvatar
-                avatar={review.user.avatar}
-                className="size-3.5 border"
-              />
-            ) : (
-              <Icon className={clsx("size-3.5", descriptor.textColor)} />
-            )
-          }
+          icon={<Icon className={clsx("size-3.5", descriptor.textColor)} />}
         >
           <span className="font-medium">{descriptor.label}</span>
           {review.user && (

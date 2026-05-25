@@ -619,15 +619,11 @@ export const resolvers: IResolvers = {
               }
 
               if (!status.includes(IBuildStatus.Accepted)) {
-                qb.whereNotExists(
-                  Build.submittedReviewQuery().where("state", "approved"),
-                );
+                qb.whereNotExists(Build.acceptedReviewQuery());
               }
 
               if (!status.includes(IBuildStatus.Rejected)) {
-                qb.whereNotExists(
-                  Build.submittedReviewQuery().where("state", "rejected"),
-                );
+                qb.whereNotExists(Build.rejectedReviewQuery());
               }
 
               if (!status.includes(IBuildStatus.ChangesDetected)) {

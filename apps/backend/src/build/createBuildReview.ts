@@ -1,10 +1,12 @@
 import { AutomationEvents } from "@argos/schemas/automation-event";
 import type { BuildReviewEvent } from "@argos/schemas/build-review";
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
+import type { BuildNotification } from "@/database/models";
 import {
   Build,
   BuildReview,
@@ -32,6 +34,31 @@ function getReviewStateFromEvent(event: BuildReviewEvent): ReviewState {
       return "commented";
     default:
       assertNever(event);
+  }
+}
+
+function getBuildNotificationType(
+  status: BuildAggregatedStatus,
+): BuildNotification["type"] | null {
+  switch (status) {
+    case "accepted":
+      return "diff-accepted";
+    case "rejected":
+      return "diff-rejected";
+    case "changes-detected":
+      return "diff-detected";
+    case "no-changes":
+      return "no-diff-detected";
+    case "pending":
+      return "queued";
+    case "progress":
+      return "progress";
+    case "aborted":
+    case "error":
+    case "expired":
+      return null;
+    default:
+      assertNever(status);
   }
 }
 
@@ -84,12 +111,17 @@ export async function createBuildReview(input: {
     compareScreenshotBucket,
     `Compare screenshot bucket not found for build: ${build.id}`,
   );
+  const [status] = await Build.getAggregatedBuildStatuses([build]);
+  invariant(status, `Build status not found for build: ${build.id}`);
+  const notificationType = getBuildNotificationType(status);
 
   await Promise.all([
-    pushBuildNotification({
-      buildId: build.id,
-      type: state === "approved" ? "diff-accepted" : "diff-rejected",
-    }),
+    notificationType
+      ? pushBuildNotification({
+          buildId: build.id,
+          type: notificationType,
+        })
+      : Promise.resolve(),
     triggerAndRunAutomation({
       projectId: build.projectId,
       message: {

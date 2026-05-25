@@ -89,9 +89,10 @@ async function getLastApprovedOrNoChangesBuilds(args: {
       }
     })
     .where((qb) => {
-      qb.whereExists(
-        Build.submittedReviewQuery().where("build_reviews.state", "approved"),
-      ).orWhere("builds.conclusion", "no-changes");
+      qb.whereExists(Build.acceptedReviewQuery()).orWhere(
+        "builds.conclusion",
+        "no-changes",
+      );
     })
     .distinctOn("builds.githubPullRequestId")
     .orderBy("builds.githubPullRequestId")

@@ -1,7 +1,7 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
-import { BuildReviewEvent, BuildStatus } from "@/gql/graphql";
+import { BuildReviewEvent } from "@/gql/graphql";
 import { DialogBody, DialogDismiss, DialogFooter } from "@/ui/Dialog";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { ErrorMessage } from "@/ui/ErrorMessage";
@@ -111,7 +111,6 @@ export function BuildReviewForm(props: {
             form.setValue("event", value, { shouldDirty: true });
           }}
           availableEvents={availableEvents}
-          buildStatus={build.status}
         />
       </DialogBody>
       <DialogFooter>
@@ -149,9 +148,8 @@ function ReviewEventRadioGroup(props: {
   value: BuildReviewEvent;
   onChange: (value: BuildReviewEvent) => void;
   availableEvents: BuildReviewEvent[];
-  buildStatus: BuildStatus;
 }) {
-  const { value, onChange, availableEvents, buildStatus } = props;
+  const { value, onChange, availableEvents } = props;
   return (
     <div role="radiogroup" className="flex flex-col gap-2">
       {availableEvents.includes(BuildReviewEvent.Comment) && (
@@ -170,7 +168,6 @@ function ReviewEventRadioGroup(props: {
           onChange={() => onChange(BuildReviewEvent.Approve)}
           label="Approve"
           description="Submit feedback and approve merging these changes."
-          isDisabled={buildStatus === BuildStatus.Accepted}
         />
       )}
       {availableEvents.includes(BuildReviewEvent.Reject) && (
@@ -180,7 +177,6 @@ function ReviewEventRadioGroup(props: {
           onChange={() => onChange(BuildReviewEvent.Reject)}
           label="Reject"
           description="Submit feedback about rejection."
-          isDisabled={buildStatus === BuildStatus.Rejected}
         />
       )}
     </div>

@@ -29,7 +29,7 @@ import { TestInsightsSection } from "./sidebar/TestInsightsSection";
 
 export const rightSidebarOpenAtom = atomWithStorage<boolean>(
   "build.rightSidebar.open",
-  false,
+  true,
 );
 
 type RightSidebarTab = "snapshot" | "review";

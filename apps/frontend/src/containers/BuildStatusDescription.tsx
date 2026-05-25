@@ -1,16 +1,16 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import clsx from "clsx";
 
 import { DocumentType, graphql } from "@/gql";
-import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
+import { BuildMode, BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
-import { Time } from "@/ui/Time";
 import { buildStatusDescriptors } from "@/util/build";
-import { buildReviewDescriptors } from "@/util/build-review";
 
-import { AccountAvatar } from "./AccountAvatar";
+import {
+  BuildReviewersStatusList,
+  getLatestReviewByUser,
+} from "./BuildReviewersStatusList";
 
 const _BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
@@ -90,7 +90,7 @@ export function BuildStatusDescription(props: {
           switch (build.mode) {
             case BuildMode.Ci:
               return (
-                <>
+                <ReviewDescription build={build}>
                   Comparing screenshot is not possible because no baseline build
                   was found.
                   <div className="my-4">
@@ -112,15 +112,15 @@ export function BuildStatusDescription(props: {
                       </li>
                     </ul>
                   </div>
-                </>
+                </ReviewDescription>
               );
             case BuildMode.Monitoring:
               return (
-                <>
+                <ReviewDescription build={build}>
                   This build has no comparison because no previous build has
                   been approved yet. To start comparing screenshots, you need to
                   approve this build.
-                </>
+                </ReviewDescription>
               );
             default:
               assertNever(build.mode);
@@ -160,10 +160,10 @@ export function BuildStatusDescription(props: {
 
         case BuildStatus.ChangesDetected:
           return (
-            <>
+            <ReviewDescription build={build}>
               Some changes have been detected between baseline and current
               screenshots.
-            </>
+            </ReviewDescription>
           );
 
         case BuildStatus.Progress:
@@ -217,52 +217,80 @@ const _ReviewDescriptionBuildFragment = graphql(`
 
 function ReviewDescription(props: {
   build: DocumentType<typeof _ReviewDescriptionBuildFragment>;
+  children?: React.ReactNode;
 }) {
-  const { build } = props;
+  const { build, children } = props;
   const descriptor = buildStatusDescriptors[build.status];
+  const reviewers = getLatestReviewByUser(build.reviews);
+  const description = getReviewStatusDescription(build.status, reviewers);
   return (
     <div className="max-w-sm">
-      <p className="mb-4">
-        This build is <strong>{descriptor.label}</strong> based on the state of
-        its latest review.
-      </p>
-      <div className="rounded-sm border p-2 pb-0">
-        <h3 className="mb-1 text-xs font-semibold">Reviews</h3>
-        <ul className="flex flex-col text-sm">
-          {build.reviews.map((review) => {
-            const descriptor = buildReviewDescriptors[review.state];
-            const Icon = descriptor.icon;
-            return (
-              <li
-                className="flex items-center gap-3 border-b py-2 text-xs last:border-b-0"
-                key={review.id}
-              >
-                <div className="flex items-center">
-                  <Icon
-                    className={clsx("size-3 shrink-0", descriptor.textColor)}
-                  />
-                  &nbsp;
-                  <strong className="w-14">{descriptor.label}</strong>
-                </div>
-                <div className="text-low">—</div>
-                <div className="flex items-center">
-                  <Time date={review.date} tooltip="title" />
-                  {review.user && (
-                    <>
-                      &nbsp;by&nbsp;
-                      <AccountAvatar
-                        className="size-4 shrink-0"
-                        avatar={review.user.avatar}
-                      />
-                      &nbsp;{review.user.name || review.user.slug}
-                    </>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      {description ? (
+        <p className="mb-4">
+          This build is <strong>{descriptor.label}</strong> {description}.
+        </p>
+      ) : children ? (
+        <div className={reviewers.length > 0 ? "mb-4" : undefined}>
+          {children}
+        </div>
+      ) : null}
+      {reviewers.length > 0 ? (
+        <div className="rounded-sm border p-2">
+          <h3 className="mb-1 text-xs font-semibold">Reviewers</h3>
+          <BuildReviewersStatusList
+            reviews={reviewers}
+            itemClassName="py-2 text-xs"
+            avatarClassName="size-4"
+          />
+        </div>
+      ) : null}
     </div>
   );
+}
+
+type Review = DocumentType<
+  typeof _ReviewDescriptionBuildFragment
+>["reviews"][number];
+
+function getReviewStatusDescription(
+  status: BuildStatus,
+  reviews: readonly Review[],
+) {
+  switch (status) {
+    case BuildStatus.Rejected: {
+      const names = getReviewerNamesByState(reviews, ReviewState.Rejected);
+      return names ? <>because {names} rejected it</> : null;
+    }
+    case BuildStatus.Accepted: {
+      const names = getReviewerNamesByState(reviews, ReviewState.Approved);
+      return names ? <>because {names} approved it</> : null;
+    }
+    default:
+      return null;
+  }
+}
+
+function getReviewerNamesByState(
+  reviews: readonly Review[],
+  state: ReviewState,
+) {
+  const names = reviews
+    .filter((review) => review.state === state)
+    .map((review) => review.user?.name || review.user?.slug)
+    .filter((name) => name !== undefined);
+  if (names.length === 0) {
+    return null;
+  }
+  return formatReviewerNames(names);
+}
+
+function formatReviewerNames(names: readonly string[]) {
+  return names.flatMap((name, index) => {
+    const parts: React.ReactNode[] = [];
+    if (index > 0) {
+      parts.push(index === names.length - 1 ? " and " : ", ");
+    }
+    parts.push(<strong key={name}>{name}</strong>);
+    return parts;
+  });
 }

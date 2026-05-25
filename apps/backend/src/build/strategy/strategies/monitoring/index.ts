@@ -12,7 +12,7 @@ async function getBase(build: Build): GetBaseResult {
     .where("mode", "monitoring")
     .where("jobStatus", "complete")
     .whereNot("id", build.id)
-    .whereExists(Build.submittedReviewQuery().where("state", "approved"))
+    .whereExists(Build.acceptedReviewQuery())
     .orderBy("id", "desc")
     .first();
 

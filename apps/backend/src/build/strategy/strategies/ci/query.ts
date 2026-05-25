@@ -68,9 +68,7 @@ function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
         qb.where("type", "check").where((qb) =>
           qb
             // An approved review exists
-            .whereExists(
-              Build.submittedReviewQuery().where("state", "approved"),
-            )
+            .whereExists(Build.acceptedReviewQuery())
             // Or the associated pull request is merged
             .orWhereExists(
               GithubPullRequest.query()

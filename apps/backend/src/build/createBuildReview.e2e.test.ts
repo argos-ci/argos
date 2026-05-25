@@ -24,7 +24,10 @@ const test = base.extend<{
     await use(user);
   },
   build: async ({}, use) => {
-    const build = await factory.Build.create({ conclusion: null });
+    const build = await factory.Build.create({
+      conclusion: "changes-detected",
+      jobStatus: "complete",
+    });
     await use(build);
   },
   screenshotDiffs: async ({ build }, use) => {
@@ -203,7 +206,7 @@ describe("#createBuildReview", () => {
     expect(notifications[0]?.type).toBe("diff-rejected");
   });
 
-  test("pushes a diff-rejected build notification when commenting", async ({
+  test("pushes a diff-detected build notification when commenting", async ({
     user,
     build,
   }) => {
@@ -217,6 +220,33 @@ describe("#createBuildReview", () => {
     const notifications = await BuildNotification.query().where({
       buildId: build.id,
     });
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.type).toBe("diff-detected");
+  });
+
+  test("pushes a diff-rejected build notification when an older user rejection still rejects the build", async ({
+    user,
+    build,
+  }) => {
+    const otherUser = await factory.User.create();
+    await factory.BuildReview.create({
+      buildId: build.id,
+      userId: otherUser.id,
+      state: "rejected",
+    });
+
+    await createBuildReview({
+      build,
+      userId: user.id,
+      event: "APPROVE",
+      snapshotReviews: [],
+    });
+
+    const notifications = await BuildNotification.query()
+      .where({
+        buildId: build.id,
+      })
+      .orderBy("createdAt", "desc");
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.type).toBe("diff-rejected");
   });

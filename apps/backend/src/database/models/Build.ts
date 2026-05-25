@@ -445,38 +445,48 @@ export class Build extends Model {
     const reviews = diffDetectedBuildIds.length
       ? await BuildReview.query()
           .select("buildId", "state")
-          .whereIn("buildId", diffDetectedBuildIds).whereRaw(`"id" IN (
-            SELECT DISTINCT ON ("buildId")
-              "id"
-            FROM "build_reviews"
-            WHERE "buildId" = "build_reviews"."buildId"
-            ORDER BY "buildId", "createdAt" DESC
-          )`)
+          .whereIn("buildId", diffDetectedBuildIds)
+          .distinctOn(["buildId", "userId"])
+          .orderBy("buildId")
+          .orderBy("userId")
+          .orderBy("createdAt", "desc")
+          .orderBy("id", "desc")
       : [];
+
+    const reviewStatusByBuildId = reviews.reduce<
+      Map<string, BuildReviewStatus>
+    >((map, review) => {
+      const currentStatus = map.get(review.buildId);
+      if (currentStatus === "rejected") {
+        return map;
+      }
+
+      switch (review.state) {
+        case "rejected":
+          map.set(review.buildId, "rejected");
+          break;
+        case "approved":
+          if (!currentStatus) {
+            map.set(review.buildId, "accepted");
+          }
+          break;
+        case "commented":
+        case "dismissed":
+        case "pending":
+          break;
+        default:
+          assertNever(review.state);
+      }
+
+      return map;
+    }, new Map());
 
     return builds.map((build) => {
       if (build.conclusion !== "changes-detected") {
         return null;
       }
 
-      const review = reviews.find((review) => review.buildId === build.id);
-
-      if (!review) {
-        return null;
-      }
-
-      switch (review.state) {
-        case "approved":
-          return "accepted";
-        case "rejected":
-          return "rejected";
-        case "commented":
-        case "dismissed":
-        case "pending":
-          return null;
-        default:
-          assertNever(review.state);
-      }
+      return reviewStatusByBuildId.get(build.id) ?? null;
     });
   }
 
@@ -537,17 +547,39 @@ export class Build extends Model {
    * To be used in a `Build.query().whereExists` clause.
    */
   static submittedReviewQuery() {
+    return Build.latestUserReviewsQuery().whereIn("build_reviews.state", [
+      "approved",
+      "rejected",
+    ]);
+  }
+
+  static acceptedReviewQuery() {
+    return Build.latestUserReviewsQuery()
+      .where("build_reviews.state", "approved")
+      .whereNotExists(Build.rejectedReviewQuery());
+  }
+
+  static rejectedReviewQuery() {
+    return Build.latestUserReviewsQuery().where(
+      "build_reviews.state",
+      "rejected",
+    );
+  }
+
+  static latestUserReviewsQuery() {
     return BuildReview.query()
       .select(1)
-      .whereRaw('build_reviews."buildId" = builds.id')
-      .whereIn("build_reviews.id", (qb) => {
-        qb.select("build_reviews.id")
-          .from("build_reviews")
-          .whereRaw('build_reviews."buildId" = builds.id')
-          .whereIn("build_reviews.state", ["approved", "rejected"])
-          .orderBy("build_reviews.id", "desc")
-          .limit(1);
-      });
+      .whereRaw('build_reviews."buildId" = "builds"."id"')
+      .whereRaw(`"build_reviews"."id" IN (
+        SELECT DISTINCT ON ("latest_build_reviews"."userId")
+          "latest_build_reviews"."id"
+        FROM "build_reviews" AS "latest_build_reviews"
+        WHERE "latest_build_reviews"."buildId" = "builds"."id"
+        ORDER BY
+          "latest_build_reviews"."userId",
+          "latest_build_reviews"."createdAt" DESC,
+          "latest_build_reviews"."id" DESC
+      )`);
   }
 
   /**
