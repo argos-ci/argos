@@ -178,8 +178,8 @@ function ReviewEventRadioGroup(props: {
           value={BuildReviewEvent.Reject}
           checked={value === BuildReviewEvent.Reject}
           onChange={() => onChange(BuildReviewEvent.Reject)}
-          label="Request changes"
-          description="Submit feedback suggesting changes."
+          label="Reject"
+          description="Submit feedback about rejection."
           isDisabled={buildStatus === BuildStatus.Rejected}
         />
       )}
