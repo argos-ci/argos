@@ -65,6 +65,8 @@ export type EditorValue = JSONContent | null;
 export interface EditorProps {
   value: EditorValue;
   onChange: (value: EditorValue) => void;
+  onBlur?: () => void;
+  ref?: React.Ref<HTMLElement>;
   className?: string;
   placeholder?: string;
   autoFocus?: boolean;
@@ -79,7 +81,16 @@ const EDITOR_CONTENT_CLASS = clsx(
 );
 
 export function Editor(props: EditorProps) {
-  const { value, onChange, className, placeholder, autoFocus } = props;
+  const { value, onChange, onBlur, ref, className, placeholder, autoFocus } =
+    props;
+
+  const onChangeRef = useRef(onChange);
+  const onBlurRef = useRef(onBlur);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onBlurRef.current = onBlur;
+  });
+
   const lastValueRef = useRef<EditorValue>(value);
   const editor = useEditor({
     extensions: [
@@ -106,12 +117,33 @@ export function Editor(props: EditorProps) {
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
       lastValueRef.current = json;
-      onChange(json);
+      onChangeRef.current(json);
+    },
+    onBlur: () => {
+      onBlurRef.current?.();
     },
   });
 
   useEffect(() => {
-    if (!editor) {
+    if (!editor || !ref) {
+      return;
+    }
+    const dom = editor.view.dom as HTMLElement;
+    if (typeof ref === "function") {
+      ref(dom);
+      return () => {
+        ref(null);
+      };
+    }
+    const refObject = ref as React.RefObject<HTMLElement | null>;
+    refObject.current = dom;
+    return () => {
+      refObject.current = null;
+    };
+  }, [editor, ref]);
+
+  useEffect(() => {
+    if (!editor || editor.isFocused) {
       return;
     }
     if (value === lastValueRef.current) {

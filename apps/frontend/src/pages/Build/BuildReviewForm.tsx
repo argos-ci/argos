@@ -3,7 +3,8 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { DocumentType, graphql } from "@/gql";
 import { BuildReviewEvent } from "@/gql/graphql";
 import { DialogBody, DialogDismiss, DialogFooter } from "@/ui/Dialog";
-import { Editor, type EditorValue } from "@/ui/Editor/Editor";
+import { type EditorValue } from "@/ui/Editor/Editor";
+import { EditorField } from "@/ui/Editor/EditorField";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
@@ -77,7 +78,6 @@ export function BuildReviewForm(props: {
   };
 
   const eventValue = form.watch("event");
-  const bodyValue = form.watch("body");
   const bodyError = form.formState.errors.body;
 
   return (
@@ -86,10 +86,10 @@ export function BuildReviewForm(props: {
         {header}
         <div>
           <Label>Comment</Label>
-          <Editor
-            value={bodyValue}
-            onChange={(value) => {
-              form.setValue("body", value, { shouldDirty: true });
+          <EditorField
+            control={form.control}
+            name="body"
+            onChange={() => {
               if (bodyError) {
                 form.clearErrors("body");
               }
