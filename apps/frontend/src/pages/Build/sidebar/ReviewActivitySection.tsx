@@ -1,18 +1,31 @@
+import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
-import { BanIcon, FileUpIcon, MailCheckIcon } from "lucide-react";
+import {
+  BanIcon,
+  BellIcon,
+  BellOffIcon,
+  FileUpIcon,
+  MailCheckIcon,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
+import { IconButton } from "@/ui/IconButton";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
 import { buildReviewDescriptors } from "@/util/build-review";
+import { getErrorMessage } from "@/util/error";
 
 const _BuildFragment = graphql(`
   fragment ReviewActivitySection_Build on Build {
+    id
     createdAt
     concludedAt
+    subscribed
     reviews {
       id
       date
@@ -47,6 +60,28 @@ const _BuildFragment = graphql(`
           ...AccountAvatarFragment
         }
       }
+    }
+  }
+`);
+
+const SubscribeToBuildMutation = graphql(`
+  mutation ReviewActivitySection_subscribeToBuild(
+    $input: SubscribeToBuildInput!
+  ) {
+    subscribeToBuild(input: $input) {
+      id
+      subscribed
+    }
+  }
+`);
+
+const UnsubscribeFromBuildMutation = graphql(`
+  mutation ReviewActivitySection_unsubscribeFromBuild(
+    $input: UnsubscribeFromBuildInput!
+  ) {
+    unsubscribeFromBuild(input: $input) {
+      id
+      subscribed
     }
   }
 `);
@@ -94,6 +129,7 @@ export function ReviewActivitySection(props: { build: Build }) {
     <SidebarSection>
       <SidebarHeader>
         <SidebarHeading>Activity</SidebarHeading>
+        <SubscribeToggleButton build={build} />
       </SidebarHeader>
       <div className="px-3">
         <Activity>
@@ -103,6 +139,60 @@ export function ReviewActivitySection(props: { build: Build }) {
         </Activity>
       </div>
     </SidebarSection>
+  );
+}
+
+function SubscribeToggleButton(props: { build: Build }) {
+  const { build } = props;
+  const [subscribeToBuild] = useMutation(SubscribeToBuildMutation, {
+    variables: { input: { buildId: build.id } },
+    optimisticResponse: {
+      subscribeToBuild: {
+        __typename: "Build",
+        id: build.id,
+        subscribed: true,
+      },
+    },
+  });
+  const [unsubscribeFromBuild] = useMutation(UnsubscribeFromBuildMutation, {
+    variables: { input: { buildId: build.id } },
+    optimisticResponse: {
+      unsubscribeFromBuild: {
+        __typename: "Build",
+        id: build.id,
+        subscribed: false,
+      },
+    },
+  });
+  const subscribed = build.subscribed;
+  const label = subscribed ? "Unsubscribe" : "Subscribe";
+  const handlePress = () => {
+    if (subscribed) {
+      unsubscribeFromBuild()
+        .then(() => {
+          toast.success(
+            "You will no longer receive notifications for this build.",
+          );
+        })
+        .catch((error) => {
+          toast.error(getErrorMessage(error));
+        });
+    } else {
+      subscribeToBuild()
+        .then(() => {
+          toast.success("You will receive notifications for this build.");
+        })
+        .catch((error) => {
+          toast.error(getErrorMessage(error));
+        });
+    }
+  };
+  return (
+    <Tooltip content={label}>
+      <IconButton size="small" aria-label={label} onPress={handlePress}>
+        {subscribed ? <BellIcon /> : <BellOffIcon />}
+      </IconButton>
+    </Tooltip>
   );
 }
 

@@ -13,6 +13,7 @@ import {
   Comment,
   ScreenshotDiffReview,
 } from "@/database/models";
+import { autoSubscribeUserToBuild } from "@/database/services/build-notification-subscription";
 import { transaction } from "@/database/transaction";
 
 export type ReviewState = "approved" | "rejected" | "commented" | "pending";
@@ -124,6 +125,7 @@ export async function createBuildReview(input: {
         payload: { build, compareScreenshotBucket, buildReview },
       },
     }),
+    autoSubscribeUserToBuild({ buildId: build.id, userId }),
   ]);
 
   return buildReview;

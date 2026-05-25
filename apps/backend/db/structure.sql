@@ -347,6 +347,22 @@ ALTER SEQUENCE public.build_merge_queue_gh_pull_requests_id_seq OWNED BY public.
 
 
 --
+-- Name: build_notification_subscriptions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.build_notification_subscriptions (
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "buildId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "subscribedAt" timestamp with time zone,
+    "unsubscribedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.build_notification_subscriptions OWNER TO postgres;
+
+--
 -- Name: build_notifications; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2638,6 +2654,14 @@ ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
 
 
 --
+-- Name: build_notification_subscriptions build_notification_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_notification_subscriptions
+    ADD CONSTRAINT build_notification_subscriptions_pkey PRIMARY KEY ("buildId", "userId");
+
+
+--
 -- Name: build_notifications build_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3243,6 +3267,13 @@ CREATE INDEX automation_action_runs_automationrunid_index ON public.automation_a
 --
 
 CREATE INDEX automation_runs_automationruleid_index ON public.automation_runs USING btree ("automationRuleId");
+
+
+--
+-- Name: build_notification_subscriptions_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_notification_subscriptions_userid_index ON public.build_notification_subscriptions USING btree ("userId");
 
 
 --
@@ -3896,6 +3927,22 @@ ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
 
 ALTER TABLE ONLY public.build_merge_queue_gh_pull_requests
     ADD CONSTRAINT build_merge_queue_gh_pull_requests_githubpullrequestid_foreign FOREIGN KEY ("githubPullRequestId") REFERENCES public.github_pull_requests(id) ON DELETE CASCADE;
+
+
+--
+-- Name: build_notification_subscriptions build_notification_subscriptions_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_notification_subscriptions
+    ADD CONSTRAINT build_notification_subscriptions_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: build_notification_subscriptions build_notification_subscriptions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_notification_subscriptions
+    ADD CONSTRAINT build_notification_subscriptions_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4677,3 +4724,6 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026051
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260517120000_team_domains.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260524210000_build-review-state-extra.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260524212300_build-reviews-buildid-createdat-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525120000_build-review-dismissal.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525121000_build-review-remove-dismissed-state.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525130000_build-notification-subscriptions.js', 1, NOW());

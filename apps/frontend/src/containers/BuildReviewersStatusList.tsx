@@ -79,7 +79,7 @@ export function BuildReviewersStatusList<
           <li
             key={review.id}
             className={clsx(
-              "flex items-center gap-2 py-1.5 text-sm",
+              "flex items-center gap-2 text-sm",
               props.itemClassName,
             )}
           >

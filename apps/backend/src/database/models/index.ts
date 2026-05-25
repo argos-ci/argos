@@ -6,6 +6,7 @@ export * from "./AuditTrail";
 export * from "./Build";
 export * from "./BuildMergeQueueGhPullRequest";
 export * from "./BuildNotification";
+export * from "./BuildNotificationSubscription";
 export * from "./BuildReview";
 export * from "./BuildShard";
 export * from "./Deployment";

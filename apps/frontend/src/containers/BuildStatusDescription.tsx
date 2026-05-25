@@ -236,11 +236,11 @@ function ReviewDescription(props: {
         </div>
       ) : null}
       {reviewers.length > 0 ? (
-        <div className="rounded-sm border p-2 pb-1">
-          <h3 className="mb-1 text-xs font-semibold">Reviewers</h3>
+        <div className="rounded-sm border p-2">
+          <h3 className="mb-2 text-xs font-semibold">Reviewers</h3>
           <BuildReviewersStatusList
             reviews={reviewers}
-            className="gap-1"
+            className="gap-2"
             itemClassName="text-xs"
             avatarClassName="size-4"
           />

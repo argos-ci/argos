@@ -34,7 +34,7 @@ export function SidebarHeader(props: {
   return (
     <div
       className={clsx(
-        "mb-2.5 flex shrink-0 items-baseline justify-between gap-4 px-4",
+        "mb-3 flex shrink-0 items-center justify-between gap-4 px-4 pr-3",
         className,
       )}
     >

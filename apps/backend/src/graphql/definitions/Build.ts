@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import { Build } from "@/database/models";
+import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 
 import {
@@ -132,6 +132,8 @@ export const typeDefs = gql`
     mergeQueue: Boolean!
     "Indicates whether this build contains only a subset of screenshots"
     subset: Boolean!
+    "Whether the current user is subscribed to this build's notifications"
+    subscribed: Boolean!
   }
 
   type BuildMetadata {
@@ -340,6 +342,16 @@ export const resolvers: IResolvers = {
         compareBucket,
         userId: ctx.auth.user.id,
       });
+    },
+    subscribed: async (build, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      const subscription = await BuildNotificationSubscription.query().findOne({
+        buildId: build.id,
+        userId: ctx.auth.user.id,
+      });
+      return subscription?.isSubscribed() ?? false;
     },
   },
 };

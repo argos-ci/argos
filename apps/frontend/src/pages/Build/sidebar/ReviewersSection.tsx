@@ -117,6 +117,7 @@ export function ReviewersSection(props: { build: Build }) {
       ) : (
         <BuildReviewersStatusList
           reviews={reviewers}
+          className="gap-3"
           itemClassName="px-4"
           renderAction={
             canDismissReview
