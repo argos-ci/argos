@@ -4,6 +4,7 @@ import {
 } from "@argos/schemas/build-review";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { JSONContent } from "@tiptap/core";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -193,7 +194,7 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         build,
         userId: auth.user.id,
         event,
-        body: body.body,
+        body: body.body as JSONContent | undefined,
         snapshotReviews: body.snapshots.map((snapshotReview) => ({
           screenshotDiffId: snapshotReview.id,
           state: getScreenshotReviewState(snapshotReview.conclusion),

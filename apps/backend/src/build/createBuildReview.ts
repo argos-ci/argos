@@ -3,18 +3,25 @@ import type { BuildReviewEvent } from "@argos/schemas/build-review";
 import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { JSONContent } from "@tiptap/core";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
+import { renderCommentHtml } from "@/comment/html";
 import type { BuildNotification } from "@/database/models";
 import {
   Build,
   BuildReview,
   Comment,
   ScreenshotDiffReview,
+  User,
 } from "@/database/models";
-import { autoSubscribeUserToBuild } from "@/database/services/build-notification-subscription";
+import {
+  autoSubscribeUserToBuild,
+  getBuildSubscribedUserIds,
+} from "@/database/services/build-notification-subscription";
 import { transaction } from "@/database/transaction";
+import { sendNotification } from "@/notification";
 
 export type ReviewState = "approved" | "rejected" | "commented" | "pending";
 
@@ -62,7 +69,7 @@ export async function createBuildReview(input: {
   build: Build;
   userId: string;
   event: BuildReviewEvent;
-  body?: unknown;
+  body?: JSONContent | undefined;
   snapshotReviews: {
     screenshotDiffId: string;
     state: ScreenshotDiffReviewState;
@@ -126,7 +133,50 @@ export async function createBuildReview(input: {
       },
     }),
     autoSubscribeUserToBuild({ buildId: build.id, userId }),
+    notifyBuildSubscribers({ build, buildReview, body }),
   ]);
 
   return buildReview;
+}
+
+async function notifyBuildSubscribers(input: {
+  build: Build;
+  buildReview: BuildReview;
+  body: JSONContent | undefined;
+}): Promise<void> {
+  const { build, buildReview, body } = input;
+  const { state } = buildReview;
+  if (state !== "approved" && state !== "rejected" && state !== "commented") {
+    return;
+  }
+  invariant(buildReview.userId, "review should have a userId");
+  const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
+  const recipients = subscribedUserIds.filter(
+    (id) => id !== buildReview.userId,
+  );
+  if (recipients.length === 0) {
+    return;
+  }
+  const [project, reviewer, buildUrl] = await Promise.all([
+    build.$relatedQuery("project").withGraphFetched("account"),
+    User.query().findById(buildReview.userId).withGraphFetched("account"),
+    build.getUrl(),
+  ]);
+  invariant(project, "project not found");
+  invariant(project.account, "project account not found");
+  const reviewerName = reviewer?.account?.displayName ?? null;
+  await sendNotification({
+    type: "review_submitted",
+    data: {
+      accountSlug: project.account.slug,
+      projectName: project.name,
+      buildNumber: build.number,
+      buildName: build.name,
+      buildUrl,
+      reviewerName,
+      state,
+      bodyHtml: body ? renderCommentHtml(body) : null,
+    },
+    recipients,
+  });
 }

@@ -267,7 +267,7 @@ function ActivityEntryRow(props: { entry: ActivityEntry }) {
 function CommentCard(props: { comment: Build["comments"][number] }) {
   const { comment } = props;
   return (
-    <div className="border-thin bg-app rounded-md">
+    <div className="border-thin bg-app -mx-1 rounded-md">
       <div className="flex items-center gap-2 px-3 py-2">
         {comment.user ? (
           <AccountAvatar
@@ -280,7 +280,7 @@ function CommentCard(props: { comment: Build["comments"][number] }) {
         </span>
         <Time date={comment.date} className="text-low text-xs" />
       </div>
-      <div className="border-t-thin text-default px-3 py-2 text-sm">
+      <div className="text-default px-3 pb-2 text-sm">
         <ReadOnlyEditor content={comment.content} />
       </div>
     </div>

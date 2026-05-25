@@ -86,6 +86,24 @@ export async function autoSubscribeUserToBuild(input: {
 }
 
 /**
+ * Get the user IDs currently subscribed to a build's notifications.
+ */
+export async function getBuildSubscribedUserIds(
+  buildId: string,
+): Promise<string[]> {
+  const subscriptions = await BuildNotificationSubscription.query()
+    .select("userId")
+    .where({ buildId })
+    .whereNotNull("subscribedAt")
+    .where((qb) =>
+      qb
+        .whereNull("unsubscribedAt")
+        .orWhereRaw('"subscribedAt" > "unsubscribedAt"'),
+    );
+  return subscriptions.map((s) => s.userId);
+}
+
+/**
  * Auto-subscribe the pull request creator to a build, if the creator is linked
  * to an Argos user and they have not intentionally unsubscribed.
  */

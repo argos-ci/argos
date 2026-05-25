@@ -89,6 +89,7 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
       className="flex items-center gap-0.5"
       onSubmit={(event) => {
         event.preventDefault();
+        event.stopPropagation();
         apply();
       }}
     >

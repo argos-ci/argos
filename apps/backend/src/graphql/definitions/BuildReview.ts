@@ -1,6 +1,7 @@
 import type { BuildReviewEvent } from "@argos/schemas/build-review";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import {
@@ -148,7 +149,7 @@ export const resolvers: IResolvers = {
         build,
         userId: auth.user.id,
         event: parseEvent(input.event),
-        body: input.body ?? undefined,
+        body: (input.body ?? undefined) as JSONContent | undefined,
         snapshotReviews: input.screenshotDiffReviews.map((diffReviewInput) => ({
           screenshotDiffId: diffReviewInput.screenshotDiffId,
           state: parseScreenshotDiffReviewState(diffReviewInput.state),
