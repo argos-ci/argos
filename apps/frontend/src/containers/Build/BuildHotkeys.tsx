@@ -301,7 +301,8 @@ export function useBuildHotkey(
           event.target.role?.startsWith("menuitem") ||
           event.target.role === "textbox" ||
           event.target.classList.contains("native-edit-context") ||
-          event.target.closest("[data-hotkeys-disabled]"))
+          event.target.closest("[data-hotkeys-disabled]") ||
+          event.target.closest("[role=dialog]"))
       ) {
         return;
       }

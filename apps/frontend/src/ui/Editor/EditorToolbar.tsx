@@ -16,7 +16,8 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 
 import { AnimatedBubbleMenu } from "./AnimatedBubbleMenu";
-import { ALT, isMacOS, LINK_KEYS, MOD, SHIFT } from "./EditorToolbar.shortcuts";
+import { LINK_EDIT_TRIGGER_EVENT } from "./EditorLinkEdit";
+import { ALT, LINK_KEYS, MOD, SHIFT } from "./EditorToolbar.shortcuts";
 import type { ToolbarState } from "./EditorToolbar.types";
 import { EditorToolbarLinkInput } from "./EditorToolbarLinkInput";
 import { HeadingMenu } from "./HeadingMenu";
@@ -78,56 +79,27 @@ export function EditorToolbar(props: EditorToolbarProps) {
   });
 
   const [linkEditing, setLinkEditing] = useState(false);
-  const [prevSelectionKey, setPrevSelectionKey] = useState<string | null>(null);
 
   const currentSelectionKey = state
     ? `${state.selectionFrom}-${state.selectionTo}`
     : null;
-  if (state && currentSelectionKey !== prevSelectionKey) {
-    setPrevSelectionKey(currentSelectionKey);
-    if (!state.isLink && linkEditing) {
-      setLinkEditing(false);
-    }
-  }
 
   useEffect(() => {
     if (!editor) {
       return;
     }
     const dom = editor.view.dom;
-    const handleClick = (event: MouseEvent) => {
-      if (event.button !== 0) {
-        return;
-      }
-      const target = event.target as HTMLElement | null;
-      if (!target) {
-        return;
-      }
-      const link = target.closest("a");
-      if (link && dom.contains(link)) {
-        setLinkEditing(true);
+    const handleTrigger = () => setLinkEditing(true);
+    const handleSelectionUpdate = () => {
+      if (!editor.isActive("link")) {
+        setLinkEditing(false);
       }
     };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.key.toLowerCase() !== "k") {
-        return;
-      }
-      const usingMod = isMacOS ? event.metaKey : event.ctrlKey;
-      if (!usingMod || event.altKey || event.shiftKey) {
-        return;
-      }
-      if (!canEditLink(editor)) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      setLinkEditing(true);
-    };
-    dom.addEventListener("click", handleClick);
-    dom.addEventListener("keydown", handleKeyDown, true);
+    dom.addEventListener(LINK_EDIT_TRIGGER_EVENT, handleTrigger);
+    editor.on("selectionUpdate", handleSelectionUpdate);
     return () => {
-      dom.removeEventListener("click", handleClick);
-      dom.removeEventListener("keydown", handleKeyDown, true);
+      dom.removeEventListener(LINK_EDIT_TRIGGER_EVENT, handleTrigger);
+      editor.off("selectionUpdate", handleSelectionUpdate);
     };
   }, [editor]);
 
@@ -270,13 +242,5 @@ function LinkButton(props: {
         <LinkIcon />
       </IconButton>
     </HotkeyTooltip>
-  );
-}
-
-function canEditLink(editor: Editor) {
-  const { selection } = editor.state;
-  return (
-    editor.isActive("link") ||
-    (!selection.empty && editor.can().setLink({ href: "" }))
   );
 }

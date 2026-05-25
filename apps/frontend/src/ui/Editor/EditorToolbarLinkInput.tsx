@@ -95,7 +95,7 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
     >
       <input
         type="text"
-        autoFocus
+        autoFocus={initialHref === ""}
         placeholder="Enter link URL"
         value={href}
         aria-invalid={isInvalid || undefined}

@@ -11,6 +11,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { clsx } from "clsx";
 
 import { EDITOR_PROSE_CLASS } from "./EditorContent.css";
+import { LinkEditTrigger } from "./EditorLinkEdit";
 import { EditorToolbar } from "./EditorToolbar";
 
 const CollapseAllSelectionDelete = Extension.create({
@@ -61,6 +62,7 @@ export function Editor(props: EditorProps) {
         },
       }),
       CollapseAllSelectionDelete,
+      LinkEditTrigger,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
     content: value,
