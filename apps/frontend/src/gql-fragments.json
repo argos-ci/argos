@@ -31,6 +31,7 @@
       "AutomationRun",
       "Build",
       "BuildReview",
+      "Comment",
       "Deployment",
       "GhApiInstallation",
       "GhApiInstallationAccount",

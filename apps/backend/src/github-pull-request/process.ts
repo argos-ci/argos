@@ -1,5 +1,6 @@
 import { GithubRepository } from "@/database/models";
 import { GithubPullRequest } from "@/database/models/GithubPullRequest";
+import { subscribePullRequestCreatorToAllBuilds } from "@/database/services/build-notification-subscription";
 import {
   getGhAccountType,
   getOrCreateGhAccount,
@@ -71,11 +72,13 @@ export async function processPullRequest(pullRequest: GithubPullRequest) {
     fallbackEmail: pullRequestData.user.email ?? null,
   });
 
-  await pullRequest
+  const updatedPullRequest = await pullRequest
     .$clone()
     .$query()
-    .patch({
+    .patchAndFetch({
       ...parsePullRequestData(pullRequestData),
       creatorId: githubAccount.id,
     });
+
+  await subscribePullRequestCreatorToAllBuilds(updatedPullRequest);
 }

@@ -12,9 +12,9 @@ import { useAtom } from "jotai/react";
 import { atomWithStorage } from "jotai/utils";
 
 import {
+  BuildReviewEvent,
   BuildStatus,
   BuildType,
-  ReviewState,
   ScreenshotDiffStatus,
 } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -277,15 +277,15 @@ export function useGetDiffGroupEvaluationStatus():
 }
 
 /**
- * Get the default diff evaluation status from the review state.
+ * Get the default diff evaluation status from the review event.
  */
 function getDiffStatusAfterReview(
-  reviewState: ReviewState,
+  event: BuildReviewEvent,
   diffStatus: EvaluationStatus | undefined,
 ): EvaluationStatus {
   diffStatus = diffStatus ?? EvaluationStatus.Pending;
 
-  if (reviewState === ReviewState.Approved) {
+  if (event === BuildReviewEvent.Approve) {
     if (diffStatus === EvaluationStatus.Pending) {
       return EvaluationStatus.Accepted;
     }
@@ -299,7 +299,7 @@ function getDiffStatusAfterReview(
 export function useGetReviewedDiffStatuses() {
   const api = use(BuildReviewAPIContext);
   const diffState = useBuildDiffState();
-  return useEventCallback((reviewState: ReviewState) => {
+  return useEventCallback((event: BuildReviewEvent) => {
     invariant(api, "API context is not available");
     const diffStatuses = api.getDiffStatuses();
     return diffState.diffs.reduce<Record<Diff["id"], EvaluationStatus>>(
@@ -309,10 +309,7 @@ export function useGetReviewedDiffStatuses() {
             isSubsetBuild: diffState.isSubsetBuild,
           })
         ) {
-          ids[diff.id] = getDiffStatusAfterReview(
-            reviewState,
-            diffStatuses[diff.id],
-          );
+          ids[diff.id] = getDiffStatusAfterReview(event, diffStatuses[diff.id]);
         }
         return ids;
       },

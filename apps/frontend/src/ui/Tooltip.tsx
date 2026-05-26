@@ -1,4 +1,5 @@
 import { cloneElement, useRef, type ComponentPropsWithRef } from "react";
+import { FocusableProvider } from "@react-aria/interactions";
 import { clsx } from "clsx";
 import type { LucideIcon } from "lucide-react";
 import { FocusableOptions, mergeProps, useFocusable } from "react-aria";
@@ -98,13 +99,17 @@ function TooltipOverlay({
       }
     >
       {(values) => {
-        // Freeze the children while the tooltip is animating.
-        if (!values.isEntering && !values.isExiting) {
-          frozenChildrenRef.current = children;
-          return children;
-        }
+        const result = (() => {
+          // Freeze the children while the tooltip is animating.
+          if (!values.isEntering && !values.isExiting) {
+            frozenChildrenRef.current = children;
+            return children;
+          }
 
-        return frozenChildrenRef.current;
+          return frozenChildrenRef.current;
+        })();
+
+        return <FocusableProvider ref={null}>{result}</FocusableProvider>;
       }}
     </RACTooltip>
   );

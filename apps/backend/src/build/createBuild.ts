@@ -11,6 +11,7 @@ import {
   Project,
   ScreenshotBucket,
 } from "@/database/models";
+import { subscribeBuildPullRequestCreator } from "@/database/services/build-notification-subscription";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
 import { boom } from "@/util/error";
@@ -201,6 +202,13 @@ export async function createBuild(params: {
     },
     { timeout: 40_000 }, // 40 seconds
   );
+
+  if (pullRequest) {
+    await subscribeBuildPullRequestCreator({
+      buildId: build.id,
+      pullRequest,
+    });
+  }
 
   await pushBuildNotification({ buildId: build.id, type: "queued" });
 

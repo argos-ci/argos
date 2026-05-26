@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import { Build } from "@/database/models";
+import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 
 import {
@@ -122,14 +122,18 @@ export const typeDefs = gql`
     baseBranch: String
     "Base branch resolved from"
     baseBranchResolvedFrom: BaseBranchResolution
-    "Effective build reviews"
+    "Submitted build reviews"
     reviews: [BuildReview!]!
+    "Comments posted on the build that are not part of a pending review"
+    comments: [Comment!]!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
     "Build is triggered in a merge queue"
     mergeQueue: Boolean!
     "Indicates whether this build contains only a subset of screenshots"
     subset: Boolean!
+    "Whether the current user is subscribed to this build's notifications"
+    subscribed: Boolean!
   }
 
   type BuildMetadata {
@@ -309,7 +313,10 @@ export const resolvers: IResolvers = {
       }
     },
     reviews: async (build, _args, ctx) => {
-      return ctx.loaders.BuildUniqueReviews.load(build.id);
+      return ctx.loaders.BuildReviews.load(build.id);
+    },
+    comments: async (build, _args, ctx) => {
+      return ctx.loaders.BuildPublishedComments.load(build.id);
     },
     stats: (build) => {
       return build.getStats();
@@ -335,6 +342,16 @@ export const resolvers: IResolvers = {
         compareBucket,
         userId: ctx.auth.user.id,
       });
+    },
+    subscribed: async (build, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      const subscription = await BuildNotificationSubscription.query().findOne({
+        buildId: build.id,
+        userId: ctx.auth.user.id,
+      });
+      return subscription?.isSubscribed() ?? false;
     },
   },
 };

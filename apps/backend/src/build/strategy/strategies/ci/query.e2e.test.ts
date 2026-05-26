@@ -88,7 +88,6 @@ describe("#getBaseBucketForBuildAndCommit", () => {
           buildId: baseBucketBuild.id,
           state: "approved",
         });
-        // The last one wins, so it's a rejected build in this case
         await factory.BuildReview.create({
           buildId: baseBucketBuild.id,
           state: "rejected",
@@ -102,6 +101,32 @@ describe("#getBaseBucketForBuildAndCommit", () => {
           { approved: true },
         );
         expect(result).toBeNull();
+      });
+    });
+
+    describe("if the associated build is a type check with a user approval after their rejection", () => {
+      beforeEach(async () => {
+        const user = await factory.User.create();
+        await baseBucketBuild.$query().patch({ type: "check" });
+        await factory.BuildReview.create({
+          buildId: baseBucketBuild.id,
+          userId: user.id,
+          state: "rejected",
+        });
+        await factory.BuildReview.create({
+          buildId: baseBucketBuild.id,
+          userId: user.id,
+          state: "approved",
+        });
+      });
+
+      it("returns the bucket", async () => {
+        const result = await getBaseBucketForBuildAndCommit(
+          build,
+          "766b744bc5fa27a330283dfd47ffafdaf905a941",
+          { approved: true },
+        );
+        expect(result).toEqual(baseBucket);
       });
     });
 

@@ -4,7 +4,9 @@ import * as Account from "./Account";
 import * as AccountSubscription from "./AccountSubscription";
 import * as AutomationRule from "./AutomationRule";
 import * as Build from "./Build";
+import * as BuildNotificationSubscription from "./BuildNotificationSubscription";
 import * as BuildReview from "./BuildReview";
+import * as Comment from "./Comment";
 import * as Connection from "./Connection";
 import * as DateDefs from "./Date";
 import * as Deployment from "./Deployment";
@@ -44,7 +46,9 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   AccountSubscription,
   AutomationRule,
   Build,
+  BuildNotificationSubscription,
   BuildReview,
+  Comment,
   Connection,
   DateDefs,
   Deployment,

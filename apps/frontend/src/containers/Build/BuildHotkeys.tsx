@@ -6,6 +6,7 @@ import { Dialog, DialogBody, DialogTitle } from "@/ui/Dialog";
 import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { useLiveRef } from "@/ui/useLiveRef";
+import { isMacOS } from "@/util/os";
 
 import {
   HotkeysDialogState,
@@ -25,8 +26,6 @@ type HotkeyGroup = {
   name: string;
   hotkeys: Record<string, Hotkey>;
 };
-
-const isMacOS = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
 const hotkeyGroups = [
   {
@@ -301,7 +300,8 @@ export function useBuildHotkey(
           event.target.role?.startsWith("menuitem") ||
           event.target.role === "textbox" ||
           event.target.classList.contains("native-edit-context") ||
-          event.target.closest("[data-hotkeys-disabled]"))
+          event.target.closest("[data-hotkeys-disabled]") ||
+          event.target.closest("[role=dialog]"))
       ) {
         return;
       }

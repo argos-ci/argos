@@ -80,9 +80,9 @@ const DisableButton = memo(function DisableButton(props: {
           <DialogBody confirm>
             <DialogTitle>Disable GitHub Single Sign-On</DialogTitle>
             <DialogText>
-              You are about to disable GitHub Single Sign-On on your Team.
+              Team members will no longer be synchronized from your GitHub
+              organization.
             </DialogText>
-            <DialogText>Are you sure you want to continue?</DialogText>
           </DialogBody>
           <DialogFooter>
             {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}

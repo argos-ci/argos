@@ -1,4 +1,10 @@
-import { cloneElement, ComponentProps, isValidElement } from "react";
+import {
+  cloneElement,
+  ComponentProps,
+  createContext,
+  isValidElement,
+  use,
+} from "react";
 import { clsx } from "clsx";
 import {
   Button as RACButton,
@@ -7,9 +13,13 @@ import {
   LinkProps as RACLinkProps,
 } from "react-aria-components";
 
-import { lowTextColorClassNames, UIColor } from "@/util/colors";
+import {
+  lowTextColorClassNames,
+  textColorClassNames,
+  UIColor,
+} from "@/util/colors";
 
-export type ChipColor = UIColor;
+export type ChipColor = UIColor | "blank";
 
 type ChipScale = "xs" | "sm" | "md";
 type ChipElementType = "div" | "button" | "a";
@@ -32,7 +42,28 @@ type ChipOptions = {
   scale?: ChipScale | undefined;
 };
 
-const interactiveClassNames = {
+/**
+ * Provides default props for any Chip / ChipLink / ChipButton in the subtree.
+ * Explicit props on each chip override the context defaults.
+ *
+ * Inspired by react-aria's `useContextProps` pattern
+ * (https://react-aria.adobe.com/customization), but simplified since we only
+ * need to merge style defaults — not refs across multiple element types.
+ *
+ * @example
+ * <ChipContext value={{ color: "blank", scale: "sm" }}>
+ *   <Chip>...</Chip> // gets color="blank" scale="sm"
+ *   <Chip color="primary">...</Chip> // gets color="primary" scale="sm"
+ * </ChipContext>
+ */
+export const ChipContext = createContext<Partial<ChipOptions>>({});
+
+function useChipContextProps<T extends Partial<ChipOptions>>(props: T): T {
+  const defaults = use(ChipContext);
+  return { ...defaults, ...props };
+}
+
+const interactiveClassNames: Record<ChipColor, string> = {
   primary: clsx(
     "data-hovered:not-aria-[current=page]:bg-primary-hover",
     "data-hovered:not-aria-[current=page]:text-primary",
@@ -45,7 +76,7 @@ const interactiveClassNames = {
   success:
     "data-hovered:not-aria-[current=page]:bg-success-hover aria-[current=page]:bg-success-active data-pressed:bg-success-active",
   neutral:
-    "data-hovered:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active data-pressed:bg-active",
+    "data-hovered:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active aria-[current=page]:text-default data-pressed:bg-active",
   pending:
     "data-hovered:not-aria-[current=page]:bg-pending-hover aria-[current=page]:bg-pending-active data-pressed:bg-pending-active",
   danger:
@@ -54,6 +85,8 @@ const interactiveClassNames = {
     "data-hovered:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
   storybook:
     "data-hovered:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active data-pressed:bg-storybook-active",
+  blank:
+    "data-hovered:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active data-pressed:bg-active",
 };
 
 /**
@@ -74,7 +107,7 @@ function getChipClassName(props: {
   };
   const spacingClassName: Record<ChipScale, string> = {
     xs: clsx(isEmpty ? "px-1" : "px-2", "[--chip-gap:--spacing(1)]"),
-    sm: clsx(!isEmpty && "px-3", "p-1 [--chip-gap:--spacing(1.5)]"),
+    sm: clsx(!isEmpty && "px-1.5", "p-1 [--chip-gap:--spacing(1.5)]"),
     md: clsx(!isEmpty && "px-4", "p-2 [--chip-gap:--spacing(2)]"),
   };
   const colorClassNames: Record<ChipColor, string> = {
@@ -87,7 +120,7 @@ function getChipClassName(props: {
       lowTextColorClassNames.success,
       "border-success bg-success-app",
     ),
-    neutral: clsx(lowTextColorClassNames.neutral, "border bg-app"),
+    neutral: clsx(lowTextColorClassNames.neutral, "border-default bg-app"),
     pending: clsx(
       lowTextColorClassNames.pending,
       "border-pending bg-pending-app",
@@ -101,6 +134,7 @@ function getChipClassName(props: {
       lowTextColorClassNames.storybook,
       "border-storybook bg-storybook-app",
     ),
+    blank: clsx(textColorClassNames.neutral, "border-transparent bg-app"),
   };
   return clsx(
     colorClassNames[color],
@@ -112,7 +146,7 @@ function getChipClassName(props: {
     "group-[*]/button-group:rounded-none",
     "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:not-first:border-l-0",
     "group-[*]/button-group:last:rounded-r-lg",
-    "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border font-medium leading-4",
+    "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border-thin font-medium leading-4",
   );
 }
 
@@ -151,7 +185,9 @@ function useChip<
           {(() => {
             const iconClassName = "size-[1em] my-[calc((1lh-1em)/2)] shrink-0";
             if (isValidElement(icon)) {
-              return cloneElement(icon, { className: iconClassName });
+              return cloneElement(icon, {
+                className: clsx(icon.props.className, iconClassName),
+              });
             }
             if (icon) {
               const Icon = icon;
@@ -170,7 +206,8 @@ function useChip<
 export type ChipProps = Omit<React.ComponentPropsWithRef<"div">, "color"> &
   ChipOptions;
 
-export function Chip(props: ChipProps) {
+export function Chip(rawProps: ChipProps) {
+  const props = useChipContextProps(rawProps);
   const { chipProps } = useChip({ ...props, elementType: "div" });
   return <div {...chipProps} />;
 }
@@ -182,7 +219,8 @@ export type ChipLinkProps = Omit<
   Pick<ComponentProps<"a">, "className" | "children"> &
   ChipOptions;
 
-export function ChipLink(props: ChipLinkProps) {
+export function ChipLink(rawProps: ChipLinkProps) {
+  const props = useChipContextProps(rawProps);
   const { chipProps } = useChip({ ...props, elementType: "a" });
   return <RACLink {...chipProps} />;
 }
@@ -194,7 +232,8 @@ type ChipButtonProps = Omit<
   Pick<ComponentProps<"button">, "className" | "children"> &
   ChipOptions;
 
-export function ChipButton(props: ChipButtonProps) {
+export function ChipButton(rawProps: ChipButtonProps) {
+  const props = useChipContextProps(rawProps);
   const { chipProps } = useChip({ ...props, elementType: "button" });
   return <RACButton {...chipProps} />;
 }

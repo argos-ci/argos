@@ -3,6 +3,7 @@ import type { RelationMappings } from "objection";
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Build } from "./Build";
+import { Comment } from "./Comment";
 import { ScreenshotDiffReview } from "./ScreenshotDiffReview";
 import { User } from "./User";
 
@@ -18,7 +19,12 @@ export class BuildReview extends Model {
         properties: {
           buildId: { type: "string" },
           userId: { type: ["string", "null"] },
-          state: { type: "string", enum: ["approved", "rejected"] },
+          dismissedAt: { type: ["string", "null"] },
+          dismissedById: { type: ["string", "null"] },
+          state: {
+            type: "string",
+            enum: ["approved", "rejected", "commented", "pending"],
+          },
         },
       },
     ],
@@ -26,7 +32,9 @@ export class BuildReview extends Model {
 
   buildId!: string;
   userId!: string | null;
-  state!: "approved" | "rejected";
+  dismissedAt!: string | null;
+  dismissedById!: string | null;
+  state!: "approved" | "rejected" | "commented" | "pending";
 
   static override get relationMappings(): RelationMappings {
     return {
@@ -46,6 +54,14 @@ export class BuildReview extends Model {
           to: "users.id",
         },
       },
+      dismissedBy: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: User,
+        join: {
+          from: "build_reviews.dismissedById",
+          to: "users.id",
+        },
+      },
       screenshotDiffReviews: {
         relation: Model.HasManyRelation,
         modelClass: ScreenshotDiffReview,
@@ -54,10 +70,20 @@ export class BuildReview extends Model {
           to: "screenshot_diff_reviews.buildReviewId",
         },
       },
+      comments: {
+        relation: Model.HasManyRelation,
+        modelClass: Comment,
+        join: {
+          from: "build_reviews.id",
+          to: "comments.buildReviewId",
+        },
+      },
     };
   }
 
   build?: Build;
   user?: User;
+  dismissedBy?: User | null;
   screenshotDiffReviews?: ScreenshotDiffReview[];
+  comments?: Comment[];
 }

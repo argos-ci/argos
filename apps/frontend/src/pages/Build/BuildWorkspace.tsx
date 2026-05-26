@@ -1,9 +1,10 @@
 import { memo } from "react";
-import { assertNever } from "@argos/util/assertNever";
 import { useAtomValue } from "jotai";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
+import { BuildDiffHighlighterProvider } from "@/containers/Build/BuildDiffHighlighterContext";
 import { snapshotTypeAtom } from "@/containers/Build/SnapshotType";
+import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
@@ -16,15 +17,15 @@ import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
 import { BuildParams } from "./BuildParams";
-import { BuildSidebar } from "./BuildSidebar";
-import { TestDetails, type TestDetailsProps } from "./TestDetails";
-import { testSidebarAtom } from "./TestSidebar";
+import { BuildLeftSidebar } from "./LeftSidebar";
+import { RightSidebar } from "./RightSidebar";
 
 const _BuildFragment = graphql(`
   fragment BuildWorkspace_Build on Build {
-    ...BuildSidebar_Build
+    ...BuildLeftSidebar_Build
     ...BuildStatusDescription_Build
     ...BuildDiffDetail_Build
+    ...RightSidebar_Build
     status
     subset
     parallel {
@@ -108,37 +109,84 @@ export function BuildWorkspace(props: {
 
   return (
     <div className="flex min-h-0 flex-1">
-      <BuildSidebar build={build} repoUrl={repoUrl} params={params} />
-      {(() => {
-        switch (build.status) {
-          case BuildStatus.Aborted:
-          case BuildStatus.Error:
-          case BuildStatus.Expired:
-            return (
-              <div className="min-h-0 flex-1 p-6 text-xl">
-                <Alert className="mx-auto max-w-xl rounded-sm border p-4">
-                  <AlertTitle>
-                    {
-                      {
-                        [BuildStatus.Error]: "Build failed",
-                        [BuildStatus.Expired]: "Build expired",
-                        [BuildStatus.Aborted]: "Build aborted",
-                      }[build.status]
-                    }
-                  </AlertTitle>
-                  <AlertText>
-                    <BuildStatusDescription build={build} />
-                  </AlertText>
-                </Alert>
-              </div>
-            );
-          case BuildStatus.Pending:
-          case BuildStatus.Progress:
-            return <BuildProgress parallel={build.parallel} />;
-          default:
-            return build && <BuildDetail build={build} repoUrl={repoUrl} />;
-        }
-      })()}
+      <BuildLeftSidebar build={build} repoUrl={repoUrl} params={params} />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <BuildDetailProviders>
+          <Toolbar build={build} />
+          <div className="bg-subtle flex min-h-0 flex-1">
+            {(() => {
+              switch (build.status) {
+                case BuildStatus.Aborted:
+                case BuildStatus.Error:
+                case BuildStatus.Expired:
+                  return (
+                    <div className="min-h-0 flex-1 p-6 text-xl">
+                      <Alert className="mx-auto max-w-xl rounded-sm border p-4">
+                        <AlertTitle>
+                          {
+                            {
+                              [BuildStatus.Error]: "Build failed",
+                              [BuildStatus.Expired]: "Build expired",
+                              [BuildStatus.Aborted]: "Build aborted",
+                            }[build.status]
+                          }
+                        </AlertTitle>
+                        <AlertText>
+                          <BuildStatusDescription build={build} />
+                        </AlertText>
+                      </Alert>
+                    </div>
+                  );
+                case BuildStatus.Pending:
+                case BuildStatus.Progress:
+                  return <BuildProgress parallel={build.parallel} />;
+                default:
+                  return (
+                    build && <BuildDetail build={build} repoUrl={repoUrl} />
+                  );
+              }
+            })()}
+            <RightSidebar
+              build={build}
+              repoUrl={repoUrl}
+              baseBranch={build.baseBranch ?? null}
+              compareBranch={build.branch}
+              deploymentUrl={build.deployment?.url ?? null}
+              prMerged={build.pullRequest?.merged ?? false}
+            />
+          </div>
+        </BuildDetailProviders>
+      </div>
+    </div>
+  );
+}
+
+function BuildDetailProviders(props: { children: React.ReactNode }) {
+  const { children } = props;
+  const { activeDiff } = useBuildDiffState();
+  if (!activeDiff) {
+    return children;
+  }
+  return (
+    <ZoomerSyncProvider id={activeDiff.id}>
+      <BuildDiffHighlighterProvider>{children}</BuildDiffHighlighterProvider>
+    </ZoomerSyncProvider>
+  );
+}
+
+function Toolbar(props: { build: DocumentType<typeof _BuildFragment> }) {
+  const { build } = props;
+  const { activeDiff } = useBuildDiffState();
+  if (!activeDiff) {
+    return null;
+  }
+  return (
+    <div className="border-b-thin sticky top-0 z-20 shrink-0 p-2">
+      <BuildDetailHeader
+        diff={activeDiff}
+        buildType={build.type ?? null}
+        isSubsetBuild={build.subset}
+      />
     </div>
   );
 }
@@ -147,54 +195,13 @@ function BuildDetail(props: {
   build: DocumentType<typeof _BuildFragment>;
   repoUrl: string | null;
 }) {
-  const { activeDiff, siblingDiffs, ariaDiff } = useBuildDiffState();
+  const { activeDiff, ariaDiff } = useBuildDiffState();
   const { build, repoUrl } = props;
   const snapshotType = useAtomValue(snapshotTypeAtom);
   const shownDiff = snapshotType === "aria" && ariaDiff ? ariaDiff : activeDiff;
   return (
     <div className="flex min-h-0 min-w-0 flex-1">
-      <BuildDiffDetail
-        build={build}
-        diff={shownDiff}
-        repoUrl={repoUrl}
-        className="bg-subtle"
-        header={
-          activeDiff ? (
-            <BuildDetailHeader
-              diff={activeDiff}
-              siblingDiffs={siblingDiffs}
-              repoUrl={props.repoUrl}
-              baseBranch={build.baseBranch ?? null}
-              compareBranch={build.branch}
-              deploymentUrl={build.deployment?.url ?? null}
-              prMerged={build.pullRequest?.merged ?? false}
-              buildType={build.type ?? null}
-              isSubsetBuild={build.subset}
-            />
-          ) : null
-        }
-        sidebar={
-          activeDiff?.test ? (
-            <TestSidebar
-              test={activeDiff.test}
-              change={activeDiff.change ?? null}
-              occurrences={activeDiff.last7daysOccurrences}
-            />
-          ) : null
-        }
-      />
+      <BuildDiffDetail build={build} diff={shownDiff} repoUrl={repoUrl} />
     </div>
   );
-}
-
-function TestSidebar(props: TestDetailsProps) {
-  const sidebar = useAtomValue(testSidebarAtom);
-  switch (sidebar) {
-    case "details":
-      return <TestDetails {...props} />;
-    case null:
-      return null;
-    default:
-      assertNever(sidebar);
-  }
 }

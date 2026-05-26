@@ -14,6 +14,7 @@ import { Helmet } from "react-helmet";
 
 import { BuildDiffDetail } from "@/containers/Build/BuildDiffDetail";
 import { BuildDiffDetailToolbar } from "@/containers/Build/BuildDiffDetailToolbar";
+import { BuildDiffHighlighterProvider } from "@/containers/Build/BuildDiffHighlighterContext";
 import {
   DiffCard,
   DiffCardFooter,
@@ -26,6 +27,7 @@ import {
   NextButton,
   PreviousButton,
 } from "@/containers/Build/toolbar/NavButtons";
+import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { PeriodSelect } from "@/containers/PeriodSelect";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import {
@@ -158,7 +160,7 @@ export function Component() {
             <PeriodSelect state={periodState} />
             <div
               className={clsx(
-                "bg-app @container flex flex-col gap-2 self-stretch rounded-md border p-2 pr-6",
+                "bg-app border-thin @container flex flex-col gap-2 self-stretch rounded-md p-2 pr-6 shadow-xs",
                 isPending && "animate-pulse",
               )}
             >
@@ -307,8 +309,11 @@ function ChangesExplorer(props: {
     );
   }
   return (
-    <div className="bg-app flex gap-4 rounded-lg border" style={{ height }}>
-      <div className="flex min-w-60 border-r">
+    <div
+      className="bg-app border-thin flex rounded-lg shadow-xs"
+      style={{ height }}
+    >
+      <div className="border-r-thin flex min-w-60">
         <ChangesList
           test={test}
           onSelect={setActiveChangeId}
@@ -316,18 +321,24 @@ function ChangesExplorer(props: {
         />
       </div>
       {activeChange && (
-        <BuildDiffDetail
-          build={activeChange.stats.lastSeenDiff.build}
-          diff={activeChange.stats.lastSeenDiff}
-          repoUrl={null}
-          header={
-            <BuildHeader
-              change={activeChange}
-              test={test}
-              onActiveTestChange={setActiveChangeId}
-            />
-          }
-        />
+        <ZoomerSyncProvider id={activeChange.stats.lastSeenDiff.build.id}>
+          <BuildDiffHighlighterProvider>
+            <div className="flex flex-col">
+              <div className="border-b-thin sticky top-0 z-20 shrink-0 p-2">
+                <BuildHeader
+                  change={activeChange}
+                  test={test}
+                  onActiveTestChange={setActiveChangeId}
+                />
+              </div>
+              <BuildDiffDetail
+                build={activeChange.stats.lastSeenDiff.build}
+                diff={activeChange.stats.lastSeenDiff}
+                repoUrl={null}
+              />
+            </div>
+          </BuildDiffHighlighterProvider>
+        </ZoomerSyncProvider>
       )}
     </div>
   );
@@ -359,7 +370,7 @@ function BuildHeader(props: {
   };
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 has-[[data-meta]:empty]:items-center">
+    <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex shrink-0 gap-1">
         <PreviousButton
           onPress={goToPreviousDiff}
@@ -367,7 +378,7 @@ function BuildHeader(props: {
         />
         <NextButton onPress={goToNextDiff} isDisabled={!nextChange} />
       </div>
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 max-2xl:order-[-1] max-2xl:basis-full max-2xl:border-b max-2xl:pb-4 xl:gap-4">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 max-2xl:-order-1 max-2xl:basis-full max-2xl:border-b max-2xl:pb-4 xl:gap-4">
         <Counter>
           <Tooltip
             content={

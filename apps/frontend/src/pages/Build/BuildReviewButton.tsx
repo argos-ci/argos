@@ -1,21 +1,15 @@
-import { invariant } from "@argos/util/invariant";
+import { useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
+import { DialogTrigger } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
-import {
-  BuildReviewAction_BuildFragment,
-  BuildStatus,
-  ProjectPermission,
-  ReviewState,
-} from "@/gql/graphql";
+import { BuildStatus, ProjectPermission } from "@/gql/graphql";
 import { Button, ButtonIcon } from "@/ui/Button";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Dialog } from "@/ui/Dialog";
 import { Popover } from "@/ui/Popover";
 import { Tooltip } from "@/ui/Tooltip";
-import { buildStatusDescriptors } from "@/util/build";
 
-import { useReviewBuildMutation } from "./BuildReviewAction";
-import { useBuildReviewAPI } from "./BuildReviewState";
+import { BuildReviewForm } from "./BuildReviewForm";
 
 const _ProjectFragment = graphql(`
   fragment BuildReviewButton_Project on Project {
@@ -29,71 +23,44 @@ const _ProjectFragment = graphql(`
     build(number: $buildNumber) {
       id
       status
-      ...BuildReviewAction_Build
+      ...BuildReviewForm_Build
     }
   }
 `);
 
 function BaseReviewButton(props: {
-  build: {
-    id: string;
-    status: BuildStatus;
-  } & BuildReviewAction_BuildFragment;
+  build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
   disabled?: boolean;
   autoFocus?: boolean;
   onCompleted?: () => void;
   children?: React.ReactNode;
 }) {
-  const api = useBuildReviewAPI();
-  invariant(api, "api must be defined");
-  const [reviewBuild, { loading }] = useReviewBuildMutation(props.build, {
-    onCompleted: () => {
-      props.onCompleted?.();
-    },
-  });
-
-  const { icon: AcceptIcon } = buildStatusDescriptors[BuildStatus.Accepted];
-  const { icon: RejectIcon } = buildStatusDescriptors[BuildStatus.Rejected];
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <MenuTrigger>
+    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button
         className="shrink-0"
-        isDisabled={props.disabled || loading}
+        isDisabled={props.disabled}
         autoFocus={props.autoFocus}
       >
-        {props.children ?? "Review changes"}
+        {props.children ?? "Submit review"}
         <ButtonIcon position="right">
           <ChevronDownIcon />
         </ButtonIcon>
       </Button>
-      <Popover placement="bottom end">
-        <Menu>
-          <MenuItem
-            onAction={() => {
-              reviewBuild(ReviewState.Approved).catch(() => {});
+      <Popover placement="bottom end" className="overflow-hidden">
+        <Dialog aria-label="Submit review">
+          <BuildReviewForm
+            build={props.build}
+            onSubmitted={() => {
+              setIsOpen(false);
+              props.onCompleted?.();
             }}
-            isDisabled={props.build.status === BuildStatus.Accepted}
-          >
-            <MenuItemIcon>
-              <AcceptIcon className="text-success-low" />
-            </MenuItemIcon>
-            Approve changes
-          </MenuItem>
-          <MenuItem
-            onAction={() => {
-              reviewBuild(ReviewState.Rejected).catch(() => {});
-            }}
-            isDisabled={props.build.status === BuildStatus.Rejected}
-          >
-            <MenuItemIcon>
-              <RejectIcon className="text-danger-low" />
-            </MenuItemIcon>
-            Reject changes
-          </MenuItem>
-        </Menu>
+          />
+        </Dialog>
       </Popover>
-    </MenuTrigger>
+    </DialogTrigger>
   );
 }
 
@@ -101,7 +68,7 @@ export function DisabledBuildReviewButton(props: { tooltip: React.ReactNode }) {
   return (
     <Tooltip content={props.tooltip}>
       <div>
-        <Button isDisabled>Review changes</Button>
+        <Button isDisabled>Submit review</Button>
       </div>
     </Tooltip>
   );

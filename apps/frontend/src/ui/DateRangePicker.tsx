@@ -148,9 +148,9 @@ export function DateRangePicker({
                     className={clsx(
                       "group border-primary my-0.5 flex cursor-default items-center justify-center px-0.5 text-sm",
                       "data-selected:text-primary-low data-selected:bg-(--violet-5)",
-                      "data-selected:data-selection-start:rounded-l-full data-selected:data-selection-start:border-l-[0.5px]",
-                      "data-selected:data-selection-end:rounded-r-full data-selected:data-selection-end:border-r-[0.5px]",
-                      "data-selected:my-[calc(var(--spacing)*0.5-0.5px)] data-selected:border-y-[0.5px]",
+                      "data-selected:data-selection-start:border-l-thin data-selected:data-selection-start:rounded-l-full",
+                      "data-selected:data-selection-end:border-r-thin data-selected:data-selection-end:rounded-r-full",
+                      "data-selected:border-y-thin data-selected:my-[calc(var(--spacing)*0.5-0.5px)]",
                       "data-selection-end:mr-[calc(var(--spacing)*0.5-0.5px)] data-selection-end:pr-0",
                       "data-selection-start:ml-[calc(var(--spacing)*0.5-0.5px)] data-selection-start:pl-0",
                       "data-disabled:opacity-disabled data-disabled:cursor-not-allowed",

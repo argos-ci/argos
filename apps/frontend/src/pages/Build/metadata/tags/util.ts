@@ -1,6 +1,17 @@
 import type { ScreenshotMetadata } from "@/gql/graphql";
 
-import { TagSource, TagWithSource } from "./TagIndicator";
+const TagSource = {
+  snapshot: "snapshot",
+  story: "story",
+  test: "test",
+} as const;
+
+type TagSource = keyof typeof TagSource;
+
+export type TagWithSource = {
+  name: string;
+  source: TagSource;
+};
 
 /**
  * Storybook internal tags that should be hidden from display and filters.

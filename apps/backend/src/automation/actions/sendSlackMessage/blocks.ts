@@ -114,6 +114,12 @@ export function buildReviewBlock(props: {
             return `${getApprovalEmoji("approved")} Approved by ${reviewerAccount?.name ?? "Unknown"}`;
           case "rejected":
             return `${getApprovalEmoji("rejected")} Rejected by ${reviewerAccount?.name ?? "Unknown"}`;
+          case "commented":
+            return `💬 Commented by ${reviewerAccount?.name ?? "Unknown"}`;
+          case "pending":
+            throw new UnretryableError(
+              `Slack notification not implemented for build review state: ${buildReview.state}`,
+            );
           default:
             assertNever(buildReview.state, "Unknown build review state");
         }

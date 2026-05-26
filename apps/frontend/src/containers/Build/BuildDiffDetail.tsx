@@ -49,7 +49,6 @@ import { useTextContent } from "@/util/text";
 import { buildDiffFitContainedAtom } from "./BuildDiffFit";
 import { getDiffGroupDefinition } from "./BuildDiffGroup";
 import {
-  BuildDiffHighlighterProvider,
   Highlighter,
   useBuildDiffHighlighterContext,
 } from "./BuildDiffHighlighterContext";
@@ -67,12 +66,7 @@ import {
 } from "./OverlayStyle";
 import { ScaleProvider, useScaleContext } from "./ScaleContext";
 import { SnapshotLoader } from "./SnapshotLoader";
-import {
-  useZoomerSyncContext,
-  useZoomTransform,
-  ZoomerSyncProvider,
-  ZoomPane,
-} from "./Zoomer";
+import { useZoomerSyncContext, useZoomTransform, ZoomPane } from "./Zoomer";
 
 const _BuildFragment = graphql(`
   fragment BuildDiffDetail_Build on Build {
@@ -233,13 +227,13 @@ const _DiffFragment = graphql(`
           consistency
         }
       }
-      ...TestDetails_Test
+      ...RightSidebar_Test
     }
     last7daysOccurrences: occurrences(period: LAST_7_DAYS)
     change {
       id
       ignored
-      ...TestDetails_TestChange
+      ...RightSidebar_TestChange
     }
   }
 `);
@@ -422,7 +416,7 @@ const MissingScreenshotInfo = memo(
     const { icon: Icon, title, description } = props;
     return (
       <div className="w-full">
-        <div className="bg-app flex flex-col items-center gap-4 rounded-sm border p-8 text-center">
+        <div className="bg-app border-thin flex flex-col items-center gap-4 rounded-md p-8 text-center shadow-xs">
           <div className="flex flex-col items-center gap-2">
             <Icon className="size-10" />
             <div className="text-base font-medium">{title}</div>
@@ -979,7 +973,7 @@ function CompareScreenshotChanged(props: {
   const jpgUrl = useMemo(() => imgkit(url, ["f-jpg"]), [url]);
   return (
     <>
-      <div className="relative flex min-h-0 flex-1 overflow-hidden rounded select-none">
+      <div className="relative flex min-h-0 flex-1 select-none">
         <ZoomPane
           ref={paneRef}
           dimensions={dimensions}
@@ -1006,11 +1000,13 @@ function CompareScreenshotChanged(props: {
           </ScreenshotContainer>
         </ZoomPane>
         {dimensions && paneSize && (
-          <RectHighlights
-            url={jpgUrl}
-            paneSize={paneSize}
-            imgSize={dimensions}
-          />
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-sm">
+            <RectHighlights
+              url={jpgUrl}
+              paneSize={paneSize}
+              imgSize={dimensions}
+            />
+          </div>
         )}
       </div>
       {dimensions && paneSize && (
@@ -1483,11 +1479,9 @@ export function BuildDiffDetail(props: {
   diff: BuildDiffDetailDocument | null;
   repoUrl: string | null;
   className?: string;
-  header?: React.ReactNode;
-  sidebar?: React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { build, diff, header, sidebar, className, ref } = props;
+  const { build, diff, className, ref } = props;
   const containerRef = useObjectRef(ref);
   useScrollToTop(containerRef, diff);
   return (
@@ -1499,22 +1493,10 @@ export function BuildDiffDetail(props: {
       )}
     >
       {diff ? (
-        <ZoomerSyncProvider id={diff.id}>
-          <BuildDiffHighlighterProvider>
-            <div
-              className={clsx(
-                "sticky top-0 z-20 shrink-0 border-b-[0.5px] p-4 transition-colors",
-              )}
-            >
-              {header}
-            </div>
-            <div className="flex min-h-0 min-w-0 flex-1">
-              <BuildScreenshots build={build} diff={diff} />
-              {sidebar}
-            </div>
-            <BuildDialogs build={build} />
-          </BuildDiffHighlighterProvider>
-        </ZoomerSyncProvider>
+        <>
+          <BuildScreenshots build={build} diff={diff} />
+          <BuildDialogs build={build} />
+        </>
       ) : build.type === BuildType.Skipped ? (
         <Centered>
           <SkippedBuildEmptyState />

@@ -46,7 +46,6 @@ export const LeaveTeamDialog = memo(
             In order to regain access at a later time, a Team Owner must invite
             you.
           </DialogText>
-          <DialogText>Are you sure you want to continue?</DialogText>
         </DialogBody>
         <DialogFooter>
           {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}

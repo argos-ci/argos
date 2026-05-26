@@ -362,36 +362,149 @@ describe("models/Build", () => {
       expect(reviewStatuses).toEqual([null, null]);
     });
 
-    it("should return 'accepted' when the last review is of type 'approved'", async () => {
-      const build = await factory.Build.create({
-        conclusion: "changes-detected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "rejected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "approved",
-      });
+    it("should return 'accepted' when one latest user review is approved", async () => {
+      const [build, user] = await Promise.all([
+        factory.Build.create({ conclusion: "changes-detected" }),
+        factory.User.create(),
+      ]);
+      await factory.BuildReview.createMany(2, [
+        {
+          buildId: build.id,
+          userId: user.id,
+          state: "rejected",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          buildId: build.id,
+          userId: user.id,
+          state: "approved",
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+      ]);
       const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["accepted"]);
     });
 
-    it("should return 'rejected' when the last review is of type 'rejected'", async () => {
-      const build = await factory.Build.create({
-        conclusion: "changes-detected",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "approved",
-      });
-      await factory.BuildReview.create({
-        buildId: build.id,
-        state: "rejected",
-      });
+    it("should return 'rejected' when one latest user review is rejected", async () => {
+      const [build, user] = await Promise.all([
+        factory.Build.create({ conclusion: "changes-detected" }),
+        factory.User.create(),
+      ]);
+      await factory.BuildReview.createMany(2, [
+        {
+          buildId: build.id,
+          userId: user.id,
+          state: "approved",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          buildId: build.id,
+          userId: user.id,
+          state: "rejected",
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+      ]);
       const reviewStatuses = await Build.getReviewStatuses([build]);
       expect(reviewStatuses).toEqual(["rejected"]);
+    });
+
+    it("should return 'rejected' when a user rejected before another user's approval", async () => {
+      const [build, rejectingUser, approvingUser] = await Promise.all([
+        factory.Build.create({ conclusion: "changes-detected" }),
+        factory.User.create(),
+        factory.User.create(),
+      ]);
+      await factory.BuildReview.createMany(2, [
+        {
+          buildId: build.id,
+          userId: rejectingUser.id,
+          state: "rejected",
+        },
+        {
+          buildId: build.id,
+          userId: approvingUser.id,
+          state: "approved",
+        },
+      ]);
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual(["rejected"]);
+    });
+
+    it("should ignore a user's old rejection when their latest review is a comment", async () => {
+      const [build, user] = await Promise.all([
+        factory.Build.create({ conclusion: "changes-detected" }),
+        factory.User.create(),
+      ]);
+      await factory.BuildReview.createMany(2, [
+        {
+          buildId: build.id,
+          userId: user.id,
+          state: "rejected",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          buildId: build.id,
+          userId: user.id,
+          state: "commented",
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+      ]);
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual([null]);
+    });
+
+    it("should ignore a user's dismissed latest review without restoring older reviews", async () => {
+      const [build, reviewer, dismissedBy] = await Promise.all([
+        factory.Build.create({ conclusion: "changes-detected" }),
+        factory.User.create(),
+        factory.User.create(),
+      ]);
+      await factory.BuildReview.createMany(2, [
+        {
+          buildId: build.id,
+          userId: reviewer.id,
+          state: "approved",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          buildId: build.id,
+          userId: reviewer.id,
+          state: "rejected",
+          createdAt: "2026-01-02T00:00:00.000Z",
+          dismissedAt: "2026-01-03T00:00:00.000Z",
+          dismissedById: dismissedBy.id,
+        },
+      ]);
+
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual([null]);
+    });
+
+    it("should accept a build when the only latest rejection is dismissed", async () => {
+      const [build, approvingUser, rejectingUser, dismissedBy] =
+        await Promise.all([
+          factory.Build.create({ conclusion: "changes-detected" }),
+          factory.User.create(),
+          factory.User.create(),
+          factory.User.create(),
+        ]);
+      await factory.BuildReview.createMany(2, [
+        {
+          buildId: build.id,
+          userId: approvingUser.id,
+          state: "approved",
+        },
+        {
+          buildId: build.id,
+          userId: rejectingUser.id,
+          state: "rejected",
+          dismissedAt: "2026-01-03T00:00:00.000Z",
+          dismissedById: dismissedBy.id,
+        },
+      ]);
+
+      const reviewStatuses = await Build.getReviewStatuses([build]);
+      expect(reviewStatuses).toEqual(["accepted"]);
     });
 
     it("should return null in other case", async () => {

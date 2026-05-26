@@ -3,7 +3,9 @@
 @import "@radix-ui/colors/gray" layer(base);
 @import "@radix-ui/colors/gray-dark" layer(base);
 @import "@radix-ui/colors/mauve" layer(base);
+@import "@radix-ui/colors/mauve-alpha" layer(base);
 @import "@radix-ui/colors/mauve-dark" layer(base);
+@import "@radix-ui/colors/mauve-dark-alpha" layer(base);
 @import "@radix-ui/colors/pink" layer(base);
 @import "@radix-ui/colors/pink-dark" layer(base);
 @import "@radix-ui/colors/violet" layer(base);
@@ -213,6 +215,9 @@
 
   --z-index-hover-card: 800;
   --z-index-dialog: 900;
+
+  --border-width-thin: 0.5px;
+  --spacing-thin: 0.5px;
 
   --animate-caret-blink: caret-blink 1.2s ease-out infinite;
 

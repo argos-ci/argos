@@ -13,6 +13,7 @@ import {
   AutomationRun,
   Build,
   BuildReview,
+  Comment,
   Deployment,
   DeploymentAlias,
   File,
@@ -623,21 +624,37 @@ function createGhApiInstallationLoader() {
   );
 }
 
-function createBuildUniqueReviewsLoader() {
+function createBuildPublishedCommentsLoader() {
+  return new DataLoader<string, Comment[]>(async (inputs) => {
+    const comments = await Comment.query()
+      .whereIn("buildId", inputs as string[])
+      .where((qb) => {
+        qb.whereNull("buildReviewId").orWhereExists(
+          BuildReview.query()
+            .select(1)
+            .whereColumn("build_reviews.id", "comments.buildReviewId")
+            .whereNot("build_reviews.state", "pending"),
+        );
+      })
+      .orderBy("createdAt", "asc");
+    const commentsMap = comments.reduce<Record<string, Comment[]>>(
+      (map, comment) => {
+        const array = map[comment.buildId] ?? [];
+        array.push(comment);
+        map[comment.buildId] = array;
+        return map;
+      },
+      {},
+    );
+    return inputs.map((id) => commentsMap[id] ?? []);
+  });
+}
+
+function createBuildReviewsLoader() {
   return new DataLoader<string, BuildReview[]>(async (inputs) => {
     const reviews = await BuildReview.query()
-      .whereIn(
-        "id",
-        BuildReview.query()
-          .select("id")
-          .whereIn("buildId", inputs as string[])
-          .distinctOn(["buildId", "userId"])
-          .orderBy([
-            { column: "buildId", order: "desc" },
-            { column: "userId", order: "desc" },
-            { column: "createdAt", order: "desc" },
-          ]),
-      )
+      .whereIn("buildId", inputs as string[])
+      .whereNot("state", "pending")
       .orderBy("createdAt", "desc");
     const reviewsMap = reviews.reduce<Record<string, BuildReview[]>>(
       (map, review) => {
@@ -1097,7 +1114,8 @@ export const createLoaders = () => ({
     createAccountLastBuildDateByAccountIdLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
-  BuildUniqueReviews: createBuildUniqueReviewsLoader(),
+  BuildPublishedComments: createBuildPublishedCommentsLoader(),
+  BuildReviews: createBuildReviewsLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),
   LatestBuildByProjectAndCommit: createLatestBuildByProjectAndCommitLoader(),

@@ -1,9 +1,18 @@
+import {
+  BuildReviewEventSchema,
+  type BuildReviewEvent,
+} from "@argos/schemas/build-review";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { JSONContent } from "@tiptap/core";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { createBuildReview, ReviewState } from "@/build/createBuildReview";
+import {
+  createBuildReview,
+  ScreenshotDiffReviewState,
+} from "@/build/createBuildReview";
+import { validateCommentJson } from "@/comment/validate";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
@@ -15,26 +24,48 @@ import { BuildNumber } from "../schema/primitives/build";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
+  invalidParameters,
   notFound,
   serverError,
   unauthorized,
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
 
+const SnapshotConclusionSchema = z.enum(["APPROVE", "REQUEST_CHANGES"]);
+
+/**
+ * @deprecated Replaced by `event`. Kept for backwards compatibility.
+ */
 const ReviewConclusionSchema = z.enum(["APPROVE", "REQUEST_CHANGES"]);
 
 const CreateReviewBodySchema = z.object({
-  conclusion: ReviewConclusionSchema.meta({
+  event: BuildReviewEventSchema.optional().meta({
     description:
-      'Overall review conclusion for the build: "APPROVE" or "REQUEST_CHANGES"',
+      'Review event to apply to the build: "APPROVE", "REJECT" or "COMMENT". Required when `conclusion` is not provided.',
   }),
+  conclusion: ReviewConclusionSchema.optional().meta({
+    deprecated: true,
+    description:
+      'Deprecated: use `event` instead. Overall review conclusion for the build: "APPROVE" or "REQUEST_CHANGES".',
+  }),
+  body: z
+    .unknown()
+    .optional()
+    .refine((value) => value === undefined || validateCommentJson(value), {
+      message:
+        "Invalid comment body. Expected a valid rich-text JSON document.",
+    })
+    .meta({
+      description:
+        "Optional comment to attach to the review. Expected as the JSON representation of a rich-text document.",
+    }),
   snapshots: z
     .array(
       z.object({
         id: z
           .string()
           .meta({ description: "The ID of the snapshot to review" }),
-        conclusion: ReviewConclusionSchema.meta({
+        conclusion: SnapshotConclusionSchema.meta({
           description:
             'Review conclusion for this individual snapshot: "APPROVE" or "REQUEST_CHANGES"',
         }),
@@ -51,7 +82,7 @@ const CreateReviewBodySchema = z.object({
 const BuildReviewSchema = z
   .object({
     id: z.string(),
-    state: z.enum(["approved", "rejected"]),
+    state: z.enum(["approved", "rejected", "commented", "pending"]),
   })
   .meta({ description: "Build review" });
 
@@ -82,6 +113,7 @@ export const createReviewOperation = {
         },
       },
     },
+    "400": invalidParameters,
     "401": unauthorized,
     "403": forbidden,
     "404": notFound,
@@ -89,31 +121,27 @@ export const createReviewOperation = {
   },
 } satisfies ZodOpenApiOperationObject;
 
-const getBuildReviewState = (
+const getEventFromConclusion = (
   conclusion: z.infer<typeof ReviewConclusionSchema>,
-): ReviewState => {
+): BuildReviewEvent => {
   switch (conclusion) {
     case "APPROVE":
-      return "approved";
-
+      return "APPROVE";
     case "REQUEST_CHANGES":
-      return "rejected";
-
+      return "REJECT";
     default:
       assertNever(conclusion);
   }
 };
 
 const getScreenshotReviewState = (
-  conclusion: z.infer<typeof ReviewConclusionSchema>,
-): ReviewState => {
+  conclusion: z.infer<typeof SnapshotConclusionSchema>,
+): ScreenshotDiffReviewState => {
   switch (conclusion) {
     case "APPROVE":
       return "approved";
-
     case "REQUEST_CHANGES":
       return "rejected";
-
     default:
       assertNever(conclusion);
   }
@@ -124,6 +152,16 @@ export const createReview: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews",
     async (req, res) => {
       const { params, body } = req.ctx;
+
+      const event: BuildReviewEvent | null = body.event
+        ? body.event
+        : body.conclusion
+          ? getEventFromConclusion(body.conclusion)
+          : null;
+
+      if (!event) {
+        throw boom(400, "Either `event` or `conclusion` is required");
+      }
 
       const [auth, build] = await Promise.all([
         getAuthPayloadFromExpressReq(req),
@@ -163,7 +201,8 @@ export const createReview: CreateAPIHandler = ({ post }) => {
       const buildReview = await createBuildReview({
         build,
         userId: auth.user.id,
-        state: getBuildReviewState(body.conclusion),
+        event,
+        body: body.body as JSONContent | undefined,
         snapshotReviews: body.snapshots.map((snapshotReview) => ({
           screenshotDiffId: snapshotReview.id,
           state: getScreenshotReviewState(snapshotReview.conclusion),

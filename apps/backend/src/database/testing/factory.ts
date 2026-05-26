@@ -269,6 +269,18 @@ export const BuildMergeQueueGhPullRequest = defineFactory(
   }),
 );
 
+export const Comment = defineFactory(models.Comment, () => ({
+  userId: User.associate("id") as unknown as string,
+  buildId: Build.associate("id") as unknown as string,
+  content: { type: "doc", content: [] },
+}));
+
+export const CommentReaction = defineFactory(models.CommentReaction, () => ({
+  commentId: Comment.associate("id") as unknown as string,
+  userId: User.associate("id") as unknown as string,
+  emoji: "thumbsup",
+}));
+
 export const ScreenshotDiffReview = defineFactory(
   models.ScreenshotDiffReview,
   () => ({

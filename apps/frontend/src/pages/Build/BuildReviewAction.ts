@@ -4,11 +4,12 @@ import { invariant } from "@argos/util/invariant";
 
 import { DocumentType, graphql } from "@/gql";
 import {
-  BuildStatus,
-  ReviewState,
-  type BuildReviewAction_ReviewBuildMutation,
-  type BuildReviewAction_ReviewBuildMutationVariables,
+  BuildReviewEvent,
+  ScreenshotDiffReviewState,
+  type BuildReviewAction_CreateBuildReviewMutation,
+  type BuildReviewAction_CreateBuildReviewMutationVariables,
 } from "@/gql/graphql";
+import { EditorValue } from "@/ui/Editor/Editor";
 import { useEventCallback } from "@/ui/useEventCallback";
 
 import {
@@ -17,9 +18,11 @@ import {
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 
-const ReviewBuildMutation = graphql(`
-  mutation BuildReviewAction_reviewBuild($input: ReviewBuildInput!) {
-    reviewBuild(input: $input) {
+const CreateBuildReviewMutation = graphql(`
+  mutation BuildReviewAction_createBuildReview(
+    $input: CreateBuildReviewInput!
+  ) {
+    createBuildReview(input: $input) {
       id
       status
       ...BuildReviewAction_Build
@@ -32,81 +35,88 @@ const _BuildFragment = graphql(`
     id
     # Invalidate the cache for the build status chip
     ...BuildStatusChip_Build
+    # Ensure the comment added by the review (if any) lands in the cache,
+    # so it appears in the review activity section.
+    comments {
+      id
+      date
+      content
+      user {
+        id
+        name
+        slug
+        avatar {
+          ...AccountAvatarFragment
+        }
+      }
+    }
   }
 `);
 
-export function useReviewBuildMutation(
+export function useCreateBuildReviewMutation(
   build: DocumentType<typeof _BuildFragment>,
   options?: Pick<
     useMutation.Options<
-      BuildReviewAction_ReviewBuildMutation,
-      BuildReviewAction_ReviewBuildMutationVariables
+      BuildReviewAction_CreateBuildReviewMutation,
+      BuildReviewAction_CreateBuildReviewMutationVariables
     >,
     "onCompleted"
   >,
 ) {
   const api = useBuildReviewAPI();
-  const [mutate, data] = useMutation(ReviewBuildMutation, {
-    optimisticResponse: (vars) => {
-      return {
-        reviewBuild: {
-          ...build,
-          status: {
-            [ReviewState.Approved]: BuildStatus.Accepted,
-            [ReviewState.Rejected]: BuildStatus.Rejected,
-          }[vars.input.state],
-        },
-      };
-    },
+  const [mutate, data] = useMutation(CreateBuildReviewMutation, {
     ...options,
   });
 
   const getReviewedDiffStatuses = useGetReviewedDiffStatuses();
-  const reviewBuild = useEventCallback(async (reviewState: ReviewState) => {
-    invariant(api, `Reviewing a build requires api to be defined`);
-    const diffStatuses = getReviewedDiffStatuses(reviewState);
-    const screenshotDiffReviews = Object.entries(diffStatuses)
-      .map(([diffId, status]) => {
-        const diffState = evaluationStatusToReviewState(
-          getDiffEvaluationStatus(reviewState, status),
-        );
+  const createReview = useEventCallback(
+    async (input: { event: BuildReviewEvent; body?: EditorValue }) => {
+      invariant(api, `Reviewing a build requires api to be defined`);
+      const diffStatuses = getReviewedDiffStatuses(input.event);
+      const screenshotDiffReviews = Object.entries(diffStatuses)
+        .map(([diffId, status]) => {
+          const diffState = evaluationStatusToReviewState(
+            getDiffEvaluationStatus(input.event, status),
+          );
 
-        if (!diffState) {
-          return null;
-        }
+          if (!diffState) {
+            return null;
+          }
 
-        return {
-          screenshotDiffId: diffId,
-          state: diffState,
-        };
-      })
-      .filter((x) => x !== null);
-    const result = await mutate({
-      variables: {
-        input: {
-          buildId: build.id,
-          state: reviewState,
-          screenshotDiffReviews,
+          return {
+            screenshotDiffId: diffId,
+            state: diffState,
+          };
+        })
+        .filter((x) => x !== null);
+      const result = await mutate({
+        variables: {
+          input: {
+            buildId: build.id,
+            event: input.event,
+            body: input.body ?? null,
+            screenshotDiffReviews,
+          },
         },
-      },
-    });
-    api.setDiffStatuses(diffStatuses);
-    return result;
-  });
+      });
+      api.setDiffStatuses(diffStatuses);
+      return result;
+    },
+  );
 
-  return [reviewBuild, data] as const;
+  return [createReview, data] as const;
 }
 
 /**
- * Get the default diff evaluation status from the
+ * Get the default diff evaluation status from the review event.
  */
 function getDiffEvaluationStatus(
-  reviewState: ReviewState,
+  event: BuildReviewEvent,
   diffStatus: EvaluationStatus | undefined,
 ): EvaluationStatus {
   diffStatus = diffStatus ?? EvaluationStatus.Pending;
 
-  if (reviewState === ReviewState.Approved) {
+  if (event === BuildReviewEvent.Approve) {
     if (diffStatus === EvaluationStatus.Pending) {
       return EvaluationStatus.Accepted;
     }
@@ -116,12 +126,12 @@ function getDiffEvaluationStatus(
 
 function evaluationStatusToReviewState(
   status: EvaluationStatus,
-): ReviewState | null {
+): ScreenshotDiffReviewState | null {
   switch (status) {
     case EvaluationStatus.Accepted:
-      return ReviewState.Approved;
+      return ScreenshotDiffReviewState.Approved;
     case EvaluationStatus.Rejected:
-      return ReviewState.Rejected;
+      return ScreenshotDiffReviewState.Rejected;
     case EvaluationStatus.Pending:
       return null;
     default:
