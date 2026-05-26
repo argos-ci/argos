@@ -302,13 +302,49 @@ jobs:
     needs: deploy
     if: ${{ always() && needs.deploy.result == 'failure' }}
     permissions:
+      id-token: write
       contents: read
 
     steps:
       - name: Check out repository code
         uses: actions/checkout@v6
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check for circuit breaker rollback
+        id: check
+        run: |
+          set -euo pipefail
+
+          # If every service that failed did so because the ECS deployment
+          # circuit breaker rolled it back, skip the Discord notification —
+          # the previous task set keeps serving traffic.
+          since=$(date -u -d '30 minutes ago' '+%Y-%m-%dT%H:%M:%SZ')
+          circuit_breaker_only=true
+
+          for service in argos-app argos-worker; do
+            events=$(aws ecs describe-services \
+              --cluster "$ECS_CLUSTER" \
+              --services "$service" \
+              --query "services[0].events[?createdAt > \`$since\`].message" \
+              --output text)
+
+            if echo "$events" | grep -qi "circuit breaker"; then
+              echo "$service: rolled back by circuit breaker"
+            else
+              echo "$service: no circuit breaker rollback found in recent events"
+              circuit_breaker_only=false
+            fi
+          done
+
+          echo "circuit-breaker-only=$circuit_breaker_only" >> "$GITHUB_OUTPUT"
+
       - name: Notify deployment failure
+        if: steps.check.outputs.circuit-breaker-only != 'true'
         uses: ./.github/actions/notify-discord
         continue-on-error: true
         with:
