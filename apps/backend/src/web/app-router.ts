@@ -143,11 +143,11 @@ export const installAppRouter = async (app: express.Application) => {
   );
 
   router.get("/auth/logout", (req, res) => {
-    // @ts-expect-error logout is added dynamically
-    req.logout();
+    res.setHeader("Clear-Site-Data", '"cookies", "storage", "cache"');
     const redirectTo =
-      config.get("env") !== "production" ? "/" : "https://www.argos-ci.com";
-    res.redirect(redirectTo);
+      typeof req.query["r"] === "string" ? req.query["r"] : null;
+    const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
+    res.redirect(`/login${search}`);
   });
 
   const OAuthQueryParamsSchema = z.object({
