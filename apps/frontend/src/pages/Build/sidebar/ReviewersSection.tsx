@@ -3,10 +3,7 @@ import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
 import { BanIcon, MoreVerticalIcon } from "lucide-react";
 
-import {
-  BuildReviewersStatusList,
-  getLatestReviewByUser,
-} from "@/containers/BuildReviewersStatusList";
+import { BuildReviewersStatusList } from "@/containers/BuildReviewersStatusList";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType, ProjectPermission } from "@/gql/graphql";
@@ -25,6 +22,7 @@ import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { getLatestReviewByUser } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 import { useNonNullable } from "@/util/useNonNullable";
 

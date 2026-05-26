@@ -412,6 +412,7 @@ CREATE TABLE public.build_reviews (
     state text NOT NULL,
     "dismissedAt" timestamp with time zone,
     "dismissedById" bigint,
+    CONSTRAINT build_reviews_dismissed_together CHECK ((("dismissedAt" IS NULL) = ("dismissedById" IS NULL))),
     CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text, 'commented'::text, 'pending'::text])))
 );
 
@@ -4727,3 +4728,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525120000_build-review-dismissal.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525121000_build-review-remove-dismissed-state.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525130000_build-notification-subscriptions.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526104543_build-review-dismissed-together.js', 1, NOW());

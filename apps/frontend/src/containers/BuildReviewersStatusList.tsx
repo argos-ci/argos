@@ -4,7 +4,10 @@ import { BanIcon } from "lucide-react";
 
 import type { ReviewState } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
-import { buildReviewDescriptors } from "@/util/build-review";
+import {
+  buildReviewDescriptors,
+  getLatestReviewByUser,
+} from "@/util/build-review";
 
 import { AccountAvatar } from "./AccountAvatar";
 
@@ -20,30 +23,6 @@ type ReviewerStatusReview = {
     avatar: ComponentProps<typeof AccountAvatar>["avatar"];
   } | null;
 };
-
-export function getLatestReviewByUser<T extends ReviewerStatusReview>(
-  reviews: readonly T[],
-): T[] {
-  const byUser = new Map<string, T>();
-  for (const review of reviews) {
-    if (!review.user) {
-      continue;
-    }
-    const previous = byUser.get(review.user.id);
-    if (!previous || new Date(review.date) > new Date(previous.date)) {
-      byUser.set(review.user.id, review);
-    }
-  }
-  return Array.from(byUser.values()).sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-}
-
-export function getLatestActiveReviewByUser<T extends ReviewerStatusReview>(
-  reviews: readonly T[],
-): T[] {
-  return getLatestReviewByUser(reviews).filter((review) => !review.dismissedAt);
-}
 
 const dismissedReviewDescriptor = {
   label: "Dismissed",

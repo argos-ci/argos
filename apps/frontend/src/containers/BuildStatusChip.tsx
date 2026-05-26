@@ -4,6 +4,7 @@ import { Chip, ChipProps } from "@/ui/Chip";
 import { StackedItems } from "@/ui/StackedItems";
 import { Tooltip } from "@/ui/Tooltip";
 import { getBuildDescriptor } from "@/util/build";
+import { getLatestActiveReviewByUser } from "@/util/build-review";
 
 import { AccountAvatar } from "./AccountAvatar";
 import { BuildStatusDescription } from "./BuildStatusDescription";
@@ -62,31 +63,6 @@ function getChipLabel(build: DocumentType<typeof _BuildFragment>) {
     default:
       return null;
   }
-}
-
-function getLatestReviewByUser(
-  reviews: DocumentType<typeof _BuildFragment>["reviews"],
-) {
-  const byUser = new Map<
-    string,
-    DocumentType<typeof _BuildFragment>["reviews"][number]
-  >();
-  for (const review of reviews) {
-    if (!review.user) {
-      continue;
-    }
-    const previous = byUser.get(review.user.id);
-    if (!previous || new Date(review.date) > new Date(previous.date)) {
-      byUser.set(review.user.id, review);
-    }
-  }
-  return Array.from(byUser.values());
-}
-
-function getLatestActiveReviewByUser(
-  reviews: DocumentType<typeof _BuildFragment>["reviews"],
-) {
-  return getLatestReviewByUser(reviews).filter((review) => !review.dismissedAt);
 }
 
 /**

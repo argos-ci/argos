@@ -6,11 +6,9 @@ import { BuildMode, BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
 import { buildStatusDescriptors } from "@/util/build";
+import { getLatestActiveReviewByUser } from "@/util/build-review";
 
-import {
-  BuildReviewersStatusList,
-  getLatestActiveReviewByUser,
-} from "./BuildReviewersStatusList";
+import { BuildReviewersStatusList } from "./BuildReviewersStatusList";
 
 const _BuildFragment = graphql(`
   fragment BuildStatusDescription_Build on Build {
