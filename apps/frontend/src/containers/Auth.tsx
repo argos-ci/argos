@@ -142,13 +142,8 @@ export function useIsLoggedIn() {
   return useAuthTokenPayload() !== null;
 }
 
-function redirectToLogin(options?: { redirectTo?: string }) {
+export function logout(options?: { redirectTo?: string }) {
   const redirectTo = options?.redirectTo ?? window.location.pathname;
   const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
-  window.location.replace(`/login${search}`);
-}
-
-export function logout(options?: { redirectTo?: string }) {
-  removeAuthTokenCookie();
-  redirectToLogin(options);
+  window.location.href = `/auth/logout${search}`;
 }
