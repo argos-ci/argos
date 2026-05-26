@@ -118,7 +118,6 @@ function BrowserChipLink(props: {
       {...rest}
       className="shrink-0 cursor-default"
       icon={<BrowserIcon browser={browser} />}
-      color="neutral"
     >
       {getBrowserLabel(browser.name)}
     </ChipLink>

@@ -12,10 +12,8 @@ export function ThresholdRow(props: { threshold: number | null }) {
   }
   return (
     <MetadataRow>
-      <Tooltip content={`Custom sensitivity of ${threshold * 100}%`}>
-        <Chip icon={TargetIcon} className="font-mono">
-          Threshold {threshold * 100}%
-        </Chip>
+      <Tooltip content="Diff sensitivity threshold between 0 and 1. The higher the threshold, the less sensitive the diff will be. Defaults to 0.5.">
+        <Chip icon={TargetIcon}>Threshold {threshold}</Chip>
       </Tooltip>
     </MetadataRow>
   );
