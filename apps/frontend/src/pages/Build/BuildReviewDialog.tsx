@@ -1,18 +1,33 @@
 import { createContext, memo, use, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
+import { ChevronDownIcon } from "lucide-react";
+import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildReviewEvent } from "@/gql/graphql";
+import { Button, ButtonIcon } from "@/ui/Button";
+import { ButtonGroup } from "@/ui/ButtonGroup";
 import {
   Dialog,
   DialogBody,
   DialogDismiss,
+  DialogFooter,
   DialogText,
   DialogTitle,
 } from "@/ui/Dialog";
-import { Modal, ModalProps } from "@/ui/Modal";
+import { type EditorValue } from "@/ui/Editor/Editor";
+import { EditorField } from "@/ui/Editor/EditorField";
+import { ErrorMessage } from "@/ui/ErrorMessage";
+import { Form } from "@/ui/Form";
+import { FormRootError } from "@/ui/FormRootError";
+import { FormSubmit } from "@/ui/FormSubmit";
+import { Label } from "@/ui/Label";
+import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import { Modal, ModalActionContext, ModalProps } from "@/ui/Modal";
+import { Popover } from "@/ui/Popover";
 
-import { BuildReviewForm } from "./BuildReviewForm";
+import { useCreateBuildReviewMutation } from "./BuildReviewAction";
+import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
 import { useBuildReviewSummary } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 
@@ -20,7 +35,8 @@ const _ProjectFragment = graphql(`
   fragment BuildReviewDialog_Project on Project {
     build(number: $buildNumber) {
       id
-      ...BuildReviewForm_Build
+      status
+      ...BuildReviewAction_Build
     }
   }
 `);
@@ -66,6 +82,16 @@ const BuildReviewModal = memo(function BuildReviewModal(props: {
   );
 });
 
+type Inputs = {
+  body: EditorValue;
+};
+
+const MENU_EVENTS: BuildReviewEvent[] = [
+  BuildReviewEvent.Approve,
+  BuildReviewEvent.Reject,
+  BuildReviewEvent.Comment,
+];
+
 function BuildReviewDialog(props: {
   build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
   onClose: () => void;
@@ -77,47 +103,166 @@ function BuildReviewDialog(props: {
   const pendingCount = summary[EvaluationStatus.Pending].length;
   const rejectedCount = summary[EvaluationStatus.Rejected].length;
 
+  const [event, setEvent] = useState<BuildReviewEvent>(
+    hasRejected ? BuildReviewEvent.Reject : BuildReviewEvent.Approve,
+  );
+
+  const form = useForm<Inputs>({
+    defaultValues: { body: null },
+  });
+
+  const [createReview] = useCreateBuildReviewMutation(build, {
+    onCompleted: () => onClose(),
+  });
+
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    if (event === BuildReviewEvent.Comment && !hasEditorContent(data.body)) {
+      form.setError("body", {
+        type: "validate",
+        message: "A comment is required when leaving a neutral review.",
+      });
+      return;
+    }
+    await createReview({
+      event,
+      body: hasEditorContent(data.body) ? data.body : undefined,
+    });
+  };
+
+  const bodyError = form.formState.errors.body;
+  const definition = BUILD_REVIEW_EVENT_DEFINITIONS[event];
+  const Icon = definition.icon;
+  const actionContext = use(ModalActionContext);
+
   return (
     <Dialog size="medium">
-      <DialogBody>
-        <DialogTitle>Submit your review</DialogTitle>
-        <DialogText>
-          {hasRejected ? (
-            <>
-              During your review,{" "}
-              <strong>
-                {rejectedCount === 1
-                  ? "1 change has been marked as rejected"
-                  : `${rejectedCount} changes have been marked as rejected`}
-              </strong>
-              .
-            </>
-          ) : pendingCount > 0 ? (
-            <>
-              <strong>
-                {pendingCount === 1
-                  ? "1 change is still pending review"
-                  : `${pendingCount} changes are still pending review`}
-              </strong>
-              .
-            </>
-          ) : (
-            <>
-              <strong>All changes have been marked as accepted.</strong>
-            </>
-          )}
-        </DialogText>
-      </DialogBody>
-      <BuildReviewForm
-        build={build}
-        defaultEvent={
-          hasRejected ? BuildReviewEvent.Reject : BuildReviewEvent.Approve
-        }
-        onSubmitted={() => onClose()}
-        cancel={<DialogDismiss>Cancel</DialogDismiss>}
-      />
+      <Form form={form} onSubmit={onSubmit}>
+        <DialogBody>
+          <DialogTitle>Submit your review</DialogTitle>
+          <DialogText>
+            {hasRejected ? (
+              <>
+                During your review,{" "}
+                <strong>
+                  {rejectedCount === 1
+                    ? "1 change has been marked as rejected"
+                    : `${rejectedCount} changes have been marked as rejected`}
+                </strong>
+                .
+              </>
+            ) : pendingCount > 0 ? (
+              <>
+                <strong>
+                  {pendingCount === 1
+                    ? "1 change is still pending review"
+                    : `${pendingCount} changes are still pending review`}
+                </strong>
+                .
+              </>
+            ) : (
+              <>
+                <strong>All changes have been marked as accepted.</strong>
+              </>
+            )}
+          </DialogText>
+          <div>
+            <Label>Comment</Label>
+            <EditorField
+              control={form.control}
+              name="body"
+              onChange={() => {
+                if (bodyError) {
+                  form.clearErrors("body");
+                }
+              }}
+              aria-label="Review comment"
+              placeholder="Leave a comment"
+              className="w-full"
+              disabled={actionContext?.isPending}
+            />
+            {bodyError?.message ? (
+              <ErrorMessage className="mt-2">
+                {String(bodyError.message)}
+              </ErrorMessage>
+            ) : null}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <FormRootError control={form.control} className="flex-1" />
+          <DialogDismiss>Cancel</DialogDismiss>
+          <ButtonGroup>
+            <FormSubmit
+              control={form.control}
+              variant={definition.color}
+              autoFocus
+            >
+              <ButtonIcon>
+                <Icon />
+              </ButtonIcon>
+              {definition.label}
+            </FormSubmit>
+            <MenuTrigger>
+              <Button
+                variant={definition.color}
+                iconOnly
+                aria-label="Change action"
+                isDisabled={actionContext?.isPending}
+              >
+                <ChevronDownIcon />
+              </Button>
+              <Popover placement="bottom end">
+                <Menu
+                  selectionMode="single"
+                  disallowEmptySelection
+                  selectedKeys={[event]}
+                  onSelectionChange={(keys) => {
+                    const [key] = keys as Set<BuildReviewEvent>;
+                    if (key) {
+                      setEvent(key);
+                    }
+                  }}
+                >
+                  {MENU_EVENTS.map((eventKey) => {
+                    const eventDef = BUILD_REVIEW_EVENT_DEFINITIONS[eventKey];
+                    const EventIcon = eventDef.icon;
+                    return (
+                      <MenuItem key={eventKey} id={eventKey}>
+                        <MenuItemIcon>
+                          <EventIcon />
+                        </MenuItemIcon>
+                        {eventDef.label}
+                      </MenuItem>
+                    );
+                  })}
+                </Menu>
+              </Popover>
+            </MenuTrigger>
+          </ButtonGroup>
+        </DialogFooter>
+      </Form>
     </Dialog>
   );
+}
+
+function hasEditorContent(value: EditorValue): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const content = (value as { content?: unknown }).content;
+  if (!Array.isArray(content) || content.length === 0) {
+    return false;
+  }
+  return content.some((node) => {
+    if (!node || typeof node !== "object") {
+      return false;
+    }
+    const text = (node as { text?: string }).text;
+    if (typeof text === "string" && text.trim().length > 0) {
+      return true;
+    }
+    const inner = (node as { content?: unknown }).content;
+    return Array.isArray(inner) && inner.length > 0;
+  });
 }
 
 export function BuildReviewDialogProvider(props: {
