@@ -145,5 +145,5 @@ export function useIsLoggedIn() {
 export function logout(options?: { redirectTo?: string }) {
   const redirectTo = options?.redirectTo ?? window.location.pathname;
   const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
-  window.location.href = `/auth/logout${search}`;
+  window.location.replace(`/auth/logout${search}`);
 }
