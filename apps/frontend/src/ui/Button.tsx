@@ -24,21 +24,27 @@ export type ButtonSize = "medium" | "small" | "large";
 type ButtonOptions = {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /**
+   * Render the button as a square containing only an icon.
+   * When using `iconOnly`, pass the icon directly as `children`
+   * (do not wrap it in `ButtonIcon`).
+   */
+  iconOnly?: boolean;
 };
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "data-focus-visible:ring-primary text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active",
+    "data-focus-visible:ring-primary text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
   secondary:
     "data-focus-visible:ring-default text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
   destructive:
-    "data-focus-visible:ring-danger text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active",
+    "data-focus-visible:ring-danger text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
   github:
-    "data-focus-visible:ring-default text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active",
+    "data-focus-visible:ring-default text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active group-[*]/button-group:not-first:border-l-white/20",
   gitlab:
-    "data-focus-visible:ring-default text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active",
+    "data-focus-visible:ring-default text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active group-[*]/button-group:not-first:border-l-white/20",
   google:
-    "data-focus-visible:ring-default text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google",
+    "data-focus-visible:ring-default text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google group-[*]/button-group:not-first:border-l-black/15",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
@@ -47,17 +53,34 @@ const sizeClassNames: Record<ButtonSize, string> = {
   large: "rounded-xl py-3 px-8 text-base",
 };
 
+// Keep the same vertical padding as the regular sizes so an iconOnly button
+// matches the height of a text button (e.g. when placed in a ButtonGroup).
+const iconOnlySizeClassNames: Record<ButtonSize, string> = {
+  small: "rounded-sm py-1 px-1.5 text-xs",
+  medium: "rounded-lg py-[calc(0.375rem-1px)] px-2 text-sm",
+  large: "rounded-xl py-3 px-4 text-base",
+};
+
 function getButtonClassName(options: {
   variant: ButtonVariant;
   size: ButtonSize;
+  iconOnly: boolean;
 }) {
-  const { variant, size } = options;
+  const { variant, size, iconOnly } = options;
   const variantClassName = variantClassNames[variant];
-  const sizeClassName = sizeClassNames[size];
+  const sizeClassName = (iconOnly ? iconOnlySizeClassNames : sizeClassNames)[
+    size
+  ];
   return clsx(
     "group/button",
     variantClassName,
     sizeClassName,
+    // ButtonGroup integration: drop the inner rounded corners and overlap
+    // adjacent borders so each variant's `border-l-*` acts as the separator.
+    "group-[*]/button-group:not-first:rounded-l-none",
+    "group-[*]/button-group:not-last:rounded-r-none",
+    "group-[*]/button-group:not-first:-ml-px",
+    iconOnly && "*:size-[1em] justify-center",
     "focus:outline-hidden data-focus-visible:ring-4",
     "items-center inline-flex select-none whitespace-nowrap border font-sans font-medium",
     "aria-disabled:opacity-disabled aria-disabled:cursor-not-allowed",
@@ -66,10 +89,11 @@ function getButtonClassName(options: {
 }
 
 function getButtonProps(options: ButtonOptions) {
-  const { variant = "primary", size = "medium" } = options;
+  const { variant = "primary", size = "medium", iconOnly = false } = options;
   return {
-    className: getButtonClassName({ variant, size }),
+    className: getButtonClassName({ variant, size, iconOnly }),
     "data-size": size ?? "medium",
+    "data-icon-only": iconOnly ? "true" : undefined,
   };
 }
 
@@ -98,12 +122,13 @@ export function Button({
   className,
   variant,
   size,
+  iconOnly,
   children,
   onAction,
   onPress,
   ...props
 }: ButtonProps) {
-  const buttonProps = getButtonProps({ variant, size });
+  const buttonProps = getButtonProps({ variant, size, iconOnly });
   const [isPending, setIsPending] = useState(false);
   return (
     <RACButton
@@ -130,6 +155,9 @@ export function Button({
         const childrenRes =
           typeof children === "function" ? children(renderProps) : children;
         if (renderProps.isPending) {
+          if (iconOnly) {
+            return <Loader delay={0} />;
+          }
           return (
             <>
               <ButtonIcon>
@@ -153,9 +181,10 @@ export function LinkButton({
   className,
   variant,
   size,
+  iconOnly,
   ...props
 }: LinkButtonProps) {
-  const buttonProps = getButtonProps({ variant, size });
+  const buttonProps = getButtonProps({ variant, size, iconOnly });
   return (
     <RACLink
       ref={ref}
@@ -184,7 +213,7 @@ export function ButtonIcon({
       children.props.className,
       "size-[1em]",
       "group-data-[size=small]/button:my-0.5",
-      "group-data-[size=medium]/button:my-[0.1875rem]",
+      "group-data-[size=medium]/button:my-0.75",
       "group-data-[size=large]/button:my-1",
       position === "left" &&
         clsx(
@@ -198,6 +227,9 @@ export function ButtonIcon({
           "group-data-[size=medium]/button:ml-2",
           "group-data-[size=large]/button:ml-2.5",
         ),
+      // iconOnly buttons have no sibling text, so the horizontal margin would
+      // off-center the icon. Force it off regardless of size/position.
+      "group-data-icon-only/button:mx-0!",
       className,
     ),
   });

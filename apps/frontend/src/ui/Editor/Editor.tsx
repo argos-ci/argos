@@ -71,6 +71,7 @@ export interface EditorProps {
   placeholder?: string;
   autoFocus?: boolean;
   "aria-label"?: string;
+  disabled?: boolean;
 }
 
 const EDITOR_CONTENT_CLASS = clsx(
@@ -89,6 +90,7 @@ export function Editor(props: EditorProps) {
     className,
     placeholder,
     autoFocus,
+    disabled,
   } = props;
 
   const onChangeRef = useRef(onChange);
@@ -112,6 +114,7 @@ export function Editor(props: EditorProps) {
       LinkEditTrigger,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
+    editable: !disabled,
     content: defaultValue,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
@@ -149,8 +152,10 @@ export function Editor(props: EditorProps) {
   return (
     <div
       data-hotkeys-disabled
+      data-disabled={disabled ? "" : undefined}
       className={clsx(
         "bg-app focus-within:border-active rounded-md border text-sm",
+        "data-disabled:opacity-disabled",
         className,
       )}
     >
