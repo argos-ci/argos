@@ -973,7 +973,7 @@ function CompareScreenshotChanged(props: {
   const jpgUrl = useMemo(() => imgkit(url, ["f-jpg"]), [url]);
   return (
     <>
-      <div className="relative flex min-h-0 flex-1 select-none">
+      <div className="relative flex min-h-0 min-w-0 flex-1 select-none">
         <ZoomPane
           ref={paneRef}
           dimensions={dimensions}
