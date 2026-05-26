@@ -36,23 +36,6 @@ export const createApp = async (): Promise<express.Express> => {
   app.set("trust proxy", 1);
   app.set("views", join(__dirname, ".."));
 
-  app.use((req, _res, next) => {
-    const scope = Sentry.getCurrentScope();
-    if (req.headers["x-argos-release-version"]) {
-      scope.setTag(
-        "clientReleaseVersion",
-        req.headers["x-argos-release-version"] as string,
-      );
-    } else if (req.headers["x-argos-cli-version"]) {
-      scope.setTag(
-        "clientCliVersion",
-        req.headers["x-argos-cli-version"] as string,
-      );
-    }
-
-    next();
-  });
-
   if (config.get("server.httpLogs")) {
     app.use(
       pinoHttp({

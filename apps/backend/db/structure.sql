@@ -450,6 +450,7 @@ CREATE TABLE public.build_shards (
     "updatedAt" timestamp with time zone NOT NULL,
     "buildId" bigint NOT NULL,
     index integer,
+    nonce character varying(255),
     metadata jsonb
 );
 
@@ -3305,11 +3306,10 @@ CREATE INDEX build_reviews_dismissedbyid_index ON public.build_reviews USING btr
 CREATE INDEX build_reviews_userid_index ON public.build_reviews USING btree ("userId");
 
 
---
--- Name: build_shards_buildid_index; Type: INDEX; Schema: public; Owner: postgres
+-- Name: build_shards_buildid_nonce_unique; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX build_shards_buildid_index ON public.build_shards USING btree ("buildId");
+CREATE UNIQUE INDEX build_shards_buildid_nonce_unique ON public.build_shards USING btree ("buildId", nonce);
 
 
 --
@@ -4729,3 +4729,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525121000_build-review-remove-dismissed-state.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525130000_build-notification-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526104543_build-review-dismissed-together.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526120000_build-shards-nonce.js', 1, NOW());

@@ -3,6 +3,7 @@ import { Application, Router } from "express";
 import { apiMiddleware as githubApiMiddleware } from "../middlewares/github";
 import { apiMiddleware as resendApiMiddleware } from "../middlewares/resend";
 import { subdomain } from "../util";
+import { argosHeadersMiddleware } from "./argosHeaders";
 import auth from "./auth";
 import builds from "./builds";
 import status from "./status";
@@ -15,6 +16,7 @@ export const installApiRouter = (app: Application) => {
   router.use(status);
   router.use(githubApiMiddleware);
   router.use(resendApiMiddleware);
+  router.use(argosHeadersMiddleware);
   router.use("/v2", v2);
   router.use(builds);
   router.use(auth);
