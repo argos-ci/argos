@@ -89,7 +89,6 @@ const interactiveClassNames: Record<ChipColor, string> = {
     "data-hovered:not-aria-[current=page]:bg-hover data-pressed:bg-active",
     "group-[*]/button-group:not-aria-[current=page]:opacity-60",
     "group-[*]/button-group:data-hovered:not-aria-[current=page]:opacity-100",
-    "group-[*]/button-group:data-hovered:not-aria-[current=page]:opacity-100",
     "group-[*]/button-group:border-default",
   ),
 };

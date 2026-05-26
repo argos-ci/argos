@@ -119,7 +119,7 @@ export function ChangesChart(props: {
           dataKey="total"
           xAxisId="total"
           type="monotone"
-          fill="var(--mauve-7)"
+          fill="var(--gray-7)"
           stroke=""
         />
         <Bar

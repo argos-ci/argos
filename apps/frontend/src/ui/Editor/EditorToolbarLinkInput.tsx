@@ -111,7 +111,7 @@ export function EditorToolbarLinkInput(props: EditorToolbarLinkInputProps) {
           isInvalid && "text-danger-low",
         )}
       />
-      <div className="mx-1 h-4 w-px shrink-0 bg-(--mauve-6)" />
+      <div className="mx-1 h-4 w-px shrink-0 bg-(--gray-6)" />
       <HotkeyTooltip description="Open link" keys={[]}>
         <IconButton
           size="small"

@@ -183,7 +183,7 @@ export const BuildStatsIndicator = memo(function BuildStatsIndicator(props: {
             tooltip={tooltip ? def.label : null}
           />
         )}
-        <span className="text-xs text-(--mauve-7) select-none last:hidden">
+        <span className="text-xs text-(--gray-7) select-none last:hidden">
           •
         </span>
       </Fragment>
