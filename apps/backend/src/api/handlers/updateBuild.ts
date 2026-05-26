@@ -142,7 +142,7 @@ async function hasShardBeenProcessed(params: {
   buildId: string;
   requestId: string;
 }) {
-  const shard = await BuildShard.query().findOne({
+  const shard = await BuildShard.query().select("id").findOne({
     buildId: params.buildId,
     nonce: params.requestId,
   });
@@ -167,22 +167,22 @@ async function handleUpdateParallel(ctx: Context) {
     ["update-build-parallel", build.id],
     async () => {
       return transaction(async (trx) => {
-        if (requestId) {
-          const existingShard = await BuildShard.query(trx).findOne({
+        const shard = await BuildShard.query(trx)
+          .insert({
             buildId: build.id,
+            index: body.parallelIndex ?? null,
             nonce: requestId,
-          });
-          if (existingShard) {
-            return false;
-          }
+            metadata: body.metadata ?? null,
+          })
+          .onConflict(["buildId", "nonce"])
+          .ignore();
+
+        // If a shard already exists for this (buildId, nonce), the insert is a no-op:
+        // this is a retried request that has already been processed.
+        if (!shard.id) {
+          return false;
         }
 
-        const shard = await BuildShard.query(trx).insert({
-          buildId: build.id,
-          index: body.parallelIndex ?? null,
-          nonce: requestId,
-          metadata: body.metadata ?? null,
-        });
         const patchedBuild = await Build.query(trx)
           .patchAndFetchById(build.id, {
             batchCount: raw('"batchCount" + 1'),
