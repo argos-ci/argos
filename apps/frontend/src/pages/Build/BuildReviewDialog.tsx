@@ -17,6 +17,7 @@ import {
 } from "@/ui/Dialog";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { EditorField } from "@/ui/Editor/EditorField";
+import { hasEditorContent } from "@/ui/Editor/util";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
@@ -216,9 +217,11 @@ function BuildReviewDialog(props: {
                   disallowEmptySelection
                   selectedKeys={[event]}
                   onSelectionChange={(keys) => {
-                    const [key] = keys as Set<BuildReviewEvent>;
-                    if (key) {
-                      setEvent(key);
+                    if (keys && keys !== "all") {
+                      const [key] = keys;
+                      if (key) {
+                        setEvent(key as BuildReviewEvent);
+                      }
                     }
                   }}
                 >
@@ -242,27 +245,6 @@ function BuildReviewDialog(props: {
       </Form>
     </Dialog>
   );
-}
-
-function hasEditorContent(value: EditorValue): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const content = (value as { content?: unknown }).content;
-  if (!Array.isArray(content) || content.length === 0) {
-    return false;
-  }
-  return content.some((node) => {
-    if (!node || typeof node !== "object") {
-      return false;
-    }
-    const text = (node as { text?: string }).text;
-    if (typeof text === "string" && text.trim().length > 0) {
-      return true;
-    }
-    const inner = (node as { content?: unknown }).content;
-    return Array.isArray(inner) && inner.length > 0;
-  });
 }
 
 export function BuildReviewDialogProvider(props: {

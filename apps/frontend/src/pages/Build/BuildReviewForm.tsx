@@ -5,6 +5,7 @@ import { BuildReviewEvent } from "@/gql/graphql";
 import { DialogBody, DialogDismiss, DialogFooter } from "@/ui/Dialog";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { EditorField } from "@/ui/Editor/EditorField";
+import { hasEditorContent } from "@/ui/Editor/util";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
@@ -32,7 +33,6 @@ export function BuildReviewForm(props: {
   defaultEvent?: BuildReviewEvent;
   availableEvents?: BuildReviewEvent[];
   onSubmitted?: () => void;
-  children?: React.ReactNode;
   cancel?: React.ReactNode;
 }) {
   const {
@@ -44,7 +44,6 @@ export function BuildReviewForm(props: {
       BuildReviewEvent.Reject,
     ],
     onSubmitted,
-    children,
     cancel,
   } = props;
 
@@ -84,7 +83,6 @@ export function BuildReviewForm(props: {
   return (
     <Form form={form} onSubmit={onSubmit}>
       <DialogBody>
-        {children}
         <div className="flex flex-col gap-4">
           <div>
             <Label>Comment</Label>
@@ -125,27 +123,6 @@ export function BuildReviewForm(props: {
       </DialogFooter>
     </Form>
   );
-}
-
-function hasEditorContent(value: EditorValue): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const content = (value as { content?: unknown }).content;
-  if (!Array.isArray(content) || content.length === 0) {
-    return false;
-  }
-  return content.some((node) => {
-    if (!node || typeof node !== "object") {
-      return false;
-    }
-    const text = (node as { text?: string }).text;
-    if (typeof text === "string" && text.trim().length > 0) {
-      return true;
-    }
-    const inner = (node as { content?: unknown }).content;
-    return Array.isArray(inner) && inner.length > 0;
-  });
 }
 
 const RADIO_EVENT_ORDER: BuildReviewEvent[] = [
