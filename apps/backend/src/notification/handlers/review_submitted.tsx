@@ -26,9 +26,9 @@ function getSubjectLabel(state: ReviewState): string {
     case "approved":
       return "approved";
     case "rejected":
-      return "changes requested on";
+      return "changes requested";
     case "commented":
-      return "new comment on";
+      return "new comment";
     default:
       assertNever(state);
   }
@@ -78,7 +78,7 @@ export const handler = defineNotificationHandler({
       subject: `[${accountSlug}/${projectName}] Build ${buildLabel} ${subjectLabel}`,
       body: (
         <EmailLayout
-          preview={`${reviewer} ${action} build ${buildLabel} on ${accountSlug}/${projectName}.`}
+          preview={`${reviewer} ${action} build ${buildLabel} in ${accountSlug}/${projectName}.`}
         >
           <H1>Review submitted</H1>
           <Hi name={ctx.user.name} />

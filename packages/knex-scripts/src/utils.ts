@@ -46,7 +46,7 @@ export function preventRunningInProduction() {
 
   if (process.env["DATABASE_URL"]) {
     throw new Error(
-      "This command can't be used when a DATABASE_URL environment is set.",
+      "This command can't be used when the DATABASE_URL environment variable is set.",
     );
   }
 }

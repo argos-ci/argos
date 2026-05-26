@@ -13,24 +13,31 @@ describe("GraphQL Build.reviews", () => {
     await setupDatabase();
 
     const account = await factory.UserAccount.create();
-    await account.$fetchGraph("user");
+    const [project] = await Promise.all([
+      factory.Project.create({ accountId: account.id }),
+      account.$fetchGraph("user"),
+    ]);
     invariant(account.user, "user relation not found");
 
-    const project = await factory.Project.create({ accountId: account.id });
     const build = await factory.Build.create({ projectId: project.id });
 
-    const olderReview = await factory.BuildReview.create({
-      buildId: build.id,
-      userId: account.user.id,
-      state: "approved",
-      createdAt: "2026-01-01T00:00:00.000Z",
-    });
-    const newerReview = await factory.BuildReview.create({
-      buildId: build.id,
-      userId: account.user.id,
-      state: "rejected",
-      createdAt: "2026-01-02T00:00:00.000Z",
-    });
+    const reviews = await factory.BuildReview.createMany(2, [
+      {
+        buildId: build.id,
+        userId: account.user.id,
+        state: "approved",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        buildId: build.id,
+        userId: account.user.id,
+        state: "rejected",
+        createdAt: "2026-01-02T00:00:00.000Z",
+      },
+    ]);
+    const olderReview = reviews[0];
+    const newerReview = reviews[1];
+    invariant(olderReview && newerReview, "factory should return two reviews");
 
     const app = await createApolloServerApp(
       apolloServer,
