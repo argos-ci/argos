@@ -221,6 +221,29 @@ describe("createReview", () => {
     });
   });
 
+  test("returns 400 when body is not a valid rich-text document", async ({
+    build,
+    scopedPatToken,
+  }) => {
+    await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/reviews`)
+      .set("Authorization", `Bearer ${scopedPatToken}`)
+      .send({
+        event: "COMMENT",
+        body: {
+          type: "doc",
+          content: [{ type: "unknownNode" }],
+        },
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toBe("Invalid request");
+        expect(res.body.details).toEqual([
+          { message: expect.stringContaining("Invalid comment body") },
+        ]);
+      });
+  });
+
   test("returns 400 when neither event nor conclusion is provided", async ({
     build,
     scopedPatToken,

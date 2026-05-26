@@ -155,6 +155,47 @@ describe("GraphQL createBuildReview mutation", () => {
     expect(projectResult.body.data.project.build.status).toBe("REJECTED");
   });
 
+  test("rejects a review with an invalid body", async ({ fixture }) => {
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: fixture.userAccount.user!,
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+            mutation CreateBuildReview($input: CreateBuildReviewInput!) {
+              createBuildReview(
+                input: $input
+              ) {
+                status
+              }
+            }
+          `,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            event: "COMMENT",
+            body: {
+              type: "doc",
+              content: [{ type: "unknownNode" }],
+            },
+            screenshotDiffReviews: [],
+          },
+        },
+      });
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toBe("Invalid comment body");
+    const reviews = await BuildReview.query().where({
+      buildId: fixture.build.id,
+    });
+    expect(reviews).toHaveLength(0);
+  });
+
   test("returns an error if unauthorized", async ({ fixture }) => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");

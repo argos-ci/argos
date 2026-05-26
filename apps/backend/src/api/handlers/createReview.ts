@@ -12,6 +12,7 @@ import {
   createBuildReview,
   ScreenshotDiffReviewState,
 } from "@/build/createBuildReview";
+import { validateCommentJson } from "@/comment/validate";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
@@ -47,10 +48,17 @@ const CreateReviewBodySchema = z.object({
     description:
       'Deprecated: use `event` instead. Overall review conclusion for the build: "APPROVE" or "REQUEST_CHANGES".',
   }),
-  body: z.unknown().optional().meta({
-    description:
-      "Optional comment to attach to the review. Expected as the JSON representation of a rich-text document.",
-  }),
+  body: z
+    .unknown()
+    .optional()
+    .refine((value) => value === undefined || validateCommentJson(value), {
+      message:
+        "Invalid comment body. Expected a valid rich-text JSON document.",
+    })
+    .meta({
+      description:
+        "Optional comment to attach to the review. Expected as the JSON representation of a rich-text document.",
+    }),
   snapshots: z
     .array(
       z.object({

@@ -8,6 +8,7 @@ import type { JSONContent } from "@tiptap/core";
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
 import { renderCommentHtml } from "@/comment/html";
+import { validateCommentJson } from "@/comment/validate";
 import type { BuildNotification } from "@/database/models";
 import {
   Build,
@@ -22,6 +23,7 @@ import {
 } from "@/database/services/build-notification-subscription";
 import { transaction } from "@/database/transaction";
 import { sendNotification } from "@/notification";
+import { boom } from "@/util/error";
 
 export type ReviewState = "approved" | "rejected" | "commented" | "pending";
 
@@ -76,6 +78,11 @@ export async function createBuildReview(input: {
   }[];
 }): Promise<BuildReview> {
   const { build, userId, event, body, snapshotReviews } = input;
+
+  if (body !== undefined && !validateCommentJson(body)) {
+    throw boom(400, "Invalid comment body");
+  }
+
   const state = getReviewStateFromEvent(event);
 
   const buildReview = await transaction(async (trx) => {
