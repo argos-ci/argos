@@ -1,6 +1,5 @@
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import clsx from "clsx";
 import { useNavigate } from "react-router-dom";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -91,7 +90,7 @@ function ViewportChipLink(props: {
     <ChipLink
       {...rest}
       icon={viewportIcons[getViewportIconKind(viewport.width)]}
-      className={clsx("cursor-default font-mono")}
+      className="cursor-default"
     >
       {viewport.width}
     </ChipLink>

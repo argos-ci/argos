@@ -1,11 +1,9 @@
 @import "tailwindcss";
 
 @import "@radix-ui/colors/gray" layer(base);
+@import "@radix-ui/colors/gray-alpha" layer(base);
 @import "@radix-ui/colors/gray-dark" layer(base);
-@import "@radix-ui/colors/mauve" layer(base);
-@import "@radix-ui/colors/mauve-alpha" layer(base);
-@import "@radix-ui/colors/mauve-dark" layer(base);
-@import "@radix-ui/colors/mauve-dark-alpha" layer(base);
+@import "@radix-ui/colors/gray-dark-alpha" layer(base);
 @import "@radix-ui/colors/pink" layer(base);
 @import "@radix-ui/colors/pink-dark" layer(base);
 @import "@radix-ui/colors/violet" layer(base);
@@ -42,9 +40,9 @@
   --color-progress-from: var(--violet-8);
   --color-progress-to: var(--violet-10);
 
-  --text-color-default: var(--mauve-12);
-  --text-color-low: var(--mauve-11);
-  --text-color-placeholder: var(--mauve-10);
+  --text-color-default: var(--gray-12);
+  --text-color-low: var(--gray-11);
+  --text-color-placeholder: var(--gray-10);
 
   --text-color-primary: var(--violet-12);
   --text-color-primary-low: var(--violet-11);
@@ -67,14 +65,14 @@
   --text-color-storybook: var(--pink-12);
   --text-color-storybook-low: var(--pink-11);
 
-  --background-color-app: var(--mauve-1);
-  --background-color-subtle: var(--mauve-2);
-  --background-color-ui: var(--mauve-3);
-  --background-color-hover: var(--mauve-4);
-  --background-color-active: var(--mauve-5);
-  --background-color-solid: var(--mauve-9);
-  --background-color-solid-hover: var(--mauve-10);
-  --background-color-solid-active: var(--mauve-11);
+  --background-color-app: var(--gray-1);
+  --background-color-subtle: var(--gray-2);
+  --background-color-ui: var(--gray-3);
+  --background-color-hover: var(--gray-4);
+  --background-color-active: var(--gray-5);
+  --background-color-solid: var(--gray-9);
+  --background-color-solid-hover: var(--gray-10);
+  --background-color-solid-active: var(--gray-11);
 
   --background-color-primary-app: var(--violet-1);
   --background-color-primary-subtle: var(--violet-2);
@@ -153,10 +151,10 @@
   --background-color-google-hover: var(--gray-2);
   --background-color-google-active: var(--gray-3);
 
-  --border-color-default: var(--mauve-6);
-  --border-color-low: var(--mauve-4);
-  --border-color-hover: var(--mauve-8);
-  --border-color-active: var(--mauve-9);
+  --border-color-default: var(--gray-6);
+  --border-color-low: var(--gray-4);
+  --border-color-hover: var(--gray-8);
+  --border-color-active: var(--gray-9);
 
   --border-color-primary: var(--violet-6);
   --border-color-primary-hover: var(--violet-8);
@@ -200,9 +198,9 @@
   --ring-color-storybook-hover: var(--pink-8);
   --ring-color-storybook-active: var(--pink-9);
 
-  --ring-color-neutral: var(--mauve-6);
-  --ring-color-neutral-hover: var(--mauve-8);
-  --ring-color-neutral-active: var(--mauve-9);
+  --ring-color-neutral: var(--gray-6);
+  --ring-color-neutral-hover: var(--gray-8);
+  --ring-color-neutral-active: var(--gray-9);
 
   --ring-color-google: var(--gray-6);
 

@@ -85,8 +85,12 @@ const interactiveClassNames: Record<ChipColor, string> = {
     "data-hovered:not-aria-[current=page]:bg-warning-hover aria-[current=page]:bg-warning-active data-pressed:bg-warning-active",
   storybook:
     "data-hovered:not-aria-[current=page]:bg-storybook-hover aria-[current=page]:bg-storybook-active data-pressed:bg-storybook-active",
-  blank:
-    "data-hovered:not-aria-[current=page]:bg-hover aria-[current=page]:bg-active data-pressed:bg-active",
+  blank: clsx(
+    "data-hovered:not-aria-[current=page]:bg-hover data-pressed:bg-active",
+    "group-[*]/button-group:not-aria-[current=page]:opacity-60",
+    "group-[*]/button-group:data-hovered:not-aria-[current=page]:opacity-100",
+    "group-[*]/button-group:border-default",
+  ),
 };
 
 /**
@@ -144,8 +148,8 @@ function getChipClassName(props: {
     spacingClassName[scale],
     "group-[*]/button-group:not-first:pl-(--chip-gap) group-[*]/button-group:not-last:pr-(--chip-gap)",
     "group-[*]/button-group:rounded-none",
-    "group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:not-first:border-l-0",
-    "group-[*]/button-group:last:rounded-r-lg",
+    "group-[*]/button-group:first:rounded-l-chip group-[*]/button-group:not-first:border-l-0",
+    "group-[*]/button-group:last:rounded-r-chip",
     "rounded-chip gap-(--chip-gap) inline-flex min-w-0 select-none items-center border-thin font-medium leading-4",
   );
 }
