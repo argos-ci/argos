@@ -25,6 +25,7 @@ export class BuildShard extends Model {
         properties: {
           buildId: { type: "string" },
           index: { type: ["integer", "null"] },
+          nonce: { type: ["string", "null"] },
           metadata: {
             anyOf: [BuildMetadataJsonSchema as JSONSchema, { type: "null" }],
           },
@@ -35,6 +36,7 @@ export class BuildShard extends Model {
 
   buildId!: string;
   index!: number | null;
+  nonce!: string | null;
   metadata!: BuildMetadata | null;
 
   static override get relationMappings(): RelationMappings {

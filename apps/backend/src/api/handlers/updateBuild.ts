@@ -77,6 +77,9 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     const auth = await getAuthProjectPayloadFromExpressReq(req);
 
     const { body, params } = req.ctx;
+    const requestIdHeader = req.headers["x-argos-request-id"];
+    const requestId =
+      typeof requestIdHeader === "string" ? requestIdHeader : null;
 
     const buildId = params["buildId"];
 
@@ -93,6 +96,16 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     }
 
     if (build.compareScreenshotBucket.complete) {
+      const duplicateParallelRequest =
+        body.parallel && requestId
+          ? await hasShardBeenProcessed({ buildId: build.id, requestId })
+          : false;
+      if (duplicateParallelRequest) {
+        res.send({
+          build: await serializeBuild(build),
+        });
+        return;
+      }
       throw boom(409, "Build is already finalized");
     }
 
@@ -104,6 +117,7 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
       project: auth.project,
       build,
       body,
+      requestId,
     } satisfies Context;
     if (body.parallel) {
       await handleUpdateParallel(ctx);
@@ -121,13 +135,25 @@ type Context = {
   body: RequestBody;
   project: Project;
   build: Build;
+  requestId: string | null;
 };
+
+async function hasShardBeenProcessed(params: {
+  buildId: string;
+  requestId: string;
+}) {
+  const shard = await BuildShard.query().findOne({
+    buildId: params.buildId,
+    nonce: params.requestId,
+  });
+  return Boolean(shard);
+}
 
 /**
  * Parallel build update.
  */
 async function handleUpdateParallel(ctx: Context) {
-  const { body, build } = ctx;
+  const { body, build, requestId } = ctx;
   const parallelTotal =
     typeof body.parallelTotal === "number" ? body.parallelTotal : null;
   const expectedTotal =
@@ -141,21 +167,28 @@ async function handleUpdateParallel(ctx: Context) {
     ["update-build-parallel", build.id],
     async () => {
       return transaction(async (trx) => {
-        const [shard, patchedBuild] = await Promise.all([
-          body.parallelIndex != null
-            ? BuildShard.query(trx).insert({
-                buildId: build.id,
-                index: body.parallelIndex,
-                metadata: body.metadata ?? null,
-              })
-            : null,
-          Build.query(trx)
-            .patchAndFetchById(build.id, {
-              batchCount: raw('"batchCount" + 1'),
-              totalBatch: parallelTotal,
-            })
-            .select("batchCount"),
-        ]);
+        if (requestId) {
+          const existingShard = await BuildShard.query(trx).findOne({
+            buildId: build.id,
+            nonce: requestId,
+          });
+          if (existingShard) {
+            return false;
+          }
+        }
+
+        const shard = await BuildShard.query(trx).insert({
+          buildId: build.id,
+          index: body.parallelIndex ?? null,
+          nonce: requestId,
+          metadata: body.metadata ?? null,
+        });
+        const patchedBuild = await Build.query(trx)
+          .patchAndFetchById(build.id, {
+            batchCount: raw('"batchCount" + 1'),
+            totalBatch: parallelTotal,
+          })
+          .select("batchCount");
 
         await insertFilesAndScreenshots({
           screenshots: body.screenshots,

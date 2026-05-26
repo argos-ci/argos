@@ -49,6 +49,18 @@ export const createApp = async (): Promise<express.Express> => {
         req.headers["x-argos-cli-version"] as string,
       );
     }
+    if (req.headers["x-argos-retry-attempt"]) {
+      scope.setTag(
+        "clientRetryAttempt",
+        req.headers["x-argos-retry-attempt"] as string,
+      );
+    }
+    if (req.headers["x-argos-request-id"]) {
+      scope.setTag(
+        "clientRequestId",
+        req.headers["x-argos-request-id"] as string,
+      );
+    }
 
     next();
   });

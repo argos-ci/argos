@@ -7,7 +7,7 @@ import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import z from "zod";
 
-import { Build, Project } from "@/database/models";
+import { Build, BuildShard, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { quitAmqp } from "@/job-core";
 import { getS3Client } from "@/storage";
@@ -585,6 +585,164 @@ describe("api v2", () => {
             },
           });
         });
+      });
+
+      it("ignores a retried shard with the same request id", async () => {
+        const createFirstShard = await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshotKeys: screenshotGroups[0]!.map(
+              (screenshot) => screenshot.key,
+            ),
+            branch: "main",
+            name: "current",
+            parallel: true,
+            parallelNonce: "retried-build-id",
+          })
+          .expect(201);
+
+        for (const resScreenshot of createFirstShard.body.screenshots as {
+          key: string;
+          putUrl: string;
+        }[]) {
+          const screenshot = screenshotGroups[0]!.find(
+            (candidate) => candidate.key === resScreenshot.key,
+          );
+          expect(screenshot).toBeDefined();
+          const file = await readFile(screenshot!.path);
+          const axiosResponse = await axios({
+            method: "PUT",
+            url: resScreenshot.putUrl,
+            data: file,
+            headers: {
+              "Content-Type": "image/jpeg",
+            },
+          });
+          expect(axiosResponse.status).toBe(200);
+        }
+
+        await request(app)
+          .put(`/v2/builds/${createFirstShard.body.build.id}`)
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .set("x-argos-request-id", "shard-1")
+          .send({
+            screenshots: screenshotGroups[0]!.map((screenshot) => ({
+              key: screenshot.key,
+              name: screenshot.name,
+            })),
+            parallel: true,
+            parallelTotal: 2,
+          })
+          .expect(200);
+
+        await request(app)
+          .put(`/v2/builds/${createFirstShard.body.build.id}`)
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .set("x-argos-request-id", "shard-1")
+          .send({
+            screenshots: screenshotGroups[0]!.map((screenshot) => ({
+              key: screenshot.key,
+              name: screenshot.name,
+            })),
+            parallel: true,
+            parallelTotal: 2,
+          })
+          .expect(200);
+
+        let build = await Build.query()
+          .findById(createFirstShard.body.build.id)
+          .withGraphFetched("compareScreenshotBucket")
+          .throwIfNotFound();
+
+        expect(build.batchCount).toBe(1);
+        expect(build.compareScreenshotBucket!.complete).toBe(false);
+
+        const createSecondShard = await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshotKeys: screenshotGroups[1]!.map(
+              (screenshot) => screenshot.key,
+            ),
+            branch: "main",
+            name: "current",
+            parallel: true,
+            parallelNonce: "retried-build-id",
+          })
+          .expect(201);
+
+        for (const resScreenshot of createSecondShard.body.screenshots as {
+          key: string;
+          putUrl: string;
+        }[]) {
+          const screenshot = screenshotGroups[1]!.find(
+            (candidate) => candidate.key === resScreenshot.key,
+          );
+          expect(screenshot).toBeDefined();
+          const file = await readFile(screenshot!.path);
+          const axiosResponse = await axios({
+            method: "PUT",
+            url: resScreenshot.putUrl,
+            data: file,
+            headers: {
+              "Content-Type": "image/jpeg",
+            },
+          });
+          expect(axiosResponse.status).toBe(200);
+        }
+
+        await request(app)
+          .put(`/v2/builds/${createSecondShard.body.build.id}`)
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .set("x-argos-request-id", "shard-2")
+          .send({
+            screenshots: screenshotGroups[1]!.map((screenshot) => ({
+              key: screenshot.key,
+              name: screenshot.name,
+            })),
+            parallel: true,
+            parallelTotal: 2,
+          })
+          .expect(200);
+
+        await request(app)
+          .put(`/v2/builds/${createSecondShard.body.build.id}`)
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .set("x-argos-request-id", "shard-2")
+          .send({
+            screenshots: screenshotGroups[1]!.map((screenshot) => ({
+              key: screenshot.key,
+              name: screenshot.name,
+            })),
+            parallel: true,
+            parallelTotal: 2,
+          })
+          .expect(200);
+
+        build = await Build.query()
+          .findById(createSecondShard.body.build.id)
+          .withGraphFetched("compareScreenshotBucket")
+          .throwIfNotFound();
+
+        const shards = await BuildShard.query()
+          .where("buildId", build.id)
+          .orderBy("id", "asc");
+
+        expect(build.batchCount).toBe(2);
+        expect(build.compareScreenshotBucket!.complete).toBe(true);
+        expect(shards.map((shard) => shard.nonce)).toEqual([
+          "shard-1",
+          "shard-2",
+        ]);
       });
 
       it("inconsistent parallel count return an error", async () => {
