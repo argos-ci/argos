@@ -103,6 +103,7 @@ function BuildReviewDialog(props: {
   const hasRejected = summary[EvaluationStatus.Rejected].length > 0;
   const pendingCount = summary[EvaluationStatus.Pending].length;
   const rejectedCount = summary[EvaluationStatus.Rejected].length;
+  const allAccepted = !hasRejected && pendingCount === 0;
 
   const [event, setEvent] = useState<BuildReviewEvent>(
     hasRejected ? BuildReviewEvent.Reject : BuildReviewEvent.Approve,
@@ -166,32 +167,35 @@ function BuildReviewDialog(props: {
               </>
             )}
           </DialogText>
-          <div>
-            <Label>Comment</Label>
-            <EditorField
-              control={form.control}
-              name="body"
-              onChange={() => {
-                if (bodyError) {
-                  form.clearErrors("body");
-                }
-              }}
-              aria-label="Review comment"
-              placeholder="Leave a comment"
-              className="w-full"
-              disabled={actionContext?.isPending}
-            />
-            {bodyError?.message ? (
-              <ErrorMessage className="mt-2">
-                {String(bodyError.message)}
-              </ErrorMessage>
-            ) : null}
-          </div>
+          {allAccepted ? null : (
+            <div>
+              <Label>Comment</Label>
+              <EditorField
+                control={form.control}
+                name="body"
+                onChange={() => {
+                  if (bodyError) {
+                    form.clearErrors("body");
+                  }
+                }}
+                aria-label="Review comment"
+                placeholder="Leave a comment"
+                className="w-full"
+                autoFocus={hasRejected}
+                disabled={actionContext?.isPending}
+              />
+              {bodyError?.message ? (
+                <ErrorMessage className="mt-2">
+                  {String(bodyError.message)}
+                </ErrorMessage>
+              ) : null}
+            </div>
+          )}
         </DialogBody>
         <DialogFooter>
           <FormRootError control={form.control} className="flex-1" />
           <DialogDismiss>Cancel</DialogDismiss>
-          <ButtonGroup>
+          {allAccepted ? (
             <FormSubmit
               control={form.control}
               variant={definition.color}
@@ -202,45 +206,58 @@ function BuildReviewDialog(props: {
               </ButtonIcon>
               {definition.label}
             </FormSubmit>
-            <MenuTrigger>
-              <Button
+          ) : (
+            <ButtonGroup>
+              <FormSubmit
+                control={form.control}
                 variant={definition.color}
-                iconOnly
-                aria-label="Change action"
-                isDisabled={actionContext?.isPending}
+                autoFocus={!hasRejected}
               >
-                <ChevronDownIcon />
-              </Button>
-              <Popover placement="bottom end">
-                <Menu
-                  selectionMode="single"
-                  disallowEmptySelection
-                  selectedKeys={[event]}
-                  onSelectionChange={(keys) => {
-                    if (keys && keys !== "all") {
-                      const [key] = keys;
-                      if (key) {
-                        setEvent(key as BuildReviewEvent);
-                      }
-                    }
-                  }}
+                <ButtonIcon>
+                  <Icon />
+                </ButtonIcon>
+                {definition.label}
+              </FormSubmit>
+              <MenuTrigger>
+                <Button
+                  variant={definition.color}
+                  iconOnly
+                  aria-label="Change action"
+                  isDisabled={actionContext?.isPending}
                 >
-                  {MENU_EVENTS.map((eventKey) => {
-                    const eventDef = BUILD_REVIEW_EVENT_DEFINITIONS[eventKey];
-                    const EventIcon = eventDef.icon;
-                    return (
-                      <MenuItem key={eventKey} id={eventKey}>
-                        <MenuItemIcon>
-                          <EventIcon />
-                        </MenuItemIcon>
-                        {eventDef.label}
-                      </MenuItem>
-                    );
-                  })}
-                </Menu>
-              </Popover>
-            </MenuTrigger>
-          </ButtonGroup>
+                  <ChevronDownIcon />
+                </Button>
+                <Popover placement="bottom end">
+                  <Menu
+                    selectionMode="single"
+                    disallowEmptySelection
+                    selectedKeys={[event]}
+                    onSelectionChange={(keys) => {
+                      if (keys && keys !== "all") {
+                        const [key] = keys;
+                        if (key) {
+                          setEvent(key as BuildReviewEvent);
+                        }
+                      }
+                    }}
+                  >
+                    {MENU_EVENTS.map((eventKey) => {
+                      const eventDef = BUILD_REVIEW_EVENT_DEFINITIONS[eventKey];
+                      const EventIcon = eventDef.icon;
+                      return (
+                        <MenuItem key={eventKey} id={eventKey}>
+                          <MenuItemIcon>
+                            <EventIcon />
+                          </MenuItemIcon>
+                          {eventDef.label}
+                        </MenuItem>
+                      );
+                    })}
+                  </Menu>
+                </Popover>
+              </MenuTrigger>
+            </ButtonGroup>
+          )}
         </DialogFooter>
       </Form>
     </Dialog>
