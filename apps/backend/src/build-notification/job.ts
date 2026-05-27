@@ -27,11 +27,6 @@ export const job = createModelJob(
           "Latest build notification not found",
         );
 
-        // Already processed, stop here.
-        if (latestBuildNotification.jobStatus === "complete") {
-          return;
-        }
-
         await processBuildNotification(latestBuildNotification);
       },
       { timeout: 20_000 },
