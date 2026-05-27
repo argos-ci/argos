@@ -96,7 +96,6 @@ export function BuildReviewForm(props: {
               }}
               aria-label="Review comment"
               placeholder="Leave a comment"
-              autoFocus
               className="w-md"
               disabled={form.formState.isSubmitting}
             />
@@ -119,7 +118,9 @@ export function BuildReviewForm(props: {
         <FormRootError control={form.control} className="flex-1" />
         {cancel}
         <DialogDismiss>Cancel</DialogDismiss>
-        <FormSubmit control={form.control}>Submit review</FormSubmit>
+        <FormSubmit control={form.control} autoFocus>
+          Submit review
+        </FormSubmit>
       </DialogFooter>
     </Form>
   );
