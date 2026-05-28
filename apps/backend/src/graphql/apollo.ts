@@ -31,7 +31,8 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
           if (
             code === "FORBIDDEN" ||
             code === "NOT_FOUND" ||
-            code === "BAD_USER_INPUT"
+            code === "BAD_USER_INPUT" ||
+            code === "UNAUTHENTICATED"
           ) {
             continue;
           }
