@@ -29,6 +29,7 @@ import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
 import { UserAuth } from "@/containers/User/Auth";
 import { UserDelete } from "@/containers/User/Delete";
 import { UserEmails } from "@/containers/User/Emails";
+import { UserNotificationPreferences } from "@/containers/User/NotificationPreferences";
 import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -74,6 +75,7 @@ const AccountQuery = graphql(`
       ...TeamSpendManagement_Account
       ...UserDelete_User
       ...UserEmail_Account
+      ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
     }
   }
@@ -211,6 +213,13 @@ function PageContent() {
           {isTeam && hasAdminPermission && <TeamGitHubSSO team={account} />}
           {isTeam && hasAdminPermission && <TeamSAMLSSO team={account} />}
         </>
+      ),
+    },
+    {
+      name: "Notifications",
+      slug: "notifications",
+      element: isUser && hasAdminPermission && (
+        <UserNotificationPreferences account={account} />
       ),
     },
     {
