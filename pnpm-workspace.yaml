@@ -8,7 +8,7 @@ blockExoticSubdeps: true
 catalog:
   '@types/express': ^5.0.6
   '@types/node': ^24.12.2
-  '@types/react': ^19.2.14
+  '@types/react': ^19.2.15
   '@types/react-dom': ^19.2.3
   eslint: ^10.4.0
   express: ^5.2.1

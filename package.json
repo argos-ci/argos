@@ -30,10 +30,10 @@
   "engines": {
     "node": "24"
   },
-  "packageManager": "pnpm@11.3.0+sha512.2c403d6594527287672b1f7056343a1f7c3634036a67ffabfcc2b3d7595d843768f8787148d1b57cf7956c90606bbd192857c363af19e96d2d0ec9ec5741d215",
+  "packageManager": "pnpm@11.4.0+sha512.f0febc7e37552ab485494a914241b338e0b3580b93d54ce31f00933015880863129038a1b4ae4e414a0ee63ac35bf21197e990172c4a68256450b5636310968f",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.4",
-    "@argos-ci/playwright": "^7.0.0",
+    "@argos-ci/playwright": "^7.0.4",
     "@argos/eslint-config": "workspace:*",
     "@graphql-codegen/cli": "^7.0.0",
     "@graphql-codegen/client-preset": "^6.0.0",
@@ -45,16 +45,16 @@
     "@parcel/watcher": "^2.5.6",
     "@playwright/test": "^1.60.0",
     "@swc/cli": "^0.8.1",
-    "@swc/core": "^1.15.33",
-    "@types/node": "catalog:",
+    "@swc/core": "^1.15.40",
+    "@types/node": "^24.12.4",
     "chokidar": "^5.0.0",
     "eslint": "catalog:",
-    "knip": "^6.14.1",
+    "knip": "^6.14.2",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "smee-client": "^5.0.0",
-    "turbo": "^2.9.14",
+    "turbo": "^2.9.15",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.7"
   }
 }
