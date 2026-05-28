@@ -25,7 +25,7 @@ import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { sendNotification } from "@/notification";
 
-import { badUserInput } from "../util";
+import { invalidId } from "../util";
 
 async function getProjectDeleteNotificationRecipients(project: Project) {
   await project.$fetchGraph("account", { skipFetched: true });
@@ -76,7 +76,7 @@ export async function getAdminProject(args: {
   withGraphFetched?: string;
 }): Promise<Project> {
   if (!isValidPgBigInt(args.id)) {
-    throw badUserInput("Invalid project ID");
+    throw invalidId();
   }
   invariant(args.user, "no user");
   const query = Project.query().findById(args.id).throwIfNotFound();
