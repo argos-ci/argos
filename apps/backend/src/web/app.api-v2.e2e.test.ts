@@ -37,9 +37,9 @@ async function uploadFile(
   for (const [name, value] of Object.entries(upload.fields)) {
     formData.append(name, value);
   }
-  // The `file` field must come after every policy field and must be the last
-  // entry in the form. We don't set a `Content-Type` form field because the
-  // policy doesn't condition it (S3 would 403 on any unconditioned field).
+  // The policy conditions Content-Type via `eq`, so the form must include a
+  // matching `Content-Type` field. The `file` field must come last.
+  formData.append("Content-Type", contentType);
   formData.append(
     "file",
     new Blob([new Uint8Array(file)], { type: contentType }),
@@ -78,9 +78,15 @@ describe("api v2", () => {
           .set("Authorization", "Bearer nop")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: [
-              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-              "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            screenshots: [
+              {
+                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                contentType: "image/jpeg",
+              },
+              {
+                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+                contentType: "image/jpeg",
+              },
             ],
             branch: "main",
             name: "current",
@@ -118,9 +124,15 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: [
-              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-              "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            screenshots: [
+              {
+                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                contentType: "image/jpeg",
+              },
+              {
+                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+                contentType: "image/jpeg",
+              },
             ],
             branch: "main",
             name: "current",
@@ -233,9 +245,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: Array.from(
+            screenshots: Array.from(
               new Set(screenshots.map((screenshot) => screenshot.key)),
-            ),
+            ).map((key) => ({ key, contentType: "image/jpeg" })),
             branch: "main",
             name: "current",
           })
@@ -360,9 +372,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: Array.from(
+            screenshots: Array.from(
               new Set(screenshots.map((screenshot) => screenshot.key)),
-            ),
+            ).map((key) => ({ key, contentType: "image/jpeg" })),
             branch: "main",
             name: "current",
             mode: "monitoring",
@@ -492,7 +504,10 @@ describe("api v2", () => {
               .set("Authorization", "Bearer awesome-token")
               .send({
                 commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
+                screenshots: screenshots.map((screenshot) => ({
+                  key: screenshot.key,
+                  contentType: "image/jpeg",
+                })),
                 branch: "main",
                 name: "current",
                 parallel: true,
@@ -603,9 +618,10 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: screenshotGroups[0]!.map(
-              (screenshot) => screenshot.key,
-            ),
+            screenshots: screenshotGroups[0]!.map((screenshot) => ({
+              key: screenshot.key,
+              contentType: "image/jpeg",
+            })),
             branch: "main",
             name: "current",
             parallel: true,
@@ -667,9 +683,10 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshotKeys: screenshotGroups[1]!.map(
-              (screenshot) => screenshot.key,
-            ),
+            screenshots: screenshotGroups[1]!.map((screenshot) => ({
+              key: screenshot.key,
+              contentType: "image/jpeg",
+            })),
             branch: "main",
             name: "current",
             parallel: true,
@@ -743,7 +760,10 @@ describe("api v2", () => {
               .set("Authorization", "Bearer awesome-token")
               .send({
                 commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
+                screenshots: screenshots.map((screenshot) => ({
+                  key: screenshot.key,
+                  contentType: "image/jpeg",
+                })),
                 branch: "main",
                 name: "current",
                 parallel: true,

@@ -1,3 +1,4 @@
+import { SnapshotContentTypeSchema } from "@argos/schemas/content-type";
 import { invariant } from "@argos/util/invariant";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
@@ -19,6 +20,7 @@ import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import {
   Sha1HashSchema,
+  Sha256HashSchema,
   UniqueSha256HashArraySchema,
 } from "../schema/primitives/sha";
 import {
@@ -37,6 +39,31 @@ import { CreateAPIHandler } from "../util";
  */
 const MAX_UPLOAD_FILE_BYTES = 25 * 1024 * 1024;
 
+/**
+ * Content type of Playwright trace files. Hard-coded because the SDK always
+ * uploads traces as ZIP archives.
+ */
+const PLAYWRIGHT_TRACE_CONTENT_TYPE = "application/zip";
+
+const ScreenshotUploadRequestSchema = z
+  .object({
+    key: Sha256HashSchema,
+    contentType: SnapshotContentTypeSchema,
+  })
+  .meta({
+    description: "Screenshot file to upload",
+    id: "ScreenshotUploadRequest",
+  });
+
+type ScreenshotUploadRequest = z.infer<typeof ScreenshotUploadRequestSchema>;
+
+const UniqueScreenshotUploadsSchema = z
+  .array(ScreenshotUploadRequestSchema)
+  .refine(
+    (items) => new Set(items.map((item) => item.key)).size === items.length,
+    { message: "Must be an array of uploads with unique keys" },
+  );
+
 const RequestBodySchema = z.object({
   commit: Sha1HashSchema.meta({
     description: "The commit the build is running on",
@@ -44,8 +71,8 @@ const RequestBodySchema = z.object({
   branch: GitBranchSchema.meta({
     description: "The branch the build is running on",
   }),
-  screenshotKeys: UniqueSha256HashArraySchema.meta({
-    description: "Keys of screenshot files",
+  screenshots: UniqueScreenshotUploadsSchema.meta({
+    description: "Screenshot files to upload",
   }),
   pwTraceKeys: UniqueSha256HashArraySchema.optional().meta({
     description: "Keys of Playwright trace files",
@@ -184,25 +211,35 @@ type BuildContext = {
 };
 
 /**
- * Get presigned POST policies for unknown file keys.
+ * Get presigned POST policies for the given items.
  *
- * Each policy is signed with a `content-length-range` condition so that S3
- * itself rejects oversized uploads (the body must be within
- * `[1, MAX_UPLOAD_FILE_BYTES]`).
+ * Each policy is signed with two conditions enforced by S3 on upload:
+ *   - `content-length-range`: the body size must be within
+ *     `[1, MAX_UPLOAD_FILE_BYTES]`.
+ *   - `eq $Content-Type <contentType>`: the client must upload with exactly the
+ *     content type declared at `createBuild` time.
  */
-async function getUploads(keys: string[]): Promise<Upload[]> {
-  const unknownKeys = await getUnknownFileKeys(keys);
+async function getUploads(
+  items: { key: string; contentType: string }[],
+): Promise<Upload[]> {
+  const unknownKeys = new Set(
+    await getUnknownFileKeys(items.map((item) => item.key)),
+  );
+  const unknownItems = items.filter((item) => unknownKeys.has(item.key));
   const s3 = getS3Client();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
   return Promise.all(
-    unknownKeys.map(async (key) => {
+    unknownItems.map(async (item) => {
       const { url, fields } = await createPresignedPost(s3, {
         Bucket: screenshotsBucket,
-        Key: key,
+        Key: item.key,
         Expires: 1800, // 30 minutes
-        Conditions: [["content-length-range", 1, MAX_UPLOAD_FILE_BYTES]],
+        Conditions: [
+          ["content-length-range", 1, MAX_UPLOAD_FILE_BYTES],
+          ["eq", "$Content-Type", item.contentType],
+        ],
       });
-      return { key, url, fields };
+      return { key: item.key, url, fields };
     }),
   );
 }
@@ -211,18 +248,18 @@ async function getUploads(keys: string[]): Promise<Upload[]> {
  * Get screenshots and pw traces from the request body.
  */
 async function getScreenshotAndPwTraces(params: {
-  screenshotKeys: string[];
+  screenshots: ScreenshotUploadRequest[];
   pwTraceKeys?: string[] | undefined;
 }): Promise<{ screenshots: Upload[]; pwTraces: Upload[] }> {
-  const screenshotKeys = params.screenshotKeys;
-  const pwTraceKeys = params.pwTraceKeys ?? [];
-  const fileKeys = [...params.screenshotKeys, ...pwTraceKeys];
-  const uploads = await getUploads(fileKeys);
+  const screenshotKeys = new Set(params.screenshots.map((s) => s.key));
+  const pwTraceItems = (params.pwTraceKeys ?? []).map((key) => ({
+    key,
+    contentType: PLAYWRIGHT_TRACE_CONTENT_TYPE,
+  }));
+  const uploads = await getUploads([...params.screenshots, ...pwTraceItems]);
   return {
-    screenshots: uploads.filter((upload) =>
-      screenshotKeys.includes(upload.key),
-    ),
-    pwTraces: uploads.filter((upload) => pwTraceKeys.includes(upload.key)),
+    screenshots: uploads.filter((upload) => screenshotKeys.has(upload.key)),
+    pwTraces: uploads.filter((upload) => !screenshotKeys.has(upload.key)),
   };
 }
 
