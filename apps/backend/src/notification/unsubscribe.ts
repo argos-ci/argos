@@ -1,9 +1,11 @@
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 
 import config from "@/config";
 
 import {
   getConfigurableNotificationCategories,
+  NOTIFICATION_CHANNELS,
   type NotificationChannel,
 } from "./categories";
 import type { NotificationCategory } from "./workflow-types";
@@ -15,6 +17,22 @@ export type UnsubscribePayload = {
   category: NotificationCategory;
   channel: NotificationChannel;
 };
+
+/**
+ * Schema for the decoded JWT payload. The category is constrained to the
+ * configurable categories so a token can never disable a mandatory one.
+ */
+const UnsubscribeTokenSchema = z.object({
+  type: z.literal(TOKEN_TYPE),
+  userId: z.string(),
+  category: z.enum(
+    getConfigurableNotificationCategories() as [
+      NotificationCategory,
+      ...NotificationCategory[],
+    ],
+  ),
+  channel: z.enum(NOTIFICATION_CHANNELS),
+});
 
 /**
  * Sign a stateless unsubscribe token. It is intentionally long-lived and
@@ -41,39 +59,22 @@ export function verifyUnsubscribeToken(
   } catch {
     return null;
   }
-  if (typeof decoded !== "object" || decoded === null) {
+  const result = UnsubscribeTokenSchema.safeParse(decoded);
+  if (!result.success) {
     return null;
   }
-  const payload = decoded as Record<string, unknown>;
-  const { type, userId, category, channel } = payload;
-  if (
-    type !== TOKEN_TYPE ||
-    typeof userId !== "string" ||
-    typeof category !== "string" ||
-    typeof channel !== "string"
-  ) {
-    return null;
-  }
-  // Only configurable categories can be unsubscribed from.
-  if (
-    !getConfigurableNotificationCategories().includes(
-      category as NotificationCategory,
-    )
-  ) {
-    return null;
-  }
-  return {
-    userId,
-    category: category as NotificationCategory,
-    channel: channel as NotificationChannel,
-  };
+  const { userId, category, channel } = result.data;
+  return { userId, category, channel };
 }
 
 /**
  * Build the public unsubscribe URL for a given category and channel.
  */
 export function getUnsubscribeUrl(payload: UnsubscribePayload): string {
-  const url = new URL("/notifications/unsubscribe", config.get("server.url"));
+  const url = new URL(
+    "/account/notifications/unsubscribe",
+    config.get("server.url"),
+  );
   url.searchParams.set("token", signUnsubscribeToken(payload));
   return url.href;
 }

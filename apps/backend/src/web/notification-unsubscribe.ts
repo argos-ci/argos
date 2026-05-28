@@ -8,7 +8,7 @@ import { asyncHandler } from "./util";
 
 const router: Router = Router();
 
-const UNSUBSCRIBE_PATH = "/notifications/unsubscribe";
+const UNSUBSCRIBE_PATH = "/account/notifications/unsubscribe";
 
 function escapeHtml(value: string): string {
   return value.replace(

@@ -92,6 +92,10 @@ export default defineConfig((args) => {
                   target: "https://app.argos-ci.dev:4001",
                   secure: false,
                 },
+              "/account/notifications/unsubscribe": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
             },
           }
         : undefined,
