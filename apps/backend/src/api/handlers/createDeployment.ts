@@ -219,12 +219,15 @@ async function writeDeploymentFiles(
 
 export const createDeployment: CreateAPIHandler = ({ post }) => {
   return post("/deployments", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
     const body = req.ctx.body;
 
     if (!body) {
       throw boom(400, "Request body is required");
     }
+
+    const auth = await getAuthProjectPayloadFromExpressReq(req, {
+      sha: body.commit,
+    });
 
     const project = auth.project;
 

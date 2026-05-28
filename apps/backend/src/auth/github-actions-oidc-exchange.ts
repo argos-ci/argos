@@ -10,8 +10,6 @@ type GitHubActionsOidcExchangeInput = {
   oidcToken: string;
   repository?: string | undefined;
   commit?: string | undefined;
-  branch?: string | undefined;
-  pullRequestNumber?: number | undefined;
 };
 
 function parseGitHubRepositoryId(repositoryId: string) {
@@ -22,16 +20,6 @@ function parseGitHubRepositoryId(repositoryId: string) {
   }
 
   return parsed;
-}
-
-function getBranchFromRef(ref: string | undefined) {
-  const prefix = "refs/heads/";
-
-  if (!ref?.startsWith(prefix)) {
-    return null;
-  }
-
-  return ref.slice(prefix.length);
 }
 
 function assertOptionalClaimsMatchInput(
@@ -47,27 +35,6 @@ function assertOptionalClaimsMatchInput(
 
   if (input.commit && claims.sha !== input.commit) {
     throw boom(401, "GitHub Actions OIDC token does not match commit.");
-  }
-
-  if (input.branch) {
-    const refBranch = getBranchFromRef(claims.ref);
-    const matchesBranch =
-      refBranch === input.branch || claims.head_ref === input.branch;
-
-    if (!matchesBranch) {
-      throw boom(401, "GitHub Actions OIDC token does not match branch.");
-    }
-  }
-
-  if (input.pullRequestNumber) {
-    const refs = [
-      `refs/pull/${input.pullRequestNumber}/merge`,
-      `refs/pull/${input.pullRequestNumber}/head`,
-    ];
-
-    if (!claims.ref || !refs.includes(claims.ref)) {
-      throw boom(401, "GitHub Actions OIDC token does not match pull request.");
-    }
   }
 }
 
@@ -111,5 +78,6 @@ export async function exchangeGitHubActionsOidcToken(
   return createShortLivedProjectToken({
     projectId: project.id,
     source: "github-actions-oidc",
+    sha: claims.sha ?? null,
   });
 }

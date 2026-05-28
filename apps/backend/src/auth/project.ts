@@ -21,15 +21,16 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
   }
 
   if (isShortLivedProjectToken(bearer)) {
-    const project = await getProjectFromShortLivedProjectToken(bearer);
+    const resolved = await getProjectFromShortLivedProjectToken(bearer);
 
-    if (!project) {
+    if (!resolved) {
       throw boom(401, "Short-lived project token has expired or is invalid.");
     }
 
     return {
       type: "project",
-      project,
+      project: resolved.project,
+      sha: resolved.sha,
     } satisfies AuthProjectPayload;
   }
 
@@ -57,6 +58,7 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
   const authPayload: AuthProjectPayload = {
     type: "project",
     project,
+    sha: null,
   };
   return authPayload;
 }

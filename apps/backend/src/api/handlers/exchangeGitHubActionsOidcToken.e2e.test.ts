@@ -86,7 +86,6 @@ describe("exchangeGitHubActionsOidcToken", () => {
         oidcToken: signGitHubActionsToken(),
         repository: "argos-ci/argos",
         commit: sha,
-        branch: "main",
       })
       .expect(200);
 
@@ -98,6 +97,7 @@ describe("exchangeGitHubActionsOidcToken", () => {
 
     const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
     expect(auth.project.id).toBe(linkedProject.project.id);
+    expect(auth.sha).toBe(sha);
   });
 
   test("rejects when GitHub Actions OIDC is disabled on the project", async ({

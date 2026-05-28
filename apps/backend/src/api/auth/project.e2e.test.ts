@@ -9,6 +9,7 @@ import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import {
+  assertAuthAttributes,
   assertProjectAccess,
   getAuthPayloadFromExpressReq,
   getAuthProjectPayloadFromExpressReq,
@@ -178,6 +179,59 @@ describe("api/auth/project", () => {
         }),
       );
 
+      expect(error).toMatchObject({ statusCode: 401 });
+    });
+  });
+
+  describe("assertAuthAttributes", () => {
+    const sha = "b6bf264029c03888b7fb7e6db7386f3b245b77b0";
+
+    test("no-op when attributes is undefined", () => {
+      const auth = {
+        type: "project",
+        project: { id: "p" },
+        sha,
+      } as AuthProjectPayload;
+      expect(() => assertAuthAttributes(auth, undefined)).not.toThrow();
+    });
+
+    test("no-op when token has no bound sha", () => {
+      const auth = {
+        type: "project",
+        project: { id: "p" },
+        sha: null,
+      } as AuthProjectPayload;
+      expect(() => assertAuthAttributes(auth, { sha })).not.toThrow();
+    });
+
+    test("no-op for non-project auth", () => {
+      const auth = {
+        type: "pat",
+        scope: [{ slug: "acme" }],
+      } as AuthPATPayload;
+      expect(() => assertAuthAttributes(auth, { sha })).not.toThrow();
+    });
+
+    test("passes when token sha matches", () => {
+      const auth = {
+        type: "project",
+        project: { id: "p" },
+        sha,
+      } as AuthProjectPayload;
+      expect(() => assertAuthAttributes(auth, { sha })).not.toThrow();
+    });
+
+    test("throws when token sha does not match", () => {
+      const auth = {
+        type: "project",
+        project: { id: "p" },
+        sha,
+      } as AuthProjectPayload;
+      const error = captureSyncError(() =>
+        assertAuthAttributes(auth, {
+          sha: "0000000000000000000000000000000000000000",
+        }),
+      );
       expect(error).toMatchObject({ statusCode: 401 });
     });
   });

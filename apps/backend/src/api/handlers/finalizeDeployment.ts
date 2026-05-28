@@ -15,7 +15,10 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
+import {
+  assertAuthAttributes,
+  getAuthProjectPayloadFromExpressReq,
+} from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
@@ -212,6 +215,8 @@ export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
     if (deployment.projectId !== auth.project.id) {
       throw boom(401, "Unauthorized");
     }
+
+    assertAuthAttributes(auth, { sha: deployment.commitSha });
 
     if (deployment.status !== "pending") {
       throw boom(400, "Deployment is not in pending status");
