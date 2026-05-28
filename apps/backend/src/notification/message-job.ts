@@ -4,6 +4,7 @@ import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core";
 import { notificationHandlers } from "@/notification/handlers";
+import { getUnsubscribeUrl } from "@/notification/unsubscribe";
 
 export const notificationMessageJob = createModelJob(
   "notificationMessage",
@@ -33,12 +34,28 @@ async function processMessage(message: NotificationMessage) {
     throw new Error(`Handler not found: ${type}`);
   }
   const data = message.workflow.data;
+
+  // Configurable notifications carry a one-click unsubscribe link/header
+  // (RFC 8058) scoped to the notification's category and channel.
+  const headers: Record<string, string> = {};
+  let unsubscribeUrl: string | null = null;
+  if (handler.configurable) {
+    unsubscribeUrl = getUnsubscribeUrl({
+      userId: message.userId,
+      category: handler.category,
+      channel: "email",
+    });
+    headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
+
   const ctx = {
     user: {
       name: message.user.account.name
         ? extractFirstName(message.user.account.name)
         : null,
     },
+    unsubscribeUrl,
   };
   const email = handler.email({ ...(data as any), ctx });
 
@@ -46,6 +63,7 @@ async function processMessage(message: NotificationMessage) {
     to,
     subject: email.subject,
     react: email.body,
+    ...(Object.keys(headers).length > 0 ? { headers } : {}),
   });
 
   const externalId = (await result?.data?.id) ?? null;

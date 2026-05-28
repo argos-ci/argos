@@ -64,6 +64,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`${dismisser} dismissed your ${reviewLabel} on build ${buildLabel}.`}
+          unsubscribeUrl={ctx.unsubscribeUrl}
         >
           <H1>Review dismissed</H1>
           <Hi name={ctx.user.name} />

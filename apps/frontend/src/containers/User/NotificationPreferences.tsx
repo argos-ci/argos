@@ -78,6 +78,9 @@ export function UserNotificationPreferences(props: {
                         },
                       },
                     })
+                    .then(() => {
+                      toast.success("Notification preferences updated.");
+                    })
                     .catch((error) => {
                       toast.error(getErrorMessage(error));
                     });

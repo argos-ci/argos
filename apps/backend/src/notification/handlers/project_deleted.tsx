@@ -49,6 +49,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`The project ${props.projectName} was deleted from ${fromLabel} team.`}
+          unsubscribeUrl={props.ctx.unsubscribeUrl}
         >
           <H1>Project deleted</H1>
           <Hi name={props.ctx.user.name} />
