@@ -66,6 +66,9 @@ export async function getAdminAccount(args: {
   user: User | undefined | null;
   withGraphFetched?: RelationExpression<Account>;
 }): Promise<Account> {
+  if (!isValidPgBigInt(args.id)) {
+    throw invalidId();
+  }
   if (!args.user) {
     throw unauthenticated();
   }
