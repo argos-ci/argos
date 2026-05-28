@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import axios from "axios";
 import type { Express } from "express";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -16,6 +15,75 @@ import { setupRedis } from "@/util/redis/testing";
 import { createApp } from "./app";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
+
+type LegacyUploadEntry = {
+  key: string;
+  putUrl: string;
+};
+
+type SecureUploadEntry = {
+  key: string;
+  postUrl: string;
+  fields: Record<string, string>;
+};
+
+type UploadEntry = LegacyUploadEntry | SecureUploadEntry;
+
+function isSecureUpload(upload: UploadEntry): upload is SecureUploadEntry {
+  return "postUrl" in upload;
+}
+
+/**
+ * Upload a file using the presigned POST policy returned by createBuild.
+ *
+ * S3 enforces the size limit baked into the policy's `content-length-range`
+ * condition; oversized uploads are rejected by S3 itself, not by Argos.
+ */
+async function uploadFileWithPostUrl(
+  upload: SecureUploadEntry,
+  file: Buffer,
+  contentType: string,
+): Promise<void> {
+  const formData = new FormData();
+  for (const [name, value] of Object.entries(upload.fields)) {
+    formData.append(name, value);
+  }
+  // The `file` field must come last.
+  formData.append(
+    "file",
+    new Blob([new Uint8Array(file)], { type: contentType }),
+  );
+  const response = await fetch(upload.postUrl, {
+    method: "POST",
+    body: formData,
+  });
+  expect(response.status).toBe(204);
+}
+
+async function uploadFileWithPutUrl(
+  upload: LegacyUploadEntry,
+  file: Buffer,
+  contentType: string,
+): Promise<void> {
+  const response = await fetch(upload.putUrl, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: new Uint8Array(file),
+  });
+  expect(response.status).toBe(200);
+}
+
+async function uploadFile(
+  upload: UploadEntry,
+  file: Buffer,
+  contentType: string,
+): Promise<void> {
+  if (isSecureUpload(upload)) {
+    await uploadFileWithPostUrl(upload, file, contentType);
+    return;
+  }
+  await uploadFileWithPutUrl(upload, file, contentType);
+}
 
 describe("api v2", () => {
   let app: Express;
@@ -77,7 +145,7 @@ describe("api v2", () => {
         });
       });
 
-      it("creates build and upload urls", async () => {
+      it("creates build and legacy upload urls", async () => {
         const res = await request(app)
           .post("/v2/builds")
           .set("Host", "api.argos-ci.dev")
@@ -131,17 +199,141 @@ describe("api v2", () => {
               gitlab: { state: "pending" },
             },
           },
-          screenshots: [
-            {
-              key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-              putUrl: expect.any(String),
-            },
-            {
-              key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-              putUrl: expect.any(String),
-            },
-          ],
         });
+        expect(res.body.screenshots).toEqual([
+          {
+            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            putUrl: expect.any(String),
+          },
+          {
+            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            putUrl: expect.any(String),
+          },
+        ]);
+
+        const [firstUpload, secondUpload] = res.body
+          .screenshots as UploadEntry[];
+        if (
+          !firstUpload ||
+          !secondUpload ||
+          isSecureUpload(firstUpload) ||
+          isSecureUpload(secondUpload)
+        ) {
+          throw new Error("Expected two upload targets");
+        }
+        await uploadFileWithPutUrl(
+          firstUpload,
+          Buffer.from("legacy upload"),
+          "image/jpeg",
+        );
+        await uploadFileWithPutUrl(
+          secondUpload,
+          Buffer.from("legacy upload"),
+          "image/jpeg",
+        );
+      });
+
+      it("creates build and secure upload fields", async () => {
+        const res = await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshots: [
+              {
+                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                contentType: "image/jpeg",
+              },
+              {
+                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+                contentType: "application/json",
+              },
+            ],
+            branch: "main",
+            name: "current",
+            prNumber: 12,
+            mode: null,
+          })
+          .expect(201);
+
+        expect(res.body.screenshots).toEqual([
+          {
+            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            postUrl: expect.any(String),
+            fields: expect.objectContaining({
+              "Content-Type": "image/jpeg",
+            }),
+          },
+          {
+            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            postUrl: expect.any(String),
+            fields: expect.objectContaining({
+              "Content-Type": "application/json",
+            }),
+          },
+        ]);
+
+        const [imageUpload, jsonUpload] = res.body.screenshots as UploadEntry[];
+        if (
+          !imageUpload ||
+          !jsonUpload ||
+          !isSecureUpload(imageUpload) ||
+          !isSecureUpload(jsonUpload)
+        ) {
+          throw new Error("Expected two secure upload targets");
+        }
+        await uploadFileWithPostUrl(
+          imageUpload,
+          Buffer.from("secure upload"),
+          "image/jpeg",
+        );
+        await uploadFileWithPostUrl(
+          jsonUpload,
+          Buffer.from('{"ok":true}'),
+          "application/json",
+        );
+      });
+
+      it("rejects requests with both legacy and secure screenshot inputs", async () => {
+        await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshotKeys: [
+              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            ],
+            screenshots: [
+              {
+                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                contentType: "image/jpeg",
+              },
+            ],
+            branch: "main",
+            name: "current",
+          })
+          .expect((res) => {
+            expect(res.body.error).toBe("Invalid request");
+          })
+          .expect(400);
+      });
+
+      it("rejects requests without screenshot inputs", async () => {
+        await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            branch: "main",
+            name: "current",
+          })
+          .expect((res) => {
+            expect(res.body.error).toBe("Invalid request");
+          })
+          .expect(400);
       });
     });
 
@@ -208,22 +400,13 @@ describe("api v2", () => {
         // Upload screenshots
         await Promise.all(
           createResult.body.screenshots.map(
-            async (resScreenshot: { key: string; putUrl: string }) => {
+            async (resScreenshot: UploadEntry) => {
               const path = screenshots.find(
                 (s) => s.key === resScreenshot.key,
               )!.path;
               const file = await readFile(path);
 
-              const axiosResponse = await axios({
-                method: "PUT",
-                url: resScreenshot.putUrl,
-                data: file,
-                headers: {
-                  "Content-Type": "image/jpeg",
-                },
-              });
-
-              expect(axiosResponse.status).toBe(200);
+              await uploadFile(resScreenshot, file, "image/jpeg");
             },
           ),
         );
@@ -345,22 +528,13 @@ describe("api v2", () => {
         // Upload screenshots
         await Promise.all(
           createResult.body.screenshots.map(
-            async (resScreenshot: { key: string; putUrl: string }) => {
+            async (resScreenshot: UploadEntry) => {
               const path = screenshots.find(
                 (s) => s.key === resScreenshot.key,
               )!.path;
               const file = await readFile(path);
 
-              const axiosResponse = await axios({
-                method: "PUT",
-                url: resScreenshot.putUrl,
-                data: file,
-                headers: {
-                  "Content-Type": "image/jpeg",
-                },
-              });
-
-              expect(axiosResponse.status).toBe(200);
+              await uploadFile(resScreenshot, file, "image/jpeg");
             },
           ),
         );
@@ -485,22 +659,13 @@ describe("api v2", () => {
             // Upload screenshots
             await Promise.all(
               createResult.body.screenshots.map(
-                async (resScreenshot: { key: string; putUrl: string }) => {
+                async (resScreenshot: UploadEntry) => {
                   const path = screenshots.find(
                     (s) => s.key === resScreenshot.key,
                   )!.path;
                   const file = await readFile(path);
 
-                  const axiosResponse = await axios({
-                    method: "PUT",
-                    url: resScreenshot.putUrl,
-                    data: file,
-                    headers: {
-                      "Content-Type": "image/jpeg",
-                    },
-                  });
-
-                  expect(axiosResponse.status).toBe(200);
+                  await uploadFile(resScreenshot, file, "image/jpeg");
                 },
               ),
             );
@@ -604,24 +769,14 @@ describe("api v2", () => {
           })
           .expect(201);
 
-        for (const resScreenshot of createFirstShard.body.screenshots as {
-          key: string;
-          putUrl: string;
-        }[]) {
+        for (const resScreenshot of createFirstShard.body
+          .screenshots as UploadEntry[]) {
           const screenshot = screenshotGroups[0]!.find(
             (candidate) => candidate.key === resScreenshot.key,
           );
           expect(screenshot).toBeDefined();
           const file = await readFile(screenshot!.path);
-          const axiosResponse = await axios({
-            method: "PUT",
-            url: resScreenshot.putUrl,
-            data: file,
-            headers: {
-              "Content-Type": "image/jpeg",
-            },
-          });
-          expect(axiosResponse.status).toBe(200);
+          await uploadFile(resScreenshot, file, "image/jpeg");
         }
 
         await request(app)
@@ -678,24 +833,14 @@ describe("api v2", () => {
           })
           .expect(201);
 
-        for (const resScreenshot of createSecondShard.body.screenshots as {
-          key: string;
-          putUrl: string;
-        }[]) {
+        for (const resScreenshot of createSecondShard.body
+          .screenshots as UploadEntry[]) {
           const screenshot = screenshotGroups[1]!.find(
             (candidate) => candidate.key === resScreenshot.key,
           );
           expect(screenshot).toBeDefined();
           const file = await readFile(screenshot!.path);
-          const axiosResponse = await axios({
-            method: "PUT",
-            url: resScreenshot.putUrl,
-            data: file,
-            headers: {
-              "Content-Type": "image/jpeg",
-            },
-          });
-          expect(axiosResponse.status).toBe(200);
+          await uploadFile(resScreenshot, file, "image/jpeg");
         }
 
         await request(app)
@@ -765,22 +910,13 @@ describe("api v2", () => {
             // Upload screenshots
             await Promise.all(
               createResult.body.screenshots.map(
-                async (resScreenshot: { key: string; putUrl: string }) => {
+                async (resScreenshot: UploadEntry) => {
                   const path = screenshots.find(
                     (s) => s.key === resScreenshot.key,
                   )!.path;
                   const file = await readFile(path);
 
-                  const axiosResponse = await axios({
-                    method: "PUT",
-                    url: resScreenshot.putUrl,
-                    data: file,
-                    headers: {
-                      "Content-Type": "image/jpeg",
-                    },
-                  });
-
-                  expect(axiosResponse.status).toBe(200);
+                  await uploadFile(resScreenshot, file, "image/jpeg");
                 },
               ),
             );

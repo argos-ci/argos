@@ -1,4 +1,6 @@
+import { SnapshotContentTypeSchema } from "@argos/schemas/content-type";
 import { invariant } from "@argos/util/invariant";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -19,6 +21,7 @@ import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import {
   Sha1HashSchema,
+  Sha256HashSchema,
   UniqueSha256HashArraySchema,
 } from "../schema/primitives/sha";
 import {
@@ -29,15 +32,26 @@ import {
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
 
-const RequestBodySchema = z.object({
+/**
+ * Maximum size (in bytes) accepted for an uploaded snapshot or trace file. The
+ * limit is enforced by S3 itself for the secure POST upload path. The legacy
+ * PUT upload path is kept for backward compatibility and does not enforce this
+ * policy.
+ */
+const MAX_UPLOAD_FILE_BYTES = 25 * 1024 * 1024;
+
+/**
+ * Content type of Playwright trace files. Hard-coded because the SDK always
+ * uploads traces as ZIP archives.
+ */
+const PLAYWRIGHT_TRACE_CONTENT_TYPE = "application/zip";
+
+const CommonRequestBodySchema = z.object({
   commit: Sha1HashSchema.meta({
     description: "The commit the build is running on",
   }),
   branch: GitBranchSchema.meta({
     description: "The branch the build is running on",
-  }),
-  screenshotKeys: UniqueSha256HashArraySchema.meta({
-    description: "Keys of screenshot files",
   }),
   pwTraceKeys: UniqueSha256HashArraySchema.optional().meta({
     description: "Keys of Playwright trace files",
@@ -104,13 +118,64 @@ const RequestBodySchema = z.object({
     }),
 });
 
-type RequestBody = z.infer<typeof RequestBodySchema>;
+const ScreenshotUploadRequestSchema = z
+  .object({
+    key: Sha256HashSchema,
+    contentType: SnapshotContentTypeSchema,
+  })
+  .meta({
+    description: "Screenshot file to upload",
+    id: "ScreenshotUploadRequest",
+  });
 
-const UploadSchema = z.object({
-  key: z.string(),
-  putUrl: z.url(),
+type ScreenshotUploadRequest = z.infer<typeof ScreenshotUploadRequestSchema>;
+
+const UniqueScreenshotUploadsSchema = z
+  .array(ScreenshotUploadRequestSchema)
+  .refine(
+    (items) => new Set(items.map((item) => item.key)).size === items.length,
+    { message: "Must be an array of uploads with unique keys" },
+  );
+
+const LegacyUploadRequestSchema = z.object({
+  screenshotKeys: UniqueSha256HashArraySchema.meta({
+    deprecated: true,
+    description: "Keys of screenshot files",
+  }),
+  screenshots: z.undefined().optional(),
 });
 
+const SecureUploadRequestSchema = z.object({
+  screenshots: UniqueScreenshotUploadsSchema.meta({
+    description: "Screenshot files to upload",
+  }),
+  screenshotKeys: z.undefined().optional(),
+});
+
+const RequestBodySchema = CommonRequestBodySchema.and(
+  z.union([LegacyUploadRequestSchema, SecureUploadRequestSchema]),
+);
+
+type RequestBody = z.infer<typeof RequestBodySchema>;
+
+const LegacyUploadSchema = z.object({
+  key: z.string(),
+  putUrl: z.url().meta({
+    deprecated: true,
+    description: "Deprecated. Use postUrl and fields instead.",
+  }),
+});
+
+const SecureUploadSchema = z.object({
+  key: z.string(),
+  postUrl: z.url(),
+  fields: z.record(z.string(), z.string()),
+});
+
+const UploadSchema = z.union([LegacyUploadSchema, SecureUploadSchema]);
+
+type LegacyUpload = z.infer<typeof LegacyUploadSchema>;
+type SecureUpload = z.infer<typeof SecureUploadSchema>;
 type Upload = z.infer<typeof UploadSchema>;
 
 const ResponseSchema = z.object({
@@ -149,7 +214,7 @@ export const createBuild: CreateAPIHandler = ({ post }) => {
     const auth = await getAuthProjectPayloadFromExpressReq(req);
 
     const ctx = {
-      body: req.body,
+      body: req.ctx.body,
       project: auth.project,
     } satisfies BuildContext;
 
@@ -175,47 +240,95 @@ type BuildContext = {
 };
 
 /**
- * Get signed URLs for unknown file keys.
+ * Get legacy signed PUT URLs for unknown file keys.
  */
-async function getUploads(keys: string[]): Promise<Upload[]> {
+async function getLegacyUploads(keys: string[]): Promise<LegacyUpload[]> {
   const unknownKeys = await getUnknownFileKeys(keys);
   const s3 = getS3Client();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
-  const putUrls = await Promise.all(
-    unknownKeys.map((key) =>
-      getSignedObjectUrl({
+  return Promise.all(
+    unknownKeys.map(async (key) => {
+      const putUrl = await getSignedObjectUrl({
         s3,
         Key: key,
         Bucket: screenshotsBucket,
         expiresIn: 1800, // 30 minutes
         method: "PUT",
-      }),
-    ),
+      });
+      return { key, putUrl };
+    }),
   );
-  return unknownKeys.map((key, index) => {
-    const putUrl = putUrls[index];
-    invariant(putUrl, "`putUrl` is undefined");
-    return { key, putUrl };
-  });
+}
+
+/**
+ * Get secure presigned POST policies for unknown file keys.
+ *
+ * Each policy is signed with two conditions enforced by S3 on upload:
+ *   - `content-length-range`: the body size must be within
+ *     `[1, MAX_UPLOAD_FILE_BYTES]`.
+ *   - `eq $Content-Type <contentType>`: the client must upload with exactly the
+ *     content type declared at `createBuild` time.
+ */
+async function getSecureUploads(
+  items: {
+    key: string;
+    contentType: string;
+  }[],
+): Promise<SecureUpload[]> {
+  const unknownKeys = new Set(
+    await getUnknownFileKeys(items.map((item) => item.key)),
+  );
+  const unknownItems = items.filter((item) => unknownKeys.has(item.key));
+  const s3 = getS3Client();
+  const screenshotsBucket = config.get("s3.screenshotsBucket");
+  return Promise.all(
+    unknownItems.map(async (item) => {
+      const { url, fields } = await createPresignedPost(s3, {
+        Bucket: screenshotsBucket,
+        Key: item.key,
+        Expires: 1800, // 30 minutes
+        Fields: { "Content-Type": item.contentType },
+        Conditions: [
+          ["content-length-range", 1, MAX_UPLOAD_FILE_BYTES],
+          ["eq", "$Content-Type", item.contentType],
+        ],
+      });
+      return { key: item.key, postUrl: url, fields };
+    }),
+  );
+}
+
+function isSecureBuildRequest(
+  body: RequestBody,
+): body is RequestBody & { screenshots: ScreenshotUploadRequest[] } {
+  return "screenshots" in body && Array.isArray(body.screenshots);
 }
 
 /**
  * Get screenshots and pw traces from the request body.
  */
-async function getScreenshotAndPwTraces(params: {
-  screenshotKeys: string[];
-  pwTraceKeys?: string[] | undefined;
-}): Promise<{ screenshots: Upload[]; pwTraces: Upload[] }> {
-  const screenshotKeys = params.screenshotKeys;
-  const pwTraceKeys = params.pwTraceKeys ?? [];
-  const fileKeys = [...params.screenshotKeys, ...pwTraceKeys];
-  const uploads = await getUploads(fileKeys);
-  return {
-    screenshots: uploads.filter((upload) =>
-      screenshotKeys.includes(upload.key),
-    ),
-    pwTraces: uploads.filter((upload) => pwTraceKeys.includes(upload.key)),
-  };
+async function getScreenshotAndPwTraces(body: RequestBody): Promise<{
+  screenshots: Upload[];
+  pwTraces: Upload[];
+}> {
+  if (isSecureBuildRequest(body)) {
+    const [screenshots, pwTraces] = await Promise.all([
+      getSecureUploads(body.screenshots),
+      getSecureUploads(
+        (body.pwTraceKeys ?? []).map((key) => ({
+          key,
+          contentType: PLAYWRIGHT_TRACE_CONTENT_TYPE,
+        })),
+      ),
+    ]);
+    return { screenshots, pwTraces };
+  }
+
+  const [screenshots, pwTraces] = await Promise.all([
+    getLegacyUploads(body.screenshotKeys),
+    getLegacyUploads(body.pwTraceKeys ?? []),
+  ]);
+  return { screenshots, pwTraces };
 }
 
 /**

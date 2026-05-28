@@ -43,3 +43,41 @@ describe("#getSignedObjectUrl", () => {
     expect(axiosResponse.status).toBe(200);
   });
 });
+
+describe("#getSignedObjectUrl response overrides", () => {
+  // Static credentials keep presigning fully offline and deterministic.
+  const s3 = new S3Client({
+    region: "eu-west-1",
+    credentials: { accessKeyId: "test", secretAccessKey: "test" },
+  });
+
+  it("serves a file as a neutralized attachment when requested", async () => {
+    const url = await getSignedObjectUrl({
+      s3,
+      Bucket: config.get("s3.screenshotsBucket"),
+      Key: "snapshot.html",
+      expiresIn: 60,
+      method: "GET",
+      responseContentType: "text/plain; charset=utf-8",
+      responseContentDisposition: "attachment",
+    });
+    const { searchParams } = new URL(url);
+    expect(searchParams.get("response-content-disposition")).toBe("attachment");
+    expect(searchParams.get("response-content-type")).toBe(
+      "text/plain; charset=utf-8",
+    );
+  });
+
+  it("does not add response overrides by default", async () => {
+    const url = await getSignedObjectUrl({
+      s3,
+      Bucket: config.get("s3.screenshotsBucket"),
+      Key: "screenshot.png",
+      expiresIn: 60,
+      method: "GET",
+    });
+    const { searchParams } = new URL(url);
+    expect(searchParams.get("response-content-disposition")).toBeNull();
+    expect(searchParams.get("response-content-type")).toBeNull();
+  });
+});

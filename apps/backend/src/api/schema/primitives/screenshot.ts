@@ -1,3 +1,4 @@
+import { SnapshotContentTypeSchema } from "@argos/schemas/content-type";
 import { ScreenshotMetadataSchema } from "@argos/schemas/screenshot-metadata";
 import { z } from "zod";
 
@@ -12,7 +13,7 @@ export const ScreenshotInputSchema = z
     metadata: ScreenshotMetadataSchema.nullish(),
     pwTraceKey: z.string().regex(SHA256_REGEX).nullish(),
     threshold: z.number().min(0).max(1).nullish(),
-    contentType: z.string().optional().default("image/png"),
+    contentType: SnapshotContentTypeSchema.default("image/png"),
   })
   .meta({
     description: "Screenshot input",
