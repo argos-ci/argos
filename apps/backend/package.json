@@ -99,7 +99,7 @@
     "sharp": "^0.34.5",
     "sqids": "^0.3.0",
     "stripe": "^22.1.1",
-    "tmp": "^0.2.5",
+    "tmp": "^0.2.6",
     "undici": "catalog:",
     "yaml": "^2.9.0",
     "zod": "catalog:",
