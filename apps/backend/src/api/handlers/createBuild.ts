@@ -211,7 +211,9 @@ export const createBuildOperation = {
 
 export const createBuild: CreateAPIHandler = ({ post }) => {
   return post("/builds", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
+    const auth = await getAuthProjectPayloadFromExpressReq(req, {
+      sha: req.ctx.body.commit,
+    });
 
     const ctx = {
       body: req.ctx.body,

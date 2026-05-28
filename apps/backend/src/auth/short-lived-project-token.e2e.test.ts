@@ -37,10 +37,22 @@ describe("short-lived project token", () => {
     expect(isShortLivedProjectToken(result.token)).toBe(true);
     expect(Date.parse(result.expiresAt)).toBeGreaterThan(Date.now());
 
-    const resolvedProject = await getProjectFromShortLivedProjectToken(
-      result.token,
-    );
-    expect(resolvedProject?.id).toBe(project.id);
+    const resolved = await getProjectFromShortLivedProjectToken(result.token);
+    expect(resolved?.project.id).toBe(project.id);
+    expect(resolved?.sha).toBeNull();
+  });
+
+  test("preserves the sha bound at creation time", async ({ project }) => {
+    const sha = "b6bf264029c03888b7fb7e6db7386f3b245b77b0";
+    const { token } = await createShortLivedProjectToken({
+      projectId: project.id,
+      source: "github-actions-oidc",
+      sha,
+    });
+
+    const resolved = await getProjectFromShortLivedProjectToken(token);
+    expect(resolved?.project.id).toBe(project.id);
+    expect(resolved?.sha).toBe(sha);
   });
 
   test("returns null for a non-temporary token", async ({ project }) => {
@@ -80,8 +92,8 @@ describe("short-lived project token", () => {
       source: "github-actions-tokenless",
     });
 
-    const resolvedProject = await getProjectFromShortLivedProjectToken(token);
-    expect(resolvedProject?.id).toBe(project.id);
+    const resolved = await getProjectFromShortLivedProjectToken(token);
+    expect(resolved?.project.id).toBe(project.id);
   });
 
   test("returns null when tokenless auth is disabled after token creation", async ({

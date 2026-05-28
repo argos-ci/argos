@@ -11,6 +11,7 @@ const SHORT_LIVED_PROJECT_TOKEN_TTL_MS = 10 * 60 * 1000;
 const ShortLivedProjectTokenPayloadSchema = z.object({
   projectId: z.string(),
   source: z.enum(["github-actions-oidc", "github-actions-tokenless"]),
+  sha: z.string().nullable().optional(),
 });
 
 type ShortLivedProjectTokenPayload = z.infer<
@@ -54,12 +55,17 @@ export async function createShortLivedProjectToken(
   return { token, expiresAt };
 }
 
+export type ResolvedShortLivedProjectToken = {
+  project: Project;
+  sha: string | null;
+};
+
 /**
  * Get a project from a short lived project token.
  */
 export async function getProjectFromShortLivedProjectToken(
   token: string,
-): Promise<Project | null> {
+): Promise<ResolvedShortLivedProjectToken | null> {
   if (!isShortLivedProjectToken(token)) {
     return null;
   }
@@ -91,11 +97,13 @@ export async function getProjectFromShortLivedProjectToken(
     return null;
   }
 
+  const sha = result.data.sha ?? null;
+
   switch (result.data.source) {
     case "github-actions-oidc":
-      return project.githubActionsOidcEnabled ? project : null;
+      return project.githubActionsOidcEnabled ? { project, sha } : null;
     case "github-actions-tokenless":
-      return project.tokenlessAuthEnabled ? project : null;
+      return project.tokenlessAuthEnabled ? { project, sha } : null;
     default:
       assertNever(result.data.source);
   }

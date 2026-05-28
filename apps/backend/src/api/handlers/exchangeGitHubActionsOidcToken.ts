@@ -26,12 +26,6 @@ const GitHubActionsOidcExchangeRequestSchema = z.object({
   commit: Sha1HashSchema.optional().meta({
     description: "Expected commit SHA",
   }),
-  branch: z.string().min(1).optional().meta({
-    description: "Expected branch name",
-  }),
-  pullRequestNumber: z.number().int().min(1).optional().meta({
-    description: "Expected pull request number",
-  }),
 });
 
 const GitHubActionsOidcExchangeResponseSchema = z.object({

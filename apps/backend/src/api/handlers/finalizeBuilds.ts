@@ -7,7 +7,10 @@ import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
 import { Build } from "@/database/models";
 import { transaction } from "@/database/transaction";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
+import {
+  assertAuthAttributes,
+  getAuthProjectPayloadFromExpressReq,
+} from "../auth/project";
 import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
 import {
   conflict,
@@ -61,6 +64,12 @@ export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
       .where("builds.projectId", auth.project.id)
       .where("builds.externalId", parallelNonce)
       .where("builds.totalBatch", -1);
+
+    for (const build of builds) {
+      assertAuthAttributes(auth, {
+        sha: build.compareScreenshotBucket?.commit,
+      });
+    }
 
     const finalized = await transaction(async (trx) => {
       return Promise.all(

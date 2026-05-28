@@ -4,11 +4,47 @@ import {
   getAuthHeaderFromExpressReq,
   parseBearerFromHeader,
 } from "@/auth/auth-header";
-import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
+import type {
+  AuthJWTPayload,
+  AuthPATPayload,
+  AuthProjectPayload,
+} from "@/auth/payload";
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { getAuthPayloadFromUserAccessToken } from "@/auth/user-access-token";
 import { Project, UserAccessToken } from "@/database/models";
 import { boom } from "@/util/error";
+
+/**
+ * Optional caller-asserted attributes that must match the token's bound
+ * attributes when the token carries them. Used to bind a short-lived OIDC
+ * token to the commit it was minted from so it cannot be reused on a
+ * different commit.
+ */
+export type AuthAttributes = {
+  sha?: string | null | undefined;
+};
+
+/**
+ * Validate that any attribute the token is bound to matches the caller's
+ * asserted attribute. No-op when either side is absent.
+ */
+export function assertAuthAttributes(
+  auth: AuthJWTPayload | AuthPATPayload | AuthProjectPayload,
+  attributes: AuthAttributes | undefined,
+): void {
+  if (!attributes) {
+    return;
+  }
+  if (auth.type !== "project") {
+    return;
+  }
+  if (attributes.sha && auth.sha && auth.sha !== attributes.sha) {
+    throw boom(
+      401,
+      "Token is bound to a different commit than the one provided.",
+    );
+  }
+}
 
 export function assertProjectAccess(
   auth: AuthPATPayload | AuthProjectPayload,
@@ -46,19 +82,28 @@ export function assertProjectAccess(
   }
 }
 
-export async function getAuthPayloadFromExpressReq(request: Request) {
+export async function getAuthPayloadFromExpressReq(
+  request: Request,
+  attributes?: AuthAttributes,
+) {
   const authHeader = getAuthHeaderFromExpressReq(request);
   const bearer = parseBearerFromHeader(authHeader);
-  if (UserAccessToken.isValidUserAccessToken(bearer)) {
-    return getAuthPayloadFromUserAccessToken(bearer);
-  }
-  return getAuthProjectPayloadFromBearerToken(bearer);
+  const auth = UserAccessToken.isValidUserAccessToken(bearer)
+    ? await getAuthPayloadFromUserAccessToken(bearer)
+    : await getAuthProjectPayloadFromBearerToken(bearer);
+  assertAuthAttributes(auth, attributes);
+  return auth;
 }
 
-export async function getAuthProjectPayloadFromExpressReq(request: Request) {
+export async function getAuthProjectPayloadFromExpressReq(
+  request: Request,
+  attributes?: AuthAttributes,
+) {
   const authHeader = getAuthHeaderFromExpressReq(request);
   const bearer = parseBearerFromHeader(authHeader);
-  return getAuthProjectPayloadFromBearerToken(bearer);
+  const auth = await getAuthProjectPayloadFromBearerToken(bearer);
+  assertAuthAttributes(auth, attributes);
+  return auth;
 }
 
 export async function getProjectFromReqAndParams(

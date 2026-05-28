@@ -10,7 +10,10 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
+import {
+  assertAuthAttributes,
+  getAuthProjectPayloadFromExpressReq,
+} from "../auth/project";
 import {
   BuildIdSchema,
   BuildSchema,
@@ -94,6 +97,10 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     if (!build.compareScreenshotBucket) {
       throw boom(500, "Could not find compareScreenshotBucket for build");
     }
+
+    assertAuthAttributes(auth, {
+      sha: build.compareScreenshotBucket.commit,
+    });
 
     if (build.compareScreenshotBucket.complete) {
       const duplicateParallelRequest =
