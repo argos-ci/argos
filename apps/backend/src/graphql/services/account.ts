@@ -19,12 +19,13 @@ import {
 } from "@/database/models";
 import { resolveAccountSlug } from "@/database/services/account";
 import { transaction } from "@/database/transaction";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 import parentLogger from "@/logger";
 import { boltApp } from "@/slack/app";
 import { uninstallSlackInstallation } from "@/slack/helpers";
 import { cancelStripeSubscription } from "@/stripe";
 
-import { badUserInput, forbidden, unauthenticated } from "../util";
+import { badUserInput, forbidden, invalidId, unauthenticated } from "../util";
 import { unsafe_deleteProject } from "./project";
 
 const logger = parentLogger.child({ module: "graphql/services/account" });
@@ -86,6 +87,14 @@ export async function getAccessibleAccounts(args: {
   trx?: TransactionOrKnex;
 }): Promise<Account[]> {
   const { accountIds, userId, trx } = args;
+
+  if (accountIds.length === 0) {
+    throw badUserInput("At least one account is required");
+  }
+
+  if (accountIds.some((accountId) => !isValidPgBigInt(accountId))) {
+    throw invalidId();
+  }
 
   return Account.query(trx)
     .whereIn("id", accountIds)
