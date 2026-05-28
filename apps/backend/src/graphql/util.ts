@@ -46,3 +46,7 @@ export function badUserInput(
     extensions,
   });
 }
+
+export function invalidId() {
+  throw badUserInput("Invalid ID");
+}

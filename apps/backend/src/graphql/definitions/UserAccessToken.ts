@@ -5,10 +5,11 @@ import { createCliAuthCode } from "@/auth/cli";
 import { UserAccessToken, UserAccessTokenScope } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { transaction } from "@/database/transaction";
+import { isValidPgBigInt } from "@/database/util/biginteger";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { getAccessibleAccounts } from "../services/account";
-import { badUserInput, forbidden } from "../util";
+import { badUserInput, forbidden, invalidId } from "../util";
 
 const { gql } = gqlTag;
 
@@ -182,6 +183,10 @@ export const resolvers: IResolvers = {
       }
 
       const { id } = args.input;
+
+      if (!isValidPgBigInt(id)) {
+        throw invalidId();
+      }
 
       await UserAccessToken.query().delete().where({
         id,

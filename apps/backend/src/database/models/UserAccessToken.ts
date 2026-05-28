@@ -22,7 +22,7 @@ export class UserAccessToken extends Model {
         required: ["userId", "name", "token", "source"],
         properties: {
           userId: { type: "string" },
-          name: { type: "string" },
+          name: { type: "string", minLength: 1, maxLength: 255 },
           token: { type: "string", minLength: 64, maxLength: 64 },
           expireAt: { type: ["string", "null"] },
           lastUsedAt: { type: ["string", "null"] },
