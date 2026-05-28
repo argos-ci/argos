@@ -8,7 +8,7 @@ The server creates the build along signed S3 URLs to upload the screenshots.
 
 ## _Client requirement_
 
-Client must upload the screenshots using the signed URLs it got from the server before starting the se 2.
+Client must upload the screenshots using the signed URLs it got from the server before starting step 2. Legacy clients send `screenshotKeys` and receive `putUrl`; new clients send `screenshots` with `key` and `contentType` and receive `postUrl` with its `fields`.
 
 ## 2. Update / Finalize — PUT /builds/:buildId
 

@@ -16,11 +16,22 @@ import { createApp } from "./app";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-type UploadEntry = {
+type LegacyUploadEntry = {
   key: string;
-  url: string;
+  putUrl: string;
+};
+
+type SecureUploadEntry = {
+  key: string;
+  postUrl: string;
   fields: Record<string, string>;
 };
+
+type UploadEntry = LegacyUploadEntry | SecureUploadEntry;
+
+function isSecureUpload(upload: UploadEntry): upload is SecureUploadEntry {
+  return "postUrl" in upload;
+}
 
 /**
  * Upload a file using the presigned POST policy returned by createBuild.
@@ -28,8 +39,8 @@ type UploadEntry = {
  * S3 enforces the size limit baked into the policy's `content-length-range`
  * condition; oversized uploads are rejected by S3 itself, not by Argos.
  */
-async function uploadFile(
-  upload: UploadEntry,
+async function uploadFileWithPostUrl(
+  upload: SecureUploadEntry,
   file: Buffer,
   contentType: string,
 ): Promise<void> {
@@ -37,18 +48,41 @@ async function uploadFile(
   for (const [name, value] of Object.entries(upload.fields)) {
     formData.append(name, value);
   }
-  // The policy conditions Content-Type via `eq`, so the form must include a
-  // matching `Content-Type` field. The `file` field must come last.
-  formData.append("Content-Type", contentType);
+  // The `file` field must come last.
   formData.append(
     "file",
     new Blob([new Uint8Array(file)], { type: contentType }),
   );
-  const response = await fetch(upload.url, {
+  const response = await fetch(upload.postUrl, {
     method: "POST",
     body: formData,
   });
   expect(response.status).toBe(204);
+}
+
+async function uploadFileWithPutUrl(
+  upload: LegacyUploadEntry,
+  file: Buffer,
+  contentType: string,
+): Promise<void> {
+  const response = await fetch(upload.putUrl, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: new Uint8Array(file),
+  });
+  expect(response.status).toBe(200);
+}
+
+async function uploadFile(
+  upload: UploadEntry,
+  file: Buffer,
+  contentType: string,
+): Promise<void> {
+  if (isSecureUpload(upload)) {
+    await uploadFileWithPostUrl(upload, file, contentType);
+    return;
+  }
+  await uploadFileWithPutUrl(upload, file, contentType);
 }
 
 describe("api v2", () => {
@@ -78,15 +112,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer nop")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshots: [
-              {
-                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-                contentType: "image/jpeg",
-              },
-              {
-                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-                contentType: "image/jpeg",
-              },
+            screenshotKeys: [
+              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+              "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
             ],
             branch: "main",
             name: "current",
@@ -117,22 +145,16 @@ describe("api v2", () => {
         });
       });
 
-      it("creates build and upload urls", async () => {
+      it("creates build and legacy upload urls", async () => {
         const res = await request(app)
           .post("/v2/builds")
           .set("Host", "api.argos-ci.dev")
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshots: [
-              {
-                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-                contentType: "image/jpeg",
-              },
-              {
-                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-                contentType: "image/jpeg",
-              },
+            screenshotKeys: [
+              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+              "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
             ],
             branch: "main",
             name: "current",
@@ -177,19 +199,141 @@ describe("api v2", () => {
               gitlab: { state: "pending" },
             },
           },
-          screenshots: [
-            {
-              key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-              url: expect.any(String),
-              fields: expect.any(Object),
-            },
-            {
-              key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
-              url: expect.any(String),
-              fields: expect.any(Object),
-            },
-          ],
         });
+        expect(res.body.screenshots).toEqual([
+          {
+            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            putUrl: expect.any(String),
+          },
+          {
+            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            putUrl: expect.any(String),
+          },
+        ]);
+
+        const [firstUpload, secondUpload] = res.body
+          .screenshots as UploadEntry[];
+        if (
+          !firstUpload ||
+          !secondUpload ||
+          isSecureUpload(firstUpload) ||
+          isSecureUpload(secondUpload)
+        ) {
+          throw new Error("Expected two upload targets");
+        }
+        await uploadFileWithPutUrl(
+          firstUpload,
+          Buffer.from("legacy upload"),
+          "image/jpeg",
+        );
+        await uploadFileWithPutUrl(
+          secondUpload,
+          Buffer.from("legacy upload"),
+          "image/jpeg",
+        );
+      });
+
+      it("creates build and secure upload fields", async () => {
+        const res = await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshots: [
+              {
+                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                contentType: "image/jpeg",
+              },
+              {
+                key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+                contentType: "application/json",
+              },
+            ],
+            branch: "main",
+            name: "current",
+            prNumber: 12,
+            mode: null,
+          })
+          .expect(201);
+
+        expect(res.body.screenshots).toEqual([
+          {
+            key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            postUrl: expect.any(String),
+            fields: expect.objectContaining({
+              "Content-Type": "image/jpeg",
+            }),
+          },
+          {
+            key: "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+            postUrl: expect.any(String),
+            fields: expect.objectContaining({
+              "Content-Type": "application/json",
+            }),
+          },
+        ]);
+
+        const [imageUpload, jsonUpload] = res.body.screenshots as UploadEntry[];
+        if (
+          !imageUpload ||
+          !jsonUpload ||
+          !isSecureUpload(imageUpload) ||
+          !isSecureUpload(jsonUpload)
+        ) {
+          throw new Error("Expected two secure upload targets");
+        }
+        await uploadFileWithPostUrl(
+          imageUpload,
+          Buffer.from("secure upload"),
+          "image/jpeg",
+        );
+        await uploadFileWithPostUrl(
+          jsonUpload,
+          Buffer.from('{"ok":true}'),
+          "application/json",
+        );
+      });
+
+      it("rejects requests with both legacy and secure screenshot inputs", async () => {
+        await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            screenshotKeys: [
+              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            ],
+            screenshots: [
+              {
+                key: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                contentType: "image/jpeg",
+              },
+            ],
+            branch: "main",
+            name: "current",
+          })
+          .expect((res) => {
+            expect(res.body.error).toBe("Invalid request");
+          })
+          .expect(400);
+      });
+
+      it("rejects requests without screenshot inputs", async () => {
+        await request(app)
+          .post("/v2/builds")
+          .set("Host", "api.argos-ci.dev")
+          .set("Authorization", "Bearer awesome-token")
+          .send({
+            commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
+            branch: "main",
+            name: "current",
+          })
+          .expect((res) => {
+            expect(res.body.error).toBe("Invalid request");
+          })
+          .expect(400);
       });
     });
 
@@ -245,9 +389,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshots: Array.from(
+            screenshotKeys: Array.from(
               new Set(screenshots.map((screenshot) => screenshot.key)),
-            ).map((key) => ({ key, contentType: "image/jpeg" })),
+            ),
             branch: "main",
             name: "current",
           })
@@ -372,9 +516,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshots: Array.from(
+            screenshotKeys: Array.from(
               new Set(screenshots.map((screenshot) => screenshot.key)),
-            ).map((key) => ({ key, contentType: "image/jpeg" })),
+            ),
             branch: "main",
             name: "current",
             mode: "monitoring",
@@ -504,10 +648,7 @@ describe("api v2", () => {
               .set("Authorization", "Bearer awesome-token")
               .send({
                 commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-                screenshots: screenshots.map((screenshot) => ({
-                  key: screenshot.key,
-                  contentType: "image/jpeg",
-                })),
+                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
                 branch: "main",
                 name: "current",
                 parallel: true,
@@ -618,10 +759,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshots: screenshotGroups[0]!.map((screenshot) => ({
-              key: screenshot.key,
-              contentType: "image/jpeg",
-            })),
+            screenshotKeys: screenshotGroups[0]!.map(
+              (screenshot) => screenshot.key,
+            ),
             branch: "main",
             name: "current",
             parallel: true,
@@ -683,10 +823,9 @@ describe("api v2", () => {
           .set("Authorization", "Bearer awesome-token")
           .send({
             commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-            screenshots: screenshotGroups[1]!.map((screenshot) => ({
-              key: screenshot.key,
-              contentType: "image/jpeg",
-            })),
+            screenshotKeys: screenshotGroups[1]!.map(
+              (screenshot) => screenshot.key,
+            ),
             branch: "main",
             name: "current",
             parallel: true,
@@ -760,10 +899,7 @@ describe("api v2", () => {
               .set("Authorization", "Bearer awesome-token")
               .send({
                 commit: "b6bf264029c03888b7fb7e6db7386f3b245b77b0",
-                screenshots: screenshots.map((screenshot) => ({
-                  key: screenshot.key,
-                  contentType: "image/jpeg",
-                })),
+                screenshotKeys: screenshots.map((screenshot) => screenshot.key),
                 branch: "main",
                 name: "current",
                 parallel: true,
