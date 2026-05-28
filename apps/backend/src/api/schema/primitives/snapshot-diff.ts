@@ -7,7 +7,7 @@ import {
   ScreenshotDiff,
   type File as FileModel,
 } from "@/database/models";
-import { getPublicImageFileUrl, getPublicUrl, getTwicPicsUrl } from "@/storage";
+import { getPublicFileUrl, getPublicUrl, getTwicPicsUrl } from "@/storage";
 
 const SnapshotDiffStatusSchema = z
   .enum([
@@ -89,8 +89,8 @@ async function serializeSnapshot(
   }
 
   const file = screenshot.file as FileModel | null | undefined;
-  const imageUrl = file
-    ? await getPublicImageFileUrl(file)
+  const url = file
+    ? await getPublicFileUrl(file)
     : await getPublicUrl(screenshot.s3Id);
 
   return {
@@ -99,7 +99,7 @@ async function serializeSnapshot(
     metadata: screenshot.metadata,
     width: file?.width ?? null,
     height: file?.height ?? null,
-    url: imageUrl,
+    url,
     contentType: file?.contentType ?? "image/png",
   };
 }
@@ -107,7 +107,7 @@ async function serializeSnapshot(
 async function getSnapshotDiffUrl(diff: ScreenshotDiff) {
   const file = diff.file as FileModel | null | undefined;
   if (file) {
-    return getPublicImageFileUrl(file);
+    return getPublicFileUrl(file);
   }
   if (diff.s3Id) {
     return getTwicPicsUrl(diff.s3Id);

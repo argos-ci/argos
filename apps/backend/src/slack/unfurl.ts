@@ -6,7 +6,7 @@ import { match } from "path-to-regexp";
 import { getBuildLabel } from "@/build/label";
 import { getStatsMessage } from "@/build/stats";
 import { Build, ScreenshotDiff } from "@/database/models";
-import { getPublicImageFileUrl, getTwicPicsUrl } from "@/storage";
+import { getPublicFileUrl, getTwicPicsUrl } from "@/storage";
 
 type BuildMatchParams = {
   accountSlug: string;
@@ -61,7 +61,7 @@ export async function unfurlBuild(
     if (!screenshot.file) {
       return getTwicPicsUrl(screenshot.s3Id);
     }
-    return getPublicImageFileUrl(screenshot.file);
+    return getPublicFileUrl(screenshot.file);
   })();
 
   const attachment: Bolt.types.MessageAttachment = {

@@ -1,4 +1,5 @@
 import { invariant } from "@argos/util/invariant";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -10,7 +11,6 @@ import { Build } from "@/database/models/Build";
 import { Project } from "@/database/models/Project";
 import { getUnknownFileKeys } from "@/database/services/file";
 import { getS3Client } from "@/storage/s3";
-import { getSignedObjectUrl } from "@/storage/signed-url";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
@@ -28,6 +28,14 @@ import {
   unauthorized,
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
+
+/**
+ * Maximum size (in bytes) accepted for an uploaded snapshot or trace file. The
+ * limit is enforced by S3 itself: each presigned upload URL is signed with a
+ * `content-length-range` condition that S3 verifies on receipt, so an oversized
+ * file is rejected at upload time and never reaches the bucket.
+ */
+const MAX_UPLOAD_FILE_BYTES = 25 * 1024 * 1024;
 
 const RequestBodySchema = z.object({
   commit: Sha1HashSchema.meta({
@@ -108,7 +116,8 @@ type RequestBody = z.infer<typeof RequestBodySchema>;
 
 const UploadSchema = z.object({
   key: z.string(),
-  putUrl: z.url(),
+  url: z.url(),
+  fields: z.record(z.string(), z.string()),
 });
 
 type Upload = z.infer<typeof UploadSchema>;
@@ -175,28 +184,27 @@ type BuildContext = {
 };
 
 /**
- * Get signed URLs for unknown file keys.
+ * Get presigned POST policies for unknown file keys.
+ *
+ * Each policy is signed with a `content-length-range` condition so that S3
+ * itself rejects oversized uploads (the body must be within
+ * `[1, MAX_UPLOAD_FILE_BYTES]`).
  */
 async function getUploads(keys: string[]): Promise<Upload[]> {
   const unknownKeys = await getUnknownFileKeys(keys);
   const s3 = getS3Client();
   const screenshotsBucket = config.get("s3.screenshotsBucket");
-  const putUrls = await Promise.all(
-    unknownKeys.map((key) =>
-      getSignedObjectUrl({
-        s3,
-        Key: key,
+  return Promise.all(
+    unknownKeys.map(async (key) => {
+      const { url, fields } = await createPresignedPost(s3, {
         Bucket: screenshotsBucket,
-        expiresIn: 1800, // 30 minutes
-        method: "PUT",
-      }),
-    ),
+        Key: key,
+        Expires: 1800, // 30 minutes
+        Conditions: [["content-length-range", 1, MAX_UPLOAD_FILE_BYTES]],
+      });
+      return { key, url, fields };
+    }),
   );
-  return unknownKeys.map((key, index) => {
-    const putUrl = putUrls[index];
-    invariant(putUrl, "`putUrl` is undefined");
-    return { key, putUrl };
-  });
 }
 
 /**

@@ -57,12 +57,10 @@ export class S3FileHandle implements FileHandle {
         Key: this.#key,
       });
       invariant(result.ContentType, "missing content type");
-      const ext = mime.getExtension(result.ContentType);
-      if (!ext) {
-        throw new Error(
-          `Unable to determine file extension for ${result.ContentType}`,
-        );
-      }
+      // The extension is only used to name the temporary file. Fall back to a
+      // generic one for content types `mime` doesn't know about (e.g.
+      // `application/yaml`).
+      const ext = mime.getExtension(result.ContentType) ?? "bin";
       const outputPath = await tmpName({ postfix: `.${ext}` });
       await s3Download(result, outputPath);
       this.#filepath = outputPath;

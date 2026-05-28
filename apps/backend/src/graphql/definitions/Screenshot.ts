@@ -8,7 +8,7 @@ import {
   checkIsTrustedNpmPackage,
   getLatestPackageVersion,
 } from "@/npm/version";
-import { getPublicImageFileUrl, getPublicUrl } from "@/storage";
+import { getPublicFileUrl, getPublicUrl } from "@/storage";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 
@@ -112,7 +112,7 @@ export const resolvers: IResolvers = {
       }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
-      return getPublicImageFileUrl(file);
+      return getPublicFileUrl(file);
     },
     originalUrl: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) {
@@ -120,7 +120,9 @@ export const resolvers: IResolvers = {
       }
       const file = await ctx.loaders.File.load(screenshot.fileId);
       invariant(file, "File not found");
-      return getPublicUrl(file.key);
+      return file.isImage()
+        ? getPublicUrl(file.key)
+        : getPublicUrl(file.key, { download: true });
     },
     width: async (screenshot, _args, ctx) => {
       if (!screenshot.fileId) {

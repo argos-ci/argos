@@ -52,3 +52,26 @@
 - Avoid large shared setups that slow down the suite or reduce concurrency.
 - Load dependencies independently whenever possible so tests can run in parallel without unnecessary bottlenecks.
 - Avoid mocking unless the behavior cannot be tested realistically.
+
+### Running tests
+
+From the repo root:
+
+```bash
+pnpm test:unit          # unit tests (no infra)
+pnpm test:integration   # e2e tests (require Postgres + Redis)
+```
+
+Before running e2e tests for the first time — and after pulling new migrations — reset the test database so its schema matches `db/structure.sql`:
+
+```bash
+NODE_ENV=test pnpm run --filter @argos/backend db:reset
+```
+
+If `db:reset` reports `database "test" is being accessed by other users`, terminate the open sessions first:
+
+```bash
+psql -h 127.0.0.1 -U postgres -d postgres -c \
+  "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+   WHERE datname = 'test' AND pid <> pg_backend_pid();"
+```

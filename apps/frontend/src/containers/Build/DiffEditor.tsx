@@ -64,7 +64,9 @@ export function Editor(props: Pick<EditorProps, "value" | "language">) {
 }
 
 export function getLanguageFromContentType(contentType: string) {
-  switch (contentType) {
+  // Normalize: drop any parameters (e.g. "; charset=utf-8") and lowercase.
+  const normalized = (contentType.split(";")[0] ?? "").trim().toLowerCase();
+  switch (normalized) {
     case "application/json":
       return "json";
     case "application/javascript":
@@ -77,6 +79,7 @@ export function getLanguageFromContentType(contentType: string) {
       return "html";
     case "text/css":
       return "css";
+    case "application/xml":
     case "text/xml":
       return "xml";
     case "text/markdown":
