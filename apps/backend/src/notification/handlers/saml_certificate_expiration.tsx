@@ -16,6 +16,8 @@ const baseUrl = config.get("server.url");
 
 export const handler = defineNotificationHandler({
   type: "saml_certificate_expiration",
+  category: "security",
+  configurable: false,
   schema: z.object({
     accountName: z.string().nullish(),
     accountSlug: z.string(),

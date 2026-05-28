@@ -12,6 +12,8 @@ import { defineNotificationHandler } from "../workflow-types";
 
 export const handler = defineNotificationHandler({
   type: "slack_automation_action_unavailable",
+  category: "integration",
+  configurable: true,
   schema: z.object({
     channelId: z.string(),
     channelName: z.string(),

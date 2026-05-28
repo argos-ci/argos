@@ -18,6 +18,8 @@ const baseUrl = config.get("server.url");
 
 export const handler = defineNotificationHandler({
   type: "spend_limit",
+  category: "billing",
+  configurable: true,
   schema: z.object({
     threshold: SpendLimitThresholdSchema,
     accountName: z.string().nullish(),

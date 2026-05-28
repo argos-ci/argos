@@ -2191,6 +2191,44 @@ CREATE TABLE public.user_emails (
 ALTER TABLE public.user_emails OWNER TO postgres;
 
 --
+-- Name: user_notification_preferences; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_notification_preferences (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "userId" bigint NOT NULL,
+    category character varying(255) NOT NULL,
+    channel character varying(255) NOT NULL,
+    enabled boolean NOT NULL
+);
+
+
+ALTER TABLE public.user_notification_preferences OWNER TO postgres;
+
+--
+-- Name: user_notification_preferences_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_notification_preferences_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_notification_preferences_id_seq OWNER TO postgres;
+
+--
+-- Name: user_notification_preferences_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_notification_preferences_id_seq OWNED BY public.user_notification_preferences.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2558,6 +2596,13 @@ ALTER TABLE ONLY public.user_access_token_scopes ALTER COLUMN id SET DEFAULT nex
 --
 
 ALTER TABLE ONLY public.user_access_tokens ALTER COLUMN id SET DEFAULT nextval('public.user_access_tokens_id_seq'::regclass);
+
+
+--
+-- Name: user_notification_preferences id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notification_preferences ALTER COLUMN id SET DEFAULT nextval('public.user_notification_preferences_id_seq'::regclass);
 
 
 --
@@ -3208,6 +3253,22 @@ ALTER TABLE ONLY public.user_emails
 
 
 --
+-- Name: user_notification_preferences user_notification_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notification_preferences
+    ADD CONSTRAINT user_notification_preferences_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_notification_preferences user_notification_preferences_userid_category_channel_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notification_preferences
+    ADD CONSTRAINT user_notification_preferences_userid_category_channel_unique UNIQUE ("userId", category, channel);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3306,6 +3367,7 @@ CREATE INDEX build_reviews_dismissedbyid_index ON public.build_reviews USING btr
 CREATE INDEX build_reviews_userid_index ON public.build_reviews USING btree ("userId");
 
 
+--
 -- Name: build_shards_buildid_nonce_unique; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3793,6 +3855,13 @@ CREATE INDEX tests_projectid_index ON public.tests USING btree ("projectId");
 --
 
 CREATE INDEX user_access_tokens_userid_index ON public.user_access_tokens USING btree ("userId");
+
+
+--
+-- Name: user_notification_preferences_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_notification_preferences_userid_index ON public.user_notification_preferences USING btree ("userId");
 
 
 --
@@ -4507,6 +4576,14 @@ ALTER TABLE ONLY public.user_emails
 
 
 --
+-- Name: user_notification_preferences user_notification_preferences_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_notification_preferences
+    ADD CONSTRAINT user_notification_preferences_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: users users_gitlabuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4730,3 +4807,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260525130000_build-notification-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526104543_build-review-dismissed-together.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526120000_build-shards-nonce.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260528120000_user-notification-preferences.js', 1, NOW());

@@ -50,4 +50,5 @@ export * from "./UserAccessToken";
 export * from "./UserAccessTokenScope";
 export * from "./User";
 export * from "./UserEmail";
+export * from "./UserNotificationPreference";
 export type { Model } from "../util/model";
