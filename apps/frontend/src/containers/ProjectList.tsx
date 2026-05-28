@@ -60,7 +60,12 @@ function RepositoryChip(props: { repository: Project["repository"] }) {
   }
 
   return (
-    <Chip scale="sm" color="neutral" icon={<RepositoryIcon />}>
+    <Chip
+      scale="sm"
+      color="neutral"
+      icon={<RepositoryIcon />}
+      className="max-w-full"
+    >
       {props.repository.fullName}
     </Chip>
   );
@@ -78,7 +83,7 @@ function ProjectCard({ project }: { project: Project }) {
         className="absolute inset-0"
         href={`/${project.slug}`}
       />
-      <div className="min-w-0">
+      <div className="w-full min-w-0">
         <div className="truncate font-medium">{project.name}</div>
         {deploymentsFlag.isEnabled && (
           <div className="text-low mt-1 truncate text-sm">
