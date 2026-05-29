@@ -232,11 +232,11 @@ export function EmailLayout(props: {
    */
   footer?: boolean;
   /**
-   * When set, an unsubscribe link is rendered in the footer.
+   * When set, a link to the notification preferences is rendered in the footer.
    */
-  unsubscribeUrl?: string | null | undefined;
+  preferencesUrl?: string | null | undefined;
 }) {
-  const { footer = true, children, centered, preview, unsubscribeUrl } = props;
+  const { footer = true, children, centered, preview, preferencesUrl } = props;
   return (
     <Html lang="en" dir="ltr">
       <Head />
@@ -268,13 +268,13 @@ export function EmailLayout(props: {
                 >
                   Argos
                 </Link>
-                {unsubscribeUrl ? (
+                {preferencesUrl ? (
                   <Text className="mt-2 text-xs text-gray-500">
                     <Link
                       className="text-xs text-gray-500 underline"
-                      href={unsubscribeUrl}
+                      href={preferencesUrl}
                     >
-                      Unsubscribe from these emails
+                      Manage your notification preferences
                     </Link>
                   </Text>
                 ) : null}

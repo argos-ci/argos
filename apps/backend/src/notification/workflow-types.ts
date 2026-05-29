@@ -5,10 +5,10 @@ type HandlerContext = {
     name: string | null;
   };
   /**
-   * URL to unsubscribe from this notification category. Present only for
-   * configurable notifications.
+   * URL to the user's notification preferences. Present only for configurable
+   * notifications.
    */
-  unsubscribeUrl?: string | null;
+  preferencesUrl?: string | null;
 };
 
 /**

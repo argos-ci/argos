@@ -42,7 +42,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`You’re at ${threshold}% of your spend limit for this cycle. Check your usage now.`}
-          unsubscribeUrl={ctx.unsubscribeUrl}
+          preferencesUrl={ctx.preferencesUrl}
         >
           <H1>Your team has reached {threshold}% of its spend limit</H1>
           <Hi name={ctx.user.name} />

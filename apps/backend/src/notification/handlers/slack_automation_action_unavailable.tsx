@@ -43,7 +43,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`The Slack channel ${channelName} (ID: ${channelId}) used in some automation rules has been ${action}.`}
-          unsubscribeUrl={ctx.unsubscribeUrl}
+          preferencesUrl={ctx.preferencesUrl}
         >
           <H1>Automation rule update required</H1>
           <Hi name={ctx.user.name} />

@@ -16,7 +16,6 @@ import { getEmailPreviewMiddleware } from "../email/express";
 import { getNotificationPreviewMiddleware } from "../notification/express";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
-import notificationUnsubscribeRouter from "./notification-unsubscribe";
 import { subdomain } from "./util";
 
 export const installAppRouter = async (app: express.Application) => {
@@ -176,8 +175,6 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(samlAuthRouter);
 
   router.use(deploymentAccessRouter);
-
-  router.use(notificationUnsubscribeRouter);
 
   router.use(getSlackMiddleware());
 

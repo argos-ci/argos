@@ -3,8 +3,8 @@ import { invariant } from "@argos/util/invariant";
 import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core";
+import { getNotificationSettingsUrl } from "@/notification/categories";
 import { notificationHandlers } from "@/notification/handlers";
-import { getUnsubscribeUrl } from "@/notification/unsubscribe";
 
 export const notificationMessageJob = createModelJob(
   "notificationMessage",
@@ -35,19 +35,11 @@ async function processMessage(message: NotificationMessage) {
   }
   const data = message.workflow.data;
 
-  // Configurable notifications carry a one-click unsubscribe link/header
-  // (RFC 8058) scoped to the notification's category and channel.
-  const headers: Record<string, string> = {};
-  let unsubscribeUrl: string | null = null;
-  if (handler.configurable) {
-    unsubscribeUrl = getUnsubscribeUrl({
-      userId: message.userId,
-      category: handler.category,
-      channel: "email",
-    });
-    headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
-    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
-  }
+  // Configurable notifications link to the user's notification preferences so
+  // they can manage what they receive.
+  const preferencesUrl = handler.configurable
+    ? getNotificationSettingsUrl(message.user.account.slug)
+    : null;
 
   const ctx = {
     user: {
@@ -55,7 +47,7 @@ async function processMessage(message: NotificationMessage) {
         ? extractFirstName(message.user.account.name)
         : null,
     },
-    unsubscribeUrl,
+    preferencesUrl,
   };
   const email = handler.email({ ...(data as any), ctx });
 
@@ -63,7 +55,6 @@ async function processMessage(message: NotificationMessage) {
     to,
     subject: email.subject,
     react: email.body,
-    ...(Object.keys(headers).length > 0 ? { headers } : {}),
   });
 
   const externalId = (await result?.data?.id) ?? null;

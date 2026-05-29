@@ -30,10 +30,6 @@ export async function sendEmail(options: {
    * Email body as React element.
    */
   react: React.ReactElement;
-  /**
-   * Custom email headers, e.g. List-Unsubscribe.
-   */
-  headers?: Record<string, string>;
 }) {
   if (production) {
     if (!resend) {

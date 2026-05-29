@@ -1,3 +1,5 @@
+import config from "@/config";
+
 import { notificationHandlers } from "./handlers";
 import type { NotificationCategory } from "./workflow-types";
 
@@ -59,6 +61,16 @@ const CATEGORY_ORDER: NotificationCategory[] = [
   "project",
   "integration",
 ];
+
+/**
+ * URL to a user's notification preferences page.
+ */
+export function getNotificationSettingsUrl(accountSlug: string): string {
+  return new URL(
+    `/${accountSlug}/settings/notifications`,
+    config.get("server.url"),
+  ).href;
+}
 
 /**
  * Categories the user can opt out of, derived from the handlers. A category is
