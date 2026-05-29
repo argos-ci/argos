@@ -24,6 +24,7 @@ import * as GoogleUser from "./GoogleUser";
 import * as JobStatus from "./JobStatus";
 import * as MetricsPeriod from "./MetricsPeriod";
 import * as Node from "./Node";
+import * as NotificationPreference from "./NotificationPreference";
 import * as PageInfo from "./PageInfo";
 import * as Plan from "./Plan";
 import * as Project from "./Project";
@@ -66,6 +67,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   JobStatus,
   MetricsPeriod,
   Node,
+  NotificationPreference,
   PageInfo,
   Plan,
   Project,

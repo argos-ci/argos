@@ -231,8 +231,12 @@ export function EmailLayout(props: {
    * @default true
    */
   footer?: boolean;
+  /**
+   * When set, a link to the notification preferences is rendered in the footer.
+   */
+  preferencesUrl?: string | null;
 }) {
-  const { footer = true, children, centered, preview } = props;
+  const { footer = true, children, centered, preview, preferencesUrl } = props;
   return (
     <Html lang="en" dir="ltr">
       <Head />
@@ -264,6 +268,16 @@ export function EmailLayout(props: {
                 >
                   Argos
                 </Link>
+                {preferencesUrl ? (
+                  <Text className="mt-2 text-xs text-gray-500">
+                    <Link
+                      className="text-xs text-gray-500 underline"
+                      href={preferencesUrl}
+                    >
+                      Manage your notification preferences
+                    </Link>
+                  </Text>
+                ) : null}
               </>
             )}
           </Container>

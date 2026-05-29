@@ -16,6 +16,7 @@ const baseUrl = config.get("server.url");
 
 export const handler = defineNotificationHandler({
   type: "project_deleted",
+  category: "project",
   schema: z.object({
     accountType: z.enum(["user", "team"]),
     accountName: z.string().nullish(),
@@ -47,6 +48,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`The project ${props.projectName} was deleted from ${fromLabel} team.`}
+          preferencesUrl={props.ctx.preferencesUrl}
         >
           <H1>Project deleted</H1>
           <Hi name={props.ctx.user.name} />

@@ -36,6 +36,7 @@ function getSubjectLabel(state: ReviewState): string {
 
 export const handler = defineNotificationHandler({
   type: "review_submitted",
+  category: "review",
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),
@@ -79,6 +80,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`${reviewer} ${action} build ${buildLabel} in ${accountSlug}/${projectName}.`}
+          preferencesUrl={ctx.preferencesUrl}
         >
           <H1>Review submitted</H1>
           <Hi name={ctx.user.name} />

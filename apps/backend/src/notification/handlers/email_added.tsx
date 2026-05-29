@@ -14,6 +14,7 @@ import { defineNotificationHandler } from "../workflow-types";
 
 export const handler = defineNotificationHandler({
   type: "email_added",
+  category: "security",
   schema: z.object({
     email: z.email(),
   }),

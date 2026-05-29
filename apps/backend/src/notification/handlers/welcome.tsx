@@ -13,6 +13,7 @@ import { defineNotificationHandler } from "../workflow-types";
 
 export const handler = defineNotificationHandler({
   type: "welcome",
+  category: "account",
   schema: z.object({}),
   previewData: {},
   email: () => {

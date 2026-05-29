@@ -3,6 +3,10 @@ import { invariant } from "@argos/util/invariant";
 import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core";
+import {
+  getNotificationSettingsUrl,
+  isConfigurableNotificationCategory,
+} from "@/notification/categories";
 import { notificationHandlers } from "@/notification/handlers";
 
 export const notificationMessageJob = createModelJob(
@@ -33,12 +37,20 @@ async function processMessage(message: NotificationMessage) {
     throw new Error(`Handler not found: ${type}`);
   }
   const data = message.workflow.data;
+
+  // Configurable notifications link to the user's notification preferences so
+  // they can manage what they receive.
+  const preferencesUrl = isConfigurableNotificationCategory(handler.category)
+    ? getNotificationSettingsUrl(message.user.account.slug)
+    : null;
+
   const ctx = {
     user: {
       name: message.user.account.name
         ? extractFirstName(message.user.account.name)
         : null,
     },
+    preferencesUrl,
   };
   const email = handler.email({ ...(data as any), ctx });
 

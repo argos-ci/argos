@@ -12,6 +12,7 @@ import { defineNotificationHandler } from "../workflow-types";
 
 export const handler = defineNotificationHandler({
   type: "slack_automation_action_unavailable",
+  category: "integration",
   schema: z.object({
     channelId: z.string(),
     channelName: z.string(),
@@ -41,6 +42,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`The Slack channel ${channelName} (ID: ${channelId}) used in some automation rules has been ${action}.`}
+          preferencesUrl={ctx.preferencesUrl}
         >
           <H1>Automation rule update required</H1>
           <Hi name={ctx.user.name} />

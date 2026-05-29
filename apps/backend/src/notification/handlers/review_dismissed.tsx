@@ -23,6 +23,7 @@ function getReviewLabel(state: ReviewState): string {
 
 export const handler = defineNotificationHandler({
   type: "review_dismissed",
+  category: "review",
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),
@@ -62,6 +63,7 @@ export const handler = defineNotificationHandler({
       body: (
         <EmailLayout
           preview={`${dismisser} dismissed your ${reviewLabel} on build ${buildLabel}.`}
+          preferencesUrl={ctx.preferencesUrl}
         >
           <H1>Review dismissed</H1>
           <Hi name={ctx.user.name} />
