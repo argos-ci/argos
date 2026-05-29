@@ -129,6 +129,10 @@ function BuildReviewDialog(props: {
       event,
       body: hasEditorContent(data.body) ? data.body : undefined,
     });
+    // The dialog closes itself once the mutation completes (see `onCompleted`).
+    // Never resolve so the form stays pending through the closing animation,
+    // instead of flashing back to its idle state before the dialog disappears.
+    await new Promise(() => {});
   };
 
   const bodyError = form.formState.errors.body;
