@@ -234,7 +234,7 @@ export function EmailLayout(props: {
   /**
    * When set, a link to the notification preferences is rendered in the footer.
    */
-  preferencesUrl?: string | null | undefined;
+  preferencesUrl?: string | null;
 }) {
   const { footer = true, children, centered, preview, preferencesUrl } = props;
   return (

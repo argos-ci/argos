@@ -5,10 +5,10 @@ type HandlerContext = {
     name: string | null;
   };
   /**
-   * URL to the user's notification preferences. Present only for configurable
-   * notifications.
+   * URL to the user's notification preferences, or null when the notification
+   * is not configurable.
    */
-  preferencesUrl?: string | null;
+  preferencesUrl: string | null;
 };
 
 /**

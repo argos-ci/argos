@@ -20,7 +20,7 @@ export function getNotificationPreviewMiddleware(options: { path: string }) {
       `/${handler.type}`,
       asyncHandler(async (req, res) => {
         const rendered = handler.email({
-          ctx: { user: { name: "James" } },
+          ctx: { user: { name: "James" }, preferencesUrl: null },
           ...(handler.previewData as any),
           ...queryStringToObject(req.query),
         });
