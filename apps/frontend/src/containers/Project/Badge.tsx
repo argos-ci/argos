@@ -67,7 +67,10 @@ export const ProjectBadge = (props: {
       </CardBody>
       <CardFooter>
         If your project is Open Source, read{" "}
-        <Link href="https://argos-ci.com/docs/open-source" target="_blank">
+        <Link
+          href="https://argos-ci.com/docs/learn/billing-and-subscription/subscription/open-source"
+          target="_blank"
+        >
           Argos documentation
         </Link>{" "}
         to learn more about Argos Open Source Sponsorship.

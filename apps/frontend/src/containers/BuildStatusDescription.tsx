@@ -49,7 +49,7 @@ export function BuildStatusDescription(props: {
               <Link
                 external
                 target="_blank"
-                href="https://argos-ci.com/docs/parallel-testing#modes"
+                href="https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding#modes"
               >
                 How to finalize in manual mode
               </Link>
@@ -143,7 +143,7 @@ export function BuildStatusDescription(props: {
             return (
               <>
                 No screenshot has been uploaded. Follow one of our{" "}
-                <Link href="https://argos-ci.com/docs/getting-started">
+                <Link href="https://argos-ci.com/docs/quickstart">
                   quick start guides
                 </Link>{" "}
                 to start taking screenshots.

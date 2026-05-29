@@ -81,14 +81,7 @@ function TeamsList() {
       <div className="text-center">
         <Heading className="mb-6">You’re not part of any team yet.</Heading>
         <p className="mb-8">
-          To join one, ask a team owner to{" "}
-          <Link
-            href="https://argos-ci.com/docs/faq#how-to-invite-someone-to-my-argos-team"
-            target="_blank"
-          >
-            send you an invite
-          </Link>
-          .
+          To join one, ask a team owner to send you an invite.
         </p>
         <p className="mb-1">Or get started now:</p>
         <ul className="space-y-1">

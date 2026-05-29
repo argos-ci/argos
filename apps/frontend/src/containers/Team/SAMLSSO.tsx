@@ -297,7 +297,10 @@ export function TeamSAMLSSO(props: {
       {hasSamlIncluded ? (
         <CardFooter>
           Learn more about{" "}
-          <Link href="https://argos-ci.com/docs/saml-sso" target="_blank">
+          <Link
+            href="https://argos-ci.com/docs/learn/account-and-access/saml-single-sign-on"
+            target="_blank"
+          >
             SAML SSO
           </Link>
           .

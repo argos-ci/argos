@@ -48,8 +48,8 @@ export const handler = defineNotificationHandler({
           </Paragraph>
           <Paragraph>
             If you need any help while updating, just{" "}
-            <Link href="https://argos-ci.com/docs/contact-us">contact us</Link>{" "}
-            we’ll be happy to assist.
+            <Link href="https://argos-ci.com/contact">contact us</Link>, we’ll
+            be happy to assist.
           </Paragraph>
           <Signature />
         </EmailLayout>

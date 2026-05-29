@@ -166,8 +166,8 @@ export function SafetyDisclaimer() {
   return (
     <>
       If you are concerned about your account's safety, please{" "}
-      <Link href="https://argos-ci.com/docs/contact-us">contact us</Link> to get
-      in touch with us.
+      <Link href="https://argos-ci.com/contact">contact us</Link> to get in
+      touch with us.
     </>
   );
 }

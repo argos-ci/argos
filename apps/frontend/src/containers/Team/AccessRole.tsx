@@ -96,7 +96,7 @@ export function TeamAccessRole(props: {
         <FormCardFooter control={form.control}>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/team-members-and-roles"
+            href="https://argos-ci.com/docs/learn/account-and-access/team-members-and-roles"
             target="_blank"
           >
             access roles

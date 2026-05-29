@@ -84,7 +84,7 @@ const BuildProgress = memo(function BuildProgress({
               <div>
                 Run <Code>argos finalize</Code> to complete this build in{" "}
                 <Link
-                  href="https://argos-ci.com/docs/parallel-testing#modes"
+                  href="https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding#modes"
                   target="_blank"
                 >
                   manual parallel mode

@@ -68,7 +68,7 @@ export function TeamGitHubLight(props: {
         <p>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/github#github-integration-without-content-permission"
+            href="https://argos-ci.com/docs/learn/integrations/github-integration#github-integration-without-content-permission"
             target="_blank"
           >
             using GitHub without content read permissions

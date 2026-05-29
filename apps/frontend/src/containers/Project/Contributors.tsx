@@ -70,7 +70,7 @@ export function ProjectContributors(props: {
             <div>
               Learn more about{" "}
               <Link
-                href="https://argos-ci.com/docs/team-members-and-roles"
+                href="https://argos-ci.com/docs/learn/account-and-access/team-members-and-roles"
                 target="_blank"
               >
                 access control management

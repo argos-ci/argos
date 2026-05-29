@@ -114,7 +114,10 @@ export const AccountGitLab = (props: {
         </CardBody>
         <FormCardFooter control={form.control}>
           Learn more about{" "}
-          <Link href="https://argos-ci.com/docs/gitlab" target="_blank">
+          <Link
+            href="https://argos-ci.com/docs/learn/integrations/gitlab-integration"
+            target="_blank"
+          >
             setting up GitLab + Argos integration
           </Link>
           .
