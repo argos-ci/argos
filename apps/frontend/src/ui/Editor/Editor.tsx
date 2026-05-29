@@ -181,13 +181,37 @@ export function Editor(props: EditorProps) {
     };
   }, [editor, ref]);
 
+  const handleContainerMouseDown = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (!editor || disabled) {
+      return;
+    }
+    const target = event.target as HTMLElement;
+    // Let ProseMirror place the cursor for clicks inside the editable content,
+    // and let interactive controls (toolbar, footer button, links) behave
+    // normally.
+    if (
+      editor.view.dom.contains(target) ||
+      target.closest("button, a, input, textarea")
+    ) {
+      return;
+    }
+    // Clicking the surrounding chrome (padding, footer) focuses the field
+    // instead of blurring it.
+    event.preventDefault();
+    editor.commands.focus("end");
+  };
+
   return (
     <div
       data-hotkeys-disabled
       data-disabled={disabled ? "" : undefined}
+      onMouseDown={handleContainerMouseDown}
       className={clsx(
         "bg-app focus-within:border-active rounded-md border text-sm",
         "data-disabled:opacity-disabled",
+        !disabled && "cursor-text",
         className,
       )}
     >
