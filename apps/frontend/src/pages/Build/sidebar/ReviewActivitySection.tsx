@@ -9,16 +9,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
+import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
+import { ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
-import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { IconButton } from "@/ui/IconButton";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
+import { useNonNullable } from "@/util/useNonNullable";
+
+import { AddCommentForm } from "./AddCommentForm";
+import { CommentCard } from "./CommentCard";
 
 const _BuildFragment = graphql(`
   fragment ReviewActivitySection_Build on Build {
@@ -26,6 +30,7 @@ const _BuildFragment = graphql(`
     createdAt
     concludedAt
     subscribed
+    ...AddCommentForm_Build
     reviews {
       id
       date
@@ -49,17 +54,7 @@ const _BuildFragment = graphql(`
       }
     }
     comments {
-      id
-      date
-      content
-      user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
-      }
+      ...CommentCard_Comment
     }
   }
 `);
@@ -124,6 +119,8 @@ function getActivityEntries(build: Build): ActivityEntry[] {
 
 export function ReviewActivitySection(props: { build: Build }) {
   const { build } = props;
+  const permissions = useNonNullable(ProjectPermissionsContext);
+  const canComment = permissions.includes(ProjectPermission.Review);
   const entries = getActivityEntries(build);
   return (
     <SidebarSection>
@@ -137,6 +134,11 @@ export function ReviewActivitySection(props: { build: Build }) {
             <ActivityEntryRow key={index} entry={entry} />
           ))}
         </Activity>
+        {canComment ? (
+          <div className="mt-3">
+            <AddCommentForm build={build} />
+          </div>
+        ) : null}
       </div>
     </SidebarSection>
   );
@@ -262,27 +264,4 @@ function ActivityEntryRow(props: { entry: ActivityEntry }) {
     case "comment":
       return <CommentCard comment={entry.comment} />;
   }
-}
-
-function CommentCard(props: { comment: Build["comments"][number] }) {
-  const { comment } = props;
-  return (
-    <div className="border-thin bg-app -mx-1 rounded-md">
-      <div className="flex items-center gap-2 px-3 py-2">
-        {comment.user ? (
-          <AccountAvatar
-            avatar={comment.user.avatar}
-            className="size-5 border"
-          />
-        ) : null}
-        <span className="text-default text-xs font-medium">
-          {comment.user?.name || comment.user?.slug || "Unknown user"}
-        </span>
-        <Time date={comment.date} className="text-low text-xs" />
-      </div>
-      <div className="text-default px-3 pb-2 text-sm">
-        <ReadOnlyEditor content={comment.content} />
-      </div>
-    </div>
-  );
 }
