@@ -170,7 +170,12 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
 
   return (
     <MenuTrigger>
-      <IconButton data-actions-menu="" size="small" aria-label="Review actions">
+      <IconButton
+        rounded
+        data-actions-menu=""
+        size="small"
+        aria-label="Review actions"
+      >
         <MoreVerticalIcon />
       </IconButton>
       <Popover placement="bottom end">

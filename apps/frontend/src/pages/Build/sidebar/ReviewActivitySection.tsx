@@ -191,7 +191,7 @@ function SubscribeToggleButton(props: { build: Build }) {
   };
   return (
     <Tooltip content={label}>
-      <IconButton size="small" aria-label={label} onPress={handlePress}>
+      <IconButton rounded size="small" aria-label={label} onPress={handlePress}>
         {subscribed ? <BellIcon /> : <BellOffIcon />}
       </IconButton>
     </Tooltip>
