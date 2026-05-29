@@ -50,7 +50,7 @@ function getIconButtonClassName(options: IconButtonOptions) {
     "group-[*]/button-group:rounded-none group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:last:rounded-r-lg text-xs font-medium",
     /* Size */
     {
-      small: "p-[calc(0.25rem-1px)] *:size-4 leading-4 text-sm",
+      small: "p-[calc(0.3125rem-1px)] *:size-3.5 leading-4 text-sm",
       medium: "p-[calc(0.5rem-1px)] *:size-4 leading-4 text-sm",
     }[size],
     /* Shape */
