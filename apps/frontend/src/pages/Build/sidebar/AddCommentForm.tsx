@@ -16,6 +16,7 @@ const AddBuildCommentMutation = graphql(`
   mutation AddCommentForm_addBuildComment($input: AddBuildCommentInput!) {
     addBuildComment(input: $input) {
       id
+      subscribed
       comments {
         ...CommentCard_Comment
       }
