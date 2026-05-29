@@ -7,6 +7,7 @@ import {
 } from "@/database/models";
 import { createModelJob } from "@/job-core";
 
+import { isConfigurableNotificationCategory } from "./categories";
 import { notificationHandlers } from "./handlers";
 import { notificationMessageJob } from "./message-job";
 
@@ -26,7 +27,7 @@ async function processWorkflow(workflow: NotificationWorkflow) {
   // Configurable notifications can be muted by the recipient. We collect the
   // users who opted out of this category on the email channel and skip them.
   // Non-configurable notifications (transactional/security) are always sent.
-  const optedOutUserIds = handler.configurable
+  const optedOutUserIds = isConfigurableNotificationCategory(handler.category)
     ? new Set(
         (
           await UserNotificationPreference.query()

@@ -3,7 +3,10 @@ import { invariant } from "@argos/util/invariant";
 import { NotificationMessage } from "@/database/models";
 import { sendEmail } from "@/email/send";
 import { createModelJob } from "@/job-core";
-import { getNotificationSettingsUrl } from "@/notification/categories";
+import {
+  getNotificationSettingsUrl,
+  isConfigurableNotificationCategory,
+} from "@/notification/categories";
 import { notificationHandlers } from "@/notification/handlers";
 
 export const notificationMessageJob = createModelJob(
@@ -37,7 +40,7 @@ async function processMessage(message: NotificationMessage) {
 
   // Configurable notifications link to the user's notification preferences so
   // they can manage what they receive.
-  const preferencesUrl = handler.configurable
+  const preferencesUrl = isConfigurableNotificationCategory(handler.category)
     ? getNotificationSettingsUrl(message.user.account.slug)
     : null;
 

@@ -26,14 +26,10 @@ export type NotificationCategory =
 export type NotificationHandler<TType extends string = string, TData = any> = {
   type: TType;
   /**
-   * Category this notification belongs to, used to group user preferences.
+   * Category this notification belongs to. Whether it is configurable is
+   * derived from the category metadata.
    */
   category: NotificationCategory;
-  /**
-   * Whether users can opt out of this notification. Transactional and security
-   * notifications are not configurable and are always delivered.
-   */
-  configurable: boolean;
   schema: z.ZodType<TData>;
   previewData: TData;
   email: (props: TData & { ctx: HandlerContext }) => {

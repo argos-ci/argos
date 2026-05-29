@@ -13,7 +13,6 @@ import { defineNotificationHandler } from "../workflow-types";
 export const handler = defineNotificationHandler({
   type: "invalid_gitlab_token",
   category: "security",
-  configurable: false,
   schema: z.object({
     account: z.object({
       name: z.string(),

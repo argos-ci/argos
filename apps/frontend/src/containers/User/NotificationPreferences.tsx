@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { toast } from "sonner";
@@ -38,6 +39,8 @@ export function UserNotificationPreferences(props: {
   const { account } = props;
   invariant(account.__typename === "User");
   const client = useApolloClient();
+  // Track in-flight mutations per row so rapid toggles can't race.
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   return (
     <Card>
       <CardBody>
@@ -59,7 +62,9 @@ export function UserNotificationPreferences(props: {
               <Switch
                 aria-label={preference.label}
                 isSelected={preference.enabled}
+                isDisabled={pendingIds.has(preference.id)}
                 onChange={(enabled) => {
+                  setPendingIds((ids) => new Set(ids).add(preference.id));
                   client
                     .mutate({
                       mutation: UpdateNotificationPreferenceMutation,
@@ -83,6 +88,13 @@ export function UserNotificationPreferences(props: {
                     })
                     .catch((error) => {
                       toast.error(getErrorMessage(error));
+                    })
+                    .finally(() => {
+                      setPendingIds((ids) => {
+                        const next = new Set(ids);
+                        next.delete(preference.id);
+                        return next;
+                      });
                     });
                 }}
               />

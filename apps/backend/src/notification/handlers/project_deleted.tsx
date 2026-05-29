@@ -17,7 +17,6 @@ const baseUrl = config.get("server.url");
 export const handler = defineNotificationHandler({
   type: "project_deleted",
   category: "project",
-  configurable: true,
   schema: z.object({
     accountType: z.enum(["user", "team"]),
     accountName: z.string().nullish(),

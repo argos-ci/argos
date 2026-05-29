@@ -107,10 +107,19 @@ export const resolvers: IResolvers = {
       if (!configurable.has(category)) {
         throw badUserInput("This notification category cannot be configured");
       }
-      await UserNotificationPreference.query()
-        .insert({ userId: ctx.auth.user.id, category, channel, enabled })
-        .onConflict(["userId", "category", "channel"])
-        .merge(["enabled", "updatedAt"]);
+      const userId = ctx.auth.user.id;
+      // Notifications are enabled by default, so the table only stores opt-outs.
+      // Re-enabling removes the override row instead of persisting enabled=true.
+      if (enabled) {
+        await UserNotificationPreference.query()
+          .delete()
+          .where({ userId, category, channel });
+      } else {
+        await UserNotificationPreference.query()
+          .insert({ userId, category, channel, enabled: false })
+          .onConflict(["userId", "category", "channel"])
+          .merge(["enabled", "updatedAt"]);
+      }
       const meta = notificationCategoryMetadata[category];
       return {
         id: `${ctx.auth.account.id}:${category}:${channel}`,

@@ -37,7 +37,6 @@ function getSubjectLabel(state: ReviewState): string {
 export const handler = defineNotificationHandler({
   type: "review_submitted",
   category: "review",
-  configurable: true,
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),
