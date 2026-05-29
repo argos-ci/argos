@@ -3,6 +3,7 @@ import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { createBuildComment } from "@/comment/createBuildComment";
+import { formatCommentId } from "@/comment/id";
 import { Build } from "@/database/models/Build";
 
 import type { IResolvers } from "../__generated__/resolver-types";
@@ -38,6 +39,7 @@ export const typeDefs = gql`
 
 export const resolvers: IResolvers = {
   Comment: {
+    id: (comment) => formatCommentId(comment.id),
     date: (comment) => {
       return new Date(comment.createdAt);
     },

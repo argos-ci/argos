@@ -10,6 +10,7 @@ import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
 import { renderCommentHtml } from "./html";
+import { formatCommentId } from "./id";
 import { isCommentEmpty, validateCommentJson } from "./validate";
 
 /**
@@ -39,7 +40,7 @@ export async function createBuildComment(input: {
 
   await Promise.all([
     autoSubscribeUserToBuild({ buildId: build.id, userId }),
-    notifyBuildSubscribers({ build, userId, body }),
+    notifyBuildSubscribers({ build, comment, userId, body }),
   ]);
 
   return comment;
@@ -47,10 +48,11 @@ export async function createBuildComment(input: {
 
 async function notifyBuildSubscribers(input: {
   build: Build;
+  comment: Comment;
   userId: string;
   body: JSONContent;
 }): Promise<void> {
-  const { build, userId, body } = input;
+  const { build, comment, userId, body } = input;
   const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
   const recipients = subscribedUserIds.filter((id) => id !== userId);
   if (recipients.length === 0) {
@@ -64,6 +66,7 @@ async function notifyBuildSubscribers(input: {
   invariant(project, "project not found");
   invariant(project.account, "project account not found");
   const authorName = author?.account?.displayName ?? null;
+  const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
   await sendNotification({
     type: "comment_added",
     data: {
@@ -71,7 +74,7 @@ async function notifyBuildSubscribers(input: {
       projectName: project.name,
       buildNumber: build.number,
       buildName: build.name,
-      buildUrl,
+      commentUrl,
       authorName,
       bodyHtml: renderCommentHtml(body),
     },

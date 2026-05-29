@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
 import {
@@ -117,11 +118,38 @@ function getActivityEntries(build: Build): ActivityEntry[] {
   );
 }
 
+/**
+ * Reads a `#comment-…` hash from the URL and, when it matches a loaded comment,
+ * returns its id so the comment can be highlighted. The highlight clears on the
+ * next click anywhere.
+ */
+function useHighlightedCommentId(commentIds: string[]): string | null {
+  const [hashId, setHashId] = useState<string | null>(() => {
+    const hash = window.location.hash.slice(1);
+    return hash || null;
+  });
+  const matchedId = hashId && commentIds.includes(hashId) ? hashId : null;
+  useEffect(() => {
+    if (!matchedId) {
+      return;
+    }
+    const clear = () => setHashId(null);
+    document.addEventListener("click", clear, { once: true, capture: true });
+    return () => {
+      document.removeEventListener("click", clear, { capture: true });
+    };
+  }, [matchedId]);
+  return matchedId;
+}
+
 export function ReviewActivitySection(props: { build: Build }) {
   const { build } = props;
   const permissions = useNonNullable(ProjectPermissionsContext);
   const canComment = permissions.includes(ProjectPermission.Review);
   const entries = getActivityEntries(build);
+  const highlightedCommentId = useHighlightedCommentId(
+    build.comments.map((comment) => comment.id),
+  );
   return (
     <SidebarSection>
       <SidebarHeader>
@@ -131,7 +159,11 @@ export function ReviewActivitySection(props: { build: Build }) {
       <div className="px-3">
         <Activity>
           {entries.map((entry, index) => (
-            <ActivityEntryRow key={index} entry={entry} />
+            <ActivityEntryRow
+              key={index}
+              entry={entry}
+              highlightedCommentId={highlightedCommentId}
+            />
           ))}
         </Activity>
         {canComment ? (
@@ -198,7 +230,10 @@ function SubscribeToggleButton(props: { build: Build }) {
   );
 }
 
-function ActivityEntryRow(props: { entry: ActivityEntry }) {
+function ActivityEntryRow(props: {
+  entry: ActivityEntry;
+  highlightedCommentId: string | null;
+}) {
   const { entry } = props;
   switch (entry.kind) {
     case "created":
@@ -262,6 +297,11 @@ function ActivityEntryRow(props: { entry: ActivityEntry }) {
       );
     }
     case "comment":
-      return <CommentCard comment={entry.comment} />;
+      return (
+        <CommentCard
+          comment={entry.comment}
+          highlighted={entry.comment.id === props.highlightedCommentId}
+        />
+      );
   }
 }

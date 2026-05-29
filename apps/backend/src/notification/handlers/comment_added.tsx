@@ -11,7 +11,7 @@ export const handler = defineNotificationHandler({
     projectName: z.string(),
     buildNumber: z.number(),
     buildName: z.string().nullish(),
-    buildUrl: z.url(),
+    commentUrl: z.url(),
     authorName: z.string().nullish(),
     bodyHtml: z.string(),
   }),
@@ -20,7 +20,8 @@ export const handler = defineNotificationHandler({
     projectName: "my-project",
     buildNumber: 42,
     buildName: "default",
-    buildUrl: "https://app.argos-ci.com/argos/my-project/builds/42",
+    commentUrl:
+      "https://app.argos-ci.com/argos/my-project/builds/42#comment-xf23d",
     authorName: "Jane Doe",
     bodyHtml: "<p>Could you double-check the header spacing?</p>",
   },
@@ -30,7 +31,7 @@ export const handler = defineNotificationHandler({
       projectName,
       buildNumber,
       buildName,
-      buildUrl,
+      commentUrl,
       authorName,
       bodyHtml,
       ctx,
@@ -50,7 +51,7 @@ export const handler = defineNotificationHandler({
           <Hi name={ctx.user.name} />
           <Paragraph>
             <strong>{author}</strong> commented on build{" "}
-            <Link href={buildUrl}>
+            <Link href={commentUrl}>
               {accountSlug}/{projectName} {buildLabel}
             </Link>
             .
@@ -60,7 +61,7 @@ export const handler = defineNotificationHandler({
             dangerouslySetInnerHTML={{ __html: bodyHtml }}
           />
           <Paragraph>
-            <Link href={buildUrl}>View the build on Argos →</Link>
+            <Link href={commentUrl}>View the comment on Argos →</Link>
           </Paragraph>
         </EmailLayout>
       ),
