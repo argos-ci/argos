@@ -58,7 +58,10 @@ function getEffectiveDefaultBaseBranch(project: Project): string {
 const LearnMoreFooter = () => (
   <>
     Learn more about{" "}
-    <Link href="https://argos-ci.com/docs/baseline-build" target="_blank">
+    <Link
+      href="https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build"
+      target="_blank"
+    >
       baseline builds
     </Link>
     .

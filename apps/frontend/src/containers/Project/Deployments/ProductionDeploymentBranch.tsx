@@ -144,7 +144,7 @@ export function ProductionDeploymentBranch(props: {
         <FormCardFooter control={form.control}>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/deployments/environments"
+            href="https://argos-ci.com/docs/learn/deployments/environments"
             target="_blank"
           >
             deployment environments

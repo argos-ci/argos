@@ -32,7 +32,7 @@ export const handler = defineNotificationHandler({
           <Hr />
           <Section className="my-8">
             <H2>
-              <Link href="https://argos-ci.com/docs/getting-started">
+              <Link href="https://argos-ci.com/docs/quickstart">
                 Set up Argos →
               </Link>
             </H2>
@@ -43,7 +43,7 @@ export const handler = defineNotificationHandler({
           </Section>
           <Section className="my-8">
             <H2>
-              <Link href="https://argos-ci.com/docs/screenshot-pages-script">
+              <Link href="https://argos-ci.com/docs/learn/how-to-guides/visual-coverage/capture-screenshots-from-urls">
                 Screenshot your whole app →
               </Link>
             </H2>

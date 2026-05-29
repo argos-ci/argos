@@ -89,7 +89,7 @@ export function ProductionDomain(props: {
         <FormCardFooter control={form.control}>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/deployments/urls"
+            href="https://argos-ci.com/docs/learn/deployments/urls-and-domains"
             target="_blank"
           >
             deployment URLs and domains

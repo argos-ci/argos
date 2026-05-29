@@ -131,7 +131,7 @@ export function DeploymentAuthentication(props: {
         <FormCardFooter control={form.control}>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/deployments/authentication"
+            href="https://argos-ci.com/docs/learn/deployments/access-protection"
             target="_blank"
           >
             deployment access protection

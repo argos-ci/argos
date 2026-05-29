@@ -75,7 +75,10 @@ export function ProjectGitHubActionsOIDC(props: {
         </CardBody>
         <FormCardFooter control={form.control}>
           Learn more about{" "}
-          <Link href="https://argos-ci.com/docs/github-oidc/" target="_blank">
+          <Link
+            href="https://argos-ci.com/docs/learn/integrations/github-oidc-authentication"
+            target="_blank"
+          >
             GitHub Actions OIDC
           </Link>
           .

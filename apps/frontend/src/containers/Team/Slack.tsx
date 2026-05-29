@@ -134,7 +134,7 @@ export function TeamSlack(props: {
         <p>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/slack-notifications"
+            href="https://argos-ci.com/docs/learn/integrations/slack-integration"
             target="_blank"
           >
             Slack notifications

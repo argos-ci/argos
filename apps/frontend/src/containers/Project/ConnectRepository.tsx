@@ -405,7 +405,10 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             token first.
           </div>
           <div className="flex items-center justify-center gap-4">
-            <LinkButton href="https://argos-ci.com/docs/gitlab" target="_blank">
+            <LinkButton
+              href="https://argos-ci.com/docs/learn/integrations/gitlab-integration"
+              target="_blank"
+            >
               Setup GitLab Access token
             </LinkButton>
             <LinkButton

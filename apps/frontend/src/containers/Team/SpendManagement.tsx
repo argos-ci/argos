@@ -250,7 +250,7 @@ function SpendManagementForm(props: {
         <FormCardFooter control={form.control} isSuccessful={isSuccessful}>
           Learn more about{" "}
           <Link
-            href="https://argos-ci.com/docs/spend-management"
+            href="https://argos-ci.com/docs/learn/billing-and-subscription/spend-management"
             target="_blank"
           >
             Spend Management

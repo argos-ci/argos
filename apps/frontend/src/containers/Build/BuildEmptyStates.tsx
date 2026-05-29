@@ -29,10 +29,7 @@ export function NoScreenshotsBuildEmptyState() {
         Follow one of our quickstart guides to start taking screenshots.
       </Text>
       <EmptyStateActions>
-        <LinkButton
-          href="https://argos-ci.com/docs/getting-started"
-          target="_blank"
-        >
+        <LinkButton href="https://argos-ci.com/docs/quickstart" target="_blank">
           View documentation
         </LinkButton>
       </EmptyStateActions>

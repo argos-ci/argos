@@ -111,7 +111,10 @@ export const ProjectAutoIgnore = (props: {
         </CardBody>
         <FormCardFooter control={form.control}>
           Learn more about{" "}
-          <Link external href="https://argos-ci.com/docs/flaky-test-detection">
+          <Link
+            external
+            href="https://argos-ci.com/docs/learn/reliability-and-flakiness/flaky-test-detection"
+          >
             Flaky test detection
           </Link>
           .

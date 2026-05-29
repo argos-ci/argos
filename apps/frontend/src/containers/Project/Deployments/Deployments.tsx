@@ -98,7 +98,10 @@ function DeploymentsCard(props: {
         </CardBody>
         <FormCardFooter control={form.control}>
           Learn more about{" "}
-          <Link href="https://argos-ci.com/docs/deployments" target="_blank">
+          <Link
+            href="https://argos-ci.com/docs/learn/deployments"
+            target="_blank"
+          >
             deployments
           </Link>
           .

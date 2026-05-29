@@ -1,5 +1,5 @@
 export const getCommentHeader = () => {
-  return "**The latest updates on your projects.** Learn more about [Argos notifications ↗︎](https://argos-ci.com/docs/notifications)";
+  return "**The latest updates on your projects.** Learn more about [Argos notifications ↗︎](https://argos-ci.com/docs/learn/review-workflow/pull-request-comments)";
 };
 
 export const getPendingCommentBody = () => {

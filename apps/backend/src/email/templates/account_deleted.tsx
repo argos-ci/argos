@@ -41,7 +41,7 @@ export const handler = defineEmailTemplate({
           <Hr />
           <InfoText>
             If you didn't request this deletion, please{" "}
-            <Link href="https://argos-ci.com/docs/contact-us">contact us</Link>.
+            <Link href="https://argos-ci.com/contact">contact us</Link>.
           </InfoText>
         </EmailLayout>
       ),
