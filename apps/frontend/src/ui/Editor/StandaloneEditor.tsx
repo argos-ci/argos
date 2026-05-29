@@ -109,8 +109,11 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
               size="small"
               rounded
               aria-label={submitLabel}
-              // Looks disabled when empty, but stays clickable so the press can
-              // surface the "empty" toast.
+              // Truly disabled (not focusable/clickable) while submitting or when
+              // disabled by the parent. When the editor is merely empty it only
+              // *looks* disabled but stays clickable, so the press can surface the
+              // "empty" toast.
+              isDisabled={disabled || isPending}
               aria-disabled={isEmpty}
               onPress={submit}
             >
