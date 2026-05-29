@@ -7,8 +7,6 @@ import type { NotificationCategory } from "./workflow-types";
  */
 export const NOTIFICATION_CHANNELS = ["email"] as const;
 
-export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
-
 type CategoryMetadata = {
   label: string;
   description: string;
