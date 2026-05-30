@@ -187,7 +187,16 @@ export function Editor(props: EditorProps) {
     if (!editor || disabled) {
       return;
     }
-    const target = event.target as HTMLElement;
+    // Only handle primary-button clicks (avoid interfering with context menus).
+    if (event.button !== 0 || event.ctrlKey) {
+      return;
+    }
+
+    if (!(event.target instanceof HTMLElement)) {
+      return;
+    }
+
+    const target = event.target;
     // Let ProseMirror place the cursor for clicks inside the editable content,
     // and let interactive controls (toolbar, footer button, links) behave
     // normally.
