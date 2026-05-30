@@ -7,9 +7,9 @@ import { getCommentPermissions } from "./permissions";
 const comment = { userId: "1" } as Comment;
 
 describe("getCommentPermissions", () => {
-  it("grants edit to the author", () => {
+  it("grants edit and delete to the author", () => {
     const user = { id: "1" } as User;
-    expect(getCommentPermissions(comment, user)).toEqual(["edit"]);
+    expect(getCommentPermissions(comment, user)).toEqual(["edit", "delete"]);
   });
 
   it("grants nothing to another user", () => {

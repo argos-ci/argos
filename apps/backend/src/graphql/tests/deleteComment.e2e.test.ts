@@ -10,12 +10,9 @@ import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
 const MUTATION = `
-  mutation UpdateComment($input: UpdateCommentInput!) {
-    updateComment(input: $input) {
+  mutation DeleteComment($input: DeleteCommentInput!) {
+    deleteComment(input: $input) {
       id
-      content
-      editedAt
-      permissions
     }
   }
 `;
@@ -50,7 +47,7 @@ const test = base.extend<Fixtures>({
   },
 });
 
-test("lets the author edit the comment", async ({ fixture }) => {
+test("lets the author delete the comment", async ({ fixture }) => {
   const app = await createApolloServerApp(
     apolloServer,
     createApolloMiddleware,
@@ -59,28 +56,52 @@ test("lets the author edit the comment", async ({ fixture }) => {
       account: fixture.authorAccount,
     },
   );
-  const body = commentBody("Edited content");
   const res = await request(app)
     .post("/graphql")
     .send({
       query: MUTATION,
-      variables: { input: { id: formatCommentId(fixture.comment.id), body } },
+      variables: { input: { id: formatCommentId(fixture.comment.id) } },
     });
 
   expectNoGraphQLError(res);
   expect(res.status).toBe(200);
 
-  const updated = res.body.data.updateComment;
-  expect(updated.content).toEqual(body);
-  expect(updated.editedAt).not.toBeNull();
-  expect(updated.permissions).toEqual(["edit", "delete"]);
-
   const stored = await Comment.query().findById(fixture.comment.id);
-  expect(stored!.content).toEqual(body);
-  expect(stored!.editedAt).not.toBeNull();
+  expect(stored!.deletedAt).not.toBeNull();
 });
 
-test("forbids a non-author from editing the comment", async ({ fixture }) => {
+test("is idempotent when the comment is already deleted", async ({
+  fixture,
+}) => {
+  await fixture.comment.$query().patch({ deletedAt: new Date().toISOString() });
+  const deletedAt = new Date(
+    (await Comment.query().findById(fixture.comment.id))!.deletedAt!,
+  ).toISOString();
+
+  const app = await createApolloServerApp(
+    apolloServer,
+    createApolloMiddleware,
+    {
+      user: fixture.authorAccount.user!,
+      account: fixture.authorAccount,
+    },
+  );
+  const res = await request(app)
+    .post("/graphql")
+    .send({
+      query: MUTATION,
+      variables: { input: { id: formatCommentId(fixture.comment.id) } },
+    });
+
+  expectNoGraphQLError(res);
+  expect(res.status).toBe(200);
+
+  // The original deletedAt is preserved (no error, no overwrite).
+  const stored = await Comment.query().findById(fixture.comment.id);
+  expect(new Date(stored!.deletedAt!).toISOString()).toBe(deletedAt);
+});
+
+test("forbids a non-author from deleting the comment", async ({ fixture }) => {
   const outsiderAccount = await factory.UserAccount.create();
   await outsiderAccount.$fetchGraph("user");
   const app = await createApolloServerApp(
@@ -95,20 +116,14 @@ test("forbids a non-author from editing the comment", async ({ fixture }) => {
     .post("/graphql")
     .send({
       query: MUTATION,
-      variables: {
-        input: {
-          id: formatCommentId(fixture.comment.id),
-          body: commentBody("Hacked"),
-        },
-      },
+      variables: { input: { id: formatCommentId(fixture.comment.id) } },
     });
 
   expect(res.status).toBe(200);
-  expect(res.body.errors[0].message).toBe("You cannot edit this comment");
+  expect(res.body.errors[0].message).toBe("You cannot delete this comment");
 
   const stored = await Comment.query().findById(fixture.comment.id);
-  expect(stored!.content).toEqual(commentBody("Original"));
-  expect(stored!.editedAt).toBeNull();
+  expect(stored!.deletedAt).toBeNull();
 });
 
 test("requires authentication", async ({ fixture }) => {
@@ -121,17 +136,12 @@ test("requires authentication", async ({ fixture }) => {
     .post("/graphql")
     .send({
       query: MUTATION,
-      variables: {
-        input: {
-          id: formatCommentId(fixture.comment.id),
-          body: commentBody("Anon"),
-        },
-      },
+      variables: { input: { id: formatCommentId(fixture.comment.id) } },
     });
 
   expect(res.body.errors).toBeDefined();
   const stored = await Comment.query().findById(fixture.comment.id);
-  expect(stored!.editedAt).toBeNull();
+  expect(stored!.deletedAt).toBeNull();
 });
 
 test("returns a clean error for a malformed comment ID", async ({
@@ -149,7 +159,7 @@ test("returns a clean error for a malformed comment ID", async ({
     .post("/graphql")
     .send({
       query: MUTATION,
-      variables: { input: { id: "not-a-comment-id", body: commentBody("x") } },
+      variables: { input: { id: "not-a-comment-id" } },
     });
 
   expect(res.status).toBe(200);

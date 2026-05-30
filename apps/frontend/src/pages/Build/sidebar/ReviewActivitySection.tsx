@@ -8,6 +8,7 @@ import {
   FileUpIcon,
   MailCheckIcon,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -121,6 +122,25 @@ function getActivityEntries(build: Build): ActivityEntry[] {
 }
 
 /**
+ * Stable key per activity entry so React keeps each row's component instance
+ * tied to its data. Index keys would let a removed comment's state (e.g. its
+ * delete animation) bleed onto the next row.
+ */
+function getActivityEntryKey(entry: ActivityEntry): string {
+  switch (entry.kind) {
+    case "created":
+    case "ready":
+      return entry.kind;
+    case "review":
+      return `review-${entry.review.id}`;
+    case "review-dismissed":
+      return `review-dismissed-${entry.review.id}`;
+    case "comment":
+      return `comment-${entry.comment.id}`;
+  }
+}
+
+/**
  * Reads a `#comment-…` hash from the URL and, when it matches a loaded comment,
  * returns its id so the comment can be highlighted. The highlight clears on the
  * next click anywhere, after 3 seconds, or when the component unmounts.
@@ -174,17 +194,20 @@ export function ReviewActivitySection(props: { build: Build }) {
         <SubscribeToggleButton build={build} />
       </SidebarHeader>
       <div className="px-3">
-        <Activity>
-          {entries.map((entry, index) => (
-            <ActivityEntryRow
-              key={index}
-              entry={entry}
-              highlightedCommentId={highlightedCommentId}
-            />
-          ))}
+        <Activity gap={false}>
+          <AnimatePresence initial={false}>
+            {entries.map((entry, index) => (
+              <ActivityEntryRow
+                key={getActivityEntryKey(entry)}
+                entry={entry}
+                highlightedCommentId={highlightedCommentId}
+                isFirst={index === 0}
+              />
+            ))}
+          </AnimatePresence>
         </Activity>
         {canComment ? (
-          <div className="mt-3">
+          <div className="-mx-1.5 mt-3 -mb-1.5">
             <AddCommentForm build={build} />
           </div>
         ) : null}
@@ -250,75 +273,98 @@ function SubscribeToggleButton(props: { build: Build }) {
 function ActivityEntryRow(props: {
   entry: ActivityEntry;
   highlightedCommentId: string | null;
+  isFirst: boolean;
 }) {
-  const { entry, highlightedCommentId } = props;
-  switch (entry.kind) {
-    case "created":
-      return (
-        <ActivityItem icon={<FileUpIcon className="size-3.5" />}>
-          Build created · <Time date={entry.date} />
-        </ActivityItem>
-      );
-    case "ready":
-      return (
-        <ActivityItem icon={<MailCheckIcon className="size-3.5" />}>
-          Build ready · <Time date={entry.date} />
-        </ActivityItem>
-      );
-    case "review": {
-      const { review } = entry;
-      const descriptor = buildReviewDescriptors[review.state];
-      const Icon = descriptor.icon;
-      return (
-        <ActivityItem
-          icon={<Icon className={clsx("size-3.5", descriptor.textColor)} />}
-        >
-          <span className="font-medium">{descriptor.label}</span>
-          {review.user && (
-            <>
-              {" by "}
-              <span className="text-default font-medium">
-                {review.user.name || review.user.slug}
-              </span>
-            </>
-          )}
-          {" · "}
-          <Time date={entry.date} />
-        </ActivityItem>
-      );
-    }
-    case "review-dismissed": {
-      const { review } = entry;
-      return (
-        <ActivityItem icon={<BanIcon className="text-low size-3.5" />}>
-          <span className="font-medium">Review dismissed</span>
-          {review.dismissedBy ? (
-            <>
-              {" by "}
-              <span className="text-default font-medium">
-                {review.dismissedBy.name || review.dismissedBy.slug}
-              </span>
-            </>
-          ) : null}
-          {review.user ? (
-            <>
-              {" for "}
-              <span className="text-default font-medium">
-                {review.user.name || review.user.slug}
-              </span>
-            </>
-          ) : null}
-          {" · "}
-          <Time date={entry.date} />
-        </ActivityItem>
-      );
-    }
-    case "comment":
-      return (
+  const { entry, highlightedCommentId, isFirst } = props;
+  // Each row carries its own top spacing (rather than relying on a `space-y`
+  // gap) so a collapsing comment can shrink that spacing away as part of its
+  // own height, keeping the delete animation smooth.
+  const spacing = isFirst ? undefined : "pt-4";
+
+  if (entry.kind === "comment") {
+    return (
+      <motion.div
+        className={spacing}
+        style={{ overflowY: "clip" }}
+        exit={{ height: 0, paddingTop: 0, opacity: 0 }}
+        transition={{
+          duration: 0.25,
+          ease: [0.4, 0, 0.2, 1],
+          opacity: { duration: 0.15 },
+        }}
+      >
         <CommentCard
           comment={entry.comment}
           highlighted={entry.comment.id === highlightedCommentId}
         />
-      );
+      </motion.div>
+    );
   }
+
+  const content = (() => {
+    switch (entry.kind) {
+      case "created":
+        return (
+          <ActivityItem icon={<FileUpIcon className="size-3.5" />}>
+            Build created · <Time date={entry.date} />
+          </ActivityItem>
+        );
+      case "ready":
+        return (
+          <ActivityItem icon={<MailCheckIcon className="size-3.5" />}>
+            Build ready · <Time date={entry.date} />
+          </ActivityItem>
+        );
+      case "review": {
+        const { review } = entry;
+        const descriptor = buildReviewDescriptors[review.state];
+        const Icon = descriptor.icon;
+        return (
+          <ActivityItem
+            icon={<Icon className={clsx("size-3.5", descriptor.textColor)} />}
+          >
+            <span className="font-medium">{descriptor.label}</span>
+            {review.user && (
+              <>
+                {" by "}
+                <span className="text-default font-medium">
+                  {review.user.name || review.user.slug}
+                </span>
+              </>
+            )}
+            {" · "}
+            <Time date={entry.date} />
+          </ActivityItem>
+        );
+      }
+      case "review-dismissed": {
+        const { review } = entry;
+        return (
+          <ActivityItem icon={<BanIcon className="text-low size-3.5" />}>
+            <span className="font-medium">Review dismissed</span>
+            {review.dismissedBy ? (
+              <>
+                {" by "}
+                <span className="text-default font-medium">
+                  {review.dismissedBy.name || review.dismissedBy.slug}
+                </span>
+              </>
+            ) : null}
+            {review.user ? (
+              <>
+                {" for "}
+                <span className="text-default font-medium">
+                  {review.user.name || review.user.slug}
+                </span>
+              </>
+            ) : null}
+            {" · "}
+            <Time date={entry.date} />
+          </ActivityItem>
+        );
+      }
+    }
+  })();
+
+  return <div className={spacing}>{content}</div>;
 }

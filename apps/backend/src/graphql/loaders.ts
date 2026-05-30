@@ -628,6 +628,7 @@ function createBuildPublishedCommentsLoader() {
   return new DataLoader<string, Comment[]>(async (inputs) => {
     const comments = await Comment.query()
       .whereIn("buildId", inputs as string[])
+      .whereNull("deletedAt")
       .where((qb) => {
         qb.whereNull("buildReviewId").orWhereExists(
           BuildReview.query()

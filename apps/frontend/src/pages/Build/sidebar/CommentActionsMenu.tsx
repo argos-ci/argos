@@ -1,15 +1,28 @@
-import { LinkIcon, MoreHorizontalIcon, PencilIcon } from "lucide-react";
+import {
+  LinkIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import { IconButton } from "@/ui/IconButton";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import {
+  Menu,
+  MenuItem,
+  MenuItemIcon,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 
 export function CommentActionsMenu(props: {
   onCopyLink: () => void;
   /** When provided, an "Edit comment" action is shown. */
   onEdit?: () => void;
+  /** When provided, a "Delete comment" action is shown. */
+  onDelete?: () => void;
 }) {
-  const { onCopyLink, onEdit } = props;
+  const { onCopyLink, onEdit, onDelete } = props;
   return (
     <MenuTrigger>
       <IconButton
@@ -36,6 +49,17 @@ export function CommentActionsMenu(props: {
             </MenuItemIcon>
             Copy link to comment
           </MenuItem>
+          {onDelete ? (
+            <>
+              <MenuSeparator />
+              <MenuItem variant="danger" onAction={onDelete}>
+                <MenuItemIcon>
+                  <Trash2Icon />
+                </MenuItemIcon>
+                Delete comment
+              </MenuItem>
+            </>
+          ) : null}
         </Menu>
       </Popover>
     </MenuTrigger>

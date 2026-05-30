@@ -12,11 +12,13 @@ import { CommentPermission } from "@/gql/graphql";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
+import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
+import { DeleteCommentDialog } from "./DeleteCommentDialog";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
 const COPY_TOAST_ID = "comment-link-copied";
@@ -59,6 +61,7 @@ export function CommentCard(props: {
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [updateComment] = useMutation(UpdateCommentMutation);
 
   useEffect(() => {
@@ -91,76 +94,83 @@ export function CommentCard(props: {
   };
 
   const canEdit = comment.permissions.includes(CommentPermission.Edit);
+  const canDelete = comment.permissions.includes(CommentPermission.Delete);
   const isEdited = Boolean(comment.editedAt);
 
   return (
-    <div
-      ref={ref}
-      id={comment.id}
-      className={clsx(
-        "border-thin bg-app ring-primary -mx-1 rounded-md transition",
-        highlighted ? "ring-2" : "ring-0",
-      )}
-    >
-      <div className="flex items-center gap-2 py-2 pr-2 pl-3">
-        {comment.user ? (
-          <AccountAvatar
-            avatar={comment.user.avatar}
-            className="size-5 border"
-          />
-        ) : null}
-        <span className="text-default text-xs font-medium">
-          {comment.user?.name || comment.user?.slug || "Unknown user"}
-        </span>
-        <Tooltip
-          content={
-            <div className="flex flex-col">
-              <span>
-                Created: {moment(comment.date).format(DETAILED_DATE_FORMAT)}
-              </span>
-              {comment.editedAt ? (
-                <span>
-                  Edited:{" "}
-                  {moment(comment.editedAt).format(DETAILED_DATE_FORMAT)}
-                </span>
-              ) : null}
-            </div>
-          }
-        >
-          <Button
-            onPress={copyLink}
-            aria-label="Copy link to comment"
-            className="text-low hover:text-default text-xs transition"
-          >
-            <Time date={comment.date} tooltip="none" />
-            {isEdited ? " (edited)" : null}
-          </Button>
-        </Tooltip>
-        <CommentActionsMenu
-          onCopyLink={copyLink}
-          onEdit={canEdit ? () => setIsEditing(true) : undefined}
-        />
-      </div>
-      <div className="text-default px-2 pb-2 text-sm">
-        {isEditing ? (
-          <StandaloneEditor
-            variant="plain"
-            defaultValue={comment.content}
-            onSubmit={handleEditSubmit}
-            onCancel={() => setIsEditing(false)}
-            submitLabel="Save"
-            emptyMessage={{
-              title: "Comment required",
-              description: "Please add a comment before saving.",
-            }}
-            autoFocus
-            aria-label="Edit comment"
-            contentClassName="px-1"
-          />
-        ) : (
-          <ReadOnlyEditor content={comment.content} className="px-1" />
+    <>
+      <div
+        ref={ref}
+        id={comment.id}
+        className={clsx(
+          "border-thin bg-app ring-primary -mx-2.5 rounded-md transition",
+          highlighted ? "ring-2" : "ring-0",
         )}
+      >
+        <div className="flex items-center gap-2 px-2 py-1.5 pr-1.5">
+          {comment.user ? (
+            <AccountAvatar
+              avatar={comment.user.avatar}
+              className="size-5 border"
+            />
+          ) : null}
+          <span className="text-default text-xs font-medium">
+            {comment.user?.name || comment.user?.slug || "Unknown user"}
+          </span>
+          <Tooltip
+            content={
+              <div className="flex flex-col">
+                <span>
+                  Created: {moment(comment.date).format(DETAILED_DATE_FORMAT)}
+                </span>
+                {comment.editedAt ? (
+                  <span>
+                    Edited:{" "}
+                    {moment(comment.editedAt).format(DETAILED_DATE_FORMAT)}
+                  </span>
+                ) : null}
+              </div>
+            }
+          >
+            <Button
+              onPress={copyLink}
+              aria-label="Copy link to comment"
+              className="text-low hover:text-default text-xs transition"
+            >
+              <Time date={comment.date} tooltip="none" />
+              {isEdited ? " (edited)" : null}
+            </Button>
+          </Tooltip>
+          <CommentActionsMenu
+            onCopyLink={copyLink}
+            onEdit={canEdit ? () => setIsEditing(true) : undefined}
+            onDelete={canDelete ? () => setIsDeleteDialogOpen(true) : undefined}
+          />
+        </div>
+        <div className="text-default px-1 pb-2 text-sm">
+          {isEditing ? (
+            <StandaloneEditor
+              variant="plain"
+              defaultValue={comment.content}
+              onSubmit={handleEditSubmit}
+              onCancel={() => setIsEditing(false)}
+              submitLabel="Save"
+              emptyMessage={{
+                title: "Comment required",
+                description: "Please add a comment before saving.",
+              }}
+              autoFocus
+              aria-label="Edit comment"
+              contentClassName="px-1"
+            />
+          ) : (
+            <ReadOnlyEditor content={comment.content} className="px-1" />
+          )}
+        </div>
       </div>
-    </div>
+      <Modal isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DeleteCommentDialog commentId={comment.id} />
+      </Modal>
+    </>
   );
 }

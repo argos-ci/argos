@@ -26,6 +26,7 @@ export class Comment extends Model {
           buildReviewId: { type: ["string", "null"] },
           threadId: { type: ["string", "null"] },
           editedAt: { type: ["string", "null"] },
+          deletedAt: { type: ["string", "null"] },
           content: {
             anyOf: [
               { type: "array" },
@@ -46,6 +47,7 @@ export class Comment extends Model {
   buildReviewId!: string | null;
   threadId!: string | null;
   editedAt!: string | null;
+  deletedAt!: string | null;
   content!: unknown;
 
   static override get relationMappings(): RelationMappings {
