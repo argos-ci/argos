@@ -1,10 +1,10 @@
 import type { Comment, User } from "@/database/models";
 
-export type CommentPermission = "edit";
+export type CommentPermission = "edit" | "delete";
 
 /**
  * Compute the permissions a user has on a given comment.
- * Only the author of a comment can edit it.
+ * Only the author of a comment can edit or delete it.
  */
 export function getCommentPermissions(
   comment: Comment,
@@ -12,7 +12,7 @@ export function getCommentPermissions(
 ): CommentPermission[] {
   const permissions: CommentPermission[] = [];
   if (user && comment.userId === user.id) {
-    permissions.push("edit");
+    permissions.push("edit", "delete");
   }
   return permissions;
 }

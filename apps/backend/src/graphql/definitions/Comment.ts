@@ -3,6 +3,7 @@ import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { createBuildComment } from "@/comment/createBuildComment";
+import { deleteBuildComment } from "@/comment/deleteBuildComment";
 import { formatCommentId, parseCommentId } from "@/comment/id";
 import { getCommentPermissions } from "@/comment/permissions";
 import { updateBuildComment } from "@/comment/updateBuildComment";
@@ -39,6 +40,7 @@ async function getCommentByGraphqlId(id: string): Promise<Comment> {
 export const typeDefs = gql`
   enum CommentPermission {
     edit
+    delete
   }
 
   """
@@ -70,11 +72,17 @@ export const typeDefs = gql`
     body: JSONObject!
   }
 
+  input DeleteCommentInput {
+    id: ID!
+  }
+
   extend type Mutation {
     "Post a comment on a build"
     addBuildComment(input: AddBuildCommentInput!): Build!
     "Update an existing comment"
     updateComment(input: UpdateCommentInput!): Comment!
+    "Delete an existing comment"
+    deleteComment(input: DeleteCommentInput!): Comment!
   }
 `;
 
@@ -160,6 +168,24 @@ export const resolvers: IResolvers = {
         comment,
         body: input.body as JSONContent,
       });
+    },
+    deleteComment: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const comment = await getCommentByGraphqlId(input.id);
+
+      const permissions = getCommentPermissions(comment, auth.user);
+
+      if (!permissions.includes("delete")) {
+        throw forbidden("You cannot delete this comment");
+      }
+
+      return deleteBuildComment({ comment });
     },
   },
 };

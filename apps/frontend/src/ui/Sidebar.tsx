@@ -15,7 +15,7 @@ export function SidebarSection(props: {
   return (
     <div
       className={clsx(
-        "bg-app border-thin rounded-md py-3 shadow-xs",
+        "bg-app border-thin rounded-xl py-3 shadow-xs",
         className,
       )}
     >
