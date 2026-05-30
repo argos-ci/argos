@@ -1,6 +1,14 @@
+import type { JSONContent } from "@tiptap/core";
 import { describe, expect, it } from "vitest";
 
-import { validateCommentJson } from "./validate";
+import { isCommentTooLarge, validateCommentJson } from "./validate";
+
+function docWithText(text: string) {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  };
+}
 
 describe("validateCommentJson", () => {
   describe("valid content", () => {
@@ -192,5 +200,60 @@ describe("validateCommentJson", () => {
         }),
       ).toBe(false);
     });
+  });
+});
+
+describe("isCommentTooLarge", () => {
+  it("accepts a small comment", () => {
+    expect(isCommentTooLarge(docWithText("Hello world!"))).toBe(false);
+  });
+
+  it("accepts a comment at the character limit", () => {
+    expect(isCommentTooLarge(docWithText("a".repeat(2_000)))).toBe(false);
+  });
+
+  it("rejects a comment over the character limit", () => {
+    expect(isCommentTooLarge(docWithText("a".repeat(2_001)))).toBe(true);
+  });
+
+  it("rejects a comment over the JSON byte limit", () => {
+    // Few nodes and few characters, but a giant attribute value (a long link
+    // href) blows the byte budget — only the byte check catches this.
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "x",
+              marks: [
+                {
+                  type: "link",
+                  attrs: { href: `https://example.com/${"a".repeat(25_000)}` },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(isCommentTooLarge(doc)).toBe(true);
+  });
+
+  it("rejects a comment with too many nodes", () => {
+    const content = Array.from({ length: 301 }, () => ({
+      type: "paragraph",
+    }));
+    expect(isCommentTooLarge({ type: "doc", content })).toBe(true);
+  });
+
+  it("rejects a deeply nested comment", () => {
+    let node: JSONContent = { type: "text", text: "deep" };
+    for (let i = 0; i < 13; i++) {
+      node = { type: "bulletList", content: [node] };
+    }
+    expect(isCommentTooLarge({ type: "doc", content: [node] })).toBe(true);
   });
 });

@@ -8,7 +8,7 @@ import type { JSONContent } from "@tiptap/core";
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
 import { renderCommentHtml } from "@/comment/html";
-import { validateCommentJson } from "@/comment/validate";
+import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import type { BuildNotification } from "@/database/models";
 import {
   Build,
@@ -81,6 +81,10 @@ export async function createBuildReview(input: {
 
   if (body !== undefined && !validateCommentJson(body)) {
     throw boom(400, "Invalid comment body");
+  }
+
+  if (body !== undefined && isCommentTooLarge(body)) {
+    throw boom(400, "Comment is too large");
   }
 
   const state = getReviewStateFromEvent(event);

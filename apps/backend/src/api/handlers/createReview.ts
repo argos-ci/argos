@@ -12,7 +12,7 @@ import {
   createBuildReview,
   ScreenshotDiffReviewState,
 } from "@/build/createBuildReview";
-import { validateCommentJson } from "@/comment/validate";
+import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
@@ -55,6 +55,13 @@ const CreateReviewBodySchema = z.object({
       message:
         "Invalid comment body. Expected a valid rich-text JSON document.",
     })
+    .refine(
+      (value) =>
+        value === undefined ||
+        !validateCommentJson(value) ||
+        !isCommentTooLarge(value),
+      { message: "Comment is too large." },
+    )
     .meta({
       description:
         "Optional comment to attach to the review. Expected as the JSON representation of a rich-text document.",

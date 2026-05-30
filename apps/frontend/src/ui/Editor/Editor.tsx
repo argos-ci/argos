@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Placeholder } from "@tiptap/extensions";
+import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import { AllSelection, Plugin, TextSelection } from "@tiptap/pm/state";
 import {
   EditorContent,
@@ -93,6 +93,13 @@ export interface EditorProps {
   readOnly?: boolean;
 }
 
+/**
+ * Hard cap on the number of characters a comment can contain. This protects the
+ * UX (no pathologically large comments) and mirrors the server-side limit. It's
+ * enforced silently — there's no character-count UI.
+ */
+const MAX_COMMENT_CHARACTERS = 2_000;
+
 const EDITOR_CONTENT_CLASS = clsx(
   EDITOR_PROSE_CLASS,
   "outline-hidden",
@@ -143,6 +150,7 @@ export function Editor(props: EditorProps) {
           autolink: false,
         },
       }),
+      CharacterCount.configure({ limit: MAX_COMMENT_CHARACTERS }),
       CollapseAllSelectionDelete,
       CollapseSelectionOnEscape,
       LinkEditTrigger,
