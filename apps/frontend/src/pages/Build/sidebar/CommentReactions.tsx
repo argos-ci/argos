@@ -170,6 +170,7 @@ export function CommentReactionList(props: { comment: Comment }) {
           </Button>
         </Tooltip>
       ))}
+      <CommentAddReactionButton comment={comment} />
     </div>
   );
 }
