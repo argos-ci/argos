@@ -133,3 +133,25 @@ test("requires authentication", async ({ fixture }) => {
   const stored = await Comment.query().findById(fixture.comment.id);
   expect(stored!.editedAt).toBeNull();
 });
+
+test("returns a clean error for a malformed comment ID", async ({
+  fixture,
+}) => {
+  const app = await createApolloServerApp(
+    apolloServer,
+    createApolloMiddleware,
+    {
+      user: fixture.authorAccount.user!,
+      account: fixture.authorAccount,
+    },
+  );
+  const res = await request(app)
+    .post("/graphql")
+    .send({
+      query: MUTATION,
+      variables: { input: { id: "not-a-comment-id", body: commentBody("x") } },
+    });
+
+  expect(res.status).toBe(200);
+  expect(res.body.errors[0].message).toBe("Comment not found");
+});

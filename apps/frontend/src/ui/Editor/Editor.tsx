@@ -238,7 +238,9 @@ export function Editor(props: EditorProps) {
 
   return (
     <div
-      data-hotkeys-disabled
+      // Only swallow build hotkeys while the editor is interactive. Read-only
+      // content (e.g. rendered comments) must not disable page shortcuts.
+      data-hotkeys-disabled={readOnly ? undefined : ""}
       data-disabled={disabled ? "" : undefined}
       onMouseDown={isBoxed ? handleContainerMouseDown : undefined}
       className={clsx(

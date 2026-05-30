@@ -17,6 +17,25 @@ import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 
+/**
+ * Resolve a comment from its public GraphQL ID. Malformed IDs and missing
+ * comments both surface as a clean "not found" error rather than an untyped
+ * 500.
+ */
+async function getCommentByGraphqlId(id: string): Promise<Comment> {
+  let commentId: string;
+  try {
+    commentId = parseCommentId(id);
+  } catch {
+    throw notFound("Comment not found");
+  }
+  const comment = await Comment.query().findById(commentId);
+  if (!comment) {
+    throw notFound("Comment not found");
+  }
+  return comment;
+}
+
 export const typeDefs = gql`
   enum CommentPermission {
     edit
@@ -129,11 +148,7 @@ export const resolvers: IResolvers = {
 
       const { input } = args;
 
-      const comment = await Comment.query().findById(parseCommentId(input.id));
-
-      if (!comment) {
-        throw notFound("Comment not found");
-      }
+      const comment = await getCommentByGraphqlId(input.id);
 
       const permissions = getCommentPermissions(comment, auth.user);
 
