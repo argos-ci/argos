@@ -123,7 +123,7 @@ function getActivityEntries(build: Build): ActivityEntry[] {
 /**
  * Reads a `#comment-…` hash from the URL and, when it matches a loaded comment,
  * returns its id so the comment can be highlighted. The highlight clears on the
- * next click anywhere.
+ * next click anywhere, after 3 seconds, or when the component unmounts.
  */
 function useHighlightedCommentId(commentIds: string[]): string | null {
   const { hash } = useLocation();

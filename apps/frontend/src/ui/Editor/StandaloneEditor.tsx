@@ -36,8 +36,9 @@ export interface StandaloneEditorProps {
 /**
  * A self-contained rich-text comment box: the {@link Editor} with a send button
  * integrated into the box. It owns its content, clears it on a successful
- * submit and keeps it on failure. The send button is never disabled — an empty
- * submit surfaces a toast instead.
+ * submit and keeps it on failure. The send button is disabled while a submit is
+ * pending or when disabled by the parent; when the editor is merely empty it
+ * stays clickable so the press can surface a toast.
  */
 export function StandaloneEditor(props: StandaloneEditorProps) {
   const {

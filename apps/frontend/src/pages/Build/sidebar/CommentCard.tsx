@@ -77,6 +77,7 @@ export function CommentCard(props: {
         </span>
         <Button
           onPress={copyLink}
+          aria-label="Copy link to comment"
           className="text-low hover:text-default text-xs transition"
         >
           <Time date={comment.date} />
