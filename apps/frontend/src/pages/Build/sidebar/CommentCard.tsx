@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { clsx } from "clsx";
 import { LinkIcon, MoreHorizontalIcon } from "lucide-react";
+import { Button } from "react-aria-components";
 import { toast } from "sonner";
 import { useClipboard } from "use-clipboard-copy";
 
@@ -74,13 +75,12 @@ export function CommentCard(props: {
         <span className="text-default text-xs font-medium">
           {comment.user?.name || comment.user?.slug || "Unknown user"}
         </span>
-        <button
-          type="button"
-          onClick={copyLink}
-          className="text-low hover:text-default cursor-pointer text-xs transition"
+        <Button
+          onPress={copyLink}
+          className="text-low hover:text-default text-xs transition"
         >
-          <Time date={comment.date} tooltip="title" />
-        </button>
+          <Time date={comment.date} />
+        </Button>
         <CommentActionsMenu onCopyLink={copyLink} />
       </div>
       <div className="text-default px-3 pb-2 text-sm">
