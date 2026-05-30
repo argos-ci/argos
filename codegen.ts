@@ -50,6 +50,8 @@ const config: CodegenConfig = {
           Build: "../../database/models/index.js#Build",
           BuildReview: "../../database/models/index.js#BuildReview",
           Comment: "../../database/models/index.js#Comment",
+          CommentReactionGroup:
+            "../../comment/reactions.js#CommentReactionGroup",
           Deployment: "../../database/models/index.js#Deployment",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
