@@ -1,5 +1,53 @@
 # Argos project
 
+## Database
+
+The schema lives in `db/` and is managed with **Knex** + **Objection** models.
+
+### Changing the schema (migration + model)
+
+To add/change a column or table:
+
+1. **Create a new migration** using `pnpm run --filter backend db:migrate:make short-description`, it will add a file in `db/migrations/`. Overwrite the content of this file to use `async / wait` for `up` and `down` functions and write the migration:
+
+   ```js
+   export async function up(knex) {
+     await knex.schema.alterTable("comments", (table) => {
+       table.dateTime("editedAt").nullable();
+     });
+   }
+   export async function down(knex) {
+     await knex.schema.alterTable("comments", (table) => {
+       table.dropColumn("editedAt");
+     });
+   }
+   ```
+
+   For raw constraint changes (e.g. CHECK constraints) use `knex.raw(...)` and
+   add `export const config = { transaction: false }` when needed.
+
+2. **Apply it and regenerate `db/structure.sql`** (the committed schema dump) in
+   one step:
+
+   ```bash
+   pnpm --filter @argos/backend run db:dump
+   ```
+
+   This runs `db:migrate:latest` then dumps `structure.sql`. Commit both the
+   migration and the updated `structure.sql`.
+
+3. **Update the Objection model** in `src/database/models/`:
+   - Add the column to `jsonSchema.properties` (nullable columns use
+     `{ type: ["string", "null"] }`; dates are stored as ISO strings).
+   - Add the typed class field (e.g. `editedAt!: string | null;`).
+   - `createdAt`/`updatedAt` are handled by the base `Model`.
+
+4. **Reset the test DB** before running e2e tests after a new migration:
+
+   ```bash
+   NODE_ENV=test pnpm run --filter @argos/backend db:reset
+   ```
+
 ## GraphQL
 
 - Keep the schema as the **source of truth**.
@@ -9,6 +57,34 @@
 
 - Add the relevant mapper in `/codegen.ts` when needed.
 - Prefer explicit mappers to avoid hidden inconsistencies.
+- After editing any `typeDefs` (in `src/graphql/definitions/`), regenerate types
+  from the repo root:
+
+  ```bash
+  pnpm run codegen
+  ```
+
+  This writes the backend resolver types
+  (`src/graphql/__generated__/resolver-types.ts`, `schema.gql`) and the frontend
+  types (`apps/frontend/src/gql/`). Import generated enums/types (e.g.
+  `ICommentPermission`) from `../__generated__/resolver-types` and cast service
+  return values to them rather than using `any`.
+
+### Exposing a model field
+
+To surface a model column in the API: add it to the relevant `type` in the
+`typeDefs`, add a resolver in the matching `definitions/*.ts` (map DB
+representation → GraphQL, e.g. ISO string → `DateTime` via `new Date(...)`,
+returning `null` when absent), run `pnpm run codegen`, then consume it in the
+frontend fragment.
+
+### Permissions
+
+Expose per-object permissions as an enum field
+(`permissions: [XxxPermission!]!`) computed from `ctx.auth?.user`. Put the logic
+in a small pure helper (see `src/comment/permissions.ts`) so the same function
+backs both the `permissions` resolver and the authorization guard inside the
+mutation. Always enforce the check in the mutation — never trust the client.
 
 ### Resolvers
 

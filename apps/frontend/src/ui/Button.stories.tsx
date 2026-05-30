@@ -19,6 +19,7 @@ export const Default: Story = {
       <div className="flex flex-wrap items-center gap-4">
         <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
+        <Button variant="ghost">Ghost</Button>
         <Button variant="destructive">Destructive</Button>
         <Button variant="github">GitHub</Button>
         <Button variant="gitlab">GitLab</Button>
@@ -30,6 +31,25 @@ export const Default: Story = {
         <Button size="small">Small</Button>
         <Button size="medium">Medium</Button>
         <Button size="large">Large</Button>
+      </div>
+
+      <StoryTitle>Rounded</StoryTitle>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button rounded size="small">
+          Small
+        </Button>
+        <Button rounded size="medium">
+          Medium
+        </Button>
+        <Button rounded size="large">
+          Large
+        </Button>
+        <Button rounded variant="primary">
+          <ButtonIcon>
+            <DownloadIcon />
+          </ButtonIcon>
+          Download
+        </Button>
       </div>
 
       <StoryTitle>With Icon</StoryTitle>
