@@ -129,7 +129,8 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
         onCancel ? (
           <div className="flex justify-end gap-1.5 p-1 pt-2">
             <Button
-              variant="secondary"
+              variant="ghost"
+              rounded
               size="small"
               onPress={onCancel}
               isDisabled={isPending}
@@ -143,6 +144,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
             >
               <Button
                 variant="secondary"
+                rounded
                 size="small"
                 onPress={submit}
                 isDisabled={disabled || isPending}

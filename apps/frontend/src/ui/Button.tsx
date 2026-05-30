@@ -15,6 +15,7 @@ import { Loader } from "./Loader";
 type ButtonVariant =
   | "primary"
   | "secondary"
+  | "ghost"
   | "destructive"
   | "github"
   | "gitlab"
@@ -30,6 +31,8 @@ type ButtonOptions = {
    * (do not wrap it in `ButtonIcon`).
    */
   iconOnly?: boolean;
+  /** Fully round the edges (pill shape) instead of the default rounded corners. */
+  rounded?: boolean;
 };
 
 const variantClassNames: Record<ButtonVariant, string> = {
@@ -37,6 +40,8 @@ const variantClassNames: Record<ButtonVariant, string> = {
     "data-focus-visible:ring-primary text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
   secondary:
     "data-focus-visible:ring-default text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
+  ghost:
+    "data-focus-visible:ring-default text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
   destructive:
     "data-focus-visible:ring-danger text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
   github:
@@ -48,25 +53,33 @@ const variantClassNames: Record<ButtonVariant, string> = {
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-  small: "rounded-sm py-1 px-2 text-xs",
-  medium: "rounded-lg py-[calc(0.375rem-1px)] px-3 text-sm",
-  large: "rounded-xl py-3 px-8 text-base",
+  small: "py-1 px-2 text-xs",
+  medium: "py-[calc(0.375rem-1px)] px-3 text-sm",
+  large: "py-3 px-8 text-base",
 };
 
 // Keep the same vertical padding as the regular sizes so an iconOnly button
 // matches the height of a text button (e.g. when placed in a ButtonGroup).
 const iconOnlySizeClassNames: Record<ButtonSize, string> = {
-  small: "rounded-sm py-1 px-1.5 text-xs",
-  medium: "rounded-lg py-[calc(0.375rem-1px)] px-2 text-sm",
-  large: "rounded-xl py-3 px-4 text-base",
+  small: "py-1 px-1.5 text-xs",
+  medium: "py-[calc(0.375rem-1px)] px-2 text-sm",
+  large: "py-3 px-4 text-base",
+};
+
+// Default corner rounding per size (overridden by `rounded` for a pill shape).
+const roundingClassNames: Record<ButtonSize, string> = {
+  small: "rounded-sm",
+  medium: "rounded-lg",
+  large: "rounded-xl",
 };
 
 function getButtonClassName(options: {
   variant: ButtonVariant;
   size: ButtonSize;
   iconOnly: boolean;
+  rounded: boolean;
 }) {
-  const { variant, size, iconOnly } = options;
+  const { variant, size, iconOnly, rounded } = options;
   const variantClassName = variantClassNames[variant];
   const sizeClassName = (iconOnly ? iconOnlySizeClassNames : sizeClassNames)[
     size
@@ -75,6 +88,7 @@ function getButtonClassName(options: {
     "group/button",
     variantClassName,
     sizeClassName,
+    rounded ? "rounded-full" : roundingClassNames[size],
     // ButtonGroup integration: drop the inner rounded corners and overlap
     // adjacent borders so each variant's `border-l-*` acts as the separator.
     "group-[*]/button-group:not-first:rounded-l-none",
@@ -89,9 +103,14 @@ function getButtonClassName(options: {
 }
 
 function getButtonProps(options: ButtonOptions) {
-  const { variant = "primary", size = "medium", iconOnly = false } = options;
+  const {
+    variant = "primary",
+    size = "medium",
+    iconOnly = false,
+    rounded = false,
+  } = options;
   return {
-    className: getButtonClassName({ variant, size, iconOnly }),
+    className: getButtonClassName({ variant, size, iconOnly, rounded }),
     "data-size": size ?? "medium",
     "data-icon-only": iconOnly ? "true" : undefined,
   };
@@ -123,12 +142,13 @@ export function Button({
   variant,
   size,
   iconOnly,
+  rounded,
   children,
   onAction,
   onPress,
   ...props
 }: ButtonProps) {
-  const buttonProps = getButtonProps({ variant, size, iconOnly });
+  const buttonProps = getButtonProps({ variant, size, iconOnly, rounded });
   const [isPending, setIsPending] = useState(false);
   return (
     <RACButton
@@ -182,9 +202,10 @@ export function LinkButton({
   variant,
   size,
   iconOnly,
+  rounded,
   ...props
 }: LinkButtonProps) {
-  const buttonProps = getButtonProps({ variant, size, iconOnly });
+  const buttonProps = getButtonProps({ variant, size, iconOnly, rounded });
   return (
     <RACLink
       ref={ref}
