@@ -11,7 +11,11 @@ import { boom } from "@/util/error";
 
 import { renderCommentHtml } from "./html";
 import { formatCommentId } from "./id";
-import { isCommentEmpty, validateCommentJson } from "./validate";
+import {
+  isCommentEmpty,
+  isCommentTooLarge,
+  validateCommentJson,
+} from "./validate";
 
 /**
  * Post a standalone comment on a build (one that is not attached to a review),
@@ -30,6 +34,10 @@ export async function createBuildComment(input: {
 
   if (isCommentEmpty(body)) {
     throw boom(400, "Comment cannot be empty");
+  }
+
+  if (isCommentTooLarge(body)) {
+    throw boom(400, "Comment is too large");
   }
 
   const comment = await Comment.query().insert({

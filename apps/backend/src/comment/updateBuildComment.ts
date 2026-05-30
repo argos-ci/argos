@@ -3,7 +3,11 @@ import type { JSONContent } from "@tiptap/core";
 import type { Comment } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { isCommentEmpty, validateCommentJson } from "./validate";
+import {
+  isCommentEmpty,
+  isCommentTooLarge,
+  validateCommentJson,
+} from "./validate";
 
 /**
  * Update the content of an existing build comment and stamp its `editedAt`
@@ -21,6 +25,10 @@ export async function updateBuildComment(input: {
 
   if (isCommentEmpty(body)) {
     throw boom(400, "Comment cannot be empty");
+  }
+
+  if (isCommentTooLarge(body)) {
+    throw boom(400, "Comment is too large");
   }
 
   return comment.$query().patchAndFetch({
