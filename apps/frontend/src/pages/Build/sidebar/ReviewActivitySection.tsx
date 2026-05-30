@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
 import {
@@ -8,6 +8,7 @@ import {
   FileUpIcon,
   MailCheckIcon,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
@@ -18,6 +19,7 @@ import { IconButton } from "@/ui/IconButton";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { useLiveRef } from "@/ui/useLiveRef";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 import { useNonNullable } from "@/util/useNonNullable";
@@ -124,21 +126,36 @@ function getActivityEntries(build: Build): ActivityEntry[] {
  * next click anywhere.
  */
 function useHighlightedCommentId(commentIds: string[]): string | null {
-  const [hashId, setHashId] = useState<string | null>(() => {
-    const hash = window.location.hash.slice(1);
-    return hash || null;
-  });
+  const { hash } = useLocation();
+  const navigate = useNavigate();
+  const hashId = hash.slice(1);
   const matchedId = hashId && commentIds.includes(hashId) ? hashId : null;
+  const matchedIdRef = useLiveRef(matchedId);
+  const clear = useCallback(() => {
+    if (matchedIdRef.current) {
+      navigate({ hash: "" }, { replace: true });
+    }
+  }, [navigate, matchedIdRef]);
+  // Clear when we click outside.
   useEffect(() => {
     if (!matchedId) {
       return;
     }
-    const clear = () => setHashId(null);
     document.addEventListener("click", clear, { once: true, capture: true });
     return () => {
       document.removeEventListener("click", clear, { capture: true });
     };
-  }, [matchedId]);
+  }, [matchedId, clear]);
+  // Clear after 3s.
+  useEffect(() => {
+    if (!matchedId) {
+      return;
+    }
+    const id = window.setTimeout(clear, 3000);
+    return () => window.clearTimeout(id);
+  }, [matchedId, clear]);
+  // Clear at unmount.
+  useEffect(() => clear, [clear]);
   return matchedId;
 }
 
@@ -234,7 +251,7 @@ function ActivityEntryRow(props: {
   entry: ActivityEntry;
   highlightedCommentId: string | null;
 }) {
-  const { entry } = props;
+  const { entry, highlightedCommentId } = props;
   switch (entry.kind) {
     case "created":
       return (
@@ -300,7 +317,7 @@ function ActivityEntryRow(props: {
       return (
         <CommentCard
           comment={entry.comment}
-          highlighted={entry.comment.id === props.highlightedCommentId}
+          highlighted={entry.comment.id === highlightedCommentId}
         />
       );
   }
