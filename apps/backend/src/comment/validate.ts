@@ -30,3 +30,17 @@ export function validateCommentJson(value: unknown): value is JSONContent {
     return false;
   }
 }
+
+/**
+ * Check whether a (structurally valid) comment document carries no meaningful
+ * content, i.e. it holds only whitespace. Used to reject empty comments
+ * submitted directly through the API.
+ */
+export function isCommentEmpty(value: JSONContent): boolean {
+  try {
+    const node = schema.nodeFromJSON(value);
+    return node.textContent.trim().length === 0;
+  } catch {
+    return true;
+  }
+}

@@ -66,8 +66,14 @@ export interface EditorProps {
   defaultValue?: EditorValue;
   onChange: (value: EditorValue) => void;
   onBlur?: () => void;
+  /** Called when the user presses Cmd/Ctrl+Enter. */
+  onSubmit?: () => void;
+  /** Content rendered inside the editor box, below the text area. */
+  footer?: React.ReactNode;
   ref?: React.Ref<HTMLElement>;
   className?: string;
+  /** Class applied to the editable text area (e.g. to override its height). */
+  contentClassName?: string;
   placeholder?: string;
   autoFocus?: boolean;
   "aria-label"?: string;
@@ -76,18 +82,23 @@ export interface EditorProps {
 
 const EDITOR_CONTENT_CLASS = clsx(
   EDITOR_PROSE_CLASS,
-  "min-h-20 px-3 py-2 outline-hidden",
+  "px-3 py-2 outline-hidden",
   // Placeholder
   "[&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_p.is-editor-empty:first-child]:before:text-low [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0",
 );
+
+const DEFAULT_CONTENT_HEIGHT_CLASS = "min-h-20";
 
 export function Editor(props: EditorProps) {
   const {
     defaultValue,
     onChange,
     onBlur,
+    onSubmit,
+    footer,
     ref,
     className,
+    contentClassName,
     placeholder,
     autoFocus,
     disabled,
@@ -95,9 +106,11 @@ export function Editor(props: EditorProps) {
 
   const onChangeRef = useRef(onChange);
   const onBlurRef = useRef(onBlur);
+  const onSubmitRef = useRef(onSubmit);
   useEffect(() => {
     onChangeRef.current = onChange;
     onBlurRef.current = onBlur;
+    onSubmitRef.current = onSubmit;
   });
 
   const editor = useEditor({
@@ -119,8 +132,23 @@ export function Editor(props: EditorProps) {
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
-        class: EDITOR_CONTENT_CLASS,
+        class: clsx(
+          EDITOR_CONTENT_CLASS,
+          contentClassName ?? DEFAULT_CONTENT_HEIGHT_CLASS,
+        ),
         ...(props["aria-label"] ? { "aria-label": props["aria-label"] } : {}),
+      },
+      handleKeyDown: (_view, event) => {
+        if (
+          (event.metaKey || event.ctrlKey) &&
+          event.key === "Enter" &&
+          onSubmitRef.current
+        ) {
+          event.preventDefault();
+          onSubmitRef.current();
+          return true;
+        }
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -130,6 +158,10 @@ export function Editor(props: EditorProps) {
       onBlurRef.current?.();
     },
   });
+
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [editor, disabled]);
 
   useEffect(() => {
     if (!editor || !ref) {
@@ -149,18 +181,52 @@ export function Editor(props: EditorProps) {
     };
   }, [editor, ref]);
 
+  const handleContainerMouseDown = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (!editor || disabled) {
+      return;
+    }
+    // Only handle primary-button clicks (avoid interfering with context menus).
+    if (event.button !== 0 || event.ctrlKey) {
+      return;
+    }
+
+    if (!(event.target instanceof HTMLElement)) {
+      return;
+    }
+
+    const target = event.target;
+    // Let ProseMirror place the cursor for clicks inside the editable content,
+    // and let interactive controls (toolbar, footer button, links) behave
+    // normally.
+    if (
+      editor.view.dom.contains(target) ||
+      target.closest("button, a, input, textarea")
+    ) {
+      return;
+    }
+    // Clicking the surrounding chrome (padding, footer) focuses the field
+    // instead of blurring it.
+    event.preventDefault();
+    editor.commands.focus("end");
+  };
+
   return (
     <div
       data-hotkeys-disabled
       data-disabled={disabled ? "" : undefined}
+      onMouseDown={handleContainerMouseDown}
       className={clsx(
         "bg-app focus-within:border-active rounded-md border text-sm",
         "data-disabled:opacity-disabled",
+        !disabled && "cursor-text",
         className,
       )}
     >
       <EditorToolbar editor={editor} />
       <EditorContent editor={editor} />
+      {footer}
     </div>
   );
 }

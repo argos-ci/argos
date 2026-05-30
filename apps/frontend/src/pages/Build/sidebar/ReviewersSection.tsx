@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
-import { BanIcon, MoreVerticalIcon } from "lucide-react";
+import { BanIcon, MoreHorizontalIcon } from "lucide-react";
 
 import { BuildReviewersStatusList } from "@/containers/BuildReviewersStatusList";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
@@ -170,8 +170,13 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
 
   return (
     <MenuTrigger>
-      <IconButton data-actions-menu="" size="small" aria-label="Review actions">
-        <MoreVerticalIcon />
+      <IconButton
+        rounded
+        data-actions-menu=""
+        size="small"
+        aria-label="Review actions"
+      >
+        <MoreHorizontalIcon />
       </IconButton>
       <Popover placement="bottom end">
         <Menu aria-label="Review actions">

@@ -73,7 +73,9 @@ export function BuildReviewersStatusList<
               {review.user?.name || review.user?.slug}
             </strong>
             <Tooltip content={descriptor.label}>
-              <Icon className={clsx("size-4 shrink-0", descriptor.textColor)} />
+              <Icon
+                className={clsx("size-3.5 shrink-0", descriptor.textColor)}
+              />
             </Tooltip>
             {props.renderAction?.(review)}
           </li>

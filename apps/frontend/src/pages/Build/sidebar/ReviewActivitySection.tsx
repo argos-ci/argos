@@ -1,3 +1,4 @@
+import { useCallback, useEffect } from "react";
 import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
 import {
@@ -7,18 +8,24 @@ import {
   FileUpIcon,
   MailCheckIcon,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { AccountAvatar } from "@/containers/AccountAvatar";
+import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
+import { ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
-import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { IconButton } from "@/ui/IconButton";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { useLiveRef } from "@/ui/useLiveRef";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
+import { useNonNullable } from "@/util/useNonNullable";
+
+import { AddCommentForm } from "./AddCommentForm";
+import { CommentCard } from "./CommentCard";
 
 const _BuildFragment = graphql(`
   fragment ReviewActivitySection_Build on Build {
@@ -26,6 +33,7 @@ const _BuildFragment = graphql(`
     createdAt
     concludedAt
     subscribed
+    ...AddCommentForm_Build
     reviews {
       id
       date
@@ -49,17 +57,7 @@ const _BuildFragment = graphql(`
       }
     }
     comments {
-      id
-      date
-      content
-      user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
-      }
+      ...CommentCard_Comment
     }
   }
 `);
@@ -122,9 +120,53 @@ function getActivityEntries(build: Build): ActivityEntry[] {
   );
 }
 
+/**
+ * Reads a `#comment-…` hash from the URL and, when it matches a loaded comment,
+ * returns its id so the comment can be highlighted. The highlight clears on the
+ * next click anywhere, after 3 seconds, or when the component unmounts.
+ */
+function useHighlightedCommentId(commentIds: string[]): string | null {
+  const { hash } = useLocation();
+  const navigate = useNavigate();
+  const hashId = hash.slice(1);
+  const matchedId = hashId && commentIds.includes(hashId) ? hashId : null;
+  const matchedIdRef = useLiveRef(matchedId);
+  const clear = useCallback(() => {
+    if (matchedIdRef.current) {
+      navigate({ hash: "" }, { replace: true });
+    }
+  }, [navigate, matchedIdRef]);
+  // Clear when we click outside.
+  useEffect(() => {
+    if (!matchedId) {
+      return;
+    }
+    document.addEventListener("click", clear, { once: true, capture: true });
+    return () => {
+      document.removeEventListener("click", clear, { capture: true });
+    };
+  }, [matchedId, clear]);
+  // Clear after 3s.
+  useEffect(() => {
+    if (!matchedId) {
+      return;
+    }
+    const id = window.setTimeout(clear, 3000);
+    return () => window.clearTimeout(id);
+  }, [matchedId, clear]);
+  // Clear at unmount.
+  useEffect(() => clear, [clear]);
+  return matchedId;
+}
+
 export function ReviewActivitySection(props: { build: Build }) {
   const { build } = props;
+  const permissions = useNonNullable(ProjectPermissionsContext);
+  const canComment = permissions.includes(ProjectPermission.Review);
   const entries = getActivityEntries(build);
+  const highlightedCommentId = useHighlightedCommentId(
+    build.comments.map((comment) => comment.id),
+  );
   return (
     <SidebarSection>
       <SidebarHeader>
@@ -134,9 +176,18 @@ export function ReviewActivitySection(props: { build: Build }) {
       <div className="px-3">
         <Activity>
           {entries.map((entry, index) => (
-            <ActivityEntryRow key={index} entry={entry} />
+            <ActivityEntryRow
+              key={index}
+              entry={entry}
+              highlightedCommentId={highlightedCommentId}
+            />
           ))}
         </Activity>
+        {canComment ? (
+          <div className="mt-3">
+            <AddCommentForm build={build} />
+          </div>
+        ) : null}
       </div>
     </SidebarSection>
   );
@@ -189,15 +240,18 @@ function SubscribeToggleButton(props: { build: Build }) {
   };
   return (
     <Tooltip content={label}>
-      <IconButton size="small" aria-label={label} onPress={handlePress}>
+      <IconButton rounded size="small" aria-label={label} onPress={handlePress}>
         {subscribed ? <BellIcon /> : <BellOffIcon />}
       </IconButton>
     </Tooltip>
   );
 }
 
-function ActivityEntryRow(props: { entry: ActivityEntry }) {
-  const { entry } = props;
+function ActivityEntryRow(props: {
+  entry: ActivityEntry;
+  highlightedCommentId: string | null;
+}) {
+  const { entry, highlightedCommentId } = props;
   switch (entry.kind) {
     case "created":
       return (
@@ -260,29 +314,11 @@ function ActivityEntryRow(props: { entry: ActivityEntry }) {
       );
     }
     case "comment":
-      return <CommentCard comment={entry.comment} />;
+      return (
+        <CommentCard
+          comment={entry.comment}
+          highlighted={entry.comment.id === highlightedCommentId}
+        />
+      );
   }
-}
-
-function CommentCard(props: { comment: Build["comments"][number] }) {
-  const { comment } = props;
-  return (
-    <div className="border-thin bg-app -mx-1 rounded-md">
-      <div className="flex items-center gap-2 px-3 py-2">
-        {comment.user ? (
-          <AccountAvatar
-            avatar={comment.user.avatar}
-            className="size-5 border"
-          />
-        ) : null}
-        <span className="text-default text-xs font-medium">
-          {comment.user?.name || comment.user?.slug || "Unknown user"}
-        </span>
-        <Time date={comment.date} className="text-low text-xs" />
-      </div>
-      <div className="text-default px-3 pb-2 text-sm">
-        <ReadOnlyEditor content={comment.content} />
-      </div>
-    </div>
-  );
 }

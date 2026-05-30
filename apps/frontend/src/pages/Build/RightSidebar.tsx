@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
 import { atomWithStorage } from "jotai/utils";
@@ -10,6 +11,7 @@ import {
   Tabs,
   type TabPanelProps,
 } from "react-aria-components";
+import { useLocation } from "react-router-dom";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
@@ -90,6 +92,13 @@ export function RightSidebar(
   const [tab, setTab] = useAtom(rightSidebarTabAtom);
   const { activeDiff, siblingDiffs } = useBuildDiffState();
   const { build, ...context } = props;
+  const { hash } = useLocation();
+  // Open the Review tab when arriving on a link to a specific comment.
+  useEffect(() => {
+    if (hash.startsWith("#comment-")) {
+      setTab("review");
+    }
+  }, [hash, setTab]);
   if (!open || !activeDiff) {
     return null;
   }
@@ -143,7 +152,7 @@ function SidebarTabPanel(props: TabPanelProps) {
     <TabPanel
       {...props}
       className={clsx(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-4 empty:hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-6 empty:hidden",
         props.className,
       )}
     />

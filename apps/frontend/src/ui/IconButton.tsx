@@ -12,6 +12,8 @@ type IconButtonOptions = {
   variant?: IconButtonVariant;
   color?: IconButtonColor;
   size?: IconButtonSize;
+  /** Render as a circle instead of the default rounded square. */
+  rounded?: boolean;
 };
 
 const colorClassNames: Record<
@@ -35,7 +37,12 @@ const colorClassNames: Record<
 };
 
 function getIconButtonClassName(options: IconButtonOptions) {
-  const { variant = "outline", color = "neutral", size = "medium" } = options;
+  const {
+    variant = "outline",
+    color = "neutral",
+    size = "medium",
+    rounded = false,
+  } = options;
   const variantClassName = colorClassNames[variant][color];
   return clsx(
     variantClassName,
@@ -43,11 +50,17 @@ function getIconButtonClassName(options: IconButtonOptions) {
     "group-[*]/button-group:rounded-none group-[*]/button-group:first:rounded-l-lg group-[*]/button-group:last:rounded-r-lg text-xs font-medium",
     /* Size */
     {
-      small: "p-[calc(0.25rem-1px)] *:size-4 rounded-md leading-4 text-sm",
-      medium: "p-[calc(0.5rem-1px)] *:size-4 rounded-lg leading-4 text-sm",
+      small: "p-[calc(0.3125rem-1px)] *:size-3.5 leading-4 text-sm",
+      medium: "p-[calc(0.5rem-1px)] *:size-4 leading-4 text-sm",
     }[size],
+    /* Shape */
+    rounded
+      ? "rounded-full"
+      : { small: "rounded-md", medium: "rounded-lg" }[size],
     /* Base */
-    "data-disabled:opacity-disabled flex cursor-default border border-transparent text-sm",
+    "flex cursor-default border border-transparent text-sm",
+    /* Disabled, including the not-really-disabled `aria-disabled` style */
+    "data-disabled:opacity-disabled aria-disabled:opacity-disabled aria-disabled:cursor-not-allowed",
     /* Focus */
     "focus:outline-hidden data-focus-visible:ring-4",
   );
@@ -62,13 +75,14 @@ export function IconButton({
   color,
   variant,
   size,
+  rounded,
   ...props
 }: IconButtonProps) {
   return (
     <RACButton
       {...props}
       className={clsx(
-        getIconButtonClassName({ color, variant, size }),
+        getIconButtonClassName({ color, variant, size, rounded }),
         props.className,
       )}
     />
