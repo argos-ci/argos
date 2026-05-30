@@ -1,10 +1,12 @@
 import { useId, useState } from "react";
+import clsx from "clsx";
 import { ArrowUpIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "../Button";
 import { HotkeyTooltip } from "../HotkeyTooltip";
 import { IconButton } from "../IconButton";
-import { Editor, type EditorValue } from "./Editor";
+import { Editor, type EditorValue, type EditorVariant } from "./Editor";
 import { MOD } from "./EditorToolbar.shortcuts";
 import { hasEditorContent } from "./util";
 
@@ -22,6 +24,16 @@ export interface StandaloneEditorProps {
    * so the user can retry.
    */
   onSubmit: (value: EditorValue) => void | Promise<void>;
+  /**
+   * Initial content of the editor. Defaults to empty. Pass existing content to
+   * use the editor in "edit" mode.
+   */
+  defaultValue?: EditorValue;
+  /**
+   * When provided, a cancel button is shown next to the send button. Useful when
+   * editing existing content.
+   */
+  onCancel?: () => void;
   placeholder?: string;
   /** Accessible label and tooltip text for the send button. */
   submitLabel?: string;
@@ -31,6 +43,13 @@ export interface StandaloneEditorProps {
   autoFocus?: boolean;
   className?: string;
   "aria-label"?: string;
+  /**
+   * Visual style, forwarded to the {@link Editor}. `boxed` (default) shows the
+   * bordered box with a toolbar; `plain` renders only the content with the
+   * action buttons below (used to edit in place without any layout shift).
+   */
+  variant?: EditorVariant;
+  contentClassName?: string;
 }
 
 /**
@@ -43,6 +62,8 @@ export interface StandaloneEditorProps {
 export function StandaloneEditor(props: StandaloneEditorProps) {
   const {
     onSubmit,
+    defaultValue = null,
+    onCancel,
     placeholder,
     submitLabel = "Send",
     emptyMessage = DEFAULT_EMPTY_MESSAGE,
@@ -50,8 +71,10 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     autoFocus,
     className,
     "aria-label": ariaLabel,
+    variant = "boxed",
+    contentClassName,
   } = props;
-  const [value, setValue] = useState<EditorValue>(null);
+  const [value, setValue] = useState<EditorValue>(defaultValue);
   // Remounts the editor after a successful submit to clear its content.
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -89,7 +112,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
   return (
     <Editor
       key={editorKey}
-      defaultValue={null}
+      defaultValue={defaultValue}
       onChange={setValue}
       onSubmit={submit}
       placeholder={placeholder}
@@ -97,31 +120,62 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
       autoFocus={autoFocus}
       aria-label={ariaLabel}
       className={className}
-      contentClassName="min-h-9"
+      variant={variant}
+      contentClassName={clsx(
+        variant === "boxed" ? "min-h-9" : undefined,
+        contentClassName,
+      )}
       footer={
-        <div className="flex justify-end p-1.5">
-          <HotkeyTooltip
-            description={submitLabel}
-            keys={[MOD, "Enter"]}
-            placement="top"
-          >
-            <IconButton
-              variant="contained"
+        onCancel ? (
+          <div className="flex justify-end gap-1.5 p-1 pt-2">
+            <Button
+              variant="secondary"
               size="small"
-              rounded
-              aria-label={submitLabel}
-              // Truly disabled (not focusable/clickable) while submitting or when
-              // disabled by the parent. When the editor is merely empty it only
-              // *looks* disabled but stays clickable, so the press can surface the
-              // "empty" toast.
-              isDisabled={disabled || isPending}
-              aria-disabled={isEmpty}
-              onPress={submit}
+              onPress={onCancel}
+              isDisabled={isPending}
             >
-              <ArrowUpIcon />
-            </IconButton>
-          </HotkeyTooltip>
-        </div>
+              Cancel
+            </Button>
+            <HotkeyTooltip
+              description={submitLabel}
+              keys={[MOD, "Enter"]}
+              placement="top"
+            >
+              <Button
+                variant="secondary"
+                size="small"
+                onPress={submit}
+                isDisabled={disabled || isPending}
+              >
+                {submitLabel}
+              </Button>
+            </HotkeyTooltip>
+          </div>
+        ) : (
+          <div className="flex justify-end p-1.5">
+            <HotkeyTooltip
+              description={submitLabel}
+              keys={[MOD, "Enter"]}
+              placement="top"
+            >
+              <IconButton
+                variant="contained"
+                size="small"
+                rounded
+                aria-label={submitLabel}
+                // Truly disabled (not focusable/clickable) while submitting or when
+                // disabled by the parent. When the editor is merely empty it only
+                // *looks* disabled but stays clickable, so the press can surface the
+                // "empty" toast.
+                isDisabled={disabled || isPending}
+                aria-disabled={isEmpty}
+                onPress={submit}
+              >
+                <ArrowUpIcon />
+              </IconButton>
+            </HotkeyTooltip>
+          </div>
+        )
       }
     />
   );

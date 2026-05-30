@@ -3,15 +3,25 @@ import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { createBuildComment } from "@/comment/createBuildComment";
-import { formatCommentId } from "@/comment/id";
+import { formatCommentId, parseCommentId } from "@/comment/id";
+import { getCommentPermissions } from "@/comment/permissions";
+import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
+import { Comment } from "@/database/models/Comment";
 
-import type { IResolvers } from "../__generated__/resolver-types";
+import type {
+  ICommentPermission,
+  IResolvers,
+} from "../__generated__/resolver-types";
 import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
 
 export const typeDefs = gql`
+  enum CommentPermission {
+    edit
+  }
+
   """
   A comment posted on a build.
   """
@@ -19,10 +29,14 @@ export const typeDefs = gql`
     id: ID!
     "Date the comment was posted"
     date: DateTime!
+    "Date the comment was last edited, null if never edited"
+    editedAt: DateTime
     "Rich-text JSON content of the comment"
     content: JSONObject!
     "Author of the comment"
     user: User
+    "Permissions of the current user on this comment"
+    permissions: [CommentPermission!]!
   }
 
   input AddBuildCommentInput {
@@ -31,9 +45,17 @@ export const typeDefs = gql`
     body: JSONObject!
   }
 
+  input UpdateCommentInput {
+    id: ID!
+    "Rich-text JSON content of the comment"
+    body: JSONObject!
+  }
+
   extend type Mutation {
     "Post a comment on a build"
     addBuildComment(input: AddBuildCommentInput!): Build!
+    "Update an existing comment"
+    updateComment(input: UpdateCommentInput!): Comment!
   }
 `;
 
@@ -42,6 +64,9 @@ export const resolvers: IResolvers = {
     id: (comment) => formatCommentId(comment.id),
     date: (comment) => {
       return new Date(comment.createdAt);
+    },
+    editedAt: (comment) => {
+      return comment.editedAt ? new Date(comment.editedAt) : null;
     },
     content: (comment) => {
       return comment.content as Record<string, unknown>;
@@ -55,6 +80,12 @@ export const resolvers: IResolvers = {
       });
       invariant(account, "Account not found");
       return account;
+    },
+    permissions: (comment, _args, ctx) => {
+      return getCommentPermissions(
+        comment,
+        ctx.auth?.user ?? null,
+      ) as ICommentPermission[];
     },
   },
   Mutation: {
@@ -89,6 +120,31 @@ export const resolvers: IResolvers = {
       });
 
       return build;
+    },
+    updateComment: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const comment = await Comment.query().findById(parseCommentId(input.id));
+
+      if (!comment) {
+        throw notFound("Comment not found");
+      }
+
+      const permissions = getCommentPermissions(comment, auth.user);
+
+      if (!permissions.includes("edit")) {
+        throw forbidden("You cannot edit this comment");
+      }
+
+      return updateBuildComment({
+        comment,
+        body: input.body as JSONContent,
+      });
     },
   },
 };

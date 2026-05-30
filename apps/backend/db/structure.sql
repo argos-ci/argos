@@ -573,7 +573,8 @@ CREATE TABLE public.comments (
     "buildId" bigint NOT NULL,
     "buildReviewId" bigint,
     "threadId" bigint,
-    content jsonb NOT NULL
+    content jsonb NOT NULL,
+    "editedAt" timestamp with time zone
 );
 
 
@@ -4808,3 +4809,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526104543_build-review-dismissed-together.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260526120000_build-shards-nonce.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260528120000_user-notification-preferences.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530120000_comment-edited-at.js', 1, NOW());

@@ -62,9 +62,18 @@ const CollapseSelectionOnEscape = Extension.create({
 
 export type EditorValue = JSONContent | null;
 
+/**
+ * - `boxed`: the editor is wrapped in a bordered box with a formatting toolbar
+ *   (used for composing a new comment).
+ * - `plain`: no border, no toolbar and no built-in padding — only the rich-text
+ *   content. Renders identically whether read-only or editable, so toggling
+ *   between the two causes no layout shift.
+ */
+export type EditorVariant = "boxed" | "plain";
+
 export interface EditorProps {
   defaultValue?: EditorValue;
-  onChange: (value: EditorValue) => void;
+  onChange?: (value: EditorValue) => void;
   onBlur?: () => void;
   /** Called when the user presses Cmd/Ctrl+Enter. */
   onSubmit?: () => void;
@@ -78,14 +87,21 @@ export interface EditorProps {
   autoFocus?: boolean;
   "aria-label"?: string;
   disabled?: boolean;
+  /** Visual style of the editor. Defaults to `boxed`. */
+  variant?: EditorVariant;
+  /** Render the content without allowing edits. */
+  readOnly?: boolean;
 }
 
 const EDITOR_CONTENT_CLASS = clsx(
   EDITOR_PROSE_CLASS,
-  "px-3 py-2 outline-hidden",
+  "outline-hidden",
   // Placeholder
   "[&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_p.is-editor-empty:first-child]:before:text-low [&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0",
 );
+
+// Internal padding of the editable area, only applied in the `boxed` variant.
+const BOXED_CONTENT_PADDING_CLASS = "px-3 py-2";
 
 const DEFAULT_CONTENT_HEIGHT_CLASS = "min-h-20";
 
@@ -102,7 +118,12 @@ export function Editor(props: EditorProps) {
     placeholder,
     autoFocus,
     disabled,
+    variant = "boxed",
+    readOnly = false,
   } = props;
+
+  const isBoxed = variant === "boxed";
+  const editable = !disabled && !readOnly;
 
   const onChangeRef = useRef(onChange);
   const onBlurRef = useRef(onBlur);
@@ -127,14 +148,17 @@ export function Editor(props: EditorProps) {
       LinkEditTrigger,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
-    editable: !disabled,
+    editable,
     content: defaultValue,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
         class: clsx(
           EDITOR_CONTENT_CLASS,
-          contentClassName ?? DEFAULT_CONTENT_HEIGHT_CLASS,
+          isBoxed && BOXED_CONTENT_PADDING_CLASS,
+          isBoxed
+            ? (contentClassName ?? DEFAULT_CONTENT_HEIGHT_CLASS)
+            : contentClassName,
         ),
         ...(props["aria-label"] ? { "aria-label": props["aria-label"] } : {}),
       },
@@ -152,7 +176,7 @@ export function Editor(props: EditorProps) {
       },
     },
     onUpdate: ({ editor }) => {
-      onChangeRef.current(editor.getJSON());
+      onChangeRef.current?.(editor.getJSON());
     },
     onBlur: () => {
       onBlurRef.current?.();
@@ -160,8 +184,8 @@ export function Editor(props: EditorProps) {
   });
 
   useEffect(() => {
-    editor?.setEditable(!disabled);
-  }, [editor, disabled]);
+    editor?.setEditable(editable);
+  }, [editor, editable]);
 
   useEffect(() => {
     if (!editor || !ref) {
@@ -184,7 +208,7 @@ export function Editor(props: EditorProps) {
   const handleContainerMouseDown = (
     event: React.MouseEvent<HTMLDivElement>,
   ) => {
-    if (!editor || disabled) {
+    if (!editor || !editable) {
       return;
     }
     // Only handle primary-button clicks (avoid interfering with context menus).
@@ -216,15 +240,17 @@ export function Editor(props: EditorProps) {
     <div
       data-hotkeys-disabled
       data-disabled={disabled ? "" : undefined}
-      onMouseDown={handleContainerMouseDown}
+      onMouseDown={isBoxed ? handleContainerMouseDown : undefined}
       className={clsx(
-        "bg-app focus-within:border-active rounded-md border text-sm",
-        "data-disabled:opacity-disabled",
-        !disabled && "cursor-text",
+        isBoxed && [
+          "bg-app focus-within:border-active rounded-md border text-sm",
+          "data-disabled:opacity-disabled",
+          editable && "cursor-text",
+        ],
         className,
       )}
     >
-      <EditorToolbar editor={editor} />
+      {isBoxed ? <EditorToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
       {footer}
     </div>
