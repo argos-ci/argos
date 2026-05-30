@@ -152,7 +152,7 @@ function SidebarTabPanel(props: TabPanelProps) {
     <TabPanel
       {...props}
       className={clsx(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-4 empty:hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-2 pb-6 empty:hidden",
         props.className,
       )}
     />
