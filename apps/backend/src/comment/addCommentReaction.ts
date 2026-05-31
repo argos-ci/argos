@@ -1,16 +1,20 @@
 import { invariant } from "@argos/util/invariant";
+import type { JSONContent } from "@tiptap/core";
 
 import { knex } from "@/database";
 import { Comment, User } from "@/database/models";
+import { getCommentThreadSubscribedUserIds } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
+import { renderCommentHtml } from "./html";
 import { formatCommentId } from "./id";
 import { isValidEmoji } from "./reactions";
 
 /**
- * Add an emoji reaction from a user to a comment and notify the comment author.
- * The operation is idempotent: reacting again with the same emoji is a no-op.
+ * Add an emoji reaction from a user to a comment and notify the comment thread
+ * subscribers. The operation is idempotent: reacting again with the same emoji
+ * is a no-op.
  */
 export async function addCommentReaction(input: {
   comment: Comment;
@@ -38,23 +42,28 @@ export async function addCommentReaction(input: {
     return comment;
   }
 
-  await notifyCommentAuthor({ comment, userId, emoji });
+  await notifyCommentThreadSubscribers({ comment, userId, emoji });
 
   return comment;
 }
 
 /**
- * Notify the comment author that someone reacted to their comment. Reacting to
- * your own comment does not send a notification.
+ * Notify everyone subscribed to the reacted-to comment's thread. The reactor is
+ * never notified of their own reaction.
  */
-async function notifyCommentAuthor(input: {
+async function notifyCommentThreadSubscribers(input: {
   comment: Comment;
   userId: string;
   emoji: string;
 }): Promise<void> {
   const { comment, userId, emoji } = input;
 
-  if (comment.userId === userId) {
+  // A standalone comment is its own thread root; a reply points at the root
+  // via `threadId`. Subscriptions are keyed on the root comment.
+  const threadId = comment.threadId ?? comment.id;
+  const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
+  const recipients = subscribedUserIds.filter((id) => id !== userId);
+  if (recipients.length === 0) {
     return;
   }
 
@@ -81,9 +90,11 @@ async function notifyCommentAuthor(input: {
       buildNumber: build.number,
       buildName: build.name,
       commentUrl,
+      commentAuthorId: comment.userId,
       reactorName,
       emoji,
+      bodyHtml: renderCommentHtml(comment.content as JSONContent),
     },
-    recipients: [comment.userId],
+    recipients,
   });
 }

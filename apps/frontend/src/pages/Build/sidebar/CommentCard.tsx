@@ -279,12 +279,12 @@ function CommentMessage(props: {
         ref={ref}
         id={comment.id}
         className={clsx(
-          "ring-primary transition",
+          "group/comment ring-primary transition",
           separated && "border-t-thin",
           highlighted ? "ring-2" : "ring-0",
         )}
       >
-        <div className="group/comment-header relative flex items-center gap-2 px-2 py-1.5 pr-1.5">
+        <div className="relative flex items-center gap-2 px-2 py-1.5 pr-1.5">
           {comment.user ? (
             <AccountAvatar
               avatar={comment.user.avatar}
@@ -323,7 +323,7 @@ function CommentMessage(props: {
               </Tooltip>
             </div>
           </div>
-          <div className="bg-app pointer-events-none absolute top-1 right-1 flex items-center rounded-md pl-1 opacity-0 transition group-focus-within/comment-header:pointer-events-auto group-focus-within/comment-header:opacity-100 group-hover/comment-header:pointer-events-auto group-hover/comment-header:opacity-100 has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
+          <div className="bg-app pointer-events-none absolute top-1 right-1 flex items-center rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
             <CommentAddReactionButton comment={comment} />
             <CommentActionsMenu
               onCopyLink={copyLink}

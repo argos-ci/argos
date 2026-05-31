@@ -83,6 +83,19 @@ export function HighlightBlock(props: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Box displaying the rendered HTML of a comment (see `renderCommentHtml`).
+ * Shared by the comment and review notification emails.
+ */
+export function CommentBox(props: { html: string }) {
+  return (
+    <div
+      className="my-4 rounded bg-[#f6f6f6] p-4 text-sm text-gray-950"
+      dangerouslySetInnerHTML={{ __html: props.html }}
+    />
+  );
+}
+
 export function OTPCode(props: { children: React.ReactNode }) {
   return (
     <Text className="inline-block rounded bg-[#f6f6f6] p-4 text-2xl font-bold tracking-[0.2em]">
