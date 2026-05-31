@@ -419,6 +419,10 @@ importers:
       supertest:
         specifier: ^7.2.2
         version: 7.2.2
+    optionalDependencies:
+      '@argos-ci/mask-fingerprint-darwin-arm64':
+        specifier: ^0.1.3
+        version: 0.1.3
 
   apps/frontend:
     devDependencies:
