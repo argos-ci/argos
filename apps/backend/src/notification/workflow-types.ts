@@ -2,6 +2,8 @@ import type { z } from "zod";
 
 type HandlerContext = {
   user: {
+    /** ID of the recipient. Lets handlers personalize copy (e.g. "your comment"). */
+    id: string;
     name: string | null;
   };
   /**

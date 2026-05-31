@@ -1,7 +1,14 @@
 import { assertNever } from "@argos/util/assertNever";
 import { z } from "zod";
 
-import { EmailLayout, H1, Hi, Link, Paragraph } from "../../email/components";
+import {
+  CommentBox,
+  EmailLayout,
+  H1,
+  Hi,
+  Link,
+  Paragraph,
+} from "../../email/components";
 import { defineNotificationHandler } from "../workflow-types";
 
 const reviewStateSchema = z.enum(["approved", "rejected", "commented"]);
@@ -91,12 +98,7 @@ export const handler = defineNotificationHandler({
             </Link>
             .
           </Paragraph>
-          {bodyHtml ? (
-            <div
-              className="my-4 rounded bg-[#f6f6f6] p-4 text-sm text-gray-950"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
-          ) : null}
+          {bodyHtml ? <CommentBox html={bodyHtml} /> : null}
           <Paragraph>
             <Link href={buildUrl}>View the build on Argos →</Link>
           </Paragraph>

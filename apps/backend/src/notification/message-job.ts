@@ -46,6 +46,7 @@ async function processMessage(message: NotificationMessage) {
 
   const ctx = {
     user: {
+      id: message.userId,
       name: message.user.account.name
         ? extractFirstName(message.user.account.name)
         : null,
