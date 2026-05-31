@@ -176,7 +176,7 @@ function useRecentEmojis(): [Emoji[], (emoji: Emoji) => void] {
 const COLUMNS = 9;
 const CELL_SIZE = 28;
 const HEADER_HEIGHT = 28;
-const VIEWPORT_HEIGHT = 296;
+const VIEWPORT_HEIGHT = 256;
 const GRID_PADDING_X = 8;
 const GRID_WIDTH = COLUMNS * CELL_SIZE;
 
