@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Comment, CommentReaction, User } from "@/database/models";
+import { knex } from "@/database";
+import { Comment, User } from "@/database/models";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
@@ -22,21 +23,20 @@ export async function addCommentReaction(input: {
     throw boom(400, "Invalid emoji");
   }
 
-  const existing = await CommentReaction.query().findById([
-    comment.id,
-    userId,
-    emoji,
-  ]);
+  // Insert atomically: `onConflict().ignore()` makes concurrent requests safe
+  // (no read-then-insert race, no primary-key violation) and the returning rows
+  // tell us whether this call actually created the reaction. `createdAt` and
+  // `updatedAt` fall back to their database defaults.
+  const inserted = await knex("comment_reactions")
+    .insert({ commentId: comment.id, userId, emoji })
+    .onConflict(["commentId", "userId", "emoji"])
+    .ignore()
+    .returning("commentId");
 
-  if (existing) {
+  // Already reacted with this emoji: nothing inserted, nothing to notify.
+  if (inserted.length === 0) {
     return comment;
   }
-
-  await CommentReaction.query().insert({
-    commentId: comment.id,
-    userId,
-    emoji,
-  });
 
   await notifyCommentAuthor({ comment, userId, emoji });
 

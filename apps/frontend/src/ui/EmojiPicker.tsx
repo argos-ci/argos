@@ -83,7 +83,7 @@ export function EmojiPicker(props: EmojiPickerProps) {
 }
 
 export type EmojiPickerPopoverProps = Omit<PopoverProps, "children"> & {
-  /** Called with the selected emoji character. */
+  /** Called with the selected frimousse {@link Emoji} (use `emoji.emoji` for the character). */
   onEmojiSelect: (emoji: Emoji) => void;
 } & Pick<EmojiPickerProps, "locale" | "skinTone" | "columns">;
 

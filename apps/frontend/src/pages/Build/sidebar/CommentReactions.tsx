@@ -95,6 +95,9 @@ function useReactionActions(commentId: string) {
  */
 function getReactionTooltip(group: ReactionGroup): string {
   const names = group.users.map((user) => user.name || user.slug);
+  if (names.length === 0) {
+    return "";
+  }
   if (names.length === 1) {
     return `${names[0]} reacted with ${group.emoji}`;
   }

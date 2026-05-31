@@ -10,28 +10,19 @@ export type CommentReactionGroup = {
 };
 
 /**
- * Upper bound on the stored emoji length. A single emoji can be several code
- * points long (skin-tone modifiers, ZWJ sequences like 👨‍👩‍👧‍👦), so we allow
- * some room while still rejecting arbitrary text.
+ * Matches a string that is *exactly* one emoji and nothing else. `\p{RGI_Emoji}`
+ * (requires the `v` flag) matches a whole recommended-for-interchange emoji,
+ * including multi-code-point ones (skin-tone modifiers, ZWJ sequences like
+ * 👨‍👩‍👧‍👦). Anchoring with `^…$` rejects embedded text such as "👍lgtm" and
+ * multi-emoji strings, so only a single emoji can be stored as a reaction.
  */
-const MAX_EMOJI_LENGTH = 64;
+const EMOJI_REGEX = /^\p{RGI_Emoji}$/v;
 
 /**
- * Matches at least one pictographic code point. Anyone can craft a request
- * directly, so this guards against storing plain text or digits as a reaction.
- */
-const EMOJI_REGEX = /\p{Extended_Pictographic}/u;
-
-/**
- * Check that a value is a valid emoji that can be stored as a reaction.
+ * Check that a value is a single emoji that can be stored as a reaction.
  */
 export function isValidEmoji(emoji: unknown): emoji is string {
-  return (
-    typeof emoji === "string" &&
-    emoji.length > 0 &&
-    emoji.length <= MAX_EMOJI_LENGTH &&
-    EMOJI_REGEX.test(emoji)
-  );
+  return typeof emoji === "string" && EMOJI_REGEX.test(emoji);
 }
 
 /**

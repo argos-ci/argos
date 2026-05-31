@@ -29,8 +29,12 @@ describe("isValidEmoji", () => {
     expect(isValidEmoji("")).toBe(false);
   });
 
-  it("rejects overly long input", () => {
-    expect(isValidEmoji("👍".repeat(64))).toBe(false);
+  it("rejects an emoji with trailing text", () => {
+    expect(isValidEmoji("👍lgtm")).toBe(false);
+  });
+
+  it("rejects multiple emojis", () => {
+    expect(isValidEmoji("👍🎉")).toBe(false);
   });
 
   it("rejects non-string values", () => {

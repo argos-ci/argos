@@ -45,7 +45,7 @@ async function getCommentByGraphqlId(id: string): Promise<Comment> {
  * Ensure the user is allowed to react to a comment. Reacting requires the same
  * "review" permission on the build's project as posting a comment does.
  */
-async function checkCanReactToComment(
+async function assertCanReactToComment(
   comment: Comment,
   user: User,
 ): Promise<void> {
@@ -264,7 +264,7 @@ export const resolvers: IResolvers = {
 
       const comment = await getCommentByGraphqlId(input.commentId);
 
-      await checkCanReactToComment(comment, auth.user);
+      await assertCanReactToComment(comment, auth.user);
 
       return addCommentReaction({
         comment,
@@ -282,7 +282,7 @@ export const resolvers: IResolvers = {
 
       const comment = await getCommentByGraphqlId(input.commentId);
 
-      await checkCanReactToComment(comment, auth.user);
+      await assertCanReactToComment(comment, auth.user);
 
       return removeCommentReaction({
         comment,
