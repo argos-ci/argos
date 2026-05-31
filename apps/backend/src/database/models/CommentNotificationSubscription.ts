@@ -28,10 +28,10 @@ export class CommentNotificationSubscription extends Model {
     ],
   };
 
-  declare commentId: string;
-  declare userId: string;
-  declare subscribedAt: string | null;
-  declare unsubscribedAt: string | null;
+  commentId!: string;
+  userId!: string;
+  subscribedAt!: string | null;
+  unsubscribedAt!: string | null;
 
   isSubscribed(): boolean {
     if (!this.subscribedAt) {
@@ -64,6 +64,6 @@ export class CommentNotificationSubscription extends Model {
     };
   }
 
-  declare comment?: Comment;
-  declare user?: User;
+  comment?: Comment;
+  user?: User;
 }
