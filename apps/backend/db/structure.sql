@@ -547,6 +547,22 @@ ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
 
 
 --
+-- Name: comment_notifications_subscriptions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.comment_notifications_subscriptions (
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "commentId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "subscribedAt" timestamp with time zone,
+    "unsubscribedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.comment_notifications_subscriptions OWNER TO postgres;
+
+--
 -- Name: comment_reactions; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2743,6 +2759,14 @@ ALTER TABLE ONLY public.builds
 
 
 --
+-- Name: comment_notifications_subscriptions comment_notifications_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_notifications_subscriptions
+    ADD CONSTRAINT comment_notifications_subscriptions_pkey PRIMARY KEY ("commentId", "userId");
+
+
+--
 -- Name: comment_reactions comment_reactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3454,6 +3478,13 @@ CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
 
 
 --
+-- Name: comment_notifications_subscriptions_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX comment_notifications_subscriptions_userid_index ON public.comment_notifications_subscriptions USING btree ("userId");
+
+
+--
 -- Name: comments_buildid_createdat_active_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4094,6 +4125,22 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: comment_notifications_subscriptions comment_notifications_subscriptions_commentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_notifications_subscriptions
+    ADD CONSTRAINT comment_notifications_subscriptions_commentid_foreign FOREIGN KEY ("commentId") REFERENCES public.comments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_notifications_subscriptions comment_notifications_subscriptions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_notifications_subscriptions
+    ADD CONSTRAINT comment_notifications_subscriptions_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4819,3 +4866,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260528120000_user-notification-preferences.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530120000_comment-edited-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530130000_comment-deleted-at.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531120000_comment-notifications-subscriptions.js', 1, NOW());

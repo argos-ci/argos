@@ -13,6 +13,7 @@ export * from "./Deployment";
 export * from "./DeploymentAlias";
 export * from "./DeploymentNotification";
 export * from "./Comment";
+export * from "./CommentNotificationSubscription";
 export * from "./CommentReaction";
 export * from "./File";
 export * from "./GithubAccount";
