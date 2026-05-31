@@ -22,6 +22,7 @@ import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useLiveRef } from "@/ui/useLiveRef";
+import { UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 import { useNonNullable } from "@/util/useNonNullable";
@@ -38,12 +39,15 @@ const _BuildFragment = graphql(`
     subscribed
     ...AddCommentForm_Build
     mentionableUsers {
-      id
-      name
-      slug
-      avatar {
-        url(size: 64)
-        initial
+      level
+      user {
+        id
+        name
+        slug
+        avatar {
+          url(size: 64)
+          initial
+        }
       }
     }
     reviews {
@@ -99,6 +103,29 @@ const UnsubscribeFromBuildMutation = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type Comment = Build["comments"][number];
 type CommentThread = { root: Comment; replies: Comment[] };
+type ReviewUser = NonNullable<Build["reviews"][number]["user"]>;
+
+/**
+ * A reviewer's name in the activity flow, with a hover card showing their
+ * avatar and slug — the same card used for comment mentions.
+ */
+function ReviewUserName(props: { user: ReviewUser }) {
+  const { user } = props;
+  return (
+    <UserHoverCard
+      user={{
+        name: user.name,
+        slug: user.slug,
+        imageUrl: user.avatar.url,
+        initial: user.avatar.initial,
+      }}
+    >
+      <span tabIndex={0} className="text-default font-medium">
+        {user.name || user.slug}
+      </span>
+    </UserHoverCard>
+  );
+}
 
 type ActivityEntry =
   | { kind: "created"; date: string }
@@ -221,13 +248,16 @@ function useHighlightedCommentId(commentIds: string[]): string | null {
   return matchedId;
 }
 
-function toMentionUsers(users: Build["mentionableUsers"]): MentionUser[] {
-  return users.map((user) => ({
+function toMentionUsers(
+  mentionableUsers: Build["mentionableUsers"],
+): MentionUser[] {
+  return mentionableUsers.map(({ user, level }) => ({
     id: user.id,
     label: user.name || user.slug,
     secondaryLabel: user.name ? user.slug : null,
     imageUrl: user.avatar.url,
     initial: user.avatar.initial,
+    role: level,
   }));
 }
 
@@ -392,9 +422,7 @@ function ActivityEntryRow(props: {
             {review.user && (
               <>
                 {" by "}
-                <span className="text-default font-medium">
-                  {review.user.name || review.user.slug}
-                </span>
+                <ReviewUserName user={review.user} />
               </>
             )}
             {" · "}
@@ -410,17 +438,13 @@ function ActivityEntryRow(props: {
             {review.dismissedBy ? (
               <>
                 {" by "}
-                <span className="text-default font-medium">
-                  {review.dismissedBy.name || review.dismissedBy.slug}
-                </span>
+                <ReviewUserName user={review.dismissedBy} />
               </>
             ) : null}
             {review.user ? (
               <>
                 {" for "}
-                <span className="text-default font-medium">
-                  {review.user.name || review.user.slug}
-                </span>
+                <ReviewUserName user={review.user} />
               </>
             ) : null}
             {" · "}

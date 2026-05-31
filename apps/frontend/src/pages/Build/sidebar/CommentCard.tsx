@@ -360,6 +360,7 @@ function CommentMessage(props: {
             <ReadOnlyEditor
               content={comment.content}
               className={contentClassName}
+              mentions={mentions}
             />
           )}
         </div>

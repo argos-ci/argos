@@ -1,7 +1,15 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import Mention from "@tiptap/extension-mention";
-import { ReactRenderer, type Editor as TiptapEditor } from "@tiptap/react";
+import {
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  ReactRenderer,
+  type NodeViewProps,
+  type Editor as TiptapEditor,
+} from "@tiptap/react";
 import { clsx } from "clsx";
+
+import { UserHoverCard } from "../UserCard";
 
 /**
  * A user that can be mentioned in a comment. `id` is the public account id
@@ -15,6 +23,8 @@ export interface MentionUser {
   imageUrl?: string | null;
   /** Initial shown when there's no image. */
   initial?: string | null;
+  /** Team role, shown in the hover card (e.g. "owner"). */
+  role?: string | null;
 }
 
 const MAX_SUGGESTIONS = 8;
@@ -184,6 +194,40 @@ function positionPopup(
  * once while the underlying list stays up to date.
  */
 export function createMentionExtension(getUsers: () => MentionUser[]) {
+  /**
+   * Node view that renders the `@label` and, when the mentioned user is in the
+   * known list, wraps it with a hover card showing their avatar, name and role.
+   */
+  function MentionNodeView(props: NodeViewProps) {
+    const id = (props.node.attrs.id as string | null) ?? null;
+    const label = (props.node.attrs.label as string | null) ?? id ?? "";
+    const user = id ? getUsers().find((item) => item.id === id) : undefined;
+    const trigger = (
+      <span contentEditable={false} className="cursor-default">
+        @{label}
+      </span>
+    );
+    return (
+      <NodeViewWrapper as="span" className="mention">
+        {user ? (
+          <UserHoverCard
+            user={{
+              name: user.label,
+              slug: user.secondaryLabel ?? user.label,
+              imageUrl: user.imageUrl,
+              initial: user.initial,
+              role: user.role,
+            }}
+          >
+            {trigger}
+          </UserHoverCard>
+        ) : (
+          trigger
+        )}
+      </NodeViewWrapper>
+    );
+  }
+
   return Mention.configure({
     HTMLAttributes: { class: "mention" },
     suggestion: {
@@ -229,6 +273,10 @@ export function createMentionExtension(getUsers: () => MentionUser[]) {
           },
         };
       },
+    },
+  }).extend({
+    addNodeView() {
+      return ReactNodeViewRenderer(MentionNodeView);
     },
   });
 }

@@ -52,6 +52,7 @@ const config: CodegenConfig = {
           Comment: "../../database/models/index.js#Comment",
           CommentReactionGroup:
             "../../comment/reactions.js#CommentReactionGroup",
+          MentionableUser: "../../comment/mentions.js#MentionableUserAccount",
           Deployment: "../../database/models/index.js#Deployment",
           GhApiInstallation: "../../github/index.js#GhApiInstallation",
           GhApiRepository: "../../github/index.js#GhApiRepository",
