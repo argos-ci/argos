@@ -60,6 +60,7 @@
     "d3-selection": "^3.0.0",
     "d3-transition": "^3.0.1",
     "d3-zoom": "^3.0.0",
+    "emojibase-data": "^17.0.0",
     "eslint": "catalog:",
     "fast-fuzzy": "^1.12.0",
     "graphql": "^16.14.0",
@@ -97,8 +98,5 @@
     "use-debounce": "^10.1.1",
     "vite": "^8.0.14",
     "zod": "catalog:"
-  },
-  "dependencies": {
-    "emojibase-data": "^17.0.0"
   }
 }

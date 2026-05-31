@@ -421,10 +421,6 @@ importers:
         version: 7.2.2
 
   apps/frontend:
-    dependencies:
-      emojibase-data:
-        specifier: ^17.0.0
-        version: 17.0.0(emojibase@17.0.0)
     devDependencies:
       '@apollo/client':
         specifier: ^4.2.0
@@ -561,6 +557,9 @@ importers:
       d3-zoom:
         specifier: ^3.0.0
         version: 3.0.0
+      emojibase-data:
+        specifier: ^17.0.0
+        version: 17.0.0(emojibase@17.0.0)
       eslint:
         specifier: 'catalog:'
         version: 10.4.0(jiti@2.7.0)
