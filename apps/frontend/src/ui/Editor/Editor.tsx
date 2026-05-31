@@ -253,7 +253,7 @@ export function Editor(props: EditorProps) {
       onMouseDown={isBoxed ? handleContainerMouseDown : undefined}
       className={clsx(
         isBoxed && [
-          "bg-app focus-within:border-active rounded-md border text-sm",
+          "bg-app focus-within:border-active border-thin rounded-md text-sm",
           "data-disabled:opacity-disabled",
           editable && "cursor-text",
         ],
