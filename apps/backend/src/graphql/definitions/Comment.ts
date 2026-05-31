@@ -2,13 +2,17 @@ import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
+import { addCommentReaction } from "@/comment/addCommentReaction";
 import { createBuildComment } from "@/comment/createBuildComment";
 import { deleteBuildComment } from "@/comment/deleteBuildComment";
 import { formatCommentId, parseCommentId } from "@/comment/id";
 import { getCommentPermissions } from "@/comment/permissions";
+import { groupCommentReactions } from "@/comment/reactions";
+import { removeCommentReaction } from "@/comment/removeCommentReaction";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
 import { Comment } from "@/database/models/Comment";
+import type { User } from "@/database/models/User";
 
 import type {
   ICommentPermission,
@@ -37,10 +41,42 @@ async function getCommentByGraphqlId(id: string): Promise<Comment> {
   return comment;
 }
 
+/**
+ * Ensure the user is allowed to react to a comment. Reacting requires the same
+ * "review" permission on the build's project as posting a comment does.
+ */
+async function assertCanReactToComment(
+  comment: Comment,
+  user: User,
+): Promise<void> {
+  const build = await comment
+    .$relatedQuery("build")
+    .withGraphFetched("project.account");
+  invariant(build?.project?.account, "Build project account not found");
+  const permissions = await build.project.$getPermissions(user);
+  if (!permissions.includes("review")) {
+    throw forbidden("You cannot react to this comment");
+  }
+}
+
 export const typeDefs = gql`
   enum CommentPermission {
     edit
     delete
+  }
+
+  """
+  Reactions of a single emoji on a comment.
+  """
+  type CommentReactionGroup {
+    "The emoji used for the reaction"
+    emoji: String!
+    "Number of users who reacted with this emoji"
+    count: Int!
+    "Whether the current user reacted with this emoji"
+    reactedByMe: Boolean!
+    "Users who reacted with this emoji"
+    users: [User!]!
   }
 
   """
@@ -58,6 +94,8 @@ export const typeDefs = gql`
     user: User
     "Permissions of the current user on this comment"
     permissions: [CommentPermission!]!
+    "Emoji reactions on the comment, grouped by emoji"
+    reactions: [CommentReactionGroup!]!
   }
 
   input AddBuildCommentInput {
@@ -76,6 +114,12 @@ export const typeDefs = gql`
     id: ID!
   }
 
+  input CommentReactionInput {
+    commentId: ID!
+    "The emoji to react with"
+    emoji: String!
+  }
+
   extend type Mutation {
     "Post a comment on a build"
     addBuildComment(input: AddBuildCommentInput!): Build!
@@ -83,6 +127,10 @@ export const typeDefs = gql`
     updateComment(input: UpdateCommentInput!): Comment!
     "Delete an existing comment"
     deleteComment(input: DeleteCommentInput!): Comment!
+    "Add an emoji reaction to a comment"
+    addCommentReaction(input: CommentReactionInput!): Comment!
+    "Remove an emoji reaction from a comment"
+    removeCommentReaction(input: CommentReactionInput!): Comment!
   }
 `;
 
@@ -113,6 +161,25 @@ export const resolvers: IResolvers = {
         comment,
         ctx.auth?.user ?? null,
       ) as ICommentPermission[];
+    },
+    reactions: async (comment, _args, ctx) => {
+      const reactions = await ctx.loaders.CommentReactions.load(comment.id);
+      return groupCommentReactions(reactions);
+    },
+  },
+  CommentReactionGroup: {
+    count: (group) => group.userIds.length,
+    reactedByMe: (group, _args, ctx) => {
+      const userId = ctx.auth?.user.id;
+      return userId ? group.userIds.includes(userId) : false;
+    },
+    users: async (group, _args, ctx) => {
+      const accounts = await Promise.all(
+        group.userIds.map((userId) =>
+          ctx.loaders.AccountFromRelation.load({ userId }),
+        ),
+      );
+      return accounts.filter((account) => account !== null);
     },
   },
   Mutation: {
@@ -186,6 +253,42 @@ export const resolvers: IResolvers = {
       }
 
       return deleteBuildComment({ comment });
+    },
+    addCommentReaction: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const comment = await getCommentByGraphqlId(input.commentId);
+
+      await assertCanReactToComment(comment, auth.user);
+
+      return addCommentReaction({
+        comment,
+        userId: auth.user.id,
+        emoji: input.emoji,
+      });
+    },
+    removeCommentReaction: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+
+      const { input } = args;
+
+      const comment = await getCommentByGraphqlId(input.commentId);
+
+      await assertCanReactToComment(comment, auth.user);
+
+      return removeCommentReaction({
+        comment,
+        userId: auth.user.id,
+        emoji: input.emoji,
+      });
     },
   },
 };

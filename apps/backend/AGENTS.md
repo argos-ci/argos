@@ -48,6 +48,26 @@ To add/change a column or table:
    NODE_ENV=test pnpm run --filter @argos/backend db:reset
    ```
 
+### Idempotent inserts
+
+Never gate an insert on a prior existence check (read-then-insert) — two
+concurrent requests can both pass the check and then race on the primary key.
+Insert atomically with `onConflict([...]).ignore()` (or `.merge(...)` for
+upserts). When you need to know whether the row was actually created (e.g. to
+send a notification only once), read the `.returning(...)` rows: an empty array
+means the conflict was ignored.
+
+```js
+const inserted = await knex("comment_reactions")
+  .insert({ commentId, userId, emoji })
+  .onConflict(["commentId", "userId", "emoji"])
+  .ignore()
+  .returning("commentId");
+if (inserted.length === 0) {
+  return; // already existed, nothing to do
+}
+```
+
 ## GraphQL
 
 - Keep the schema as the **source of truth**.

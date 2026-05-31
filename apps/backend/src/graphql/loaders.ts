@@ -14,6 +14,7 @@ import {
   Build,
   BuildReview,
   Comment,
+  CommentReaction,
   Deployment,
   DeploymentAlias,
   File,
@@ -651,6 +652,24 @@ function createBuildPublishedCommentsLoader() {
   });
 }
 
+function createCommentReactionsLoader() {
+  return new DataLoader<string, CommentReaction[]>(async (commentIds) => {
+    const reactions = await CommentReaction.query()
+      .whereIn("commentId", commentIds as string[])
+      .orderBy("createdAt", "asc");
+    const reactionsMap = reactions.reduce<Record<string, CommentReaction[]>>(
+      (map, reaction) => {
+        const array = map[reaction.commentId] ?? [];
+        array.push(reaction);
+        map[reaction.commentId] = array;
+        return map;
+      },
+      {},
+    );
+    return commentIds.map((id) => reactionsMap[id] ?? []);
+  });
+}
+
 function createBuildReviewsLoader() {
   return new DataLoader<string, BuildReview[]>(async (inputs) => {
     const reviews = await BuildReview.query()
@@ -1116,6 +1135,7 @@ export const createLoaders = () => ({
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
+  CommentReactions: createCommentReactionsLoader(),
   BuildReviews: createBuildReviewsLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),

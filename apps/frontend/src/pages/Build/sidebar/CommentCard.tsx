@@ -18,6 +18,10 @@ import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
+import {
+  CommentAddReactionButton,
+  CommentReactionList,
+} from "./CommentReactions";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
@@ -41,6 +45,7 @@ const _CommentFragment = graphql(`
         ...AccountAvatarFragment
       }
     }
+    ...CommentReactions_Comment
   }
 `);
 
@@ -141,11 +146,16 @@ export function CommentCard(props: {
               {isEdited ? " (edited)" : null}
             </Button>
           </Tooltip>
-          <CommentActionsMenu
-            onCopyLink={copyLink}
-            onEdit={canEdit ? () => setIsEditing(true) : undefined}
-            onDelete={canDelete ? () => setIsDeleteDialogOpen(true) : undefined}
-          />
+          <div className="ml-auto flex items-center">
+            <CommentAddReactionButton comment={comment} />
+            <CommentActionsMenu
+              onCopyLink={copyLink}
+              onEdit={canEdit ? () => setIsEditing(true) : undefined}
+              onDelete={
+                canDelete ? () => setIsDeleteDialogOpen(true) : undefined
+              }
+            />
+          </div>
         </div>
         <div className="text-default px-1 pb-2 text-sm">
           {isEditing ? (
@@ -167,6 +177,7 @@ export function CommentCard(props: {
             <ReadOnlyEditor content={comment.content} className="px-1" />
           )}
         </div>
+        <CommentReactionList comment={comment} />
       </div>
       <Modal isOpen={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DeleteCommentDialog commentId={comment.id} />

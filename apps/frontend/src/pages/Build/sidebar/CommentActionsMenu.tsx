@@ -25,12 +25,7 @@ export function CommentActionsMenu(props: {
   const { onCopyLink, onEdit, onDelete } = props;
   return (
     <MenuTrigger>
-      <IconButton
-        rounded
-        size="small"
-        aria-label="Comment actions"
-        className="ml-auto"
-      >
+      <IconButton rounded size="small" aria-label="Comment actions">
         <MoreHorizontalIcon />
       </IconButton>
       <Popover placement="bottom end">

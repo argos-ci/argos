@@ -1,5 +1,6 @@
 import type { NotificationHandler } from "../workflow-types";
 import * as comment_added from "./comment_added";
+import * as comment_reaction from "./comment_reaction";
 import * as email_added from "./email_added";
 import * as email_removed from "./email_removed";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
@@ -13,6 +14,7 @@ import * as welcome from "./welcome";
 
 export const notificationHandlers = [
   comment_added.handler,
+  comment_reaction.handler,
   email_added.handler,
   email_removed.handler,
   invalid_gitlab_token.handler,
