@@ -62,7 +62,6 @@
     "d3-zoom": "^3.0.0",
     "eslint": "catalog:",
     "fast-fuzzy": "^1.12.0",
-    "frimousse": "^0.3.0",
     "graphql": "^16.14.0",
     "input-otp": "^1.4.2",
     "jotai": "^2.20.0",
@@ -98,5 +97,8 @@
     "use-debounce": "^10.1.1",
     "vite": "^8.0.14",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "emojibase-data": "^17.0.0"
   }
 }

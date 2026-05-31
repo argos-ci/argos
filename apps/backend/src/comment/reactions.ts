@@ -18,11 +18,27 @@ export type CommentReactionGroup = {
  */
 const EMOJI_REGEX = /^\p{RGI_Emoji}$/v;
 
+/** Variation Selector-16 (U+FE0F), which requests emoji (vs. text) presentation. */
+const VARIATION_SELECTOR_16 = String.fromCodePoint(0xfe0f);
+
 /**
  * Check that a value is a single emoji that can be stored as a reaction.
+ *
+ * Some emoji sources (e.g. emojibase) "fully-qualify" emoji by appending a
+ * VS16 variation selector (U+FE0F) even when the base code point already has
+ * emoji presentation — e.g. "✅️" instead of "✅". Those sequences are not
+ * part of the RGI set, so we also accept a string that becomes a valid single
+ * emoji once such variation selectors are dropped. We only validate here and
+ * never mutate the value, so whatever the client sent is stored verbatim.
  */
 export function isValidEmoji(emoji: unknown): emoji is string {
-  return typeof emoji === "string" && EMOJI_REGEX.test(emoji);
+  if (typeof emoji !== "string") {
+    return false;
+  }
+  return (
+    EMOJI_REGEX.test(emoji) ||
+    EMOJI_REGEX.test(emoji.split(VARIATION_SELECTOR_16).join(""))
+  );
 }
 
 /**
