@@ -4,6 +4,7 @@ import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
 import { Build } from "./Build";
 import { BuildReview } from "./BuildReview";
+import { CommentMention } from "./CommentMention";
 import { CommentReaction } from "./CommentReaction";
 import { User } from "./User";
 
@@ -100,6 +101,14 @@ export class Comment extends Model {
           to: "comment_reactions.commentId",
         },
       },
+      mentions: {
+        relation: Model.HasManyRelation,
+        modelClass: CommentMention,
+        join: {
+          from: "comments.id",
+          to: "comment_mentions.commentId",
+        },
+      },
     };
   }
 
@@ -109,4 +118,5 @@ export class Comment extends Model {
   thread?: Comment | null;
   replies?: Comment[];
   reactions?: CommentReaction[];
+  mentions?: CommentMention[];
 }

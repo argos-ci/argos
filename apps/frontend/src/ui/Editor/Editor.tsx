@@ -13,6 +13,7 @@ import { clsx } from "clsx";
 import { EDITOR_PROSE_CLASS } from "./EditorContent.css";
 import { LinkEditTrigger } from "./EditorLinkEdit";
 import { EditorToolbar } from "./EditorToolbar";
+import { createMentionExtension, type MentionUser } from "./mention";
 
 const CollapseAllSelectionDelete = Extension.create({
   name: "collapseAllSelectionDelete",
@@ -91,6 +92,12 @@ export interface EditorProps {
   variant?: EditorVariant;
   /** Render the content without allowing edits. */
   readOnly?: boolean;
+  /**
+   * Users that can be mentioned with `@`. When omitted, typing `@` shows no
+   * suggestions (existing mentions still render). The list is read lazily, so
+   * it can change without recreating the editor.
+   */
+  mentions?: MentionUser[];
 }
 
 /**
@@ -127,6 +134,7 @@ export function Editor(props: EditorProps) {
     disabled,
     variant = "boxed",
     readOnly = false,
+    mentions,
   } = props;
 
   const isBoxed = variant === "boxed";
@@ -135,10 +143,14 @@ export function Editor(props: EditorProps) {
   const onChangeRef = useRef(onChange);
   const onBlurRef = useRef(onBlur);
   const onSubmitRef = useRef(onSubmit);
+  // Read lazily by the mention suggestion so the list can update without
+  // recreating the editor.
+  const mentionsRef = useRef(mentions);
   useEffect(() => {
     onChangeRef.current = onChange;
     onBlurRef.current = onBlur;
     onSubmitRef.current = onSubmit;
+    mentionsRef.current = mentions;
   });
 
   const editor = useEditor({
@@ -154,6 +166,10 @@ export function Editor(props: EditorProps) {
       CollapseAllSelectionDelete,
       CollapseSelectionOnEscape,
       LinkEditTrigger,
+      // The getter is invoked lazily by the suggestion plugin (on `@`), never
+      // during render, so reading the ref here is safe.
+      // eslint-disable-next-line react-hooks/refs
+      createMentionExtension(() => mentionsRef.current ?? []),
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
     editable,

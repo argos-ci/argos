@@ -28,4 +28,6 @@ export const EDITOR_PROSE_CLASS = clsx(
   "[&_hr]:my-3 [&_hr]:border-t",
   // Links
   "[&_a]:text-primary-low [&_a]:underline [&_a]:underline-offset-2",
+  // Mentions
+  "[&_.mention]:font-medium",
 );

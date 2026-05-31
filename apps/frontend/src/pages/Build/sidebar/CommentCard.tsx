@@ -29,6 +29,7 @@ import {
   CommentReactionList,
 } from "./CommentReactions";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
+import { useMentionableUsers } from "./MentionableUsersContext";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
 const COPY_TOAST_ID = "comment-link-copied";
@@ -235,6 +236,7 @@ function CommentMessage(props: {
   } = props;
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
+  const mentions = useMentionableUsers();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [updateComment] = useMutation(UpdateCommentMutation);
@@ -342,6 +344,7 @@ function CommentMessage(props: {
             <StandaloneEditor
               variant="plain"
               defaultValue={comment.content}
+              mentions={mentions}
               onSubmit={handleEditSubmit}
               onCancel={() => setIsEditing(false)}
               submitLabel="Save"
@@ -373,6 +376,7 @@ function ReplyComposer(props: {
   onSubmit: (body: EditorValue) => Promise<void>;
 }) {
   const { onSubmit } = props;
+  const mentions = useMentionableUsers();
   const [value, setValue] = useState<EditorValue>(null);
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -413,6 +417,7 @@ function ReplyComposer(props: {
           key={editorKey}
           onChange={setValue}
           onSubmit={submit}
+          mentions={mentions}
           placeholder="Leave a reply…"
           disabled={isPending}
           aria-label="Add a reply"

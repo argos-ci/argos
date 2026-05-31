@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
 import {
@@ -16,6 +16,7 @@ import { ProjectPermissionsContext } from "@/containers/Project/PermissionsConte
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
+import type { MentionUser } from "@/ui/Editor/mention";
 import { IconButton } from "@/ui/IconButton";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
@@ -27,6 +28,7 @@ import { useNonNullable } from "@/util/useNonNullable";
 
 import { AddCommentForm } from "./AddCommentForm";
 import { CommentCard } from "./CommentCard";
+import { MentionableUsersProvider } from "./MentionableUsersContext";
 
 const _BuildFragment = graphql(`
   fragment ReviewActivitySection_Build on Build {
@@ -35,6 +37,15 @@ const _BuildFragment = graphql(`
     concludedAt
     subscribed
     ...AddCommentForm_Build
+    mentionableUsers {
+      id
+      name
+      slug
+      avatar {
+        url(size: 64)
+        initial
+      }
+    }
     reviews {
       id
       date
@@ -210,6 +221,16 @@ function useHighlightedCommentId(commentIds: string[]): string | null {
   return matchedId;
 }
 
+function toMentionUsers(users: Build["mentionableUsers"]): MentionUser[] {
+  return users.map((user) => ({
+    id: user.id,
+    label: user.name || user.slug,
+    secondaryLabel: user.name ? user.slug : null,
+    imageUrl: user.avatar.url,
+    initial: user.avatar.initial,
+  }));
+}
+
 export function ReviewActivitySection(props: { build: Build }) {
   const { build } = props;
   const permissions = useNonNullable(ProjectPermissionsContext);
@@ -218,34 +239,40 @@ export function ReviewActivitySection(props: { build: Build }) {
   const highlightedCommentId = useHighlightedCommentId(
     build.comments.map((comment) => comment.id),
   );
+  const mentionableUsers = useMemo(
+    () => toMentionUsers(build.mentionableUsers),
+    [build.mentionableUsers],
+  );
   return (
-    <SidebarSection>
-      <SidebarHeader>
-        <SidebarHeading>Activity</SidebarHeading>
-        <SubscribeToggleButton build={build} />
-      </SidebarHeader>
-      <div className="px-3">
-        <Activity gap={false}>
-          <AnimatePresence initial={false}>
-            {entries.map((entry, index) => (
-              <ActivityEntryRow
-                key={getActivityEntryKey(entry)}
-                entry={entry}
-                highlightedCommentId={highlightedCommentId}
-                isFirst={index === 0}
-                buildId={build.id}
-                canReply={canComment}
-              />
-            ))}
-          </AnimatePresence>
-        </Activity>
-        {canComment ? (
-          <div className="-mx-1.5 mt-3 -mb-1.5">
-            <AddCommentForm build={build} />
-          </div>
-        ) : null}
-      </div>
-    </SidebarSection>
+    <MentionableUsersProvider value={mentionableUsers}>
+      <SidebarSection>
+        <SidebarHeader>
+          <SidebarHeading>Activity</SidebarHeading>
+          <SubscribeToggleButton build={build} />
+        </SidebarHeader>
+        <div className="px-3">
+          <Activity gap={false}>
+            <AnimatePresence initial={false}>
+              {entries.map((entry, index) => (
+                <ActivityEntryRow
+                  key={getActivityEntryKey(entry)}
+                  entry={entry}
+                  highlightedCommentId={highlightedCommentId}
+                  isFirst={index === 0}
+                  buildId={build.id}
+                  canReply={canComment}
+                />
+              ))}
+            </AnimatePresence>
+          </Activity>
+          {canComment ? (
+            <div className="-mx-1.5 mt-3 -mb-1.5">
+              <AddCommentForm build={build} />
+            </div>
+          ) : null}
+        </div>
+      </SidebarSection>
+    </MentionableUsersProvider>
   );
 }
 

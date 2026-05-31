@@ -8,6 +8,7 @@ import {
   Build,
   BuildNotificationSubscription,
   Comment,
+  CommentMention,
   CommentNotificationSubscription,
   Project,
 } from "@/database/models";
@@ -67,6 +68,24 @@ function commentBody(text: string) {
   return {
     type: "doc",
     content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+  };
+}
+
+function mentionBody(account: Account) {
+  return {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          { type: "text", text: "Hey " },
+          {
+            type: "mention",
+            attrs: { id: account.id, label: account.slug },
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -369,6 +388,107 @@ describe("GraphQL addBuildComment mutation", () => {
     expect(res.body.errors[0].message).toBe("Comment cannot be empty");
     const comments = await Comment.query().where({ buildId: fixture.build.id });
     expect(comments).toHaveLength(0);
+  });
+
+  test("records and notifies a mentioned team member", async ({ fixture }) => {
+    invariant(fixture.teamAccount.teamId);
+    // A second team member that the author can mention.
+    const mentionedAccount = await factory.UserAccount.create();
+    await mentionedAccount.$fetchGraph("user");
+    invariant(mentionedAccount.userId);
+    await factory.TeamUser.create({
+      teamId: fixture.teamAccount.teamId,
+      userId: mentionedAccount.userId,
+      userLevel: "member",
+    });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            body: mentionBody(mentionedAccount),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+
+    const comment = await Comment.query().findOne({
+      buildId: fixture.build.id,
+    });
+    invariant(comment);
+
+    // The mention is recorded.
+    const mentions = await CommentMention.query().where({
+      commentId: comment.id,
+    });
+    expect(mentions).toHaveLength(1);
+    expect(mentions[0]?.type).toBe("user");
+    expect(mentions[0]?.mentionedUserId).toBe(mentionedAccount.userId);
+
+    // The mentioned user is subscribed to the thread.
+    const subscription = await CommentNotificationSubscription.query().findOne({
+      commentId: comment.id,
+      userId: mentionedAccount.userId,
+    });
+    expect(subscription?.isSubscribed()).toBe(true);
+
+    // The mentioned user gets a dedicated comment_mention notification.
+    expect(mockSendNotification).toHaveBeenCalledTimes(1);
+    const call = mockSendNotification.mock.calls[0]?.[0];
+    invariant(call);
+    expect(call.type).toBe("comment_mention");
+    expect(call.recipients).toEqual([mentionedAccount.userId]);
+  });
+
+  test("ignores a mention of a user without project access", async ({
+    fixture,
+  }) => {
+    // An account that is not part of the project's team.
+    const outsiderAccount = await factory.UserAccount.create();
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            body: mentionBody(outsiderAccount),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    const comment = await Comment.query().findOne({
+      buildId: fixture.build.id,
+    });
+    invariant(comment);
+    const mentions = await CommentMention.query().where({
+      commentId: comment.id,
+    });
+    expect(mentions).toHaveLength(0);
+    // No mention notification (only the author is subscribed, and they're excluded).
+    expect(mockSendNotification).not.toHaveBeenCalled();
   });
 
   test("returns an error if the user cannot review", async ({ fixture }) => {

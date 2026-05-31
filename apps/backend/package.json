@@ -51,6 +51,7 @@
     "@sentry/node": "^10.54.0",
     "@slack/bolt": "^4.7.2",
     "@tiptap/core": "^3.23.6",
+    "@tiptap/extension-mention": "3.23.6",
     "@tiptap/html": "^3.23.6",
     "@tiptap/pm": "^3.23.6",
     "@tiptap/starter-kit": "^3.23.6",

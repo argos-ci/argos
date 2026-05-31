@@ -130,6 +130,32 @@ mutation. Always enforce the check in the mutation — never trust the client.
 - Return consistent, typed errors.
 - Do not expose internal errors.
 
+## Rich-text comment editor (TipTap)
+
+Comment `content` is TipTap JSON. The list of TipTap extensions is **duplicated**
+and must stay in sync between:
+
+- `src/comment/schema.ts` (backend) — drives `validateCommentJson` and email
+  HTML rendering (`renderCommentHtml`).
+- `apps/frontend/src/ui/Editor/` (frontend) — the actual editor.
+
+If a node/mark type the client produces isn't registered in the backend schema,
+`validateCommentJson` rejects the comment with `Invalid comment body`. When
+adding a node (e.g. mentions), configure it with the **same node spec** on both
+sides; only the interactive bits (e.g. a mention `suggestion`) are frontend-only.
+
+Never trust the client for anything derived from `content` (e.g. which users are
+mentioned). Re-parse the stored JSON on the server and validate against
+permissions — see `src/comment/mentions.ts`.
+
+### Adding a `@tiptap/*` package
+
+All `@tiptap/*` packages must resolve to a **single `@tiptap/core` version**. A
+second core (pulled in by a caret range) silently breaks the command type
+augmentation across the whole editor (`toggleBold`, `setLink`, … vanish from
+`ChainedCommands`). Pin new tiptap deps to the **exact** version already used by
+the others (e.g. `"3.23.6"`, not `"^3.23.6"`) in both apps, then `pnpm install`.
+
 ## Testing
 
 - Use **Vitest** for all tests.

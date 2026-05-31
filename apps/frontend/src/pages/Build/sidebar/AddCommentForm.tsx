@@ -6,6 +6,8 @@ import { type EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { getErrorMessage } from "@/util/error";
 
+import { useMentionableUsers } from "./MentionableUsersContext";
+
 const _BuildFragment = graphql(`
   fragment AddCommentForm_Build on Build {
     id
@@ -28,6 +30,7 @@ export function AddCommentForm(props: {
   build: DocumentType<typeof _BuildFragment>;
 }) {
   const { build } = props;
+  const mentions = useMentionableUsers();
   const [addBuildComment] = useMutation(AddBuildCommentMutation);
   const handleSubmit = async (body: EditorValue) => {
     try {
@@ -43,6 +46,7 @@ export function AddCommentForm(props: {
   return (
     <StandaloneEditor
       onSubmit={handleSubmit}
+      mentions={mentions}
       placeholder="Leave a comment…"
       submitLabel="Submit the comment"
       emptyMessage={{
