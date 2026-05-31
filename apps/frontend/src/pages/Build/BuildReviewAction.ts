@@ -38,17 +38,7 @@ const _BuildFragment = graphql(`
     # Ensure the comment added by the review (if any) lands in the cache,
     # so it appears in the review activity section.
     comments {
-      id
-      date
-      content
-      user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
-      }
+      ...CommentCard_Comment
     }
   }
 `);

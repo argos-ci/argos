@@ -42,7 +42,7 @@
 
   --text-color-default: var(--gray-12);
   --text-color-low: var(--gray-11);
-  --text-color-placeholder: var(--gray-10);
+  --text-color-placeholder: color-mix(in srgb, var(--gray-10) 90%, transparent);
 
   --text-color-primary: var(--violet-12);
   --text-color-primary-low: var(--violet-11);

@@ -12,7 +12,12 @@ import { removeCommentReaction } from "@/comment/removeCommentReaction";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
 import { Comment } from "@/database/models/Comment";
+import { CommentNotificationSubscription } from "@/database/models/CommentNotificationSubscription";
 import type { User } from "@/database/models/User";
+import {
+  subscribeUserToCommentThread,
+  unsubscribeUserFromCommentThread,
+} from "@/database/services/comment-notification-subscription";
 
 import type {
   ICommentPermission,
@@ -59,6 +64,56 @@ async function assertCanReactToComment(
   }
 }
 
+async function getCommentThreadByGraphqlId(id: string): Promise<Comment> {
+  const comment = await getCommentByGraphqlId(id);
+  if (comment.deletedAt) {
+    throw notFound("Thread not found");
+  }
+  const threadId = comment.threadId ?? comment.id;
+  const thread =
+    threadId === comment.id
+      ? comment
+      : await Comment.query().findById(threadId);
+  if (!thread || thread.deletedAt) {
+    throw notFound("Thread not found");
+  }
+  return thread;
+}
+
+async function assertCanAccessCommentThread(input: {
+  thread: Comment;
+  user: User;
+  permission: "view" | "review";
+}): Promise<void> {
+  const { thread, user, permission } = input;
+  const build = await thread
+    .$relatedQuery("build")
+    .withGraphFetched("project.account");
+  invariant(build?.project?.account, "Build project account not found");
+  const permissions = await build.project.$getPermissions(user);
+  if (!permissions.includes(permission)) {
+    throw forbidden("You cannot access this thread");
+  }
+}
+
+async function getCommentThreadForUser(input: {
+  id: string;
+  user: User;
+  permission: "view" | "review";
+  buildId?: string;
+}): Promise<Comment> {
+  const thread = await getCommentThreadByGraphqlId(input.id);
+  if (input.buildId && thread.buildId !== input.buildId) {
+    throw notFound("Thread not found");
+  }
+  await assertCanAccessCommentThread({
+    thread,
+    user: input.user,
+    permission: input.permission,
+  });
+  return thread;
+}
+
 export const typeDefs = gql`
   enum CommentPermission {
     edit
@@ -92,6 +147,10 @@ export const typeDefs = gql`
     content: JSONObject!
     "Author of the comment"
     user: User
+    "Root comment ID when this comment is a reply"
+    threadId: ID
+    "Whether the current user is subscribed to this comment thread"
+    threadSubscribed: Boolean!
     "Permissions of the current user on this comment"
     permissions: [CommentPermission!]!
     "Emoji reactions on the comment, grouped by emoji"
@@ -100,6 +159,8 @@ export const typeDefs = gql`
 
   input AddBuildCommentInput {
     buildId: ID!
+    "Root comment ID to reply to"
+    threadId: ID
     "Rich-text JSON content of the comment"
     body: JSONObject!
   }
@@ -120,6 +181,14 @@ export const typeDefs = gql`
     emoji: String!
   }
 
+  input SubscribeToCommentThreadInput {
+    commentId: ID!
+  }
+
+  input UnsubscribeFromCommentThreadInput {
+    commentId: ID!
+  }
+
   extend type Mutation {
     "Post a comment on a build"
     addBuildComment(input: AddBuildCommentInput!): Build!
@@ -131,6 +200,12 @@ export const typeDefs = gql`
     addCommentReaction(input: CommentReactionInput!): Comment!
     "Remove an emoji reaction from a comment"
     removeCommentReaction(input: CommentReactionInput!): Comment!
+    "Subscribe the current user to a comment thread's notifications"
+    subscribeToCommentThread(input: SubscribeToCommentThreadInput!): Comment!
+    "Unsubscribe the current user from a comment thread's notifications"
+    unsubscribeFromCommentThread(
+      input: UnsubscribeFromCommentThreadInput!
+    ): Comment!
   }
 `;
 
@@ -155,6 +230,20 @@ export const resolvers: IResolvers = {
       });
       invariant(account, "Account not found");
       return account;
+    },
+    threadId: (comment) => {
+      return comment.threadId ? formatCommentId(comment.threadId) : null;
+    },
+    threadSubscribed: async (comment, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      const subscription =
+        await CommentNotificationSubscription.query().findOne({
+          commentId: comment.threadId ?? comment.id,
+          userId: ctx.auth.user.id,
+        });
+      return subscription?.isSubscribed() ?? false;
     },
     permissions: (comment, _args, ctx) => {
       return getCommentPermissions(
@@ -207,10 +296,20 @@ export const resolvers: IResolvers = {
         throw forbidden("You cannot comment on this build");
       }
 
+      const thread = input.threadId
+        ? await getCommentThreadForUser({
+            id: input.threadId,
+            user: auth.user,
+            permission: "review",
+            buildId: build.id,
+          })
+        : null;
+
       await createBuildComment({
         build,
         userId: auth.user.id,
         body: input.body as JSONContent,
+        threadId: thread?.id ?? null,
       });
 
       return build;
@@ -289,6 +388,38 @@ export const resolvers: IResolvers = {
         userId: auth.user.id,
         emoji: input.emoji,
       });
+    },
+    subscribeToCommentThread: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+      const thread = await getCommentThreadForUser({
+        id: args.input.commentId,
+        user: auth.user,
+        permission: "view",
+      });
+      await subscribeUserToCommentThread({
+        commentId: thread.id,
+        userId: auth.user.id,
+      });
+      return thread;
+    },
+    unsubscribeFromCommentThread: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+      const thread = await getCommentThreadForUser({
+        id: args.input.commentId,
+        user: auth.user,
+        permission: "view",
+      });
+      await unsubscribeUserFromCommentThread({
+        commentId: thread.id,
+        userId: auth.user.id,
+      });
+      return thread;
     },
   },
 };

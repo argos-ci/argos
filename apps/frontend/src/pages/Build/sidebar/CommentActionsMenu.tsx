@@ -1,4 +1,6 @@
 import {
+  BellIcon,
+  BellOffIcon,
   LinkIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -17,12 +19,22 @@ import { Popover } from "@/ui/Popover";
 
 export function CommentActionsMenu(props: {
   onCopyLink: () => void;
+  threadSubscribed: boolean;
+  onSubscribeThread: () => void;
+  onUnsubscribeThread: () => void;
   /** When provided, an "Edit comment" action is shown. */
   onEdit?: () => void;
   /** When provided, a "Delete comment" action is shown. */
   onDelete?: () => void;
 }) {
-  const { onCopyLink, onEdit, onDelete } = props;
+  const {
+    onCopyLink,
+    onSubscribeThread,
+    onUnsubscribeThread,
+    threadSubscribed,
+    onEdit,
+    onDelete,
+  } = props;
   return (
     <MenuTrigger>
       <IconButton rounded size="small" aria-label="Comment actions">
@@ -35,7 +47,7 @@ export function CommentActionsMenu(props: {
               <MenuItemIcon>
                 <PencilIcon />
               </MenuItemIcon>
-              Edit comment
+              Edit
             </MenuItem>
           ) : null}
           <MenuItem onAction={onCopyLink}>
@@ -44,6 +56,18 @@ export function CommentActionsMenu(props: {
             </MenuItemIcon>
             Copy link to comment
           </MenuItem>
+          <MenuItem
+            onAction={
+              threadSubscribed ? onUnsubscribeThread : onSubscribeThread
+            }
+          >
+            <MenuItemIcon>
+              {threadSubscribed ? <BellOffIcon /> : <BellIcon />}
+            </MenuItemIcon>
+            {threadSubscribed
+              ? "Unsubscribe from thread"
+              : "Subscribe to thread"}
+          </MenuItem>
           {onDelete ? (
             <>
               <MenuSeparator />
@@ -51,7 +75,7 @@ export function CommentActionsMenu(props: {
                 <MenuItemIcon>
                   <Trash2Icon />
                 </MenuItemIcon>
-                Delete comment
+                Delete
               </MenuItem>
             </>
           ) : null}

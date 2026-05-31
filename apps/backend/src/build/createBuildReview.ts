@@ -21,6 +21,7 @@ import {
   autoSubscribeUserToBuild,
   getBuildSubscribedUserIds,
 } from "@/database/services/build-notification-subscription";
+import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { transaction } from "@/database/transaction";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
@@ -89,7 +90,7 @@ export async function createBuildReview(input: {
 
   const state = getReviewStateFromEvent(event);
 
-  const buildReview = await transaction(async (trx) => {
+  const { buildReview, comment } = await transaction(async (trx) => {
     const buildReview = await BuildReview.query(trx).insert({
       buildId: build.id,
       userId,
@@ -106,17 +107,22 @@ export async function createBuildReview(input: {
       );
     }
 
-    if (body != null) {
-      await Comment.query(trx).insert({
-        userId,
-        buildId: build.id,
-        buildReviewId: buildReview.id,
-        content: body,
-      });
-    }
+    const comment =
+      body != null
+        ? await Comment.query(trx).insert({
+            userId,
+            buildId: build.id,
+            buildReviewId: buildReview.id,
+            content: body,
+          })
+        : null;
 
-    return buildReview;
+    return { buildReview, comment };
   });
+
+  if (comment) {
+    await subscribeUserToCommentThread({ commentId: comment.id, userId });
+  }
 
   const compareScreenshotBucket = await build.$relatedQuery(
     "compareScreenshotBucket",

@@ -86,6 +86,8 @@ const UnsubscribeFromBuildMutation = graphql(`
 `);
 
 type Build = DocumentType<typeof _BuildFragment>;
+type Comment = Build["comments"][number];
+type CommentThread = { root: Comment; replies: Comment[] };
 
 type ActivityEntry =
   | { kind: "created"; date: string }
@@ -96,7 +98,36 @@ type ActivityEntry =
       date: string;
       review: Build["reviews"][number];
     }
-  | { kind: "comment"; date: string; comment: Build["comments"][number] };
+  | { kind: "comment"; date: string; thread: CommentThread };
+
+function getCommentThreads(comments: Comment[]): CommentThread[] {
+  const commentsById = new Map(
+    comments.map((comment) => [comment.id, comment]),
+  );
+  const repliesByThreadId = new Map<string, Comment[]>();
+  const roots: Comment[] = [];
+
+  for (const comment of comments) {
+    if (!comment.threadId) {
+      roots.push(comment);
+      continue;
+    }
+    if (!commentsById.has(comment.threadId)) {
+      continue;
+    }
+    const replies = repliesByThreadId.get(comment.threadId);
+    if (replies) {
+      replies.push(comment);
+    } else {
+      repliesByThreadId.set(comment.threadId, [comment]);
+    }
+  }
+
+  return roots.map((root) => ({
+    root,
+    replies: repliesByThreadId.get(root.id) ?? [],
+  }));
+}
 
 function getActivityEntries(build: Build): ActivityEntry[] {
   const entries: ActivityEntry[] = [{ kind: "created", date: build.createdAt }];
@@ -113,8 +144,8 @@ function getActivityEntries(build: Build): ActivityEntry[] {
       });
     }
   }
-  for (const comment of build.comments) {
-    entries.push({ kind: "comment", date: comment.date, comment });
+  for (const thread of getCommentThreads(build.comments)) {
+    entries.push({ kind: "comment", date: thread.root.date, thread });
   }
   return entries.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
@@ -136,7 +167,7 @@ function getActivityEntryKey(entry: ActivityEntry): string {
     case "review-dismissed":
       return `review-dismissed-${entry.review.id}`;
     case "comment":
-      return `comment-${entry.comment.id}`;
+      return `comment-${entry.thread.root.id}`;
   }
 }
 
@@ -202,6 +233,8 @@ export function ReviewActivitySection(props: { build: Build }) {
                 entry={entry}
                 highlightedCommentId={highlightedCommentId}
                 isFirst={index === 0}
+                buildId={build.id}
+                canReply={canComment}
               />
             ))}
           </AnimatePresence>
@@ -274,8 +307,10 @@ function ActivityEntryRow(props: {
   entry: ActivityEntry;
   highlightedCommentId: string | null;
   isFirst: boolean;
+  buildId: string;
+  canReply: boolean;
 }) {
-  const { entry, highlightedCommentId, isFirst } = props;
+  const { entry, highlightedCommentId, isFirst, buildId, canReply } = props;
   // Each row carries its own top spacing (rather than relying on a `space-y`
   // gap) so a collapsing comment can shrink that spacing away as part of its
   // own height, keeping the delete animation smooth.
@@ -294,8 +329,11 @@ function ActivityEntryRow(props: {
         }}
       >
         <CommentCard
-          comment={entry.comment}
-          highlighted={entry.comment.id === highlightedCommentId}
+          buildId={buildId}
+          comment={entry.thread.root}
+          replies={entry.thread.replies}
+          highlightedCommentId={highlightedCommentId}
+          canReply={canReply}
         />
       </motion.div>
     );
