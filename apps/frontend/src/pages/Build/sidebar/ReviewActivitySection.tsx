@@ -22,7 +22,7 @@ import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { UserHoverCard } from "@/ui/UserCard";
+import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 import { useNonNullable } from "@/util/useNonNullable";
@@ -39,16 +39,7 @@ const _BuildFragment = graphql(`
     subscribed
     ...AddCommentForm_Build
     mentionableUsers {
-      level
-      user {
-        id
-        name
-        slug
-        avatar {
-          url(size: 64)
-          initial
-        }
-      }
+      ...UserCard_user
     }
     reviews {
       id
@@ -56,20 +47,10 @@ const _BuildFragment = graphql(`
       state
       dismissedAt
       dismissedBy {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
+        ...UserCard_user
       }
       user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
+        ...UserCard_user
       }
     }
     comments {
@@ -112,14 +93,7 @@ type ReviewUser = NonNullable<Build["reviews"][number]["user"]>;
 function ReviewUserName(props: { user: ReviewUser }) {
   const { user } = props;
   return (
-    <UserHoverCard
-      user={{
-        name: user.name,
-        slug: user.slug,
-        imageUrl: user.avatar.url,
-        initial: user.avatar.initial,
-      }}
-    >
+    <UserHoverCard user={getUserCardData(user)}>
       <span tabIndex={0} className="text-default font-medium">
         {user.name || user.slug}
       </span>
@@ -251,13 +225,13 @@ function useHighlightedCommentId(commentIds: string[]): string | null {
 function toMentionUsers(
   mentionableUsers: Build["mentionableUsers"],
 ): MentionUser[] {
-  return mentionableUsers.map(({ user, level }) => ({
+  return mentionableUsers.map((user) => ({
     id: user.id,
     label: user.name || user.slug,
     secondaryLabel: user.name ? user.slug : null,
     imageUrl: user.avatar.url,
     initial: user.avatar.initial,
-    role: level,
+    role: user.role,
   }));
 }
 

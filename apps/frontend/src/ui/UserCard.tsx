@@ -1,6 +1,25 @@
 import { clsx } from "clsx";
 
+import { DocumentType, graphql } from "@/gql";
+
 import { Tooltip } from "./Tooltip";
+
+/**
+ * Fields the user card needs. Colocated so any query rendering a card selects
+ * them. `role` is scoped to a project via its slug/name — the embedding
+ * operation must provide `$accountSlug` and `$projectName`.
+ */
+export const UserCardFragment = graphql(`
+  fragment UserCard_user on User {
+    id
+    name
+    slug
+    avatar {
+      ...AccountAvatarFragment
+    }
+    role(accountSlug: $accountSlug, projectName: $projectName)
+  }
+`);
 
 export interface UserCardData {
   name?: string | null;
@@ -9,6 +28,19 @@ export interface UserCardData {
   initial?: string | null;
   /** Team role (e.g. "owner"), shown as a humanized label when present. */
   role?: string | null;
+}
+
+/** Map the `UserCard_user` fragment to the data the card renders. */
+export function getUserCardData(
+  user: DocumentType<typeof UserCardFragment>,
+): UserCardData {
+  return {
+    name: user.name,
+    slug: user.slug,
+    imageUrl: user.avatar.url,
+    initial: user.avatar.initial,
+    role: user.role,
+  };
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -53,11 +85,11 @@ export function UserCard(props: { user: UserCardData }) {
   const { user } = props;
   const name = user.name || user.slug;
   return (
-    <div className="flex items-center gap-2.5">
-      <UserCardAvatar user={user} className="size-9 shrink-0" />
-      <div className="min-w-0">
-        <div className="text-default truncate font-semibold">{name}</div>
-        <div className="text-low flex items-center gap-1.5 truncate text-xs">
+    <div className="flex items-center gap-2">
+      <UserCardAvatar user={user} className="size-8 shrink-0" />
+      <div className="min-w-0 leading-tight">
+        <div className="text-default truncate text-sm font-medium">{name}</div>
+        <div className="text-low flex items-center gap-1 truncate text-xs">
           <span className="truncate">{user.slug}</span>
           {user.role ? (
             <>
@@ -84,10 +116,10 @@ export function UserHoverCard(props: {
   return (
     <Tooltip
       variant="info"
-      delay={300}
+      delay={1200}
       placement={props.placement ?? "top"}
       content={
-        <div className="max-w-64 min-w-44 p-1">
+        <div>
           <UserCard user={props.user} />
         </div>
       }

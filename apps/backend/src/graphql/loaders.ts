@@ -330,6 +330,83 @@ function createAccountFromRelationLoader() {
   );
 }
 
+/**
+ * Loads a user's team role on a project identified by its account slug and
+ * name. Batches across users: it resolves each distinct project's team once,
+ * then fetches every requested team membership in a single query — so a list of
+ * mentionable users or reviewers costs one query, not one per user.
+ */
+function createProjectTeamUserLevelLoader() {
+  type Key = { accountSlug: string; projectName: string; userId: string };
+  const projectKey = (k: { accountSlug: string; projectName: string }) =>
+    `${k.accountSlug} ${k.projectName}`;
+  return new DataLoader<Key, TeamUser["userLevel"] | null, string>(
+    async (keys) => {
+      // Resolve the team behind each distinct project once.
+      const projects = new Map<
+        string,
+        { accountSlug: string; projectName: string }
+      >();
+      for (const key of keys) {
+        projects.set(projectKey(key), {
+          accountSlug: key.accountSlug,
+          projectName: key.projectName,
+        });
+      }
+      const teamIdByProject = new Map<string, string | null>();
+      await Promise.all(
+        [...projects].map(async ([id, { accountSlug, projectName }]) => {
+          const account = await Account.query().findOne({ slug: accountSlug });
+          if (!account?.teamId) {
+            teamIdByProject.set(id, null);
+            return;
+          }
+          const project = await Project.query()
+            .findOne({ accountId: account.id, name: projectName })
+            .select("id");
+          teamIdByProject.set(id, project ? account.teamId : null);
+        }),
+      );
+
+      // Fetch every requested membership across the involved teams at once.
+      const teamIds = [
+        ...new Set(
+          [...teamIdByProject.values()].filter(
+            (id): id is string => id != null,
+          ),
+        ),
+      ];
+      const userIds = [...new Set(keys.map((key) => key.userId))];
+      const teamUsers =
+        teamIds.length > 0 && userIds.length > 0
+          ? await TeamUser.query()
+              .whereIn("teamId", teamIds)
+              .whereIn("userId", userIds)
+              .select("teamId", "userId", "userLevel")
+          : [];
+      const levelByMembership = new Map<string, TeamUser["userLevel"]>();
+      for (const teamUser of teamUsers) {
+        levelByMembership.set(
+          `${teamUser.teamId} ${teamUser.userId}`,
+          teamUser.userLevel,
+        );
+      }
+
+      return keys.map((key) => {
+        const teamId = teamIdByProject.get(projectKey(key));
+        if (!teamId) {
+          return null;
+        }
+        return levelByMembership.get(`${teamId} ${key.userId}`) ?? null;
+      });
+    },
+    {
+      cacheKeyFn: (input) =>
+        `${input.accountSlug} ${input.projectName} ${input.userId}`,
+    },
+  );
+}
+
 function createAutomationRunActionRunsLoader() {
   return new DataLoader<string, AutomationActionRun[]>(async (ids) => {
     const runs = await AutomationActionRun.query().whereIn(
@@ -1122,6 +1199,7 @@ function createLatestCompareScreenshotLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
+  ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:

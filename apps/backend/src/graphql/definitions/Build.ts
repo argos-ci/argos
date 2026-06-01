@@ -3,7 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import { getMentionableUsers } from "@/comment/mentions";
+import { getMentionableUserIds } from "@/comment/mentions";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 
@@ -11,7 +11,6 @@ import {
   IBaseBranchResolution,
   IBuildStatus,
   type IResolvers,
-  type ITeamUserLevel,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import { paginateResult } from "./PageInfo";
@@ -137,15 +136,7 @@ export const typeDefs = gql`
     "Whether the current user is subscribed to this build's notifications"
     subscribed: Boolean!
     "Users that can be mentioned in comments on this build"
-    mentionableUsers: [MentionableUser!]!
-  }
-
-  "A user that can be mentioned in a comment, with their team role."
-  type MentionableUser {
-    "Account of the mentionable user (matches the mention node id)"
-    user: User!
-    "Team role of the user, null for personal-account projects"
-    level: TeamUserLevel
+    mentionableUsers: [User!]!
   }
 
   type BuildMetadata {
@@ -371,20 +362,13 @@ export const resolvers: IResolvers = {
       }
       const project = await ctx.loaders.Project.load(build.projectId);
       invariant(project, "Project not found");
-      const users = await getMentionableUsers(project);
-      const entries = await Promise.all(
-        users.map(async (user) => {
-          const account = await ctx.loaders.AccountFromRelation.load({
-            userId: user.userId,
-          });
-          return account ? { account, level: user.level } : null;
-        }),
+      const userIds = await getMentionableUserIds(project);
+      const accounts = await Promise.all(
+        userIds.map((userId) =>
+          ctx.loaders.AccountFromRelation.load({ userId }),
+        ),
       );
-      return entries.filter((entry) => entry !== null);
+      return accounts.filter((account) => account !== null);
     },
-  },
-  MentionableUser: {
-    user: (entry) => entry.account,
-    level: (entry) => entry.level as ITeamUserLevel | null,
   },
 };

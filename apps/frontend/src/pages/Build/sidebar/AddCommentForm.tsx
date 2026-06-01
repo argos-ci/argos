@@ -2,6 +2,7 @@ import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
+import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { getErrorMessage } from "@/util/error";
@@ -15,7 +16,11 @@ const _BuildFragment = graphql(`
 `);
 
 const AddBuildCommentMutation = graphql(`
-  mutation AddCommentForm_addBuildComment($input: AddBuildCommentInput!) {
+  mutation AddCommentForm_addBuildComment(
+    $input: AddBuildCommentInput!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     addBuildComment(input: $input) {
       id
       subscribed
@@ -31,11 +36,19 @@ export function AddCommentForm(props: {
 }) {
   const { build } = props;
   const mentions = useMentionableUsers();
+  const projectParams = useProjectParams();
   const [addBuildComment] = useMutation(AddBuildCommentMutation);
   const handleSubmit = async (body: EditorValue) => {
+    if (!projectParams) {
+      return;
+    }
     try {
       await addBuildComment({
-        variables: { input: { buildId: build.id, body } },
+        variables: {
+          input: { buildId: build.id, body },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
+        },
       });
     } catch (error) {
       toast.error(getErrorMessage(error));

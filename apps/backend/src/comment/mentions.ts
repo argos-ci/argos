@@ -10,27 +10,6 @@ import {
   TeamUser,
 } from "@/database/models";
 
-type TeamUserLevel = TeamUser["userLevel"];
-
-/**
- * A user who may be mentioned on a project, with the team role to display in
- * the mention hover card. `level` is null for personal-account projects, which
- * have no team roles.
- */
-export type MentionableUser = {
-  userId: string;
-  level: TeamUserLevel | null;
-};
-
-/**
- * A mentionable user resolved to its account, used as the GraphQL
- * `MentionableUser` mapper.
- */
-export type MentionableUserAccount = {
-  account: Account;
-  level: TeamUserLevel | null;
-};
-
 /**
  * Collect the ids carried by `mention` nodes in a comment document. The id is
  * the public GraphQL id of the mentioned user's personal account (what the
@@ -65,16 +44,16 @@ function visit(node: JSONContent | null | undefined, ids: Set<string>): void {
  * project, i.e. the users that may legitimately be mentioned in a comment on
  * one of its builds. Mirrors the "view" branch of {@link Project.getPermissions}.
  */
-export async function getMentionableUsers(
+export async function getMentionableUserIds(
   project: Project,
-): Promise<MentionableUser[]> {
+): Promise<string[]> {
   await project.$fetchGraph("account", { skipFetched: true });
   invariant(project.account, "Project account not found");
   const { account } = project;
 
-  // Personal project: only the owner can access it (no team role).
+  // Personal project: only the owner can access it.
   if (account.type === "user") {
-    return account.userId ? [{ userId: account.userId, level: null }] : [];
+    return account.userId ? [account.userId] : [];
   }
 
   const { teamId } = account;
@@ -84,14 +63,14 @@ export async function getMentionableUsers(
     .where("teamId", teamId)
     .select("userId", "userLevel");
 
-  const levelByUserId = new Map<string, TeamUserLevel>();
+  const userIds = new Set<string>();
   const contributorIds: string[] = [];
   for (const teamUser of teamUsers) {
     if (teamUser.userLevel === "contributor") {
       contributorIds.push(teamUser.userId);
     } else {
       // Owners and members always have access.
-      levelByUserId.set(teamUser.userId, teamUser.userLevel);
+      userIds.add(teamUser.userId);
     }
   }
 
@@ -99,7 +78,7 @@ export async function getMentionableUsers(
     if (project.defaultUserLevel) {
       // Every contributor inherits at least the project's default level, which
       // always grants "view".
-      contributorIds.forEach((id) => levelByUserId.set(id, "contributor"));
+      contributorIds.forEach((id) => userIds.add(id));
     } else {
       // Otherwise only contributors with an explicit project-level access.
       const projectUsers = await ProjectUser.query()
@@ -107,24 +86,11 @@ export async function getMentionableUsers(
         .whereIn("userId", contributorIds)
         .whereNotNull("userLevel")
         .select("userId");
-      projectUsers.forEach((projectUser) =>
-        levelByUserId.set(projectUser.userId, "contributor"),
-      );
+      projectUsers.forEach((projectUser) => userIds.add(projectUser.userId));
     }
   }
 
-  return [...levelByUserId].map(([userId, level]) => ({ userId, level }));
-}
-
-/**
- * The database ids of every user who has at least "view" access to the project.
- * Thin wrapper over {@link getMentionableUsers} for callers that only need ids.
- */
-export async function getMentionableUserIds(
-  project: Project,
-): Promise<string[]> {
-  const users = await getMentionableUsers(project);
-  return users.map((user) => user.userId);
+  return [...userIds];
 }
 
 /**

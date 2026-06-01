@@ -9,6 +9,7 @@ import {
   type BuildReviewAction_CreateBuildReviewMutation,
   type BuildReviewAction_CreateBuildReviewMutationVariables,
 } from "@/gql/graphql";
+import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { EditorValue } from "@/ui/Editor/Editor";
 import { useEventCallback } from "@/ui/useEventCallback";
 
@@ -22,6 +23,8 @@ import { useOpenReviewSidebar } from "./RightSidebarState";
 const CreateBuildReviewMutation = graphql(`
   mutation BuildReviewAction_createBuildReview(
     $input: CreateBuildReviewInput!
+    $accountSlug: String!
+    $projectName: String!
   ) {
     createBuildReview(input: $input) {
       id
@@ -56,6 +59,7 @@ export function useCreateBuildReviewMutation(
 ) {
   const api = useBuildReviewAPI();
   const openReviewSidebar = useOpenReviewSidebar();
+  const projectParams = useProjectParams();
   const [mutate, data] = useMutation(CreateBuildReviewMutation, {
     ...options,
   });
@@ -64,6 +68,7 @@ export function useCreateBuildReviewMutation(
   const createReview = useEventCallback(
     async (input: { event: BuildReviewEvent; body?: EditorValue }) => {
       invariant(api, `Reviewing a build requires api to be defined`);
+      invariant(projectParams, `Reviewing a build requires project params`);
       const diffStatuses = getReviewedDiffStatuses(input.event);
       const screenshotDiffReviews = Object.entries(diffStatuses)
         .map(([diffId, status]) => {
@@ -89,6 +94,8 @@ export function useCreateBuildReviewMutation(
             body: input.body ?? null,
             screenshotDiffReviews,
           },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
         },
       });
       api.setDiffStatuses(diffStatuses);
