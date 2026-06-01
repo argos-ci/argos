@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
+import { useSetAtom } from "jotai/react";
 import { atomWithStorage } from "jotai/utils";
 import { PanelRightIcon } from "lucide-react";
 import {
@@ -41,6 +42,16 @@ const rightSidebarTabAtom = atomWithStorage<RightSidebarTab>(
   "build.rightSidebar.tab",
   "snapshot",
 );
+
+export function useOpenReviewSidebar() {
+  const setOpen = useSetAtom(rightSidebarOpenAtom);
+  const setTab = useSetAtom(rightSidebarTabAtom);
+
+  return () => {
+    setOpen(true);
+    setTab("review");
+  };
+}
 
 graphql(`
   fragment RightSidebar_Test on Test {
