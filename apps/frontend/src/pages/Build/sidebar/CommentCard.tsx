@@ -307,7 +307,7 @@ function CommentMessage(props: {
           highlighted ? "ring-2" : "ring-0",
         )}
       >
-        <div className="relative flex items-center gap-1.5 px-2 py-1.5 pr-1.5">
+        <div className="relative flex items-center gap-1.5 px-2 py-1.5 pr-1.5 select-none">
           {comment.user ? (
             <UserHoverCard user={getUserCardData(comment.user)}>
               <span tabIndex={0} className="shrink-0">
@@ -375,7 +375,7 @@ function CommentMessage(props: {
             />
           </div>
         </div>
-        <div className="text-default px-1 pb-2 text-sm">
+        <div className="text-default px-1 pb-2 text-sm select-text">
           {isEditing ? (
             <StandaloneEditor
               variant="plain"

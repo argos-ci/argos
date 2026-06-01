@@ -254,7 +254,7 @@ export function ReviewActivitySection(props: { build: Build }) {
           <SidebarHeading>Activity</SidebarHeading>
           <SubscribeToggleButton build={build} />
         </SidebarHeader>
-        <div className="px-3">
+        <div className="px-3 select-none">
           <Activity gap={false}>
             <AnimatePresence initial={false}>
               {entries.map((entry, index) => (
