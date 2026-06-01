@@ -1,17 +1,18 @@
 import {
-  MessageSquareIcon,
+  MessageCircleIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
   type LucideIcon,
 } from "lucide-react";
 
 import { BuildReviewEvent } from "@/gql/graphql";
-import type { ButtonProps } from "@/ui/Button";
+
+export type ReviewEventRadioVariant = "primary" | "secondary" | "destructive";
 
 export type BuildReviewEventDefinition = {
   label: string;
   description: string;
-  color: NonNullable<ButtonProps["variant"]>;
+  variant: ReviewEventRadioVariant;
   icon: LucideIcon;
 };
 
@@ -22,19 +23,19 @@ export const BUILD_REVIEW_EVENT_DEFINITIONS: Record<
   [BuildReviewEvent.Approve]: {
     label: "Approve",
     description: "Submit feedback and approve merging these changes.",
-    color: "primary",
+    variant: "primary",
     icon: ThumbsUpIcon,
   },
   [BuildReviewEvent.Reject]: {
     label: "Reject",
     description: "Submit feedback about rejection.",
-    color: "destructive",
+    variant: "destructive",
     icon: ThumbsDownIcon,
   },
   [BuildReviewEvent.Comment]: {
     label: "Comment",
     description: "Submit general feedback without explicit approval.",
-    color: "secondary",
-    icon: MessageSquareIcon,
+    variant: "secondary",
+    icon: MessageCircleIcon,
   },
 };

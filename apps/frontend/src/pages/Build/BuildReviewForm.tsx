@@ -1,8 +1,15 @@
+import { clsx } from "clsx";
+import { Text } from "react-aria-components";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildReviewEvent } from "@/gql/graphql";
-import { DialogBody, DialogDismiss, DialogFooter } from "@/ui/Dialog";
+import {
+  DialogBody,
+  DialogDismiss,
+  DialogFooter,
+  DialogTitle,
+} from "@/ui/Dialog";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { EditorField } from "@/ui/Editor/EditorField";
 import { hasEditorContent } from "@/ui/Editor/util";
@@ -13,12 +20,14 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { Label } from "@/ui/Label";
 
 import { useCreateBuildReviewMutation } from "./BuildReviewAction";
-import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
+import {
+  BUILD_REVIEW_EVENT_DEFINITIONS,
+  ReviewEventRadioVariant,
+} from "./BuildReviewEvents";
 
 const _BuildFragment = graphql(`
   fragment BuildReviewForm_Build on Build {
     id
-    status
     ...BuildReviewAction_Build
   }
 `);
@@ -83,9 +92,13 @@ export function BuildReviewForm(props: {
   return (
     <Form form={form} onSubmit={onSubmit}>
       <DialogBody>
+        <DialogTitle>Review changes</DialogTitle>
         <div className="flex flex-col gap-4">
           <div>
-            <Label>Comment</Label>
+            <Label>
+              Add a comment{" "}
+              <Text className="text-low text-sm font-normal">(optional)</Text>
+            </Label>
             <EditorField
               control={form.control}
               name="body"
@@ -95,7 +108,7 @@ export function BuildReviewForm(props: {
                 }
               }}
               aria-label="Review comment"
-              placeholder="Leave a comment"
+              placeholder="Share your feedback, ask a question, or leave a note..."
               className="w-md"
               disabled={form.formState.isSubmitting}
             />
@@ -152,6 +165,7 @@ function ReviewEventRadioGroup(props: {
               label={definition.label}
               description={definition.description}
               icon={definition.icon}
+              variant={definition.variant}
             />
           );
         },
@@ -159,6 +173,27 @@ function ReviewEventRadioGroup(props: {
     </div>
   );
 }
+
+const REVIEW_EVENT_THEME_BY_VARIANT: Record<
+  ReviewEventRadioVariant,
+  { checkedContainer: string; icon: string; iconChecked: string }
+> = {
+  primary: {
+    checkedContainer: "border-success bg-success-app",
+    icon: "bg-success-hover text-success-low",
+    iconChecked: "bg-success-active text-success-low",
+  },
+  destructive: {
+    checkedContainer: "border-danger bg-danger-app",
+    icon: "bg-danger-hover text-danger-low",
+    iconChecked: "bg-danger-active text-danger-low",
+  },
+  secondary: {
+    checkedContainer: "border-info bg-info-app",
+    icon: "bg-info-hover text-info-low",
+    iconChecked: "bg-info-active text-info-low",
+  },
+};
 
 function ReviewEventRadio(props: {
   value: BuildReviewEvent;
@@ -168,6 +203,7 @@ function ReviewEventRadio(props: {
   description: string;
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   isDisabled?: boolean;
+  variant: ReviewEventRadioVariant;
 }) {
   const {
     value,
@@ -177,12 +213,21 @@ function ReviewEventRadio(props: {
     description,
     icon: Icon,
     isDisabled,
+    variant,
   } = props;
   const id = `review-event-${value}`;
+  const { checkedContainer, icon, iconChecked } =
+    REVIEW_EVENT_THEME_BY_VARIANT[variant];
   return (
     <label
       htmlFor={id}
-      className="flex items-start gap-2 select-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+      className={clsx(
+        "flex cursor-pointer items-center gap-2 rounded-md border p-2 transition-colors select-none",
+        !checked &&
+          "hover:bg-hover hover:border-low active:bg-active active:border-active",
+        "aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
+        checked && checkedContainer,
+      )}
       aria-disabled={isDisabled || undefined}
     >
       <input
@@ -193,14 +238,23 @@ function ReviewEventRadio(props: {
         checked={checked}
         onChange={onChange}
         disabled={isDisabled}
-        className="mt-1"
+        className="focus-visible:ring-default focus-visible:ring-2"
       />
-      <div className="flex flex-col gap-0.5">
-        <span className="flex items-center gap-1.5 text-sm font-medium">
+      <div className="flex items-center gap-1.5 text-sm font-medium">
+        <div
+          className={clsx(
+            "flex size-10 items-center justify-center rounded-sm",
+            checked ? iconChecked : icon,
+          )}
+        >
           <Icon aria-hidden className="size-4" />
-          {label}
-        </span>
-        <span className="text-low text-xs">{description}</span>
+        </div>
+        <div>
+          <div className={clsx(checked && "text-default")}>{label}</div>
+          <span className={clsx("text-low text-xs", checked && "text-default")}>
+            {description}
+          </span>
+        </div>
       </div>
     </label>
   );
