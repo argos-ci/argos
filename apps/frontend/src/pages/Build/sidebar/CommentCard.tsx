@@ -22,7 +22,7 @@ import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
-import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
+import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
@@ -49,6 +49,9 @@ const _CommentFragment = graphql(`
     threadSubscribed
     permissions
     user {
+      ...UserCard_user
+    }
+    mentionedUsers {
       ...UserCard_user
     }
     ...CommentReactions_Comment
@@ -251,6 +254,9 @@ function CommentMessage(props: {
   const clipboard = useClipboard();
   const projectParams = useProjectParams();
   const mentions = useMentionableUsers();
+  // Resolve the comment's own mentions (which persist only an id) to render
+  // their name/avatar/role — these may include users no longer mentionable.
+  const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [updateComment] = useMutation(UpdateCommentMutation);
@@ -381,6 +387,7 @@ function CommentMessage(props: {
               variant="plain"
               defaultValue={comment.content}
               mentions={mentions}
+              mentionedUsers={mentionedUsers}
               onSubmit={handleEditSubmit}
               onCancel={() => setIsEditing(false)}
               submitLabel="Save"
@@ -396,7 +403,7 @@ function CommentMessage(props: {
             <ReadOnlyEditor
               content={comment.content}
               className={contentClassName}
-              mentions={mentions}
+              mentionedUsers={mentionedUsers}
             />
           )}
         </div>

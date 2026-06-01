@@ -2,6 +2,7 @@ import { clsx } from "clsx";
 
 import { DocumentType, graphql } from "@/gql";
 
+import { type MentionUser } from "./Editor/mention";
 import { Tooltip } from "./Tooltip";
 
 /**
@@ -37,6 +38,24 @@ export function getUserCardData(
   return {
     name: user.name,
     slug: user.slug,
+    imageUrl: user.avatar.url,
+    initial: user.avatar.initial,
+    role: user.role,
+  };
+}
+
+/**
+ * Map the `UserCard_user` fragment to a {@link MentionUser}, used both to feed
+ * the `@` autocomplete and to resolve stored mentions (which keep only the id)
+ * back to a name, avatar and role at render time.
+ */
+export function getMentionUser(
+  user: DocumentType<typeof UserCardFragment>,
+): MentionUser {
+  return {
+    id: user.id,
+    label: user.name || user.slug,
+    secondaryLabel: user.name ? user.slug : null,
     imageUrl: user.avatar.url,
     initial: user.avatar.initial,
     role: user.role,

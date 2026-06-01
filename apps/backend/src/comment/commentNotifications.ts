@@ -7,6 +7,7 @@ import { sendNotification } from "@/notification";
 
 import { renderCommentHtml } from "./html";
 import { formatCommentId } from "./id";
+import { getCommentMentionLabels } from "./mentions";
 
 /**
  * Build the data shared by every comment notification email (author name and
@@ -21,9 +22,10 @@ export async function getCommentNotificationData(input: {
 }) {
   const { build, project, comment, userId, body } = input;
   invariant(project.account, "Build project account not found");
-  const [author, buildUrl] = await Promise.all([
+  const [author, buildUrl, mentionLabels] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
     build.getUrl(),
+    getCommentMentionLabels(comment.id),
   ]);
   const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
   return {
@@ -33,7 +35,7 @@ export async function getCommentNotificationData(input: {
     buildName: build.name,
     commentUrl,
     authorName: author?.account?.displayName ?? null,
-    bodyHtml: renderCommentHtml(body),
+    bodyHtml: renderCommentHtml(body, mentionLabels),
   };
 }
 

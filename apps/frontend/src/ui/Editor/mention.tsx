@@ -12,8 +12,10 @@ import { clsx } from "clsx";
 import { UserHoverCard } from "../UserCard";
 
 /**
- * A user that can be mentioned in a comment. `id` is the public account id
- * stored in the mention node; `label` is what's rendered after the `@`.
+ * A user that can be mentioned in a comment. `id` is the public account id —
+ * the only thing the mention node persists. `label` is resolved at render time
+ * (from the suggestion list or the comment's mentioned users) and shown after
+ * the `@`, so a user's name never goes stale in stored content.
  */
 export interface MentionUser {
   id: string;
@@ -182,29 +184,44 @@ function positionPopup(
   popup.style.zIndex = "50";
 }
 
+/** Label rendered after `@` when a mention's user can't be resolved. */
+const UNKNOWN_MENTION_LABEL = "unknown";
+
+export interface MentionExtensionOptions {
+  /** Suggestions shown in the `@` autocomplete (the mentionable users). */
+  getSuggestions: () => MentionUser[];
+  /**
+   * Resolve a mention node's stored id to the user to render. Mentions persist
+   * only the id, so the label/avatar/role are looked up here at render time.
+   */
+  resolveUser: (id: string) => MentionUser | undefined;
+}
+
 /**
- * Build the TipTap Mention extension wired to a (synchronous) list of
- * mentionable users.
+ * Build the TipTap Mention extension. The node persists only the user `id`;
+ * everything shown (the `@label` and the hover card) is resolved at render
+ * time via {@link MentionExtensionOptions.resolveUser}.
  *
  * The node spec MUST match the backend (`apps/backend/src/comment/schema.ts`)
  * so the server accepts the `mention` nodes this produces. Only the interactive
  * `suggestion` lives here.
  *
- * `getUsers` is read lazily on each `@` query so the extension can be created
- * once while the underlying list stays up to date.
+ * The getters are read lazily so the extension can be created once while the
+ * underlying lists stay up to date.
  */
-export function createMentionExtension(getUsers: () => MentionUser[]) {
+export function createMentionExtension(options: MentionExtensionOptions) {
+  const { getSuggestions, resolveUser } = options;
   /**
-   * Node view that renders the `@label` and, when the mentioned user is in the
-   * known list, wraps it with a hover card showing their avatar, name and role.
+   * Node view that resolves the stored id to a user and renders the `@label`,
+   * wrapping it with a hover card (avatar, name, role) when resolved. Falls
+   * back to "@unknown" when the user can't be resolved.
    */
   function MentionNodeView(props: NodeViewProps) {
     const id = (props.node.attrs.id as string | null) ?? null;
-    const label = (props.node.attrs.label as string | null) ?? id ?? "";
-    const user = id ? getUsers().find((item) => item.id === id) : undefined;
+    const user = id ? resolveUser(id) : undefined;
     const trigger = (
       <span contentEditable={false} className="cursor-default">
-        @{label}
+        @{user?.label ?? UNKNOWN_MENTION_LABEL}
       </span>
     );
     return (
@@ -233,7 +250,7 @@ export function createMentionExtension(getUsers: () => MentionUser[]) {
     suggestion: {
       char: "@",
       items: ({ query }: { query: string }) =>
-        filterMentionUsers(getUsers(), query),
+        filterMentionUsers(getSuggestions(), query),
       render: () => {
         let component: ReactRenderer<MentionListHandle> | null = null;
         let popup: HTMLDivElement | null = null;
@@ -275,6 +292,22 @@ export function createMentionExtension(getUsers: () => MentionUser[]) {
       },
     },
   }).extend({
+    // Persist only the user id. The default Mention extension also stores a
+    // `label`, but the name is resolved at render time so it never goes stale.
+    addAttributes() {
+      return {
+        id: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("data-id"),
+          renderHTML: (attributes) => {
+            if (!attributes["id"]) {
+              return {};
+            }
+            return { "data-id": attributes["id"] as string };
+          },
+        },
+      };
+    },
     addNodeView() {
       return ReactNodeViewRenderer(MentionNodeView);
     },

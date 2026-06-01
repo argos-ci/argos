@@ -103,6 +103,37 @@ describe("renderCommentHtml", () => {
     expect(renderCommentHtml(doc)).toBe("");
   });
 
+  it("renders a mention's label from the provided map", () => {
+    const doc: JSONContent = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "Hey " },
+            { type: "mention", attrs: { id: "42" } },
+          ],
+        },
+      ],
+    };
+    expect(renderCommentHtml(doc, new Map([["42", "Alice"]]))).toContain(
+      "@Alice",
+    );
+  });
+
+  it("falls back to @unknown for an unresolved mention", () => {
+    const doc: JSONContent = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "mention", attrs: { id: "42" } }],
+        },
+      ],
+    };
+    expect(renderCommentHtml(doc, new Map())).toContain("@unknown");
+  });
+
   it("escapes HTML in text nodes", () => {
     const doc: JSONContent = {
       type: "doc",

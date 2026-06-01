@@ -141,6 +141,30 @@ export async function getCommentMentionedUserIds(
 }
 
 /**
+ * Build the map used to render a comment's mentions, keyed by the account id
+ * the `mention` nodes store and pointing at the display label to show after
+ * `@`. Resolved from the persisted `comment_mentions` rows so it matches what
+ * the frontend renders (only validated mentions get a name). Used server-side
+ * when rendering a comment to HTML (e.g. notification emails).
+ */
+export async function getCommentMentionLabels(
+  commentId: string,
+): Promise<Map<string, string>> {
+  const userIds = await getCommentMentionedUserIds(commentId);
+  if (userIds.length === 0) {
+    return new Map();
+  }
+  const accounts = await Account.query()
+    .whereIn("userId", userIds)
+    .select("id", "name", "slug");
+  const labels = new Map<string, string>();
+  for (const account of accounts) {
+    labels.set(account.id, account.name || account.slug);
+  }
+  return labels;
+}
+
+/**
  * Reconcile the `comment_mentions` rows for a comment with the user mentions
  * found in its content, and return the database ids of the mentioned users.
  *

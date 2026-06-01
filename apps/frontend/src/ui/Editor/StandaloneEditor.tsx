@@ -53,6 +53,8 @@ export interface StandaloneEditorProps {
   contentClassName?: string;
   /** Users that can be mentioned with `@`, forwarded to the {@link Editor}. */
   mentions?: MentionUser[];
+  /** Users to resolve existing mentions against, forwarded to the {@link Editor}. */
+  mentionedUsers?: MentionUser[];
 }
 
 /**
@@ -77,6 +79,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     variant = "boxed",
     contentClassName,
     mentions,
+    mentionedUsers,
   } = props;
   const [value, setValue] = useState<EditorValue>(defaultValue);
   // Remounts the editor after a successful submit to clear its content.
@@ -120,6 +123,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
       onChange={setValue}
       onSubmit={submit}
       mentions={mentions}
+      mentionedUsers={mentionedUsers}
       placeholder={placeholder}
       disabled={disabled || isPending}
       autoFocus={autoFocus}

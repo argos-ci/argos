@@ -22,7 +22,7 @@ import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
+import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 import { useNonNullable } from "@/util/useNonNullable";
@@ -225,14 +225,7 @@ function useHighlightedCommentId(commentIds: string[]): string | null {
 function toMentionUsers(
   mentionableUsers: Build["mentionableUsers"],
 ): MentionUser[] {
-  return mentionableUsers.map((user) => ({
-    id: user.id,
-    label: user.name || user.slug,
-    secondaryLabel: user.name ? user.slug : null,
-    imageUrl: user.avatar.url,
-    initial: user.avatar.initial,
-    role: user.role,
-  }));
+  return mentionableUsers.map(getMentionUser);
 }
 
 export function ReviewActivitySection(props: { build: Build }) {

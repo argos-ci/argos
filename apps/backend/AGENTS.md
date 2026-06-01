@@ -148,6 +148,15 @@ Never trust the client for anything derived from `content` (e.g. which users are
 mentioned). Re-parse the stored JSON on the server and validate against
 permissions — see `src/comment/mentions.ts`.
 
+A `mention` node persists **only the user's account id** — never the name (both
+node specs override `addAttributes` to drop the default `label`). The display
+label is resolved at render time so it never goes stale: the frontend resolves
+it via `Comment.mentionedUsers` (the `UserCard_user` fragment), and the server
+resolves it in `renderCommentHtml`, which builds a label-aware Mention whose
+`renderHTML` reads a `Map<accountId, label>` from `getCommentMentionLabels` (the
+persisted `comment_mentions` rows). Unresolvable mentions render as `@unknown`
+on both sides.
+
 ### Adding a `@tiptap/*` package
 
 All `@tiptap/*` packages must resolve to a **single `@tiptap/core` version**. A

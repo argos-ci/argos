@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Account, Comment, CommentMention } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getMentionableUserIds, syncCommentMentions } from "./mentions";
+import {
+  getCommentMentionLabels,
+  getMentionableUserIds,
+  syncCommentMentions,
+} from "./mentions";
 
 function mentionDoc(accountIds: string[]) {
   return {
@@ -16,7 +20,7 @@ function mentionDoc(accountIds: string[]) {
           { type: "text", text: "Hey " },
           ...accountIds.map((id) => ({
             type: "mention",
-            attrs: { id, label: `user-${id}` },
+            attrs: { id },
           })),
         ],
       },
@@ -174,5 +178,42 @@ describe("syncCommentMentions", () => {
     });
     const mentionedUserIds = await syncCommentMentions({ comment, project });
     expect(mentionedUserIds).toEqual([]);
+  });
+});
+
+describe("getCommentMentionLabels", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  it("maps the mentioned account id to its display name", async () => {
+    const teamAccount = await factory.TeamAccount.create();
+    invariant(teamAccount.teamId);
+    const project = await factory.Project.create({ accountId: teamAccount.id });
+    const build = await factory.Build.create({ projectId: project.id });
+    const memberAccount = await factory.UserAccount.create({ name: "Alice" });
+    invariant(memberAccount.userId);
+    await factory.TeamUser.create({
+      teamId: teamAccount.teamId,
+      userId: memberAccount.userId,
+      userLevel: "member",
+    });
+    const comment = await factory.Comment.create({
+      buildId: build.id,
+      content: mentionDoc([memberAccount.id]),
+    });
+    await syncCommentMentions({ comment, project });
+
+    const labels = await getCommentMentionLabels(comment.id);
+    // Keyed by the account id stored in the mention node (not the user id).
+    expect(labels.get(memberAccount.id)).toBe("Alice");
+    expect(labels.size).toBe(1);
+  });
+
+  it("returns an empty map when there are no mentions", async () => {
+    const build = await factory.Build.create();
+    const comment = await factory.Comment.create({ buildId: build.id });
+    const labels = await getCommentMentionLabels(comment.id);
+    expect(labels.size).toBe(0);
   });
 });

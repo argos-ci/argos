@@ -14,6 +14,7 @@ import {
   Build,
   BuildReview,
   Comment,
+  CommentMention,
   CommentReaction,
   Deployment,
   DeploymentAlias,
@@ -747,6 +748,26 @@ function createCommentReactionsLoader() {
   });
 }
 
+function createCommentMentionedUserIdsLoader() {
+  return new DataLoader<string, string[]>(async (commentIds) => {
+    const mentions = await CommentMention.query()
+      .whereIn("commentId", commentIds as string[])
+      .where("type", "user")
+      .whereNotNull("mentionedUserId")
+      .select("commentId", "mentionedUserId");
+    const map = mentions.reduce<Record<string, string[]>>((acc, mention) => {
+      if (!mention.mentionedUserId) {
+        return acc;
+      }
+      const array = acc[mention.commentId] ?? [];
+      array.push(mention.mentionedUserId);
+      acc[mention.commentId] = array;
+      return acc;
+    }, {});
+    return commentIds.map((id) => map[id] ?? []);
+  });
+}
+
 function createBuildReviewsLoader() {
   return new DataLoader<string, BuildReview[]>(async (inputs) => {
     const reviews = await BuildReview.query()
@@ -1214,6 +1235,7 @@ export const createLoaders = () => ({
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
+  CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),
   BuildReviews: createBuildReviewsLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),
