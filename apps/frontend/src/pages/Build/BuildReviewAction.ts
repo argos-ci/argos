@@ -17,7 +17,7 @@ import {
   useGetReviewedDiffStatuses,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
-import { useOpenReviewSidebar } from "./RightSidebar";
+import { useOpenReviewSidebar } from "./RightSidebarState";
 
 const CreateBuildReviewMutation = graphql(`
   mutation BuildReviewAction_createBuildReview(

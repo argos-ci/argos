@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import clsx from "clsx";
 import { useAtom, useAtomValue } from "jotai";
-import { useSetAtom } from "jotai/react";
-import { atomWithStorage } from "jotai/utils";
 import { PanelRightIcon } from "lucide-react";
 import {
   Tab as RACTab,
@@ -22,6 +20,11 @@ import { Sidebar } from "@/ui/Sidebar";
 
 import { useBuildDiffState } from "./BuildDiffState";
 import {
+  rightSidebarOpenAtom,
+  rightSidebarTabAtom,
+  type RightSidebarTab,
+} from "./RightSidebarState";
+import {
   MetadataSection,
   type MetadataSectionProps,
 } from "./sidebar/MetadataSection";
@@ -30,28 +33,6 @@ import { ReviewersSection } from "./sidebar/ReviewersSection";
 import { TestActivitySection } from "./sidebar/TestActivitySection";
 import { TestChangeSection } from "./sidebar/TestChangeSection";
 import { TestInsightsSection } from "./sidebar/TestInsightsSection";
-
-const rightSidebarOpenAtom = atomWithStorage<boolean>(
-  "build.rightSidebar.open",
-  true,
-);
-
-type RightSidebarTab = "snapshot" | "review";
-
-const rightSidebarTabAtom = atomWithStorage<RightSidebarTab>(
-  "build.rightSidebar.tab",
-  "snapshot",
-);
-
-export function useOpenReviewSidebar() {
-  const setOpen = useSetAtom(rightSidebarOpenAtom);
-  const setTab = useSetAtom(rightSidebarTabAtom);
-
-  return () => {
-    setTab("review");
-    setOpen(true);
-  };
-}
 
 graphql(`
   fragment RightSidebar_Test on Test {
