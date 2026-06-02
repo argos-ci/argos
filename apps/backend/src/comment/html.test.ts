@@ -14,7 +14,9 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe("<p>Hello world!</p>");
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe(
+      "<p>Hello world!</p>",
+    );
   });
 
   it("renders inline marks (bold, italic, code)", () => {
@@ -116,9 +118,9 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc, { mentionLabels: new Map([["42", "Alice"]]) })).toContain(
-      "@Alice",
-    );
+    expect(
+      renderCommentHtml(doc, { mentionLabels: new Map([["42", "Alice"]]) }),
+    ).toContain("@Alice");
   });
 
   it("falls back to @unknown for an unresolved mention", () => {
@@ -131,7 +133,9 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toContain("@unknown");
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toContain(
+      "@unknown",
+    );
   });
 
   it("escapes HTML in text nodes", () => {
