@@ -202,7 +202,7 @@ function BuildReviewDialog(props: {
           {allAccepted ? (
             <FormSubmit
               control={form.control}
-              variant={definition.color}
+              variant={definition.variant}
               autoFocus
             >
               <ButtonIcon>
@@ -214,7 +214,7 @@ function BuildReviewDialog(props: {
             <ButtonGroup>
               <FormSubmit
                 control={form.control}
-                variant={definition.color}
+                variant={definition.variant}
                 autoFocus={!hasRejected}
               >
                 <ButtonIcon>
@@ -224,7 +224,7 @@ function BuildReviewDialog(props: {
               </FormSubmit>
               <MenuTrigger>
                 <Button
-                  variant={definition.color}
+                  variant={definition.variant}
                   iconOnly
                   aria-label="Change action"
                   isDisabled={actionContext?.isPending}
