@@ -17,6 +17,7 @@ import {
   useGetReviewedDiffStatuses,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { useOpenReviewSidebar } from "./RightSidebarState";
 
 const CreateBuildReviewMutation = graphql(`
   mutation BuildReviewAction_createBuildReview(
@@ -54,6 +55,7 @@ export function useCreateBuildReviewMutation(
   >,
 ) {
   const api = useBuildReviewAPI();
+  const openReviewSidebar = useOpenReviewSidebar();
   const [mutate, data] = useMutation(CreateBuildReviewMutation, {
     ...options,
   });
@@ -90,6 +92,7 @@ export function useCreateBuildReviewMutation(
         },
       });
       api.setDiffStatuses(diffStatuses);
+      openReviewSidebar();
       return result;
     },
   );
