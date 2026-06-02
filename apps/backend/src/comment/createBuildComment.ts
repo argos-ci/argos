@@ -48,21 +48,35 @@ export async function createBuildComment(input: {
     throw boom(400, "Comment is too large");
   }
 
-  const comment = await Comment.query().insert({
-    userId,
-    buildId: build.id,
-    threadId,
-    content: body,
-  });
-
-  const project = await build
-    .$relatedQuery("project")
-    .withGraphFetched("account");
+  // Inserting the comment and loading the project are independent — run them
+  // together rather than back-to-back.
+  const [comment, project] = await Promise.all([
+    Comment.query().insert({
+      userId,
+      buildId: build.id,
+      threadId,
+      content: body,
+    }),
+    build.$relatedQuery("project").withGraphFetched("account"),
+  ]);
   invariant(project?.account, "Build project account not found");
 
   // Persist the user mentions found in the comment and resolve them to the
   // users that may actually be notified (members of the project's team).
   const mentionedUserIds = await syncCommentMentions({ comment, project });
+
+  // Notifying the mentioned users is independent of notifying the thread/build
+  // subscribers (those already exclude the mentioned users by id), so let it
+  // run alongside them.
+  const notifyMentioned = notifyMentionedUsers({
+    build,
+    project,
+    comment,
+    userId,
+    body,
+    mentionedUserIds,
+    threadId: threadId ?? comment.id,
+  });
 
   if (threadId) {
     await Promise.all([
@@ -77,6 +91,7 @@ export async function createBuildComment(input: {
         // Mentioned users get a dedicated notification, don't double-notify.
         excludeUserIds: mentionedUserIds,
       }),
+      notifyMentioned,
     ]);
   } else {
     await Promise.all([
@@ -90,18 +105,9 @@ export async function createBuildComment(input: {
         body,
         excludeUserIds: mentionedUserIds,
       }),
+      notifyMentioned,
     ]);
   }
-
-  await notifyMentionedUsers({
-    build,
-    project,
-    comment,
-    userId,
-    body,
-    mentionedUserIds,
-    threadId: threadId ?? comment.id,
-  });
 
   return comment;
 }

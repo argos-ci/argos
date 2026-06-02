@@ -354,20 +354,47 @@ function createProjectTeamUserLevelLoader() {
           projectName: key.projectName,
         });
       }
-      const teamIdByProject = new Map<string, string | null>();
-      await Promise.all(
-        [...projects].map(async ([id, { accountSlug, projectName }]) => {
-          const account = await Account.query().findOne({ slug: accountSlug });
-          if (!account?.teamId) {
-            teamIdByProject.set(id, null);
-            return;
-          }
-          const project = await Project.query()
-            .findOne({ accountId: account.id, name: projectName })
-            .select("id");
-          teamIdByProject.set(id, project ? account.teamId : null);
-        }),
+      // Resolve every referenced account in one query, keyed by slug.
+      const accountSlugs = [
+        ...new Set([...projects.values()].map((p) => p.accountSlug)),
+      ];
+      const accounts = accountSlugs.length
+        ? await Account.query()
+            .whereIn("slug", accountSlugs)
+            .select("id", "slug", "teamId")
+        : [];
+      const accountBySlug = new Map(accounts.map((a) => [a.slug, a]));
+
+      // Resolve every referenced project in one query, using a composite
+      // (accountId, name) `in (...)` so the count is independent of the batch.
+      const projectTuples: [string, string][] = [];
+      for (const { accountSlug, projectName } of projects.values()) {
+        const account = accountBySlug.get(accountSlug);
+        if (account?.teamId) {
+          projectTuples.push([account.id, projectName]);
+        }
+      }
+      const existingProjects = projectTuples.length
+        ? await Project.query()
+            .whereIn(["accountId", "name"], projectTuples)
+            .select("accountId", "name")
+        : [];
+      const existingProjectKeys = new Set(
+        existingProjects.map(
+          (project) => `${project.accountId}\0${project.name}`,
+        ),
       );
+
+      // A project's team is its account's team, but only when the project
+      // actually exists under that account (mirrors the per-project lookup).
+      const teamIdByProject = new Map<string, string | null>();
+      for (const [id, { accountSlug, projectName }] of projects) {
+        const account = accountBySlug.get(accountSlug);
+        const exists =
+          account?.teamId != null &&
+          existingProjectKeys.has(`${account.id}\0${projectName}`);
+        teamIdByProject.set(id, exists ? (account?.teamId ?? null) : null);
+      }
 
       // Fetch every requested membership across the involved teams at once.
       const teamIds = [
