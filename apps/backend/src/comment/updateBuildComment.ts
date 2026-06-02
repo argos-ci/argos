@@ -68,7 +68,6 @@ export async function updateBuildComment(input: {
     project,
     comment: updatedComment,
     userId: updatedComment.userId,
-    body,
     mentionedUserIds: newlyMentionedUserIds,
     threadId: updatedComment.threadId ?? updatedComment.id,
   });

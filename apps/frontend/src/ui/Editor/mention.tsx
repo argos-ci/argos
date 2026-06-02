@@ -69,14 +69,21 @@ const MentionList = forwardRef<
   }
 >(function MentionList(props, ref) {
   const { items, command } = props;
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  // Reset the highlighted row whenever the suggestions change (new query),
-  // using the "adjust state during render" pattern instead of an effect.
-  const [prevItems, setPrevItems] = useState(items);
-  if (items !== prevItems) {
-    setPrevItems(items);
-    setSelectedIndex(0);
-  }
+  const [selectedIndexMap, setSelectedIndexMap] = useState<
+    WeakMap<MentionUser[], number>
+  >(new WeakMap());
+  const selectedIndex = selectedIndexMap.get(items) ?? 0;
+  const setSelectedIndex = (
+    fnOrValue: ((index: number) => number) | number,
+  ) => {
+    setSelectedIndexMap((weakmap) => {
+      const index = weakmap.get(items) ?? 0;
+      const nextIndex =
+        typeof fnOrValue === "number" ? fnOrValue : fnOrValue(index);
+      const nextWeakmap = new WeakMap<MentionUser[], number>();
+      return nextWeakmap.set(items, nextIndex);
+    });
+  };
 
   const select = (index: number) => {
     const item = items[index];

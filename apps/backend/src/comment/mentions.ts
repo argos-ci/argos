@@ -10,6 +10,8 @@ import {
   TeamUser,
 } from "@/database/models";
 
+import { renderCommentHtml } from "./html";
+
 /**
  * Collect the ids carried by `mention` nodes in a comment document. The id is
  * the public GraphQL id of the mentioned user's personal account (what the
@@ -166,6 +168,19 @@ export async function getCommentMentionLabels(
     labels.set(account.id, account.name || account.slug);
   }
   return labels;
+}
+
+/**
+ * Render a stored comment to HTML with its persisted mentions resolved to their
+ * current display labels. Combines the mention-label lookup and the HTML
+ * rendering that every comment notification needs, so callers don't have to
+ * repeat the two-step dance (or forget to pass the labels).
+ */
+export async function renderCommentHtmlWithMentions(
+  comment: Comment,
+): Promise<string> {
+  const mentionLabels = await getCommentMentionLabels(comment.id);
+  return renderCommentHtml(comment.content as JSONContent, { mentionLabels });
 }
 
 /**

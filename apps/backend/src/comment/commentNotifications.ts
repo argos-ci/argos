@@ -1,13 +1,11 @@
 import { invariant } from "@argos/util/invariant";
-import type { JSONContent } from "@tiptap/core";
 
 import { Build, Comment, Project, User } from "@/database/models";
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
 
-import { renderCommentHtml } from "./html";
 import { formatCommentId } from "./id";
-import { getCommentMentionLabels } from "./mentions";
+import { renderCommentHtmlWithMentions } from "./mentions";
 
 /**
  * Build the data shared by every comment notification email (author name and
@@ -18,14 +16,13 @@ export async function getCommentNotificationData(input: {
   project: Project;
   comment: Comment;
   userId: string;
-  body: JSONContent;
 }) {
-  const { build, project, comment, userId, body } = input;
+  const { build, project, comment, userId } = input;
   invariant(project.account, "Build project account not found");
-  const [author, buildUrl, mentionLabels] = await Promise.all([
+  const [author, buildUrl, bodyHtml] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
     build.getUrl(),
-    getCommentMentionLabels(comment.id),
+    renderCommentHtmlWithMentions(comment),
   ]);
   const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
   return {
@@ -35,7 +32,7 @@ export async function getCommentNotificationData(input: {
     buildName: build.name,
     commentUrl,
     authorName: author?.account?.displayName ?? null,
-    bodyHtml: renderCommentHtml(body, mentionLabels),
+    bodyHtml,
   };
 }
 
@@ -49,12 +46,10 @@ export async function notifyMentionedUsers(input: {
   project: Project;
   comment: Comment;
   userId: string;
-  body: JSONContent;
   mentionedUserIds: string[];
   threadId: string;
 }): Promise<void> {
-  const { build, project, comment, userId, body, mentionedUserIds, threadId } =
-    input;
+  const { build, project, comment, userId, mentionedUserIds, threadId } = input;
   const recipients = mentionedUserIds.filter((id) => id !== userId);
   if (recipients.length === 0) {
     return;
@@ -73,7 +68,6 @@ export async function notifyMentionedUsers(input: {
     project,
     comment,
     userId,
-    body,
   });
   await sendNotification({ type: "comment_mention", data, recipients });
 }

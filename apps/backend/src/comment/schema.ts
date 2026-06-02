@@ -4,6 +4,12 @@ import type { Schema } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 
 /**
+ * Fallback label rendered for a mention whose user can't be resolved (e.g. a
+ * deleted account). Mirrors the frontend's "@unknown" fallback.
+ */
+const UNKNOWN_MENTION_LABEL = "unknown";
+
+/**
  * Mention node configuration. The node spec (name, attributes, rendering) MUST
  * stay identical to the frontend editor (`apps/frontend/src/ui/Editor/mention.tsx`)
  * so the server reads/writes the same `mention` nodes the client produced and
@@ -14,7 +20,7 @@ import StarterKit from "@tiptap/starter-kit";
  * `label`, which we drop). The display label is resolved at render time — see
  * `renderCommentHtml` in `./html.ts`.
  */
-export const MentionExtension = Mention.extend({
+const MentionExtension = Mention.extend({
   addAttributes() {
     return {
       id: {
@@ -32,6 +38,28 @@ export const MentionExtension = Mention.extend({
 }).configure({
   HTMLAttributes: { class: "mention" },
 });
+
+/**
+ * Get the editor extensions with optional configuration.
+ */
+export function getExtensions(options?: {
+  mentionLabels?: Map<string, string>;
+}) {
+  const mentionLabels = options?.mentionLabels;
+  const mention = mentionLabels
+    ? MentionExtension.configure({
+        renderHTML: ({ options, node }) => {
+          const id =
+            typeof node.attrs["id"] === "string" ? node.attrs["id"] : null;
+          const label =
+            (id ? mentionLabels?.get(id) : null) ?? UNKNOWN_MENTION_LABEL;
+          return ["span", options.HTMLAttributes, `@${label}`];
+        },
+      })
+    : MentionExtension;
+
+  return [StarterKit, mention];
+}
 
 /**
  * TipTap extensions used by the comment editor. Must stay in sync with the

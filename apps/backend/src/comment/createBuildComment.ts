@@ -73,7 +73,6 @@ export async function createBuildComment(input: {
     project,
     comment,
     userId,
-    body,
     mentionedUserIds,
     threadId: threadId ?? comment.id,
   });
@@ -86,7 +85,6 @@ export async function createBuildComment(input: {
         project,
         comment,
         userId,
-        body,
         threadId,
         // Mentioned users get a dedicated notification, don't double-notify.
         excludeUserIds: mentionedUserIds,
@@ -102,7 +100,6 @@ export async function createBuildComment(input: {
         project,
         comment,
         userId,
-        body,
         excludeUserIds: mentionedUserIds,
       }),
       notifyMentioned,
@@ -117,10 +114,9 @@ async function notifyBuildSubscribers(input: {
   project: Project;
   comment: Comment;
   userId: string;
-  body: JSONContent;
   excludeUserIds: string[];
 }): Promise<void> {
-  const { build, project, comment, userId, body, excludeUserIds } = input;
+  const { build, project, comment, userId, excludeUserIds } = input;
   const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
   const excluded = new Set([userId, ...excludeUserIds]);
   const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
@@ -132,7 +128,6 @@ async function notifyBuildSubscribers(input: {
     project,
     comment,
     userId,
-    body,
   });
   await sendNotification({ type: "comment_added", data, recipients });
 }
@@ -142,12 +137,10 @@ async function notifyCommentThreadSubscribers(input: {
   project: Project;
   comment: Comment;
   userId: string;
-  body: JSONContent;
   threadId: string;
   excludeUserIds: string[];
 }): Promise<void> {
-  const { build, project, comment, userId, body, threadId, excludeUserIds } =
-    input;
+  const { build, project, comment, userId, threadId, excludeUserIds } = input;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
   const excluded = new Set([userId, ...excludeUserIds]);
   const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
@@ -159,7 +152,6 @@ async function notifyCommentThreadSubscribers(input: {
     project,
     comment,
     userId,
-    body,
   });
   await sendNotification({ type: "comment_replied", data, recipients });
 }

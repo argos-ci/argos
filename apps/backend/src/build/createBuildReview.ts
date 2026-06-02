@@ -7,7 +7,7 @@ import type { JSONContent } from "@tiptap/core";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
-import { renderCommentHtml } from "@/comment/html";
+import { renderCommentHtmlWithMentions } from "@/comment/mentions";
 import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import type { BuildNotification } from "@/database/models";
 import {
@@ -150,7 +150,7 @@ export async function createBuildReview(input: {
       },
     }),
     autoSubscribeUserToBuild({ buildId: build.id, userId }),
-    notifyBuildSubscribers({ build, buildReview, body }),
+    notifyBuildSubscribers({ build, buildReview, comment }),
   ]);
 
   return buildReview;
@@ -159,9 +159,9 @@ export async function createBuildReview(input: {
 async function notifyBuildSubscribers(input: {
   build: Build;
   buildReview: BuildReview;
-  body: JSONContent | undefined;
+  comment: Comment | null;
 }): Promise<void> {
-  const { build, buildReview, body } = input;
+  const { build, buildReview, comment } = input;
   const { state } = buildReview;
   if (state !== "approved" && state !== "rejected" && state !== "commented") {
     return;
@@ -192,7 +192,7 @@ async function notifyBuildSubscribers(input: {
       buildUrl,
       reviewerName,
       state,
-      bodyHtml: body ? renderCommentHtml(body) : null,
+      bodyHtml: comment ? await renderCommentHtmlWithMentions(comment) : null,
     },
     recipients,
   });

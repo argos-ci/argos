@@ -14,7 +14,7 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc)).toBe("<p>Hello world!</p>");
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe("<p>Hello world!</p>");
   });
 
   it("renders inline marks (bold, italic, code)", () => {
@@ -33,7 +33,7 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc)).toBe(
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe(
       "<p><strong>bold</strong> <em>italic</em> <code>code</code></p>",
     );
   });
@@ -59,7 +59,7 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc)).toContain(
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toContain(
       '<a target="_blank" rel="noopener noreferrer nofollow" href="https://argos-ci.com">Argos</a>',
     );
   });
@@ -93,14 +93,14 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc)).toBe(
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe(
       "<ul><li><p>first</p></li><li><p>second</p></li></ul>",
     );
   });
 
   it("renders an empty document as an empty string", () => {
     const doc: JSONContent = { type: "doc", content: [] };
-    expect(renderCommentHtml(doc)).toBe("");
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe("");
   });
 
   it("renders a mention's label from the provided map", () => {
@@ -116,7 +116,7 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc, new Map([["42", "Alice"]]))).toContain(
+    expect(renderCommentHtml(doc, { mentionLabels: new Map([["42", "Alice"]]) })).toContain(
       "@Alice",
     );
   });
@@ -131,7 +131,7 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc, new Map())).toContain("@unknown");
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toContain("@unknown");
   });
 
   it("escapes HTML in text nodes", () => {
@@ -144,7 +144,7 @@ describe("renderCommentHtml", () => {
         },
       ],
     };
-    expect(renderCommentHtml(doc)).toBe(
+    expect(renderCommentHtml(doc, { mentionLabels: new Map() })).toBe(
       "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>",
     );
   });

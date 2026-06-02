@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { BanIcon, MoreHorizontalIcon } from "lucide-react";
 
@@ -97,6 +98,7 @@ export function ReviewersSection(props: { build: Build }) {
   const { build } = props;
   const permissions = useNonNullable(ProjectPermissionsContext);
   const projectParams = useProjectParams();
+  invariant(projectParams);
   const [reviewToDismiss, setReviewToDismiss] = useState<Review | null>(null);
   const [dismissReview, dismissReviewState] = useMutation(
     DismissReviewMutation,
@@ -154,9 +156,6 @@ export function ReviewersSection(props: { build: Build }) {
             loading={dismissReviewState.loading}
             error={dismissReviewState.error}
             onDismiss={() => {
-              if (!projectParams) {
-                return;
-              }
               dismissReview({
                 variables: {
                   input: {

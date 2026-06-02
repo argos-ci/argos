@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ArrowUpIcon } from "lucide-react";
 import moment from "moment";
@@ -125,6 +126,7 @@ export function CommentCard(props: {
     canReply,
   } = props;
   const projectParams = useProjectParams();
+  invariant(projectParams);
   const [addReply] = useMutation(AddReplyMutation);
   const [subscribeToCommentThread] = useMutation(
     SubscribeToCommentThreadMutation,
@@ -154,9 +156,6 @@ export function CommentCard(props: {
   );
 
   const handleReplySubmit = async (body: EditorValue) => {
-    if (!projectParams) {
-      return;
-    }
     try {
       await addReply({
         variables: {
@@ -253,6 +252,7 @@ function CommentMessage(props: {
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
   const projectParams = useProjectParams();
+  invariant(projectParams);
   const mentions = useMentionableUsers();
   // Resolve the comment's own mentions (which persist only an id) to render
   // their name/avatar/role — these may include users no longer mentionable.
@@ -278,9 +278,6 @@ function CommentMessage(props: {
   };
 
   const handleEditSubmit = async (body: EditorValue) => {
-    if (!projectParams) {
-      return;
-    }
     try {
       await updateComment({
         variables: {

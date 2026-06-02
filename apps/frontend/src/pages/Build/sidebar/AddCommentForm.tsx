@@ -1,4 +1,5 @@
 import { useMutation } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
@@ -37,11 +38,9 @@ export function AddCommentForm(props: {
   const { build } = props;
   const mentions = useMentionableUsers();
   const projectParams = useProjectParams();
+  invariant(projectParams);
   const [addBuildComment] = useMutation(AddBuildCommentMutation);
   const handleSubmit = async (body: EditorValue) => {
-    if (!projectParams) {
-      return;
-    }
     try {
       await addBuildComment({
         variables: {

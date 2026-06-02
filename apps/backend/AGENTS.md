@@ -157,14 +157,6 @@ resolves it in `renderCommentHtml`, which builds a label-aware Mention whose
 persisted `comment_mentions` rows). Unresolvable mentions render as `@unknown`
 on both sides.
 
-### Adding a `@tiptap/*` package
-
-All `@tiptap/*` packages must resolve to a **single `@tiptap/core` version**. A
-second core (pulled in by a caret range) silently breaks the command type
-augmentation across the whole editor (`toggleBold`, `setLink`, … vanish from
-`ChainedCommands`). Pin new tiptap deps to the **exact** version already used by
-the others (e.g. `"3.23.6"`, not `"^3.23.6"`) in both apps, then `pnpm install`.
-
 ## Testing
 
 - Use **Vitest** for all tests.
