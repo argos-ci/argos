@@ -23,7 +23,10 @@ import { checkOctokitErrorStatus, getTokenOctokit } from "@/github";
 import logger from "@/logger";
 import { sendNotification } from "@/notification";
 
-import type { IResolvers } from "../__generated__/resolver-types";
+import {
+  type IResolvers,
+  type ITeamUserLevel,
+} from "../__generated__/resolver-types";
 import { deleteAccount, getAdminAccount } from "../services/account";
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { commonAccountResolvers } from "./Account";
@@ -79,6 +82,8 @@ export const typeDefs = gql`
     emails: [UserEmail!]!
     "List of personal access tokens for the user"
     userAccessTokens: [UserAccessToken!]!
+    "Team role of the user on the given project, null if not a team member"
+    role(accountSlug: String!, projectName: String!): TeamUserLevel
   }
 
   type UserEmail {
@@ -329,6 +334,17 @@ export const resolvers: IResolvers = {
   },
   User: {
     ...commonAccountResolvers,
+    role: async (account, args, ctx) => {
+      if (!account.userId) {
+        return null;
+      }
+      const level = await ctx.loaders.ProjectTeamUserLevel.load({
+        accountSlug: args.accountSlug,
+        projectName: args.projectName,
+        userId: account.userId,
+      });
+      return (level as ITeamUserLevel) ?? null;
+    },
     hasSubscribedToTrial: async (account) => {
       return account.$checkHasSubscribedToTrial();
     },

@@ -155,6 +155,12 @@ export const Project = defineFactory(models.Project, () => ({
   githubRepositoryId: GithubRepository.associate("id") as unknown as string,
 }));
 
+export const ProjectUser = defineFactory(models.ProjectUser, () => ({
+  projectId: Project.associate("id") as unknown as string,
+  userId: User.associate("id") as unknown as string,
+  userLevel: "reviewer" as const,
+}));
+
 export const ProjectDomain = defineFactory(models.ProjectDomain, () => ({
   domain: FactoryGirl.sequence(
     "projectDomain.domain",
@@ -279,6 +285,12 @@ export const CommentReaction = defineFactory(models.CommentReaction, () => ({
   commentId: Comment.associate("id") as unknown as string,
   userId: User.associate("id") as unknown as string,
   emoji: "thumbsup",
+}));
+
+export const CommentMention = defineFactory(models.CommentMention, () => ({
+  commentId: Comment.associate("id") as unknown as string,
+  type: "user" as const,
+  mentionedUserId: User.associate("id") as unknown as string,
 }));
 
 export const ScreenshotDiffReview = defineFactory(

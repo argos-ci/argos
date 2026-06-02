@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import { BanIcon, MoreHorizontalIcon } from "lucide-react";
 
@@ -7,6 +8,7 @@ import { BuildReviewersStatusList } from "@/containers/BuildReviewersStatusList"
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType, ProjectPermission } from "@/gql/graphql";
+import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -49,7 +51,11 @@ const _BuildFragment = graphql(`
 `);
 
 const DismissReviewMutation = graphql(`
-  mutation ReviewersSection_dismissReview($input: DismissReviewInput!) {
+  mutation ReviewersSection_dismissReview(
+    $input: DismissReviewInput!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     dismissReview(input: $input) {
       id
       status
@@ -91,6 +97,8 @@ function getEmptyStateMessage(build: Build): string {
 export function ReviewersSection(props: { build: Build }) {
   const { build } = props;
   const permissions = useNonNullable(ProjectPermissionsContext);
+  const projectParams = useProjectParams();
+  invariant(projectParams);
   const [reviewToDismiss, setReviewToDismiss] = useState<Review | null>(null);
   const [dismissReview, dismissReviewState] = useMutation(
     DismissReviewMutation,
@@ -153,6 +161,8 @@ export function ReviewersSection(props: { build: Build }) {
                   input: {
                     reviewId: reviewToDismiss.id,
                   },
+                  accountSlug: projectParams.accountSlug,
+                  projectName: projectParams.projectName,
                 },
               }).catch(() => {});
             }}

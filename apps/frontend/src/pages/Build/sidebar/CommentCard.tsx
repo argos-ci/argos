@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { ArrowUpIcon } from "lucide-react";
 import moment from "moment";
@@ -11,6 +12,7 @@ import { useClipboard } from "use-clipboard-copy";
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { DocumentType, graphql } from "@/gql";
 import { CommentPermission } from "@/gql/graphql";
+import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
@@ -21,6 +23,7 @@ import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
+import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
 import { CommentActionsMenu } from "./CommentActionsMenu";
@@ -29,6 +32,7 @@ import {
   CommentReactionList,
 } from "./CommentReactions";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
+import { useMentionableUsers } from "./MentionableUsersContext";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
 const COPY_TOAST_ID = "comment-link-copied";
@@ -46,12 +50,10 @@ const _CommentFragment = graphql(`
     threadSubscribed
     permissions
     user {
-      id
-      name
-      slug
-      avatar {
-        ...AccountAvatarFragment
-      }
+      ...UserCard_user
+    }
+    mentionedUsers {
+      ...UserCard_user
     }
     ...CommentReactions_Comment
   }
@@ -60,7 +62,11 @@ const _CommentFragment = graphql(`
 type Comment = DocumentType<typeof _CommentFragment>;
 
 const UpdateCommentMutation = graphql(`
-  mutation CommentCard_updateComment($input: UpdateCommentInput!) {
+  mutation CommentCard_updateComment(
+    $input: UpdateCommentInput!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     updateComment(input: $input) {
       id
       ...CommentCard_Comment
@@ -69,7 +75,11 @@ const UpdateCommentMutation = graphql(`
 `);
 
 const AddReplyMutation = graphql(`
-  mutation CommentCard_addBuildComment($input: AddBuildCommentInput!) {
+  mutation CommentCard_addBuildComment(
+    $input: AddBuildCommentInput!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     addBuildComment(input: $input) {
       id
       comments {
@@ -115,6 +125,8 @@ export function CommentCard(props: {
     highlightedCommentId,
     canReply,
   } = props;
+  const projectParams = useProjectParams();
+  invariant(projectParams);
   const [addReply] = useMutation(AddReplyMutation);
   const [subscribeToCommentThread] = useMutation(
     SubscribeToCommentThreadMutation,
@@ -146,7 +158,11 @@ export function CommentCard(props: {
   const handleReplySubmit = async (body: EditorValue) => {
     try {
       await addReply({
-        variables: { input: { buildId, threadId: comment.id, body } },
+        variables: {
+          input: { buildId, threadId: comment.id, body },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
+        },
       });
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -235,6 +251,12 @@ function CommentMessage(props: {
   } = props;
   const ref = useRef<HTMLDivElement>(null);
   const clipboard = useClipboard();
+  const projectParams = useProjectParams();
+  invariant(projectParams);
+  const mentions = useMentionableUsers();
+  // Resolve the comment's own mentions (which persist only an id) to render
+  // their name/avatar/role — these may include users no longer mentionable.
+  const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [updateComment] = useMutation(UpdateCommentMutation);
@@ -258,7 +280,11 @@ function CommentMessage(props: {
   const handleEditSubmit = async (body: EditorValue) => {
     try {
       await updateComment({
-        variables: { input: { id: comment.id, body } },
+        variables: {
+          input: { id: comment.id, body },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
+        },
       });
       setIsEditing(false);
     } catch (error) {
@@ -271,7 +297,7 @@ function CommentMessage(props: {
   const canEdit = comment.permissions.includes(CommentPermission.Edit);
   const canDelete = comment.permissions.includes(CommentPermission.Delete);
   const isEdited = Boolean(comment.editedAt);
-  const contentClassName = isReply ? "pl-8 pr-1" : "px-1";
+  const contentClassName = isReply ? "pl-7.5 pr-1" : "px-1";
 
   return (
     <>
@@ -284,18 +310,33 @@ function CommentMessage(props: {
           highlighted ? "ring-2" : "ring-0",
         )}
       >
-        <div className="relative flex items-center gap-2 px-2 py-1.5 pr-1.5">
+        <div className="relative flex items-center gap-1.5 px-2 py-1.5 pr-1.5 select-none">
           {comment.user ? (
-            <AccountAvatar
-              avatar={comment.user.avatar}
-              className="size-5 shrink-0 border"
-            />
+            <UserHoverCard user={getUserCardData(comment.user)}>
+              <span tabIndex={0} className="shrink-0">
+                <AccountAvatar
+                  avatar={comment.user.avatar}
+                  className="size-5 border"
+                />
+              </span>
+            </UserHoverCard>
           ) : null}
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="text-default max-w-full min-w-0 text-xs font-medium break-words">
-                {comment.user?.name || comment.user?.slug || "Unknown user"}
-              </span>
+              {comment.user ? (
+                <UserHoverCard user={getUserCardData(comment.user)}>
+                  <span
+                    tabIndex={0}
+                    className="text-default max-w-full min-w-0 text-xs font-medium wrap-break-word"
+                  >
+                    {comment.user.name || comment.user.slug}
+                  </span>
+                </UserHoverCard>
+              ) : (
+                <span className="text-default max-w-full min-w-0 text-xs font-medium break-words">
+                  Unknown user
+                </span>
+              )}
               <Tooltip
                 content={
                   <div className="flex flex-col">
@@ -337,11 +378,13 @@ function CommentMessage(props: {
             />
           </div>
         </div>
-        <div className="text-default px-1 pb-2 text-sm">
+        <div className="text-default px-1 pb-2 text-sm select-text">
           {isEditing ? (
             <StandaloneEditor
               variant="plain"
               defaultValue={comment.content}
+              mentions={mentions}
+              mentionedUsers={mentionedUsers}
               onSubmit={handleEditSubmit}
               onCancel={() => setIsEditing(false)}
               submitLabel="Save"
@@ -357,6 +400,7 @@ function CommentMessage(props: {
             <ReadOnlyEditor
               content={comment.content}
               className={contentClassName}
+              mentionedUsers={mentionedUsers}
             />
           )}
         </div>
@@ -373,6 +417,7 @@ function ReplyComposer(props: {
   onSubmit: (body: EditorValue) => Promise<void>;
 }) {
   const { onSubmit } = props;
+  const mentions = useMentionableUsers();
   const [value, setValue] = useState<EditorValue>(null);
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -413,6 +458,7 @@ function ReplyComposer(props: {
           key={editorKey}
           onChange={setValue}
           onSubmit={submit}
+          mentions={mentions}
           placeholder="Leave a reply…"
           disabled={isPending}
           aria-label="Add a reply"

@@ -13,6 +13,7 @@ import { clsx } from "clsx";
 import { EDITOR_PROSE_CLASS } from "./EditorContent.css";
 import { LinkEditTrigger } from "./EditorLinkEdit";
 import { EditorToolbar } from "./EditorToolbar";
+import { createMentionExtension, type MentionUser } from "./mention";
 
 const CollapseAllSelectionDelete = Extension.create({
   name: "collapseAllSelectionDelete",
@@ -91,6 +92,18 @@ export interface EditorProps {
   variant?: EditorVariant;
   /** Render the content without allowing edits. */
   readOnly?: boolean;
+  /**
+   * Users that can be mentioned with `@` (the autocomplete suggestions). When
+   * omitted, typing `@` shows no suggestions. Read lazily, so it can change
+   * without recreating the editor.
+   */
+  mentions?: MentionUser[];
+  /**
+   * Users to resolve existing mention nodes against for rendering (their label,
+   * avatar and role). Mentions store only an id, so this is what turns them
+   * into "@name" + a hover card. Falls back to the `mentions` list.
+   */
+  mentionedUsers?: MentionUser[];
 }
 
 /**
@@ -127,6 +140,8 @@ export function Editor(props: EditorProps) {
     disabled,
     variant = "boxed",
     readOnly = false,
+    mentions,
+    mentionedUsers,
   } = props;
 
   const isBoxed = variant === "boxed";
@@ -135,10 +150,16 @@ export function Editor(props: EditorProps) {
   const onChangeRef = useRef(onChange);
   const onBlurRef = useRef(onBlur);
   const onSubmitRef = useRef(onSubmit);
+  // Read lazily by the mention suggestion/resolution so the lists can update
+  // without recreating the editor.
+  const mentionsRef = useRef(mentions);
+  const mentionedUsersRef = useRef(mentionedUsers);
   useEffect(() => {
     onChangeRef.current = onChange;
     onBlurRef.current = onBlur;
     onSubmitRef.current = onSubmit;
+    mentionsRef.current = mentions;
+    mentionedUsersRef.current = mentionedUsers;
   });
 
   const editor = useEditor({
@@ -154,6 +175,16 @@ export function Editor(props: EditorProps) {
       CollapseAllSelectionDelete,
       CollapseSelectionOnEscape,
       LinkEditTrigger,
+      // The getters are invoked lazily by the suggestion plugin and node views,
+      // never during this render, so reading the refs here is safe.
+      /* eslint-disable react-hooks/refs */
+      createMentionExtension({
+        getSuggestions: () => mentionsRef.current ?? [],
+        resolveUser: (id) =>
+          mentionedUsersRef.current?.find((user) => user.id === id) ??
+          mentionsRef.current?.find((user) => user.id === id),
+      }),
+      /* eslint-enable react-hooks/refs */
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
     editable,

@@ -547,6 +547,63 @@ ALTER SEQUENCE public.builds_id_seq OWNED BY public.builds.id;
 
 
 --
+-- Name: comment_mentions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.comment_mentions (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "commentId" bigint NOT NULL,
+    type character varying(255) NOT NULL,
+    "mentionedUserId" bigint,
+    "mentionedBuildId" bigint,
+    "mentionedTestId" bigint,
+    "mentionedScreenshotDiffId" bigint,
+    CONSTRAINT comment_mentions_single_target CHECK ((((((
+CASE
+    WHEN ("mentionedUserId" IS NOT NULL) THEN 1
+    ELSE 0
+END +
+CASE
+    WHEN ("mentionedBuildId" IS NOT NULL) THEN 1
+    ELSE 0
+END) +
+CASE
+    WHEN ("mentionedTestId" IS NOT NULL) THEN 1
+    ELSE 0
+END) +
+CASE
+    WHEN ("mentionedScreenshotDiffId" IS NOT NULL) THEN 1
+    ELSE 0
+END) = 1) AND (((type)::text = 'user'::text) = ("mentionedUserId" IS NOT NULL)) AND (((type)::text = 'build'::text) = ("mentionedBuildId" IS NOT NULL)) AND (((type)::text = 'test'::text) = ("mentionedTestId" IS NOT NULL)) AND (((type)::text = 'screenshotDiff'::text) = ("mentionedScreenshotDiffId" IS NOT NULL))))
+);
+
+
+ALTER TABLE public.comment_mentions OWNER TO postgres;
+
+--
+-- Name: comment_mentions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.comment_mentions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.comment_mentions_id_seq OWNER TO postgres;
+
+--
+-- Name: comment_mentions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.comment_mentions_id_seq OWNED BY public.comment_mentions.id;
+
+
+--
 -- Name: comment_notifications_subscriptions; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2358,6 +2415,13 @@ ALTER TABLE ONLY public.builds ALTER COLUMN id SET DEFAULT nextval('public.build
 
 
 --
+-- Name: comment_mentions id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions ALTER COLUMN id SET DEFAULT nextval('public.comment_mentions_id_seq'::regclass);
+
+
+--
 -- Name: comments id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2756,6 +2820,46 @@ ALTER TABLE ONLY public.build_shards
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: comment_mentions comment_mentions_commentid_mentionedbuildid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_commentid_mentionedbuildid_unique UNIQUE ("commentId", "mentionedBuildId");
+
+
+--
+-- Name: comment_mentions comment_mentions_commentid_mentionedscreenshotdiffid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_commentid_mentionedscreenshotdiffid_unique UNIQUE ("commentId", "mentionedScreenshotDiffId");
+
+
+--
+-- Name: comment_mentions comment_mentions_commentid_mentionedtestid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_commentid_mentionedtestid_unique UNIQUE ("commentId", "mentionedTestId");
+
+
+--
+-- Name: comment_mentions comment_mentions_commentid_mentioneduserid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_commentid_mentioneduserid_unique UNIQUE ("commentId", "mentionedUserId");
+
+
+--
+-- Name: comment_mentions comment_mentions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3478,6 +3582,13 @@ CREATE INDEX builds_runid_index ON public.builds USING btree ("runId");
 
 
 --
+-- Name: comment_mentions_mentioneduserid_createdat_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX comment_mentions_mentioneduserid_createdat_index ON public.comment_mentions USING btree ("mentionedUserId", "createdAt");
+
+
+--
 -- Name: comment_notifications_subscriptions_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4125,6 +4236,46 @@ ALTER TABLE ONLY public.builds
 
 ALTER TABLE ONLY public.builds
     ADD CONSTRAINT builds_projectid_foreign FOREIGN KEY ("projectId") REFERENCES public.projects(id);
+
+
+--
+-- Name: comment_mentions comment_mentions_commentid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_commentid_foreign FOREIGN KEY ("commentId") REFERENCES public.comments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_mentions comment_mentions_mentionedbuildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_mentionedbuildid_foreign FOREIGN KEY ("mentionedBuildId") REFERENCES public.builds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_mentions comment_mentions_mentionedscreenshotdiffid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_mentionedscreenshotdiffid_foreign FOREIGN KEY ("mentionedScreenshotDiffId") REFERENCES public.screenshot_diffs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_mentions comment_mentions_mentionedtestid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_mentionedtestid_foreign FOREIGN KEY ("mentionedTestId") REFERENCES public.tests(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comment_mentions comment_mentions_mentioneduserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comment_mentions
+    ADD CONSTRAINT comment_mentions_mentioneduserid_foreign FOREIGN KEY ("mentionedUserId") REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4867,3 +5018,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026052
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530120000_comment-edited-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530130000_comment-deleted-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531120000_comment-notifications-subscriptions.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531130000_comment-mentions.js', 1, NOW());

@@ -147,6 +147,8 @@ export const typeDefs = gql`
     content: JSONObject!
     "Author of the comment"
     user: User
+    "Users mentioned in the comment"
+    mentionedUsers: [User!]!
     "Root comment ID when this comment is a reply"
     threadId: ID
     "Whether the current user is subscribed to this comment thread"
@@ -230,6 +232,17 @@ export const resolvers: IResolvers = {
       });
       invariant(account, "Account not found");
       return account;
+    },
+    mentionedUsers: async (comment, _args, ctx) => {
+      const userIds = await ctx.loaders.CommentMentionedUserIds.load(
+        comment.id,
+      );
+      const accounts = await Promise.all(
+        userIds.map((userId) =>
+          ctx.loaders.AccountFromRelation.load({ userId }),
+        ),
+      );
+      return accounts.filter((account) => account !== null);
     },
     threadId: (comment) => {
       return comment.threadId ? formatCommentId(comment.threadId) : null;

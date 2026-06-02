@@ -26,6 +26,8 @@ export type TooltipProps = {
   disableHoverableContent?: boolean;
   isOpen?: TooltipTriggerComponentProps["isOpen"];
   onOpenChange?: TooltipTriggerComponentProps["onOpenChange"];
+  delay?: TooltipTriggerComponentProps["delay"];
+  closeDelay?: TooltipTriggerComponentProps["closeDelay"];
 };
 
 export function getTooltipAnimationClassName(
@@ -136,8 +138,8 @@ export function Tooltip(props: TooltipProps) {
   }
   return (
     <TooltipTrigger
-      delay={900}
-      closeDelay={100}
+      delay={props.delay ?? 900}
+      closeDelay={props.closeDelay ?? 100}
       isOpen={props.isOpen}
       onOpenChange={props.onOpenChange}
     >

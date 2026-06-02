@@ -1,10 +1,17 @@
 import { memo } from "react";
 
 import { Editor, type EditorValue } from "./Editor";
+import { type MentionUser } from "./mention";
 
 export interface ReadOnlyEditorProps {
   content: EditorValue;
   className?: string;
+  /**
+   * Users to resolve the content's mentions against (their label, avatar and
+   * role). Mentions store only an id, so this is what renders "@name" and the
+   * hover card.
+   */
+  mentionedUsers?: MentionUser[];
 }
 
 /**
@@ -15,7 +22,7 @@ export interface ReadOnlyEditorProps {
 export const ReadOnlyEditor = memo(function ReadOnlyEditor(
   props: ReadOnlyEditorProps,
 ) {
-  const { content, className } = props;
+  const { content, className, mentionedUsers } = props;
   if (!content) {
     return null;
   }
@@ -25,6 +32,7 @@ export const ReadOnlyEditor = memo(function ReadOnlyEditor(
       readOnly
       defaultValue={content}
       className={className}
+      mentionedUsers={mentionedUsers}
     />
   );
 });

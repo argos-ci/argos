@@ -1,5 +1,4 @@
 import { invariant } from "@argos/util/invariant";
-import type { JSONContent } from "@tiptap/core";
 
 import { knex } from "@/database";
 import { Comment, User } from "@/database/models";
@@ -7,8 +6,8 @@ import { getCommentThreadSubscribedUserIds } from "@/database/services/comment-n
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
-import { renderCommentHtml } from "./html";
 import { formatCommentId } from "./id";
+import { renderCommentHtmlWithMentions } from "./mentions";
 import { isValidEmoji } from "./reactions";
 
 /**
@@ -93,7 +92,7 @@ async function notifyCommentThreadSubscribers(input: {
       commentAuthorId: comment.userId,
       reactorName,
       emoji,
-      bodyHtml: renderCommentHtml(comment.content as JSONContent),
+      bodyHtml: await renderCommentHtmlWithMentions(comment),
     },
     recipients,
   });

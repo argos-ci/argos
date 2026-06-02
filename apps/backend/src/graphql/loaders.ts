@@ -14,6 +14,7 @@ import {
   Build,
   BuildReview,
   Comment,
+  CommentMention,
   CommentReaction,
   Deployment,
   DeploymentAlias,
@@ -327,6 +328,110 @@ function createAccountFromRelationLoader() {
       });
     },
     { cacheKeyFn: (input) => `${input.userId}-${input.teamId}` },
+  );
+}
+
+/**
+ * Loads a user's team role on a project identified by its account slug and
+ * name. Batches across users: it resolves each distinct project's team once,
+ * then fetches every requested team membership in a single query — so a list of
+ * mentionable users or reviewers costs one query, not one per user.
+ */
+function createProjectTeamUserLevelLoader() {
+  type Key = { accountSlug: string; projectName: string; userId: string };
+  const projectKey = (k: { accountSlug: string; projectName: string }) =>
+    `${k.accountSlug}\0${k.projectName}`;
+  return new DataLoader<Key, TeamUser["userLevel"] | null, string>(
+    async (keys) => {
+      // Resolve the team behind each distinct project once.
+      const projects = new Map<
+        string,
+        { accountSlug: string; projectName: string }
+      >();
+      for (const key of keys) {
+        projects.set(projectKey(key), {
+          accountSlug: key.accountSlug,
+          projectName: key.projectName,
+        });
+      }
+      // Resolve every referenced account in one query, keyed by slug.
+      const accountSlugs = [
+        ...new Set([...projects.values()].map((p) => p.accountSlug)),
+      ];
+      const accounts = accountSlugs.length
+        ? await Account.query()
+            .whereIn("slug", accountSlugs)
+            .select("id", "slug", "teamId")
+        : [];
+      const accountBySlug = new Map(accounts.map((a) => [a.slug, a]));
+
+      // Resolve every referenced project in one query, using a composite
+      // (accountId, name) `in (...)` so the count is independent of the batch.
+      const projectTuples: [string, string][] = [];
+      for (const { accountSlug, projectName } of projects.values()) {
+        const account = accountBySlug.get(accountSlug);
+        if (account?.teamId) {
+          projectTuples.push([account.id, projectName]);
+        }
+      }
+      const existingProjects = projectTuples.length
+        ? await Project.query()
+            .whereIn(["accountId", "name"], projectTuples)
+            .select("accountId", "name")
+        : [];
+      const existingProjectKeys = new Set(
+        existingProjects.map(
+          (project) => `${project.accountId}\0${project.name}`,
+        ),
+      );
+
+      // A project's team is its account's team, but only when the project
+      // actually exists under that account (mirrors the per-project lookup).
+      const teamIdByProject = new Map<string, string | null>();
+      for (const [id, { accountSlug, projectName }] of projects) {
+        const account = accountBySlug.get(accountSlug);
+        const exists =
+          account?.teamId != null &&
+          existingProjectKeys.has(`${account.id}\0${projectName}`);
+        teamIdByProject.set(id, exists ? (account?.teamId ?? null) : null);
+      }
+
+      // Fetch every requested membership across the involved teams at once.
+      const teamIds = [
+        ...new Set(
+          [...teamIdByProject.values()].filter(
+            (id): id is string => id != null,
+          ),
+        ),
+      ];
+      const userIds = [...new Set(keys.map((key) => key.userId))];
+      const teamUsers =
+        teamIds.length > 0 && userIds.length > 0
+          ? await TeamUser.query()
+              .whereIn("teamId", teamIds)
+              .whereIn("userId", userIds)
+              .select("teamId", "userId", "userLevel")
+          : [];
+      const levelByMembership = new Map<string, TeamUser["userLevel"]>();
+      for (const teamUser of teamUsers) {
+        levelByMembership.set(
+          `${teamUser.teamId}\0${teamUser.userId}`,
+          teamUser.userLevel,
+        );
+      }
+
+      return keys.map((key) => {
+        const teamId = teamIdByProject.get(projectKey(key));
+        if (!teamId) {
+          return null;
+        }
+        return levelByMembership.get(`${teamId}\0${key.userId}`) ?? null;
+      });
+    },
+    {
+      cacheKeyFn: (input) =>
+        `${input.accountSlug}\0${input.projectName}\0${input.userId}`,
+    },
   );
 }
 
@@ -667,6 +772,26 @@ function createCommentReactionsLoader() {
       {},
     );
     return commentIds.map((id) => reactionsMap[id] ?? []);
+  });
+}
+
+function createCommentMentionedUserIdsLoader() {
+  return new DataLoader<string, string[]>(async (commentIds) => {
+    const mentions = await CommentMention.query()
+      .whereIn("commentId", commentIds as string[])
+      .where("type", "user")
+      .whereNotNull("mentionedUserId")
+      .select("commentId", "mentionedUserId");
+    const map = mentions.reduce<Record<string, string[]>>((acc, mention) => {
+      if (!mention.mentionedUserId) {
+        return acc;
+      }
+      const array = acc[mention.commentId] ?? [];
+      array.push(mention.mentionedUserId);
+      acc[mention.commentId] = array;
+      return acc;
+    }, {});
+    return commentIds.map((id) => map[id] ?? []);
   });
 }
 
@@ -1122,6 +1247,7 @@ function createLatestCompareScreenshotLoader() {
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
   AccountFromRelation: createAccountFromRelationLoader(),
+  ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
   Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:
@@ -1136,6 +1262,7 @@ export const createLoaders = () => ({
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
+  CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),
   BuildReviews: createBuildReviewsLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),

@@ -130,6 +130,33 @@ mutation. Always enforce the check in the mutation — never trust the client.
 - Return consistent, typed errors.
 - Do not expose internal errors.
 
+## Rich-text comment editor (TipTap)
+
+Comment `content` is TipTap JSON. The list of TipTap extensions is **duplicated**
+and must stay in sync between:
+
+- `src/comment/schema.ts` (backend) — drives `validateCommentJson` and email
+  HTML rendering (`renderCommentHtml`).
+- `apps/frontend/src/ui/Editor/` (frontend) — the actual editor.
+
+If a node/mark type the client produces isn't registered in the backend schema,
+`validateCommentJson` rejects the comment with `Invalid comment body`. When
+adding a node (e.g. mentions), configure it with the **same node spec** on both
+sides; only the interactive bits (e.g. a mention `suggestion`) are frontend-only.
+
+Never trust the client for anything derived from `content` (e.g. which users are
+mentioned). Re-parse the stored JSON on the server and validate against
+permissions — see `src/comment/mentions.ts`.
+
+A `mention` node persists **only the user's account id** — never the name (both
+node specs override `addAttributes` to drop the default `label`). The display
+label is resolved at render time so it never goes stale: the frontend resolves
+it via `Comment.mentionedUsers` (the `UserCard_user` fragment), and the server
+resolves it in `renderCommentHtml`, which builds a label-aware Mention whose
+`renderHTML` reads a `Map<accountId, label>` from `getCommentMentionLabels` (the
+persisted `comment_mentions` rows). Unresolvable mentions render as `@unknown`
+on both sides.
+
 ## Testing
 
 - Use **Vitest** for all tests.

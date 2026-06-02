@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
-import { Build, Comment, User } from "@/database/models";
+import { Build, Comment, Project } from "@/database/models";
 import {
   autoSubscribeUserToBuild,
   getBuildSubscribedUserIds,
@@ -13,8 +13,11 @@ import {
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
-import { renderCommentHtml } from "./html";
-import { formatCommentId } from "./id";
+import {
+  getCommentNotificationData,
+  notifyMentionedUsers,
+} from "./commentNotifications";
+import { syncCommentMentions } from "./mentions";
 import {
   isCommentEmpty,
   isCommentTooLarge,
@@ -45,11 +48,33 @@ export async function createBuildComment(input: {
     throw boom(400, "Comment is too large");
   }
 
-  const comment = await Comment.query().insert({
+  // Inserting the comment and loading the project are independent — run them
+  // together rather than back-to-back.
+  const [comment, project] = await Promise.all([
+    Comment.query().insert({
+      userId,
+      buildId: build.id,
+      threadId,
+      content: body,
+    }),
+    build.$relatedQuery("project").withGraphFetched("account"),
+  ]);
+  invariant(project?.account, "Build project account not found");
+
+  // Persist the user mentions found in the comment and resolve them to the
+  // users that may actually be notified (members of the project's team).
+  const mentionedUserIds = await syncCommentMentions({ comment, project });
+
+  // Notifying the mentioned users is independent of notifying the thread/build
+  // subscribers (those already exclude the mentioned users by id), so let it
+  // run alongside them.
+  const notifyMentioned = notifyMentionedUsers({
+    build,
+    project,
+    comment,
     userId,
-    buildId: build.id,
-    threadId,
-    content: body,
+    mentionedUserIds,
+    threadId: threadId ?? comment.id,
   });
 
   if (threadId) {
@@ -57,17 +82,27 @@ export async function createBuildComment(input: {
       subscribeUserToCommentThread({ commentId: threadId, userId }),
       notifyCommentThreadSubscribers({
         build,
+        project,
         comment,
         userId,
-        body,
         threadId,
+        // Mentioned users get a dedicated notification, don't double-notify.
+        excludeUserIds: mentionedUserIds,
       }),
+      notifyMentioned,
     ]);
   } else {
     await Promise.all([
       autoSubscribeUserToBuild({ buildId: build.id, userId }),
       subscribeUserToCommentThread({ commentId: comment.id, userId }),
-      notifyBuildSubscribers({ build, comment, userId, body }),
+      notifyBuildSubscribers({
+        build,
+        project,
+        comment,
+        userId,
+        excludeUserIds: mentionedUserIds,
+      }),
+      notifyMentioned,
     ]);
   }
 
@@ -76,73 +111,47 @@ export async function createBuildComment(input: {
 
 async function notifyBuildSubscribers(input: {
   build: Build;
+  project: Project;
   comment: Comment;
   userId: string;
-  body: JSONContent;
+  excludeUserIds: string[];
 }): Promise<void> {
-  const { build, comment, userId, body } = input;
+  const { build, project, comment, userId, excludeUserIds } = input;
   const subscribedUserIds = await getBuildSubscribedUserIds(build.id);
-  const recipients = subscribedUserIds.filter((id) => id !== userId);
+  const excluded = new Set([userId, ...excludeUserIds]);
+  const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
   if (recipients.length === 0) {
     return;
   }
-  const [project, author, buildUrl] = await Promise.all([
-    build.$relatedQuery("project").withGraphFetched("account"),
-    User.query().findById(userId).withGraphFetched("account"),
-    build.getUrl(),
-  ]);
-  invariant(project, "project not found");
-  invariant(project.account, "project account not found");
-  const authorName = author?.account?.displayName ?? null;
-  const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
-  await sendNotification({
-    type: "comment_added",
-    data: {
-      accountSlug: project.account.slug,
-      projectName: project.name,
-      buildNumber: build.number,
-      buildName: build.name,
-      commentUrl,
-      authorName,
-      bodyHtml: renderCommentHtml(body),
-    },
-    recipients,
+  const data = await getCommentNotificationData({
+    build,
+    project,
+    comment,
+    userId,
   });
+  await sendNotification({ type: "comment_added", data, recipients });
 }
 
 async function notifyCommentThreadSubscribers(input: {
   build: Build;
+  project: Project;
   comment: Comment;
   userId: string;
-  body: JSONContent;
   threadId: string;
+  excludeUserIds: string[];
 }): Promise<void> {
-  const { build, comment, userId, body, threadId } = input;
+  const { build, project, comment, userId, threadId, excludeUserIds } = input;
   const subscribedUserIds = await getCommentThreadSubscribedUserIds(threadId);
-  const recipients = subscribedUserIds.filter((id) => id !== userId);
+  const excluded = new Set([userId, ...excludeUserIds]);
+  const recipients = subscribedUserIds.filter((id) => !excluded.has(id));
   if (recipients.length === 0) {
     return;
   }
-  const [project, author, buildUrl] = await Promise.all([
-    build.$relatedQuery("project").withGraphFetched("account"),
-    User.query().findById(userId).withGraphFetched("account"),
-    build.getUrl(),
-  ]);
-  invariant(project, "project not found");
-  invariant(project.account, "project account not found");
-  const authorName = author?.account?.displayName ?? null;
-  const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
-  await sendNotification({
-    type: "comment_replied",
-    data: {
-      accountSlug: project.account.slug,
-      projectName: project.name,
-      buildNumber: build.number,
-      buildName: build.name,
-      commentUrl,
-      authorName,
-      bodyHtml: renderCommentHtml(body),
-    },
-    recipients,
+  const data = await getCommentNotificationData({
+    build,
+    project,
+    comment,
+    userId,
   });
+  await sendNotification({ type: "comment_replied", data, recipients });
 }

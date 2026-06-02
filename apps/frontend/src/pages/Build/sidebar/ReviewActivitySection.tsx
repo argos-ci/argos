@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useMutation } from "@apollo/client/react";
 import clsx from "clsx";
 import {
@@ -16,17 +16,20 @@ import { ProjectPermissionsContext } from "@/containers/Project/PermissionsConte
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
+import type { MentionUser } from "@/ui/Editor/mention";
 import { IconButton } from "@/ui/IconButton";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
 import { useLiveRef } from "@/ui/useLiveRef";
+import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
 import { useNonNullable } from "@/util/useNonNullable";
 
 import { AddCommentForm } from "./AddCommentForm";
 import { CommentCard } from "./CommentCard";
+import { MentionableUsersProvider } from "./MentionableUsersContext";
 
 const _BuildFragment = graphql(`
   fragment ReviewActivitySection_Build on Build {
@@ -35,26 +38,19 @@ const _BuildFragment = graphql(`
     concludedAt
     subscribed
     ...AddCommentForm_Build
+    mentionableUsers {
+      ...UserCard_user
+    }
     reviews {
       id
       date
       state
       dismissedAt
       dismissedBy {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
+        ...UserCard_user
       }
       user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
+        ...UserCard_user
       }
     }
     comments {
@@ -88,6 +84,22 @@ const UnsubscribeFromBuildMutation = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type Comment = Build["comments"][number];
 type CommentThread = { root: Comment; replies: Comment[] };
+type ReviewUser = NonNullable<Build["reviews"][number]["user"]>;
+
+/**
+ * A reviewer's name in the activity flow, with a hover card showing their
+ * avatar and slug — the same card used for comment mentions.
+ */
+function ReviewUserName(props: { user: ReviewUser }) {
+  const { user } = props;
+  return (
+    <UserHoverCard user={getUserCardData(user)}>
+      <span tabIndex={0} className="text-default font-medium">
+        {user.name || user.slug}
+      </span>
+    </UserHoverCard>
+  );
+}
 
 type ActivityEntry =
   | { kind: "created"; date: string }
@@ -210,6 +222,12 @@ function useHighlightedCommentId(commentIds: string[]): string | null {
   return matchedId;
 }
 
+function toMentionUsers(
+  mentionableUsers: Build["mentionableUsers"],
+): MentionUser[] {
+  return mentionableUsers.map(getMentionUser);
+}
+
 export function ReviewActivitySection(props: { build: Build }) {
   const { build } = props;
   const permissions = useNonNullable(ProjectPermissionsContext);
@@ -218,34 +236,40 @@ export function ReviewActivitySection(props: { build: Build }) {
   const highlightedCommentId = useHighlightedCommentId(
     build.comments.map((comment) => comment.id),
   );
+  const mentionableUsers = useMemo(
+    () => toMentionUsers(build.mentionableUsers),
+    [build.mentionableUsers],
+  );
   return (
-    <SidebarSection>
-      <SidebarHeader>
-        <SidebarHeading>Activity</SidebarHeading>
-        <SubscribeToggleButton build={build} />
-      </SidebarHeader>
-      <div className="px-3">
-        <Activity gap={false}>
-          <AnimatePresence initial={false}>
-            {entries.map((entry, index) => (
-              <ActivityEntryRow
-                key={getActivityEntryKey(entry)}
-                entry={entry}
-                highlightedCommentId={highlightedCommentId}
-                isFirst={index === 0}
-                buildId={build.id}
-                canReply={canComment}
-              />
-            ))}
-          </AnimatePresence>
-        </Activity>
-        {canComment ? (
-          <div className="-mx-1.5 mt-3 -mb-1.5">
-            <AddCommentForm build={build} />
-          </div>
-        ) : null}
-      </div>
-    </SidebarSection>
+    <MentionableUsersProvider value={mentionableUsers}>
+      <SidebarSection>
+        <SidebarHeader>
+          <SidebarHeading>Activity</SidebarHeading>
+          <SubscribeToggleButton build={build} />
+        </SidebarHeader>
+        <div className="px-3 select-none">
+          <Activity gap={false}>
+            <AnimatePresence initial={false}>
+              {entries.map((entry, index) => (
+                <ActivityEntryRow
+                  key={getActivityEntryKey(entry)}
+                  entry={entry}
+                  highlightedCommentId={highlightedCommentId}
+                  isFirst={index === 0}
+                  buildId={build.id}
+                  canReply={canComment}
+                />
+              ))}
+            </AnimatePresence>
+          </Activity>
+          {canComment ? (
+            <div className="-mx-1.5 mt-3 -mb-1.5">
+              <AddCommentForm build={build} />
+            </div>
+          ) : null}
+        </div>
+      </SidebarSection>
+    </MentionableUsersProvider>
   );
 }
 
@@ -365,9 +389,7 @@ function ActivityEntryRow(props: {
             {review.user && (
               <>
                 {" by "}
-                <span className="text-default font-medium">
-                  {review.user.name || review.user.slug}
-                </span>
+                <ReviewUserName user={review.user} />
               </>
             )}
             {" · "}
@@ -383,17 +405,13 @@ function ActivityEntryRow(props: {
             {review.dismissedBy ? (
               <>
                 {" by "}
-                <span className="text-default font-medium">
-                  {review.dismissedBy.name || review.dismissedBy.slug}
-                </span>
+                <ReviewUserName user={review.dismissedBy} />
               </>
             ) : null}
             {review.user ? (
               <>
                 {" for "}
-                <span className="text-default font-medium">
-                  {review.user.name || review.user.slug}
-                </span>
+                <ReviewUserName user={review.user} />
               </>
             ) : null}
             {" · "}

@@ -8,6 +8,7 @@ import { HotkeyTooltip } from "../HotkeyTooltip";
 import { IconButton } from "../IconButton";
 import { Editor, type EditorValue, type EditorVariant } from "./Editor";
 import { MOD } from "./EditorToolbar.shortcuts";
+import { type MentionUser } from "./mention";
 import { hasEditorContent } from "./util";
 
 type EmptyMessage = { title: string; description?: string };
@@ -50,6 +51,10 @@ export interface StandaloneEditorProps {
    */
   variant?: EditorVariant;
   contentClassName?: string;
+  /** Users that can be mentioned with `@`, forwarded to the {@link Editor}. */
+  mentions?: MentionUser[];
+  /** Users to resolve existing mentions against, forwarded to the {@link Editor}. */
+  mentionedUsers?: MentionUser[];
 }
 
 /**
@@ -73,6 +78,8 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     "aria-label": ariaLabel,
     variant = "boxed",
     contentClassName,
+    mentions,
+    mentionedUsers,
   } = props;
   const [value, setValue] = useState<EditorValue>(defaultValue);
   // Remounts the editor after a successful submit to clear its content.
@@ -115,6 +122,8 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
       defaultValue={defaultValue}
       onChange={setValue}
       onSubmit={submit}
+      mentions={mentions}
+      mentionedUsers={mentionedUsers}
       placeholder={placeholder}
       disabled={disabled || isPending}
       autoFocus={autoFocus}
