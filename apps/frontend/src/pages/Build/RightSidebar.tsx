@@ -48,8 +48,8 @@ export function useOpenReviewSidebar() {
   const setTab = useSetAtom(rightSidebarTabAtom);
 
   return () => {
-    setOpen(true);
     setTab("review");
+    setOpen(true);
   };
 }
 
