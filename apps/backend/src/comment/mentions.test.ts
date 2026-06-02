@@ -68,4 +68,13 @@ describe("extractMentionedAccountIds", () => {
       }),
     ).toEqual([]);
   });
+
+  it("does not throw when `content` is not an array", () => {
+    expect(extractMentionedAccountIds({ type: "doc", content: 42 })).toEqual(
+      [],
+    );
+    expect(
+      extractMentionedAccountIds({ type: "doc", content: { nope: true } }),
+    ).toEqual([]);
+  });
 });

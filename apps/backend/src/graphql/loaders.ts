@@ -340,7 +340,7 @@ function createAccountFromRelationLoader() {
 function createProjectTeamUserLevelLoader() {
   type Key = { accountSlug: string; projectName: string; userId: string };
   const projectKey = (k: { accountSlug: string; projectName: string }) =>
-    `${k.accountSlug} ${k.projectName}`;
+    `${k.accountSlug}\0${k.projectName}`;
   return new DataLoader<Key, TeamUser["userLevel"] | null, string>(
     async (keys) => {
       // Resolve the team behind each distinct project once.
@@ -388,7 +388,7 @@ function createProjectTeamUserLevelLoader() {
       const levelByMembership = new Map<string, TeamUser["userLevel"]>();
       for (const teamUser of teamUsers) {
         levelByMembership.set(
-          `${teamUser.teamId} ${teamUser.userId}`,
+          `${teamUser.teamId}\0${teamUser.userId}`,
           teamUser.userLevel,
         );
       }
@@ -398,12 +398,12 @@ function createProjectTeamUserLevelLoader() {
         if (!teamId) {
           return null;
         }
-        return levelByMembership.get(`${teamId} ${key.userId}`) ?? null;
+        return levelByMembership.get(`${teamId}\0${key.userId}`) ?? null;
       });
     },
     {
       cacheKeyFn: (input) =>
-        `${input.accountSlug} ${input.projectName} ${input.userId}`,
+        `${input.accountSlug}\0${input.projectName}\0${input.userId}`,
     },
   );
 }

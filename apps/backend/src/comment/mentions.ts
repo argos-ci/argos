@@ -34,8 +34,12 @@ function visit(node: JSONContent | null | undefined, ids: Set<string>): void {
       ids.add(id);
     }
   }
-  for (const child of node.content ?? []) {
-    visit(child, ids);
+  // `content` comes straight from an untrusted request body, so it may be any
+  // shape — only recurse when it's actually an array of child nodes.
+  if (Array.isArray(node.content)) {
+    for (const child of node.content) {
+      visit(child, ids);
+    }
   }
 }
 
