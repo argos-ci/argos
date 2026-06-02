@@ -100,7 +100,7 @@ function UserCardAvatar(props: { user: UserCardData; className?: string }) {
  * Rendered inside a {@link Tooltip} by {@link UserHoverCard}, but exported so it
  * can be embedded elsewhere if needed.
  */
-export function UserCard(props: { user: UserCardData }) {
+function UserCard(props: { user: UserCardData }) {
   const { user } = props;
   const name = user.name || user.slug;
   return (

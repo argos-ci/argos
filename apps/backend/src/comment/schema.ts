@@ -39,7 +39,7 @@ export const MentionExtension = Mention.extend({
  * (paragraphs, lists, headings, marks, links, mentions, ...) the client
  * produced.
  */
-export const extensions = [StarterKit, MentionExtension];
+const extensions = [StarterKit, MentionExtension];
 
 /**
  * ProseMirror schema derived from the comment extensions. Reused for HTML
