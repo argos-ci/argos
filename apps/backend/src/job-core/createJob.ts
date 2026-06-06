@@ -244,7 +244,6 @@ export const createJob = <TValue extends string | number>(
           redisLock.acquire(
             [queue, id],
             async () => {
-              ctx.logger.info("Running");
               const performStart = performance.now();
               await consumer.perform(id, ctx);
               const performEnd = performance.now();
