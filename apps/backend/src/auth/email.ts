@@ -21,7 +21,7 @@ type VerifyAuthEmailCodeResult = {
 
 // Configuration for account lockout
 const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 // Atomically verifies a code, tracks failed attempts, and applies lockout.
 //

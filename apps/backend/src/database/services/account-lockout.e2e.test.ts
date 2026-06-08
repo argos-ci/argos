@@ -94,7 +94,7 @@ describe("authenticateWithEmail - account lockout", () => {
     ).rejects.toMatchObject({
       statusCode: 429,
       code: "ACCOUNT_LOCKED",
-      message: expect.stringContaining("Try again in 30 minutes."),
+      message: expect.stringContaining("Try again in 5 minutes."),
     });
   });
 
