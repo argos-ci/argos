@@ -2318,7 +2318,10 @@ CREATE TABLE public.user_sessions (
     "revokedAt" timestamp with time zone,
     ip character varying(255),
     "userAgent" character varying(255),
-    "deviceLabel" character varying(255)
+    "deviceLabel" character varying(255),
+    city character varying(255),
+    region character varying(255),
+    country character varying(255)
 );
 
 

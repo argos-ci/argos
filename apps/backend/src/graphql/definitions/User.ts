@@ -1,6 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import { listActiveSessions } from "@/auth/session";
 import {
   Account,
   ProjectUser,
@@ -82,6 +83,8 @@ export const typeDefs = gql`
     emails: [UserEmail!]!
     "List of personal access tokens for the user"
     userAccessTokens: [UserAccessToken!]!
+    "List of active login sessions for the user, most recently seen first"
+    sessions: [UserSession!]!
     "Team role of the user on the given project, null if not a team member"
     role(accountSlug: String!, projectName: String!): TeamUserLevel
   }
@@ -470,6 +473,14 @@ export const resolvers: IResolvers = {
         .where("userId", account.userId)
         .withGraphFetched("scope.account")
         .orderBy("createdAt", "desc");
+    },
+    sessions: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      // Sessions are sensitive — only the owner may list them.
+      if (ctx.auth?.user.id !== account.userId) {
+        throw forbidden();
+      }
+      return listActiveSessions(account.userId);
     },
   },
 };

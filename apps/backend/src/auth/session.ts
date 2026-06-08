@@ -134,6 +134,9 @@ export async function createSession(input: {
   ip?: string | null;
   userAgent?: string | null;
   deviceLabel?: string | null;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
 }): Promise<{ rawToken: string; session: UserSession }> {
   const rawToken = randomBytes(32).toString("base64url");
   const tokenHash = hashToken(rawToken);
@@ -149,6 +152,9 @@ export async function createSession(input: {
     ip: input.ip ?? null,
     userAgent: input.userAgent ?? null,
     deviceLabel: input.deviceLabel ?? null,
+    city: input.city ?? null,
+    region: input.region ?? null,
+    country: input.country ?? null,
   });
 
   await writeCache(

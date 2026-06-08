@@ -22,6 +22,9 @@ export class UserSession extends Model {
           ip: { type: ["string", "null"] },
           userAgent: { type: ["string", "null"] },
           deviceLabel: { type: ["string", "null"] },
+          city: { type: ["string", "null"] },
+          region: { type: ["string", "null"] },
+          country: { type: ["string", "null"] },
         },
       },
     ],
@@ -35,6 +38,9 @@ export class UserSession extends Model {
   ip!: string | null;
   userAgent!: string | null;
   deviceLabel!: string | null;
+  city!: string | null;
+  region!: string | null;
+  country!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

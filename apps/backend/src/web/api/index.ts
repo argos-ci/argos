@@ -6,7 +6,6 @@ import { subdomain } from "../util";
 import { argosHeadersMiddleware } from "./argosHeaders";
 import auth from "./auth";
 import builds from "./builds";
-import sessions from "./sessions";
 import status from "./status";
 import stripe from "./stripe";
 import v2 from "./v2";
@@ -21,7 +20,6 @@ export const installApiRouter = (app: Application) => {
   router.use("/v2", v2);
   router.use(builds);
   router.use(auth);
-  router.use(sessions);
   router.use(stripe);
 
   app.use(subdomain(router, "api"));

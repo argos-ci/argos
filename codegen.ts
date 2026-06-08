@@ -86,6 +86,7 @@ const config: CodegenConfig = {
           TestChange: "../../graphql/definitions/Test.js#TestChangeObject",
           User: "../../database/models/index.js#Account",
           UserAccessToken: "../../database/models/index.js#UserAccessToken",
+          UserSession: "../../database/models/index.js#UserSession",
         },
       },
     },

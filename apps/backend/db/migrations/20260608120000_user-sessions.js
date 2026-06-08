@@ -22,6 +22,11 @@ export const up = async (knex) => {
     table.string("ip");
     table.string("userAgent");
     table.string("deviceLabel");
+    // Approximate geolocation captured at login (from Cloudflare geo headers),
+    // shown in the session-management UI.
+    table.string("city");
+    table.string("region");
+    table.string("country");
   });
 
   // "Active sessions for a user", used by the session-management endpoints.
