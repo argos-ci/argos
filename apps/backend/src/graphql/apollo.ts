@@ -83,6 +83,7 @@ const apolloSentryPlugin: ApolloServerPlugin<Context> = {
 export const apolloServer = new ApolloServer<Context>({
   schema,
   plugins: [apolloSentryPlugin],
+  hideSchemaDetailsFromClientErrors: true,
 });
 
 export const createApolloMiddleware = (): RequestHandler =>
