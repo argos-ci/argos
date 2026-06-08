@@ -5,6 +5,7 @@ import request from "supertest";
 import { afterEach, test as base, describe, expect } from "vitest";
 
 import { createSession } from "@/auth/session";
+import { SESSION_COOKIE_NAME } from "@/auth/session-cookie";
 import config from "@/config";
 import type { Account, Deployment } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -23,7 +24,7 @@ const getRedirectLocation = (headers: IncomingHttpHeaders) => {
 const createSessionCookie = async (account: Account) => {
   invariant(account.userId, "Account has no userId");
   const { rawToken } = await createSession({ userId: account.userId });
-  return `theme=dark; argos_session=${rawToken}; other=value`;
+  return `theme=dark; ${SESSION_COOKIE_NAME}=${rawToken}; other=value`;
 };
 
 const test = base.extend<{

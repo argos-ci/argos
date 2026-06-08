@@ -230,7 +230,7 @@ export async function revokeSession(input: {
     .where("id", input.sessionId)
     .where("userId", input.userId)
     .whereNull("revokedAt")
-    .returning("tokenHash");
+    .returning(["tokenHash"]);
 
   const redis = await getRedisClient();
   await Promise.all(
@@ -265,7 +265,7 @@ export async function revokeAllSessions(input: {
     .patch({ revokedAt: new Date().toISOString() })
     .where("userId", input.userId)
     .whereNull("revokedAt")
-    .returning("tokenHash");
+    .returning(["tokenHash"]);
 
   if (input.exceptSessionId) {
     query.whereNot("id", input.exceptSessionId);
