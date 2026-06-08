@@ -73,7 +73,7 @@ export function Component() {
           }}
         />
 
-        <p className="mt-8">
+        <p className="my-8">
           Don’t have an account?{" "}
           <Link href={getSignupUrl({ email, redirect })}>Sign up</Link>
         </p>
