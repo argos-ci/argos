@@ -695,14 +695,19 @@ export const resolvers: IResolvers = {
           hasAutoInvite,
         };
       } catch (error) {
-        if (
-          error instanceof HTTPError &&
-          error.code === "INVALID_EMAIL_VERIFICATION_CODE"
-        ) {
-          throw badUserInput(error.message, {
-            field: "code",
-            code: error.code,
-          });
+        if (error instanceof HTTPError) {
+          if (error.code === "ACCOUNT_LOCKED") {
+            throw badUserInput(error.message, {
+              field: "code",
+              code: error.code,
+            });
+          }
+          if (error.code === "INVALID_EMAIL_VERIFICATION_CODE") {
+            throw badUserInput(error.message, {
+              field: "code",
+              code: error.code,
+            });
+          }
         }
         throw error;
       }
