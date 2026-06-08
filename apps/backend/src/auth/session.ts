@@ -63,6 +63,28 @@ async function writeCache(
   });
 }
 
+/**
+ * Parse a cached entry, returning `null` for anything corrupt, partially
+ * written, or in an older format — the caller then treats it as a cache miss
+ * rather than letting a bad value throw and turn an auth check into a 500.
+ */
+function parseCacheEntry(raw: string): SessionCacheEntry | null {
+  try {
+    const value = JSON.parse(raw);
+    if (
+      value &&
+      typeof value === "object" &&
+      typeof value.sid === "string" &&
+      typeof value.userId === "string"
+    ) {
+      return { sid: value.sid, userId: value.userId };
+    }
+  } catch {
+    // Fall through to treat as a cache miss.
+  }
+  return null;
+}
+
 function findMatch(
   userAgent: string,
   matchers: ReadonlyArray<readonly [RegExp, string]>,
@@ -158,7 +180,12 @@ export async function resolveSession(
   const cached = await redis.get(getRedisKey(tokenHash));
 
   if (cached) {
-    return JSON.parse(cached) as SessionCacheEntry;
+    const entry = parseCacheEntry(cached);
+    if (entry) {
+      return entry;
+    }
+    // Corrupt/unrecognized entry — drop it and fall back to Postgres.
+    await redis.del(getRedisKey(tokenHash));
   }
 
   const now = new Date();

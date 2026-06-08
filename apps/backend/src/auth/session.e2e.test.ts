@@ -51,6 +51,17 @@ describe("session service", () => {
     expect(await resolveSession("not-a-real-token")).toBeNull();
   });
 
+  test("treats a corrupt cache entry as a miss and falls back to Postgres", async () => {
+    const { rawToken, session } = await createSession({ userId });
+
+    // Simulate a corrupt / partially-written / old-format cache entry.
+    const redis = await getRedisClient();
+    await redis.set(`session:${hashToken(rawToken)}`, "}not json{");
+
+    const resolved = await resolveSession(rawToken);
+    expect(resolved).toEqual({ sid: session.id, userId });
+  });
+
   test("revokes a session and never resurrects it from Postgres", async () => {
     const { rawToken, session } = await createSession({ userId });
     await revokeSession({ sessionId: session.id, userId });
