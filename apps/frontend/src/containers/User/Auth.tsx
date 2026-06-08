@@ -14,7 +14,9 @@ import {
   DialogBody,
   DialogDismiss,
   DialogFooter,
+  DialogText,
   DialogTitle,
+  DialogTrigger,
   useDialogValueState,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
@@ -22,7 +24,6 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListRow } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
-import { getErrorMessage } from "@/util/error";
 
 import { EmailAuth } from "./providers/EmailAuth";
 import { GitHubAuth } from "./providers/GitHubAuth";
@@ -187,16 +188,53 @@ function RevokeSessionDialog(props: { session: Session }) {
   );
 }
 
+function RevokeAllSessionsDialog(props: { count: number }) {
+  const state = useOverlayTriggerState();
+  const [revokeAllSessions, { loading, error }] = useMutation(
+    RevokeAllSessionsMutation,
+    {
+      onCompleted: () => {
+        state.close();
+        toast.success("Sessions revoked");
+      },
+    },
+  );
+
+  return (
+    <Dialog size="medium" role="alertdialog">
+      <DialogBody>
+        <DialogTitle>Revoke all other sessions</DialogTitle>
+        <DialogText>
+          This will sign you out of {props.count} other{" "}
+          {props.count > 1 ? "devices" : "device"}. Your current session won’t
+          be affected.
+        </DialogText>
+      </DialogBody>
+      <DialogFooter>
+        {error ? (
+          <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
+        ) : null}
+        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <Button
+          variant="destructive"
+          isPending={loading}
+          onPress={() => {
+            revokeAllSessions().catch(() => {});
+          }}
+        >
+          Revoke all
+        </Button>
+      </DialogFooter>
+    </Dialog>
+  );
+}
+
 function UserSessions(props: { sessions: readonly Session[] }) {
   const { sessions } = props;
   const current = sessions.find((session) => session.isCurrent) ?? null;
   const others = sessions.filter((session) => !session.isCurrent);
 
   const revoking = useDialogValueState<Session | null>(null);
-  const [revokeAllSessions, { loading: revokingAll }] = useMutation(
-    RevokeAllSessionsMutation,
-    { onError: (error) => toast.error(getErrorMessage(error)) },
-  );
 
   return (
     <Card>
@@ -240,16 +278,14 @@ function UserSessions(props: { sessions: readonly Session[] }) {
               <div className="text-sm font-medium">
                 {others.length} other session{others.length > 1 ? "s" : ""}
               </div>
-              <Button
-                variant="secondary"
-                size="small"
-                isDisabled={revokingAll}
-                onPress={() => {
-                  revokeAllSessions().catch(() => {});
-                }}
-              >
-                Revoke all
-              </Button>
+              <DialogTrigger>
+                <Button variant="secondary" size="small">
+                  Revoke all
+                </Button>
+                <Modal>
+                  <RevokeAllSessionsDialog count={others.length} />
+                </Modal>
+              </DialogTrigger>
             </div>
             {others.map((session) => (
               <RACButton
