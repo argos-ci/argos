@@ -33,6 +33,10 @@ const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 // ARGV[3] = max failed attempts
 const VERIFY_AUTH_EMAIL_CODE_SCRIPT = `
 local lockTtl = redis.call("PTTL", KEYS[3])
+if lockTtl == -1 then
+  redis.call("PEXPIRE", KEYS[3], ARGV[2])
+  lockTtl = tonumber(ARGV[2])
+end
 if lockTtl ~= -2 then
   return {0, 1, lockTtl}
 end
