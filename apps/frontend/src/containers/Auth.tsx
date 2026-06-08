@@ -16,7 +16,7 @@ import { PageLoader } from "@/ui/PageLoader";
  */
 const LOGGED_IN_COOKIE = "argos_logged_in";
 
-export type AuthAccount = {
+type AuthAccount = {
   id: string;
   slug: string;
   name: string | null;
@@ -93,7 +93,7 @@ export const AuthContextProvider = ({
   return <AuthContext value={value}>{children}</AuthContext>;
 };
 
-export function useAuth() {
+function useAuth() {
   const value = use(AuthContext);
   invariant(value, "useAuth must be used within AuthProvider");
   return value;

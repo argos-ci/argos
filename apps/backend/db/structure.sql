@@ -2304,6 +2304,48 @@ ALTER SEQUENCE public.user_notification_preferences_id_seq OWNED BY public.user_
 
 
 --
+-- Name: user_sessions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_sessions (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "userId" bigint NOT NULL,
+    "tokenHash" character varying(255) NOT NULL,
+    "lastSeenAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "expiresAt" timestamp with time zone NOT NULL,
+    "revokedAt" timestamp with time zone,
+    ip character varying(255),
+    "userAgent" character varying(255),
+    "deviceLabel" character varying(255)
+);
+
+
+ALTER TABLE public.user_sessions OWNER TO postgres;
+
+--
+-- Name: user_sessions_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_sessions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_sessions_id_seq OWNER TO postgres;
+
+--
+-- Name: user_sessions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_sessions_id_seq OWNED BY public.user_sessions.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2685,6 +2727,13 @@ ALTER TABLE ONLY public.user_access_tokens ALTER COLUMN id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.user_notification_preferences ALTER COLUMN id SET DEFAULT nextval('public.user_notification_preferences_id_seq'::regclass);
+
+
+--
+-- Name: user_sessions id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_sessions ALTER COLUMN id SET DEFAULT nextval('public.user_sessions_id_seq'::regclass);
 
 
 --
@@ -3399,6 +3448,22 @@ ALTER TABLE ONLY public.user_notification_preferences
 
 
 --
+-- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_sessions user_sessions_tokenhash_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_sessions_tokenhash_unique UNIQUE ("tokenHash");
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -4013,6 +4078,13 @@ CREATE INDEX user_access_tokens_userid_index ON public.user_access_tokens USING 
 --
 
 CREATE INDEX user_notification_preferences_userid_index ON public.user_notification_preferences USING btree ("userId");
+
+
+--
+-- Name: user_sessions_active_user; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX user_sessions_active_user ON public.user_sessions USING btree ("userId") WHERE ("revokedAt" IS NULL);
 
 
 --
@@ -4791,6 +4863,14 @@ ALTER TABLE ONLY public.user_notification_preferences
 
 
 --
+-- Name: user_sessions user_sessions_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_sessions_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: users users_gitlabuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5019,3 +5099,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026053
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530130000_comment-deleted-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531120000_comment-notifications-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531130000_comment-mentions.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260608120000_user-sessions.js', 1, NOW());
