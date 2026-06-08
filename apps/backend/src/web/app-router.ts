@@ -147,8 +147,12 @@ export const installAppRouter = async (app: express.Application) => {
     createApolloMiddleware(),
   );
 
-  router.get(
+  // POST (behind CSRF) so logout cannot be triggered by a cross-site
+  // navigation — a forged GET would otherwise force-logout the user. The client
+  // handles the redirect after this resolves.
+  router.post(
     "/auth/logout",
+    requireCsrf,
     asyncHandler(async (req, res) => {
       // Revoke the session server-side so the token can never be replayed,
       // then clear our cookies (belt-and-braces with Clear-Site-Data).
@@ -158,10 +162,7 @@ export const installAppRouter = async (app: express.Application) => {
       }
       clearSessionCookies(res);
       res.setHeader("Clear-Site-Data", '"cookies", "storage", "cache"');
-      const redirectTo =
-        typeof req.query["r"] === "string" ? req.query["r"] : null;
-      const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
-      res.redirect(`/login${search}`);
+      res.sendStatus(204);
     }),
   );
 

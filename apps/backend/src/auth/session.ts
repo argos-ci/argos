@@ -5,8 +5,9 @@ import { hashToken } from "@/database/services/crypto";
 import { getRedisClient } from "@/util/redis/client";
 
 /**
- * Idle timeout. A session that goes unused for this long expires. Slid forward
- * on activity (throttled) and used as the Redis cache TTL.
+ * Idle timeout. A session that goes unused for this long expires. Enforced
+ * authoritatively in Postgres via `lastSeenAt`, which is slid forward on
+ * activity.
  */
 const IDLE_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -17,17 +18,19 @@ const IDLE_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const ABSOLUTE_TIMEOUT_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 /**
- * Only persist `lastSeenAt` / slide the Redis TTL when the last touch is older
- * than this, to avoid a write on every request.
+ * Lifetime of a Redis cache entry. Postgres stays the source of truth; this is
+ * only how long a cached decision is trusted before being re-validated against
+ * Postgres. Keeping it short bounds how long a revoked session can survive a
+ * failed cache invalidation, and — because `lastSeenAt` is refreshed only when
+ * we fall back to Postgres — naturally throttles idle-timeout writes to at most
+ * one per window per session.
  */
-const TOUCH_THROTTLE_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 type SessionCacheEntry = {
   /** Session row id. */
   sid: string;
   userId: string;
-  /** Absolute expiry, epoch milliseconds. Never extended. */
-  exp: number;
 };
 
 export type ResolvedSession = {
@@ -40,23 +43,32 @@ function getRedisKey(tokenHash: string): string {
 }
 
 /**
- * TTL for the Redis cache entry, in seconds: the idle timeout, capped so it
- * never outlives the absolute expiry.
+ * TTL for a cache entry, in seconds: the revalidation window, capped so the
+ * entry never outlives the absolute expiry.
  */
-function getCacheTtlSeconds(exp: number): number {
-  const untilAbsolute = exp - Date.now();
-  const ttlMs = Math.min(IDLE_TIMEOUT_MS, untilAbsolute);
+function getCacheTtlSeconds(absoluteExpiryMs: number): number {
+  const untilAbsolute = absoluteExpiryMs - Date.now();
+  const ttlMs = Math.min(CACHE_TTL_MS, untilAbsolute);
   return Math.max(1, Math.ceil(ttlMs / 1000));
 }
 
 async function writeCache(
   tokenHash: string,
   entry: SessionCacheEntry,
+  absoluteExpiryMs: number,
 ): Promise<void> {
   const redis = await getRedisClient();
   await redis.set(getRedisKey(tokenHash), JSON.stringify(entry), {
-    expiration: { type: "EX", value: getCacheTtlSeconds(entry.exp) },
+    expiration: { type: "EX", value: getCacheTtlSeconds(absoluteExpiryMs) },
   });
+}
+
+function findMatch(
+  userAgent: string,
+  matchers: ReadonlyArray<readonly [RegExp, string]>,
+): string | null {
+  const match = matchers.find(([pattern]) => pattern.test(userAgent));
+  return match?.[1] ?? null;
 }
 
 /**
@@ -66,32 +78,27 @@ export function parseDeviceLabel(userAgent: string | null): string | null {
   if (!userAgent) {
     return null;
   }
-  const browser =
-    /Edg\//.test(userAgent) || /Edge\//.test(userAgent)
-      ? "Edge"
-      : /OPR\/|Opera/.test(userAgent)
-        ? "Opera"
-        : /Firefox\//.test(userAgent)
-          ? "Firefox"
-          : /Chrome\//.test(userAgent)
-            ? "Chrome"
-            : /Safari\//.test(userAgent)
-              ? "Safari"
-              : null;
-  const os = /Windows/.test(userAgent)
-    ? "Windows"
-    : /Mac OS X|Macintosh/.test(userAgent)
-      ? "macOS"
-      : /Android/.test(userAgent)
-        ? "Android"
-        : /iPhone|iPad|iOS/.test(userAgent)
-          ? "iOS"
-          : /Linux/.test(userAgent)
-            ? "Linux"
-            : null;
+
+  const browser = findMatch(userAgent, [
+    [/Edg\/|Edge\//, "Edge"],
+    [/OPR\/|Opera/, "Opera"],
+    [/Firefox\//, "Firefox"],
+    [/Chrome\//, "Chrome"],
+    [/Safari\//, "Safari"],
+  ]);
+
+  const os = findMatch(userAgent, [
+    [/Windows/, "Windows"],
+    [/Mac OS X|Macintosh/, "macOS"],
+    [/Android/, "Android"],
+    [/iPhone|iPad|iOS/, "iOS"],
+    [/Linux/, "Linux"],
+  ]);
+
   if (browser && os) {
     return `${browser} on ${os}`;
   }
+
   return browser ?? os;
 }
 
@@ -122,38 +129,26 @@ export async function createSession(input: {
     deviceLabel: input.deviceLabel ?? null,
   });
 
-  await writeCache(tokenHash, {
-    sid: session.id,
-    userId: session.userId,
-    exp: new Date(expiresAt).getTime(),
-  });
+  await writeCache(
+    tokenHash,
+    { sid: session.id, userId: session.userId },
+    new Date(expiresAt).getTime(),
+  );
 
   return { rawToken, session };
 }
 
 /**
- * Slide the idle timeout forward, throttled. Updates `lastSeenAt` in Postgres
- * and refreshes the Redis TTL only when the last touch is stale enough.
- */
-async function touchSession(
-  tokenHash: string,
-  entry: SessionCacheEntry,
-  lastSeenAt: string,
-): Promise<void> {
-  const sinceTouch = Date.now() - new Date(lastSeenAt).getTime();
-  if (sinceTouch < TOUCH_THROTTLE_MS) {
-    return;
-  }
-  const now = new Date().toISOString();
-  await UserSession.query().findById(entry.sid).patch({ lastSeenAt: now });
-  await writeCache(tokenHash, entry);
-}
-
-/**
- * Resolve a raw session token to `{ sid, userId }`, or `null` if missing,
- * expired, or revoked. Reads Redis first, falls back to Postgres (filtered on
- * `revokedAt IS NULL AND expiresAt > now()` — mandatory to avoid resurrecting a
- * revoked session) and repopulates the cache. Touches the session (throttled).
+ * Resolve a raw session token to `{ sid, userId }`, or `null` if it is missing,
+ * expired, idle, or revoked.
+ *
+ * A Redis hit is trusted for the short cache window. On a miss it falls back to
+ * Postgres — the source of truth — filtered on
+ * `revokedAt IS NULL AND expiresAt > now() AND lastSeenAt > now() - idle`
+ * (mandatory: prevents resurrecting a revoked, expired, or idle session). A
+ * successful fallback slides the idle window forward (`lastSeenAt`) and
+ * repopulates the cache; since that only happens on a cache miss, the write is
+ * throttled to at most once per cache window per session.
  */
 export async function resolveSession(
   rawToken: string,
@@ -163,54 +158,30 @@ export async function resolveSession(
   const cached = await redis.get(getRedisKey(tokenHash));
 
   if (cached) {
-    const entry = JSON.parse(cached) as SessionCacheEntry;
-    if (entry.exp <= Date.now()) {
-      await redis.del(getRedisKey(tokenHash));
-      return null;
-    }
-    // Refresh lastSeenAt from PG lazily only when we might need to touch.
-    void touchSessionFromCache(tokenHash, entry);
-    return { sid: entry.sid, userId: entry.userId };
+    return JSON.parse(cached) as SessionCacheEntry;
   }
 
+  const now = new Date();
+  const idleCutoff = new Date(now.getTime() - IDLE_TIMEOUT_MS);
   const session = await UserSession.query()
     .findOne({ tokenHash })
     .whereNull("revokedAt")
-    .where("expiresAt", ">", new Date().toISOString());
+    .where("expiresAt", ">", now.toISOString())
+    .where("lastSeenAt", ">", idleCutoff.toISOString());
 
   if (!session) {
     return null;
   }
 
-  const entry: SessionCacheEntry = {
-    sid: session.id,
-    userId: session.userId,
-    exp: new Date(session.expiresAt).getTime(),
-  };
-  await writeCache(tokenHash, entry);
-  await touchSession(tokenHash, entry, session.lastSeenAt);
+  // Slide the idle window forward and repopulate the cache.
+  await session.$query().patch({ lastSeenAt: now.toISOString() });
+  await writeCache(
+    tokenHash,
+    { sid: session.id, userId: session.userId },
+    new Date(session.expiresAt).getTime(),
+  );
 
-  return { sid: entry.sid, userId: entry.userId };
-}
-
-/**
- * On a cache hit we don't have `lastSeenAt` handy. Fetch it cheaply and touch
- * if stale. Fire-and-forget; never blocks the request.
- */
-async function touchSessionFromCache(
-  tokenHash: string,
-  entry: SessionCacheEntry,
-): Promise<void> {
-  try {
-    const session = await UserSession.query()
-      .findById(entry.sid)
-      .select("lastSeenAt");
-    if (session) {
-      await touchSession(tokenHash, entry, session.lastSeenAt);
-    }
-  } catch {
-    // Touch is best-effort; ignore failures.
-  }
+  return { sid: session.id, userId: session.userId };
 }
 
 /**
@@ -281,15 +252,18 @@ export async function revokeAllSessions(input: {
 }
 
 /**
- * List a user's active (non-revoked, non-expired) sessions, most recently seen
- * first. For the session-management endpoints.
+ * List a user's active sessions (non-revoked, within both the idle and absolute
+ * timeouts), most recently seen first. For the session-management endpoints.
  */
 export async function listActiveSessions(
   userId: string,
 ): Promise<UserSession[]> {
+  const now = Date.now();
+  const idleCutoff = new Date(now - IDLE_TIMEOUT_MS);
   return UserSession.query()
     .where("userId", userId)
     .whereNull("revokedAt")
-    .where("expiresAt", ">", new Date().toISOString())
+    .where("expiresAt", ">", new Date(now).toISOString())
+    .where("lastSeenAt", ">", idleCutoff.toISOString())
     .orderBy("lastSeenAt", "desc");
 }

@@ -90,6 +90,22 @@ describe("session service", () => {
     expect(await resolveSession(rawToken)).toBeNull();
   });
 
+  test("rejects a session past its idle timeout", async () => {
+    const rawToken = "idle-token";
+    const eightDaysAgo = new Date(
+      Date.now() - 8 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    await UserSession.query().insert({
+      userId,
+      tokenHash: hashToken(rawToken),
+      // Idle for longer than the 7d idle window, but still within absolute.
+      lastSeenAt: eightDaysAgo,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      revokedAt: null,
+    });
+    expect(await resolveSession(rawToken)).toBeNull();
+  });
+
   test("lists active sessions and excludes revoked ones", async () => {
     const a = await createSession({ userId });
     const b = await createSession({ userId });

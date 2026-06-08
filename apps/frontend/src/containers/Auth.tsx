@@ -125,5 +125,13 @@ export function useIsLoggedIn() {
 export function logout(options?: { redirectTo?: string }) {
   const redirectTo = options?.redirectTo ?? window.location.pathname;
   const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
-  window.location.replace(`/auth/logout${search}`);
+  // POST (with the CSRF header) so logout can't be forged via a cross-site
+  // navigation; redirect to login regardless of the request outcome.
+  void fetch("/auth/logout", {
+    method: "POST",
+    credentials: "include",
+    headers: { "X-Argos-CSRF": "1" },
+  }).finally(() => {
+    window.location.replace(`/login${search}`);
+  });
 }
