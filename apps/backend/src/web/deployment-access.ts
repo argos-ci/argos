@@ -2,7 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { signDeploymentAccessToken } from "@/auth/deployment-access";
-import { verifyJWT } from "@/auth/jwt";
+import { resolveSession } from "@/auth/session";
+import { readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
 import { Account, Project } from "@/database/models";
 import { resolveDeploymentByDomain } from "@/deployment/resolve";
@@ -13,25 +14,6 @@ import { asyncHandler } from "./util";
 const QuerySchema = z.object({
   return_to: z.string(),
 });
-
-const AUTH_COOKIE_NAME = "argos_jwt";
-
-function readAuthCookie(header: string | undefined): string | null {
-  if (!header) {
-    return null;
-  }
-  for (const part of header.split(";")) {
-    const trimmed = part.trim();
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) {
-      continue;
-    }
-    if (trimmed.slice(0, eq) === AUTH_COOKIE_NAME) {
-      return trimmed.slice(eq + 1) || null;
-    }
-  }
-  return null;
-}
 
 /**
  * Validate that `return_to` points at one of our deployment domains. We use the
@@ -71,8 +53,8 @@ router.get(
       throw boom(400, "Invalid return_to");
     }
 
-    const cookieToken = readAuthCookie(req.headers.cookie);
-    const session = cookieToken ? verifyJWT(cookieToken) : null;
+    const rawToken = readSessionCookie(req);
+    const session = rawToken ? await resolveSession(rawToken) : null;
     if (!session) {
       const requestUrl = new URL(req.originalUrl, config.get("server.url"));
       const loginUrl = new URL("/login", config.get("server.url"));
@@ -88,7 +70,7 @@ router.get(
 
     const account = await Account.query()
       .withGraphFetched("user")
-      .findById(session.account.id);
+      .findOne({ userId: session.userId });
     if (!account?.user) {
       throw boom(401, "Invalid session");
     }

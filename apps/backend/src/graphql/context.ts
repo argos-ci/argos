@@ -1,10 +1,10 @@
 import type { BaseContext } from "@apollo/server";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { GraphQLError } from "graphql";
 
-import { safeParseBearerFromHeader } from "@/auth/auth-header";
-import { getAuthPayloadFromJWT } from "@/auth/jwt";
-import type { AuthJWTPayload } from "@/auth/payload";
+import type { AuthSessionPayload } from "@/auth/payload";
+import { readSessionCookie } from "@/auth/session-cookie";
+import { sessionAuthFromExpressReq } from "@/auth/session-request";
 import { HTTPError } from "@/util/error";
 import {
   extractLocationFromRequest,
@@ -14,14 +14,20 @@ import {
 import { createLoaders } from "./loaders";
 
 export type Context = BaseContext & {
-  auth: AuthJWTPayload | null;
+  auth: AuthSessionPayload | null;
   requestLocation: RequestLocation | null;
   loaders: ReturnType<typeof createLoaders>;
+  /**
+   * The Express request/response, exposed so login mutations (email auth,
+   * invite sign-up) can create a session and set the session cookie.
+   */
+  req: Request;
+  res: Response;
 };
 
 async function getContextAuth(
   request: Request,
-): Promise<AuthJWTPayload | null> {
+): Promise<AuthSessionPayload | null> {
   if (process.env["NODE_ENV"] === "test") {
     const mockedAuth = (request as any).__MOCKED_AUTH__;
     if (mockedAuth) {
@@ -29,22 +35,30 @@ async function getContextAuth(
     }
   }
 
-  const authHeader = request.get("authorization");
-  if (!authHeader) {
+  // No cookie → anonymous request (allowed). A present-but-invalid cookie
+  // throws a 401, which surfaces as UNAUTHENTICATED below so the client logs
+  // out.
+  const rawToken = readSessionCookie(request);
+  if (!rawToken) {
     return null;
   }
-  const bearer = safeParseBearerFromHeader(authHeader);
-  if (!bearer) {
-    return null;
-  }
-  return getAuthPayloadFromJWT(bearer);
+  return sessionAuthFromExpressReq(request);
 }
 
-export async function getContext(request: Request): Promise<Context> {
+export async function getContext(
+  request: Request,
+  response: Response,
+): Promise<Context> {
   try {
     const auth = await getContextAuth(request);
     const requestLocation = extractLocationFromRequest(request);
-    return { auth, requestLocation, loaders: createLoaders() };
+    return {
+      auth,
+      requestLocation,
+      loaders: createLoaders(),
+      req: request,
+      res: response,
+    };
   } catch (error) {
     if (error instanceof HTTPError && error.statusCode === 401) {
       throw new GraphQLError("User is not authenticated", {

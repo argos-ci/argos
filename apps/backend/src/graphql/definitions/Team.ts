@@ -3,6 +3,7 @@ import { omitUndefinedValues } from "@argos/util/omitUndefinedValues";
 import { captureException } from "@sentry/node";
 import gqlTag from "graphql-tag";
 
+import { startSession } from "@/auth/login";
 import {
   checkHasAccessToSAML,
   getTeamSamlPublicValues,
@@ -23,10 +24,7 @@ import {
   TeamUser,
   UserEmail,
 } from "@/database/models";
-import {
-  createAccount,
-  createJWTFromAccount,
-} from "@/database/services/account";
+import { createAccount } from "@/database/services/account";
 import { createTeamAccount } from "@/database/services/team";
 import {
   findVerifiedEmailForDomain,
@@ -247,7 +245,6 @@ export const typeDefs = gql`
   }
 
   type AcceptInvitePayload {
-    jwt: String
     team: Team!
   }
 
@@ -1142,7 +1139,7 @@ export const resolvers: IResolvers = {
 
       if (!auth) {
         // Get or create the user account based on the email of the invite.
-        const { account, user } = await (async () => {
+        const { user } = await (async () => {
           const userEmail = await UserEmail.query()
             .where("email", email)
             .withGraphFetched("user.account")
@@ -1176,8 +1173,8 @@ export const resolvers: IResolvers = {
           ]);
         });
 
-        const jwt = createJWTFromAccount(account);
-        return { jwt, team: teamAccount };
+        await startSession(ctx.req, ctx.res, user.id);
+        return { team: teamAccount };
       }
 
       // If the user is logged in:
@@ -1209,7 +1206,7 @@ export const resolvers: IResolvers = {
         ]);
       });
 
-      return { jwt: null, team: teamAccount };
+      return { team: teamAccount };
     },
     joinTeam: async (_root, args, ctx) => {
       const { auth } = ctx;

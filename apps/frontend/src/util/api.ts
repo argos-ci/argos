@@ -49,17 +49,18 @@ export class APIError<TData> extends Error {
  */
 export async function fetchApi<TData, TErrorData = unknown>(
   pathname: string,
-  options: { token?: string | undefined; data: unknown },
+  options: { data: unknown },
 ): Promise<TData> {
   const url = new URL(pathname, config.api.baseUrl);
   const headers = new Headers();
   headers.append("Content-Type", "application/json");
-  if (options.token) {
-    headers.append("Authorization", `Bearer ${options.token}`);
-  }
+  // Authenticate with the session cookie. The custom header satisfies CSRF
+  // protection (a cross-site page cannot set it).
+  headers.append("X-Argos-CSRF", "1");
   const result = await fetch(url.toString(), {
     method: "POST",
     headers,
+    credentials: "include",
     body: JSON.stringify(options.data),
   });
   const json = await result.json();

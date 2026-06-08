@@ -5,7 +5,7 @@ import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useAuth, useIsLoggedIn } from "@/containers/Auth";
+import { useIsLoggedIn } from "@/containers/Auth";
 import {
   AlreadyJoined,
   InvalidInvite,
@@ -55,7 +55,6 @@ const AcceptInviteMutation = graphql(`
         id
         slug
       }
-      jwt
     }
   }
 `);
@@ -64,7 +63,7 @@ function AcceptInviteButton(
   props: { secret: string } & Omit<ButtonProps, "onPress">,
 ) {
   const navigate = useNavigate();
-  const { setToken } = useAuth();
+  const isLoggedIn = useIsLoggedIn();
   const [accept, { data, loading }] = useMutation(AcceptInviteMutation, {
     variables: {
       secret: props.secret,
@@ -73,13 +72,14 @@ function AcceptInviteButton(
       toast.error(getErrorMessage(error));
     },
     onCompleted(data) {
-      const { jwt, team } = data.acceptInvite;
+      const { team } = data.acceptInvite;
       const redirectURL = getAccountURL({ accountSlug: team.slug });
-      if (jwt) {
-        setToken(jwt, { silent: true });
-        window.location.replace(redirectURL);
-      } else {
+      if (isLoggedIn) {
         navigate(redirectURL, { replace: true });
+      } else {
+        // Accepting the invite as a new user established a session cookie
+        // server-side. Full navigation so the app re-bootstraps logged-in.
+        window.location.replace(redirectURL);
       }
     },
   });

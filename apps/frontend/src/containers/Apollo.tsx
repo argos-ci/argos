@@ -12,13 +12,9 @@ import { invariant } from "@argos/util/invariant";
 
 import fragments from "@/gql-fragments.json";
 
-import { logout, useAuthToken } from "./Auth";
+import { logout } from "./Auth";
 
-const ApolloProvider = (props: {
-  children: React.ReactNode;
-  authToken: string | null;
-}) => {
-  const authorization = props.authToken ? `Bearer ${props.authToken}` : null;
+const ApolloProvider = (props: { children: React.ReactNode }) => {
   const apolloClient = useMemo(() => {
     const logoutLink = new ErrorLink(({ error }) => {
       if (error && "statusCode" in error && error.statusCode === 401) {
@@ -28,7 +24,11 @@ const ApolloProvider = (props: {
 
     const httpLink = new HttpLink({
       uri: "/graphql",
-      headers: authorization ? { authorization } : {},
+      // Authenticate with the HttpOnly session cookie instead of a Bearer
+      // token. The custom header satisfies CSRF protection (a cross-site page
+      // cannot set it).
+      credentials: "include",
+      headers: { "x-argos-csrf": "1" },
     });
 
     const retryLink = new RetryLink({
@@ -72,7 +72,7 @@ const ApolloProvider = (props: {
       }),
       link: ApolloLink.from([logoutLink, retryLink, httpLink]),
     });
-  }, [authorization]);
+  }, []);
   return (
     <BaseApolloProvider client={apolloClient}>
       {props.children}
@@ -81,10 +81,7 @@ const ApolloProvider = (props: {
 };
 
 export const ApolloInitializer = (props: { children: React.ReactNode }) => {
-  const authToken = useAuthToken();
-  return (
-    <ApolloProvider authToken={authToken}>{props.children}</ApolloProvider>
-  );
+  return <ApolloProvider>{props.children}</ApolloProvider>;
 };
 
 /**

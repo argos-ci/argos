@@ -3,14 +3,14 @@ import axios from "axios";
 import express, { Router } from "express";
 import { z } from "zod";
 
-import { safeJwtAuthFromExpressReq } from "@/auth/jwt";
-import type { AuthJWTPayload } from "@/auth/payload";
+import { startSession } from "@/auth/login";
+import type { AuthSessionPayload } from "@/auth/payload";
 import { consumeSamlAuthCode } from "@/auth/saml";
+import { safeSessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import type { Account } from "@/database/models";
 import { Account as AccountModel } from "@/database/models";
 import {
-  createJWTFromAccount,
   getOrCreateUserAccountFromGhAccount,
   getOrCreateUserAccountFromGitlabUser,
   getOrCreateUserAccountFromGoogleUser,
@@ -32,6 +32,7 @@ import {
 import { getGoogleAuthenticatedClient, getGoogleUserProfile } from "@/google";
 
 import { allowApp } from "../middlewares/cors";
+import { requireCsrf } from "../middlewares/csrf";
 import { allowOnlyPost } from "../middlewares/methods";
 import { asyncHandler } from "../util";
 
@@ -58,15 +59,16 @@ type OAuthResult = {
 function withOAuth(
   retrieveAccount: (
     body: OAuthBody,
-    auth: AuthJWTPayload | null,
+    auth: AuthSessionPayload | null,
   ) => Promise<OAuthResult>,
 ): express.RequestHandler[] {
   return [
     allowApp,
     allowOnlyPost,
+    requireCsrf,
     express.json(),
     asyncHandler(async (req, res) => {
-      const auth = await safeJwtAuthFromExpressReq(req);
+      const auth = await safeSessionAuthFromExpressReq(req);
       try {
         const parsed = OAuthBodySchema.parse(req.body);
         const { account, creation } = await retrieveAccount(
@@ -78,8 +80,8 @@ function withOAuth(
           !auth && creation
             ? await hasAutoInviteForUser({ userId: account.userId })
             : false;
+        await startSession(req, res, account.userId);
         res.send({
-          jwt: createJWTFromAccount(account),
           creation,
           hasAutoInvite,
         });
@@ -205,6 +207,7 @@ router.use(
   "/auth/saml",
   allowApp,
   allowOnlyPost,
+  requireCsrf,
   express.json(),
   asyncHandler(async (req, res) => {
     const parsed = SamlBodySchema.parse(req.body);
@@ -220,8 +223,9 @@ router.use(
     const account = await AccountModel.query()
       .findById(payload.accountId)
       .throwIfNotFound();
+    invariant(account.userId, "Expected account to have userId");
+    await startSession(req, res, account.userId);
     res.send({
-      jwt: createJWTFromAccount(account),
       redirect: payload.redirect,
     });
   }),

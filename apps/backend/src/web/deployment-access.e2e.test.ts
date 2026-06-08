@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import request from "supertest";
 import { afterEach, test as base, describe, expect } from "vitest";
 
-import { createJWT, JWT_VERSION } from "@/auth/jwt";
+import { createSession } from "@/auth/session";
 import config from "@/config";
 import type { Account, Deployment } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
@@ -20,16 +20,10 @@ const getRedirectLocation = (headers: IncomingHttpHeaders) => {
   return new URL(location);
 };
 
-const createSessionCookie = (account: Account) => {
-  const token = createJWT({
-    version: JWT_VERSION,
-    account: {
-      id: account.id,
-      slug: account.slug,
-      name: account.name,
-    },
-  });
-  return `theme=dark; argos_jwt=${token}; other=value`;
+const createSessionCookie = async (account: Account) => {
+  invariant(account.userId, "Account has no userId");
+  const { rawToken } = await createSession({ userId: account.userId });
+  return `theme=dark; argos_session=${rawToken}; other=value`;
 };
 
 const test = base.extend<{
@@ -77,7 +71,7 @@ describe("deployment access web auth", () => {
         return_to:
           "https://preview-access.dev.argos-ci.live/dashboard?tab=logs#details",
       })
-      .set("Cookie", createSessionCookie(userAccount))
+      .set("Cookie", await createSessionCookie(userAccount))
       .expect(302)
       .expect((res) => {
         expect(res.headers["cache-control"]).toBe("no-store");
@@ -149,7 +143,7 @@ describe("deployment access web auth", () => {
       .query({
         return_to: `https://${deployment.slug}.dev.argos-ci.live/dashboard`,
       })
-      .set("Cookie", createSessionCookie(otherAccount))
+      .set("Cookie", await createSessionCookie(otherAccount))
       .expect(403)
       .expect((res) => {
         expect(res.text).toBe("You do not have access to this deployment");

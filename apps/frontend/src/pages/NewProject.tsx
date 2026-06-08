@@ -10,7 +10,8 @@ export function Component() {
     <AuthGuard>
       {({ authPayload }) => {
         const accountSlug =
-          getLatestVisitedAccount() ?? authPayload.account.slug;
+          getLatestVisitedAccount(authPayload.account.id) ??
+          authPayload.account.slug;
         return (
           <Navigate replace to={`${getAccountURL({ accountSlug })}/new`} />
         );

@@ -5,6 +5,8 @@ import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import { z } from "zod";
 
+import { revokeSessionByToken } from "@/auth/session";
+import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
 import { getGoogleAuthUrl } from "@/google";
 import { apolloServer, createApolloMiddleware } from "@/graphql";
@@ -16,8 +18,9 @@ import { getEmailPreviewMiddleware } from "../email/express";
 import { getNotificationPreviewMiddleware } from "../notification/express";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
+import { requireCsrf } from "./middlewares/csrf";
 import { MONACO_EDITOR_CDN_URL } from "./monaco-version.generated";
-import { subdomain } from "./util";
+import { asyncHandler, subdomain } from "./util";
 
 export const installAppRouter = async (app: express.Application) => {
   const router = Router();
@@ -140,16 +143,27 @@ export const installAppRouter = async (app: express.Application) => {
         action: "deny", // Disallow embedded iframe
       },
     }),
+    requireCsrf,
     createApolloMiddleware(),
   );
 
-  router.get("/auth/logout", (req, res) => {
-    res.setHeader("Clear-Site-Data", '"cookies", "storage", "cache"');
-    const redirectTo =
-      typeof req.query["r"] === "string" ? req.query["r"] : null;
-    const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
-    res.redirect(`/login${search}`);
-  });
+  router.get(
+    "/auth/logout",
+    asyncHandler(async (req, res) => {
+      // Revoke the session server-side so the token can never be replayed,
+      // then clear our cookies (belt-and-braces with Clear-Site-Data).
+      const rawToken = readSessionCookie(req);
+      if (rawToken) {
+        await revokeSessionByToken(rawToken);
+      }
+      clearSessionCookies(res);
+      res.setHeader("Clear-Site-Data", '"cookies", "storage", "cache"');
+      const redirectTo =
+        typeof req.query["r"] === "string" ? req.query["r"] : null;
+      const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
+      res.redirect(`/login${search}`);
+    }),
+  );
 
   const OAuthQueryParamsSchema = z.object({
     state: z.string(),

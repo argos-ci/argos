@@ -12,10 +12,12 @@ export type AuthProjectPayload = {
   sha: string | null;
 };
 
-export type AuthJWTPayload = {
-  type: "jwt";
+export type AuthSessionPayload = {
+  type: "session";
   account: Account;
   user: User;
+  /** Id of the `user_sessions` row backing this request. */
+  sessionId: string;
 };
 
 export type AuthPATPayload = {
