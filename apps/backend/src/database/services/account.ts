@@ -726,14 +726,14 @@ export async function authenticateWithEmail(args: {
   });
 
   if (locked) {
-    const remainingMinutes = Math.ceil((remainingTime ?? 0) / 1000 / 60);
-    throw boom(
-      429,
-      `Account temporarily locked. Try again in ${remainingMinutes} minutes.`,
-      {
-        code: "ACCOUNT_LOCKED",
-      },
-    );
+    const remainingMinutes = Math.ceil((remainingTime ?? 0) / (1000 * 60));
+    const minuteMessage =
+      remainingMinutes > 0
+        ? `Try again in ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}.`
+        : "Try again in a few seconds.";
+    throw boom(429, `Account temporarily locked. ${minuteMessage}`, {
+      code: "ACCOUNT_LOCKED",
+    });
   }
 
   if (!valid) {

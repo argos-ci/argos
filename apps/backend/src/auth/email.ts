@@ -16,7 +16,6 @@ function getLockoutKey(email: string) {
 // Configuration for account lockout
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
-const FAILED_ATTEMPTS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Generate a code for email authentication.
@@ -47,8 +46,8 @@ async function isAccountLocked(email: string): Promise<boolean> {
  */
 async function getRemainingLockoutTime(email: string): Promise<number> {
   const redis = await getRedisClient();
+  // pttl returns -2 if key doesn't exist, -1 if key exists but has no expire
   const pttl = await redis.pTTL(getLockoutKey(email));
-  // pttl returns -1 if key doesn't exist, -2 if expired
   return pttl > 0 ? pttl : 0;
 }
 
@@ -58,26 +57,23 @@ async function getRemainingLockoutTime(email: string): Promise<number> {
 async function lockAccount(email: string): Promise<void> {
   const redis = await getRedisClient();
   await redis.set(getLockoutKey(email), "locked", {
-    expiration: {
-      type: "PX",
-      value: LOCKOUT_DURATION_MS,
-    },
+    expiration: { type: "PX", value: LOCKOUT_DURATION_MS },
   });
 }
 
 /**
- * Increment the failed attempt counter for an email.
+ * Increment the failed attempt counter for an email with sliding-window TTL.
  */
 async function incrementFailedAttempts(email: string): Promise<number> {
   const redis = await getRedisClient();
   const key = getFailedAttemptsKey(email);
-  const attempts = await redis.incr(key);
-
-  // Set expiration on first attempt
-  if (attempts === 1) {
-    await redis.expire(key, Math.ceil(FAILED_ATTEMPTS_WINDOW_MS / 1000));
-  }
-
+  // Refresh the TTL on every failure (sliding window) and do it atomically so the
+  // counter can never be left without an expiration.
+  const [attempts] = (await redis
+    .multi()
+    .incr(key)
+    .pExpire(key, LOCKOUT_DURATION_MS)
+    .exec()) as [number, unknown];
   return attempts;
 }
 
@@ -124,6 +120,12 @@ export async function verifyAuthEmailCode(args: {
     // Lock account if max attempts exceeded
     if (attempts >= MAX_FAILED_ATTEMPTS) {
       await lockAccount(email);
+      const remainingTime = await getRemainingLockoutTime(email);
+      return {
+        valid: false,
+        locked: true,
+        remainingTime,
+      };
     }
 
     return {
