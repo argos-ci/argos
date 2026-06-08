@@ -57,7 +57,7 @@ redis.call("PEXPIRE", KEYS[2], ARGV[2])
 
 if attempts >= tonumber(ARGV[3]) then
   redis.call("SET", KEYS[3], "locked", "PX", ARGV[2])
-  return {0, 1, ARGV[2]}
+  return {0, 1, tonumber(ARGV[2])}
 end
 
 return {0, 0, 0}
