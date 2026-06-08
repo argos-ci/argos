@@ -9,26 +9,19 @@ import { authenticateWithEmail } from "./account";
 
 setupRedis();
 
-async function authenticateWithBadCode({
-  email,
-  code,
-}: {
-  email: string;
-  code: string;
-}) {
-  await expect(authenticateWithEmail({ email, code })).rejects.toMatchObject({
+async function authenticateWithBadCode({ email }: { email: string }) {
+  await expect(
+    authenticateWithEmail({ email, code: "000000" }),
+  ).rejects.toMatchObject({
     statusCode: 400,
     code: "INVALID_EMAIL_VERIFICATION_CODE",
   });
 }
 
 async function lockTheAccount(email: string) {
-  // Lock the account
   for (let i = 0; i < 4; i++) {
-    await authenticateWithBadCode({ email, code: "000000" });
+    await authenticateWithBadCode({ email });
   }
-
-  // Check lockout error includes time message
   await expect(
     authenticateWithEmail({ email, code: "000000" }),
   ).rejects.toMatchObject({ statusCode: 429, code: "ACCOUNT_LOCKED" });
@@ -48,7 +41,7 @@ describe("authenticateWithEmail - account lockout", () => {
 
     // Make 4 failed attempts
     for (let i = 0; i < 4; i++) {
-      await authenticateWithBadCode({ email: testEmail, code: "000000" });
+      await authenticateWithBadCode({ email: testEmail });
     }
 
     // 5th attempt should lock the account
@@ -72,7 +65,7 @@ describe("authenticateWithEmail - account lockout", () => {
 
     // Make 2 failed attempts
     for (let i = 0; i < 2; i++) {
-      await authenticateWithBadCode({ email: testEmail, code: "000000" });
+      await authenticateWithBadCode({ email: testEmail });
     }
 
     // Successful authentication should clear failed attempts
@@ -90,19 +83,29 @@ describe("authenticateWithEmail - account lockout", () => {
   });
 
   test("should include remaining lockout time in error", async () => {
+    await generateAuthEmailCode(testEmail);
+
     for (let i = 0; i < 4; i++) {
-      await authenticateWithBadCode({ email: testEmail, code: "000000" });
+      await authenticateWithBadCode({ email: testEmail });
     }
 
-    try {
-      await authenticateWithEmail({ email: testEmail, code: "111111" });
-    } catch (error) {
-      if (error instanceof Error) {
-        expect(error.message).toMatch(/Account temporarily locked/);
-        expect(error.message).toMatch(/Try again/);
-      } else {
-        throw error;
-      }
+    await expect(
+      authenticateWithEmail({ email: testEmail, code: "111111" }),
+    ).rejects.toMatchObject({
+      statusCode: 429,
+      code: "ACCOUNT_LOCKED",
+      message: expect.stringContaining("Try again in 30 minutes."),
+    });
+  });
+
+  test("should not lock account when no verification code was issued", async () => {
+    for (let i = 0; i < 6; i++) {
+      await authenticateWithBadCode({ email: testEmail });
     }
+
+    const code = await generateAuthEmailCode(testEmail);
+    const result = await authenticateWithEmail({ email: testEmail, code });
+    expect(result.account).toBeDefined();
+    expect(result.creation).toBe(true);
   });
 });
