@@ -720,9 +720,23 @@ export async function authenticateWithEmail(args: {
   const { code } = args;
   const email = sanitizeEmail(args.email);
 
-  const verified = await verifyAuthEmailCode({ email, code });
+  const { valid, locked, remainingTime } = await verifyAuthEmailCode({
+    email,
+    code,
+  });
 
-  if (!verified) {
+  if (locked) {
+    const remainingMinutes = Math.ceil((remainingTime ?? 0) / 1000 / 60);
+    throw boom(
+      429,
+      `Account temporarily locked. Try again in ${remainingMinutes} minutes.`,
+      {
+        code: "ACCOUNT_LOCKED",
+      },
+    );
+  }
+
+  if (!valid) {
     throw boom(400, `Invalid email verification code`, {
       code: "INVALID_EMAIL_VERIFICATION_CODE",
     });
