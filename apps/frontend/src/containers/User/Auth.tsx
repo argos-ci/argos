@@ -1,13 +1,26 @@
 import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MonitorIcon, SmartphoneIcon } from "lucide-react";
+import moment from "moment";
+import { Button as RACButton } from "react-aria-components";
 import { toast } from "sonner";
 
 import { logout } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
+import {
+  Dialog,
+  DialogBody,
+  DialogDismiss,
+  DialogFooter,
+  DialogTitle,
+  useDialogValueState,
+  useOverlayTriggerState,
+} from "@/ui/Dialog";
+import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListRow } from "@/ui/List";
+import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
 import { getErrorMessage } from "@/util/error";
 
@@ -21,7 +34,9 @@ const _SessionFragment = graphql(`
     id
     isCurrent
     deviceLabel
+    ip
     location
+    createdAt
     lastSeenAt
   }
 `);
@@ -65,6 +80,10 @@ const RevokeAllSessionsMutation = graphql(`
 
 type Session = DocumentType<typeof _SessionFragment>;
 
+function getDeviceName(session: Session) {
+  return session.deviceLabel ?? "Unknown device";
+}
+
 /** Pick an icon from the device label (cosmetic). */
 function DeviceIcon(props: { deviceLabel: string | null; className?: string }) {
   if (props.deviceLabel && /iOS|iPhone|iPad|Android/i.test(props.deviceLabel)) {
@@ -73,30 +92,98 @@ function DeviceIcon(props: { deviceLabel: string | null; className?: string }) {
   return <MonitorIcon className={props.className} />;
 }
 
-function SessionRow(props: {
+function DeviceIconBox(props: { session: Session }) {
+  return (
+    <div className="bg-subtle flex size-9 shrink-0 items-center justify-center rounded-md border">
+      <DeviceIcon
+        deviceLabel={props.session.deviceLabel}
+        className="text-low size-4"
+      />
+    </div>
+  );
+}
+
+/** Shared row layout: device icon, name + subtitle, and a trailing slot. */
+function SessionRowLayout(props: {
   session: Session;
   subtitle: React.ReactNode;
-  action: React.ReactNode;
+  trailing: React.ReactNode;
 }) {
-  const { session, subtitle, action } = props;
   return (
-    <ListRow className="group flex items-center gap-3 p-4">
-      <div className="bg-subtle flex size-9 shrink-0 items-center justify-center rounded-md border">
-        <DeviceIcon
-          deviceLabel={session.deviceLabel}
-          className="text-low size-4"
-        />
-      </div>
-      <div className="min-w-0 flex-1">
+    <>
+      <DeviceIconBox session={props.session} />
+      <div className="min-w-0 flex-1 text-left">
         <div className="truncate text-sm font-medium">
-          {session.deviceLabel ?? "Unknown device"}
+          {getDeviceName(props.session)}
         </div>
-        <div className="text-low truncate text-xs">{subtitle}</div>
+        <div className="text-low truncate text-xs">{props.subtitle}</div>
       </div>
-      <div className="opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
-        {action}
-      </div>
-    </ListRow>
+      {props.trailing}
+    </>
+  );
+}
+
+function RevokeSessionDialog(props: { session: Session }) {
+  const { session } = props;
+  const state = useOverlayTriggerState();
+  const [revokeSession, { loading, error }] = useMutation(
+    RevokeSessionMutation,
+    {
+      variables: { id: session.id },
+      onCompleted: () => {
+        state.close();
+        toast.success("Session revoked");
+      },
+    },
+  );
+
+  const details: { label: string; value: React.ReactNode }[] = [
+    { label: "Device", value: getDeviceName(session) },
+    { label: "IP address", value: session.ip ?? "—" },
+    { label: "Last location", value: session.location ?? "—" },
+    {
+      label: "Original sign in",
+      value: <Time date={session.createdAt} format="ll" tooltip="none" />,
+    },
+  ];
+
+  return (
+    <Dialog size="medium">
+      <DialogBody>
+        <DialogTitle>
+          <span className="flex items-center gap-3">
+            <DeviceIconBox session={session} />
+            {getDeviceName(session)}
+          </span>
+        </DialogTitle>
+        <dl className="mt-2 text-sm">
+          {details.map((detail) => (
+            <div
+              key={detail.label}
+              className="grid grid-cols-[1fr_2fr] gap-4 border-b py-3 last:border-b-0"
+            >
+              <dt className="text-low">{detail.label}</dt>
+              <dd className="min-w-0 break-all">{detail.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </DialogBody>
+      <DialogFooter>
+        {error ? (
+          <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
+        ) : null}
+        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <Button
+          variant="destructive"
+          isPending={loading}
+          onPress={() => {
+            revokeSession().catch(() => {});
+          }}
+        >
+          Revoke Access
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }
 
@@ -105,10 +192,7 @@ function UserSessions(props: { sessions: readonly Session[] }) {
   const current = sessions.find((session) => session.isCurrent) ?? null;
   const others = sessions.filter((session) => !session.isCurrent);
 
-  const [revokeSession, { loading: revoking }] = useMutation(
-    RevokeSessionMutation,
-    { onError: (error) => toast.error(getErrorMessage(error)) },
-  );
+  const revoking = useDialogValueState<Session | null>(null);
   const [revokeAllSessions, { loading: revokingAll }] = useMutation(
     RevokeAllSessionsMutation,
     { onError: (error) => toast.error(getErrorMessage(error)) },
@@ -122,27 +206,31 @@ function UserSessions(props: { sessions: readonly Session[] }) {
 
         {current ? (
           <List className="mb-4">
-            <SessionRow
-              session={current}
-              subtitle={
-                <>
-                  <span className="text-success-low inline-flex items-center gap-1.5">
-                    <span className="size-1.5 rounded-full bg-current" />
-                    Current session
-                  </span>
-                  {current.location ? ` · ${current.location}` : null}
-                </>
-              }
-              action={
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onPress={() => logout()}
-                >
-                  Log out
-                </Button>
-              }
-            />
+            <ListRow className="group flex items-center gap-3 p-4">
+              <SessionRowLayout
+                session={current}
+                subtitle={
+                  <>
+                    <span className="text-success-low inline-flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-current" />
+                      Current session
+                    </span>
+                    {current.location ? ` · ${current.location}` : null}
+                  </>
+                }
+                trailing={
+                  <div className="opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onPress={() => logout()}
+                    >
+                      Log out
+                    </Button>
+                  </div>
+                }
+              />
+            </ListRow>
           </List>
         ) : null}
 
@@ -164,34 +252,36 @@ function UserSessions(props: { sessions: readonly Session[] }) {
               </Button>
             </div>
             {others.map((session) => (
-              <SessionRow
+              <RACButton
                 key={session.id}
-                session={session}
-                subtitle={
-                  <>
-                    {session.location ? `${session.location} · ` : null}
-                    Last seen <Time date={session.lastSeenAt} />
-                  </>
-                }
-                action={
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    isDisabled={revoking}
-                    onPress={() => {
-                      revokeSession({ variables: { id: session.id } }).catch(
-                        () => {},
-                      );
-                    }}
-                  >
-                    Revoke
-                  </Button>
-                }
-              />
+                onPress={() => revoking.open(session)}
+                className="group bg-app data-focus-visible:bg-hover data-hovered:bg-hover flex w-full items-center gap-3 border-b p-4 last:border-b-0 focus:outline-hidden"
+              >
+                <SessionRowLayout
+                  session={session}
+                  subtitle={
+                    <>
+                      {session.location ? `${session.location} · ` : null}
+                      Last seen {moment(session.lastSeenAt).fromNow()}
+                    </>
+                  }
+                  trailing={
+                    <span className="border-default text-default rounded-md border px-2 py-1 text-xs opacity-0 transition group-hover:opacity-100">
+                      Revoke
+                    </span>
+                  }
+                />
+              </RACButton>
             ))}
           </List>
         ) : null}
       </CardBody>
+
+      {revoking.value ? (
+        <Modal isOpen={revoking.isOpen} onOpenChange={revoking.onOpenChange}>
+          <RevokeSessionDialog session={revoking.value} />
+        </Modal>
+      ) : null}
     </Card>
   );
 }

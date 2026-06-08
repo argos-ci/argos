@@ -13,6 +13,8 @@ export const typeDefs = gql`
     id: ID!
     "Best-effort device/browser label parsed from the user agent."
     deviceLabel: String
+    "IP address the session was created from."
+    ip: String
     "Approximate geolocation captured at login, e.g. Paris, IDF, FR."
     location: String
     createdAt: DateTime!
