@@ -36,7 +36,7 @@ export async function generateAuthEmailCode(email: string) {
 /**
  * Check if an email account is currently locked due to too many failed attempts.
  */
-export async function isAccountLocked(email: string): Promise<boolean> {
+async function isAccountLocked(email: string): Promise<boolean> {
   const redis = await getRedisClient();
   const lockoutValue = await redis.get(getLockoutKey(email));
   return lockoutValue !== null;
@@ -45,7 +45,7 @@ export async function isAccountLocked(email: string): Promise<boolean> {
 /**
  * Get the remaining lockout time in milliseconds (0 if not locked).
  */
-export async function getRemainingLockoutTime(email: string): Promise<number> {
+async function getRemainingLockoutTime(email: string): Promise<number> {
   const redis = await getRedisClient();
   const pttl = await redis.pTTL(getLockoutKey(email));
   // pttl returns -1 if key doesn't exist, -2 if expired
