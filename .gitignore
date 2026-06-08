@@ -17,6 +17,7 @@ src/gql-fragments.json
 # Generated files @ backend
 src/graphql/__generated__
 /apps/backend/src/graphql/__generated__
+/apps/backend/src/web/monaco-version.generated.ts
 # Various cache files
 .cache
 # Playwright
