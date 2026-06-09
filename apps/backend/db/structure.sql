@@ -883,7 +883,7 @@ CREATE TABLE public.github_accounts (
     login character varying(255) NOT NULL,
     "githubId" integer NOT NULL,
     type text NOT NULL,
-    "accessToken" character varying(255),
+    "accessToken" text,
     scope character varying(255),
     "lastLoggedAt" timestamp with time zone,
     emails jsonb,
@@ -1170,9 +1170,9 @@ CREATE TABLE public.gitlab_users (
     email character varying(255) NOT NULL,
     username character varying(255) NOT NULL,
     "gitlabId" integer NOT NULL,
-    "accessToken" character varying(255) NOT NULL,
+    "accessToken" text NOT NULL,
     "accessTokenExpiresAt" timestamp with time zone NOT NULL,
-    "refreshToken" character varying(255) NOT NULL,
+    "refreshToken" text NOT NULL,
     "lastLoggedAt" timestamp with time zone
 );
 
@@ -1590,7 +1590,7 @@ CREATE TABLE public.projects (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    token character varying(255) NOT NULL,
+    token text NOT NULL,
     private boolean,
     "defaultBaseBranch" character varying(255),
     "accountId" bigint NOT NULL,
@@ -5103,3 +5103,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026053
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531120000_comment-notifications-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531130000_comment-mentions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260608120000_user-sessions.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260609120000_encrypt-sensitive-data.js', 1, NOW());
