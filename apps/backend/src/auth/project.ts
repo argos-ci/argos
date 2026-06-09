@@ -40,7 +40,10 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
 
   const project = strategy
     ? await strategy.getProject(bearer)
-    : await Project.query().findOne({ token: encryptDeterministic(bearer) });
+    : await Project.query()
+        .where("token", encryptDeterministic(bearer))
+        .orWhere("token", bearer)
+        .first();
 
   if (!project && strategy) {
     throw boom(
