@@ -119,6 +119,12 @@ function RootErrorBoundary() {
   const error = useRouteError();
   const shouldReload = checkIsFailedToFetchError(error) && !checkHasReloaded();
   const isSAMLRequired = checkIsErrorCode(error, "SAML_SSO_REQUIRED");
+  const isAuthError =
+    error instanceof AuthenticationError ||
+    (CombinedGraphQLErrors.is(error) &&
+      error.errors.some(
+        (error) => error.extensions?.code === "UNAUTHENTICATED",
+      ));
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
@@ -136,27 +142,21 @@ function RootErrorBoundary() {
       return;
     }
 
-    if (error instanceof AuthenticationError) {
+    // Ignore auth errors and logout.
+    if (isAuthError) {
       logout();
       return;
     }
 
-    if (CombinedGraphQLErrors.is(error)) {
-      // Ignore unauthenticated errors & logout the user
-      if (
-        error.errors.some(
-          (error) => error.extensions?.code === "UNAUTHENTICATED",
-        )
-      ) {
-        logout();
-        return;
-      }
-    }
-
     Sentry.captureException(error, { level: "fatal" });
-  }, [error, shouldReload, isSAMLRequired]);
+  }, [error, shouldReload, isSAMLRequired, isAuthError]);
 
   if (shouldReload) {
+    return null;
+  }
+
+  // We display nothing while we are logging out the user.
+  if (isAuthError) {
     return null;
   }
 

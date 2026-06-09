@@ -7,11 +7,11 @@ import type { PartialModelObject } from "objection";
 import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
+import { startSession } from "@/auth/login";
 import { Account, Project, ProjectUser, TeamUser } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
-  createJWTFromAccount,
   requestEmailSignin,
   requestEmailSignup,
 } from "@/database/services/account";
@@ -179,7 +179,6 @@ export const typeDefs = gql`
   }
 
   type AuthPayload {
-    jwt: String!
     creation: Boolean!
     hasAutoInvite: Boolean!
   }
@@ -673,7 +672,7 @@ export const resolvers: IResolvers = {
 
       return true;
     },
-    authenticateWithEmail: async (_root, args) => {
+    authenticateWithEmail: async (_root, args, ctx) => {
       const { email, code } = args.input;
 
       try {
@@ -689,8 +688,9 @@ export const resolvers: IResolvers = {
             })
           : false;
 
+        await startSession(ctx.req, ctx.res, account.userId);
+
         return {
-          jwt: createJWTFromAccount(account),
           creation,
           hasAutoInvite,
         };

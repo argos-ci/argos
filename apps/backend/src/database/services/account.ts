@@ -5,7 +5,6 @@ import { slugify } from "@argos/util/slug";
 import type { PartialModelObject, TransactionOrKnex } from "objection";
 
 import { generateAuthEmailCode, verifyAuthEmailCode } from "@/auth/email";
-import { createJWT, JWT_VERSION } from "@/auth/jwt";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { sendNotification } from "@/notification";
 import { getSlugFromEmail, sanitizeEmail } from "@/util/email";
@@ -52,20 +51,6 @@ export async function markUserLastAuthMethod(args: {
   await TeamUser.query(args.trx)
     .where("userId", args.userId)
     .patch({ lastAuthMethod: args.method });
-}
-
-/**
- * Create a JWT token from an account.
- */
-export function createJWTFromAccount(account: Account) {
-  return createJWT({
-    version: JWT_VERSION,
-    account: {
-      id: account.id,
-      name: account.name,
-      slug: account.slug,
-    },
-  });
 }
 
 /**

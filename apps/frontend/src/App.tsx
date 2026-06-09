@@ -15,12 +15,12 @@ export function App() {
       <Helmet defaultTitle="Argos" titleTemplate="%s - Argos" />
       <NuqsAdapter>
         <ColorModeProvider>
-          <AuthContextProvider>
-            <ApolloInitializer>
+          <ApolloInitializer>
+            <AuthContextProvider>
               <RouterProvider router={router} useTransitions={false} />
               <Toaster />
-            </ApolloInitializer>
-          </AuthContextProvider>
+            </AuthContextProvider>
+          </ApolloInitializer>
         </ColorModeProvider>
       </NuqsAdapter>
     </>

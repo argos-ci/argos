@@ -2,5 +2,8 @@
   "server": {
     "secure": true,
     "url": "https://app.argos-ci.dev:4002"
+  },
+  "session": {
+    "domain": ".argos-ci.dev"
   }
 }

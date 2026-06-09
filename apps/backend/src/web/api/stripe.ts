@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/node";
 import express from "express";
 
-import { jwtAuthFromExpressReq } from "@/auth/jwt";
+import { sessionAuthFromExpressReq } from "@/auth/session-request";
 import config from "@/config";
 import { getAdminAccount } from "@/graphql/services/account";
 import parentLogger from "@/logger";
@@ -16,6 +16,7 @@ import type { Stripe } from "@/stripe";
 import { boom } from "@/util/error";
 
 import { allowApp } from "../middlewares/cors";
+import { requireCsrf } from "../middlewares/csrf";
 import { allowOnlyPost } from "../middlewares/methods";
 import { asyncHandler } from "../util";
 
@@ -63,9 +64,10 @@ router.use(
   "/stripe/create-customer-portal-session",
   allowApp,
   allowOnlyPost,
+  requireCsrf,
   express.json(),
   asyncHandler(async (req, res) => {
-    const auth = await jwtAuthFromExpressReq(req);
+    const auth = await sessionAuthFromExpressReq(req);
     const { user } = auth;
 
     try {
@@ -108,9 +110,10 @@ router.use(
   "/stripe/create-checkout-session",
   allowApp,
   allowOnlyPost,
+  requireCsrf,
   express.json(),
   asyncHandler(async (req, res) => {
-    const auth = await jwtAuthFromExpressReq(req);
+    const auth = await sessionAuthFromExpressReq(req);
 
     try {
       const { accountId, successUrl, cancelUrl } = req.body;

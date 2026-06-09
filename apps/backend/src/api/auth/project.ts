@@ -5,9 +5,9 @@ import {
   parseBearerFromHeader,
 } from "@/auth/auth-header";
 import type {
-  AuthJWTPayload,
   AuthPATPayload,
   AuthProjectPayload,
+  AuthSessionPayload,
 } from "@/auth/payload";
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { getAuthPayloadFromUserAccessToken } from "@/auth/user-access-token";
@@ -29,7 +29,7 @@ export type AuthAttributes = {
  * asserted attribute. No-op when either side is absent.
  */
 export function assertAuthAttributes(
-  auth: AuthJWTPayload | AuthPATPayload | AuthProjectPayload,
+  auth: AuthSessionPayload | AuthPATPayload | AuthProjectPayload,
   attributes: AuthAttributes | undefined,
 ): void {
   if (!attributes) {

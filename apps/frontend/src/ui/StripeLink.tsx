@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { useAssertAuthToken } from "@/containers/Auth";
 import { fetchApi } from "@/util/api";
 
 import { Button, ButtonProps } from "./Button";
@@ -8,31 +7,26 @@ import { LinkButton } from "./Link";
 import { useEventCallback } from "./useEventCallback";
 
 async function getStripePortalLink({
-  token,
   stripeCustomerId,
   accountId,
 }: {
-  token: string;
   stripeCustomerId: string;
   accountId: string;
 }) {
   return fetchApi<{ sessionUrl: string }>(
     "/stripe/create-customer-portal-session",
     {
-      token,
       data: { stripeCustomerId, accountId },
     },
   );
 }
 
 function useRedirectToStripePortal() {
-  const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
     (props: { stripeCustomerId: string; accountId: string }) => {
       setStatus("loading");
       getStripePortalLink({
-        token,
         stripeCustomerId: props.stripeCustomerId,
         accountId: props.accountId,
       })
@@ -86,29 +80,22 @@ export function StripePortalLink({
   );
 }
 
-async function getCheckoutSessionLink({
-  token,
-  ...props
-}: {
+async function getCheckoutSessionLink(props: {
   accountId: string;
-  token: string;
   successUrl: string;
   cancelUrl: string;
 }) {
   return fetchApi<{ sessionUrl: string }>("/stripe/create-checkout-session", {
-    token,
     data: props,
   });
 }
 
 const useRedirectToStripeCheckout = () => {
-  const token = useAssertAuthToken();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const redirect = useEventCallback(
     (props: { accountId: string; successUrl: string; cancelUrl: string }) => {
       setStatus("loading");
       getCheckoutSessionLink({
-        token,
         accountId: props.accountId,
         successUrl: props.successUrl,
         cancelUrl: props.cancelUrl,

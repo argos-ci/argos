@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/react";
 import { Helmet } from "react-helmet";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 
-import { useAuth, useIsLoggedIn } from "@/containers/Auth";
+import { useIsLoggedIn } from "@/containers/Auth";
 import { Layout } from "@/containers/Layout";
 import { Linkify } from "@/containers/Linkify";
 import { UniversalNavigate } from "@/containers/Redirect";
@@ -54,36 +54,31 @@ function AuthCallback(props: { provider: AuthProvider }) {
   const state = searchParams.get("state");
   const errorParam = searchParams.get("error");
   const redirectUri = state ? getRedirectFromState({ state, provider }) : null;
-  const { setToken, token } = useAuth();
-  const [initialToken] = useState(token);
   const [authError, setAuthError] = useState<Error | null>(null);
-  const [targetRedirectUri, setTargetRedirectUri] = useState<string | null>(
-    null,
-  );
   useEffect(() => {
     if (!code || !redirectUri) {
       return;
     }
 
-    fetchApi<{ jwt: string; creation: boolean; hasAutoInvite: boolean }>(
+    fetchApi<{ creation: boolean; hasAutoInvite: boolean }>(
       `/auth/${provider}`,
       {
         data: { code },
-        token: initialToken ?? undefined,
       },
     )
       .then((data) => {
-        setTargetRedirectUri(
+        const target =
           data.creation && data.hasAutoInvite
             ? getAutoInviteTeamsURL(redirectUri)
-            : redirectUri,
-        );
-        setToken(data.jwt);
+            : redirectUri;
+        // The server set the session cookie on the response. Do a full
+        // navigation so the app re-bootstraps as the logged-in user.
+        window.location.replace(target);
       })
       .catch((error) => {
         setAuthError(error);
       });
-  }, [code, setToken, initialToken, provider, redirectUri]);
+  }, [code, provider, redirectUri]);
 
   // If a authError is thrown, it will be caught by the ErrorBoundary.
   if (authError) {
@@ -97,11 +92,6 @@ function AuthCallback(props: { provider: AuthProvider }) {
   // If there is an error param, redirect to the login page.
   if (errorParam) {
     return <UniversalNavigate to="/login" replace />;
-  }
-
-  // If the token changes, redirect to the original page.
-  if (token && initialToken !== token) {
-    return <UniversalNavigate to={targetRedirectUri ?? redirectUri} replace />;
   }
 
   return null;

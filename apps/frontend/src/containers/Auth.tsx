@@ -1,110 +1,103 @@
-import {
-  createContext,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, use, useEffect, useMemo } from "react";
+import { useQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import * as Sentry from "@sentry/react";
 import Cookie from "js-cookie";
-import { jwtDecode } from "jwt-decode";
 
 import { config } from "@/config";
+import { graphql } from "@/gql";
+import { PageLoader } from "@/ui/PageLoader";
 
-const JWT_VERSION = 2;
+/**
+ * Zero-privilege render hint set (and cleared) by the server alongside the
+ * HttpOnly session cookie. Lets us know synchronously whether to expect a
+ * logged-in user. Never a security input — the real credential is the HttpOnly
+ * `argos_session` cookie, which JS cannot read.
+ */
+const LOGGED_IN_COOKIE = "argos_logged_in";
 
-type AuthToken = null | string;
+type AuthAccount = {
+  id: string;
+  slug: string;
+  name: string | null;
+};
+
+/**
+ * Shape exposed to consumers. Named `JWTData` for historical reasons (auth used
+ * to be a client-readable JWT); the credential is now a server-side session.
+ */
+export type JWTData = {
+  account: AuthAccount;
+};
 
 interface AuthContextValue {
-  token: AuthToken;
-  setToken: (token: AuthToken, options?: { silent?: boolean }) => void;
+  account: AuthAccount | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const COOKIE_NAME = "argos_jwt";
+function readLoggedInHint(): boolean {
+  return Cookie.get(LOGGED_IN_COOKIE) === "1";
+}
 
-export const readAuthTokenCookie = () => {
-  return Cookie.get(COOKIE_NAME) ?? null;
-};
+function clearLoggedInHint(): void {
+  Cookie.remove(LOGGED_IN_COOKIE, { domain: config.session.domain });
+}
 
-const removeAuthTokenCookie = () => {
-  Cookie.remove(COOKIE_NAME, {
-    domain: config.session.domain,
-  });
-};
-
-const setAuthTokenCookie = (token: string) => {
-  Cookie.set(COOKIE_NAME, token, {
-    domain: config.session.domain,
-    expires: 60,
-  });
-};
+const MeQuery = graphql(`
+  query Auth_me {
+    me {
+      id
+      slug
+      name
+    }
+  }
+`);
 
 export const AuthContextProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [token, setStateToken] = useState<string | null>(() =>
-    readAuthTokenCookie(),
-  );
-  const setToken = useCallback<AuthContextValue["setToken"]>(
-    (newToken, options) => {
-      if (newToken === null) {
-        removeAuthTokenCookie();
-      } else {
-        setAuthTokenCookie(newToken);
-      }
-      if (!options?.silent) {
-        setStateToken(newToken);
-      }
-    },
-    [],
-  );
+  const loggedInHint = readLoggedInHint();
+  // Resolve the current account from the session cookie. Skipped entirely when
+  // the hint says we're logged out, so anonymous pages render immediately.
+  const { data, loading } = useQuery(MeQuery, { skip: !loggedInHint });
+
+  const account = data?.me ?? null;
+
   useEffect(() => {
-    if (token) {
-      const payload = decodeAuthToken(token);
-      if (payload) {
-        Sentry.setUser({
-          id: payload.account.id,
-          username: payload.account.slug,
-        });
-      }
+    // Reconcile a stale hint: the cookie claims logged-in but the server has no
+    // valid session. Drop the hint so the UI reflects reality.
+    if (loggedInHint && data && data.me === null) {
+      clearLoggedInHint();
     }
-  }, [token]);
-  const value = useMemo(() => ({ token, setToken }), [token, setToken]);
+  }, [loggedInHint, data]);
+
+  useEffect(() => {
+    if (account) {
+      Sentry.setUser({ id: account.id, username: account.slug });
+    } else {
+      Sentry.setUser(null);
+    }
+  }, [account]);
+
+  const value = useMemo<AuthContextValue>(() => ({ account }), [account]);
+
+  // Hold rendering until we know who the user is, so consumers of
+  // `useAssertAuthTokenPayload` always observe a resolved account.
+  if (loggedInHint && loading && !data) {
+    return <PageLoader />;
+  }
+
   return <AuthContext value={value}>{children}</AuthContext>;
 };
 
-export function useAuth() {
+function useAuth() {
   const value = use(AuthContext);
   invariant(value, "useAuth must be used within AuthProvider");
   return value;
 }
-
-export type JWTData = {
-  version: number;
-  account: {
-    id: string;
-    slug: string;
-    name: string | null;
-  };
-};
-
-export const decodeAuthToken = (t: string) => {
-  try {
-    const value = jwtDecode<JWTData>(t);
-    if (value?.version !== JWT_VERSION) {
-      return null;
-    }
-    return value as JWTData;
-  } catch {
-    return null;
-  }
-};
 
 export class AuthenticationError extends Error {
   constructor(message: string) {
@@ -112,25 +105,12 @@ export class AuthenticationError extends Error {
   }
 }
 
-export function useAuthToken() {
-  const { token } = useAuth();
-  return token;
+export function useAuthTokenPayload(): JWTData | null {
+  const { account } = useAuth();
+  return account ? { account } : null;
 }
 
-export function useAssertAuthToken() {
-  const token = useAuthToken();
-  if (!token) {
-    throw new AuthenticationError("Missing auth token");
-  }
-  return token;
-}
-
-export function useAuthTokenPayload() {
-  const token = useAuthToken();
-  return token ? decodeAuthToken(token) : null;
-}
-
-export function useAssertAuthTokenPayload() {
+export function useAssertAuthTokenPayload(): JWTData {
   const payload = useAuthTokenPayload();
   if (!payload) {
     throw new AuthenticationError("Invalid auth token payload");
@@ -139,11 +119,19 @@ export function useAssertAuthTokenPayload() {
 }
 
 export function useIsLoggedIn() {
-  return useAuthTokenPayload() !== null;
+  return useAuth().account !== null;
 }
 
 export function logout(options?: { redirectTo?: string }) {
   const redirectTo = options?.redirectTo ?? window.location.pathname;
   const search = redirectTo ? `?r=${encodeURIComponent(redirectTo)}` : "";
-  window.location.replace(`/auth/logout${search}`);
+  // POST (with the CSRF header) so logout can't be forged via a cross-site
+  // navigation; redirect to login regardless of the request outcome.
+  void fetch("/auth/logout", {
+    method: "POST",
+    credentials: "include",
+    headers: { "X-Argos-CSRF": "1" },
+  }).finally(() => {
+    window.location.replace(`/login${search}`);
+  });
 }

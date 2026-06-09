@@ -12,7 +12,7 @@ export function HomeLink(props: Omit<HeadlessLinkProps, "to">) {
   const { pathname } = useLocation();
   const accountSlug =
     params.accountSlug ??
-    getLatestVisitedAccount() ??
+    (authPayload ? getLatestVisitedAccount(authPayload.account.id) : null) ??
     authPayload?.account.slug ??
     "";
   return (

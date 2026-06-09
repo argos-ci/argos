@@ -69,7 +69,6 @@
     "jotai": "^2.20.0",
     "jotai-family": "^1.0.2",
     "js-cookie": "^3.0.7",
-    "jwt-decode": "^4.0.0",
     "linkify-plugin-ticket": "^4.3.3",
     "linkify-react": "^4.3.3",
     "linkifyjs": "^4.3.3",
