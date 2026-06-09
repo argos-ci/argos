@@ -208,6 +208,9 @@ export async function up(knex) {
   await knex.schema.alterTable("github_accounts", (table) => {
     table.text("accessToken").alter();
   });
+  await knex.schema.alterTable("projects", (table) => {
+    table.text("token").notNullable().alter();
+  });
 
   await transform(knex, "encrypt");
 }
@@ -224,5 +227,8 @@ export async function down(knex) {
   });
   await knex.schema.alterTable("github_accounts", (table) => {
     table.string("accessToken").alter();
+  });
+  await knex.schema.alterTable("projects", (table) => {
+    table.string("token").notNullable().alter();
   });
 }

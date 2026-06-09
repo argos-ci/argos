@@ -2,9 +2,8 @@
 -- PostgreSQL database dump
 --
 
-
--- Dumped from database version 17.9
--- Dumped by pg_dump version 17.9 (Homebrew)
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1591,7 +1590,7 @@ CREATE TABLE public.projects (
     "createdAt" timestamp with time zone NOT NULL,
     "updatedAt" timestamp with time zone NOT NULL,
     name character varying(255) NOT NULL,
-    token character varying(255) NOT NULL,
+    token text NOT NULL,
     private boolean,
     "defaultBaseBranch" character varying(255),
     "accountId" bigint NOT NULL,
