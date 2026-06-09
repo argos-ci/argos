@@ -1,7 +1,6 @@
 import {
   createCipheriv,
   createDecipheriv,
-  createHash,
   createHmac,
   randomBytes,
 } from "node:crypto";
@@ -12,31 +11,25 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const IV_DERIVATION_INFO = "argos-iv-derivation";
-const DEV_DEFAULT_KEY =
-  "0000000000000000000000000000000000000000000000000000000000000000";
 
 let cachedKey: Buffer | null = null;
 
 /**
- * Derive the 32-byte AES key from the configured secret via SHA-256.
- * Accepts any high-entropy string; throws in production when the insecure
- * default is still in use.
+ * Get the 32-byte (256-bit) encryption key from the configuration.
  */
 function getKey(): Buffer {
   if (cachedKey) {
     return cachedKey;
   }
-  const secret = config.get("encryption.key");
-  if (
-    config.get("env") === "production" &&
-    (!secret || secret === DEV_DEFAULT_KEY)
-  ) {
+  const hexKey = config.get("encryption.key");
+  const key = Buffer.from(hexKey, "hex");
+  if (key.length !== 32) {
     throw new Error(
-      "ENCRYPTION_KEY must be set to a strong secret in production. Generate one with: openssl rand -hex 32",
+      "Invalid ENCRYPTION_KEY: expected a 32-byte (64 hex characters) key.",
     );
   }
-  cachedKey = createHash("sha256").update(secret).digest();
-  return cachedKey;
+  cachedKey = key;
+  return key;
 }
 
 /**

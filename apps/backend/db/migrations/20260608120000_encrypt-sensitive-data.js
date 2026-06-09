@@ -2,7 +2,6 @@ import { Buffer } from "node:buffer";
 import {
   createCipheriv,
   createDecipheriv,
-  createHash,
   createHmac,
   randomBytes,
 } from "node:crypto";
@@ -14,20 +13,20 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const IV_DERIVATION_INFO = "argos-iv-derivation";
-const DEV_DEFAULT_KEY =
-  "0000000000000000000000000000000000000000000000000000000000000000";
 
 function getKey() {
-  const secret = process.env.ENCRYPTION_KEY || DEV_DEFAULT_KEY;
-  if (
-    process.env.NODE_ENV === "production" &&
-    (!process.env.ENCRYPTION_KEY || secret === DEV_DEFAULT_KEY)
-  ) {
+  // Mirror the config default in apps/backend/src/config/index.ts so dev/test
+  // runs without ENCRYPTION_KEY derive the same key as the application.
+  const hexKey =
+    process.env.ENCRYPTION_KEY ||
+    "0000000000000000000000000000000000000000000000000000000000000000";
+  const key = Buffer.from(hexKey, "hex");
+  if (key.length !== 32) {
     throw new Error(
-      "ENCRYPTION_KEY must be set in production before running migrations. Generate one with: openssl rand -hex 32",
+      "Invalid ENCRYPTION_KEY: expected a 32-byte (64 hex characters) key.",
     );
   }
-  return createHash("sha256").update(secret).digest();
+  return key;
 }
 
 function encryptWithIv(key, plaintext, iv) {
@@ -102,6 +101,37 @@ const TARGETS = [
   },
 ];
 
+// Number of rows updated per SQL statement. Each row needs its own value (random
+// IV), so this bounds the number of round-trips rather than allowing a set-based
+// update. ~17K rows / 1000 = ~17 statements instead of 17K.
+const BATCH_SIZE = 1000;
+
+/**
+ * Apply per-row new values to a column in a single statement per batch, using
+ * `UPDATE ... FROM (VALUES ...)`.
+ *
+ * @param { import("knex").Knex } knex
+ * @param {string} table
+ * @param {string} idColumn
+ * @param {string} column
+ * @param {Array<{ id: unknown, value: string }>} updates
+ */
+async function bulkUpdateColumn(knex, table, idColumn, column, updates) {
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const chunk = updates.slice(i, i + BATCH_SIZE);
+    const valuesSql = chunk.map(() => "(?, ?)").join(", ");
+    const bindings = [table, column];
+    for (const { id, value } of chunk) {
+      bindings.push(id, value);
+    }
+    bindings.push(idColumn);
+    await knex.raw(
+      `UPDATE ?? AS t SET ?? = v.val FROM (VALUES ${valuesSql}) AS v(id, val) WHERE t.?? = v.id::bigint`,
+      bindings,
+    );
+  }
+}
+
 /**
  * @param { import("knex").Knex } knex
  */
@@ -112,19 +142,23 @@ async function transform(knex, mode) {
       target.idColumn,
       ...target.columns,
     ]);
+
+    /** @type {Map<string, Array<{ id: unknown, value: string }>>} */
+    const updatesByColumn = new Map(target.columns.map((c) => [c, []]));
+
     for (const row of rows) {
-      const update = {};
       for (const column of target.columns) {
         const value = row[column];
         if (typeof value !== "string") {
           continue;
         }
+        let next;
         if (mode === "encrypt") {
-          // Skip values that are already encrypted.
+          // Skip values that are already encrypted (idempotency).
           if (tryDecrypt(key, value) !== null) {
             continue;
           }
-          update[column] = target.deterministic
+          next = target.deterministic
             ? encryptDeterministic(key, value)
             : encrypt(key, value);
         } else {
@@ -132,13 +166,24 @@ async function transform(knex, mode) {
           if (decrypted === null) {
             continue;
           }
-          update[column] = decrypted;
+          next = decrypted;
         }
+        updatesByColumn
+          .get(column)
+          .push({ id: row[target.idColumn], value: next });
       }
-      if (Object.keys(update).length > 0) {
-        await knex(target.table)
-          .where(target.idColumn, row[target.idColumn])
-          .update(update);
+    }
+
+    for (const column of target.columns) {
+      const updates = updatesByColumn.get(column);
+      if (updates.length > 0) {
+        await bulkUpdateColumn(
+          knex,
+          target.table,
+          target.idColumn,
+          column,
+          updates,
+        );
       }
     }
   }
