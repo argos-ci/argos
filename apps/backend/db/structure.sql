@@ -2,8 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict t0WYqty14AP46Iau1G36AIzqDuN19f6bpVaW0yYUmIA4zS2SjrpdTR9IO5mL5Xu
-
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Homebrew)
 
@@ -4811,8 +4809,6 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict t0WYqty14AP46Iau1G36AIzqDuN19f6bpVaW0yYUmIA4zS2SjrpdTR9IO5mL5Xu
 
 -- Knex migrations
 

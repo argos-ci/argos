@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import {
   createCipheriv,
   createDecipheriv,
+  createHash,
   createHmac,
   randomBytes,
 } from "node:crypto";
@@ -13,18 +14,20 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const IV_DERIVATION_INFO = "argos-iv-derivation";
+const DEV_DEFAULT_KEY =
+  "0000000000000000000000000000000000000000000000000000000000000000";
 
 function getKey() {
-  const hexKey =
-    process.env.ENCRYPTION_KEY ||
-    "0000000000000000000000000000000000000000000000000000000000000000";
-  const key = Buffer.from(hexKey, "hex");
-  if (key.length !== 32) {
+  const secret = process.env.ENCRYPTION_KEY || DEV_DEFAULT_KEY;
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!process.env.ENCRYPTION_KEY || secret === DEV_DEFAULT_KEY)
+  ) {
     throw new Error(
-      "Invalid ENCRYPTION_KEY: expected a 32-byte (64 hex characters) key.",
+      "ENCRYPTION_KEY must be set in production before running migrations. Generate one with: openssl rand -hex 32",
     );
   }
-  return key;
+  return createHash("sha256").update(secret).digest();
 }
 
 function encryptWithIv(key, plaintext, iv) {
