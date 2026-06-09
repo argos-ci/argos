@@ -121,6 +121,7 @@ jobs:
             NODE_ENV=production
           secrets: |
             DATABASE_URL=/production/database_url
+            ENCRYPTION_KEY=/production/encryption_key
 
       - name: Run ECS migration task
         env:
