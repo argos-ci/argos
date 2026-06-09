@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.9
--- Dumped by pg_dump version 17.9 (Homebrew)
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -883,7 +883,7 @@ CREATE TABLE public.github_accounts (
     login character varying(255) NOT NULL,
     "githubId" integer NOT NULL,
     type text NOT NULL,
-    "accessToken" text,
+    "accessToken" character varying(255),
     scope character varying(255),
     "lastLoggedAt" timestamp with time zone,
     emails jsonb,
@@ -1170,9 +1170,9 @@ CREATE TABLE public.gitlab_users (
     email character varying(255) NOT NULL,
     username character varying(255) NOT NULL,
     "gitlabId" integer NOT NULL,
-    "accessToken" text NOT NULL,
+    "accessToken" character varying(255) NOT NULL,
     "accessTokenExpiresAt" timestamp with time zone NOT NULL,
-    "refreshToken" text NOT NULL,
+    "refreshToken" character varying(255) NOT NULL,
     "lastLoggedAt" timestamp with time zone
 );
 
@@ -5019,4 +5019,3 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026053
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260530130000_comment-deleted-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531120000_comment-notifications-subscriptions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531130000_comment-mentions.js', 1, NOW());
-INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260608120000_encrypt-sensitive-data.js', 1, NOW());
