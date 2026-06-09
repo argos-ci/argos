@@ -8,11 +8,6 @@ describe("encrypt / decrypt", () => {
     const encrypted = encrypt(value);
     expect(encrypted).not.toBe(value);
     expect(decrypt(encrypted)).toBe(value);
-    console.log(
-      decrypt(
-        "TFC4pH6ob4Na3GNOBWRF0hKN4sdCaF6HlRbj2el9TMyM1sayWJbHpqTpZUmjTD8es7TobiJZzFufjIdIiHMaalnR4tA=",
-      ),
-    );
   });
 
   it("uses a random IV so equal plaintexts produce different ciphertexts", () => {
