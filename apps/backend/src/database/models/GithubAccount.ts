@@ -8,6 +8,8 @@ import { GithubAccountMember } from "./GithubAccountMember";
 export class GithubAccount extends Model {
   static override tableName = "github_accounts";
 
+  static override encryptedAttributes = ["accessToken"];
+
   static override get jsonAttributes() {
     return ["emails"];
   }
