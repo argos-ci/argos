@@ -7,6 +7,8 @@ import { User } from "./User";
 export class GitlabUser extends Model {
   static override tableName = "gitlab_users";
 
+  static override encryptedAttributes = ["accessToken", "refreshToken"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

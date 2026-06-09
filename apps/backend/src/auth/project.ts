@@ -1,5 +1,6 @@
 import type { AuthProjectPayload } from "@/auth/payload";
 import { Project, UserAccessToken } from "@/database/models";
+import { encryptDeterministic } from "@/database/services/encrypt";
 import { boom } from "@/util/error";
 
 import {
@@ -39,7 +40,7 @@ export async function getAuthProjectPayloadFromBearerToken(bearer: string) {
 
   const project = strategy
     ? await strategy.getProject(bearer)
-    : await Project.query().findOne({ token: bearer });
+    : await Project.query().findOne({ token: encryptDeterministic(bearer) });
 
   if (!project && strategy) {
     throw boom(

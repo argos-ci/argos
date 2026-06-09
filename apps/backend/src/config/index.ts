@@ -125,6 +125,15 @@ export function createConfig() {
         env: "SERVER_SESSION_SECRET",
       },
     },
+    encryption: {
+      key: {
+        doc: "32-byte (64 hex characters) key used to encrypt sensitive columns at rest. Must be overridden in production.",
+        format: String,
+        default:
+          "0000000000000000000000000000000000000000000000000000000000000000",
+        env: "ENCRYPTION_KEY",
+      },
+    },
     csp: {
       scriptSrc: {
         doc: "Content Security Policy script-src",

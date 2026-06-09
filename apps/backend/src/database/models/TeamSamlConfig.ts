@@ -7,6 +7,8 @@ import { Account } from "./Account";
 export class TeamSamlConfig extends Model {
   static override tableName = "team_saml_configs";
 
+  static override encryptedAttributes = ["signingCertificate"];
+
   static override get jsonAttributes() {
     return ["signingCertificate", "domainAllowlist"];
   }

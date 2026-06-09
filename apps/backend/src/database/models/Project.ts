@@ -44,6 +44,8 @@ const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
 export class Project extends Model {
   static override tableName = "projects";
 
+  static override deterministicEncryptedAttributes = ["token"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,
