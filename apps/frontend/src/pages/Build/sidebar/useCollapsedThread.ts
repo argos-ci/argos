@@ -1,15 +1,40 @@
-import { useCallback } from "react";
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import { atom, useAtom } from "jotai";
+import { atomFamily } from "jotai-family";
+import { atomWithStorage, RESET } from "jotai/utils";
 
 /**
- * Per-thread collapse preference, persisted in local storage and keyed by the
- * root comment id. Only resolved threads are collapsible; unresolved threads
- * are always shown in full.
+ * Ids of resolved threads the user has explicitly expanded, persisted in local
+ * storage. Resolved threads are collapsed by default, so only these exceptions
+ * are stored: an id is dropped as soon as its thread collapses back to the
+ * default, and the key is removed entirely once none remain.
  */
-const collapsedThreadsAtom = atomWithStorage<Record<string, boolean>>(
-  "preferences.collapsedCommentThreads",
-  {},
+const expandedThreadsAtom = atomWithStorage<string[]>(
+  "preferences.expandedCommentThreads",
+  [],
+);
+
+/**
+ * Per-thread collapse state derived from {@link expandedThreadsAtom}. A family
+ * of derived atoms keeps threads isolated — toggling one re-renders only that
+ * thread, since every other thread's derived value is unchanged.
+ */
+const collapsedThreadAtomFamily = atomFamily((commentId: string) =>
+  atom(
+    (get) => !get(expandedThreadsAtom).includes(commentId),
+    (get, set, collapsed: boolean) => {
+      const expanded = get(expandedThreadsAtom);
+      if (collapsed) {
+        if (!expanded.includes(commentId)) {
+          return;
+        }
+        const next = expanded.filter((id) => id !== commentId);
+        // Forget the whole key once no thread is expanded anymore.
+        set(expandedThreadsAtom, next.length === 0 ? RESET : next);
+      } else if (!expanded.includes(commentId)) {
+        set(expandedThreadsAtom, [...expanded, commentId]);
+      }
+    },
+  ),
 );
 
 /**
@@ -21,13 +46,8 @@ export function useCollapsedThread(
   commentId: string,
   resolved: boolean,
 ): readonly [boolean, (collapsed: boolean) => void] {
-  const [collapsedThreads, setCollapsedThreads] = useAtom(collapsedThreadsAtom);
-  const collapsed = resolved ? (collapsedThreads[commentId] ?? true) : false;
-  const setCollapsed = useCallback(
-    (value: boolean) => {
-      setCollapsedThreads((prev) => ({ ...prev, [commentId]: value }));
-    },
-    [commentId, setCollapsedThreads],
+  const [collapsed, setCollapsed] = useAtom(
+    collapsedThreadAtomFamily(commentId),
   );
-  return [collapsed, setCollapsed] as const;
+  return [resolved && collapsed, setCollapsed] as const;
 }
