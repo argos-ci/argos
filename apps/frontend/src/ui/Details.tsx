@@ -12,7 +12,9 @@ export function Details(props: React.ComponentPropsWithRef<"details">) {
 export function Summary(props: {
   className?: string;
   children: React.ReactNode;
+  chevronPosition?: "left" | "right";
 }) {
+  const chevronPosition = props.chevronPosition ?? "left";
   const ref = useRef<HTMLElement>(null);
   const { pressProps, isPressed } = usePress({
     onPress: () => {
@@ -45,8 +47,13 @@ export function Summary(props: {
         pressProps.onClick?.(event);
       }}
     >
-      <ChevronRightIcon className="size-[1em] transition group-open/details:rotate-90" />
+      {chevronPosition === "left" && (
+        <ChevronRightIcon className="size-[1em] transition group-open/details:rotate-90" />
+      )}
       {props.children}
+      {chevronPosition === "right" && (
+        <ChevronRightIcon className="ml-auto size-[1em] transition group-open/details:rotate-90" />
+      )}
     </summary>
   );
 }

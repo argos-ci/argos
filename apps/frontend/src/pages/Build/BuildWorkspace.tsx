@@ -7,7 +7,7 @@ import { snapshotTypeAtom } from "@/containers/Build/SnapshotType";
 import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { BuildStatusDescription } from "@/containers/BuildStatusDescription";
 import { DocumentType, graphql } from "@/gql";
-import { BuildStatus } from "@/gql/graphql";
+import { BuildStatus, BuildType } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { EggLoader } from "@/ui/EggLoader";
 import { Progress } from "@/ui/Progress";
@@ -16,6 +16,7 @@ import { Code } from "../../ui/Code";
 import { Link } from "../../ui/Link";
 import { BuildDetailHeader } from "./BuildDetailHeader";
 import { useBuildDiffState } from "./BuildDiffState";
+import { BuildOverview } from "./BuildOverview";
 import { BuildParams } from "./BuildParams";
 import { BuildLeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
@@ -26,6 +27,7 @@ const _BuildFragment = graphql(`
     ...BuildStatusDescription_Build
     ...BuildDiffDetail_Build
     ...RightSidebar_Build
+    ...BuildOverview_Build
     status
     subset
     parallel {
@@ -141,6 +143,18 @@ export function BuildWorkspace(props: {
                 case BuildStatus.Progress:
                   return <BuildProgress parallel={build.parallel} />;
                 default:
+                  if (
+                    !params.diffId &&
+                    build.type !== BuildType.Skipped &&
+                    (build.stats?.total ?? 0) > 0
+                  ) {
+                    return (
+                      <BuildOverview
+                        build={build}
+                        hasRepository={Boolean(project.repository)}
+                      />
+                    );
+                  }
                   return (
                     build && <BuildDetail build={build} repoUrl={repoUrl} />
                   );
