@@ -648,7 +648,8 @@ CREATE TABLE public.comments (
     "threadId" bigint,
     content jsonb NOT NULL,
     "editedAt" timestamp with time zone,
-    "deletedAt" timestamp with time zone
+    "deletedAt" timestamp with time zone,
+    "resolvedAt" timestamp with time zone
 );
 
 
@@ -5104,3 +5105,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026053
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260531130000_comment-mentions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260608120000_user-sessions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260609120000_encrypt-sensitive-data.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260610120000_comment-resolved-at.js', 1, NOW());

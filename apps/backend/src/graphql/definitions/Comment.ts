@@ -9,6 +9,10 @@ import { formatCommentId, parseCommentId } from "@/comment/id";
 import { getCommentPermissions } from "@/comment/permissions";
 import { groupCommentReactions } from "@/comment/reactions";
 import { removeCommentReaction } from "@/comment/removeCommentReaction";
+import {
+  resolveCommentThread,
+  unresolveCommentThread,
+} from "@/comment/resolveCommentThread";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
 import { Comment } from "@/database/models/Comment";
@@ -143,6 +147,8 @@ export const typeDefs = gql`
     date: DateTime!
     "Date the comment was last edited, null if never edited"
     editedAt: DateTime
+    "Date the thread was resolved, null if not resolved. Only set on a root comment."
+    resolvedAt: DateTime
     "Rich-text JSON content of the comment"
     content: JSONObject!
     "Author of the comment"
@@ -191,6 +197,14 @@ export const typeDefs = gql`
     commentId: ID!
   }
 
+  input ResolveCommentThreadInput {
+    commentId: ID!
+  }
+
+  input UnresolveCommentThreadInput {
+    commentId: ID!
+  }
+
   extend type Mutation {
     "Post a comment on a build"
     addBuildComment(input: AddBuildCommentInput!): Build!
@@ -208,6 +222,10 @@ export const typeDefs = gql`
     unsubscribeFromCommentThread(
       input: UnsubscribeFromCommentThreadInput!
     ): Comment!
+    "Mark a comment thread as resolved"
+    resolveCommentThread(input: ResolveCommentThreadInput!): Comment!
+    "Reopen a resolved comment thread"
+    unresolveCommentThread(input: UnresolveCommentThreadInput!): Comment!
   }
 `;
 
@@ -219,6 +237,9 @@ export const resolvers: IResolvers = {
     },
     editedAt: (comment) => {
       return comment.editedAt ? new Date(comment.editedAt) : null;
+    },
+    resolvedAt: (comment) => {
+      return comment.resolvedAt ? new Date(comment.resolvedAt) : null;
     },
     content: (comment) => {
       return comment.content as Record<string, unknown>;
@@ -433,6 +454,30 @@ export const resolvers: IResolvers = {
         userId: auth.user.id,
       });
       return thread;
+    },
+    resolveCommentThread: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+      const thread = await getCommentThreadForUser({
+        id: args.input.commentId,
+        user: auth.user,
+        permission: "review",
+      });
+      return resolveCommentThread({ thread });
+    },
+    unresolveCommentThread: async (_root, args, ctx) => {
+      const { auth } = ctx;
+      if (!auth) {
+        throw unauthenticated();
+      }
+      const thread = await getCommentThreadForUser({
+        id: args.input.commentId,
+        user: auth.user,
+        permission: "review",
+      });
+      return unresolveCommentThread({ thread });
     },
   },
 };

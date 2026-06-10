@@ -1,6 +1,7 @@
 import {
   BellIcon,
   BellOffIcon,
+  CheckIcon,
   LinkIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -22,6 +23,10 @@ export function CommentActionsMenu(props: {
   threadSubscribed: boolean;
   onSubscribeThread: () => void;
   onUnsubscribeThread: () => void;
+  /** Whether the thread is currently resolved. */
+  resolved: boolean;
+  /** When provided, a "Resolve thread"/"Reopen thread" action is shown. */
+  onToggleResolved?: () => void;
   /** When provided, an "Edit comment" action is shown. */
   onEdit?: () => void;
   /** When provided, a "Delete comment" action is shown. */
@@ -32,6 +37,8 @@ export function CommentActionsMenu(props: {
     onSubscribeThread,
     onUnsubscribeThread,
     threadSubscribed,
+    resolved,
+    onToggleResolved,
     onEdit,
     onDelete,
   } = props;
@@ -50,12 +57,6 @@ export function CommentActionsMenu(props: {
               Edit
             </MenuItem>
           ) : null}
-          <MenuItem onAction={onCopyLink}>
-            <MenuItemIcon>
-              <LinkIcon />
-            </MenuItemIcon>
-            Copy link to comment
-          </MenuItem>
           <MenuItem
             onAction={
               threadSubscribed ? onUnsubscribeThread : onSubscribeThread
@@ -67,6 +68,24 @@ export function CommentActionsMenu(props: {
             {threadSubscribed
               ? "Unsubscribe from thread"
               : "Subscribe to thread"}
+          </MenuItem>
+          {onToggleResolved ? (
+            <>
+              <MenuSeparator />
+              <MenuItem onAction={onToggleResolved}>
+                <MenuItemIcon>
+                  <CheckIcon />
+                </MenuItemIcon>
+                {resolved ? "Reopen thread" : "Resolve thread"}
+              </MenuItem>
+            </>
+          ) : null}
+          <MenuSeparator />
+          <MenuItem onAction={onCopyLink}>
+            <MenuItemIcon>
+              <LinkIcon />
+            </MenuItemIcon>
+            Copy link to comment
           </MenuItem>
           {onDelete ? (
             <>

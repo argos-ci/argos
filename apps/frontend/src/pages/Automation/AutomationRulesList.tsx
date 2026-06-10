@@ -78,7 +78,7 @@ function LastTriggerStatusIcon({
         </IconButton>
       </Tooltip>
       <Popover className="bg-app">
-        <div className="flex flex-col gap-2 p-2">
+        <div className="flex flex-col gap-2 p-3">
           <div className="text-xs font-semibold">Runs</div>
           {automationRun.actionRuns.map((actionRun) => {
             const action = ACTIONS.find((a) => a.type === actionRun.actionName);
