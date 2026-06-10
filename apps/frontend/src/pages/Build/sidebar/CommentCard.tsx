@@ -2,7 +2,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { ArrowUpIcon } from "lucide-react";
+import {
+  ArrowUpIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
+  MessageSquareCheckIcon,
+} from "lucide-react";
 import moment from "moment";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "react-aria-components";
@@ -33,6 +38,7 @@ import {
 } from "./CommentReactions";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
 import { useMentionableUsers } from "./MentionableUsersContext";
+import { useCollapsedThread } from "./useCollapsedThread";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
 const COPY_TOAST_ID = "comment-link-copied";
@@ -40,11 +46,21 @@ const COPY_TOAST_ID = "comment-link-copied";
 // Detailed date format used in the date tooltip, e.g. "Thu May 21, 2026, 15:47:43".
 const DETAILED_DATE_FORMAT = "ddd MMM D, YYYY, HH:mm:ss";
 
+// Shared height/opacity transition for content that animates in and out: the
+// reply list, and the thread body collapsing when a thread is resolved. Kept in
+// sync with the comment-removal animation so both feel the same.
+const COLLAPSE_TRANSITION = {
+  duration: 0.25,
+  ease: [0.4, 0, 0.2, 1],
+  opacity: { duration: 0.15 },
+} as const;
+
 const _CommentFragment = graphql(`
   fragment CommentCard_Comment on Comment {
     id
     date
     editedAt
+    resolvedAt
     content
     threadId
     threadSubscribed
@@ -111,6 +127,28 @@ const UnsubscribeFromCommentThreadMutation = graphql(`
   }
 `);
 
+const ResolveCommentThreadMutation = graphql(`
+  mutation CommentCard_resolveCommentThread(
+    $input: ResolveCommentThreadInput!
+  ) {
+    resolveCommentThread(input: $input) {
+      id
+      resolvedAt
+    }
+  }
+`);
+
+const UnresolveCommentThreadMutation = graphql(`
+  mutation CommentCard_unresolveCommentThread(
+    $input: UnresolveCommentThreadInput!
+  ) {
+    unresolveCommentThread(input: $input) {
+      id
+      resolvedAt
+    }
+  }
+`);
+
 export function CommentCard(props: {
   buildId: string;
   comment: Comment;
@@ -154,6 +192,36 @@ export function CommentCard(props: {
       },
     },
   );
+  const [resolveCommentThread] = useMutation(ResolveCommentThreadMutation, {
+    variables: { input: { commentId: comment.id } },
+    optimisticResponse: {
+      resolveCommentThread: {
+        __typename: "Comment",
+        id: comment.id,
+        resolvedAt: new Date().toISOString(),
+      },
+    },
+  });
+  const [unresolveCommentThread] = useMutation(UnresolveCommentThreadMutation, {
+    variables: { input: { commentId: comment.id } },
+    optimisticResponse: {
+      unresolveCommentThread: {
+        __typename: "Comment",
+        id: comment.id,
+        resolvedAt: null,
+      },
+    },
+  });
+
+  const resolved = Boolean(comment.resolvedAt);
+  const [collapsed, setCollapsed] = useCollapsedThread(comment.id, resolved);
+  // Keep a deep-linked comment visible even inside a collapsed resolved thread,
+  // so the highlight from the URL hash isn't hidden away.
+  const containsHighlighted =
+    highlightedCommentId != null &&
+    (highlightedCommentId === comment.id ||
+      replies.some((reply) => reply.id === highlightedCommentId));
+  const showBody = !resolved || !collapsed || containsHighlighted;
 
   const handleReplySubmit = async (body: EditorValue) => {
     try {
@@ -193,41 +261,120 @@ export function CommentCard(props: {
       });
   };
 
+  const toggleResolved = () => {
+    if (resolved) {
+      unresolveCommentThread()
+        .then(() => {
+          toast.success("Thread reopened.");
+        })
+        .catch((error) => {
+          toast.error(getErrorMessage(error));
+        });
+    } else {
+      resolveCommentThread()
+        .then(() => {
+          toast.success("Thread resolved.");
+        })
+        .catch((error) => {
+          toast.error(getErrorMessage(error));
+        });
+    }
+  };
+
+  // Only reviewers can resolve a thread; gate the menu action accordingly.
+  const onToggleResolved = canReply ? toggleResolved : undefined;
+
   return (
     <div className="border-thin bg-app -mx-2.5 rounded-md">
-      <CommentMessage
-        comment={comment}
-        highlighted={comment.id === highlightedCommentId}
-        threadSubscribed={comment.threadSubscribed}
-        onSubscribeThread={subscribeThread}
-        onUnsubscribeThread={unsubscribeThread}
-      />
+      {resolved ? (
+        <ResolvedThreadHeader
+          collapsed={!showBody}
+          commentCount={replies.length + 1}
+          authorName={
+            comment.user?.name || comment.user?.slug || "Unknown user"
+          }
+          onToggle={() => setCollapsed(showBody)}
+        />
+      ) : null}
       <AnimatePresence initial={false}>
-        {replies.map((reply) => (
+        {showBody ? (
           <motion.div
-            key={reply.id}
+            key="thread-body"
             style={{ overflowY: "clip" }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{
-              duration: 0.25,
-              ease: [0.4, 0, 0.2, 1],
-              opacity: { duration: 0.15 },
-            }}
+            transition={COLLAPSE_TRANSITION}
           >
             <CommentMessage
-              comment={reply}
-              highlighted={reply.id === highlightedCommentId}
-              isReply
-              separated
+              comment={comment}
+              highlighted={comment.id === highlightedCommentId}
+              separated={resolved}
+              resolved={resolved}
               threadSubscribed={comment.threadSubscribed}
               onSubscribeThread={subscribeThread}
               onUnsubscribeThread={unsubscribeThread}
+              onToggleResolved={onToggleResolved}
             />
+            <AnimatePresence initial={false}>
+              {replies.map((reply) => (
+                <motion.div
+                  key={reply.id}
+                  style={{ overflowY: "clip" }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={COLLAPSE_TRANSITION}
+                >
+                  <CommentMessage
+                    comment={reply}
+                    highlighted={reply.id === highlightedCommentId}
+                    isReply
+                    separated
+                    resolved={resolved}
+                    threadSubscribed={comment.threadSubscribed}
+                    onSubscribeThread={subscribeThread}
+                    onUnsubscribeThread={unsubscribeThread}
+                    onToggleResolved={onToggleResolved}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {canReply ? <ReplyComposer onSubmit={handleReplySubmit} /> : null}
           </motion.div>
-        ))}
+        ) : null}
       </AnimatePresence>
-      {canReply ? <ReplyComposer onSubmit={handleReplySubmit} /> : null}
     </div>
+  );
+}
+
+function ResolvedThreadHeader(props: {
+  collapsed: boolean;
+  commentCount: number;
+  authorName: string;
+  onToggle: () => void;
+}) {
+  const { collapsed, commentCount, authorName, onToggle } = props;
+  return (
+    <Button
+      onPress={onToggle}
+      aria-label={collapsed ? "Expand thread" : "Collapse thread"}
+      className="text-low hover:text-default flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-xs transition select-none"
+    >
+      {collapsed ? (
+        <>
+          <MessageSquareCheckIcon className="size-3.5 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">
+            {commentCount} resolved comment{commentCount > 1 ? "s" : ""} from{" "}
+            {authorName}
+          </span>
+          <ChevronsUpDownIcon className="size-3.5 shrink-0" />
+        </>
+      ) : (
+        <>
+          <span className="min-w-0 flex-1">Collapse</span>
+          <ChevronsDownUpIcon className="size-3.5 shrink-0" />
+        </>
+      )}
+    </Button>
   );
 }
 
@@ -237,6 +384,8 @@ function CommentMessage(props: {
   threadSubscribed: boolean;
   onSubscribeThread: () => void;
   onUnsubscribeThread: () => void;
+  resolved: boolean;
+  onToggleResolved?: () => void;
   separated?: boolean;
   isReply?: boolean;
 }) {
@@ -246,6 +395,8 @@ function CommentMessage(props: {
     threadSubscribed,
     onSubscribeThread,
     onUnsubscribeThread,
+    resolved,
+    onToggleResolved,
     separated = false,
     isReply = false,
   } = props;
@@ -371,6 +522,8 @@ function CommentMessage(props: {
               threadSubscribed={threadSubscribed}
               onSubscribeThread={onSubscribeThread}
               onUnsubscribeThread={onUnsubscribeThread}
+              resolved={resolved}
+              onToggleResolved={onToggleResolved}
               onEdit={canEdit ? () => setIsEditing(true) : undefined}
               onDelete={
                 canDelete ? () => setIsDeleteDialogOpen(true) : undefined

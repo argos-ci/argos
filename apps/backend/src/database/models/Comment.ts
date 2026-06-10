@@ -28,6 +28,7 @@ export class Comment extends Model {
           threadId: { type: ["string", "null"] },
           editedAt: { type: ["string", "null"] },
           deletedAt: { type: ["string", "null"] },
+          resolvedAt: { type: ["string", "null"] },
           content: {
             anyOf: [
               { type: "array" },
@@ -49,6 +50,11 @@ export class Comment extends Model {
   threadId!: string | null;
   editedAt!: string | null;
   deletedAt!: string | null;
+  /**
+   * When set, the thread is resolved. Only ever set on a root comment (one with
+   * a null `threadId`); replies leave it null and inherit their thread's state.
+   */
+  resolvedAt!: string | null;
   content!: unknown;
 
   static override get relationMappings(): RelationMappings {

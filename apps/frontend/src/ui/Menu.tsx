@@ -22,7 +22,7 @@ import {
 import { Tooltip } from "./Tooltip";
 
 export function MenuSeparator() {
-  return <Separator className="my-1 border-t" />;
+  return <Separator className="border-t-thin -mx-1 my-1" />;
 }
 
 export { MenuTrigger, SubmenuTrigger } from "react-aria-components";
@@ -36,7 +36,7 @@ export function Menu<T extends object>(
     <RACMenu<T>
       {...props}
       className={clsx(
-        "overflow-auto outline-hidden select-none",
+        "overflow-auto p-1 outline-hidden select-none",
         props.className,
       )}
     />

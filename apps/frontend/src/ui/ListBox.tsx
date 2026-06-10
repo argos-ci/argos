@@ -15,7 +15,7 @@ export function ListBox<T extends object>({
 }: ListBoxProps<T>) {
   return (
     <RACListBox<T>
-      className={clsx("overflow-auto outline-hidden", className)}
+      className={clsx("overflow-auto p-1 outline-hidden", className)}
       {...props}
     />
   );
@@ -38,7 +38,7 @@ export function ListBoxItem(
       className={clsx(
         className,
         "group/item",
-        "text-default data-focused:bg-active data-pressed:bg-active data-disabled:opacity-disabled flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition select-none focus:outline-hidden",
+        "text-default data-focused:bg-active data-pressed:bg-active data-disabled:opacity-disabled flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm select-none focus:outline-hidden",
       )}
       {...restProps}
     >
