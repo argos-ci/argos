@@ -214,9 +214,11 @@ export function CommentCard(props: {
   });
 
   const resolved = Boolean(comment.resolvedAt);
+  // `collapsed` is the stored preference and drives the header label and toggle.
   const [collapsed, setCollapsed] = useCollapsedThread(comment.id, resolved);
   // Keep a deep-linked comment visible even inside a collapsed resolved thread,
-  // so the highlight from the URL hash isn't hidden away.
+  // so the highlight from the URL hash isn't hidden away. This only affects what
+  // is shown, not the stored `collapsed` preference.
   const containsHighlighted =
     highlightedCommentId != null &&
     (highlightedCommentId === comment.id ||
@@ -288,12 +290,12 @@ export function CommentCard(props: {
     <div className="border-thin bg-app -mx-2.5 rounded-md">
       {resolved ? (
         <ResolvedThreadHeader
-          collapsed={!showBody}
+          collapsed={collapsed}
           commentCount={replies.length + 1}
           authorName={
             comment.user?.name || comment.user?.slug || "Unknown user"
           }
-          onToggle={() => setCollapsed(showBody)}
+          onToggle={() => setCollapsed(!collapsed)}
         />
       ) : null}
       <AnimatePresence initial={false}>
