@@ -216,14 +216,19 @@ export function CommentCard(props: {
   const resolved = Boolean(comment.resolvedAt);
   // `collapsed` is the stored preference and drives the header label and toggle.
   const [collapsed, setCollapsed] = useCollapsedThread(comment.id, resolved);
-  // Keep a deep-linked comment visible even inside a collapsed resolved thread,
-  // so the highlight from the URL hash isn't hidden away. This only affects what
-  // is shown, not the stored `collapsed` preference.
+  const showBody = !resolved || !collapsed;
+  // Deep-linking to a comment inside a resolved thread opens the thread for
+  // good (not just for the highlight's lifetime), so the target comment stays
+  // visible instead of vanishing when the highlight clears.
   const containsHighlighted =
     highlightedCommentId != null &&
     (highlightedCommentId === comment.id ||
       replies.some((reply) => reply.id === highlightedCommentId));
-  const showBody = !resolved || !collapsed || containsHighlighted;
+  useEffect(() => {
+    if (resolved && collapsed && containsHighlighted) {
+      setCollapsed(false);
+    }
+  }, [resolved, collapsed, containsHighlighted, setCollapsed]);
 
   const handleReplySubmit = async (body: EditorValue) => {
     try {
