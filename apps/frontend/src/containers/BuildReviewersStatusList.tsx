@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import clsx from "clsx";
 import { BanIcon } from "lucide-react";
+import moment from "moment";
 
 import type { ReviewState } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
@@ -72,7 +73,9 @@ export function BuildReviewersStatusList<
             <strong className="flex-1 truncate font-medium">
               {review.user?.name || review.user?.slug}
             </strong>
-            <Tooltip content={descriptor.label}>
+            <Tooltip
+              content={`${descriptor.label} · ${moment(review.dismissedAt ?? review.date).fromNow()}`}
+            >
               <Icon
                 className={clsx("size-3.5 shrink-0", descriptor.textColor)}
               />
