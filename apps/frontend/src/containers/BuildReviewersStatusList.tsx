@@ -74,7 +74,7 @@ export function BuildReviewersStatusList<
               {review.user?.name || review.user?.slug}
             </strong>
             <Tooltip
-              content={`${descriptor.label} · ${moment(review.date).fromNow()}`}
+              content={`${descriptor.label} · ${moment(review.dismissedAt ?? review.date).fromNow()}`}
             >
               <Icon
                 className={clsx("size-3.5 shrink-0", descriptor.textColor)}
