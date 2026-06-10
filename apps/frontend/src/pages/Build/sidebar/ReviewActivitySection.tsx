@@ -244,8 +244,15 @@ function toMentionUsers(members: Build["members"]): MentionUser[] {
   return members.map(getMentionUser);
 }
 
-export function ReviewActivitySection(props: { build: Build }) {
-  const { build } = props;
+export function ReviewActivitySection(props: {
+  build: Build;
+  /**
+   * "sidebar" wraps the section in a card (used in the build sidebar). "page"
+   * renders it flat, without card chrome, to sit directly on the page.
+   */
+  variant?: "sidebar" | "page";
+}) {
+  const { build, variant = "sidebar" } = props;
   // `UserCard_user` (spread by the subscription) scopes the author's role to
   // the project, so the operation needs the project's slug/name from the route.
   const { accountSlug, projectName } = useParams();
@@ -347,6 +354,44 @@ export function ReviewActivitySection(props: { build: Build }) {
     () => toMentionUsers(build.members),
     [build.members],
   );
+  const body = (
+    <>
+      <Activity gap={false}>
+        <AnimatePresence initial={false}>
+          {entries.map((entry, index) => (
+            <ActivityEntryRow
+              key={getActivityEntryKey(entry)}
+              entry={entry}
+              highlightedCommentId={highlightedCommentId}
+              isFirst={index === 0}
+              buildId={build.id}
+              canReply={canComment}
+            />
+          ))}
+        </AnimatePresence>
+      </Activity>
+      {canComment ? (
+        <div className={variant === "page" ? "mt-3" : "-mx-1.5 mt-3 -mb-1.5"}>
+          <AddCommentForm build={build} />
+        </div>
+      ) : null}
+    </>
+  );
+  if (variant === "page") {
+    return (
+      <MentionableUsersProvider value={mentionableUsers}>
+        <section className="max-w-3xl select-none">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-primary-low text-xs font-semibold tracking-wider uppercase">
+              Activity
+            </h2>
+            <SubscribeToggleButton build={build} />
+          </div>
+          {body}
+        </section>
+      </MentionableUsersProvider>
+    );
+  }
   return (
     <MentionableUsersProvider value={mentionableUsers}>
       <SidebarSection>
@@ -354,27 +399,7 @@ export function ReviewActivitySection(props: { build: Build }) {
           <SidebarHeading>Activity</SidebarHeading>
           <SubscribeToggleButton build={build} />
         </SidebarHeader>
-        <div className="px-3 select-none">
-          <Activity gap={false}>
-            <AnimatePresence initial={false}>
-              {entries.map((entry, index) => (
-                <ActivityEntryRow
-                  key={getActivityEntryKey(entry)}
-                  entry={entry}
-                  highlightedCommentId={highlightedCommentId}
-                  isFirst={index === 0}
-                  buildId={build.id}
-                  canReply={canComment}
-                />
-              ))}
-            </AnimatePresence>
-          </Activity>
-          {canComment ? (
-            <div className="-mx-1.5 mt-3 -mb-1.5">
-              <AddCommentForm build={build} />
-            </div>
-          ) : null}
-        </div>
+        <div className="px-3 select-none">{body}</div>
       </SidebarSection>
     </MentionableUsersProvider>
   );

@@ -60,6 +60,12 @@ const hotkeyGroups = [
   {
     name: "Navigation",
     hotkeys: {
+      startReview: {
+        keys: ["Enter"],
+        displayKeys: ["↵"],
+        description: "Start reviewing changes",
+        envs: ["build"],
+      },
       goToPreviousDiff: {
         keys: ["ArrowUp"],
         displayKeys: ["↑"],
@@ -268,6 +274,7 @@ type HotkeyOptions = {
   preventDefault: boolean;
   enabled: boolean;
   allowInInput: boolean;
+  ignoreInteractiveTarget: boolean;
 };
 
 type HotkeyRegistration = {
@@ -361,6 +368,16 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
       continue;
     }
 
+    // Let interactive elements (buttons, links, inputs…) handle the key
+    // themselves when the hotkey opts into yielding to them.
+    if (
+      options.ignoreInteractiveTarget &&
+      event.target instanceof HTMLElement &&
+      event.target.closest("button, a, [role=button], input, select, textarea")
+    ) {
+      continue;
+    }
+
     if (!checkHotkeyMatches(hotkey, event)) {
       continue;
     }
@@ -401,6 +418,11 @@ export function useBuildHotkey(
     preventDefault?: boolean;
     enabled?: boolean;
     allowInInput?: boolean;
+    /**
+     * Ignore the hotkey when the event targets an interactive element
+     * (button, link, input…), letting the element handle the key itself.
+     */
+    ignoreInteractiveTarget?: boolean;
   },
 ): Hotkey {
   const hotkey = hotkeys[name];
@@ -408,10 +430,11 @@ export function useBuildHotkey(
     preventDefault = true,
     enabled = true,
     allowInInput = false,
+    ignoreInteractiveTarget = false,
   } = options ?? {};
   const ref = useLiveRef({
     callback,
-    options: { preventDefault, enabled, allowInInput },
+    options: { preventDefault, enabled, allowInInput, ignoreInteractiveTarget },
   });
   useEffect(() => {
     return registerHotkey({ hotkey, ref, timeout: 0 });

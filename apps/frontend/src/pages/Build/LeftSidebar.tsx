@@ -1,6 +1,6 @@
 import { memo, startTransition, useCallback, useRef } from "react";
 import clsx from "clsx";
-import { SearchIcon, XIcon } from "lucide-react";
+import { PanelsTopLeftIcon, SearchIcon, XIcon } from "lucide-react";
 import {
   Tab as RACTab,
   TabList as RACTabList,
@@ -14,11 +14,13 @@ import { DocumentType, graphql } from "@/gql";
 import { BuildType } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
+import { HeadlessLink } from "@/ui/Link";
+import { Tooltip } from "@/ui/Tooltip";
 
 import { BuildDiffList } from "./BuildDiffList";
 import { useSearchModeState, useSearchState } from "./BuildDiffState";
 import { BuildInfos } from "./BuildInfos";
-import { BuildParams } from "./BuildParams";
+import { BuildParams, getBuildOverviewURL } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
 import { FilterChips } from "./metadata/filters/FilterChips";
 
@@ -72,6 +74,28 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   );
 }
 
+function OverviewButton(props: { params: BuildParams }) {
+  const { params } = props;
+  const selected = params.diffId == null;
+  return (
+    <Tooltip content="Overview">
+      <HeadlessLink
+        href={getBuildOverviewURL(params)}
+        aria-label="Overview"
+        aria-current={selected ? "page" : undefined}
+        className={clsx(
+          "rac-focus flex size-7 shrink-0 items-center justify-center rounded-sm transition",
+          selected
+            ? "bg-ui text-default"
+            : "text-low data-hovered:bg-ui data-hovered:text-default",
+        )}
+      >
+        <PanelsTopLeftIcon className="size-4" strokeWidth={1.75} />
+      </HeadlessLink>
+    </Tooltip>
+  );
+}
+
 export const BuildLeftSidebar = memo(function BuildLeftSidebar(props: {
   repoUrl: string | null;
   build: DocumentType<typeof _BuildFragment>;
@@ -90,6 +114,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
   params: BuildParams;
 }) {
   const { build } = props;
+  const hasOverview = (build.stats?.total ?? 0) > 0;
   const { searchMode, setSearchMode } = useSearchModeState();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const enterSearchMode = useCallback(() => {
@@ -118,6 +143,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
     >
       {build.type !== BuildType.Skipped ? (
         <div className="border-b-thin flex shrink-0 items-center gap-1 px-2">
+          {hasOverview ? <OverviewButton params={props.params} /> : null}
           {searchMode ? (
             <>
               <SearchInput ref={searchInputRef} />

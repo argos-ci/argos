@@ -20,6 +20,7 @@ import { Tooltip } from "@/ui/Tooltip";
 
 import { IconButton } from "../../../ui/IconButton";
 import { useBuildDiffState } from "../BuildDiffState";
+import { getBuildOverviewURL } from "../BuildParams";
 import {
   BuildReviewButton,
   DisabledBuildReviewButton,
@@ -226,10 +227,19 @@ export const BuildHeader = memo(
                 mode={build ? build.mode : BuildMode.Ci}
                 scale="sm"
               />
-              <div className="text-sm leading-none font-medium">
-                Build {props.buildNumber}
-                {build && build.name !== "default" ? ` • ${build.name}` : ""}
-              </div>
+              <Tooltip content="Build overview">
+                <HeadlessLink
+                  href={getBuildOverviewURL({
+                    accountSlug: props.accountSlug,
+                    projectName: props.projectName,
+                    buildNumber: props.buildNumber,
+                  })}
+                  className="data-hovered:text-default rac-focus text-sm leading-none font-medium transition"
+                >
+                  Build {props.buildNumber}
+                  {build && build.name !== "default" ? ` • ${build.name}` : ""}
+                </HeadlessLink>
+              </Tooltip>
             </div>
             <div className="flex">
               <ProjectLink

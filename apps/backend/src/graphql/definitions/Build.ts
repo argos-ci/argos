@@ -3,6 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
+import { getBuildImpactAnalysis } from "@/build/impact-analysis";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { getProjectMemberIds } from "@/project/members";
@@ -141,6 +142,43 @@ export const typeDefs = gql`
     members: [User!]!
     "Users requested to review this build"
     reviewers: [User!]!
+    "Aggregated analysis of the visual changes, null until the build is concluded"
+    impactAnalysis: BuildImpactAnalysis
+    "Indicates whether the build contains Storybook screenshots"
+    storybook: Boolean!
+  }
+
+  "An entity affected by visual changes in a build"
+  type BuildImpactItem {
+    name: String!
+    "Number of changed screenshots in this entity"
+    count: Int!
+  }
+
+  "Aggregated analysis of the visual changes of a build"
+  type BuildImpactAnalysis {
+    "Number of changed screenshots"
+    changedCount: Int!
+    "Number of unique changes, similar changes are grouped together"
+    uniqueChangeCount: Int!
+    "Distinct browsers among changed screenshots"
+    changedBrowsers: [String!]!
+    "Distinct browsers among all screenshots of the build"
+    buildBrowsers: [String!]!
+    "Distinct color schemes among changed screenshots"
+    changedColorSchemes: [String!]!
+    "Distinct color schemes among all screenshots of the build"
+    buildColorSchemes: [String!]!
+    "Distinct viewport sizes among all screenshots of the build, smallest first"
+    buildViewports: [String!]!
+    "Distinct automation libraries (Storybook, Playwright…) used in the build"
+    buildAutomationLibraries: [String!]!
+    "Storybook components affected by changes, most affected first"
+    affectedComponents: [BuildImpactItem!]!
+    "Storybook stories affected by changes, most affected first"
+    affectedStories: [BuildImpactItem!]!
+    "Tests affected by changes (end-to-end builds), most affected first"
+    affectedTests: [BuildImpactItem!]!
   }
 
   type BuildMetadata {
@@ -374,6 +412,16 @@ export const resolvers: IResolvers = {
         userId: ctx.auth.user.id,
       });
       return subscription?.isSubscribed() ?? false;
+    },
+    impactAnalysis: async (build) => {
+      if (!build.conclusion) {
+        return null;
+      }
+      return getBuildImpactAnalysis(build);
+    },
+    storybook: async (build, _args, ctx) => {
+      const compareBucket = await getCompareScreenshotBucket(ctx, build);
+      return compareBucket.storybookScreenshotCount > 0;
     },
     members: async (build, _args, ctx) => {
       if (!ctx.auth) {

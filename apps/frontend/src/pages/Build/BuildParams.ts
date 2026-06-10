@@ -9,8 +9,16 @@ import {
 
 export interface BuildParams extends ProjectParams {
   buildNumber: number;
+  /**
+   * Active screenshot diff ID, or `null` when the build overview is shown.
+   */
   diffId?: string | null | undefined;
 }
+
+/**
+ * Reserved diff ID segment for the build overview page.
+ */
+const OVERVIEW_SEGMENT = "overview";
 
 /**
  * Returns parameters for a build page.
@@ -36,7 +44,7 @@ export function useBuildParams(): BuildParams | null {
     return {
       ...projectParams,
       buildNumber: numBuildNumber,
-      diffId: diffId ?? null,
+      diffId: diffId === OVERVIEW_SEGMENT ? null : (diffId ?? null),
     };
   }, [projectParams, buildNumber, diffId]);
   return params;
@@ -44,4 +52,8 @@ export function useBuildParams(): BuildParams | null {
 
 export function getBuildURL(params: BuildParams): string {
   return `${getProjectURL(params)}/builds/${params.buildNumber}${params.diffId ? `/${params.diffId}` : ""}`;
+}
+
+export function getBuildOverviewURL(params: BuildParams): string {
+  return getBuildURL({ ...params, diffId: OVERVIEW_SEGMENT });
 }

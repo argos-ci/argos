@@ -15,7 +15,6 @@ const _BuildFragment = graphql(`
     type
     status
     mode
-    baseBranch
     stats {
       total
     }
@@ -91,25 +90,6 @@ export function BuildStatusDescription(props: {
                 <ReviewDescription build={build}>
                   Comparing screenshot is not possible because no baseline build
                   was found.
-                  <div className="my-4">
-                    It may happens because:
-                    <ul className="mt-2 ml-8 list-disc space-y-1">
-                      <li>
-                        No Argos build has been performed on the base branch
-                        {build.baseBranch ? (
-                          <>
-                            {" "}
-                            : <Code>{build.baseBranch}</Code>
-                          </>
-                        ) : null}
-                        .
-                      </li>
-                      <li>
-                        Argos can't find any commit ancestor that matches an
-                        approved build. You may need to rebase your branch.
-                      </li>
-                    </ul>
-                  </div>
                 </ReviewDescription>
               );
             case BuildMode.Monitoring:

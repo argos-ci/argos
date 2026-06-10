@@ -13,7 +13,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import {
   checkIsDiffGroupName,
@@ -24,9 +24,13 @@ import {
 import { DocumentType, graphql } from "@/gql";
 import { ScreenshotDiffStatus } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
-import { useLiveRef } from "@/ui/useLiveRef";
 
-import { getBuildURL, type BuildParams } from "./BuildParams";
+import {
+  getBuildOverviewURL,
+  getBuildURL,
+  useBuildParams,
+  type BuildParams,
+} from "./BuildParams";
 import { useBuildReviewState } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import { FilterStateContext } from "./metadata/filters/FilterState";
@@ -317,7 +321,7 @@ export function useGoToNextDiff() {
   });
 }
 
-export function useHasPreviousDiff() {
+function useHasPreviousDiff() {
   const activeDiffIndex = useActiveDiffIndex();
   return activeDiffIndex > 0;
 }
@@ -361,11 +365,18 @@ function useGetPreviousDiff() {
 
 export function useGoToPreviousDiff() {
   const getPreviousDiff = useGetPreviousDiff();
-  const { setActiveDiff } = useBuildDiffState();
+  const { setActiveDiff, activeDiff } = useBuildDiffState();
+  const params = useBuildParams();
+  const navigate = useNavigate();
   return useEventCallback(() => {
     const previousDiff = getPreviousDiff();
     if (previousDiff) {
       setActiveDiff(previousDiff, true);
+      return;
+    }
+    // From the first diff, going up returns to the build overview.
+    if (activeDiff && params) {
+      navigate(getBuildOverviewURL(params), { replace: true });
     }
   });
 }
@@ -662,23 +673,6 @@ export function BuildDiffProvider(props: {
 
   const [initialDiffIdParam] = useState(params.diffId);
   const initialDiffId = initialDiffIdParam ?? firstDiffId;
-  const paramsRef = useLiveRef(params);
-  // Capture the hash (e.g. `#comment-XXX`) so it is preserved when we redirect
-  // to the initial diff.
-  const [initialHash] = useState(useLocation().hash);
-
-  // Navigate to the initial diff if not already the case.
-  useEffect(() => {
-    if (!initialDiffIdParam && initialDiffId) {
-      navigate(
-        getBuildURL({ ...paramsRef.current, diffId: initialDiffId }) +
-          initialHash,
-        {
-          replace: true,
-        },
-      );
-    }
-  }, [initialDiffId, initialDiffIdParam, paramsRef, navigate, initialHash]);
 
   const initialDiff =
     (initialDiffId ? indices.byId[initialDiffId] : null) ?? null;
@@ -725,7 +719,9 @@ export function BuildDiffProvider(props: {
         projectName: params.projectName,
         diffId: diff.id,
       }),
-      { replace: true },
+      // Coming from the overview, push a new history entry so that
+      // the back button returns to it. Between diffs, keep replacing.
+      { replace: params.diffId != null },
     );
 
     if (scroll) {

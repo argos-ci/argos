@@ -59,7 +59,7 @@ function InnerFilterableIndicator({
   };
 
   return (
-    <div ref={ref} onContextMenu={handleContextMenu}>
+    <div ref={ref} onContextMenu={handleContextMenu} className="min-w-0">
       {children}
       <Popover
         triggerRef={ref}

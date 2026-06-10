@@ -146,6 +146,23 @@ export async function createBuildScenario(input: {
   const { projectId, keyPrefix = "" } = input;
   const ts = new Date().toISOString();
 
+  const metadataBase = {
+    sdk: { name: "@argos-ci/storybook", version: "5.0.0" },
+    automationLibrary: { name: "storybook", version: "8.5.0" },
+  };
+
+  const chromiumLightMetadata = {
+    ...metadataBase,
+    browser: { name: "chromium", version: "126.0" },
+    colorScheme: "light" as const,
+  };
+
+  const firefoxDarkMetadata = {
+    ...metadataBase,
+    browser: { name: "firefox", version: "127.0" },
+    colorScheme: "dark" as const,
+  };
+
   const screenshotBucketProps = {
     name: "default",
     commit: "029b662f3ae57bae7a215301067262c1e95bbc95",
@@ -164,6 +181,9 @@ export async function createBuildScenario(input: {
     {
       ...screenshotBucketProps,
       commit: "5a23b6f173d9596a09a73864ab051ea5972e8804",
+      // The compare bucket of the build scenarios contains Storybook
+      // screenshots (see metadata below).
+      storybookScreenshotCount: 11,
     },
     {
       ...screenshotBucketProps,
@@ -192,16 +212,28 @@ export async function createBuildScenario(input: {
       screenshotBucket: screenshotBuckets[0]!,
       name: "penelope.jpg",
       s3Id: "penelope.jpg",
+      metadata: {
+        ...chromiumLightMetadata,
+        story: { id: "gallery-portrait--default" },
+      },
     },
     {
       screenshotBucket: screenshotBuckets[1]!,
       name: "penelope-argos.jpg",
       s3Id: "penelope-argos.jpg",
+      metadata: {
+        ...chromiumLightMetadata,
+        story: { id: "gallery-portrait--default" },
+      },
     },
     {
       screenshotBucket: screenshotBuckets[2]!,
       name: "penelope-argos (failed).jpg",
       s3Id: "penelope-argos.jpg",
+      metadata: {
+        ...chromiumLightMetadata,
+        story: { id: "gallery-portrait--default" },
+      },
     },
   ];
 
@@ -219,6 +251,7 @@ export async function createBuildScenario(input: {
       name: screenshot.name,
       s3Id: screenshot.s3Id,
       screenshotBucketId: screenshot.screenshotBucket.id,
+      metadata: screenshot.metadata,
     })),
   );
 
@@ -284,6 +317,17 @@ export async function createBuildScenario(input: {
       name: file.key,
       s3Id: file.key,
       fileId: file.id,
+      metadata: file.key.includes("dummy")
+        ? {
+            ...chromiumLightMetadata,
+            story: { id: "gallery-hero--default" },
+            viewport: { width: file.width!, height: file.height! },
+          }
+        : {
+            ...firefoxDarkMetadata,
+            story: { id: "gallery-bear--default" },
+            viewport: { width: file.width!, height: file.height! },
+          },
     })),
   );
 
