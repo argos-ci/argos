@@ -22,7 +22,7 @@ export function ListBox<T extends object>({
 }
 
 export function ListBoxSeparator() {
-  return <Separator className="-mx-1 my-1 border-t" />;
+  return <Separator className="border-t-thin -mx-1 my-1" />;
 }
 
 export { MenuItemIcon as ListBoxItemIcon } from "./Menu";

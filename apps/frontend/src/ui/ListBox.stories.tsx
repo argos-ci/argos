@@ -15,7 +15,7 @@ export const Default: Story = {
   render: () => (
     <div className="flex flex-col">
       <StoryTitle>Single Selection</StoryTitle>
-      <div className="max-w-xs rounded-lg border p-1">
+      <div className="border-thin max-w-xs rounded-lg">
         <ListBox aria-label="Options" selectionMode="single">
           <ListBoxItem id="edit">Edit</ListBoxItem>
           <ListBoxItem id="duplicate">Duplicate</ListBoxItem>
@@ -25,7 +25,7 @@ export const Default: Story = {
       </div>
 
       <StoryTitle>Multiple Selection</StoryTitle>
-      <div className="max-w-xs rounded-lg border p-1">
+      <div className="border-thin max-w-xs rounded-lg">
         <ListBox aria-label="Browsers" selectionMode="multiple">
           <ListBoxItem id="chrome">Chrome</ListBoxItem>
           <ListBoxItem id="firefox">Firefox</ListBoxItem>
