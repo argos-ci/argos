@@ -150,8 +150,14 @@ export const SLACK_BOT_SCOPES = [
 const ExpressReceiver = (Bolt.ExpressReceiver ||
   (Bolt.default as any).ExpressReceiver) as typeof Bolt.ExpressReceiver;
 
+const signingSecret = config.get("slack.signingSecret");
+
 export const receiver = new ExpressReceiver({
-  signingSecret: config.get("slack.signingSecret"),
+  signingSecret,
+  // The signing secret is not configured in test/dev environments. Disable
+  // signature verification in that case, otherwise `@slack/bolt` throws an
+  // `AppInitializationError` at initialization.
+  signatureVerification: Boolean(signingSecret),
   clientId: config.get("slack.clientId"),
   clientSecret: config.get("slack.clientSecret"),
   stateSecret: config.get("slack.stateSecret"),
