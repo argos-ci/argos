@@ -14,7 +14,7 @@ export function MemberLevelSelect(
   props: {
     hasFineGrainedAccessControl: boolean;
     className?: string;
-  } & SelectProps &
+  } & SelectProps<object> &
     Pick<SelectButtonProps, "size"> &
     RefAttributes<HTMLDivElement>,
 ) {
