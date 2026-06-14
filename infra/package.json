@@ -13,9 +13,9 @@
     "lint": "eslint --max-warnings 0 ."
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1065.0",
-    "@aws-sdk/lib-dynamodb": "^3.1065.0",
-    "aws-cdk-lib": "^2.258.1",
+    "@aws-sdk/client-dynamodb": "^3.1068.0",
+    "@aws-sdk/lib-dynamodb": "^3.1068.0",
+    "aws-cdk-lib": "^2.259.0",
     "constructs": "^10.6.0"
   },
   "devDependencies": {
