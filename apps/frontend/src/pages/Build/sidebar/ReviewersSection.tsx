@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
@@ -285,11 +285,14 @@ function RequestReviewersMenu(props: { build: Build }) {
   }, [build.reviewers, memberIds, reviewedKeys]);
 
   // Optimistic selection: reflect the click immediately, then reconcile with the
-  // server response (or revert on error).
+  // server's requested set whenever it changes (React's "adjust state during
+  // render" pattern — avoids a setState-in-effect).
   const [requested, setRequested] = useState(() => new Set(requestedKeys));
-  useEffect(() => {
+  const [syncedKeys, setSyncedKeys] = useState(requestedKeys);
+  if (syncedKeys !== requestedKeys) {
+    setSyncedKeys(requestedKeys);
     setRequested(new Set(requestedKeys));
-  }, [requestedKeys]);
+  }
 
   const selectedKeys = useMemo(
     () => new Set([...requested, ...reviewedKeys]),
