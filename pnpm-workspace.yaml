@@ -33,6 +33,7 @@ overrides:
   minimatch: "catalog:"
   react: "catalog:"
   react-dom: "catalog:"
+  sharp: ^0.35.1
   uuid: ^14.0.0
   undici: "catalog:"
   ws: ^8.20.1
