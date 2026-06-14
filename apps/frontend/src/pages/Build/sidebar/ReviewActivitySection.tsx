@@ -38,7 +38,7 @@ const _BuildFragment = graphql(`
     concludedAt
     subscribed
     ...AddCommentForm_Build
-    mentionableUsers {
+    members {
       ...UserCard_user
     }
     reviews {
@@ -222,10 +222,8 @@ function useHighlightedCommentId(commentIds: string[]): string | null {
   return matchedId;
 }
 
-function toMentionUsers(
-  mentionableUsers: Build["mentionableUsers"],
-): MentionUser[] {
-  return mentionableUsers.map(getMentionUser);
+function toMentionUsers(members: Build["members"]): MentionUser[] {
+  return members.map(getMentionUser);
 }
 
 export function ReviewActivitySection(props: { build: Build }) {
@@ -237,8 +235,8 @@ export function ReviewActivitySection(props: { build: Build }) {
     build.comments.map((comment) => comment.id),
   );
   const mentionableUsers = useMemo(
-    () => toMentionUsers(build.mentionableUsers),
-    [build.mentionableUsers],
+    () => toMentionUsers(build.members),
+    [build.members],
   );
   return (
     <MentionableUsersProvider value={mentionableUsers}>

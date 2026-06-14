@@ -130,6 +130,54 @@ mutation. Always enforce the check in the mutation — never trust the client.
 - Return consistent, typed errors.
 - Do not expose internal errors.
 
+## Notifications
+
+Notifications are sent through a two-stage async pipeline (`src/notification/`):
+
+1. `sendNotification({ type, data, recipients })` creates one
+   `NotificationWorkflow` (the event) + a `NotificationWorkflowRecipient` per
+   user, then queues `notificationWorkflowJob`.
+2. `notificationWorkflowJob` applies opt-outs (see categories below) and creates
+   one `NotificationMessage` per remaining recipient, queuing
+   `notificationMessageJob`.
+3. `notificationMessageJob` renders the handler's email and sends it.
+
+### Adding a notification handler
+
+1. **Create the handler** `src/notification/handlers/<type>.tsx` exporting
+   `handler = defineNotificationHandler({ type, category, schema, previewData, email })`.
+   Model it on an existing one (e.g. `handlers/review_submitted.tsx`):
+   - `type` is the unique string discriminator.
+   - `schema` is a Zod schema for `data` — it both types `sendNotification` and
+     validates the persisted `NotificationWorkflow.data`.
+   - `previewData` feeds the email preview; `email(props)` returns
+     `{ subject, body }` (a React email built from `../../email/components`).
+
+2. **Register it** in `src/notification/handlers/index.ts` (import + add to the
+   `notificationHandlers` array). The `NotificationWorkflowType` union and the
+   typed `sendNotification` props are derived from this array automatically — no
+   other type wiring needed.
+
+3. **Pick a `category`** from the union in `workflow-types.ts`. Category metadata
+   (label/description/`configurable`) lives in `categories.ts`. Configurable
+   categories (`review`, `billing`, `project`, `integration`) can be opted out
+   via `UserNotificationPreference`; `account`/`security` always send. Add a new
+   category to both files only if none fit.
+
+4. **Dispatch** from app code with `sendNotification({ type, data, recipients })`.
+   `recipients` is an array of **user ids you compute** (the system never
+   discovers recipients) — typically the interested users minus the actor (see
+   `notifyBuildSubscribers` in `src/build/createBuildReview.ts`). Opt-outs for
+   configurable categories are applied automatically by the workflow job. For
+   "notify once" semantics on an idempotent action, derive `recipients` from the
+   rows the insert actually created (see the Idempotent inserts section).
+
+5. **Preview** the rendered email via the notification preview route
+   (`src/notification/express.tsx`) using `previewData`.
+
+No DB migration is needed for a new type: `notification_workflows` /
+`notification_messages` are polymorphic via the `data` JSON column.
+
 ## Rich-text comment editor (TipTap)
 
 Comment `content` is TipTap JSON. The list of TipTap extensions is **duplicated**

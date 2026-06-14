@@ -214,6 +214,12 @@ const hotkeyGroups = [
   {
     name: "Actions",
     hotkeys: {
+      requestReviewers: {
+        keys: ["KeyA"],
+        displayKeys: ["A"],
+        description: "Add reviewer",
+        envs: ["build"],
+      },
       acceptDiff: {
         keys: ["KeyY"],
         displayKeys: ["Y"],

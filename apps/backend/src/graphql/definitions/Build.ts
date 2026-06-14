@@ -3,9 +3,9 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import { getMentionableUserIds } from "@/comment/mentions";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
+import { getProjectMemberIds } from "@/project/members";
 
 import {
   IBaseBranchResolution,
@@ -135,8 +135,10 @@ export const typeDefs = gql`
     subset: Boolean!
     "Whether the current user is subscribed to this build's notifications"
     subscribed: Boolean!
-    "Users that can be mentioned in comments on this build"
-    mentionableUsers: [User!]!
+    "Users with access to this build's project (can be mentioned or requested as reviewers)"
+    members: [User!]!
+    "Users requested to review this build"
+    reviewers: [User!]!
   }
 
   type BuildMetadata {
@@ -356,16 +358,30 @@ export const resolvers: IResolvers = {
       });
       return subscription?.isSubscribed() ?? false;
     },
-    mentionableUsers: async (build, _args, ctx) => {
+    members: async (build, _args, ctx) => {
       if (!ctx.auth) {
         return [];
       }
       const project = await ctx.loaders.Project.load(build.projectId);
       invariant(project, "Project not found");
-      const userIds = await getMentionableUserIds(project);
+      const userIds = await getProjectMemberIds(project);
       const accounts = await Promise.all(
         userIds.map((userId) =>
           ctx.loaders.AccountFromRelation.load({ userId }),
+        ),
+      );
+      return accounts.filter((account) => account !== null);
+    },
+    reviewers: async (build, _args, ctx) => {
+      if (!ctx.auth) {
+        return [];
+      }
+      const requestedReviewers = await ctx.loaders.BuildRequestedReviewers.load(
+        build.id,
+      );
+      const accounts = await Promise.all(
+        requestedReviewers.map((reviewer) =>
+          ctx.loaders.AccountFromRelation.load({ userId: reviewer.userId }),
         ),
       );
       return accounts.filter((account) => account !== null);
