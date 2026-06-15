@@ -9,6 +9,7 @@ import { IconButton } from "../IconButton";
 import { Editor, type EditorValue, type EditorVariant } from "./Editor";
 import { MOD } from "./EditorToolbar.shortcuts";
 import { type MentionUser } from "./mention";
+import { useEditorDraft } from "./useEditorDraft";
 import { hasEditorContent } from "./util";
 
 type EmptyMessage = { title: string; description?: string };
@@ -55,6 +56,12 @@ export interface StandaloneEditorProps {
   mentions?: MentionUser[];
   /** Users to resolve existing mentions against, forwarded to the {@link Editor}. */
   mentionedUsers?: MentionUser[];
+  /**
+   * When provided, the editor content is persisted in local storage under this
+   * key so a draft survives a page refresh. The key must encode the context so
+   * a draft only reappears where it was written (see {@link useEditorDraft}).
+   */
+  draftKey?: string;
 }
 
 /**
@@ -80,8 +87,12 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     contentClassName,
     mentions,
     mentionedUsers,
+    draftKey,
   } = props;
-  const [value, setValue] = useState<EditorValue>(defaultValue);
+  const { initialContent, value, setValue, clear } = useEditorDraft(
+    draftKey,
+    defaultValue,
+  );
   // Remounts the editor after a successful submit to clear its content.
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -93,7 +104,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     setIsPending(true);
     try {
       await onSubmit(value);
-      setValue(null);
+      clear();
       setEditorKey((key) => key + 1);
     } catch {
       // Keep the content so the user can retry.
@@ -119,7 +130,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
   return (
     <Editor
       key={editorKey}
-      defaultValue={defaultValue}
+      defaultValue={initialContent}
       onChange={setValue}
       onSubmit={submit}
       mentions={mentions}

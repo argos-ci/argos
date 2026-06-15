@@ -22,6 +22,7 @@ import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { ReadOnlyEditor } from "@/ui/Editor/ReadOnlyEditor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
+import { useEditorDraft } from "@/ui/Editor/useEditorDraft";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
@@ -345,7 +346,12 @@ export function CommentCard(props: {
                 </motion.div>
               ))}
             </AnimatePresence>
-            {canReply ? <ReplyComposer onSubmit={handleReplySubmit} /> : null}
+            {canReply ? (
+              <ReplyComposer
+                draftKey={`build.${buildId}.thread.${comment.id}.reply`}
+                onSubmit={handleReplySubmit}
+              />
+            ) : null}
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -583,11 +589,12 @@ function CommentMessage(props: {
 }
 
 function ReplyComposer(props: {
+  draftKey: string;
   onSubmit: (body: EditorValue) => Promise<void>;
 }) {
-  const { onSubmit } = props;
+  const { draftKey, onSubmit } = props;
   const mentions = useMentionableUsers();
-  const [value, setValue] = useState<EditorValue>(null);
+  const { initialContent, value, setValue, clear } = useEditorDraft(draftKey);
   const [editorKey, setEditorKey] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const emptyToastId = useId();
@@ -597,7 +604,7 @@ function ReplyComposer(props: {
     setIsPending(true);
     try {
       await onSubmit(value);
-      setValue(null);
+      clear();
       setEditorKey((key) => key + 1);
     } catch {
       // Keep the content so the user can retry.
@@ -625,6 +632,7 @@ function ReplyComposer(props: {
       <div className="flex items-start gap-1.5">
         <Editor
           key={editorKey}
+          defaultValue={initialContent}
           onChange={setValue}
           onSubmit={submit}
           mentions={mentions}
