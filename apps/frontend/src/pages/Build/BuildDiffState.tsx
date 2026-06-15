@@ -13,7 +13,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { ResultOf } from "@graphql-typed-document-node/core";
 import { MatchData, Searcher } from "fast-fuzzy";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   checkIsDiffGroupName,
@@ -663,15 +663,22 @@ export function BuildDiffProvider(props: {
   const [initialDiffIdParam] = useState(params.diffId);
   const initialDiffId = initialDiffIdParam ?? firstDiffId;
   const paramsRef = useLiveRef(params);
+  // Capture the hash (e.g. `#comment-XXX`) so it is preserved when we redirect
+  // to the initial diff.
+  const [initialHash] = useState(useLocation().hash);
 
   // Navigate to the initial diff if not already the case.
   useEffect(() => {
     if (!initialDiffIdParam && initialDiffId) {
-      navigate(getBuildURL({ ...paramsRef.current, diffId: initialDiffId }), {
-        replace: true,
-      });
+      navigate(
+        getBuildURL({ ...paramsRef.current, diffId: initialDiffId }) +
+          initialHash,
+        {
+          replace: true,
+        },
+      );
     }
-  }, [initialDiffId, initialDiffIdParam, paramsRef, navigate]);
+  }, [initialDiffId, initialDiffIdParam, paramsRef, navigate, initialHash]);
 
   const initialDiff =
     (initialDiffId ? indices.byId[initialDiffId] : null) ?? null;

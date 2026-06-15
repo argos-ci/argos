@@ -463,11 +463,20 @@ function CommentMessage(props: {
         ref={ref}
         id={comment.id}
         className={clsx(
-          "group/comment ring-primary transition",
+          "group/comment relative transition",
           separated && "border-t-thin",
-          highlighted ? "ring-2" : "ring-0",
         )}
       >
+        {/* Highlight drawn as an inset overlay rather than a `ring`, so it
+            stays within the comment bounds and is never clipped by the
+            surrounding `overflow: clip` containers or the sidebar. */}
+        <div
+          aria-hidden
+          className={clsx(
+            "border-primary pointer-events-none absolute inset-0 z-10 rounded-md border-2 transition-opacity",
+            highlighted ? "opacity-100" : "opacity-0",
+          )}
+        />
         <div className="relative flex items-center gap-1.5 px-2 py-1.5 pr-1.5 select-none">
           {comment.user ? (
             <UserHoverCard user={getUserCardData(comment.user)}>
