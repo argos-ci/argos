@@ -1,7 +1,16 @@
 import type { JSONContent } from "@tiptap/core";
 import { describe, expect, it } from "vitest";
 
-import { isCommentTooLarge, validateCommentJson } from "./validate";
+import {
+  isCommentTooLarge,
+  sanitizeCommentJson,
+  validateCommentJson,
+} from "./validate";
+
+const paragraph = (text?: string) =>
+  text === undefined
+    ? { type: "paragraph" }
+    : { type: "paragraph", content: [{ type: "text", text }] };
 
 function docWithText(text: string) {
   return {
@@ -200,6 +209,145 @@ describe("validateCommentJson", () => {
         }),
       ).toBe(false);
     });
+  });
+});
+
+describe("sanitizeCommentJson", () => {
+  it("strips leading blank paragraphs", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [paragraph(), paragraph(), paragraph("Hello")],
+      }),
+    ).toEqual({ type: "doc", content: [paragraph("Hello")] });
+  });
+
+  it("strips trailing blank paragraphs", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [paragraph("Hello"), paragraph(), paragraph()],
+      }),
+    ).toEqual({ type: "doc", content: [paragraph("Hello")] });
+  });
+
+  it("strips both leading and trailing blank paragraphs", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [paragraph(), paragraph("Hello"), paragraph()],
+      }),
+    ).toEqual({ type: "doc", content: [paragraph("Hello")] });
+  });
+
+  it("treats whitespace-only paragraphs as blank", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [paragraph("   "), paragraph("Hello")],
+      }),
+    ).toEqual({ type: "doc", content: [paragraph("Hello")] });
+  });
+
+  it("keeps blank paragraphs between content", () => {
+    const content = [paragraph("a"), paragraph(), paragraph("b")];
+    expect(sanitizeCommentJson({ type: "doc", content })).toEqual({
+      type: "doc",
+      content,
+    });
+  });
+
+  it("returns the same value when there is nothing to trim", () => {
+    const value = { type: "doc", content: [paragraph("Hello")] };
+    expect(sanitizeCommentJson(value)).toBe(value);
+  });
+
+  it("strips leading and trailing line breaks within a paragraph", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { type: "hardBreak" },
+              { type: "text", text: "Hello" },
+              { type: "hardBreak" },
+            ],
+          },
+        ],
+      }),
+    ).toEqual({ type: "doc", content: [paragraph("Hello")] });
+  });
+
+  it("keeps line breaks between text", () => {
+    const content = [
+      {
+        type: "paragraph",
+        content: [
+          { type: "text", text: "a" },
+          { type: "hardBreak" },
+          { type: "text", text: "b" },
+        ],
+      },
+    ];
+    expect(sanitizeCommentJson({ type: "doc", content })).toEqual({
+      type: "doc",
+      content,
+    });
+  });
+
+  it("treats line-break-only paragraphs as blank", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [
+          { type: "paragraph", content: [{ type: "hardBreak" }] },
+          paragraph("Hello"),
+        ],
+      }),
+    ).toEqual({ type: "doc", content: [paragraph("Hello")] });
+  });
+
+  it("trims trailing breaks on the last block and leading on the first", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "hardBreak" }, { type: "text", text: "a" }],
+          },
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "b" }, { type: "hardBreak" }],
+          },
+        ],
+      }),
+    ).toEqual({
+      type: "doc",
+      content: [paragraph("a"), paragraph("b")],
+    });
+  });
+
+  it("does not strip non-paragraph blocks (e.g. headings)", () => {
+    const content = [
+      { type: "heading", attrs: { level: 2 }, content: [] },
+      paragraph("Hello"),
+    ];
+    expect(sanitizeCommentJson({ type: "doc", content })).toEqual({
+      type: "doc",
+      content,
+    });
+  });
+
+  it("leaves an all-blank doc reducible to empty (then rejected by isCommentEmpty)", () => {
+    expect(
+      sanitizeCommentJson({
+        type: "doc",
+        content: [paragraph(), paragraph()],
+      }),
+    ).toEqual({ type: "doc", content: [] });
   });
 });
 
