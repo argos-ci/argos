@@ -3,6 +3,10 @@ import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { addCommentReaction } from "@/comment/addCommentReaction";
+import {
+  subscribeToCommentChanges,
+  type CommentChangeType,
+} from "@/comment/commentEvents";
 import { createBuildComment } from "@/comment/createBuildComment";
 import { deleteBuildComment } from "@/comment/deleteBuildComment";
 import { formatCommentId, parseCommentId } from "@/comment/id";
@@ -23,10 +27,12 @@ import {
   unsubscribeUserFromCommentThread,
 } from "@/database/services/comment-notification-subscription";
 
-import type {
-  ICommentPermission,
-  IResolvers,
+import {
+  ICommentChangeType,
+  type ICommentPermission,
+  type IResolvers,
 } from "../__generated__/resolver-types";
+import { assertCanViewBuild } from "../buildAccess";
 import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
@@ -227,7 +233,41 @@ export const typeDefs = gql`
     "Reopen a resolved comment thread"
     unresolveCommentThread(input: UnresolveCommentThreadInput!): Comment!
   }
+
+  """
+  How a comment changed: a new comment was added, an existing one was updated
+  (edited, reacted to, or its thread resolved/reopened), or it was deleted.
+  """
+  enum CommentChangeType {
+    ADDED
+    UPDATED
+    DELETED
+  }
+
+  """
+  A comment that was added to, updated on, or deleted from a build, pushed live
+  to subscribers.
+  """
+  type CommentChangeEvent {
+    "How the comment changed"
+    type: CommentChangeType!
+    "The comment that changed. For a deletion, only its id is meaningful."
+    comment: Comment!
+  }
+
+  type Subscription {
+    "Emitted when a comment is added to, updated on, or deleted from the given build"
+    buildCommentChanged(buildId: ID!): CommentChangeEvent!
+  }
 `;
+
+/** Map the internal comment-change type to its GraphQL enum value. */
+const COMMENT_CHANGE_EVENT_TYPE: Record<CommentChangeType, ICommentChangeType> =
+  {
+    ADDED: ICommentChangeType.Added,
+    UPDATED: ICommentChangeType.Updated,
+    DELETED: ICommentChangeType.Deleted,
+  };
 
 export const resolvers: IResolvers = {
   Comment: {
@@ -478,6 +518,34 @@ export const resolvers: IResolvers = {
         permission: "review",
       });
       return unresolveCommentThread({ thread });
+    },
+  },
+  Subscription: {
+    buildCommentChanged: {
+      // Authorize before opening the stream so an unpermitted subscription is
+      // rejected upfront rather than after the first event.
+      subscribe: async (_root, args, ctx) => {
+        await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
+        return (async function* () {
+          for await (const change of subscribeToCommentChanges(args.buildId)) {
+            // Field resolvers below run with the connection's shared loaders,
+            // whose per-comment caches would otherwise pin the reactions and
+            // mentions seen on the first event. Those relations live in their
+            // own tables (not the comment row that travels through Redis), so
+            // drop the changed comment's cached entries to resolve each event
+            // against the current state — this is what makes live reactions and
+            // edited mentions reflect reality across successive events.
+            ctx.loaders.CommentReactions.clear(change.comment.id);
+            ctx.loaders.CommentMentionedUserIds.clear(change.comment.id);
+            yield {
+              buildCommentChanged: {
+                type: COMMENT_CHANGE_EVENT_TYPE[change.type],
+                comment: change.comment,
+              },
+            };
+          }
+        })();
+      },
     },
   },
 };

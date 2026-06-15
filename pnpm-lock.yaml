@@ -255,6 +255,9 @@ importers:
       graphql-tag:
         specifier: ^2.12.6
         version: 2.12.6(graphql@16.14.2)
+      graphql-ws:
+        specifier: ^6.0.8
+        version: 6.0.8(graphql@16.14.2)(ws@8.21.0)
       happy-dom:
         specifier: ^20.10.3
         version: 20.10.3
@@ -348,6 +351,9 @@ importers:
       undici:
         specifier: 8.4.1
         version: 8.4.1
+      ws:
+        specifier: ^8.20.1
+        version: 8.21.0
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -403,6 +409,9 @@ importers:
       '@types/tmp':
         specifier: ^0.2.6
         version: 0.2.6
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       concurrently:
         specifier: ^10.0.3
         version: 10.0.3
@@ -584,6 +593,9 @@ importers:
       graphql:
         specifier: ^16.14.2
         version: 16.14.2
+      graphql-ws:
+        specifier: ^6.0.8
+        version: 6.0.8(graphql@16.14.2)(ws@8.21.0)
       input-otp:
         specifier: ^1.4.2
         version: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

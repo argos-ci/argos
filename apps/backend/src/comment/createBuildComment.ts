@@ -13,6 +13,7 @@ import {
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
+import { publishCommentChange } from "./commentEvents";
 import {
   getCommentNotificationData,
   notifyMentionedUsers,
@@ -108,6 +109,9 @@ export async function createBuildComment(input: {
       notifyMentioned,
     ]);
   }
+
+  // Notify clients watching this build so the new comment appears live.
+  await publishCommentChange({ buildId: build.id, type: "ADDED", comment });
 
   return comment;
 }

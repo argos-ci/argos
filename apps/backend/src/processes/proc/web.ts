@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import config from "@/config";
+import { createGraphQLWebSocketServer } from "@/graphql";
 import logger from "@/logger";
 import { createApp } from "@/web";
 
@@ -33,6 +34,9 @@ const createServer = (requestListener: RequestListener): Server => {
 
 const app = await createApp();
 const server = createServer(app);
+
+// Serve GraphQL subscriptions over WebSocket on the same server/path.
+createGraphQLWebSocketServer(server);
 
 server.listen(config.get("server.port"), () => {
   logger.info(`Ready on http://localhost:${config.get("server.port")}`);

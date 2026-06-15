@@ -30,7 +30,7 @@ export const ReadOnlyEditor = memo(function ReadOnlyEditor(
     <Editor
       variant="plain"
       readOnly
-      defaultValue={content}
+      value={content}
       className={className}
       mentionedUsers={mentionedUsers}
     />

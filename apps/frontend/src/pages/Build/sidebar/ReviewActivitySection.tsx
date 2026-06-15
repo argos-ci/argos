@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { useMutation } from "@apollo/client/react";
+import type { Reference } from "@apollo/client";
+import { useMutation, useSubscription } from "@apollo/client/react";
+import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
   BanIcon,
@@ -9,12 +11,16 @@ import {
   MailCheckIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
-import { ProjectPermission } from "@/gql/graphql";
+import {
+  CommentChangeType,
+  ProjectPermission,
+  ReviewChangeType,
+} from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { MentionUser } from "@/ui/Editor/mention";
 import { IconButton } from "@/ui/IconButton";
@@ -77,6 +83,47 @@ const UnsubscribeFromBuildMutation = graphql(`
     unsubscribeFromBuild(input: $input) {
       id
       subscribed
+    }
+  }
+`);
+
+const BuildCommentChangedSubscription = graphql(`
+  subscription ReviewActivitySection_buildCommentChanged(
+    $buildId: ID!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
+    buildCommentChanged(buildId: $buildId) {
+      type
+      comment {
+        id
+        threadId
+        ...CommentCard_Comment
+      }
+    }
+  }
+`);
+
+const BuildReviewChangedSubscription = graphql(`
+  subscription ReviewActivitySection_buildReviewChanged(
+    $buildId: ID!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
+    buildReviewChanged(buildId: $buildId) {
+      type
+      review {
+        id
+        date
+        state
+        dismissedAt
+        dismissedBy {
+          ...UserCard_user
+        }
+        user {
+          ...UserCard_user
+        }
+      }
     }
   }
 `);
@@ -228,6 +275,97 @@ function toMentionUsers(members: Build["members"]): MentionUser[] {
 
 export function ReviewActivitySection(props: { build: Build }) {
   const { build } = props;
+  // `UserCard_user` (spread by the subscription) scopes the author's role to
+  // the project, so the operation needs the project's slug/name from the route.
+  const { accountSlug, projectName } = useParams();
+  invariant(accountSlug && projectName, "Missing project route params");
+  // Keep the activity feed live. Added comments are inserted into the build's
+  // comment list and deleted ones are evicted; updates (edits, reactions,
+  // resolve/reopen) need no handling here — the normalized cache merges the
+  // changed fields in place by comment id.
+  useSubscription(BuildCommentChangedSubscription, {
+    variables: { buildId: build.id, accountSlug, projectName },
+    onData: ({ client, data }) => {
+      const event = data.data?.buildCommentChanged;
+      if (!event) {
+        return;
+      }
+      const { comment } = event;
+      switch (event.type) {
+        case CommentChangeType.Added: {
+          client.cache.modify({
+            id: client.cache.identify({ __typename: "Build", id: build.id }),
+            fields: {
+              comments(
+                existingRefs: readonly Reference[] = [],
+                { readField, toReference },
+              ) {
+                const ref = toReference(comment);
+                if (
+                  !ref ||
+                  existingRefs.some(
+                    (existing) => readField("id", existing) === comment.id,
+                  )
+                ) {
+                  return existingRefs;
+                }
+                return [...existingRefs, ref];
+              },
+            },
+          });
+          break;
+        }
+        case CommentChangeType.Deleted: {
+          // Evicting the comment drops it from the build's list (the dangling
+          // ref is garbage-collected), so `AnimatePresence` plays its exit
+          // animation — matching a local delete.
+          const cacheId = client.cache.identify({
+            __typename: "Comment",
+            id: comment.id,
+          });
+          if (cacheId) {
+            client.cache.evict({ id: cacheId });
+            client.cache.gc();
+          }
+          break;
+        }
+        // CommentChangeType.Updated needs no manual cache work.
+      }
+    },
+  });
+  // Same for reviews: a submitted review is inserted into the build's review
+  // list; a dismissal needs no handling here — the normalized cache merges
+  // `dismissedAt`/`dismissedBy` in place by review id.
+  useSubscription(BuildReviewChangedSubscription, {
+    variables: { buildId: build.id, accountSlug, projectName },
+    onData: ({ client, data }) => {
+      const event = data.data?.buildReviewChanged;
+      if (event?.type !== ReviewChangeType.Submitted) {
+        return;
+      }
+      const { review } = event;
+      client.cache.modify({
+        id: client.cache.identify({ __typename: "Build", id: build.id }),
+        fields: {
+          reviews(
+            existingRefs: readonly Reference[] = [],
+            { readField, toReference },
+          ) {
+            const ref = toReference(review);
+            if (
+              !ref ||
+              existingRefs.some(
+                (existing) => readField("id", existing) === review.id,
+              )
+            ) {
+              return existingRefs;
+            }
+            return [...existingRefs, ref];
+          },
+        },
+      });
+    },
+  });
   const permissions = useNonNullable(ProjectPermissionsContext);
   const canComment = permissions.includes(ProjectPermission.Review);
   const entries = getActivityEntries(build);

@@ -7,8 +7,11 @@ import {
 } from "@apollo/client";
 import { ErrorLink } from "@apollo/client/link/error";
 import { RetryLink } from "@apollo/client/link/retry";
+import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { ApolloProvider as BaseApolloProvider } from "@apollo/client/react";
+import { getMainDefinition } from "@apollo/client/utilities";
 import { invariant } from "@argos/util/invariant";
+import { createClient } from "graphql-ws";
 
 import fragments from "@/gql-fragments.json";
 
@@ -48,11 +51,46 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
       },
     });
 
+    // Subscriptions ride a WebSocket; the HttpOnly session cookie is sent
+    // automatically on the same-origin upgrade request, so no extra auth is
+    // needed here. The client connects lazily on the first subscription.
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: () => {
+          const url = new URL("/graphql", window.location.href);
+          url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+          return url.toString();
+        },
+      }),
+    );
+
+    // Route subscription operations over the WebSocket and everything else
+    // through the HTTP chain.
+    const link = ApolloLink.split(
+      ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+          definition.kind === "OperationDefinition" &&
+          definition.operation === "subscription"
+        );
+      },
+      wsLink,
+      ApolloLink.from([logoutLink, retryLink, httpLink]),
+    );
+
     return new ApolloClient({
       dataMasking: false,
       cache: new InMemoryCache({
         possibleTypes: fragments.possibleTypes,
         typePolicies: {
+          // A comment's reaction groups are an embedded value object with no
+          // id to normalize on, and the server always returns the complete,
+          // authoritative list. Replace it wholesale instead of merging, which
+          // also silences Apollo's "cache data may be lost" warning when a live
+          // reaction update returns fewer groups than are cached.
+          CommentReactionGroup: {
+            merge: false,
+          },
           Team: {
             keyFields: (obj) => {
               invariant(obj.id, "Team.id is undefined");
@@ -70,7 +108,7 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
           },
         },
       }),
-      link: ApolloLink.from([logoutLink, retryLink, httpLink]),
+      link,
     });
   }, []);
   return (

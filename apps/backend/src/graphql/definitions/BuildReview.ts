@@ -9,6 +9,11 @@ import {
   ReviewState,
   ScreenshotDiffReviewState,
 } from "@/build/createBuildReview";
+import {
+  publishReviewChange,
+  subscribeToReviewChanges,
+  type ReviewChangeType,
+} from "@/build/reviewEvents";
 import { Build } from "@/database/models/Build";
 import { BuildReview } from "@/database/models/BuildReview";
 import { User } from "@/database/models/User";
@@ -16,10 +21,12 @@ import { sendNotification } from "@/notification";
 
 import {
   IBuildReviewEvent,
+  IReviewChangeType,
   IReviewState,
   IScreenshotDiffReviewState,
   type IResolvers,
 } from "../__generated__/resolver-types";
+import { assertCanViewBuild } from "../buildAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
@@ -88,7 +95,38 @@ export const typeDefs = gql`
     createBuildReview(input: CreateBuildReviewInput!): Build!
     dismissReview(input: DismissReviewInput!): Build!
   }
+
+  """
+  How a review changed: it was newly submitted, or an existing one was
+  dismissed.
+  """
+  enum ReviewChangeType {
+    SUBMITTED
+    DISMISSED
+  }
+
+  """
+  A review that was submitted on or dismissed from a build, pushed live to
+  subscribers.
+  """
+  type BuildReviewChangeEvent {
+    "How the review changed"
+    type: ReviewChangeType!
+    "The review that changed"
+    review: BuildReview!
+  }
+
+  extend type Subscription {
+    "Emitted when a review is submitted on or dismissed from the given build"
+    buildReviewChanged(buildId: ID!): BuildReviewChangeEvent!
+  }
 `;
+
+/** Map the internal review-change type to its GraphQL enum value. */
+const REVIEW_CHANGE_EVENT_TYPE: Record<ReviewChangeType, IReviewChangeType> = {
+  SUBMITTED: IReviewChangeType.Submitted,
+  DISMISSED: IReviewChangeType.Dismissed,
+};
 
 export const resolvers: IResolvers = {
   BuildReview: {
@@ -195,18 +233,45 @@ export const resolvers: IResolvers = {
         throw badUserInput("Review already dismissed");
       }
 
-      await review.$query().patch({
+      const dismissedReview = await review.$query().patchAndFetch({
         dismissedAt: new Date().toISOString(),
         dismissedById: auth.user.id,
       });
 
-      await notifyReviewDismissed({
-        review,
-        build,
-        dismissedById: auth.user.id,
-      });
+      await Promise.all([
+        notifyReviewDismissed({
+          review,
+          build,
+          dismissedById: auth.user.id,
+        }),
+        // Notify clients watching this build so the dismissal appears live.
+        publishReviewChange({
+          buildId: build.id,
+          type: "DISMISSED",
+          review: dismissedReview,
+        }),
+      ]);
 
       return build;
+    },
+  },
+  Subscription: {
+    buildReviewChanged: {
+      // Authorize before opening the stream so an unpermitted subscription is
+      // rejected upfront rather than after the first event.
+      subscribe: async (_root, args, ctx) => {
+        await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
+        return (async function* () {
+          for await (const change of subscribeToReviewChanges(args.buildId)) {
+            yield {
+              buildReviewChanged: {
+                type: REVIEW_CHANGE_EVENT_TYPE[change.type],
+                review: change.review,
+              },
+            };
+          }
+        })();
+      },
     },
   },
 };

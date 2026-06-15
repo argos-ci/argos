@@ -1,10 +1,14 @@
+import type { IncomingMessage } from "node:http";
 import type { BaseContext } from "@apollo/server";
 import type { Request, Response } from "express";
 import { GraphQLError } from "graphql";
 
 import type { AuthSessionPayload } from "@/auth/payload";
 import { readSessionCookie } from "@/auth/session-cookie";
-import { sessionAuthFromExpressReq } from "@/auth/session-request";
+import {
+  safeSessionAuthFromExpressReq,
+  sessionAuthFromExpressReq,
+} from "@/auth/session-request";
 import { HTTPError } from "@/util/error";
 import {
   extractLocationFromRequest,
@@ -19,10 +23,11 @@ export type Context = BaseContext & {
   loaders: ReturnType<typeof createLoaders>;
   /**
    * The Express request/response, exposed so login mutations (email auth,
-   * invite sign-up) can create a session and set the session cookie.
+   * invite sign-up) can create a session and set the session cookie. Absent on
+   * the WebSocket (subscription) transport, which has no Express response.
    */
-  req: Request;
-  res: Response;
+  req?: Request;
+  res?: Response;
 };
 
 async function getContextAuth(
@@ -72,4 +77,22 @@ export async function getContext(
 
     throw error;
   }
+}
+
+/**
+ * Build the GraphQL context for a WebSocket (subscription) connection. The
+ * session cookie rides along on the upgrade request, so we authenticate from it
+ * the same way the HTTP transport does. A missing or invalid session resolves
+ * to an anonymous context rather than throwing — public builds can be watched
+ * without a session, and each subscription resolver enforces its own access.
+ */
+export async function getWebSocketContext(
+  request: IncomingMessage,
+): Promise<Context> {
+  const auth = await safeSessionAuthFromExpressReq(request);
+  return {
+    auth,
+    requestLocation: null,
+    loaders: createLoaders(),
+  };
 }

@@ -20,6 +20,8 @@ All checks must pass.
 
 - Do not use `!` (non-null assertion)
 - Use `invariant` for required values
+- Avoid `as` type assertions; prefer proper typing, type guards, or
+  `satisfies`. `as const` is fine.
 
 ## Testing (Vitest)
 
