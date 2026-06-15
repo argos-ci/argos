@@ -524,6 +524,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.26.1
         version: 3.26.1
+      '@tiptap/suggestion':
+        specifier: ^3.26.1
+        version: 3.26.1(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1)
       '@types/d3-interpolate':
         specifier: ^3.0.4
         version: 3.0.4
