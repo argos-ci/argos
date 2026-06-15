@@ -54,7 +54,9 @@ export async function addBuildReviewers(input: {
   requestedById: string;
 }): Promise<void> {
   const { build, accountIds, requestedById } = input;
-  const userIds = await resolveEligibleReviewerUserIds({ build, accountIds });
+  const userIds = (await resolveEligibleReviewerUserIds({ build, accountIds }))
+    // You can't request yourself as a reviewer.
+    .filter((userId) => userId !== requestedById);
   if (userIds.length === 0) {
     return;
   }
@@ -71,9 +73,7 @@ export async function addBuildReviewers(input: {
     .ignore()
     .returning("userId");
 
-  const newReviewerIds = inserted
-    .map((row) => row.userId as string)
-    .filter((userId) => userId !== requestedById);
+  const newReviewerIds = inserted.map((row) => row.userId as string);
 
   if (newReviewerIds.length > 0) {
     await notifyReviewersRequested({
