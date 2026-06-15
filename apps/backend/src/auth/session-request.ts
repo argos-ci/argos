@@ -14,7 +14,7 @@ import { readSessionCookie } from "./session-cookie";
  * the cookie-based counterpart of the Bearer-token auth used by the API.
  */
 export async function sessionAuthFromExpressReq(
-  req: Request,
+  req: Pick<Request, "headers">,
 ): Promise<AuthSessionPayload> {
   const rawToken = readSessionCookie(req);
   if (!rawToken) {
@@ -48,7 +48,7 @@ export async function sessionAuthFromExpressReq(
  * when there is no valid session.
  */
 export async function safeSessionAuthFromExpressReq(
-  req: Request,
+  req: Pick<Request, "headers">,
 ): Promise<AuthSessionPayload | null> {
   try {
     return await sessionAuthFromExpressReq(req);

@@ -688,6 +688,7 @@ export const resolvers: IResolvers = {
             })
           : false;
 
+        invariant(ctx.req && ctx.res, "Login is only available over HTTP");
         await startSession(ctx.req, ctx.res, account.userId);
 
         return {

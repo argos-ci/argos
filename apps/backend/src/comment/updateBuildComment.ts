@@ -4,6 +4,7 @@ import type { JSONContent } from "@tiptap/core";
 import type { Comment } from "@/database/models";
 import { boom } from "@/util/error";
 
+import { publishCommentChange } from "./commentEvents";
 import { notifyMentionedUsers } from "./commentNotifications";
 import { getCommentMentionedUserIds, syncCommentMentions } from "./mentions";
 import {
@@ -73,6 +74,13 @@ export async function updateBuildComment(input: {
     userId: updatedComment.userId,
     mentionedUserIds: newlyMentionedUserIds,
     threadId: updatedComment.threadId ?? updatedComment.id,
+  });
+
+  // Notify clients watching this build so the edit appears live.
+  await publishCommentChange({
+    buildId: updatedComment.buildId,
+    type: "UPDATED",
+    comment: updatedComment,
   });
 
   return updatedComment;

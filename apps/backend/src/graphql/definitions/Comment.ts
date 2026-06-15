@@ -3,6 +3,10 @@ import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { addCommentReaction } from "@/comment/addCommentReaction";
+import {
+  subscribeToCommentChanges,
+  type CommentChangeType,
+} from "@/comment/commentEvents";
 import { createBuildComment } from "@/comment/createBuildComment";
 import { deleteBuildComment } from "@/comment/deleteBuildComment";
 import { formatCommentId, parseCommentId } from "@/comment/id";
@@ -23,9 +27,10 @@ import {
   unsubscribeUserFromCommentThread,
 } from "@/database/services/comment-notification-subscription";
 
-import type {
-  ICommentPermission,
-  IResolvers,
+import {
+  ICommentChangeType,
+  type ICommentPermission,
+  type IResolvers,
 } from "../__generated__/resolver-types";
 import { forbidden, notFound, unauthenticated } from "../util";
 
@@ -65,6 +70,28 @@ async function assertCanReactToComment(
   const permissions = await build.project.$getPermissions(user);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot react to this comment");
+  }
+}
+
+/**
+ * Ensure the user is allowed to watch a build's comments. Viewing the live
+ * comment stream requires the same "view" permission as loading the build, so
+ * a subscription can never leak comments the user could not already read.
+ */
+async function assertCanViewBuild(
+  buildId: string,
+  user: User | null,
+): Promise<void> {
+  const build = await Build.query()
+    .findById(buildId)
+    .withGraphFetched("project.account");
+  if (!build) {
+    throw notFound("Build not found");
+  }
+  invariant(build.project?.account, "Build project account not found");
+  const permissions = await build.project.$getPermissions(user);
+  if (!permissions.includes("view")) {
+    throw forbidden("You cannot view this build");
   }
 }
 
@@ -227,7 +254,37 @@ export const typeDefs = gql`
     "Reopen a resolved comment thread"
     unresolveCommentThread(input: UnresolveCommentThreadInput!): Comment!
   }
+
+  """
+  Whether a comment change added a new comment or updated an existing one.
+  """
+  enum CommentChangeType {
+    ADDED
+    UPDATED
+  }
+
+  """
+  A comment that was added to or updated on a build, pushed live to subscribers.
+  """
+  type CommentChangeEvent {
+    "Whether the comment was newly added or an existing one was updated"
+    type: CommentChangeType!
+    "The comment that changed"
+    comment: Comment!
+  }
+
+  type Subscription {
+    "Emitted when a comment is added to or updated on the given build"
+    buildCommentChanged(buildId: ID!): CommentChangeEvent!
+  }
 `;
+
+/** Map the internal comment-change type to its GraphQL enum value. */
+const COMMENT_CHANGE_EVENT_TYPE: Record<CommentChangeType, ICommentChangeType> =
+  {
+    ADDED: ICommentChangeType.Added,
+    UPDATED: ICommentChangeType.Updated,
+  };
 
 export const resolvers: IResolvers = {
   Comment: {
@@ -478,6 +535,25 @@ export const resolvers: IResolvers = {
         permission: "review",
       });
       return unresolveCommentThread({ thread });
+    },
+  },
+  Subscription: {
+    buildCommentChanged: {
+      // Authorize before opening the stream so an unpermitted subscription is
+      // rejected upfront rather than after the first event.
+      subscribe: async (_root, args, ctx) => {
+        await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
+        return (async function* () {
+          for await (const change of subscribeToCommentChanges(args.buildId)) {
+            yield {
+              buildCommentChanged: {
+                type: COMMENT_CHANGE_EVENT_TYPE[change.type],
+                comment: change.comment,
+              },
+            };
+          }
+        })();
+      },
     },
   },
 };

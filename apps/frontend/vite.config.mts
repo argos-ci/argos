@@ -82,6 +82,8 @@ export default defineConfig((args) => {
               "/graphql": {
                 target: "https://app.argos-ci.dev:4001",
                 secure: false,
+                // Proxy the subscription WebSocket upgrade too.
+                ws: true,
               },
               "/config.js": {
                 target: "https://app.argos-ci.dev:4001",

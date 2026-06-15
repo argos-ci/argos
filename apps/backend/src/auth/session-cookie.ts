@@ -56,7 +56,9 @@ export function clearSessionCookies(res: Response): void {
  * Read the raw session token from the request cookies. Returns `null` when the
  * cookie is absent. We parse the header directly (no cookie-parser middleware).
  */
-export function readSessionCookie(req: Request): string | null {
+export function readSessionCookie(
+  req: Pick<Request, "headers">,
+): string | null {
   const header = req.headers.cookie;
   if (!header) {
     return null;

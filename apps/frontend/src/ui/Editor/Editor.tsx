@@ -74,7 +74,15 @@ export type EditorValue = JSONContent | null;
 export type EditorVariant = "boxed" | "plain";
 
 export interface EditorProps {
+  /** Initial content for an uncontrolled editor. Read once, at creation. */
   defaultValue?: EditorValue;
+  /**
+   * Controlled content: the editor re-renders to reflect changes to it. Use it
+   * for read-only rendering that must stay in sync with its source (e.g. a
+   * comment edited live over the subscription). Seeds the initial content, so
+   * use it instead of — not together with — `defaultValue`.
+   */
+  value?: EditorValue;
   onChange?: (value: EditorValue) => void;
   onBlur?: () => void;
   /** Called when the user presses Cmd/Ctrl+Enter. */
@@ -129,6 +137,7 @@ const DEFAULT_CONTENT_HEIGHT_CLASS = "min-h-20";
 export function Editor(props: EditorProps) {
   const {
     defaultValue,
+    value,
     onChange,
     onBlur,
     onSubmit,
@@ -190,7 +199,7 @@ export function Editor(props: EditorProps) {
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
     editable,
-    content: defaultValue,
+    content: value ?? defaultValue,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: {
@@ -227,6 +236,17 @@ export function Editor(props: EditorProps) {
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
+
+  // Keep the editor in sync with the controlled `value` — `useEditor` only
+  // seeds `content` once at creation, so a live update (e.g. a comment edited
+  // by someone else over the subscription) would otherwise render stale text.
+  // `value`'s identity only changes when the content does (Apollo shares
+  // references for unchanged data), so this stays a no-op on unrelated renders.
+  useEffect(() => {
+    if (editor && value != null) {
+      editor.commands.setContent(value);
+    }
+  }, [editor, value]);
 
   useEffect(() => {
     if (!editor || !ref) {

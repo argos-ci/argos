@@ -1173,6 +1173,7 @@ export const resolvers: IResolvers = {
           ]);
         });
 
+        invariant(ctx.req && ctx.res, "Login is only available over HTTP");
         await startSession(ctx.req, ctx.res, user.id);
         return { team: teamAccount };
       }

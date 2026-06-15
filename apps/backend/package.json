@@ -73,6 +73,7 @@
     "graphql": "^16.14.2",
     "graphql-scalars": "^1.25.0",
     "graphql-tag": "^2.12.6",
+    "graphql-ws": "^6.0.8",
     "happy-dom": "^20.10.3",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
@@ -104,6 +105,7 @@
     "stripe": "^22.2.1",
     "tmp": "^0.2.7",
     "undici": "catalog:",
+    "ws": "^8.21.0",
     "yaml": "^2.9.0",
     "zod": "catalog:",
     "zod-openapi": "^5.4.6"
@@ -125,6 +127,7 @@
     "@types/semver": "^7.7.1",
     "@types/supertest": "^7.2.0",
     "@types/tmp": "^0.2.6",
+    "@types/ws": "^8.18.1",
     "concurrently": "^10.0.3",
     "eslint": "catalog:",
     "factory-girl-ts": "^2.3.1",
