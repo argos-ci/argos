@@ -32,6 +32,120 @@ export function validateCommentJson(value: unknown): value is JSONContent {
 }
 
 /**
+ * Whether an inline node carries no meaningful content, i.e. it's a line break
+ * (`hardBreak`) or a whitespace-only text node.
+ */
+function isBlankInline(node: JSONContent): boolean {
+  if (node.type === "hardBreak") {
+    return true;
+  }
+  return node.type === "text" && (node.text ?? "").trim().length === 0;
+}
+
+/**
+ * Whether a top-level node is a "blank" paragraph, i.e. one carrying no
+ * meaningful content (no children, or only line breaks and whitespace). Such
+ * paragraphs are produced by trailing/leading newlines in the editor.
+ */
+function isBlankParagraph(node: JSONContent): boolean {
+  if (node.type !== "paragraph") {
+    return false;
+  }
+  const content = node.content;
+  if (!content || content.length === 0) {
+    return true;
+  }
+  return content.every(isBlankInline);
+}
+
+/**
+ * Trim leading and/or trailing line breaks (`hardBreak`) from a paragraph's
+ * inline content. Returns the same node when there is nothing to trim or it
+ * isn't a paragraph.
+ */
+function trimParagraphBreaks(
+  node: JSONContent,
+  options: { leading: boolean; trailing: boolean },
+): JSONContent {
+  if (node.type !== "paragraph") {
+    return node;
+  }
+  const content = node.content;
+  if (!content || content.length === 0) {
+    return node;
+  }
+
+  let start = 0;
+  let end = content.length;
+  if (options.leading) {
+    while (start < end && content[start]!.type === "hardBreak") {
+      start += 1;
+    }
+  }
+  if (options.trailing) {
+    while (end > start && content[end - 1]!.type === "hardBreak") {
+      end -= 1;
+    }
+  }
+
+  if (start === 0 && end === content.length) {
+    return node;
+  }
+
+  return { ...node, content: content.slice(start, end) };
+}
+
+/**
+ * Strip leading and trailing blank paragraphs from a (structurally valid)
+ * comment document, then trim line breaks at the very start and end of the
+ * remaining content, so empty lines and line breaks typed before/after the
+ * content don't get persisted. Returns the same value when there is nothing to
+ * trim.
+ */
+export function sanitizeCommentJson(value: JSONContent): JSONContent {
+  const content = value.content;
+  if (!Array.isArray(content)) {
+    return value;
+  }
+
+  let start = 0;
+  let end = content.length;
+  while (start < end && isBlankParagraph(content[start]!)) {
+    start += 1;
+  }
+  while (end > start && isBlankParagraph(content[end - 1]!)) {
+    end -= 1;
+  }
+
+  const trimmed = content.slice(start, end);
+
+  // Trim line breaks at the boundaries of the surviving content (leading breaks
+  // on the first block, trailing breaks on the last block).
+  if (trimmed.length > 0) {
+    const lastIndex = trimmed.length - 1;
+    trimmed[0] = trimParagraphBreaks(trimmed[0]!, {
+      leading: true,
+      trailing: lastIndex === 0,
+    });
+    if (lastIndex > 0) {
+      trimmed[lastIndex] = trimParagraphBreaks(trimmed[lastIndex]!, {
+        leading: false,
+        trailing: true,
+      });
+    }
+  }
+
+  const changed =
+    trimmed.length !== content.length ||
+    trimmed.some((node, index) => node !== content[index]);
+  if (!changed) {
+    return value;
+  }
+
+  return { ...value, content: trimmed };
+}
+
+/**
  * Check whether a (structurally valid) comment document carries no meaningful
  * content, i.e. it holds only whitespace. Used to reject empty comments
  * submitted directly through the API.

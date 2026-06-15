@@ -9,6 +9,7 @@ import { getCommentMentionedUserIds, syncCommentMentions } from "./mentions";
 import {
   isCommentEmpty,
   isCommentTooLarge,
+  sanitizeCommentJson,
   validateCommentJson,
 } from "./validate";
 
@@ -24,11 +25,13 @@ export async function updateBuildComment(input: {
   comment: Comment;
   body: JSONContent;
 }): Promise<Comment> {
-  const { comment, body } = input;
+  const { comment } = input;
 
-  if (!validateCommentJson(body)) {
+  if (!validateCommentJson(input.body)) {
     throw boom(400, "Invalid comment body");
   }
+
+  const body = sanitizeCommentJson(input.body);
 
   if (isCommentEmpty(body)) {
     throw boom(400, "Comment cannot be empty");
