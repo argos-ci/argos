@@ -10,6 +10,17 @@ describe("getProjectMemberIds", () => {
     await setupDatabase();
   });
 
+  it("returns only the owner for a personal project", async () => {
+    const userAccount = await factory.UserAccount.create();
+    invariant(userAccount.userId);
+    const project = await factory.Project.create({
+      accountId: userAccount.id,
+    });
+
+    const userIds = await getProjectMemberIds(project);
+    expect(userIds).toEqual([userAccount.userId]);
+  });
+
   it("includes team owners and members but not bare contributors", async () => {
     const teamAccount = await factory.TeamAccount.create();
     invariant(teamAccount.teamId);
