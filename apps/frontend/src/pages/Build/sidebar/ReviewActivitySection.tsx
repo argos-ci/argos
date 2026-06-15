@@ -251,36 +251,58 @@ export function ReviewActivitySection(props: { build: Build }) {
   // the project, so the operation needs the project's slug/name from the route.
   const { accountSlug, projectName } = useParams();
   invariant(accountSlug && projectName, "Missing project route params");
-  // Keep the activity feed live: append comments added by others, and let the
-  // normalized cache merge edits in place (it dedupes by comment id).
+  // Keep the activity feed live. Added comments are inserted into the build's
+  // comment list and deleted ones are evicted; updates (edits, reactions,
+  // resolve/reopen) need no handling here — the normalized cache merges the
+  // changed fields in place by comment id.
   useSubscription(BuildCommentChangedSubscription, {
     variables: { buildId: build.id, accountSlug, projectName },
     onData: ({ client, data }) => {
       const event = data.data?.buildCommentChanged;
-      if (event?.type !== CommentChangeType.Added) {
+      if (!event) {
         return;
       }
       const { comment } = event;
-      client.cache.modify({
-        id: client.cache.identify({ __typename: "Build", id: build.id }),
-        fields: {
-          comments(
-            existingRefs: readonly Reference[] = [],
-            { readField, toReference },
-          ) {
-            const ref = toReference(comment);
-            if (
-              !ref ||
-              existingRefs.some(
-                (existing) => readField("id", existing) === comment.id,
-              )
-            ) {
-              return existingRefs;
-            }
-            return [...existingRefs, ref];
-          },
-        },
-      });
+      switch (event.type) {
+        case CommentChangeType.Added: {
+          client.cache.modify({
+            id: client.cache.identify({ __typename: "Build", id: build.id }),
+            fields: {
+              comments(
+                existingRefs: readonly Reference[] = [],
+                { readField, toReference },
+              ) {
+                const ref = toReference(comment);
+                if (
+                  !ref ||
+                  existingRefs.some(
+                    (existing) => readField("id", existing) === comment.id,
+                  )
+                ) {
+                  return existingRefs;
+                }
+                return [...existingRefs, ref];
+              },
+            },
+          });
+          break;
+        }
+        case CommentChangeType.Deleted: {
+          // Evicting the comment drops it from the build's list (the dangling
+          // ref is garbage-collected), so `AnimatePresence` plays its exit
+          // animation — matching a local delete.
+          const cacheId = client.cache.identify({
+            __typename: "Comment",
+            id: comment.id,
+          });
+          if (cacheId) {
+            client.cache.evict({ id: cacheId });
+            client.cache.gc();
+          }
+          break;
+        }
+        // CommentChangeType.Updated needs no manual cache work.
+      }
     },
   });
   const permissions = useNonNullable(ProjectPermissionsContext);

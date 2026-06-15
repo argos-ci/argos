@@ -6,6 +6,7 @@ import { getCommentThreadSubscribedUserIds } from "@/database/services/comment-n
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
+import { publishCommentChange } from "./commentEvents";
 import { formatCommentId } from "./id";
 import { renderCommentHtmlWithMentions } from "./mentions";
 import { isValidEmoji } from "./reactions";
@@ -42,6 +43,14 @@ export async function addCommentReaction(input: {
   }
 
   await notifyCommentThreadSubscribers({ comment, userId, emoji });
+
+  // Notify clients watching this build so the reaction appears live. The
+  // comment row is unchanged; subscribers re-resolve its `reactions` field.
+  await publishCommentChange({
+    buildId: comment.buildId,
+    type: "UPDATED",
+    comment,
+  });
 
   return comment;
 }

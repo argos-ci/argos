@@ -4,7 +4,7 @@ import { Comment } from "@/database/models/Comment";
 import { redisPubSub } from "@/util/redis";
 
 const commentChangeSchema = z.object({
-  type: z.enum(["ADDED", "UPDATED"]),
+  type: z.enum(["ADDED", "UPDATED", "DELETED"]),
   comment: z.record(z.string(), z.unknown()),
 });
 

@@ -256,25 +256,28 @@ export const typeDefs = gql`
   }
 
   """
-  Whether a comment change added a new comment or updated an existing one.
+  How a comment changed: a new comment was added, an existing one was updated
+  (edited, reacted to, or its thread resolved/reopened), or it was deleted.
   """
   enum CommentChangeType {
     ADDED
     UPDATED
+    DELETED
   }
 
   """
-  A comment that was added to or updated on a build, pushed live to subscribers.
+  A comment that was added to, updated on, or deleted from a build, pushed live
+  to subscribers.
   """
   type CommentChangeEvent {
-    "Whether the comment was newly added or an existing one was updated"
+    "How the comment changed"
     type: CommentChangeType!
-    "The comment that changed"
+    "The comment that changed. For a deletion, only its id is meaningful."
     comment: Comment!
   }
 
   type Subscription {
-    "Emitted when a comment is added to or updated on the given build"
+    "Emitted when a comment is added to, updated on, or deleted from the given build"
     buildCommentChanged(buildId: ID!): CommentChangeEvent!
   }
 `;
@@ -284,6 +287,7 @@ const COMMENT_CHANGE_EVENT_TYPE: Record<CommentChangeType, ICommentChangeType> =
   {
     ADDED: ICommentChangeType.Added,
     UPDATED: ICommentChangeType.Updated,
+    DELETED: ICommentChangeType.Deleted,
   };
 
 export const resolvers: IResolvers = {
@@ -545,6 +549,15 @@ export const resolvers: IResolvers = {
         await assertCanViewBuild(args.buildId, ctx.auth?.user ?? null);
         return (async function* () {
           for await (const change of subscribeToCommentChanges(args.buildId)) {
+            // Field resolvers below run with the connection's shared loaders,
+            // whose per-comment caches would otherwise pin the reactions and
+            // mentions seen on the first event. Those relations live in their
+            // own tables (not the comment row that travels through Redis), so
+            // drop the changed comment's cached entries to resolve each event
+            // against the current state — this is what makes live reactions and
+            // edited mentions reflect reality across successive events.
+            ctx.loaders.CommentReactions.clear(change.comment.id);
+            ctx.loaders.CommentMentionedUserIds.clear(change.comment.id);
             yield {
               buildCommentChanged: {
                 type: COMMENT_CHANGE_EVENT_TYPE[change.type],

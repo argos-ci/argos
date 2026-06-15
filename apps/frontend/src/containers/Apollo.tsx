@@ -83,6 +83,14 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
       cache: new InMemoryCache({
         possibleTypes: fragments.possibleTypes,
         typePolicies: {
+          // A comment's reaction groups are an embedded value object with no
+          // id to normalize on, and the server always returns the complete,
+          // authoritative list. Replace it wholesale instead of merging, which
+          // also silences Apollo's "cache data may be lost" warning when a live
+          // reaction update returns fewer groups than are cached.
+          CommentReactionGroup: {
+            merge: false,
+          },
           Team: {
             keyFields: (obj) => {
               invariant(obj.id, "Team.id is undefined");
