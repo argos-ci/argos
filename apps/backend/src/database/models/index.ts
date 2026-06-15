@@ -7,6 +7,7 @@ export * from "./Build";
 export * from "./BuildMergeQueueGhPullRequest";
 export * from "./BuildNotification";
 export * from "./BuildNotificationSubscription";
+export * from "./BuildRequestedReviewer";
 export * from "./BuildReview";
 export * from "./BuildShard";
 export * from "./Deployment";

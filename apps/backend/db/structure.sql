@@ -400,6 +400,21 @@ ALTER SEQUENCE public.build_notifications_id_seq OWNED BY public.build_notificat
 
 
 --
+-- Name: build_requested_reviewers; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.build_requested_reviewers (
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "buildId" bigint NOT NULL,
+    "userId" bigint NOT NULL,
+    "requestedById" bigint
+);
+
+
+ALTER TABLE public.build_requested_reviewers OWNER TO postgres;
+
+--
 -- Name: build_reviews; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2852,6 +2867,14 @@ ALTER TABLE ONLY public.build_notifications
 
 
 --
+-- Name: build_requested_reviewers build_requested_reviewers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_requested_reviewers
+    ADD CONSTRAINT build_requested_reviewers_pkey PRIMARY KEY ("buildId", "userId");
+
+
+--
 -- Name: build_reviews build_reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3543,6 +3566,13 @@ CREATE INDEX build_notification_subscriptions_userid_index ON public.build_notif
 --
 
 CREATE INDEX build_notifications_buildid_index ON public.build_notifications USING btree ("buildId");
+
+
+--
+-- Name: build_requested_reviewers_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX build_requested_reviewers_userid_index ON public.build_requested_reviewers USING btree ("userId");
 
 
 --
@@ -4248,6 +4278,30 @@ ALTER TABLE ONLY public.build_notification_subscriptions
 
 ALTER TABLE ONLY public.build_notifications
     ADD CONSTRAINT build_notifications_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id);
+
+
+--
+-- Name: build_requested_reviewers build_requested_reviewers_buildid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_requested_reviewers
+    ADD CONSTRAINT build_requested_reviewers_buildid_foreign FOREIGN KEY ("buildId") REFERENCES public.builds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: build_requested_reviewers build_requested_reviewers_requestedbyid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_requested_reviewers
+    ADD CONSTRAINT build_requested_reviewers_requestedbyid_foreign FOREIGN KEY ("requestedById") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: build_requested_reviewers build_requested_reviewers_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.build_requested_reviewers
+    ADD CONSTRAINT build_requested_reviewers_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -5106,3 +5160,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026053
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260608120000_user-sessions.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260609120000_encrypt-sensitive-data.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260610120000_comment-resolved-at.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260614202438_build-requested-reviewers.js', 1, NOW());

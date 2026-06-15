@@ -214,6 +214,12 @@ const hotkeyGroups = [
   {
     name: "Actions",
     hotkeys: {
+      requestReviewers: {
+        keys: ["KeyA"],
+        displayKeys: ["A"],
+        description: "Add reviewer",
+        envs: ["build"],
+      },
       acceptDiff: {
         keys: ["KeyY"],
         displayKeys: ["Y"],
@@ -394,13 +400,7 @@ const BuildHotkeysDialogWithState = memo(
             >
               <XIcon />
             </IconButton>
-            <div
-              className={clsx(
-                "gap-12 space-y-6 md:columns-2",
-                { test: "md:max-h-[20rem]", build: "md:max-h-[32rem]" }[env],
-              )}
-              style={{ columnFill: "auto" }}
-            >
+            <div className={clsx("gap-12 space-y-6 pb-4 md:columns-2")}>
               {plainHotkeyGroups.map((group, index) => {
                 const entries = Object.entries(group.hotkeys).filter(
                   ([, hotKey]) =>

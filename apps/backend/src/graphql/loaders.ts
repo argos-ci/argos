@@ -12,6 +12,7 @@ import {
   AutomationActionRun,
   AutomationRun,
   Build,
+  BuildRequestedReviewer,
   BuildReview,
   Comment,
   CommentMention,
@@ -814,6 +815,23 @@ function createBuildReviewsLoader() {
   });
 }
 
+function createBuildRequestedReviewersLoader() {
+  return new DataLoader<string, BuildRequestedReviewer[]>(async (inputs) => {
+    const reviewers = await BuildRequestedReviewer.query()
+      .whereIn("buildId", inputs as string[])
+      .orderBy("createdAt", "asc");
+    const reviewersMap = reviewers.reduce<
+      Record<string, BuildRequestedReviewer[]>
+    >((map, reviewer) => {
+      const array = map[reviewer.buildId] ?? [];
+      array.push(reviewer);
+      map[reviewer.buildId] = array;
+      return map;
+    }, {});
+    return inputs.map((id) => reviewersMap[id] ?? []);
+  });
+}
+
 function createChangeOccurrencesLoader(): (
   from: string,
 ) => DataLoader<{ testId: string; fingerprint: string }, number, string> {
@@ -1264,6 +1282,7 @@ export const createLoaders = () => ({
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),
   BuildReviews: createBuildReviewsLoader(),
+  BuildRequestedReviewers: createBuildRequestedReviewersLoader(),
   DeploymentAliasesByDeploymentId:
     createDeploymentAliasesByDeploymentIdLoader(),
   LatestBuildByProjectAndCommit: createLatestBuildByProjectAndCommitLoader(),

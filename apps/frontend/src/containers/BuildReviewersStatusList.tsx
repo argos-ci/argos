@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { BanIcon } from "lucide-react";
 import moment from "moment";
 
-import type { ReviewState } from "@/gql/graphql";
+import { ReviewState } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
 import {
   buildReviewDescriptors,
@@ -25,6 +25,8 @@ type ReviewerStatusReview = {
   } | null;
 };
 
+type ReviewerUser = NonNullable<ReviewerStatusReview["user"]>;
+
 const dismissedReviewDescriptor = {
   label: "Dismissed",
   icon: BanIcon,
@@ -41,15 +43,23 @@ export function BuildReviewersStatusList<
   T extends ReviewerStatusReview,
 >(props: {
   reviews: readonly T[];
+  /**
+   * Users requested as reviewers that haven't submitted a review yet. Rendered
+   * as "pending" rows after the submitted reviews.
+   */
+  pendingUsers?: readonly ReviewerUser[];
   className?: string;
   itemClassName?: string;
   avatarClassName?: string;
   renderAction?: (review: T) => ReactNode;
 }) {
   const reviewers = getLatestReviewByUser(props.reviews);
-  if (reviewers.length === 0) {
+  const pendingUsers = props.pendingUsers ?? [];
+  if (reviewers.length === 0 && pendingUsers.length === 0) {
     return null;
   }
+  const pendingDescriptor = buildReviewDescriptors[ReviewState.Pending];
+  const PendingIcon = pendingDescriptor.icon;
   return (
     <ul className={clsx("flex flex-col", props.className)}>
       {reviewers.map((review) => {
@@ -84,6 +94,29 @@ export function BuildReviewersStatusList<
           </li>
         );
       })}
+      {pendingUsers.map((user) => (
+        <li
+          key={`pending-${user.id}`}
+          className={clsx(
+            "flex items-center gap-2 text-sm",
+            props.itemClassName,
+          )}
+        >
+          <AccountAvatar
+            className={clsx("size-5 shrink-0", props.avatarClassName)}
+            avatar={user.avatar}
+            alt={user.name ?? undefined}
+          />
+          <strong className="flex-1 truncate font-medium">
+            {user.name || user.slug}
+          </strong>
+          <Tooltip content={pendingDescriptor.label}>
+            <PendingIcon
+              className={clsx("size-3.5 shrink-0", pendingDescriptor.textColor)}
+            />
+          </Tooltip>
+        </li>
+      ))}
     </ul>
   );
 }
