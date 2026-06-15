@@ -32,6 +32,7 @@ import {
   type ICommentPermission,
   type IResolvers,
 } from "../__generated__/resolver-types";
+import { assertCanViewBuild } from "../buildAccess";
 import { forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
@@ -70,28 +71,6 @@ async function assertCanReactToComment(
   const permissions = await build.project.$getPermissions(user);
   if (!permissions.includes("review")) {
     throw forbidden("You cannot react to this comment");
-  }
-}
-
-/**
- * Ensure the user is allowed to watch a build's comments. Viewing the live
- * comment stream requires the same "view" permission as loading the build, so
- * a subscription can never leak comments the user could not already read.
- */
-async function assertCanViewBuild(
-  buildId: string,
-  user: User | null,
-): Promise<void> {
-  const build = await Build.query()
-    .findById(buildId)
-    .withGraphFetched("project.account");
-  if (!build) {
-    throw notFound("Build not found");
-  }
-  invariant(build.project?.account, "Build project account not found");
-  const permissions = await build.project.$getPermissions(user);
-  if (!permissions.includes("view")) {
-    throw forbidden("You cannot view this build");
   }
 }
 

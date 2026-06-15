@@ -26,6 +26,8 @@ import { transaction } from "@/database/transaction";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
+import { publishReviewChange } from "./reviewEvents";
+
 export type ReviewState = "approved" | "rejected" | "commented" | "pending";
 
 export type ScreenshotDiffReviewState = "approved" | "rejected";
@@ -151,6 +153,14 @@ export async function createBuildReview(input: {
     }),
     autoSubscribeUserToBuild({ buildId: build.id, userId }),
     notifyBuildSubscribers({ build, buildReview, comment }),
+    // Notify clients watching this build so the review appears live in the
+    // activity feed. Reviews created here are never pending, so they always
+    // belong in the feed.
+    publishReviewChange({
+      buildId: build.id,
+      type: "SUBMITTED",
+      review: buildReview,
+    }),
   ]);
 
   return buildReview;

@@ -16,7 +16,11 @@ import { toast } from "sonner";
 
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
-import { CommentChangeType, ProjectPermission } from "@/gql/graphql";
+import {
+  CommentChangeType,
+  ProjectPermission,
+  ReviewChangeType,
+} from "@/gql/graphql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import type { MentionUser } from "@/ui/Editor/mention";
 import { IconButton } from "@/ui/IconButton";
@@ -95,6 +99,30 @@ const BuildCommentChangedSubscription = graphql(`
         id
         threadId
         ...CommentCard_Comment
+      }
+    }
+  }
+`);
+
+const BuildReviewChangedSubscription = graphql(`
+  subscription ReviewActivitySection_buildReviewChanged(
+    $buildId: ID!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
+    buildReviewChanged(buildId: $buildId) {
+      type
+      review {
+        id
+        date
+        state
+        dismissedAt
+        dismissedBy {
+          ...UserCard_user
+        }
+        user {
+          ...UserCard_user
+        }
       }
     }
   }
@@ -303,6 +331,39 @@ export function ReviewActivitySection(props: { build: Build }) {
         }
         // CommentChangeType.Updated needs no manual cache work.
       }
+    },
+  });
+  // Same for reviews: a submitted review is inserted into the build's review
+  // list; a dismissal needs no handling here — the normalized cache merges
+  // `dismissedAt`/`dismissedBy` in place by review id.
+  useSubscription(BuildReviewChangedSubscription, {
+    variables: { buildId: build.id, accountSlug, projectName },
+    onData: ({ client, data }) => {
+      const event = data.data?.buildReviewChanged;
+      if (event?.type !== ReviewChangeType.Submitted) {
+        return;
+      }
+      const { review } = event;
+      client.cache.modify({
+        id: client.cache.identify({ __typename: "Build", id: build.id }),
+        fields: {
+          reviews(
+            existingRefs: readonly Reference[] = [],
+            { readField, toReference },
+          ) {
+            const ref = toReference(review);
+            if (
+              !ref ||
+              existingRefs.some(
+                (existing) => readField("id", existing) === review.id,
+              )
+            ) {
+              return existingRefs;
+            }
+            return [...existingRefs, ref];
+          },
+        },
+      });
     },
   });
   const permissions = useNonNullable(ProjectPermissionsContext);
