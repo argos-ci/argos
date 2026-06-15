@@ -58,6 +58,7 @@ export function AddCommentForm(props: {
   return (
     <StandaloneEditor
       onSubmit={handleSubmit}
+      draftKey={`build.${build.id}.comment`}
       mentions={mentions}
       placeholder="Leave a comment…"
       submitLabel="Submit the comment"
