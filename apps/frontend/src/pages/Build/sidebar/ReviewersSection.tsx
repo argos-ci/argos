@@ -17,6 +17,7 @@ import {
 } from "react-aria-components";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
+import { useAuthTokenPayload } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { BuildReviewersStatusList } from "@/containers/BuildReviewersStatusList";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
@@ -256,9 +257,18 @@ function RequestReviewersMenu(props: { build: Build }) {
   const [addReviewers] = useMutation(AddBuildReviewersMutation);
   const [removeReviewers] = useMutation(RemoveBuildReviewersMutation);
 
+  // You can't request yourself as a reviewer, so exclude the current user from
+  // the picker (the server enforces this too).
+  const authPayload = useAuthTokenPayload();
+  const currentAccountId = authPayload?.account.id;
+  const members = useMemo(
+    () => build.members.filter((member) => member.id !== currentAccountId),
+    [build.members, currentAccountId],
+  );
+
   const memberIds = useMemo(
-    () => new Set(build.members.map((member) => member.id)),
-    [build.members],
+    () => new Set(members.map((member) => member.id)),
+    [members],
   );
 
   // Members who already submitted an active review can't be toggled: they show
@@ -269,10 +279,8 @@ function RequestReviewersMenu(props: { build: Build }) {
         .map((review) => review.user?.id)
         .filter((id): id is string => Boolean(id)),
     );
-    return build.members
-      .map((member) => member.id)
-      .filter((id) => reviewed.has(id));
-  }, [build.members, build.reviews]);
+    return members.map((member) => member.id).filter((id) => reviewed.has(id));
+  }, [members, build.reviews]);
 
   // Requested reviewers that are still toggleable (members that haven't reviewed
   // yet). A requested user who lost access stays pending but isn't manageable
@@ -356,7 +364,7 @@ function RequestReviewersMenu(props: { build: Build }) {
               selectedKeys={selectedKeys}
               disabledKeys={disabledKeys}
               onSelectionChange={handleSelectionChange}
-              items={build.members}
+              items={members}
               renderEmptyState={() => (
                 <p className="text-low px-2 py-1.5 text-xs">No members found</p>
               )}
