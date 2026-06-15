@@ -75,6 +75,17 @@ export const Default: Story = {
                 { type: "text", text: " to toggle bold." },
               ],
             },
+            {
+              type: "paragraph",
+              content: [
+                { type: "text", text: "Type " },
+                { type: "text", text: "/", marks: [{ type: "code" }] },
+                {
+                  type: "text",
+                  text: " at the start of a line for block commands.",
+                },
+              ],
+            },
           ],
         }}
       />

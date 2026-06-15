@@ -14,6 +14,7 @@ import { EDITOR_PROSE_CLASS } from "./EditorContent.css";
 import { LinkEditTrigger } from "./EditorLinkEdit";
 import { EditorToolbar } from "./EditorToolbar";
 import { createMentionExtension, type MentionUser } from "./mention";
+import { SlashCommand } from "./slashCommand";
 
 const CollapseAllSelectionDelete = Extension.create({
   name: "collapseAllSelectionDelete",
@@ -185,6 +186,7 @@ export function Editor(props: EditorProps) {
           mentionsRef.current?.find((user) => user.id === id),
       }),
       /* eslint-enable react-hooks/refs */
+      SlashCommand,
       ...(placeholder ? [Placeholder.configure({ placeholder })] : []),
     ],
     editable,
