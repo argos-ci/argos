@@ -116,7 +116,29 @@ describe("exchangeGitHubActionsOidcToken", () => {
       .expect(403)
       .expect((res) => {
         expect(res.body.error).toBe(
-          "GitHub Actions OIDC authentication is not enabled for this project.",
+          "GitHub Actions OIDC authentication is not enabled for this project. Enable it in the project settings.",
+        );
+      });
+  });
+
+  test("rejects with project settings guidance when OIDC is disabled and the commit does not match", async ({
+    linkedProject,
+  }) => {
+    await linkedProject.project.$query().patch({
+      githubActionsOidcEnabled: false,
+    });
+
+    await request(app)
+      .post("/auth/github-actions/oidc/exchange")
+      .send({
+        oidcToken: signGitHubActionsToken(),
+        repository: "argos-ci/argos",
+        commit: "0000000000000000000000000000000000000000",
+      })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.error).toBe(
+          "GitHub Actions OIDC authentication is not enabled for this project. Enable it in the project settings.",
         );
       });
   });
