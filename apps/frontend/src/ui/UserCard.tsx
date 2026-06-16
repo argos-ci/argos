@@ -93,6 +93,8 @@ export function getMentionUser(
     imageUrl: user.avatar.url,
     initial: user.avatar.initial,
     role: user.role,
+    lastSeenAt: user.lastSeenAt,
+    timezone: user.timezone,
   };
 }
 
@@ -197,7 +199,7 @@ function UserCardPresence(props: {
   const localTime = timezone ? formatLocalTime(timezone, now) : null;
 
   return (
-    <div className="text-low mt-2 flex flex-col gap-1.5 border-t pt-2 text-xs">
+    <div className="text-low border-t-thin mt-3 flex flex-col gap-1.5 pt-3 text-xs">
       <div className="flex items-center gap-2">
         <span
           className={clsx("size-2 shrink-0 rounded-full", PRESENCE_DOT[status])}

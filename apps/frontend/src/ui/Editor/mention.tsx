@@ -27,6 +27,10 @@ export interface MentionUser {
   initial?: string | null;
   /** Team role, shown in the hover card (e.g. "owner"). */
   role?: string | null;
+  /** Last activity timestamp, for the hover card's presence dot. */
+  lastSeenAt?: string | null;
+  /** IANA timezone, for the hover card's local time. */
+  timezone?: string | null;
 }
 
 const MAX_SUGGESTIONS = 8;
@@ -236,11 +240,14 @@ export function createMentionExtension(options: MentionExtensionOptions) {
         {user ? (
           <UserHoverCard
             user={{
+              id: user.id,
               name: user.label,
               slug: user.secondaryLabel ?? user.label,
               imageUrl: user.imageUrl,
               initial: user.initial,
               role: user.role,
+              lastSeenAt: user.lastSeenAt,
+              timezone: user.timezone,
             }}
           >
             {trigger}
