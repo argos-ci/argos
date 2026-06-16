@@ -5,6 +5,7 @@ import moment from "moment";
 
 import { ReviewState } from "@/gql/graphql";
 import { Tooltip } from "@/ui/Tooltip";
+import { UserHoverCard, type UserCardData } from "@/ui/UserCard";
 import {
   buildReviewDescriptors,
   getLatestReviewByUser,
@@ -12,20 +13,20 @@ import {
 
 import { AccountAvatar } from "./AccountAvatar";
 
+type ReviewerUser = {
+  id: string;
+  name: string | null;
+  slug: string;
+  avatar: ComponentProps<typeof AccountAvatar>["avatar"];
+};
+
 type ReviewerStatusReview = {
   id: string;
   date: string;
   state: ReviewState;
   dismissedAt?: string | null;
-  user: {
-    id: string;
-    name: string | null;
-    slug: string;
-    avatar: ComponentProps<typeof AccountAvatar>["avatar"];
-  } | null;
+  user: ReviewerUser | null;
 };
-
-type ReviewerUser = NonNullable<ReviewerStatusReview["user"]>;
 
 const dismissedReviewDescriptor = {
   label: "Dismissed",
@@ -47,11 +48,17 @@ export function BuildReviewersStatusList<
    * Users requested as reviewers that haven't submitted a review yet. Rendered
    * as "pending" rows after the submitted reviews.
    */
-  pendingUsers?: readonly ReviewerUser[];
+  pendingUsers?: readonly NonNullable<T["user"]>[];
   className?: string;
   itemClassName?: string;
   avatarClassName?: string;
   renderAction?: (review: T) => ReactNode;
+  /**
+   * When provided, the reviewer's avatar + name are wrapped in a {@link
+   * UserHoverCard}. The user type is the caller's, so a richer selection
+   * (presence, role) flows through to the card.
+   */
+  getUserCardData?: (user: NonNullable<T["user"]>) => UserCardData;
 }) {
   const reviewers = getLatestReviewByUser(props.reviews);
   const pendingUsers = props.pendingUsers ?? [];
@@ -60,11 +67,36 @@ export function BuildReviewersStatusList<
   }
   const pendingDescriptor = buildReviewDescriptors[ReviewState.Pending];
   const PendingIcon = pendingDescriptor.icon;
+
+  const renderUserContent = (user: NonNullable<T["user"]>) => {
+    const content = (
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        <AccountAvatar
+          className={clsx("size-5 shrink-0", props.avatarClassName)}
+          avatar={user.avatar}
+          alt={user.name ?? undefined}
+        />
+        <strong className="truncate font-medium">
+          {user.name || user.slug}
+        </strong>
+      </span>
+    );
+    if (props.getUserCardData) {
+      return (
+        <UserHoverCard user={props.getUserCardData(user)}>
+          {content}
+        </UserHoverCard>
+      );
+    }
+    return content;
+  };
+
   return (
     <ul className={clsx("flex flex-col", props.className)}>
       {reviewers.map((review) => {
         const descriptor = getReviewDescriptor(review);
         const Icon = descriptor.icon;
+        const user = review.user as NonNullable<T["user"]> | null;
         return (
           <li
             key={review.id}
@@ -73,16 +105,11 @@ export function BuildReviewersStatusList<
               props.itemClassName,
             )}
           >
-            {review.user && (
-              <AccountAvatar
-                className={clsx("size-5 shrink-0", props.avatarClassName)}
-                avatar={review.user.avatar}
-                alt={review.user.name ?? undefined}
-              />
+            {user ? (
+              renderUserContent(user)
+            ) : (
+              <span className="flex-1 truncate font-medium">Unknown user</span>
             )}
-            <strong className="flex-1 truncate font-medium">
-              {review.user?.name || review.user?.slug}
-            </strong>
             <Tooltip
               content={`${descriptor.label} · ${moment(review.dismissedAt ?? review.date).fromNow()}`}
             >
@@ -102,14 +129,7 @@ export function BuildReviewersStatusList<
             props.itemClassName,
           )}
         >
-          <AccountAvatar
-            className={clsx("size-5 shrink-0", props.avatarClassName)}
-            avatar={user.avatar}
-            alt={user.name ?? undefined}
-          />
-          <strong className="flex-1 truncate font-medium">
-            {user.name || user.slug}
-          </strong>
+          {renderUserContent(user)}
           <Tooltip content={pendingDescriptor.label}>
             <PendingIcon
               className={clsx("size-3.5 shrink-0", pendingDescriptor.textColor)}

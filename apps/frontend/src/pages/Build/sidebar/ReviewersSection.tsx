@@ -40,6 +40,7 @@ import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { getUserCardData } from "@/ui/UserCard";
 import {
   getLatestActiveReviewByUser,
   getLatestReviewByUser,
@@ -59,12 +60,7 @@ const _BuildFragment = graphql(`
       state
       dismissedAt
       user {
-        id
-        name
-        slug
-        avatar {
-          ...AccountAvatarFragment
-        }
+        ...UserCard_user
       }
     }
     members {
@@ -76,12 +72,7 @@ const _BuildFragment = graphql(`
       }
     }
     reviewers {
-      id
-      name
-      slug
-      avatar {
-        ...AccountAvatarFragment
-      }
+      ...UserCard_user
     }
   }
 `);
@@ -103,7 +94,11 @@ const DismissReviewMutation = graphql(`
 `);
 
 const AddBuildReviewersMutation = graphql(`
-  mutation ReviewersSection_addBuildReviewers($input: AddBuildReviewersInput!) {
+  mutation ReviewersSection_addBuildReviewers(
+    $input: AddBuildReviewersInput!
+    $accountSlug: String!
+    $projectName: String!
+  ) {
     addBuildReviewers(input: $input) {
       id
       ...ReviewersSection_Build
@@ -114,6 +109,8 @@ const AddBuildReviewersMutation = graphql(`
 const RemoveBuildReviewersMutation = graphql(`
   mutation ReviewersSection_removeBuildReviewers(
     $input: RemoveBuildReviewersInput!
+    $accountSlug: String!
+    $projectName: String!
   ) {
     removeBuildReviewers(input: $input) {
       id
@@ -197,6 +194,7 @@ export function ReviewersSection(props: { build: Build }) {
           pendingUsers={pendingReviewers}
           className="gap-3"
           itemClassName={clsx("px-4 has-data-actions-menu:pr-3")}
+          getUserCardData={getUserCardData}
           renderAction={
             canDismissReview
               ? (review) => (
@@ -251,6 +249,8 @@ export function ReviewersSection(props: { build: Build }) {
  */
 function RequestReviewersMenu(props: { build: Build }) {
   const { build } = props;
+  const projectParams = useProjectParams();
+  invariant(projectParams);
   const { contains } = useFilter({ sensitivity: "base" });
   const [isOpen, setIsOpen] = useState(false);
   const hotkey = useBuildHotkey("requestReviewers", () => setIsOpen(true));
@@ -324,12 +324,20 @@ function RequestReviewersMenu(props: { build: Build }) {
     const revert = () => setRequested(new Set(requestedKeys));
     if (added.length > 0) {
       addReviewers({
-        variables: { input: { buildId: build.id, userIds: added } },
+        variables: {
+          input: { buildId: build.id, userIds: added },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
+        },
       }).catch(revert);
     }
     if (removed.length > 0) {
       removeReviewers({
-        variables: { input: { buildId: build.id, userIds: removed } },
+        variables: {
+          input: { buildId: build.id, userIds: removed },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
+        },
       }).catch(revert);
     }
   };

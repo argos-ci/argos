@@ -1,6 +1,8 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
+import { type UserPresence } from "@/auth/presence";
+import { subscribeToUserPresenceChanges } from "@/auth/presenceEvents";
 import { listActiveSessions } from "@/auth/session";
 import {
   Account,
@@ -28,12 +30,37 @@ import {
   type IResolvers,
   type ITeamUserLevel,
 } from "../__generated__/resolver-types";
+import type { Context } from "../context";
 import { deleteAccount, getAdminAccount } from "../services/account";
+import { assertCanViewUserPresence } from "../services/user-presence";
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { commonAccountResolvers } from "./Account";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
+
+/**
+ * Load a user's presence, but only if the viewer is allowed to see it (the user
+ * themselves or a shared-team member). Returns `null` otherwise. Both the
+ * visibility check and the presence read are batched via the request loaders.
+ */
+async function loadVisiblePresence(
+  ctx: Context,
+  targetUserId: string,
+): Promise<UserPresence | null> {
+  const viewerId = ctx.auth?.user.id;
+  if (!viewerId) {
+    return null;
+  }
+  const canView = await ctx.loaders.UsersShareTeam.load({
+    aUserId: viewerId,
+    bUserId: targetUserId,
+  });
+  if (!canView) {
+    return null;
+  }
+  return ctx.loaders.Presence.load(targetUserId);
+}
 
 export const typeDefs = gql`
   type User implements Node & Account {
@@ -85,8 +112,21 @@ export const typeDefs = gql`
     userAccessTokens: [UserAccessToken!]!
     "List of active login sessions for the user, most recently seen first"
     sessions: [UserSession!]!
+    "Last activity timestamp, for presence. Null unless the viewer shares a team with the user."
+    lastSeenAt: DateTime
+    "IANA timezone, for rendering the user's local time. Null unless the viewer shares a team with the user."
+    timezone: String
     "Team role of the user on the given project, null if not a team member"
     role(accountSlug: String!, projectName: String!): TeamUserLevel
+  }
+
+  type UserPresenceChangeEvent {
+    user: User!
+  }
+
+  extend type Subscription {
+    "Emitted when the given user becomes active again."
+    userPresenceChanged(userId: ID!): UserPresenceChangeEvent!
   }
 
   type UserEmail {
@@ -481,6 +521,41 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
       return listActiveSessions(account.userId);
+    },
+    lastSeenAt: async (account, _args, ctx) => {
+      if (!account.userId) {
+        return null;
+      }
+      const presence = await loadVisiblePresence(ctx, account.userId);
+      return presence ? new Date(presence.lastSeenAt) : null;
+    },
+    timezone: async (account, _args, ctx) => {
+      if (!account.userId) {
+        return null;
+      }
+      const presence = await loadVisiblePresence(ctx, account.userId);
+      return presence?.timezone ?? null;
+    },
+  },
+  Subscription: {
+    userPresenceChanged: {
+      // Authorize before opening the stream so an unpermitted subscription is
+      // rejected upfront rather than after the first event.
+      subscribe: async (_root, args, ctx) => {
+        await assertCanViewUserPresence(args.userId, ctx.auth?.user ?? null);
+        return (async function* () {
+          for await (const change of subscribeToUserPresenceChanges(
+            args.userId,
+          )) {
+            const account = await Account.query().findOne({
+              userId: change.userId,
+            });
+            if (account) {
+              yield { userPresenceChanged: { user: account } };
+            }
+          }
+        })();
+      },
     },
   },
 };
