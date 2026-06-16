@@ -51,6 +51,12 @@ export interface StandaloneEditorProps {
    * action buttons below (used to edit in place without any layout shift).
    */
   variant?: EditorVariant;
+  /**
+   * Content rendered in the footer, to the left of the send button (e.g. an
+   * attachment control). Only shown when no `onCancel` is set, i.e. when
+   * composing rather than editing.
+   */
+  footerStart?: React.ReactNode;
   contentClassName?: string;
   /** Users that can be mentioned with `@`, forwarded to the {@link Editor}. */
   mentions?: MentionUser[];
@@ -84,6 +90,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     className,
     "aria-label": ariaLabel,
     variant = "boxed",
+    footerStart,
     contentClassName,
     mentions,
     mentionedUsers,
@@ -179,7 +186,12 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
             </HotkeyTooltip>
           </div>
         ) : (
-          <div className="flex justify-end p-1.5">
+          <div className="flex items-center gap-1.5 p-1.5">
+            {footerStart ? (
+              <div className="flex min-w-0 flex-1 items-center">
+                {footerStart}
+              </div>
+            ) : null}
             <HotkeyTooltip
               description={submitLabel}
               keys={[MOD, "Enter"]}
@@ -197,6 +209,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 isDisabled={disabled || isPending}
                 aria-disabled={isEmpty}
                 onPress={submit}
+                className="ml-auto"
               >
                 <ArrowUpIcon />
               </IconButton>

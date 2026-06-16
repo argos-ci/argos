@@ -37,6 +37,10 @@ import {
   CommentAddReactionButton,
   CommentReactionList,
 } from "./CommentReactions";
+import {
+  CommentScreenshotReference,
+  type CommentAnchor,
+} from "./CommentScreenshotReference";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
 import { useMentionableUsers } from "./MentionableUsersContext";
 import { useCollapsedThread } from "./useCollapsedThread";
@@ -71,6 +75,20 @@ const _CommentFragment = graphql(`
     }
     mentionedUsers {
       ...UserCard_user
+    }
+    screenshotDiff {
+      ...CommentScreenshotReference_ScreenshotDiff
+    }
+    anchor {
+      __typename
+      ... on CommentPointAnchor {
+        x
+        y
+      }
+      ... on CommentLinesAnchor {
+        from
+        to
+      }
     }
     ...CommentReactions_Comment
   }
@@ -294,6 +312,14 @@ export function CommentCard(props: {
 
   return (
     <div className="border-thin bg-app -mx-2.5 rounded-md">
+      {comment.screenshotDiff ? (
+        <div className="border-b-thin">
+          <CommentScreenshotReference
+            screenshotDiff={comment.screenshotDiff}
+            anchor={(comment.anchor as CommentAnchor | null) ?? null}
+          />
+        </div>
+      ) : null}
       {resolved ? (
         <ResolvedThreadHeader
           collapsed={collapsed}

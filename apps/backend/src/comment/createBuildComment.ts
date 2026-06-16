@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
 import { Build, Comment, Project } from "@/database/models";
+import type { CommentAnchor } from "@/database/models/Comment";
 import {
   autoSubscribeUserToBuild,
   getBuildSubscribedUserIds,
@@ -35,8 +36,16 @@ export async function createBuildComment(input: {
   userId: string;
   body: JSONContent;
   threadId?: string | null;
+  screenshotDiffId?: string | null;
+  anchor?: CommentAnchor | null;
 }): Promise<Comment> {
-  const { build, userId, threadId = null } = input;
+  const {
+    build,
+    userId,
+    threadId = null,
+    screenshotDiffId = null,
+    anchor = null,
+  } = input;
 
   if (!validateCommentJson(input.body)) {
     throw boom(400, "Invalid comment body");
@@ -59,6 +68,8 @@ export async function createBuildComment(input: {
       userId,
       buildId: build.id,
       threadId,
+      screenshotDiffId,
+      anchor,
       content: body,
     }),
     build.$relatedQuery("project").withGraphFetched("account"),
