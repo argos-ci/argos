@@ -4,6 +4,10 @@
       "Team",
       "User"
     ],
+    "CommentAnchor": [
+      "CommentLinesAnchor",
+      "CommentPointAnchor"
+    ],
     "Connection": [
       "AutomationRuleConnection",
       "BuildConnection",

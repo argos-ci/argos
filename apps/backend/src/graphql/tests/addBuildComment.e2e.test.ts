@@ -44,6 +44,32 @@ const MUTATION = `
   }
 `;
 
+const ANCHORED_MUTATION = `
+  mutation AddAnchoredBuildComment($input: AddBuildCommentInput!) {
+    addBuildComment(input: $input) {
+      id
+      comments {
+        id
+        screenshotDiff {
+          id
+        }
+        anchor {
+          __typename
+          ... on CommentPointAnchor {
+            side
+            x
+            y
+          }
+          ... on CommentLinesAnchor {
+            from
+            to
+          }
+        }
+      }
+    }
+  }
+`;
+
 const SUBSCRIBE_TO_THREAD_MUTATION = `
   mutation SubscribeToCommentThread($input: SubscribeToCommentThreadInput!) {
     subscribeToCommentThread(input: $input) {
@@ -513,6 +539,310 @@ describe("GraphQL addBuildComment mutation", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.errors[0].message).toBe("You cannot comment on this build");
+    const comments = await Comment.query().where({ buildId: fixture.build.id });
+    expect(comments).toHaveLength(0);
+  });
+
+  test("anchors a comment to a whole screenshot diff", async ({ fixture }) => {
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            body: commentBody("This screenshot looks off."),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    const comments = res.body.data.addBuildComment.comments;
+    expect(comments).toHaveLength(1);
+    expect(comments[0].screenshotDiff.id).toBe(diff.id);
+    expect(comments[0].anchor).toBeNull();
+
+    const stored = await Comment.query().findOne({ buildId: fixture.build.id });
+    invariant(stored);
+    expect(stored.screenshotDiffId).toBe(diff.id);
+    expect(stored.anchor).toBeNull();
+  });
+
+  test("anchors a comment to a point on a screenshot diff", async ({
+    fixture,
+  }) => {
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            anchor: { point: { side: "compare", x: 0.42, y: 0.18 } },
+            body: commentBody("This button is misaligned."),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    const { anchor } = res.body.data.addBuildComment.comments[0];
+    expect(anchor).toEqual({
+      __typename: "CommentPointAnchor",
+      side: "compare",
+      x: 0.42,
+      y: 0.18,
+    });
+
+    const stored = await Comment.query().findOne({ buildId: fixture.build.id });
+    invariant(stored);
+    expect(stored.anchor).toEqual({
+      type: "point",
+      side: "compare",
+      x: 0.42,
+      y: 0.18,
+    });
+  });
+
+  test("anchors a comment to a line range on a snapshot", async ({
+    fixture,
+  }) => {
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            anchor: { lines: { from: 12, to: 18 } },
+            body: commentBody("These lines changed unexpectedly."),
+          },
+        },
+      });
+
+    expectNoGraphQLError(res);
+    const { anchor } = res.body.data.addBuildComment.comments[0];
+    expect(anchor).toEqual({
+      __typename: "CommentLinesAnchor",
+      from: 12,
+      to: 18,
+    });
+
+    const stored = await Comment.query().findOne({ buildId: fixture.build.id });
+    invariant(stored);
+    expect(stored.anchor).toEqual({ type: "lines", from: 12, to: 18 });
+  });
+
+  test("rejects an anchor on a reply", async ({ fixture }) => {
+    invariant(fixture.userAccount.userId);
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const rootComment = await factory.Comment.create({
+      buildId: fixture.build.id,
+      userId: fixture.userAccount.userId,
+      content: commentBody("Root"),
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            threadId: formatCommentId(rootComment.id),
+            screenshotDiffId: diff.id,
+            body: commentBody("Reply"),
+          },
+        },
+      });
+
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toBe(
+      "A reply cannot be anchored to a screenshot diff",
+    );
+    const replies = await Comment.query().where({ threadId: rootComment.id });
+    expect(replies).toHaveLength(0);
+  });
+
+  test("rejects an anchor on a diff from another build", async ({
+    fixture,
+  }) => {
+    const otherBuild = await factory.Build.create({
+      projectId: fixture.project.id,
+    });
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: otherBuild.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            body: commentBody("Wrong build"),
+          },
+        },
+      });
+
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toBe("Screenshot diff not found");
+    const comments = await Comment.query().where({ buildId: fixture.build.id });
+    expect(comments).toHaveLength(0);
+  });
+
+  test("rejects an anchor without a screenshot diff", async ({ fixture }) => {
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            anchor: { point: { side: "compare", x: 0.5, y: 0.5 } },
+            body: commentBody("No diff"),
+          },
+        },
+      });
+
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toBe(
+      "A screenshot diff is required to anchor a comment",
+    );
+    const comments = await Comment.query().where({ buildId: fixture.build.id });
+    expect(comments).toHaveLength(0);
+  });
+
+  test("rejects an out-of-range point anchor", async ({ fixture }) => {
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            anchor: { point: { side: "compare", x: 1.5, y: 0.5 } },
+            body: commentBody("Out of range"),
+          },
+        },
+      });
+
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toBe(
+      "Comment anchor coordinates must be between 0 and 1",
+    );
+    const comments = await Comment.query().where({ buildId: fixture.build.id });
+    expect(comments).toHaveLength(0);
+  });
+
+  test("rejects providing both point and lines anchors", async ({
+    fixture,
+  }) => {
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: fixture.build.id,
+    });
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      {
+        user: getAccountUser(fixture.userAccount),
+        account: fixture.userAccount,
+      },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ANCHORED_MUTATION,
+        variables: {
+          input: {
+            buildId: fixture.build.id,
+            screenshotDiffId: diff.id,
+            anchor: {
+              point: { side: "compare", x: 0.5, y: 0.5 },
+              lines: { from: 1, to: 2 },
+            },
+            body: commentBody("Both"),
+          },
+        },
+      });
+
+    expect(res.body.errors).toBeDefined();
+    expect(res.body.errors[0].message).toBe(
+      "A comment anchor must set exactly one of point or lines",
+    );
     const comments = await Comment.query().where({ buildId: fixture.build.id });
     expect(comments).toHaveLength(0);
   });

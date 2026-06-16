@@ -664,7 +664,10 @@ CREATE TABLE public.comments (
     content jsonb NOT NULL,
     "editedAt" timestamp with time zone,
     "deletedAt" timestamp with time zone,
-    "resolvedAt" timestamp with time zone
+    "resolvedAt" timestamp with time zone,
+    "screenshotDiffId" bigint,
+    anchor jsonb,
+    CONSTRAINT comments_anchor_requires_diff CHECK (((anchor IS NULL) OR ("screenshotDiffId" IS NOT NULL)))
 );
 
 
@@ -3709,6 +3712,13 @@ CREATE INDEX comments_buildid_createdat_index ON public.comments USING btree ("b
 
 
 --
+-- Name: comments_screenshotdiffid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX comments_screenshotdiffid_index ON public.comments USING btree ("screenshotDiffId");
+
+
+--
 -- Name: deployment_aliases_deploymentid_type_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4457,6 +4467,14 @@ ALTER TABLE ONLY public.comments
 
 
 --
+-- Name: comments comments_screenshotdiffid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_screenshotdiffid_foreign FOREIGN KEY ("screenshotDiffId") REFERENCES public.screenshot_diffs(id) ON DELETE CASCADE;
+
+
+--
 -- Name: comments comments_threadid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5161,3 +5179,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026060
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260609120000_encrypt-sensitive-data.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260610120000_comment-resolved-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260614202438_build-requested-reviewers.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260616120000_comment-anchor.js', 1, NOW());

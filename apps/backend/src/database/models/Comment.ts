@@ -6,13 +6,41 @@ import { Build } from "./Build";
 import { BuildReview } from "./BuildReview";
 import { CommentMention } from "./CommentMention";
 import { CommentReaction } from "./CommentReaction";
+import { ScreenshotDiff } from "./ScreenshotDiff";
 import { User } from "./User";
+
+/** Which side of a diff a position anchor points at. */
+export type CommentAnchorSide = "baseline" | "compare";
+
+/**
+ * A point on one side of the referenced screenshot diff, stored as normalized
+ * coordinates (0–1 of the image's width/height) so it survives scaling.
+ */
+type CommentPointAnchor = {
+  type: "point";
+  side: CommentAnchorSide;
+  x: number;
+  y: number;
+};
+
+/** A 1-based inclusive line range on a textual snapshot. */
+type CommentLinesAnchor = {
+  type: "lines";
+  from: number;
+  to: number;
+};
+
+/**
+ * Where on the referenced screenshot diff a comment points. A null anchor (with
+ * a `screenshotDiffId` set) means the comment is about the whole diff.
+ */
+export type CommentAnchor = CommentPointAnchor | CommentLinesAnchor;
 
 export class Comment extends Model {
   static override tableName = "comments";
 
   static override get jsonAttributes() {
-    return ["content"];
+    return ["content", "anchor"];
   }
 
   static override jsonSchema = {
@@ -26,6 +54,8 @@ export class Comment extends Model {
           buildId: { type: "string" },
           buildReviewId: { type: ["string", "null"] },
           threadId: { type: ["string", "null"] },
+          screenshotDiffId: { type: ["string", "null"] },
+          anchor: { type: ["object", "null"] },
           editedAt: { type: ["string", "null"] },
           deletedAt: { type: ["string", "null"] },
           resolvedAt: { type: ["string", "null"] },
@@ -48,6 +78,10 @@ export class Comment extends Model {
   buildId!: string;
   buildReviewId!: string | null;
   threadId!: string | null;
+  /** The screenshot diff this comment is anchored to, if any. */
+  screenshotDiffId!: string | null;
+  /** Where on {@link screenshotDiffId} the comment points; null = whole diff. */
+  anchor!: CommentAnchor | null;
   editedAt!: string | null;
   deletedAt!: string | null;
   /**
@@ -115,6 +149,14 @@ export class Comment extends Model {
           to: "comment_mentions.commentId",
         },
       },
+      screenshotDiff: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: ScreenshotDiff,
+        join: {
+          from: "comments.screenshotDiffId",
+          to: "screenshot_diffs.id",
+        },
+      },
     };
   }
 
@@ -125,4 +167,5 @@ export class Comment extends Model {
   replies?: Comment[];
   reactions?: CommentReaction[];
   mentions?: CommentMention[];
+  screenshotDiff?: ScreenshotDiff | null;
 }
