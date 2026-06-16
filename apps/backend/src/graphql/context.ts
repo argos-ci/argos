@@ -1,9 +1,11 @@
 import type { IncomingMessage } from "node:http";
 import type { BaseContext } from "@apollo/server";
+import { captureException } from "@sentry/node";
 import type { Request, Response } from "express";
 import { GraphQLError } from "graphql";
 
 import type { AuthSessionPayload } from "@/auth/payload";
+import { touchPresence } from "@/auth/presence";
 import { readSessionCookie } from "@/auth/session-cookie";
 import {
   safeSessionAuthFromExpressReq,
@@ -29,6 +31,15 @@ export type Context = BaseContext & {
   req?: Request;
   res?: Response;
 };
+
+/**
+ * Read a single header value as a non-empty string, or `null`.
+ */
+function getHeaderString(request: Request, name: string): string | null {
+  const value = request.headers[name];
+  const str = Array.isArray(value) ? value[0] : value;
+  return str && str.length > 0 ? str : null;
+}
 
 async function getContextAuth(
   request: Request,
@@ -57,6 +68,15 @@ export async function getContext(
   try {
     const auth = await getContextAuth(request);
     const requestLocation = extractLocationFromRequest(request);
+    if (auth) {
+      // Record live presence. Best-effort and fire-and-forget — a presence
+      // write must never turn a query into a 500. Timezone rides on the
+      // Cloudflare `cf-timezone` header (absent locally).
+      void touchPresence({
+        userId: auth.user.id,
+        timezone: getHeaderString(request, "cf-timezone"),
+      }).catch(captureException);
+    }
     return {
       auth,
       requestLocation,

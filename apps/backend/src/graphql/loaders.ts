@@ -4,6 +4,7 @@ import DataLoader from "dataloader";
 import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
+import { getPresences, type UserPresence } from "@/auth/presence";
 import { knex } from "@/database";
 import {
   Account,
@@ -1262,8 +1263,59 @@ function createLatestCompareScreenshotLoader() {
   });
 }
 
+function createPresenceLoader() {
+  return new DataLoader<string, UserPresence | null>(async (userIds) =>
+    getPresences(userIds as string[]),
+  );
+}
+
+/**
+ * Whether the two users in each pair share a team (or are the same user).
+ * Batches every requested pair into a single membership query — so a card list
+ * full of comment authors costs one query, not one per author.
+ */
+function createUsersShareTeamLoader() {
+  return new DataLoader<{ aUserId: string; bUserId: string }, boolean, string>(
+    async (pairs) => {
+      const userIds = [
+        ...new Set(pairs.flatMap((pair) => [pair.aUserId, pair.bUserId])),
+      ];
+      const rows = userIds.length
+        ? await TeamUser.query()
+            .whereIn("userId", userIds)
+            .select("userId", "teamId")
+        : [];
+      const teamIdsByUser = new Map<string, Set<string>>();
+      for (const row of rows) {
+        const set = teamIdsByUser.get(row.userId) ?? new Set<string>();
+        set.add(row.teamId);
+        teamIdsByUser.set(row.userId, set);
+      }
+      return pairs.map(({ aUserId, bUserId }) => {
+        if (aUserId === bUserId) {
+          return true;
+        }
+        const aTeamIds = teamIdsByUser.get(aUserId);
+        const bTeamIds = teamIdsByUser.get(bUserId);
+        if (!aTeamIds || !bTeamIds) {
+          return false;
+        }
+        for (const teamId of aTeamIds) {
+          if (bTeamIds.has(teamId)) {
+            return true;
+          }
+        }
+        return false;
+      });
+    },
+    { cacheKeyFn: (input) => `${input.aUserId}:${input.bUserId}` },
+  );
+}
+
 export const createLoaders = () => ({
   Account: createModelLoader(Account),
+  Presence: createPresenceLoader(),
+  UsersShareTeam: createUsersShareTeamLoader(),
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
