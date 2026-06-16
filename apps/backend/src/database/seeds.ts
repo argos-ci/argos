@@ -1,3 +1,4 @@
+import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 
 import { concludeBuild } from "@/build/concludeBuild";
@@ -497,6 +498,416 @@ export async function createBuildScenario(input: {
   };
 }
 
+/**
+ * Manifest for the "real world" build scenario below.
+ *
+ * The referenced assets (screenshots, diffs, Playwright traces and markdown
+ * snapshots) have already been generated and uploaded to S3 under the
+ * `seeds/big/` prefix, so the seed only inserts the rows pointing at them.
+ */
+const REALWORLD_PREFIX = "seeds/big";
+const REALWORLD_SDK = { name: "@argos-ci/playwright", version: "5.0.4" };
+const REALWORLD_AUTOMATION_LIBRARY = { name: "playwright", version: "1.49.1" };
+
+const realWorldBuild = {
+  name: "default",
+  branch: "feat/analytics-redesign",
+  baseBranch: "main",
+  baseCommit: "a1c9f4e2d8b7063f5e21c0a9d4f8b6e3c7a20915",
+  headCommit: "b7e3d05a9c14f862e0d7a3b1c6f9082d4e5a17c8",
+  prNumber: 482,
+  ciProvider: "github-actions",
+  argosSdk: "@argos-ci/playwright@5.0.4",
+  runId: "12041850127",
+  runAttempt: 1,
+  mode: "ci" as const,
+  createdAt: "2026-06-15T09:12:51.000Z",
+  metadata: {
+    testReport: {
+      status: "passed" as const,
+      stats: {
+        startTime: "2026-06-15T09:12:03.000Z",
+        duration: 48213,
+      },
+    },
+  },
+};
+
+type RealWorldStatus = "unchanged" | "changed" | "added" | "removed";
+
+type RealWorldScreenshot = {
+  /** Screenshot/test name as reported by the SDK (also the S3 key suffix). */
+  name: string;
+  title: string;
+  status: RealWorldStatus;
+  /** Source file the test lives in. */
+  spec: string;
+  /** URL of the page (or file) that was captured. */
+  url: string;
+  contentType: string;
+  /** Image viewport. Absent for text (markdown) snapshots. */
+  viewport?: { width: number; height: number };
+  browser?: { name: string; version: string };
+  /** Diff score for "changed" screenshots (0 < score <= 1). */
+  score?: number;
+  /** Attach a Playwright trace file (a non-screenshot file). */
+  trace?: boolean;
+};
+
+const CHROMIUM = { name: "chromium", version: "131.0.6778.85" };
+const FIREFOX = { name: "firefox", version: "133.0" };
+const WEBKIT = { name: "webkit", version: "18.2" };
+
+const realWorldScreenshots: RealWorldScreenshot[] = [
+  {
+    name: "auth/login.png",
+    title: "renders the sign-in page",
+    status: "unchanged",
+    spec: "e2e/auth.spec.ts",
+    url: "https://app.acme-analytics.dev/login",
+    contentType: "image/png",
+    viewport: { width: 1280, height: 800 },
+    browser: CHROMIUM,
+  },
+  {
+    name: "dashboard/overview.png",
+    title: "renders the dashboard overview",
+    status: "changed",
+    spec: "e2e/dashboard.spec.ts",
+    url: "https://app.acme-analytics.dev/dashboard",
+    contentType: "image/png",
+    viewport: { width: 1280, height: 800 },
+    browser: CHROMIUM,
+    score: 0.0698,
+    trace: true,
+  },
+  {
+    name: "dashboard/overview.mobile.png",
+    title: "renders the dashboard overview on mobile",
+    status: "changed",
+    spec: "e2e/dashboard.spec.ts",
+    url: "https://app.acme-analytics.dev/dashboard",
+    contentType: "image/png",
+    viewport: { width: 390, height: 844 },
+    browser: WEBKIT,
+    score: 0.0019,
+  },
+  {
+    name: "marketing/pricing.png",
+    title: "renders the pricing page",
+    status: "changed",
+    spec: "e2e/marketing.spec.ts",
+    url: "https://acme-analytics.dev/pricing",
+    contentType: "image/png",
+    viewport: { width: 1280, height: 800 },
+    browser: CHROMIUM,
+    score: 0.0009,
+    trace: true,
+  },
+  {
+    name: "settings/profile.png",
+    title: "renders the profile settings",
+    status: "unchanged",
+    spec: "e2e/settings.spec.ts",
+    url: "https://app.acme-analytics.dev/settings/profile",
+    contentType: "image/png",
+    viewport: { width: 1280, height: 800 },
+    browser: FIREFOX,
+  },
+  {
+    name: "team/members.png",
+    title: "renders the team members page",
+    status: "added",
+    spec: "e2e/team.spec.ts",
+    url: "https://app.acme-analytics.dev/team",
+    contentType: "image/png",
+    viewport: { width: 1280, height: 800 },
+    browser: CHROMIUM,
+  },
+  {
+    name: "integrations/marketplace.png",
+    title: "renders the integrations marketplace",
+    status: "removed",
+    spec: "e2e/integrations.spec.ts",
+    url: "https://app.acme-analytics.dev/integrations",
+    contentType: "image/png",
+    viewport: { width: 1280, height: 800 },
+    browser: CHROMIUM,
+  },
+  // Markdown text snapshots — compared as text, rendered as a markdown diff.
+  {
+    name: "docs/README.md",
+    title: "matches the README snapshot",
+    status: "changed",
+    spec: "e2e/docs.spec.ts",
+    url: "https://github.com/acme/analytics/blob/main/docs/README.md",
+    contentType: "text/markdown",
+    // Text snapshots have no pixel score: any change is a full mismatch.
+    score: 1,
+  },
+  {
+    name: "reports/test-summary.md",
+    title: "matches the test summary snapshot",
+    status: "added",
+    spec: "e2e/docs.spec.ts",
+    url: "https://github.com/acme/analytics/blob/main/reports/test-summary.md",
+    contentType: "text/markdown",
+  },
+];
+
+const getBaseKey = (s: RealWorldScreenshot) =>
+  `${REALWORLD_PREFIX}/base/${s.name}`;
+const getCompareKey = (s: RealWorldScreenshot) =>
+  `${REALWORLD_PREFIX}/compare/${s.name}`;
+const getDiffKey = (s: RealWorldScreenshot) =>
+  `${REALWORLD_PREFIX}/diff/${s.name}`;
+const getTraceKey = (s: RealWorldScreenshot) =>
+  `${REALWORLD_PREFIX}/trace/${s.name}.zip`;
+const isRealWorldImage = (s: RealWorldScreenshot) =>
+  s.contentType.startsWith("image/");
+
+/** Build the SDK metadata stored on a screenshot. */
+function getRealWorldMetadata(s: RealWorldScreenshot): ScreenshotMetadata {
+  const test = {
+    title: s.title,
+    titlePath: [s.spec.split("/").pop()!, s.title],
+    location: { file: s.spec, line: 12, column: 5 },
+    retries: 2,
+    retry: 0,
+  };
+  if (isRealWorldImage(s)) {
+    return {
+      url: s.url,
+      viewport: s.viewport,
+      colorScheme: "light",
+      mediaType: "screen",
+      test,
+      browser: s.browser,
+      automationLibrary: REALWORLD_AUTOMATION_LIBRARY,
+      sdk: REALWORLD_SDK,
+    };
+  }
+  return {
+    url: s.url,
+    test,
+    automationLibrary: REALWORLD_AUTOMATION_LIBRARY,
+    sdk: REALWORLD_SDK,
+  };
+}
+
+/**
+ * Creates a realistic CI build with real metadata, polished screenshots and a
+ * couple of non-screenshot files (Playwright traces and markdown snapshots). It
+ * mimics a pull request that redesigns the analytics dashboard: a few
+ * screenshots change, one is added and one is removed.
+ */
+async function createRealWorldBuildScenario(input: {
+  projectId: string;
+}): Promise<Build> {
+  const { projectId } = input;
+  const { createdAt } = realWorldBuild;
+
+  const bucketBase = {
+    name: realWorldBuild.name,
+    projectId,
+    createdAt,
+    updatedAt: createdAt,
+    complete: true,
+    valid: true,
+    storybookScreenshotCount: 0,
+  };
+
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      {
+        ...bucketBase,
+        commit: realWorldBuild.baseCommit,
+        branch: realWorldBuild.baseBranch,
+        screenshotCount: realWorldScreenshots.filter(
+          (s) => s.status !== "added",
+        ).length,
+      },
+      {
+        ...bucketBase,
+        commit: realWorldBuild.headCommit,
+        branch: realWorldBuild.branch,
+        screenshotCount: realWorldScreenshots.filter(
+          (s) => s.status !== "removed",
+        ).length,
+      },
+    ]);
+
+  invariant(baseBucket && compareBucket, "buckets not created");
+
+  const build = await Build.query().insertAndFetch({
+    name: realWorldBuild.name,
+    baseScreenshotBucketId: baseBucket.id,
+    compareScreenshotBucketId: compareBucket.id,
+    projectId,
+    jobStatus: "complete",
+    type: "check",
+    mode: realWorldBuild.mode,
+    baseBranch: realWorldBuild.baseBranch,
+    baseBranchResolvedFrom: "project",
+    prNumber: realWorldBuild.prNumber,
+    baseCommit: realWorldBuild.baseCommit,
+    prHeadCommit: realWorldBuild.headCommit,
+    ciProvider: realWorldBuild.ciProvider,
+    argosSdk: realWorldBuild.argosSdk,
+    runId: realWorldBuild.runId,
+    runAttempt: realWorldBuild.runAttempt,
+    partial: false,
+    metadata: realWorldBuild.metadata,
+    createdAt,
+    updatedAt: createdAt,
+  });
+
+  const tests = await Test.query().insertAndFetch(
+    realWorldScreenshots.map((screenshot) => ({
+      name: screenshot.name,
+      buildName: realWorldBuild.name,
+      projectId,
+    })),
+  );
+  const testIdByName = new Map(tests.map((test) => [test.name, test.id]));
+
+  // Create the underlying File rows for every uploaded asset.
+  const fileInputs = realWorldScreenshots.flatMap((screenshot) => {
+    const inputs: {
+      type: "screenshot" | "screenshotDiff" | "playwrightTrace";
+      key: string;
+      width: number | null;
+      height: number | null;
+      contentType: string;
+    }[] = [];
+    // Markdown text snapshots have no dimensions.
+    const width = screenshot.viewport?.width ?? null;
+    const height = screenshot.viewport?.height ?? null;
+    const contentType = screenshot.contentType;
+    if (screenshot.status !== "added") {
+      inputs.push({
+        type: "screenshot",
+        key: getBaseKey(screenshot),
+        width,
+        height,
+        contentType,
+      });
+    }
+    if (screenshot.status !== "removed") {
+      inputs.push({
+        type: "screenshot",
+        key: getCompareKey(screenshot),
+        width,
+        height,
+        contentType,
+      });
+    }
+    // Only image diffs produce a diff file; text diffs are computed by the UI.
+    if (screenshot.status === "changed" && isRealWorldImage(screenshot)) {
+      inputs.push({
+        type: "screenshotDiff",
+        key: getDiffKey(screenshot),
+        width,
+        height,
+        contentType: "image/png",
+      });
+    }
+    if (screenshot.trace) {
+      inputs.push({
+        type: "playwrightTrace",
+        key: getTraceKey(screenshot),
+        width: null,
+        height: null,
+        contentType: "application/zip",
+      });
+    }
+    return inputs;
+  });
+  const files = await File.query().insertAndFetch(fileInputs);
+  const fileIdByKey = new Map(files.map((file) => [file.key, file.id]));
+
+  // Base screenshots (everything that is not freshly added).
+  const baseScreenshots = await Screenshot.query().insertAndFetch(
+    realWorldScreenshots
+      .filter((screenshot) => screenshot.status !== "added")
+      .map((screenshot) => {
+        const key = getBaseKey(screenshot);
+        return {
+          screenshotBucketId: baseBucket.id,
+          name: screenshot.name,
+          s3Id: key,
+          fileId: fileIdByKey.get(key) ?? null,
+          testId: testIdByName.get(screenshot.name) ?? null,
+          metadata: getRealWorldMetadata(screenshot),
+        };
+      }),
+  );
+  const baseScreenshotIdByName = new Map(
+    baseScreenshots.map((screenshot) => [screenshot.name, screenshot.id]),
+  );
+
+  // Compare screenshots (everything that is not removed), with traces attached.
+  const compareScreenshots = await Screenshot.query().insertAndFetch(
+    realWorldScreenshots
+      .filter((screenshot) => screenshot.status !== "removed")
+      .map((screenshot) => {
+        const key = getCompareKey(screenshot);
+        return {
+          screenshotBucketId: compareBucket.id,
+          name: screenshot.name,
+          s3Id: key,
+          fileId: fileIdByKey.get(key) ?? null,
+          testId: testIdByName.get(screenshot.name) ?? null,
+          metadata: getRealWorldMetadata(screenshot),
+          playwrightTraceFileId: screenshot.trace
+            ? (fileIdByKey.get(getTraceKey(screenshot)) ?? null)
+            : null,
+        };
+      }),
+  );
+  const compareScreenshotIdByName = new Map(
+    compareScreenshots.map((screenshot) => [screenshot.name, screenshot.id]),
+  );
+
+  await ScreenshotDiff.query().insert(
+    realWorldScreenshots.map((screenshot) => {
+      // A diff image only exists for "changed" image screenshots; text diffs
+      // (markdown) carry a full-mismatch score but no diff file.
+      const hasDiffImage =
+        screenshot.status === "changed" && isRealWorldImage(screenshot);
+      const diffKey = getDiffKey(screenshot);
+      const score = (() => {
+        switch (screenshot.status) {
+          case "changed":
+            return screenshot.score ?? 1;
+          case "unchanged":
+            return 0;
+          case "added":
+          case "removed":
+            return null;
+        }
+      })();
+      return {
+        buildId: build.id,
+        testId: testIdByName.get(screenshot.name) ?? null,
+        baseScreenshotId: baseScreenshotIdByName.get(screenshot.name) ?? null,
+        compareScreenshotId:
+          compareScreenshotIdByName.get(screenshot.name) ?? null,
+        jobStatus: "complete" as const,
+        score,
+        s3Id: hasDiffImage ? diffKey : null,
+        fileId: hasDiffImage ? (fileIdByKey.get(diffKey) ?? null) : null,
+        createdAt,
+        updatedAt: createdAt,
+      };
+    }),
+  );
+
+  await concludeBuild({ build, notify: false });
+
+  return build;
+}
+
 export async function createDeploymentScenario(input: {
   projectId: string;
   accountSlug: string;
@@ -768,6 +1179,10 @@ export async function seed() {
   await createBuildScenario({
     projectId: bigProject.id,
     userId: greg.user.id,
+  });
+
+  await createRealWorldBuildScenario({
+    projectId: bigProject.id,
   });
 
   await createDeploymentScenario({
