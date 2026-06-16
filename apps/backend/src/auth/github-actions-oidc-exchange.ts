@@ -22,7 +22,7 @@ function parseGitHubRepositoryId(repositoryId: string) {
   return parsed;
 }
 
-function assertOptionalClaimsMatchInput(
+function assertOptionalRepositoryClaimMatchesInput(
   claims: Awaited<ReturnType<typeof verifyGitHubActionsOidcToken>>,
   input: GitHubActionsOidcExchangeInput,
 ) {
@@ -32,7 +32,12 @@ function assertOptionalClaimsMatchInput(
   ) {
     throw boom(401, "GitHub Actions OIDC token does not match repository.");
   }
+}
 
+function assertOptionalCommitClaimMatchesInput(
+  claims: Awaited<ReturnType<typeof verifyGitHubActionsOidcToken>>,
+  input: GitHubActionsOidcExchangeInput,
+) {
   if (input.commit && claims.sha !== input.commit) {
     throw boom(401, "GitHub Actions OIDC token does not match commit.");
   }
@@ -42,7 +47,7 @@ export async function exchangeGitHubActionsOidcToken(
   input: GitHubActionsOidcExchangeInput,
 ) {
   const claims = await verifyGitHubActionsOidcToken(input.oidcToken);
-  assertOptionalClaimsMatchInput(claims, input);
+  assertOptionalRepositoryClaimMatchesInput(claims, input);
 
   const repository = await GithubRepository.query()
     .withGraphFetched("[repoInstallations.installation, projects]")
@@ -71,9 +76,11 @@ export async function exchangeGitHubActionsOidcToken(
   if (!project.githubActionsOidcEnabled) {
     throw boom(
       403,
-      "GitHub Actions OIDC authentication is not enabled for this project.",
+      "GitHub Actions OIDC authentication is not enabled for this project. Enable it in the project settings.",
     );
   }
+
+  assertOptionalCommitClaimMatchesInput(claims, input);
 
   return createShortLivedProjectToken({
     projectId: project.id,
