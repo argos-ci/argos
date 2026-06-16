@@ -6,7 +6,7 @@ import { forbidden, unauthenticated } from "../util";
  * Whether two users share at least one team. A user always "shares" with
  * themselves.
  */
-export async function usersShareTeam(
+async function usersShareTeam(
   aUserId: string,
   bUserId: string,
 ): Promise<boolean> {
