@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { ComponentProps, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
-import { EyeOffIcon, ImageIcon } from "lucide-react";
+import { EyeOffIcon } from "lucide-react";
 import { Button } from "react-aria-components";
 import { toast } from "sonner";
 
@@ -10,12 +10,12 @@ import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
-import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { useMentionableUsers } from "./MentionableUsersContext";
+import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";
 
 const _BuildFragment = graphql(`
   fragment AddCommentForm_Build on Build {
@@ -47,11 +47,13 @@ const AddBuildCommentMutation = graphql(`
  */
 function AttachedSnapshotToggle(props: {
   name: string;
-  thumbnailUrl: string | null;
+  screenshotDiff: ComponentProps<
+    typeof ScreenshotDiffThumbnail
+  >["screenshotDiff"];
   attached: boolean;
   onToggle: () => void;
 }) {
-  const { name, thumbnailUrl, attached, onToggle } = props;
+  const { name, screenshotDiff, attached, onToggle } = props;
   return (
     <Tooltip
       content={
@@ -65,24 +67,20 @@ function AttachedSnapshotToggle(props: {
         aria-pressed={attached}
         aria-label={`${attached ? "Detach" : "Attach"} snapshot ${name}`}
         className={clsx(
-          "border-thin hover:bg-hover rac-focus flex min-w-0 items-center gap-1.5 rounded-md py-0.5 pr-2 pl-0.5 text-xs transition",
+          "border-thin hover:bg-hover rac-focus flex min-w-0 items-center gap-1.5 rounded-md py-0.5 pr-2 pl-1 text-xs transition",
           attached ? "text-default" : "text-low opacity-60",
         )}
       >
         <span className="flex size-4 shrink-0 items-center justify-center">
-          {!attached ? (
-            <EyeOffIcon className="text-low size-3" />
-          ) : thumbnailUrl ? (
-            <span className="block size-4 overflow-hidden rounded-sm border bg-white">
-              <ImageKitPicture
-                src={thumbnailUrl}
-                transformations={["w-32", "h-32", "c-at_max"]}
-                className="size-full object-cover"
-                alt=""
-              />
-            </span>
+          {attached ? (
+            <ScreenshotDiffThumbnail
+              screenshotDiff={screenshotDiff}
+              className="size-4"
+              iconClassName="size-3.5"
+              fit="cover"
+            />
           ) : (
-            <ImageIcon className="size-4" />
+            <EyeOffIcon className="text-low size-3.5" />
           )}
         </span>
         <span className="min-w-0 truncate font-medium">{name}</span>
@@ -125,10 +123,6 @@ export function AddCommentForm(props: {
       throw error;
     }
   };
-  const thumbnailUrl =
-    activeDiff?.compareScreenshot?.url ??
-    activeDiff?.baseScreenshot?.url ??
-    null;
   return (
     <StandaloneEditor
       onSubmit={handleSubmit}
@@ -145,7 +139,7 @@ export function AddCommentForm(props: {
         activeDiff ? (
           <AttachedSnapshotToggle
             name={activeDiff.name}
-            thumbnailUrl={thumbnailUrl}
+            screenshotDiff={activeDiff}
             attached={attachedDiff != null}
             onToggle={() => setDetached((value) => !value)}
           />
