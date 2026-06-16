@@ -3,7 +3,6 @@ import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { addCommentReaction } from "@/comment/addCommentReaction";
-import { validateCommentAnchor } from "@/comment/anchor";
 import {
   subscribeToCommentChanges,
   type CommentChangeType,
@@ -20,10 +19,10 @@ import {
 } from "@/comment/resolveCommentThread";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
-import { Comment } from "@/database/models/Comment";
-import type {
-  CommentAnchor,
-  CommentAnchorSide,
+import {
+  Comment,
+  CommentAnchorSchema,
+  type CommentAnchor,
 } from "@/database/models/Comment";
 import { CommentNotificationSubscription } from "@/database/models/CommentNotificationSubscription";
 import { ScreenshotDiff } from "@/database/models/ScreenshotDiff";
@@ -48,8 +47,8 @@ const { gql } = gqlTag;
 
 /**
  * Turn the comment-anchor input into the stored anchor shape, enforcing that
- * exactly one positioning is given. Bounds are checked by
- * {@link validateCommentAnchor}.
+ * exactly one positioning is given. Bounds and shape are validated by the
+ * model's {@link CommentAnchorSchema}.
  */
 function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
   const { point, lines } = input;
@@ -58,16 +57,16 @@ function commentAnchorFromInput(input: ICommentAnchorInput): CommentAnchor {
       "A comment anchor must set exactly one of point or lines",
     );
   }
-  const anchor: CommentAnchor = point
-    ? {
-        type: "point",
-        side: point.side as CommentAnchorSide,
-        x: point.x,
-        y: point.y,
-      }
+  const candidate = point
+    ? { type: "point", x: point.x, y: point.y }
     : { type: "lines", from: lines!.from, to: lines!.to };
-  validateCommentAnchor(anchor);
-  return anchor;
+  const result = CommentAnchorSchema.safeParse(candidate);
+  if (!result.success) {
+    throw badUserInput(
+      result.error.issues[0]?.message ?? "Invalid comment anchor",
+    );
+  }
+  return result.data;
 }
 
 /**
@@ -177,18 +176,12 @@ export const typeDefs = gql`
     users: [User!]!
   }
 
-  "Which side of a screenshot diff a position anchor points at."
-  enum CommentAnchorSide {
-    baseline
-    compare
-  }
-
   """
-  A point on one side of a screenshot diff, in normalized coordinates (0–1 of
-  the image's width/height).
+  A point on a screenshot diff, in normalized coordinates (0–1 of the image's
+  width/height). The baseline and compare sides render at the same scale, so a
+  single coordinate applies to both.
   """
   type CommentPointAnchor {
-    side: CommentAnchorSide!
     x: Float!
     y: Float!
   }
@@ -237,7 +230,6 @@ export const typeDefs = gql`
   }
 
   input CommentPointAnchorInput {
-    side: CommentAnchorSide!
     x: Float!
     y: Float!
   }
@@ -508,10 +500,13 @@ export const resolvers: IResolvers = {
 
       let screenshotDiffId: string | null = null;
       if (input.screenshotDiffId) {
-        const diff = await ScreenshotDiff.query().findById(
-          input.screenshotDiffId,
-        );
-        if (!diff || diff.buildId !== build.id) {
+        // Only check the diff belongs to this build — a non-existent id would
+        // fail the insert anyway, but a diff from another build would not.
+        const diff = await ScreenshotDiff.query().findOne({
+          id: input.screenshotDiffId,
+          buildId: build.id,
+        });
+        if (!diff) {
           throw notFound("Screenshot diff not found");
         }
         screenshotDiffId = diff.id;

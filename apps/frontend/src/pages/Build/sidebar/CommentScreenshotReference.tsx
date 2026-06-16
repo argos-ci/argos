@@ -30,7 +30,7 @@ type ScreenshotDiff = DocumentType<typeof _ScreenshotDiffFragment>;
  * the same way wherever the union is selected.
  */
 export type CommentAnchor =
-  | { __typename: "CommentPointAnchor"; side: string; x: number; y: number }
+  | { __typename: "CommentPointAnchor"; x: number; y: number }
   | { __typename: "CommentLinesAnchor"; from: number; to: number };
 
 /** Short human label describing where on the diff a comment points. */

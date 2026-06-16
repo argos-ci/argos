@@ -56,7 +56,6 @@ const ANCHORED_MUTATION = `
         anchor {
           __typename
           ... on CommentPointAnchor {
-            side
             x
             y
           }
@@ -602,7 +601,7 @@ describe("GraphQL addBuildComment mutation", () => {
           input: {
             buildId: fixture.build.id,
             screenshotDiffId: diff.id,
-            anchor: { point: { side: "compare", x: 0.42, y: 0.18 } },
+            anchor: { point: { x: 0.42, y: 0.18 } },
             body: commentBody("This button is misaligned."),
           },
         },
@@ -612,7 +611,6 @@ describe("GraphQL addBuildComment mutation", () => {
     const { anchor } = res.body.data.addBuildComment.comments[0];
     expect(anchor).toEqual({
       __typename: "CommentPointAnchor",
-      side: "compare",
       x: 0.42,
       y: 0.18,
     });
@@ -621,7 +619,6 @@ describe("GraphQL addBuildComment mutation", () => {
     invariant(stored);
     expect(stored.anchor).toEqual({
       type: "point",
-      side: "compare",
       x: 0.42,
       y: 0.18,
     });
@@ -760,7 +757,7 @@ describe("GraphQL addBuildComment mutation", () => {
         variables: {
           input: {
             buildId: fixture.build.id,
-            anchor: { point: { side: "compare", x: 0.5, y: 0.5 } },
+            anchor: { point: { x: 0.5, y: 0.5 } },
             body: commentBody("No diff"),
           },
         },
@@ -794,7 +791,7 @@ describe("GraphQL addBuildComment mutation", () => {
           input: {
             buildId: fixture.build.id,
             screenshotDiffId: diff.id,
-            anchor: { point: { side: "compare", x: 1.5, y: 0.5 } },
+            anchor: { point: { x: 1.5, y: 0.5 } },
             body: commentBody("Out of range"),
           },
         },
@@ -831,7 +828,7 @@ describe("GraphQL addBuildComment mutation", () => {
             buildId: fixture.build.id,
             screenshotDiffId: diff.id,
             anchor: {
-              point: { side: "compare", x: 0.5, y: 0.5 },
+              point: { x: 0.5, y: 0.5 },
               lines: { from: 1, to: 2 },
             },
             body: commentBody("Both"),

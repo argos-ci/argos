@@ -82,7 +82,6 @@ const _CommentFragment = graphql(`
     anchor {
       __typename
       ... on CommentPointAnchor {
-        side
         x
         y
       }

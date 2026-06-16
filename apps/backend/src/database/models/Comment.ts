@@ -1,4 +1,5 @@
-import type { RelationMappings } from "objection";
+import type { JSONSchema, RelationMappings } from "objection";
+import { z } from "zod";
 
 import { Model } from "../util/model";
 import { timestampsSchema } from "../util/schemas";
@@ -9,32 +10,54 @@ import { CommentReaction } from "./CommentReaction";
 import { ScreenshotDiff } from "./ScreenshotDiff";
 import { User } from "./User";
 
-/** Which side of a diff a position anchor points at. */
-export type CommentAnchorSide = "baseline" | "compare";
+const COORDINATE_MESSAGE = "Comment anchor coordinates must be between 0 and 1";
+const LINES_MESSAGE = "Comment anchor lines must be positive integers";
 
 /**
- * A point on one side of the referenced screenshot diff, stored as normalized
- * coordinates (0–1 of the image's width/height) so it survives scaling.
+ * A point on the referenced screenshot diff, stored as normalized coordinates
+ * (0–1 of the image's width/height) so it survives scaling. The baseline and
+ * compare sides render at the same scale, so a single coordinate applies to
+ * both.
  */
-type CommentPointAnchor = {
-  type: "point";
-  side: CommentAnchorSide;
-  x: number;
-  y: number;
-};
+const CommentPointAnchorSchema = z.object({
+  type: z.literal("point"),
+  x: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
+    message: COORDINATE_MESSAGE,
+  }),
+  y: z.number().min(0, { message: COORDINATE_MESSAGE }).max(1, {
+    message: COORDINATE_MESSAGE,
+  }),
+});
 
 /** A 1-based inclusive line range on a textual snapshot. */
-type CommentLinesAnchor = {
-  type: "lines";
-  from: number;
-  to: number;
-};
+const CommentLinesAnchorSchema = z.object({
+  type: z.literal("lines"),
+  from: z.number().int().min(1, { message: LINES_MESSAGE }),
+  to: z.number().int().min(1, { message: LINES_MESSAGE }),
+});
+
+const CommentAnchorObjectSchema = z.discriminatedUnion("type", [
+  CommentPointAnchorSchema,
+  CommentLinesAnchorSchema,
+]);
 
 /**
  * Where on the referenced screenshot diff a comment points. A null anchor (with
- * a `screenshotDiffId` set) means the comment is about the whole diff.
+ * a `screenshotDiffId` set) means the comment is about the whole diff. All
+ * anchor validation lives here so the model, the API and the inferred type stay
+ * in sync.
  */
-export type CommentAnchor = CommentPointAnchor | CommentLinesAnchor;
+export const CommentAnchorSchema = CommentAnchorObjectSchema.refine(
+  (anchor) => anchor.type !== "lines" || anchor.to >= anchor.from,
+  { message: "Comment anchor line range is inverted" },
+);
+
+export type CommentAnchor = z.infer<typeof CommentAnchorSchema>;
+
+const commentAnchorJsonSchema = z.toJSONSchema(
+  CommentAnchorObjectSchema.nullable(),
+  { io: "input" },
+) as JSONSchema;
 
 export class Comment extends Model {
   static override tableName = "comments";
@@ -55,7 +78,7 @@ export class Comment extends Model {
           buildReviewId: { type: ["string", "null"] },
           threadId: { type: ["string", "null"] },
           screenshotDiffId: { type: ["string", "null"] },
-          anchor: { type: ["object", "null"] },
+          anchor: commentAnchorJsonSchema,
           editedAt: { type: ["string", "null"] },
           deletedAt: { type: ["string", "null"] },
           resolvedAt: { type: ["string", "null"] },

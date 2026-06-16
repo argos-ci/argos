@@ -7,7 +7,7 @@
  *   comment, the existing behaviour).
  * - `anchor`: where on that diff the comment points. Null means the whole diff;
  *   otherwise a discriminated shape:
- *     { type: "point", side: "baseline" | "compare", x: 0..1, y: 0..1 }
+ *     { type: "point", x: 0..1, y: 0..1 }
  *     { type: "lines", from: int, to: int }
  *
  * @param {import('knex').Knex} knex
