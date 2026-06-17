@@ -305,13 +305,12 @@ export function useBuildHotkey(
         return;
       }
 
-      // Ignore key events from menu, menuitem, textbox or monaco editor
+      // Ignore key events from menu, menuitem or textbox
       if (
         event.target instanceof HTMLElement &&
         (event.target.role === "menu" ||
           event.target.role?.startsWith("menuitem") ||
           event.target.role === "textbox" ||
-          event.target.classList.contains("native-edit-context") ||
           event.target.closest("[data-hotkeys-disabled]") ||
           event.target.closest("[role=dialog]"))
       ) {

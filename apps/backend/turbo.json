@@ -3,7 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "outputs": ["dist/**", "src/web/monaco-version.generated.ts"]
+      "outputs": ["dist/**"]
     }
   }
 }
