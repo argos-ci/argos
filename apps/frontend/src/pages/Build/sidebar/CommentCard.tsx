@@ -174,6 +174,21 @@ export function CommentCard(props: {
   replies?: Comment[];
   highlightedCommentId: string | null;
   canReply: boolean;
+  /**
+   * Hide the snapshot-reference header. Used when the thread is rendered
+   * directly on the screenshot it points to, where the reference is redundant.
+   */
+  hideScreenshotReference?: boolean;
+  /**
+   * Drop the card's own border/background/rounding so a surrounding container
+   * (e.g. a floating popover on the screenshot) can provide that chrome.
+   */
+  embedded?: boolean;
+  /**
+   * Focus the reply composer on mount. Used when the thread opens in a floating
+   * popover, where replying is the primary action.
+   */
+  autoFocusReply?: boolean;
 }) {
   const {
     buildId,
@@ -181,6 +196,9 @@ export function CommentCard(props: {
     replies = [],
     highlightedCommentId,
     canReply,
+    hideScreenshotReference = false,
+    embedded = false,
+    autoFocusReply = false,
   } = props;
   const projectParams = useProjectParams();
   invariant(projectParams);
@@ -311,8 +329,8 @@ export function CommentCard(props: {
   const onToggleResolved = canReply ? toggleResolved : undefined;
 
   return (
-    <div className="border-thin bg-app -mx-2.5 rounded-md">
-      {comment.screenshotDiff ? (
+    <div className={clsx(!embedded && "border-thin bg-app -mx-2.5 rounded-md")}>
+      {!hideScreenshotReference && comment.screenshotDiff ? (
         <div className="border-b-thin">
           <CommentScreenshotReference
             screenshotDiff={comment.screenshotDiff}
@@ -376,6 +394,7 @@ export function CommentCard(props: {
               <ReplyComposer
                 draftKey={`build.${buildId}.thread.${comment.id}.reply`}
                 onSubmit={handleReplySubmit}
+                autoFocus={autoFocusReply}
               />
             ) : null}
           </motion.div>
@@ -617,8 +636,9 @@ function CommentMessage(props: {
 function ReplyComposer(props: {
   draftKey: string;
   onSubmit: (body: EditorValue) => Promise<void>;
+  autoFocus?: boolean;
 }) {
-  const { draftKey, onSubmit } = props;
+  const { draftKey, onSubmit, autoFocus = false } = props;
   const mentions = useMentionableUsers();
   const { initialContent, value, setValue, clear } = useEditorDraft(draftKey);
   const [editorKey, setEditorKey] = useState(0);
@@ -664,6 +684,7 @@ function ReplyComposer(props: {
           mentions={mentions}
           placeholder="Leave a reply…"
           disabled={isPending}
+          autoFocus={autoFocus}
           aria-label="Add a reply"
           variant="plain"
           className="min-w-0 flex-1 text-sm"

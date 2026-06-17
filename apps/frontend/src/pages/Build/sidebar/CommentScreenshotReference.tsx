@@ -1,24 +1,17 @@
-import { ImageIcon, MapPinIcon } from "lucide-react";
+import { MapPinIcon } from "lucide-react";
 import { Button } from "react-aria-components";
 
 import { DocumentType, graphql } from "@/gql";
-import { ImageKitPicture } from "@/ui/ImageKitPicture";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffState } from "../BuildDiffState";
+import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";
 
 const _ScreenshotDiffFragment = graphql(`
   fragment CommentScreenshotReference_ScreenshotDiff on ScreenshotDiff {
     id
     name
-    compareScreenshot {
-      id
-      url
-    }
-    baseScreenshot {
-      id
-      url
-    }
+    ...ScreenshotDiffThumbnail_ScreenshotDiff
   }
 `);
 
@@ -60,10 +53,6 @@ export function CommentScreenshotReference(props: {
 }) {
   const { screenshotDiff, anchor } = props;
   const { allDiffs, setActiveDiff } = useBuildDiffState();
-  const thumbnailUrl =
-    screenshotDiff.compareScreenshot?.url ??
-    screenshotDiff.baseScreenshot?.url ??
-    null;
   const linesLabel = getAnchorLabel(anchor);
   const isPoint = anchor?.__typename === "CommentPointAnchor";
 
@@ -85,18 +74,11 @@ export function CommentScreenshotReference(props: {
         aria-label={`Go to snapshot ${screenshotDiff.name}`}
         className="text-low hover:bg-hover hover:text-default rac-focus flex w-full items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs transition select-none"
       >
-        {thumbnailUrl ? (
-          <span className="block size-6 shrink-0 overflow-hidden rounded-sm border bg-white">
-            <ImageKitPicture
-              src={thumbnailUrl}
-              transformations={["w-32", "h-32", "c-at_max"]}
-              className="size-full object-contain"
-              alt=""
-            />
-          </span>
-        ) : (
-          <ImageIcon className="size-4 shrink-0" />
-        )}
+        <ScreenshotDiffThumbnail
+          screenshotDiff={screenshotDiff}
+          className="size-6"
+          iconClassName="size-4"
+        />
         <span className="min-w-0 flex-1 truncate font-medium">
           {screenshotDiff.name}
         </span>

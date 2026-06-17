@@ -22,9 +22,13 @@ import { useObjectRef } from "react-aria";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
+import { useResizeObserver } from "@/ui/useResizeObserver";
 
 import { useBuildHotkey } from "./BuildHotkeys";
 import { useScaleContext } from "./ScaleContext";
+
+/** The content-box size of a {@link ZoomPane}, used to position overlays. */
+export type PaneSize = { width: number; height: number };
 
 type ZoomPaneEvent = {
   state: Transform;
@@ -43,6 +47,14 @@ const isWrappedWithClass = (event: any, className: string | undefined) =>
 
 const ZOOMER_CONTROLS_CLASS = "zoomer-controls";
 
+/**
+ * Elements drawn over the image that handle their own pointer and wheel events
+ * (comment pins, the comment prompt and threads). Marking them with this class
+ * stops d3 from starting a pan/zoom from them, so a drag selects text and a
+ * scroll scrolls the popover instead of moving the image.
+ */
+export const ZOOMER_OVERLAY_INTERACTIVE_CLASS = "zoomer-overlay-interactive";
+
 class Zoomer {
   zoom: ZoomBehavior<Element, unknown>;
   selection: Selection<Element, unknown, null, undefined>;
@@ -59,7 +71,10 @@ class Zoomer {
     this.zoom = zoom()
       .scaleExtent([scales.minScale, scales.maxScale])
       .filter((event: any) => {
-        if (isWrappedWithClass(event, ZOOMER_CONTROLS_CLASS)) {
+        if (
+          isWrappedWithClass(event, ZOOMER_CONTROLS_CLASS) ||
+          isWrappedWithClass(event, ZOOMER_OVERLAY_INTERACTIVE_CLASS)
+        ) {
           return false;
         }
 
@@ -85,6 +100,10 @@ class Zoomer {
     this.selection.on(
       "wheel.zoom",
       (event: any) => {
+        // Let interactive overlays (comment prompt/threads) scroll themselves.
+        if (isWrappedWithClass(event, ZOOMER_OVERLAY_INTERACTIVE_CLASS)) {
+          return;
+        }
         event.preventDefault();
         event.stopImmediatePropagation();
 
@@ -393,13 +412,32 @@ export function ZoomPane(props: {
   children: React.ReactNode;
   dimensions: { width: number; height: number } | undefined;
   controls?: React.ReactNode;
+  /**
+   * Content drawn on top of the (transformed) image but outside its transform,
+   * so it can position elements at fixed screen size against the live pane size.
+   * Receives the pane's content-box size (null until first measured). The
+   * wrapper is `pointer-events-none`; opt individual children back in. Events on
+   * those children still bubble to the pane, so pan/zoom keep working.
+   */
+  overlay?: (paneSize: PaneSize | null) => React.ReactNode;
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const { dimensions, children, controls, ref } = props;
+  const { dimensions, children, controls, overlay, ref } = props;
   const paneRef = useObjectRef(ref);
   const { register, getInitialTransform } = useZoomerSyncContext();
   const [imgScale] = useScaleContext();
   const [transform, setTransform] = useState<Transform>(identityTransform);
+  const [paneSize, setPaneSize] = useState<PaneSize | null>(null);
+  // Forwards the node to `paneRef` (for d3) while also observing its size so
+  // overlays can map image coordinates onto the current pane.
+  const setPaneNode = useResizeObserver((entry) => {
+    startTransition(() => {
+      setPaneSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+  }, paneRef);
   const [scales, setScales] = useState<{ minScale: number; maxScale: number }>({
     minScale: MIN_ZOOM_SCALE,
     maxScale: MAX_ZOOM_SCALE,
@@ -436,8 +474,8 @@ export function ZoomPane(props: {
 
   return (
     <div
-      ref={paneRef}
-      className="group/pane bg-app border-thin flex min-h-0 flex-1 cursor-grab overflow-hidden rounded-md shadow-xs select-none"
+      ref={setPaneNode}
+      className="group/pane bg-app border-thin relative flex min-h-0 flex-1 cursor-grab overflow-hidden rounded-md shadow-xs select-none"
     >
       <div
         className="flex min-h-0 min-w-0 flex-1 origin-top-left justify-center"
@@ -445,6 +483,11 @@ export function ZoomPane(props: {
       >
         {children}
       </div>
+      {overlay && (
+        <div className="pointer-events-none absolute inset-0">
+          {overlay(paneSize)}
+        </div>
+      )}
       {controls && (
         <div className="opacity-0 transition group-focus-within/pane:opacity-100 group-hover/pane:opacity-100 group-has-[button[aria-expanded=true]]/pane:opacity-100">
           <div
