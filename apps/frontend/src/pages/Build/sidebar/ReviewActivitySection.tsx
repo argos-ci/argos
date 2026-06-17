@@ -35,6 +35,7 @@ import { useNonNullable } from "@/util/useNonNullable";
 
 import { AddCommentForm } from "./AddCommentForm";
 import { CommentCard } from "./CommentCard";
+import { getCommentThreads, type CommentThread } from "./commentThreads";
 import { MentionableUsersProvider } from "./MentionableUsersContext";
 
 const _BuildFragment = graphql(`
@@ -130,7 +131,6 @@ const BuildReviewChangedSubscription = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 type Comment = Build["comments"][number];
-type CommentThread = { root: Comment; replies: Comment[] };
 type ReviewUser = NonNullable<Build["reviews"][number]["user"]>;
 
 /**
@@ -157,36 +157,7 @@ type ActivityEntry =
       date: string;
       review: Build["reviews"][number];
     }
-  | { kind: "comment"; date: string; thread: CommentThread };
-
-function getCommentThreads(comments: Comment[]): CommentThread[] {
-  const commentsById = new Map(
-    comments.map((comment) => [comment.id, comment]),
-  );
-  const repliesByThreadId = new Map<string, Comment[]>();
-  const roots: Comment[] = [];
-
-  for (const comment of comments) {
-    if (!comment.threadId) {
-      roots.push(comment);
-      continue;
-    }
-    if (!commentsById.has(comment.threadId)) {
-      continue;
-    }
-    const replies = repliesByThreadId.get(comment.threadId);
-    if (replies) {
-      replies.push(comment);
-    } else {
-      repliesByThreadId.set(comment.threadId, [comment]);
-    }
-  }
-
-  return roots.map((root) => ({
-    root,
-    replies: repliesByThreadId.get(root.id) ?? [],
-  }));
-}
+  | { kind: "comment"; date: string; thread: CommentThread<Comment> };
 
 function getActivityEntries(build: Build): ActivityEntry[] {
   const entries: ActivityEntry[] = [{ kind: "created", date: build.createdAt }];

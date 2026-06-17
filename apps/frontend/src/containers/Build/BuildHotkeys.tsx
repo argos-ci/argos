@@ -203,6 +203,12 @@ const hotkeyGroups = [
         description: "Switch between screenshot and aria view",
         envs: ["build"],
       },
+      toggleCommentTool: {
+        keys: ["KeyC"],
+        displayKeys: ["C"],
+        description: "Toggle comment tool",
+        envs: ["build"],
+      },
       showDetails: {
         keys: ["["],
         displayKeys: ["["],

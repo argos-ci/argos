@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { BuildDialogs } from "@/pages/Build/BuildDialogs";
+import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
@@ -91,6 +92,7 @@ const _BuildFragment = graphql(`
       merged
     }
     ...BuildDialogs_Build
+    ...ScreenshotCommentLayer_Build
   }
 `);
 
@@ -812,9 +814,10 @@ function DownloadCompareScreenshotButton({
 
 function CompareScreenshot(props: {
   diff: BuildDiffDetailDocument;
-  buildId: string;
+  build: BuildFragmentDocument;
 }) {
-  const { diff, buildId } = props;
+  const { diff, build } = props;
+  const buildId = build.id;
   const visible = useAtomValue(overlayVisibleAtom);
   const contained = useAtomValue(buildDiffFitContainedAtom);
   switch (diff.status) {
@@ -828,6 +831,18 @@ function CompareScreenshot(props: {
             dimensions={dimensions}
             controls={
               <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+            }
+            overlay={
+              dimensions
+                ? (paneSize) => (
+                    <ScreenshotCommentLayer
+                      build={build}
+                      screenshotDiffId={diff.id}
+                      imgSize={dimensions}
+                      paneSize={paneSize}
+                    />
+                  )
+                : undefined
             }
           >
             <ScreenshotContainer dimensions={dimensions} contained={contained}>
@@ -935,7 +950,7 @@ function CompareScreenshot(props: {
       return (
         <CompareScreenshotChanged
           diff={diff}
-          buildId={buildId}
+          build={build}
           contained={contained}
           diffVisible={visible}
         />
@@ -950,11 +965,12 @@ function CompareScreenshot(props: {
 
 function CompareScreenshotChanged(props: {
   diff: BuildDiffDetailDocument;
-  buildId: string;
+  build: BuildFragmentDocument;
   diffVisible: boolean;
   contained: boolean;
 }) {
-  const { diff, buildId, diffVisible, contained } = props;
+  const { diff, build, diffVisible, contained } = props;
+  const buildId = build.id;
   const { url } = diff;
   const dimensions = useMemo(() => extractDimensions(diff), [diff]);
   invariant(url);
@@ -979,6 +995,18 @@ function CompareScreenshotChanged(props: {
           dimensions={dimensions}
           controls={
             <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+          }
+          overlay={
+            dimensions
+              ? (paneSize) => (
+                  <ScreenshotCommentLayer
+                    build={build}
+                    screenshotDiffId={diff.id}
+                    imgSize={dimensions}
+                    paneSize={paneSize}
+                  />
+                )
+              : undefined
           }
         >
           <ScreenshotContainer dimensions={dimensions} contained={contained}>
@@ -1357,7 +1385,7 @@ const BuildScreenshots = memo(
           />
           <div className="relative flex min-h-0 flex-1 justify-center">
             <ScaleProvider>
-              <CompareScreenshot diff={diff} buildId={build.id} />
+              <CompareScreenshot diff={diff} build={build} />
             </ScaleProvider>
           </div>
         </div>
