@@ -19,7 +19,6 @@ import { getNotificationPreviewMiddleware } from "../notification/express";
 import samlAuthRouter from "./auth-saml";
 import deploymentAccessRouter from "./deployment-access";
 import { requireCsrf } from "./middlewares/csrf";
-import { MONACO_EDITOR_CDN_URL } from "./monaco-version.generated";
 import { asyncHandler, subdomain } from "./util";
 
 export const installAppRouter = async (app: express.Application) => {
@@ -228,8 +227,6 @@ export const installAppRouter = async (app: express.Application) => {
           "worker-src": ["'self'", "blob:"],
           "script-src": [
             "'self'",
-            // Monaco editor, pinned to the version resolved in pnpm-lock.yaml
-            MONACO_EDITOR_CDN_URL,
             // Script to update color classes
             "'sha256-3eiqAvd5lbIOVQdobPBczwuRAhAf7/oxg3HH2aFmp8Y='",
             ...config.get("csp.scriptSrc"),

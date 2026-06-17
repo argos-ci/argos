@@ -1,69 +1,102 @@
-import { lazy } from "react";
-import type { DiffEditorProps, EditorProps } from "@monaco-editor/react";
+import { lazy, Suspense } from "react";
+import type {
+  BaseCodeOptions,
+  SupportedLanguages,
+  ThemeTypes,
+} from "@pierre/diffs/react";
 
-import { useColorMode } from "@/ui/ColorMode";
+import { ColorMode, useColorMode } from "@/ui/ColorMode";
 
 import { SnapshotLoader } from "./SnapshotLoader";
 
-const MonacoEditor = lazy(() =>
-  import("@monaco-editor/react").then(({ Editor }) => ({
-    default: Editor,
+const File = lazy(() =>
+  import("@pierre/diffs/react").then(({ File }) => ({
+    default: File,
   })),
 );
 
-const MonacoDiffEditor = lazy(() =>
-  import("@monaco-editor/react").then(({ DiffEditor }) => ({
-    default: DiffEditor,
+const MultiFileDiff = lazy(() =>
+  import("@pierre/diffs/react").then(({ MultiFileDiff }) => ({
+    default: MultiFileDiff,
   })),
 );
 
-const OPTIONS = {
-  readOnly: true,
-  wordWrap: "on" as const,
-  useInlineViewWhenSpaceIsLimited: false,
-  minimap: { enabled: false },
-};
+// Shared options matching the previous Monaco read-only viewer behavior:
+// word wrapping on, no file header, JS highlighter (avoids a WASM CSP relaxation).
+const BASE_OPTIONS = {
+  theme: { light: "pierre-light", dark: "pierre-dark" },
+  overflow: "wrap",
+  disableFileHeader: true,
+  preferredHighlighter: "shiki-js",
+} satisfies BaseCodeOptions;
 
-export function DiffEditor(
-  props: Pick<
-    DiffEditorProps,
-    "original" | "modified" | "originalLanguage" | "modifiedLanguage"
-  > &
-    Pick<NonNullable<DiffEditorProps["options"]>, "renderSideBySide">,
-) {
-  const { renderSideBySide, ...rest } = props;
+const CLASS_NAME = "overflow-hidden rounded border";
+
+function useThemeType(): ThemeTypes {
   const { colorMode } = useColorMode();
+  switch (colorMode) {
+    case ColorMode.Light:
+      return "light";
+    case ColorMode.Dark:
+      return "dark";
+    // `null` means "follow the system preference".
+    default:
+      return "system";
+  }
+}
+
+export function DiffEditor(props: {
+  original: string;
+  modified: string;
+  originalLanguage: SupportedLanguages;
+  modifiedLanguage: SupportedLanguages;
+  renderSideBySide: boolean;
+}) {
+  const { original, modified, originalLanguage, modifiedLanguage } = props;
+  const themeType = useThemeType();
+  const options = {
+    ...BASE_OPTIONS,
+    themeType,
+    diffStyle: props.renderSideBySide
+      ? ("split" as const)
+      : ("unified" as const),
+  };
   return (
-    <MonacoDiffEditor
-      {...rest}
-      theme={colorMode === "dark" ? "vs-dark" : "vs-light"}
-      loading={<SnapshotLoader />}
-      options={{
-        ...OPTIONS,
-        renderSideBySide: renderSideBySide,
-      }}
-      className="overflow-hidden rounded border"
-      // @see https://github.com/suren-atoyan/monaco-react/issues/647#issuecomment-2897027817
-      keepCurrentModifiedModel
-      keepCurrentOriginalModel
-    />
+    <Suspense fallback={<SnapshotLoader />}>
+      <MultiFileDiff
+        oldFile={{
+          name: "snapshot",
+          contents: original,
+          lang: originalLanguage,
+        }}
+        newFile={{
+          name: "snapshot",
+          contents: modified,
+          lang: modifiedLanguage,
+        }}
+        options={options}
+        className={CLASS_NAME}
+      />
+    </Suspense>
   );
 }
 
-export function Editor(props: Pick<EditorProps, "value" | "language">) {
+export function Editor(props: { value: string; language: SupportedLanguages }) {
+  const themeType = useThemeType();
   return (
-    <MonacoEditor
-      {...props}
-      options={OPTIONS}
-      loading={<SnapshotLoader />}
-      className="overflow-hidden rounded border"
-      // @see https://github.com/suren-atoyan/monaco-react/issues/647#issuecomment-2897027817
-      keepCurrentModel
-    />
+    <Suspense fallback={<SnapshotLoader />}>
+      <File
+        file={{ name: "snapshot", contents: props.value, lang: props.language }}
+        options={{ ...BASE_OPTIONS, themeType }}
+        className={CLASS_NAME}
+      />
+    </Suspense>
   );
 }
 
-export function getLanguageFromContentType(contentType: string) {
+export function getLanguageFromContentType(
+  contentType: string,
+): SupportedLanguages {
   // Normalize: drop any parameters (e.g. "; charset=utf-8") and lowercase.
   const normalized = (contentType.split(";")[0] ?? "").trim().toLowerCase();
   switch (normalized) {
@@ -85,6 +118,6 @@ export function getLanguageFromContentType(contentType: string) {
     case "text/markdown":
       return "markdown";
     default:
-      return "plaintext";
+      return "text";
   }
 }
