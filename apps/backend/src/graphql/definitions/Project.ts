@@ -16,8 +16,6 @@ import {
   Project,
   ProjectUser,
   Screenshot,
-  ScreenshotDiff,
-  Test,
   User,
 } from "@/database/models";
 import {
@@ -34,7 +32,6 @@ import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
-import { getStartDateFromPeriod } from "@/metrics/test";
 import { HTTPError } from "@/util/error";
 
 import {
@@ -45,7 +42,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types";
 import { deleteProject, getAdminProject } from "../services/project";
-import { safeParseTestId } from "../services/test";
+import { queryActiveTests, safeParseTestId } from "../services/test";
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
@@ -686,102 +683,13 @@ export const resolvers: IResolvers = {
       return test;
     },
     tests: async (project, { first, after, period, filters }) => {
-      const search = filters?.search?.trim();
-      const latestRef = Build.query()
-        .alias("b")
-        .select("b.id", "b.projectId", "b.name")
-        .distinctOn(["b.projectId", "b.name"])
-        .where("b.type", "reference")
-        .where("b.projectId", project.id)
-        .orderBy("b.projectId")
-        .orderBy("b.name")
-        .orderBy("b.createdAt", "desc")
-        .as("latest_reference_build");
-
-      const activeTests = ScreenshotDiff.query()
-        .alias("sd")
-        .distinct("sd.testId")
-        .join(latestRef, "latest_reference_build.id", "sd.buildId")
-        .whereNotNull("sd.testId")
-        .joinRelated("compareScreenshot")
-        .whereNull("compareScreenshot.parentName")
-        .modify((query) => {
-          if (search) {
-            query.whereILike("compareScreenshot.name", `%${search}%`);
-          }
-        })
-        .as("active_tests");
-
-      const result = await Test.query()
-        .where("tests.projectId", project.id)
-        .where((qb) => {
-          if (filters?.buildName) {
-            qb.where("tests.buildName", filters.buildName);
-          }
-        })
-        // only ongoing
-        .join(activeTests, "active_tests.testId", "tests.id")
-        .orderByRaw(
-          `
-    (
-      with
-        totals as (
-          select sum(tsb.value)::numeric as total
-          from test_stats_builds tsb
-          where tsb."testId" = "tests"."id"
-            and tsb."date" >= :from::timestamp
-            and tsb."date" <  :to::timestamp
-        ),
-        fp_agg as (
-          select
-            tsf."fingerprint",
-            sum(tsf.value)::numeric as changes_value,
-            count(*) as fp_count
-          from test_stats_fingerprints tsf
-          where tsf."testId" = "tests"."id"
-            and tsf."date" >= :from::timestamp
-            and tsf."date" <  :to::timestamp
-          group by tsf."fingerprint"
-        ),
-        changes as (
-          select
-            sum(changes_value)::numeric as changes,
-            count(*) filter (where fp_count = 1)::numeric as "uniqueChanges"
-          from fp_agg
-        )
-      select
-        round(
-          (
-            1 - (
-              (
-                case
-                  when coalesce(changes.changes, 0) > 0
-                    then 1 - changes.changes / nullif(totals.total, 0)
-                  else 1
-                end
-              +
-                case
-                  when coalesce(changes.changes, 0) > 0
-                    then coalesce(changes."uniqueChanges", 0) / nullif(changes.changes, 0)
-                  else 1
-                end
-              ) / 2
-            )
-          ),
-          2
-        )
-      from totals, changes
-    ) desc,
-    "tests"."createdAt" desc,
-    "tests"."id" desc
-    `,
-          {
-            from: getStartDateFromPeriod(period).toISOString(),
-            to: new Date().toISOString(),
-          },
-        )
-        .range(after, after + first - 1);
-
+      const result = await queryActiveTests({
+        projectIds: [project.id],
+        period,
+        filters: filters ?? null,
+        after,
+        first,
+      });
       return paginateResult({ result, first, after });
     },
     deployments: async (project, { first, after }) => {

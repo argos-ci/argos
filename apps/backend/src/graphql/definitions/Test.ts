@@ -82,6 +82,7 @@ export const typeDefs = gql`
     name: String!
     buildName: String!
     status: TestStatus!
+    project: Project!
     screenshot: Screenshot
     firstSeenDiff: ScreenshotDiff
     lastSeenDiff: ScreenshotDiff
@@ -123,6 +124,11 @@ export const resolvers: IResolvers = {
       const project = await ctx.loaders.Project.load(test.projectId);
       invariant(project);
       return formatTestId({ projectName: project.name, testId: test.id });
+    },
+    project: async (test, _args, ctx) => {
+      const project = await ctx.loaders.Project.load(test.projectId);
+      invariant(project);
+      return project;
     },
     status: async (test, _args, ctx) => {
       return ctx.loaders.TestStatusLoader.load({
