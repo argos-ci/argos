@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import { TransactionOrKnex } from "objection";
 
 import {
+  Account,
   AuditTrail,
   AutomationActionRun,
   AutomationRule,
@@ -87,6 +88,76 @@ export async function getAdminProject(args: {
   const permissions = await project.$getPermissions(args.user);
   invariant(permissions.includes("admin"), "not admin");
   return project;
+}
+
+/**
+ * Resolve the ids of the projects an authenticated user can see within an
+ * account, applying the same visibility rules as the `Account.projects`
+ * resolver:
+ * - staff see every project
+ * - on a user account, only the owner
+ * - on a team, owners/members see all; contributors see projects they are a
+ *   contributor on (or that expose a default user level)
+ *
+ * Returns an empty array when the user can see nothing, so callers can short
+ * circuit without a query.
+ */
+export async function getVisibleProjectIds(args: {
+  account: Account;
+  user: { id: string; staff: boolean };
+}): Promise<string[]> {
+  const { account, user } = args;
+  const query = Project.query()
+    .where("accountId", account.id)
+    .select("projects.id");
+
+  if (user.staff) {
+    const rows = await query;
+    return rows.map((row) => row.id);
+  }
+
+  switch (account.type) {
+    case "user": {
+      if (account.userId !== user.id) {
+        return [];
+      }
+      const rows = await query;
+      return rows.map((row) => row.id);
+    }
+    case "team": {
+      const teamUserQuery = TeamUser.query().where({
+        teamId: account.teamId,
+        userId: user.id,
+      });
+      const rows = await query.where((qb) => {
+        // User is a team member or owner
+        qb.whereExists(
+          teamUserQuery
+            .select(1)
+            .clone()
+            .whereIn("userLevel", ["owner", "member"]),
+        ).orWhere((qb) => {
+          // User is a contributor
+          qb.whereExists(
+            teamUserQuery.select(1).clone().where("userLevel", "contributor"),
+          ).where((qb) => {
+            // And is a contributor to the project
+            qb.whereExists(
+              ProjectUser.query()
+                .select(1)
+                .whereRaw(`projects.id = project_users."projectId"`)
+                .where("userId", user.id),
+            )
+              // Or where there is a default user level set on the project
+              .orWhereNotNull("projects.defaultUserLevel");
+          });
+        });
+      });
+      return rows.map((row) => row.id);
+    }
+    default:
+      return [];
+  }
 }
 
 /**

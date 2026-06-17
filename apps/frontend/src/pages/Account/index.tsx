@@ -40,6 +40,7 @@ function AccountTabs({ account }: { account: Account }) {
       <TabList className="px-4" aria-label="Account navigation">
         <TabLink href="">Projects</TabLink>
         <TabLink href="~/analytics">Analytics</TabLink>
+        <TabLink href="~/tests">Tests</TabLink>
         <TabLink href="settings">Settings</TabLink>
       </TabList>
       <hr className="border-t" />

@@ -92,6 +92,12 @@ export const typeDefs = gql`
     canExtendTrial: Boolean!
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
+    tests(
+      after: Int = 0
+      first: Int = 30
+      period: MetricsPeriod!
+      filters: TestsFilterInput
+    ): TestConnection!
     avatar: AccountAvatar!
     hasForcedPlan: Boolean!
     gitlabAccessToken: String

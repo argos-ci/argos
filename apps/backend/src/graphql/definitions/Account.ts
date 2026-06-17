@@ -37,6 +37,8 @@ import {
 import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getAccountAvatar } from "../services/avatar";
+import { getVisibleProjectIds } from "../services/project";
+import { queryActiveTests } from "../services/test";
 import { badUserInput, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
@@ -137,6 +139,13 @@ export const typeDefs = gql`
     hasForcedPlan: Boolean!
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
+    "List all tests across the account's visible projects, sorted by flakiness."
+    tests(
+      after: Int = 0
+      first: Int = 30
+      period: MetricsPeriod!
+      filters: TestsFilterInput
+    ): TestConnection!
     avatar: AccountAvatar!
     gitlabAccessToken: String
     gitlabBaseUrl: String
@@ -324,6 +333,27 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       default:
         assertNever(account.type);
     }
+  },
+  tests: async (account, { first, after, period, filters }, ctx) => {
+    const { auth } = ctx;
+    if (!auth) {
+      throw unauthenticated();
+    }
+    const projectIds = await getVisibleProjectIds({
+      account,
+      user: auth.user,
+    });
+    if (projectIds.length === 0) {
+      return { pageInfo: { totalCount: 0, hasNextPage: false }, edges: [] };
+    }
+    const result = await queryActiveTests({
+      projectIds,
+      period,
+      filters: filters ?? null,
+      after,
+      first,
+    });
+    return paginateResult({ result, first, after });
   },
   consumptionRatio: async (account) => {
     const manager = account.$getSubscriptionManager();
