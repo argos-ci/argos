@@ -243,7 +243,11 @@ export function Editor(props: EditorProps) {
   // `value`'s identity only changes when the content does (Apollo shares
   // references for unchanged data), so this stays a no-op on unrelated renders.
   useEffect(() => {
-    if (editor && value != null) {
+    // Guard against a destroyed instance: when this editor is mounted somewhere
+    // that remounts it (e.g. an inline diff comment annotation, or React strict
+    // mode), `useEditor` can briefly hand back a torn-down editor whose
+    // `commandManager` is null, so `editor.commands` would throw.
+    if (editor && !editor.isDestroyed && value != null) {
       editor.commands.setContent(value);
     }
   }, [editor, value]);
@@ -269,7 +273,7 @@ export function Editor(props: EditorProps) {
   const handleContainerMouseDown = (
     event: React.MouseEvent<HTMLDivElement>,
   ) => {
-    if (!editor || !editable) {
+    if (!editor || editor.isDestroyed || !editable) {
       return;
     }
     // Only handle primary-button clicks (avoid interfering with context menus).
