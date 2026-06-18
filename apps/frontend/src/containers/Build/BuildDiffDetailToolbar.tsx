@@ -40,6 +40,22 @@ function checkCanCommentOnDiff(diff: BuildDiffDetailDocument): boolean {
   }
 }
 
+/**
+ * Whether line comments can be placed on this diff's textual changes. Mirrors
+ * the condition under which the text diff (and its `DiffCommentLayer`) renders.
+ */
+function checkCanCommentOnTextDiff(diff: BuildDiffDetailDocument): boolean {
+  switch (diff.status) {
+    case ScreenshotDiffStatus.Changed:
+    case ScreenshotDiffStatus.Ignored:
+      return !checkIsImageContentType(
+        diff.compareScreenshot?.contentType ?? "",
+      );
+    default:
+      return false;
+  }
+}
+
 export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   const { diff, children, fitControls } = props;
   const shouldShowToolbarControls =
@@ -52,6 +68,9 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   const permissions = use(ProjectPermissionsContext);
   const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
   const showCommentTools = canComment && checkCanCommentOnDiff(diff);
+  // Text diffs use the gutter "+" (no hand/comment tool switch), so they only
+  // get the show/hide toggle.
+  const showTextCommentTools = canComment && checkCanCommentOnTextDiff(diff);
 
   return (
     <div className="flex shrink-0 items-center gap-1.5">
@@ -75,6 +94,12 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />
           <CommentToolToggle />
+          <CommentsVisibilityToggle />
+        </>
+      )}
+      {showTextCommentTools && (
+        <>
+          <Separator orientation="vertical" className="mx-1 h-6" />
           <CommentsVisibilityToggle />
         </>
       )}

@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
 import { BuildDialogs } from "@/pages/Build/BuildDialogs";
+import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
@@ -58,7 +59,7 @@ import {
   SkippedBuildEmptyState,
 } from "./BuildEmptyStates";
 import { buildViewModeAtom } from "./BuildViewMode";
-import { DiffEditor, Editor, getLanguageFromContentType } from "./DiffEditor";
+import { Editor, getLanguageFromContentType } from "./DiffEditor";
 import {
   overlayColorAtom,
   overlayOpacityAtom,
@@ -93,6 +94,7 @@ const _BuildFragment = graphql(`
     }
     ...BuildDialogs_Build
     ...ScreenshotCommentLayer_Build
+    ...DiffCommentLayer_Build
   }
 `);
 
@@ -1347,6 +1349,8 @@ const BuildScreenshots = memo(
                   />
                 ),
               }}
+              build={build}
+              screenshotDiffId={diff.id}
             />
           </div>
         );
@@ -1418,11 +1422,15 @@ function DiffSnapshots(props: {
   base: { url: string; contentType: string };
   head: { url: string; contentType: string };
   renderSideBySide: boolean;
+  build: BuildFragmentDocument;
+  screenshotDiffId: string;
 }) {
-  const { base, head, renderSideBySide } = props;
+  const { base, head, renderSideBySide, build, screenshotDiffId } = props;
   const [baseText, headText] = useTextContent([base.url, head.url]);
   return (
-    <DiffEditor
+    <DiffCommentLayer
+      build={build}
+      screenshotDiffId={screenshotDiffId}
       original={baseText}
       originalLanguage={getLanguageFromContentType(base.contentType)}
       modified={headText}
@@ -1441,8 +1449,10 @@ type DiffSnapshotEntry = {
 function BuildSnapshotsDiff(props: {
   base: DiffSnapshotEntry;
   head: DiffSnapshotEntry;
+  build: BuildFragmentDocument;
+  screenshotDiffId: string;
 }) {
-  const { base, head } = props;
+  const { base, head, build, screenshotDiffId } = props;
   const isDiffOverlayVisible = useAtomValue(overlayVisibleAtom);
   const viewMode = useAtomValue(buildViewModeAtom);
   // const [headText, baseText] = useTextContent([props.base, props.head]);
@@ -1479,7 +1489,13 @@ function BuildSnapshotsDiff(props: {
               </div>
             }
           >
-            <DiffSnapshots base={base} head={head} renderSideBySide={isSplit} />
+            <DiffSnapshots
+              base={base}
+              head={head}
+              renderSideBySide={isSplit}
+              build={build}
+              screenshotDiffId={screenshotDiffId}
+            />
           </Suspense>
         </>
       );
