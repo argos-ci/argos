@@ -213,9 +213,6 @@
 
   --z-index-hover-card: 800;
   --z-index-dialog: 900;
-  /* Editor suggestion popups (`@` mentions, `/` commands). Above dialogs so they
-     stay usable when the editor is rendered inside a modal or popover. */
-  --z-index-editor-popup: 1000;
 
   --border-width-thin: 0.5px;
   --spacing-thin: 0.5px;

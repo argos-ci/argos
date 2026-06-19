@@ -261,9 +261,12 @@ function positionPopup(
   popup.style.position = "fixed";
   popup.style.left = `${rect.left}px`;
   popup.style.top = `${rect.bottom + 4}px`;
-  // Above dialogs/popovers so the menu stays visible and clickable even when the
-  // editor is rendered inside one (e.g. the review submission form).
-  popup.style.zIndex = "var(--z-index-editor-popup)";
+  // Above dialogs and popovers (`--z-index-dialog` is 900) so the menu stays
+  // visible and clickable when the editor is rendered inside one (e.g. the
+  // review submission form). A literal value is used because the popup is
+  // appended to `document.body`; a Tailwind theme token would be tree-shaken
+  // out since nothing references it from a class.
+  popup.style.zIndex = "1000";
 }
 
 /** Dedicated key so this plugin never collides with the mention suggestion. */
