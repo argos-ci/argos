@@ -26,6 +26,7 @@ import { Label } from "@/ui/Label";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal, ModalActionContext, ModalProps } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
+import { getMentionUser } from "@/ui/UserCard";
 
 import { useCreateBuildReviewMutation } from "./BuildReviewAction";
 import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
@@ -37,6 +38,9 @@ const _ProjectFragment = graphql(`
     build(number: $buildNumber) {
       id
       status
+      members {
+        ...UserCard_user
+      }
       ...BuildReviewAction_Build
     }
   }
@@ -98,6 +102,10 @@ function BuildReviewDialog(props: {
   onClose: () => void;
 }) {
   const { build, onClose } = props;
+  const mentions = useMemo(
+    () => build.members.map(getMentionUser),
+    [build.members],
+  );
   const summary = useBuildReviewSummary();
   invariant(summary, "BuildReviewDialog requires a summary");
   const hasRejected = summary[EvaluationStatus.Rejected].length > 0;
@@ -177,6 +185,7 @@ function BuildReviewDialog(props: {
               <EditorField
                 control={form.control}
                 name="body"
+                mentions={mentions}
                 onChange={() => {
                   if (bodyError) {
                     form.clearErrors("body");

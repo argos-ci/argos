@@ -192,7 +192,9 @@ function positionPopup(
   popup.style.position = "fixed";
   popup.style.left = `${rect.left}px`;
   popup.style.top = `${rect.bottom + 4}px`;
-  popup.style.zIndex = "50";
+  // Above dialogs/popovers so the suggestions stay visible and clickable even
+  // when the editor is rendered inside one (e.g. the review submission form).
+  popup.style.zIndex = "var(--z-index-editor-popup)";
 }
 
 /** Label rendered after `@` when a mention's user can't be resolved. */
@@ -276,6 +278,11 @@ export function createMentionExtension(options: MentionExtensionOptions) {
               editor: props.editor,
             });
             popup = document.createElement("div");
+            // Mark as a top layer so react-aria's interact-outside ignores
+            // clicks on it — otherwise selecting a mention inside a dialog or
+            // popover would dismiss that overlay. Also keeps it visible to
+            // screen readers (excluded from the modal's `aria-hidden`).
+            popup.setAttribute("data-react-aria-top-layer", "true");
             popup.append(component.element);
             document.body.append(popup);
             positionPopup(popup, props.clientRect);
