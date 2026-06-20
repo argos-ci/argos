@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { clsx } from "clsx";
 import { Text } from "react-aria-components";
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -18,6 +19,7 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { Label } from "@/ui/Label";
+import { getMentionUser } from "@/ui/UserCard";
 
 import { useCreateBuildReviewMutation } from "./BuildReviewAction";
 import {
@@ -28,6 +30,9 @@ import {
 const _BuildFragment = graphql(`
   fragment BuildReviewForm_Build on Build {
     id
+    members {
+      ...UserCard_user
+    }
     ...BuildReviewAction_Build
   }
 `);
@@ -55,6 +60,11 @@ export function BuildReviewForm(props: {
     onSubmitted,
     cancel,
   } = props;
+
+  const mentions = useMemo(
+    () => build.members.map(getMentionUser),
+    [build.members],
+  );
 
   const form = useForm<Inputs>({
     defaultValues: {
@@ -102,6 +112,7 @@ export function BuildReviewForm(props: {
             <EditorField
               control={form.control}
               name="body"
+              mentions={mentions}
               onChange={() => {
                 if (bodyError) {
                   form.clearErrors("body");

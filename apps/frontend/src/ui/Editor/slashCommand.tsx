@@ -261,7 +261,11 @@ function positionPopup(
   popup.style.position = "fixed";
   popup.style.left = `${rect.left}px`;
   popup.style.top = `${rect.bottom + 4}px`;
-  popup.style.zIndex = "50";
+  // Keep the menu above every overlay so it stays visible and clickable when the
+  // editor is rendered inside one (e.g. the review submission popover). The popup
+  // is appended to `document.body`, and react-aria gives its popovers/modals an
+  // inline `z-index: 100000`, so this must clear that layer.
+  popup.style.zIndex = "300000";
 }
 
 /** Dedicated key so this plugin never collides with the mention suggestion. */
@@ -310,6 +314,11 @@ export const SlashCommand = Extension.create({
                 editor: props.editor,
               });
               popup = document.createElement("div");
+              // Mark as a top layer so react-aria's interact-outside ignores
+              // clicks on it — otherwise selecting a command inside a dialog or
+              // popover would dismiss that overlay. Also keeps it visible to
+              // screen readers (excluded from the modal's `aria-hidden`).
+              popup.setAttribute("data-react-aria-top-layer", "true");
               popup.append(component.element);
               document.body.append(popup);
               positionPopup(popup, props.clientRect);
