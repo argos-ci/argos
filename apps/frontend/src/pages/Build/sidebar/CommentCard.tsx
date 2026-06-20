@@ -333,6 +333,7 @@ export function CommentCard(props: {
       {!hideScreenshotReference && comment.screenshotDiff ? (
         <div className="border-b-thin">
           <CommentScreenshotReference
+            commentId={comment.id}
             screenshotDiff={comment.screenshotDiff}
             anchor={(comment.anchor as CommentAnchor | null) ?? null}
           />

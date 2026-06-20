@@ -1,6 +1,11 @@
+import { useSetAtom } from "jotai/react";
 import { MapPinIcon } from "lucide-react";
 import { Button } from "react-aria-components";
 
+import {
+  commentsVisibleAtom,
+  requestedScreenshotCommentIdAtom,
+} from "@/containers/Build/CommentTool";
 import { DocumentType, graphql } from "@/gql";
 import { Tooltip } from "@/ui/Tooltip";
 
@@ -48,11 +53,14 @@ function getAnchorLabel(anchor: CommentAnchor | null): string | null {
  * comment thread. Clicking it navigates to that diff in the viewer.
  */
 export function CommentScreenshotReference(props: {
+  commentId: string;
   screenshotDiff: ScreenshotDiff;
   anchor: CommentAnchor | null;
 }) {
-  const { screenshotDiff, anchor } = props;
+  const { commentId, screenshotDiff, anchor } = props;
   const { allDiffs, setActiveDiff } = useBuildDiffState();
+  const setCommentsVisible = useSetAtom(commentsVisibleAtom);
+  const requestOpenComment = useSetAtom(requestedScreenshotCommentIdAtom);
   const linesLabel = getAnchorLabel(anchor);
   const isPoint = anchor?.__typename === "CommentPointAnchor";
 
@@ -62,8 +70,17 @@ export function CommentScreenshotReference(props: {
     const diff = allDiffs.find(
       (candidate) => candidate.id === screenshotDiff.id,
     );
-    if (diff) {
-      setActiveDiff(diff, true);
+    if (!diff) {
+      return;
+    }
+    setActiveDiff(diff, true);
+    // A point-anchored comment lives as a marker on the image: reveal comments
+    // and ask the screenshot layer to open this one's thread once its diff is
+    // shown. (Line-anchored comments render inline on the diff, so navigating
+    // there already surfaces them.)
+    if (isPoint) {
+      setCommentsVisible(true);
+      requestOpenComment(commentId);
     }
   };
 
