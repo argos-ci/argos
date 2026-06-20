@@ -16,7 +16,7 @@ catalog:
   minimatch: ^10.2.5
   react: ^19.2.7
   react-dom: ^19.2.7
-  undici: 8.4.1
+  undici: 8.5.0
   zod: ^4.4.3
 
 overrides:
