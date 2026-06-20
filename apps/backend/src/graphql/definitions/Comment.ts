@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
+import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
 import { addCommentReaction } from "@/comment/addCommentReaction";
 import {
   subscribeToCommentChanges,
@@ -223,6 +224,8 @@ export const typeDefs = gql`
     anchor: CommentAnchor
     "Whether the current user is subscribed to this comment thread"
     threadSubscribed: Boolean!
+    "Whether the comment belongs to a pending (unsubmitted) review and is only visible to its author"
+    pending: Boolean!
     "Permissions of the current user on this comment"
     permissions: [CommentPermission!]!
     "Emoji reactions on the comment, grouped by emoji"
@@ -258,6 +261,8 @@ export const typeDefs = gql`
     anchor: CommentAnchorInput
     "Rich-text JSON content of the comment"
     body: JSONObject!
+    "Attach the comment to the current user's pending review (created if needed) instead of posting it immediately. Ignored for replies, which inherit their thread's review."
+    addToReview: Boolean
   }
 
   input UpdateCommentInput {
@@ -413,6 +418,13 @@ export const resolvers: IResolvers = {
         });
       return subscription?.isSubscribed() ?? false;
     },
+    pending: async (comment, _args, ctx) => {
+      if (!comment.buildReviewId) {
+        return false;
+      }
+      const review = await ctx.loaders.BuildReview.load(comment.buildReviewId);
+      return review?.state === "pending";
+    },
     permissions: (comment, _args, ctx) => {
       return getCommentPermissions(
         comment,
@@ -514,6 +526,20 @@ export const resolvers: IResolvers = {
 
       const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
 
+      // A reply inherits its thread's review (so a reply to a draft comment
+      // stays a draft); a root comment joins the user's pending review when
+      // `addToReview` is set, creating that review on first use.
+      let buildReviewId: string | null = null;
+      if (thread) {
+        buildReviewId = thread.buildReviewId;
+      } else if (input.addToReview) {
+        const pendingReview = await getOrCreatePendingBuildReview({
+          build,
+          userId: auth.user.id,
+        });
+        buildReviewId = pendingReview.id;
+      }
+
       await createBuildComment({
         build,
         userId: auth.user.id,
@@ -521,6 +547,7 @@ export const resolvers: IResolvers = {
         threadId: thread?.id ?? null,
         screenshotDiffId,
         anchor,
+        buildReviewId,
       });
 
       return build;

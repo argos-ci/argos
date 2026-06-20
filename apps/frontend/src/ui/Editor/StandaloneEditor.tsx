@@ -58,6 +58,17 @@ export interface StandaloneEditorProps {
    */
   footerStart?: React.ReactNode;
   contentClassName?: string;
+  /**
+   * Render a custom submit control in place of the default send button (only in
+   * compose mode, i.e. when no `onCancel` is set). Receives the submit handler
+   * (which keeps the empty-check/toast behavior) and the current button state.
+   */
+  renderSubmit?: (args: {
+    submit: () => void;
+    isEmpty: boolean;
+    isPending: boolean;
+    disabled: boolean;
+  }) => React.ReactNode;
   /** Users that can be mentioned with `@`, forwarded to the {@link Editor}. */
   mentions?: MentionUser[];
   /** Users to resolve existing mentions against, forwarded to the {@link Editor}. */
@@ -92,6 +103,7 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
     variant = "boxed",
     footerStart,
     contentClassName,
+    renderSubmit,
     mentions,
     mentionedUsers,
     draftKey,
@@ -192,28 +204,39 @@ export function StandaloneEditor(props: StandaloneEditorProps) {
                 {footerStart}
               </div>
             ) : null}
-            <HotkeyTooltip
-              description={submitLabel}
-              keys={[MOD, "Enter"]}
-              placement="top"
-            >
-              <IconButton
-                variant="contained"
-                size="small"
-                rounded
-                aria-label={submitLabel}
-                // Truly disabled (not focusable/clickable) while submitting or when
-                // disabled by the parent. When the editor is merely empty it only
-                // *looks* disabled but stays clickable, so the press can surface the
-                // "empty" toast.
-                isDisabled={disabled || isPending}
-                aria-disabled={isEmpty}
-                onPress={submit}
-                className="ml-auto"
+            {renderSubmit ? (
+              <div className="ml-auto flex items-center">
+                {renderSubmit({
+                  submit,
+                  isEmpty,
+                  isPending,
+                  disabled: Boolean(disabled),
+                })}
+              </div>
+            ) : (
+              <HotkeyTooltip
+                description={submitLabel}
+                keys={[MOD, "Enter"]}
+                placement="top"
               >
-                <ArrowUpIcon />
-              </IconButton>
-            </HotkeyTooltip>
+                <IconButton
+                  variant="contained"
+                  size="small"
+                  rounded
+                  aria-label={submitLabel}
+                  // Truly disabled (not focusable/clickable) while submitting or when
+                  // disabled by the parent. When the editor is merely empty it only
+                  // *looks* disabled but stays clickable, so the press can surface the
+                  // "empty" toast.
+                  isDisabled={disabled || isPending}
+                  aria-disabled={isEmpty}
+                  onPress={submit}
+                  className="ml-auto"
+                >
+                  <ArrowUpIcon />
+                </IconButton>
+              </HotkeyTooltip>
+            )}
           </div>
         )
       }

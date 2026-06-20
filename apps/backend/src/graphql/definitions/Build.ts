@@ -3,7 +3,11 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import { Build, BuildNotificationSubscription } from "@/database/models";
+import {
+  Build,
+  BuildNotificationSubscription,
+  BuildReview,
+} from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { getProjectMemberIds } from "@/project/members";
 
@@ -125,7 +129,9 @@ export const typeDefs = gql`
     baseBranchResolvedFrom: BaseBranchResolution
     "Submitted build reviews"
     reviews: [BuildReview!]!
-    "Comments posted on the build that are not part of a pending review"
+    "Whether the current user has already submitted a review on this build"
+    viewerHasSubmittedReview: Boolean!
+    "Comments visible to the current user (excludes other users' pending-review drafts)"
     comments: [Comment!]!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
@@ -320,8 +326,23 @@ export const resolvers: IResolvers = {
     reviews: async (build, _args, ctx) => {
       return ctx.loaders.BuildReviews.load(build.id);
     },
+    viewerHasSubmittedReview: async (build, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      const review = await BuildReview.query()
+        .where("buildId", build.id)
+        .where("userId", ctx.auth.user.id)
+        .whereNot("state", "pending")
+        .whereNull("dismissedAt")
+        .resultSize();
+      return review > 0;
+    },
     comments: async (build, _args, ctx) => {
-      return ctx.loaders.BuildPublishedComments.load(build.id);
+      return ctx.loaders.BuildPublishedComments.load({
+        buildId: build.id,
+        viewerUserId: ctx.auth?.user.id ?? null,
+      });
     },
     stats: (build) => {
       return build.getStats();

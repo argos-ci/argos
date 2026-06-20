@@ -15,6 +15,7 @@ import {
   useBuildDiffStatusState,
 } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { useRejectCommentInvite } from "./RejectCommentDialog";
 
 function useEvaluationToggle(props: {
   diffId: string;
@@ -23,6 +24,7 @@ function useEvaluationToggle(props: {
 }) {
   const { diffId, diffGroup, target } = props;
   const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff();
+  const promptRejectComment = useRejectCommentInvite();
   const [status, setStatus] = useBuildDiffStatusState({
     diffId,
     diffGroup,
@@ -35,6 +37,16 @@ function useEvaluationToggle(props: {
       status === EvaluationStatus.Pending ? target : EvaluationStatus.Pending;
     setStatus(nextStatus);
     if (nextStatus !== EvaluationStatus.Pending) {
+      // On a fresh rejection with no note yet, invite the reviewer to explain
+      // why. When the dialog opens we skip the usual auto-advance/review-dialog
+      // so it isn't buried; otherwise proceed as normal.
+      if (
+        target === EvaluationStatus.Rejected &&
+        !diffGroup &&
+        promptRejectComment?.(diffId)
+      ) {
+        return;
+      }
       acknowledge();
     }
   });

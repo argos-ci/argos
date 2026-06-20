@@ -32,6 +32,7 @@ import { useCreateBuildReviewMutation } from "./BuildReviewAction";
 import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
 import { useBuildReviewSummary } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
+import { PendingCommentsSection } from "./PendingCommentsSection";
 
 const _ProjectFragment = graphql(`
   fragment BuildReviewDialog_Project on Project {
@@ -42,6 +43,7 @@ const _ProjectFragment = graphql(`
         ...UserCard_user
       }
       ...BuildReviewAction_Build
+      ...PendingCommentsSection_Build
     }
   }
 `);
@@ -179,6 +181,7 @@ function BuildReviewDialog(props: {
               </>
             )}
           </DialogText>
+          <PendingCommentsSection build={build} />
           {allAccepted ? null : (
             <div>
               <Label>Comment</Label>

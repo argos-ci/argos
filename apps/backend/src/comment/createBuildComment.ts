@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
-import { Build, Comment, Project } from "@/database/models";
+import { Build, BuildReview, Comment, Project } from "@/database/models";
 import type { CommentAnchor } from "@/database/models/Comment";
 import {
   autoSubscribeUserToBuild,
@@ -28,8 +28,14 @@ import {
 } from "./validate";
 
 /**
- * Post a standalone comment on a build (one that is not attached to a review),
- * auto-subscribe the author to the build and notify the other subscribers.
+ * Post a comment on a build, auto-subscribe the author and notify the other
+ * subscribers.
+ *
+ * When `buildReviewId` points to a review still in the `pending` state, the
+ * comment is a draft: it is visible only to its author until the review is
+ * submitted, so all notifications and the live broadcast are deferred to
+ * submission time (see `notifyReviewCommentsWentLive` in `createBuildReview`).
+ * Mentions are still persisted now so we know whom to notify then.
  */
 export async function createBuildComment(input: {
   build: Build;
@@ -38,6 +44,7 @@ export async function createBuildComment(input: {
   threadId?: string | null;
   screenshotDiffId?: string | null;
   anchor?: CommentAnchor | null;
+  buildReviewId?: string | null;
 }): Promise<Comment> {
   const {
     build,
@@ -45,6 +52,7 @@ export async function createBuildComment(input: {
     threadId = null,
     screenshotDiffId = null,
     anchor = null,
+    buildReviewId = null,
   } = input;
 
   if (!validateCommentJson(input.body)) {
@@ -67,6 +75,7 @@ export async function createBuildComment(input: {
     Comment.query().insert({
       userId,
       buildId: build.id,
+      buildReviewId,
       threadId,
       screenshotDiffId,
       anchor,
@@ -77,8 +86,31 @@ export async function createBuildComment(input: {
   invariant(project?.account, "Build project account not found");
 
   // Persist the user mentions found in the comment and resolve them to the
-  // users that may actually be notified (members of the project's team).
+  // users that may actually be notified (members of the project's team). Done
+  // even for draft comments so submission knows whom to notify.
   const mentionedUserIds = await syncCommentMentions({ comment, project });
+
+  // Subscribe the author so they receive updates on this thread/build, whether
+  // the comment is live now or once the review is submitted.
+  const authorSubscriptions = threadId
+    ? [subscribeUserToCommentThread({ commentId: threadId, userId })]
+    : [
+        autoSubscribeUserToBuild({ buildId: build.id, userId }),
+        subscribeUserToCommentThread({ commentId: comment.id, userId }),
+      ];
+
+  // A comment is a draft when it belongs to a review that is still pending.
+  const pending = buildReviewId
+    ? (await BuildReview.query().findById(buildReviewId))?.state === "pending"
+    : false;
+
+  if (pending) {
+    // Defer notifications and the live broadcast to submission time. The
+    // author's own client reflects the comment from the mutation result; other
+    // clients (including the author's other tabs) reconcile on next load.
+    await Promise.all(authorSubscriptions);
+    return comment;
+  }
 
   // Notifying the mentioned users is independent of notifying the thread/build
   // subscribers (those already exclude the mentioned users by id), so let it
@@ -94,7 +126,7 @@ export async function createBuildComment(input: {
 
   if (threadId) {
     await Promise.all([
-      subscribeUserToCommentThread({ commentId: threadId, userId }),
+      ...authorSubscriptions,
       notifyCommentThreadSubscribers({
         build,
         project,
@@ -108,8 +140,7 @@ export async function createBuildComment(input: {
     ]);
   } else {
     await Promise.all([
-      autoSubscribeUserToBuild({ buildId: build.id, userId }),
-      subscribeUserToCommentThread({ commentId: comment.id, userId }),
+      ...authorSubscriptions,
       notifyBuildSubscribers({
         build,
         project,

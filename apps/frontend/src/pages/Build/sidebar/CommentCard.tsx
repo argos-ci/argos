@@ -69,6 +69,7 @@ const _CommentFragment = graphql(`
     content
     threadId
     threadSubscribed
+    pending
     permissions
     user {
       ...UserCard_user
@@ -581,9 +582,10 @@ function CommentMessage(props: {
                   {isEdited ? " (edited)" : null}
                 </Button>
               </Tooltip>
+              {comment.pending ? <PendingCommentBadge /> : null}
             </div>
           </div>
-          <div className="bg-app pointer-events-none absolute top-1 right-1 flex items-center rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
+          <div className="bg-app before:from-app pointer-events-none absolute top-1 right-1 flex items-center rounded-md pl-1 opacity-0 transition group-focus-within/comment:pointer-events-auto group-focus-within/comment:opacity-100 group-hover/comment:pointer-events-auto group-hover/comment:opacity-100 before:absolute before:inset-y-0 before:right-full before:w-8 before:bg-linear-to-l before:to-transparent before:content-[''] has-[button[aria-expanded=true]]:pointer-events-auto has-[button[aria-expanded=true]]:opacity-100">
             <CommentAddReactionButton comment={comment} />
             <CommentActionsMenu
               onCopyLink={copyLink}
@@ -631,6 +633,20 @@ function CommentMessage(props: {
         <DeleteCommentDialog commentId={comment.id} />
       </Modal>
     </>
+  );
+}
+
+/**
+ * Marks a comment that belongs to the current user's not-yet-submitted review.
+ * Such comments are visible only to their author until the review is submitted.
+ */
+function PendingCommentBadge() {
+  return (
+    <Tooltip content="Only you can see this. It becomes visible when you submit your review.">
+      <span className="border-thin text-low shrink-0 cursor-default rounded-full px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase">
+        Pending
+      </span>
+    </Tooltip>
   );
 }
 

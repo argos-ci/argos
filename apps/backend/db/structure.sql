@@ -3593,6 +3593,13 @@ CREATE INDEX build_reviews_dismissedbyid_index ON public.build_reviews USING btr
 
 
 --
+-- Name: build_reviews_pending_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX build_reviews_pending_unique ON public.build_reviews USING btree ("buildId", "userId") WHERE ((state = 'pending'::text) AND ("dismissedAt" IS NULL));
+
+
+--
 -- Name: build_reviews_userid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5180,3 +5187,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026060
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260610120000_comment-resolved-at.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260614202438_build-requested-reviewers.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260616120000_comment-anchor.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260620120000_pending-review-unique.js', 1, NOW());

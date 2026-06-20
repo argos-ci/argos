@@ -11,15 +11,21 @@ import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
 import { Tooltip } from "@/ui/Tooltip";
+import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 import { getErrorMessage } from "@/util/error";
 
 import { useBuildDiffState } from "../BuildDiffState";
+import {
+  ReviewCommentSubmitButton,
+  useCanAddToReview,
+} from "../ReviewCommentSubmitButton";
 import { useMentionableUsers } from "./MentionableUsersContext";
 import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";
 
 const _BuildFragment = graphql(`
   fragment AddCommentForm_Build on Build {
     id
+    ...ReviewCommentSubmitButton_Build
   }
 `);
 
@@ -102,6 +108,8 @@ export function AddCommentForm(props: {
   // the view.
   const [detached, setDetached] = useState(false);
   const attachedDiff = detached ? null : activeDiff;
+  const canAddToReview = useCanAddToReview(build);
+  const altHeld = useAltKeyHeld();
   const [addBuildComment] = useMutation(AddBuildCommentMutation);
   const handleSubmit = async (body: EditorValue) => {
     try {
@@ -110,6 +118,7 @@ export function AddCommentForm(props: {
           input: {
             buildId: build.id,
             body,
+            addToReview: canAddToReview && !altHeld,
             ...(attachedDiff ? { screenshotDiffId: attachedDiff.id } : null),
           },
           accountSlug: projectParams.accountSlug,
@@ -135,6 +144,17 @@ export function AddCommentForm(props: {
         description: "Please add a comment before submitting.",
       }}
       aria-label="Add a comment"
+      renderSubmit={({ submit, isEmpty, isPending, disabled }) => (
+        <ReviewCommentSubmitButton
+          canAddToReview={canAddToReview}
+          altHeld={altHeld}
+          fallbackLabel="Submit the comment"
+          isEmpty={isEmpty}
+          isPending={isPending}
+          disabled={disabled}
+          onPress={submit}
+        />
+      )}
       footerStart={
         activeDiff ? (
           <AttachedSnapshotToggle

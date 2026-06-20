@@ -1,13 +1,11 @@
 import { useId, useState } from "react";
-import { ArrowUpIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
-import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { hasEditorContent } from "@/ui/Editor/util";
-import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
-import { IconButton } from "@/ui/IconButton";
+import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
+import { ReviewCommentSubmitButton } from "../ReviewCommentSubmitButton";
 import { useMentionableUsers } from "../sidebar/MentionableUsersContext";
 import { CommentPopoverFrame } from "./CommentPopoverFrame";
 import type { ScreenPoint } from "./geometry";
@@ -21,10 +19,15 @@ import type { ScreenPoint } from "./geometry";
  */
 export function CommentDraftPopover(props: {
   point: ScreenPoint;
-  onSubmit: (body: EditorValue) => Promise<void>;
+  canAddToReview: boolean;
+  onSubmit: (
+    body: EditorValue,
+    options: { addToReview: boolean },
+  ) => Promise<void>;
 }) {
-  const { point, onSubmit } = props;
+  const { point, canAddToReview, onSubmit } = props;
   const mentions = useMentionableUsers();
+  const altHeld = useAltKeyHeld();
   const [value, setValue] = useState<EditorValue>(null);
   // Remounts the editor to clear it after a successful submit.
   const [editorKey, setEditorKey] = useState(0);
@@ -44,7 +47,7 @@ export function CommentDraftPopover(props: {
       return;
     }
     setIsPending(true);
-    onSubmit(value)
+    onSubmit(value, { addToReview: canAddToReview && !altHeld })
       .then(() => {
         setValue(null);
         setEditorKey((key) => key + 1);
@@ -82,24 +85,15 @@ export function CommentDraftPopover(props: {
           className="min-w-0 flex-1 px-1.5 text-sm"
           contentClassName="max-h-32 min-h-6 overflow-y-auto py-0.5"
         />
-        <HotkeyTooltip
-          description="Submit the comment"
-          keys={[MOD, "Enter"]}
-          placement="top"
-        >
-          <IconButton
-            variant="contained"
-            size="small"
-            rounded
-            aria-label="Submit the comment"
-            aria-disabled={isEmpty}
-            isDisabled={isPending}
-            onPress={submit}
-            className="shrink-0"
-          >
-            <ArrowUpIcon />
-          </IconButton>
-        </HotkeyTooltip>
+        <ReviewCommentSubmitButton
+          canAddToReview={canAddToReview}
+          altHeld={altHeld}
+          fallbackLabel="Submit the comment"
+          isEmpty={isEmpty}
+          isPending={isPending}
+          onPress={submit}
+          className="shrink-0"
+        />
       </div>
     </CommentPopoverFrame>
   );

@@ -30,6 +30,7 @@ import { type EditorValue } from "@/ui/Editor/Editor";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
+import { useCanAddToReview } from "../ReviewCommentSubmitButton";
 import { getCommentThreads } from "../sidebar/commentThreads";
 import { MentionableUsersProvider } from "../sidebar/MentionableUsersContext";
 import { CommentDraftPopover } from "./CommentDraftPopover";
@@ -53,6 +54,7 @@ const _BuildFragment = graphql(`
     comments {
       ...CommentCard_Comment
     }
+    ...ReviewCommentSubmitButton_Build
   }
 `);
 
@@ -121,6 +123,7 @@ export function ScreenshotCommentLayer(props: {
   const visible = useAtomValue(commentsVisibleAtom);
   const permissions = use(ProjectPermissionsContext);
   const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
+  const canAddToReview = useCanAddToReview(build);
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
   const accountId = useAuthTokenPayload()?.account.id;
@@ -312,7 +315,7 @@ export function ScreenshotCommentLayer(props: {
   };
 
   const handleCreate = useCallback(
-    async (body: EditorValue) => {
+    async (body: EditorValue, options: { addToReview: boolean }) => {
       if (!draft) {
         return;
       }
@@ -325,6 +328,7 @@ export function ScreenshotCommentLayer(props: {
               screenshotDiffId,
               anchor: { point: { x: draft.x, y: draft.y } },
               body,
+              addToReview: options.addToReview,
             },
             accountSlug,
             projectName,
@@ -424,6 +428,7 @@ export function ScreenshotCommentLayer(props: {
       {draftShown ? (
         <CommentDraftPopover
           point={toViewport(toScreen(draft))}
+          canAddToReview={canAddToReview}
           onSubmit={handleCreate}
         />
       ) : null}
