@@ -32,6 +32,7 @@ function createTokenlessBearer(authData: {
   repository: string;
   jobId: string;
   runId: string;
+  project?: string;
 }) {
   const payload = Buffer.from(JSON.stringify(authData)).toString("base64");
   return `tokenless-github-${payload}`;
@@ -218,5 +219,114 @@ describe("exchangeGitHubActionsTokenlessToken", () => {
           "GitHub Actions workflow run does not match branch.",
         );
       });
+  });
+
+  describe("when multiple projects are linked to the GitHub repository", () => {
+    async function createRepositoryWithProjects() {
+      const account = await factory.GithubAccount.create({
+        githubId: 456,
+        login: "argos-ci",
+        type: "organization",
+      });
+      const repository = await factory.GithubRepository.create({
+        githubAccountId: account.id,
+        githubId: 123,
+        name: "argos",
+      });
+      const installation = await factory.GithubInstallation.create({
+        githubId: 789,
+      });
+      await factory.GithubRepositoryInstallation.create({
+        githubRepositoryId: repository.id,
+        githubInstallationId: installation.id,
+      });
+
+      const teamA = await factory.TeamAccount.create({ slug: "team-a" });
+      const teamB = await factory.TeamAccount.create({ slug: "team-b" });
+
+      const projectA = await factory.Project.create({
+        name: "project-a",
+        accountId: teamA.id,
+        tokenlessAuthEnabled: true,
+        githubRepositoryId: repository.id,
+      });
+      const projectB = await factory.Project.create({
+        name: "project-b",
+        accountId: teamB.id,
+        tokenlessAuthEnabled: true,
+        githubRepositoryId: repository.id,
+      });
+
+      return { projectA, projectB };
+    }
+
+    test("rejects when no project slug is provided", async () => {
+      await setupDatabase();
+      await createRepositoryWithProjects();
+      mockWorkflowRun({});
+
+      const bearer = createTokenlessBearer({
+        owner: "argos-ci",
+        repository: "argos",
+        jobId: "1",
+        runId: "42",
+      });
+
+      await request(app)
+        .post("/auth/github-actions/tokenless/exchange")
+        .send({ tokenlessToken: bearer, commit: commitSha, branch })
+        .expect(400)
+        .expect((res) => {
+          expect(res.body.error).toBe(
+            `Multiple projects found for GitHub repository (token: "${bearer}"). Please specify a project slug or a project token.`,
+          );
+        });
+    });
+
+    test("resolves the project matching the provided slug", async () => {
+      await setupDatabase();
+      const { projectB } = await createRepositoryWithProjects();
+      mockWorkflowRun({});
+
+      const bearer = createTokenlessBearer({
+        owner: "argos-ci",
+        repository: "argos",
+        jobId: "1",
+        runId: "42",
+        project: "team-b/project-b",
+      });
+
+      const res = await request(app)
+        .post("/auth/github-actions/tokenless/exchange")
+        .send({ tokenlessToken: bearer, commit: commitSha, branch })
+        .expect(200);
+
+      const auth = await getAuthProjectPayloadFromBearerToken(res.body.token);
+      expect(auth.project.id).toBe(projectB.id);
+    });
+
+    test("rejects when the provided slug does not match any linked project", async () => {
+      await setupDatabase();
+      await createRepositoryWithProjects();
+      mockWorkflowRun({});
+
+      const bearer = createTokenlessBearer({
+        owner: "argos-ci",
+        repository: "argos",
+        jobId: "1",
+        runId: "42",
+        project: "team-a/unknown",
+      });
+
+      await request(app)
+        .post("/auth/github-actions/tokenless/exchange")
+        .send({ tokenlessToken: bearer, commit: commitSha, branch })
+        .expect(400)
+        .expect((res) => {
+          expect(res.body.error).toBe(
+            `Project "team-a/unknown" not found for GitHub repository (token: "${bearer}"). Ensure the project slug matches an Argos project linked to this repository.`,
+          );
+        });
+    });
   });
 });

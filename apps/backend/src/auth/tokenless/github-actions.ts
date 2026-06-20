@@ -13,6 +13,11 @@ const AuthTokenPayloadSchema = z.object({
   repository: z.string(),
   jobId: z.string(),
   runId: z.string(),
+  /**
+   * Optional Argos project slug ("account/project-name") used to disambiguate
+   * when several projects are linked to the same GitHub repository.
+   */
+  project: z.string().optional(),
 });
 
 /**
@@ -29,6 +34,15 @@ function decodeToken(bearerToken: string, marker: string) {
   } catch {
     throw boom(401, `Invalid token (token: "${bearerToken}")`);
   }
+}
+
+/**
+ * Compute the slug ("account/project-name") of a project. Requires the
+ * `account` relation to be fetched.
+ */
+function getProjectSlug(project: Project): string {
+  invariant(project.account, "account is not fetched");
+  return `${project.account.slug}/${project.name}`;
 }
 
 type TokenlessGitHubActionsRun = {
@@ -53,7 +67,7 @@ export async function resolveTokenlessGitHubActionsContext(
 
   const repository = await GithubRepository.query()
     .joinRelated("githubAccount")
-    .withGraphJoined("[repoInstallations.installation, projects]")
+    .withGraphJoined("[repoInstallations.installation, projects.account]")
     .where("githubAccount.login", authData.owner)
     .findOne("github_repositories.name", authData.repository)
     .orderBy("github_repositories.updatedAt", "desc")
@@ -69,11 +83,34 @@ export async function resolveTokenlessGitHubActionsContext(
     return null;
   }
 
-  if (repository.projects.length > 1) {
-    throw boom(
-      400,
-      `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a Project token.`,
+  let project: Project;
+
+  if (authData.project) {
+    // A project slug was provided: pick the matching project. This is what lets
+    // a repository with several linked projects authenticate tokenless-ly.
+    const matching = repository.projects.find(
+      (candidate) => getProjectSlug(candidate) === authData.project,
     );
+
+    if (!matching) {
+      throw boom(
+        400,
+        `Project "${authData.project}" not found for GitHub repository (token: "${bearerToken}"). Ensure the project slug matches an Argos project linked to this repository.`,
+      );
+    }
+
+    project = matching;
+  } else {
+    // No project slug: keep the legacy behavior and reject when the repository
+    // is linked to more than one project, since we cannot disambiguate.
+    if (repository.projects.length > 1) {
+      throw boom(
+        400,
+        `Multiple projects found for GitHub repository (token: "${bearerToken}"). Please specify a project slug or a project token.`,
+      );
+    }
+
+    project = repository.projects[0];
   }
 
   const installation = GithubRepository.pickBestInstallation(repository);
@@ -129,7 +166,7 @@ export async function resolveTokenlessGitHubActionsContext(
   }
 
   return {
-    project: repository.projects[0],
+    project,
     run: {
       status: githubRun.data.status,
       head_sha: githubRun.data.head_sha,
