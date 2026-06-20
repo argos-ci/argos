@@ -21,6 +21,15 @@ export const commentsVisibleAtom = atomWithStorage<boolean>(
 );
 
 /**
+ * A one-shot request to open a point-anchored comment's thread on the changes
+ * image, carrying the thread root's comment id. Set when jumping to a comment
+ * from outside the viewer (the sidebar's "Go to this snapshot"); the screenshot
+ * layer consumes it — opening the matching marker's thread, then resetting it to
+ * null — once that comment's diff is shown. Null when there's nothing to open.
+ */
+export const requestedScreenshotCommentIdAtom = atom<string | null>(null);
+
+/**
  * Comment-tool state with its cross-field invariants in one place: picking the
  * Comment tool always reveals comments, and hiding comments always drops back to
  * the Hand tool — you can't place a comment you can't see.

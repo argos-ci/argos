@@ -9,13 +9,14 @@ import {
 } from "react";
 import { useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { useAtomValue } from "jotai/react";
+import { useAtom, useAtomValue } from "jotai/react";
 import { toast } from "sonner";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
 import {
   commentsVisibleAtom,
   commentToolModeAtom,
+  requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
 import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
@@ -150,6 +151,30 @@ export function ScreenshotCommentLayer(props: {
     () => threads.find((thread) => thread.root.id === openThreadId) ?? null,
     [threads, openThreadId],
   );
+
+  // Honor a request to open a specific thread, set when jumping to a comment
+  // from outside the viewer (the sidebar's "Go to this snapshot"). Once the
+  // requested comment is one of this diff's threads — which happens after
+  // navigating to its diff — open it and clear the request. Any in-progress
+  // draft is dropped so the thread, not a half-placed pin, is shown.
+  const [requestedCommentId, setRequestedCommentId] = useAtom(
+    requestedScreenshotCommentIdAtom,
+  );
+  useEffect(() => {
+    if (!requestedCommentId) {
+      return;
+    }
+    const requested = threads.find(
+      (thread) => thread.root.id === requestedCommentId,
+    );
+    if (requested) {
+      setRequestedCommentId(null);
+      // Move the external open request into this layer's local state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDraft(null);
+      setOpenThreadId(requestedCommentId);
+    }
+  }, [requestedCommentId, threads, setRequestedCommentId]);
 
   const mentionUsers = useMemo(
     () => build.members.map(getMentionUser),
@@ -380,6 +405,10 @@ export function ScreenshotCommentLayer(props: {
       openThread &&
       openThread.root.anchor?.__typename === "CommentPointAnchor" ? (
         <CommentThreadPopover
+          // Remount per thread so the reply composer re-runs its autofocus and
+          // reads its own draft when switching directly between markers (the
+          // popover stays mounted across that switch).
+          key={openThread.root.id}
           point={toViewport(
             toScreen({
               x: openThread.root.anchor.x,
