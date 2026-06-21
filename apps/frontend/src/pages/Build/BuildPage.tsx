@@ -14,6 +14,7 @@ import { BuildReviewStateProvider } from "./BuildReviewState";
 import { BuildWorkspace } from "./BuildWorkspace";
 import { BuildHeader } from "./header/BuildHeader";
 import { OvercapacityBanner } from "./OvercapacityBanner";
+import { RejectCommentDialogProvider } from "./RejectCommentDialog";
 
 const ProjectQuery = graphql(`
   query BuildPage_Project(
@@ -38,6 +39,7 @@ const ProjectQuery = graphql(`
         ...BuildHeader_Build
         ...BuildWorkspace_Build
         ...BuildDiffState_Build
+        ...RejectCommentDialog_Build
       }
     }
   }
@@ -87,31 +89,33 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
       >
         <BuildDiffProvider params={params} build={build}>
           <BuildReviewDialogProvider project={data?.project ?? null}>
-            <div className="flex h-screen min-h-0 flex-col">
-              {data?.project?.account && (
-                <>
-                  <PaymentBanner account={data.project.account} />
-                  <OvercapacityBanner
-                    account={data.project.account}
-                    accountSlug={params.accountSlug}
-                  />
-                </>
-              )}
-              <BuildHeader
-                buildNumber={params.buildNumber}
-                accountSlug={params.accountSlug}
-                projectName={params.projectName}
-                build={build}
-                project={data?.project ?? null}
-              />
-              {project && build ? (
-                <BuildWorkspace
-                  params={params}
+            <RejectCommentDialogProvider build={build}>
+              <div className="flex h-screen min-h-0 flex-col">
+                {data?.project?.account && (
+                  <>
+                    <PaymentBanner account={data.project.account} />
+                    <OvercapacityBanner
+                      account={data.project.account}
+                      accountSlug={params.accountSlug}
+                    />
+                  </>
+                )}
+                <BuildHeader
+                  buildNumber={params.buildNumber}
+                  accountSlug={params.accountSlug}
+                  projectName={params.projectName}
                   build={build}
-                  project={project}
+                  project={data?.project ?? null}
                 />
-              ) : null}
-            </div>
+                {project && build ? (
+                  <BuildWorkspace
+                    params={params}
+                    build={build}
+                    project={project}
+                  />
+                ) : null}
+              </div>
+            </RejectCommentDialogProvider>
           </BuildReviewDialogProvider>
         </BuildDiffProvider>
       </BuildReviewStateProvider>

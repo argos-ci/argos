@@ -1,11 +1,15 @@
 import { invariant } from "@argos/util/invariant";
 
-import { Build, Comment, Project, User } from "@/database/models";
+import { Build, BuildReview, Comment, Project, User } from "@/database/models";
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
 
+import { publishCommentChange } from "./commentEvents";
 import { formatCommentId } from "./id";
-import { renderCommentHtmlWithMentions } from "./mentions";
+import {
+  getCommentMentionedUserIds,
+  renderCommentHtmlWithMentions,
+} from "./mentions";
 
 /**
  * Build the data shared by every comment notification email (author name and
@@ -70,4 +74,43 @@ export async function notifyMentionedUsers(input: {
     userId,
   });
   await sendNotification({ type: "comment_mention", data, recipients });
+}
+
+/**
+ * Called when a review leaves the `pending` state: its draft comments become
+ * visible to everyone. Broadcast each comment so other clients' activity feeds
+ * populate, and send the mention notifications that were deferred while the
+ * comments were drafts. We deliberately do NOT send `comment_added` here — the
+ * review submission notification already covers the build subscribers.
+ */
+export async function notifyReviewCommentsWentLive(input: {
+  build: Build;
+  project: Project;
+  review: BuildReview;
+}): Promise<void> {
+  const { build, project, review } = input;
+  const comments = await review
+    .$relatedQuery("comments")
+    .whereNull("deletedAt")
+    .orderBy("createdAt", "asc");
+  if (comments.length === 0) {
+    return;
+  }
+  await Promise.all(
+    comments.map(async (comment) => {
+      invariant(comment.userId, "comment should have a userId");
+      const mentionedUserIds = await getCommentMentionedUserIds(comment.id);
+      await Promise.all([
+        publishCommentChange({ buildId: build.id, type: "ADDED", comment }),
+        notifyMentionedUsers({
+          build,
+          project,
+          comment,
+          userId: comment.userId,
+          mentionedUserIds,
+          threadId: comment.threadId ?? comment.id,
+        }),
+      ]);
+    }),
+  );
 }

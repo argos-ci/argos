@@ -732,31 +732,54 @@ function createGhApiInstallationLoader() {
   );
 }
 
+/**
+ * Loads the comments visible to a given viewer on a build. A comment is visible
+ * when it is standalone (no review), belongs to a submitted review, or belongs
+ * to the viewer's own pending (draft) review — draft comments stay hidden from
+ * everyone but their author until the review is submitted.
+ */
 function createBuildPublishedCommentsLoader() {
-  return new DataLoader<string, Comment[]>(async (inputs) => {
-    const comments = await Comment.query()
-      .whereIn("buildId", inputs as string[])
-      .whereNull("deletedAt")
-      .where((qb) => {
-        qb.whereNull("buildReviewId").orWhereExists(
-          BuildReview.query()
-            .select(1)
-            .whereColumn("build_reviews.id", "comments.buildReviewId")
-            .whereNot("build_reviews.state", "pending"),
-        );
-      })
-      .orderBy("createdAt", "asc");
-    const commentsMap = comments.reduce<Record<string, Comment[]>>(
-      (map, comment) => {
-        const array = map[comment.buildId] ?? [];
-        array.push(comment);
-        map[comment.buildId] = array;
-        return map;
-      },
-      {},
-    );
-    return inputs.map((id) => commentsMap[id] ?? []);
-  });
+  return new DataLoader<
+    { buildId: string; viewerUserId: string | null },
+    Comment[],
+    string
+  >(
+    async (inputs) => {
+      const buildIds = inputs.map((input) => input.buildId);
+      // A single request carries one viewer, so all inputs share it.
+      const viewerUserId = inputs[0]?.viewerUserId ?? null;
+      const comments = await Comment.query()
+        .whereIn("buildId", buildIds)
+        .whereNull("deletedAt")
+        .where((qb) => {
+          qb.whereNull("buildReviewId").orWhereExists(
+            BuildReview.query()
+              .select(1)
+              .whereColumn("build_reviews.id", "comments.buildReviewId")
+              .where((sub) => {
+                sub.whereNot("build_reviews.state", "pending");
+                if (viewerUserId) {
+                  sub.orWhere("build_reviews.userId", viewerUserId);
+                }
+              }),
+          );
+        })
+        .orderBy("createdAt", "asc");
+      const commentsMap = comments.reduce<Record<string, Comment[]>>(
+        (map, comment) => {
+          const array = map[comment.buildId] ?? [];
+          array.push(comment);
+          map[comment.buildId] = array;
+          return map;
+        },
+        {},
+      );
+      return inputs.map((input) => commentsMap[input.buildId] ?? []);
+    },
+    {
+      cacheKeyFn: (input) => `${input.buildId}:${input.viewerUserId ?? ""}`,
+    },
+  );
 }
 
 function createCommentReactionsLoader() {
@@ -1333,6 +1356,7 @@ export const createLoaders = () => ({
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
   CommentReactions: createCommentReactionsLoader(),
   CommentMentionedUserIds: createCommentMentionedUserIdsLoader(),
+  BuildReview: createModelLoader(BuildReview),
   BuildReviews: createBuildReviewsLoader(),
   BuildRequestedReviewers: createBuildRequestedReviewersLoader(),
   DeploymentAliasesByDeploymentId:

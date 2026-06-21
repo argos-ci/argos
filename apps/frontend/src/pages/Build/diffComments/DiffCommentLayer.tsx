@@ -20,6 +20,7 @@ import { type EditorValue } from "@/ui/Editor/Editor";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
+import { useCanAddToReview } from "../ReviewCommentSubmitButton";
 import { CommentCard } from "../sidebar/CommentCard";
 import {
   getCommentThreads,
@@ -38,6 +39,7 @@ const _BuildFragment = graphql(`
     comments {
       ...CommentCard_Comment
     }
+    ...ReviewCommentSubmitButton_Build
   }
 `);
 
@@ -105,6 +107,7 @@ export function DiffCommentLayer(props: {
   const visible = useAtomValue(commentsVisibleAtom);
   const permissions = use(ProjectPermissionsContext);
   const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
+  const canAddToReview = useCanAddToReview(build);
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
   const accountId = useAuthTokenPayload()?.account.id;
@@ -200,7 +203,7 @@ export function DiffCommentLayer(props: {
   }, [threads, activeDraft, visible]);
 
   const handleCreate = useCallback(
-    async (body: EditorValue) => {
+    async (body: EditorValue, options: { addToReview: boolean }) => {
       if (!draft) {
         return;
       }
@@ -212,6 +215,7 @@ export function DiffCommentLayer(props: {
               screenshotDiffId,
               anchor: { lines: { from: draft.from, to: draft.to } },
               body,
+              addToReview: options.addToReview,
             },
             accountSlug,
             projectName,
@@ -263,6 +267,7 @@ export function DiffCommentLayer(props: {
           {draftRange ? (
             <DiffCommentDraft
               avatar={currentAvatar}
+              canAddToReview={canAddToReview}
               onSubmit={handleCreate}
               onCancel={closeDraft}
             />
@@ -270,7 +275,14 @@ export function DiffCommentLayer(props: {
         </div>
       );
     },
-    [build.id, canComment, currentAvatar, handleCreate, closeDraft],
+    [
+      build.id,
+      canComment,
+      canAddToReview,
+      currentAvatar,
+      handleCreate,
+      closeDraft,
+    ],
   );
 
   const onGutterUtilityClick = useCallback((range: SelectedLineRange) => {

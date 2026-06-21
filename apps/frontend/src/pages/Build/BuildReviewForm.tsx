@@ -26,6 +26,7 @@ import {
   BUILD_REVIEW_EVENT_DEFINITIONS,
   ReviewEventRadioVariant,
 } from "./BuildReviewEvents";
+import { PendingCommentsSection } from "./PendingCommentsSection";
 
 const _BuildFragment = graphql(`
   fragment BuildReviewForm_Build on Build {
@@ -34,6 +35,7 @@ const _BuildFragment = graphql(`
       ...UserCard_user
     }
     ...BuildReviewAction_Build
+    ...PendingCommentsSection_Build
   }
 `);
 
@@ -104,6 +106,7 @@ export function BuildReviewForm(props: {
       <DialogBody>
         <DialogTitle>Review changes</DialogTitle>
         <div className="flex flex-col gap-4">
+          <PendingCommentsSection build={build} />
           <div>
             <Label>
               Add a comment{" "}

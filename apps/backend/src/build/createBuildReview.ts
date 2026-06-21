@@ -7,6 +7,7 @@ import type { JSONContent } from "@tiptap/core";
 
 import { triggerAndRunAutomation } from "@/automation";
 import { pushBuildNotification } from "@/build-notification/notifications";
+import { notifyReviewCommentsWentLive } from "@/comment/commentNotifications";
 import { renderCommentHtmlWithMentions } from "@/comment/mentions";
 import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import type { BuildNotification } from "@/database/models";
@@ -26,6 +27,7 @@ import { transaction } from "@/database/transaction";
 import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
+import { getViewerPendingReview } from "./pendingReview";
 import { publishReviewChange } from "./reviewEvents";
 
 export type ReviewState = "approved" | "rejected" | "commented" | "pending";
@@ -92,35 +94,46 @@ export async function createBuildReview(input: {
 
   const state = getReviewStateFromEvent(event);
 
-  const { buildReview, comment } = await transaction(async (trx) => {
-    const buildReview = await BuildReview.query(trx).insert({
-      buildId: build.id,
-      userId,
-      state,
-    });
-
-    if (snapshotReviews.length > 0) {
-      await ScreenshotDiffReview.query(trx).insert(
-        snapshotReviews.map((snapshotReview) => ({
-          screenshotDiffId: snapshotReview.screenshotDiffId,
-          buildReviewId: buildReview.id,
-          state: snapshotReview.state,
-        })),
-      );
-    }
-
-    const comment =
-      body != null
-        ? await Comment.query(trx).insert({
-            userId,
+  const { buildReview, comment, hadPendingReview } = await transaction(
+    async (trx) => {
+      // Reuse the user's pending (draft) review if they have one, so the draft
+      // comments they added are submitted together; otherwise open a fresh one.
+      const pendingReview = await getViewerPendingReview({
+        buildId: build.id,
+        userId,
+        trx,
+      });
+      const buildReview = pendingReview
+        ? await pendingReview.$query(trx).patchAndFetch({ state })
+        : await BuildReview.query(trx).insert({
             buildId: build.id,
-            buildReviewId: buildReview.id,
-            content: body,
-          })
-        : null;
+            userId,
+            state,
+          });
 
-    return { buildReview, comment };
-  });
+      if (snapshotReviews.length > 0) {
+        await ScreenshotDiffReview.query(trx).insert(
+          snapshotReviews.map((snapshotReview) => ({
+            screenshotDiffId: snapshotReview.screenshotDiffId,
+            buildReviewId: buildReview.id,
+            state: snapshotReview.state,
+          })),
+        );
+      }
+
+      const comment =
+        body != null
+          ? await Comment.query(trx).insert({
+              userId,
+              buildId: build.id,
+              buildReviewId: buildReview.id,
+              content: body,
+            })
+          : null;
+
+      return { buildReview, comment, hadPendingReview: Boolean(pendingReview) };
+    },
+  );
 
   if (comment) {
     await subscribeUserToCommentThread({ commentId: comment.id, userId });
@@ -133,6 +146,22 @@ export async function createBuildReview(input: {
     compareScreenshotBucket,
     `Compare screenshot bucket not found for build: ${build.id}`,
   );
+
+  // When the submitted review was the user's pending draft, its draft comments
+  // become visible now: broadcast them and send their deferred mention
+  // notifications. A fresh review has no draft comments to promote.
+  let goLivePromise: Promise<void> = Promise.resolve();
+  if (hadPendingReview) {
+    const project = await build
+      .$relatedQuery("project")
+      .withGraphFetched("account");
+    invariant(project, "project not found");
+    goLivePromise = notifyReviewCommentsWentLive({
+      build,
+      project,
+      review: buildReview,
+    });
+  }
   const [status] = await Build.getAggregatedBuildStatuses([build]);
   invariant(status, `Build status not found for build: ${build.id}`);
   const notificationType = getBuildNotificationType(status);
@@ -153,9 +182,10 @@ export async function createBuildReview(input: {
     }),
     autoSubscribeUserToBuild({ buildId: build.id, userId }),
     notifyBuildSubscribers({ build, buildReview, comment }),
+    goLivePromise,
     // Notify clients watching this build so the review appears live in the
-    // activity feed. Reviews created here are never pending, so they always
-    // belong in the feed.
+    // activity feed. The review is now submitted (not pending), so it belongs
+    // in the feed.
     publishReviewChange({
       buildId: build.id,
       type: "SUBMITTED",

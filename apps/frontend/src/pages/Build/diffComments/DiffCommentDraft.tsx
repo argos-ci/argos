@@ -1,12 +1,14 @@
 import { useId, useState } from "react";
+import { MessageSquarePlusIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
-import { Button } from "@/ui/Button";
+import { Button, ButtonIcon } from "@/ui/Button";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
 import { useMentionableUsers } from "../sidebar/MentionableUsersContext";
 
@@ -22,15 +24,26 @@ type Avatar = React.ComponentProps<typeof AccountAvatar>["avatar"];
  */
 export function DiffCommentDraft(props: {
   avatar: Avatar | null;
-  onSubmit: (body: EditorValue) => Promise<void>;
+  canAddToReview: boolean;
+  onSubmit: (
+    body: EditorValue,
+    options: { addToReview: boolean },
+  ) => Promise<void>;
   onCancel: () => void;
 }) {
-  const { avatar, onSubmit, onCancel } = props;
+  const { avatar, canAddToReview, onSubmit, onCancel } = props;
   const mentions = useMentionableUsers();
+  const altHeld = useAltKeyHeld();
   const [value, setValue] = useState<EditorValue>(null);
   const [isPending, setIsPending] = useState(false);
   const emptyToastId = useId();
   const isEmpty = !hasEditorContent(value);
+  const reviewMode = canAddToReview && !altHeld;
+  const submitLabel = !canAddToReview
+    ? "Add comment"
+    : reviewMode
+      ? "Add to review"
+      : "Post comment";
 
   const submit = () => {
     if (isPending) {
@@ -44,7 +57,7 @@ export function DiffCommentDraft(props: {
       return;
     }
     setIsPending(true);
-    onSubmit(value)
+    onSubmit(value, { addToReview: canAddToReview && !altHeld })
       .catch(() => {
         // Keep the content so the user can retry.
       })
@@ -87,7 +100,20 @@ export function DiffCommentDraft(props: {
             Cancel
           </Button>
           <HotkeyTooltip
-            description="Add comment"
+            description={
+              canAddToReview ? (
+                <div className="flex flex-col">
+                  <span>{submitLabel}</span>
+                  <span className="text-low">
+                    {reviewMode
+                      ? "Hold Alt to post now"
+                      : "Release Alt to draft"}
+                  </span>
+                </div>
+              ) : (
+                submitLabel
+              )
+            }
             keys={[MOD, "Enter"]}
             placement="top"
           >
@@ -101,7 +127,12 @@ export function DiffCommentDraft(props: {
               isDisabled={isPending}
               aria-disabled={isEmpty}
             >
-              Add comment
+              {reviewMode ? (
+                <ButtonIcon>
+                  <MessageSquarePlusIcon />
+                </ButtonIcon>
+              ) : null}
+              {submitLabel}
             </Button>
           </HotkeyTooltip>
         </div>

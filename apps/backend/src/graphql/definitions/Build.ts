@@ -125,7 +125,9 @@ export const typeDefs = gql`
     baseBranchResolvedFrom: BaseBranchResolution
     "Submitted build reviews"
     reviews: [BuildReview!]!
-    "Comments posted on the build that are not part of a pending review"
+    "Whether the current user has already submitted a review on this build"
+    viewerHasSubmittedReview: Boolean!
+    "Comments visible to the current user (excludes other users' pending-review drafts)"
     comments: [Comment!]!
     "Previous approved diffs from a build with the same branch"
     branchApprovedDiffs: [ID!]!
@@ -320,8 +322,23 @@ export const resolvers: IResolvers = {
     reviews: async (build, _args, ctx) => {
       return ctx.loaders.BuildReviews.load(build.id);
     },
+    viewerHasSubmittedReview: async (build, _args, ctx) => {
+      if (!ctx.auth) {
+        return false;
+      }
+      // Reuse the batched, non-pending reviews already loaded for `reviews`
+      // rather than issuing a separate count query.
+      const userId = ctx.auth.user.id;
+      const reviews = await ctx.loaders.BuildReviews.load(build.id);
+      return reviews.some(
+        (review) => review.userId === userId && !review.dismissedAt,
+      );
+    },
     comments: async (build, _args, ctx) => {
-      return ctx.loaders.BuildPublishedComments.load(build.id);
+      return ctx.loaders.BuildPublishedComments.load({
+        buildId: build.id,
+        viewerUserId: ctx.auth?.user.id ?? null,
+      });
     },
     stats: (build) => {
       return build.getStats();

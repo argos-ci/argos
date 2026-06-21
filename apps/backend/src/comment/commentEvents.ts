@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { BuildReview } from "@/database/models/BuildReview";
 import { Comment } from "@/database/models/Comment";
 import { redisPubSub } from "@/util/redis";
 
@@ -24,12 +25,28 @@ function getCommentChannel(buildId: string): string {
  * live. Only the comment row travels through Redis; relations (author,
  * mentions, reactions) are loaded per subscriber by the GraphQL field
  * resolvers from the rehydrated comment.
+ *
+ * Comments belonging to a pending (unsubmitted) review are drafts visible only
+ * to their author, so they are never broadcast — the channel reaches every
+ * build viewer and has no per-recipient filtering. Guarding here (rather than
+ * at each call site) keeps every path — edits, reactions, thread resolution,
+ * deletion — from leaking a draft. Once the review is submitted the comments
+ * are no longer pending and broadcast normally (e.g. from
+ * `notifyReviewCommentsWentLive`).
  */
 export async function publishCommentChange(input: {
   buildId: string;
   type: CommentChangeType;
   comment: Comment;
 }): Promise<void> {
+  if (input.comment.buildReviewId) {
+    const review = await BuildReview.query()
+      .findById(input.comment.buildReviewId)
+      .select("state");
+    if (review?.state === "pending") {
+      return;
+    }
+  }
   await redisPubSub.publish(getCommentChannel(input.buildId), {
     type: input.type,
     comment: input.comment.toJSON(),
