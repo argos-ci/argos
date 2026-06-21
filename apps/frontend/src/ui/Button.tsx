@@ -33,23 +33,29 @@ type ButtonOptions = {
   iconOnly?: boolean;
   /** Fully round the edges (pill shape) instead of the default rounded corners. */
   rounded?: boolean;
+  /**
+   * Show the focus ring whenever the button is focused, not only when it is
+   * `focus-visible`. Use it to make an autofocused default action visible even
+   * to pointer users, so they can see which button Enter will trigger.
+   */
+  showFocusRing?: boolean;
 };
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "data-focus-visible:ring-primary text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
   secondary:
-    "data-focus-visible:ring-default text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
+    "text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
   ghost:
-    "data-focus-visible:ring-default text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
+    "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
   destructive:
-    "data-focus-visible:ring-danger text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
   github:
-    "data-focus-visible:ring-default text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active group-[*]/button-group:not-first:border-l-white/20",
   gitlab:
-    "data-focus-visible:ring-default text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active group-[*]/button-group:not-first:border-l-white/20",
   google:
-    "data-focus-visible:ring-default text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google group-[*]/button-group:not-first:border-l-black/15",
+    "text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google group-[*]/button-group:not-first:border-l-black/15",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
@@ -59,11 +65,52 @@ const sizeClassNames: Record<ButtonSize, string> = {
 };
 
 // Keep the same vertical padding as the regular sizes so an iconOnly button
-// matches the height of a text button (e.g. when placed in a ButtonGroup).
+// matches the height of a text button (e.g. when placed in a ButtonGroup), and
+// mirror it horizontally so the button stays a perfect square around the
+// `size-[1em]` icon.
 const iconOnlySizeClassNames: Record<ButtonSize, string> = {
-  small: "py-1 px-1.5 text-xs",
-  medium: "py-[calc(0.375rem-1px)] px-2 text-sm",
-  large: "py-3 px-4 text-base",
+  small: "py-1 px-1 text-xs",
+  medium: "py-[calc(0.375rem-1px)] px-[calc(0.375rem-1px)] text-sm",
+  large: "py-3 px-3 text-base",
+};
+
+// Ring color per variant, the single source of truth for both the
+// keyboard-focus ring (`data-focus-visible`) and the always-on ring drawn by
+// `showFocusRing` (`data-focused`, e.g. an autofocused default action). Keeping
+// the two states side by side stops them from drifting apart; the values are
+// full literals so Tailwind keeps generating the classes.
+const ringClassNames: Record<
+  ButtonVariant,
+  { focusVisible: string; focused: string }
+> = {
+  primary: {
+    focusVisible: "data-focus-visible:ring-primary",
+    focused: "data-focused:ring-primary",
+  },
+  secondary: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  ghost: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  destructive: {
+    focusVisible: "data-focus-visible:ring-danger",
+    focused: "data-focused:ring-danger",
+  },
+  github: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  gitlab: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  google: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
 };
 
 // Default corner rounding per size (overridden by `rounded` for a pill shape).
@@ -78,9 +125,11 @@ function getButtonClassName(options: {
   size: ButtonSize;
   iconOnly: boolean;
   rounded: boolean;
+  showFocusRing: boolean;
 }) {
-  const { variant, size, iconOnly, rounded } = options;
+  const { variant, size, iconOnly, rounded, showFocusRing } = options;
   const variantClassName = variantClassNames[variant];
+  const ring = ringClassNames[variant];
   const sizeClassName = (iconOnly ? iconOnlySizeClassNames : sizeClassNames)[
     size
   ];
@@ -88,6 +137,8 @@ function getButtonClassName(options: {
     "group/button",
     variantClassName,
     sizeClassName,
+    ring.focusVisible,
+    showFocusRing && ["data-focused:ring-4", ring.focused],
     rounded ? "rounded-full" : roundingClassNames[size],
     // ButtonGroup integration: drop the inner rounded corners and overlap
     // adjacent borders so each variant's `border-l-*` acts as the separator.
@@ -108,9 +159,16 @@ function getButtonProps(options: ButtonOptions) {
     size = "medium",
     iconOnly = false,
     rounded = false,
+    showFocusRing = false,
   } = options;
   return {
-    className: getButtonClassName({ variant, size, iconOnly, rounded }),
+    className: getButtonClassName({
+      variant,
+      size,
+      iconOnly,
+      rounded,
+      showFocusRing,
+    }),
     "data-size": size ?? "medium",
     "data-icon-only": iconOnly ? "true" : undefined,
   };
@@ -143,12 +201,19 @@ export function Button({
   size,
   iconOnly,
   rounded,
+  showFocusRing,
   children,
   onAction,
   onPress,
   ...props
 }: ButtonProps) {
-  const buttonProps = getButtonProps({ variant, size, iconOnly, rounded });
+  const buttonProps = getButtonProps({
+    variant,
+    size,
+    iconOnly,
+    rounded,
+    showFocusRing,
+  });
   const [isPending, setIsPending] = useState(false);
   return (
     <RACButton
@@ -203,9 +268,16 @@ export function LinkButton({
   size,
   iconOnly,
   rounded,
+  showFocusRing,
   ...props
 }: LinkButtonProps) {
-  const buttonProps = getButtonProps({ variant, size, iconOnly, rounded });
+  const buttonProps = getButtonProps({
+    variant,
+    size,
+    iconOnly,
+    rounded,
+    showFocusRing,
+  });
   return (
     <RACLink
       ref={ref}

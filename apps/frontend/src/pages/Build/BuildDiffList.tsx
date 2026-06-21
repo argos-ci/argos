@@ -22,15 +22,14 @@ import {
   SquareStackIcon,
 } from "lucide-react";
 import memoize from "memoize";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Heading,
   Button as RACButton,
   ButtonProps as RACButtonProps,
-  Tooltip as RACTooltip,
-  TooltipProps as RACTooltipProps,
   Text,
-  TooltipTrigger,
 } from "react-aria-components";
+import { createPortal } from "react-dom";
 
 import {
   checkIsDiffGroupName,
@@ -53,7 +52,7 @@ import { Badge } from "@/ui/Badge";
 import { Button, ButtonIcon, ButtonProps } from "@/ui/Button";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { EmptyState, EmptyStateIcon } from "@/ui/Layout";
-import { getTooltipAnimationClassName, Tooltip } from "@/ui/Tooltip";
+import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
 
@@ -604,40 +603,94 @@ const ListItem = memo(function ListItem(props: {
           style={{ top: 8, left: 16 }}
         />
       )}
+      {button}
       {isEvaluated && item.diff ? (
-        <TooltipTrigger delay={0} closeDelay={0} isOpen={isHovered}>
-          {button}
-          <DiffTooltip status={status} diff={item.diff} triggerRef={ref} />
-        </TooltipTrigger>
-      ) : (
-        button
-      )}
+        <DiffPreview
+          status={status}
+          diff={item.diff}
+          triggerRef={ref}
+          open={isHovered}
+        />
+      ) : null}
     </div>
   );
 });
 
-function DiffTooltip(props: {
+/**
+ * Hover preview of an evaluated (accepted/rejected) diff. These rows are
+ * collapsed in the list, so we float a full-size card to their right.
+ *
+ * We deliberately avoid react-aria's `Tooltip`: it registers a global
+ * capture-phase `keydown` listener that calls `stopPropagation()` on Escape to
+ * dismiss itself. Since this preview is controlled (`isOpen`), that close is a
+ * no-op but the `stopPropagation()` still fires, swallowing Escape for every
+ * open modal while a preview is shown.
+ *
+ * The preview is portaled to `document.body` because the list rows live inside
+ * an `overflow-y-auto` container with `translateY` transforms, which would both
+ * clip the card and break `position: fixed` positioning.
+ */
+function DiffPreview(props: {
   diff: Diff;
   status: EvaluationStatus;
-  triggerRef: RACTooltipProps["triggerRef"];
+  triggerRef: React.RefObject<HTMLElement | null>;
+  open: boolean;
 }) {
-  const { diff } = props;
-  return (
-    <RACTooltip
-      triggerRef={props.triggerRef}
-      placement="right top"
-      offset={8}
-      className={(props) =>
-        clsx(
-          "z-hover-card! pointer-events-none w-60",
-          getTooltipAnimationClassName(props),
-        )
+  const { diff, status, triggerRef, open } = props;
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  // Anchor to the trigger while open, and keep it anchored as the list scrolls
+  // or the window resizes (the card is `position: fixed`, so a moving trigger
+  // would otherwise leave it stranded). We keep the last position during the
+  // exit animation, so the card fades out where it was shown.
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    const update = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) {
+        return;
       }
-    >
-      <StatusDiffCard isActive={false} status={props.status}>
-        <DiffImage diff={diff} config={DIFF_IMAGE_CONFIG} />
-      </StatusDiffCard>
-    </RACTooltip>
+      const rect = trigger.getBoundingClientRect();
+      setPosition({ top: rect.top, left: rect.right + 8 });
+    };
+    update();
+    // Capture phase so scrolls on the ancestor list container are caught too.
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open, triggerRef]);
+
+  return createPortal(
+    <AnimatePresence>
+      {open && position ? (
+        <motion.div
+          key="diff-preview"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          style={{
+            top: position.top,
+            left: position.left,
+            transformOrigin: "top left",
+          }}
+          className="z-hover-card pointer-events-none fixed w-60"
+        >
+          <StatusDiffCard isActive={false} status={status}>
+            <DiffImage diff={diff} config={DIFF_IMAGE_CONFIG} />
+          </StatusDiffCard>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>,
+    document.body,
   );
 }
 

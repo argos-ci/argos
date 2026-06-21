@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect } from "react";
 import clsx from "clsx";
 import { XIcon } from "lucide-react";
 
@@ -264,6 +264,136 @@ function checkIsModifiedPressed(event: KeyboardEvent) {
   return event.ctrlKey;
 }
 
+type HotkeyOptions = {
+  preventDefault: boolean;
+  enabled: boolean;
+  allowInInput: boolean;
+};
+
+type HotkeyRegistration = {
+  hotkey: Hotkey;
+  /** Live ref so callback/options updates don't require re-registering. */
+  ref: React.RefObject<{
+    callback: (event: KeyboardEvent) => void;
+    options: HotkeyOptions;
+  }>;
+  /** Pending async dispatch, cleared on unregister. */
+  timeout: number;
+};
+
+/**
+ * Whether `event` matches `hotkey`'s key combination (modifiers included).
+ */
+function checkHotkeyMatches(hotkey: Hotkey, event: KeyboardEvent): boolean {
+  const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
+  const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
+  const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
+
+  if (hasDigits && altShouldBePressed !== event.altKey) {
+    return false;
+  }
+
+  if (modifierShouldBePressed !== checkIsModifiedPressed(event)) {
+    return false;
+  }
+
+  return hotkey.keys.every((key) => {
+    // Ignore modifier keys
+    if (key === "⌘") {
+      return true;
+    }
+    if (key.startsWith("Key")) {
+      const letter = key.slice(3);
+      return letter === event.key || letter.toLowerCase() === event.key;
+    }
+    return key === event.code || key === event.key;
+  });
+}
+
+/**
+ * Single source of truth for build hotkeys: every `useBuildHotkey` consumer
+ * registers here and we keep a single capture-phase `keydown` listener on the
+ * document, instead of one listener per hook.
+ */
+const hotkeyRegistry = new Set<HotkeyRegistration>();
+
+function handleDocumentKeyDown(event: KeyboardEvent) {
+  // Guards shared by all hotkeys, based solely on the event target.
+
+  // If the element has a modal as ancestor, it means a modal is open (because
+  // of focus trap). So by doing that we ignore all hotkeys when a modal is open.
+  if (
+    event.target instanceof HTMLElement &&
+    event.target.closest("[data-modal]")
+  ) {
+    return;
+  }
+
+  if (document.getElementById("root")?.getAttribute("aria-hidden") === "true") {
+    return;
+  }
+
+  // Ignore key events from menu, menuitem or textbox
+  if (
+    event.target instanceof HTMLElement &&
+    (event.target.role === "menu" ||
+      event.target.role?.startsWith("menuitem") ||
+      event.target.role === "textbox" ||
+      event.target.closest("[data-hotkeys-disabled]") ||
+      event.target.closest("[role=dialog]"))
+  ) {
+    return;
+  }
+
+  const isTextInput =
+    event.target instanceof HTMLTextAreaElement ||
+    (event.target instanceof HTMLInputElement && event.target.type === "text");
+
+  for (const registration of hotkeyRegistry) {
+    const { hotkey, ref } = registration;
+    const { callback, options } = ref.current;
+
+    if (!options.enabled) {
+      continue;
+    }
+
+    if (!options.allowInInput && isTextInput) {
+      continue;
+    }
+
+    if (!checkHotkeyMatches(hotkey, event)) {
+      continue;
+    }
+
+    if (options.preventDefault) {
+      event.preventDefault();
+    }
+
+    // Make sure events are triggered asynchronously.
+    registration.timeout = window.setTimeout(() => {
+      callback(event);
+    });
+  }
+}
+
+function registerHotkey(registration: HotkeyRegistration) {
+  if (hotkeyRegistry.size === 0) {
+    document.addEventListener("keydown", handleDocumentKeyDown, {
+      capture: true,
+    });
+  }
+  hotkeyRegistry.add(registration);
+  return () => {
+    window.clearTimeout(registration.timeout);
+    hotkeyRegistry.delete(registration);
+    if (hotkeyRegistry.size === 0) {
+      document.removeEventListener("keydown", handleDocumentKeyDown, {
+        capture: true,
+      });
+    }
+  };
+}
+
 export function useBuildHotkey(
   name: HotkeyName,
   callback: (event: KeyboardEvent) => void,
@@ -279,96 +409,13 @@ export function useBuildHotkey(
     enabled = true,
     allowInInput = false,
   } = options ?? {};
-  const optionsWithDefaults = { preventDefault, enabled, allowInInput };
-  const refs = useLiveRef({ callback, options: optionsWithDefaults });
-  const timeoutRef = useRef(0);
+  const ref = useLiveRef({
+    callback,
+    options: { preventDefault, enabled, allowInInput },
+  });
   useEffect(() => {
-    const listener = (event: KeyboardEvent) => {
-      const { options, callback } = refs.current;
-
-      // If the element has a modal as ancestor, it means a modal is open (because of focus trap).
-      // So by doing that we ignore all hotkeys when a modal is open.
-      if (
-        event.target instanceof HTMLElement &&
-        event.target.closest("[data-modal]")
-      ) {
-        return;
-      }
-
-      if (!options.enabled) {
-        return;
-      }
-
-      if (
-        document.getElementById("root")?.getAttribute("aria-hidden") === "true"
-      ) {
-        return;
-      }
-
-      // Ignore key events from menu, menuitem or textbox
-      if (
-        event.target instanceof HTMLElement &&
-        (event.target.role === "menu" ||
-          event.target.role?.startsWith("menuitem") ||
-          event.target.role === "textbox" ||
-          event.target.closest("[data-hotkeys-disabled]") ||
-          event.target.closest("[role=dialog]"))
-      ) {
-        return;
-      }
-
-      if (!options.allowInInput && event.target instanceof HTMLInputElement) {
-        if (event.target.type === "text") {
-          return;
-        }
-        if (event.target.type === "textarea") {
-          return;
-        }
-      }
-
-      const modifierShouldBePressed = hotkey.keys.some((key) => key === "⌘");
-      const altShouldBePressed = hotkey.keys.some((key) => key === "⌥");
-      const hasDigits = hotkey.keys.some((key) => key.startsWith("Digit"));
-
-      if (hasDigits && altShouldBePressed !== event.altKey) {
-        return;
-      }
-
-      if (modifierShouldBePressed !== checkIsModifiedPressed(event)) {
-        return;
-      }
-
-      const matchKeys = hotkey.keys.every((key) => {
-        // Ignore modifier keys
-        if (key === "⌘") {
-          return true;
-        }
-        if (key.startsWith("Key")) {
-          const letter = key.slice(3);
-          return letter === event.key || letter.toLowerCase() === event.key;
-        }
-        return key === event.code || key === event.key;
-      });
-
-      if (!matchKeys) {
-        return;
-      }
-
-      if (options.preventDefault) {
-        event.preventDefault();
-      }
-
-      // Make sure events are triggered asynchronously.
-      timeoutRef.current = window.setTimeout(() => {
-        callback(event);
-      });
-    };
-    document.addEventListener("keydown", listener, { capture: true });
-    return () => {
-      document.removeEventListener("keydown", listener, { capture: true });
-    };
-  }, [hotkey, refs]);
-  useEffect(() => () => window.clearTimeout(timeoutRef.current), []);
+    return registerHotkey({ hotkey, ref, timeout: 0 });
+  }, [hotkey, ref]);
   return hotkey;
 }
 

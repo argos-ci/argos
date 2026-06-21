@@ -1,13 +1,6 @@
 import { ComponentProps, memo, useState } from "react";
 import clsx from "clsx";
-import {
-  CheckIcon,
-  EllipsisIcon,
-  RefreshCcwIcon,
-  SparklesIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-} from "lucide-react";
+import { CheckIcon, RefreshCcwIcon, SparklesIcon } from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
 
 import { useIsLoggedIn } from "@/containers/Auth";
@@ -21,19 +14,20 @@ import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildType } from "@/gql/graphql";
 import { getProjectURL } from "@/pages/Project/ProjectParams";
 import { BrandShield } from "@/ui/BrandShield";
-import { Chip } from "@/ui/Chip";
 import { HeadlessLink } from "@/ui/Link";
 import { Progress } from "@/ui/Progress";
 import { Tooltip } from "@/ui/Tooltip";
 
 import { IconButton } from "../../../ui/IconButton";
-import { checkDiffCanBeReviewed, useBuildDiffState } from "../BuildDiffState";
+import { useBuildDiffState } from "../BuildDiffState";
 import {
   BuildReviewButton,
   DisabledBuildReviewButton,
 } from "../BuildReviewButton";
-import { useGetDiffEvaluationStatus } from "../BuildReviewState";
-import { EvaluationStatus } from "../EvaluationStatus";
+import {
+  ReviewProgressBadge,
+  useBuildReviewProgression,
+} from "../ReviewProgressBadge";
 import { createBuildReviewPrompt } from "./BuildReviewPrompt";
 
 const _BuildFragment = graphql(`
@@ -95,29 +89,6 @@ const ProjectLink = memo(
   },
 );
 
-function useBuildReviewProgression() {
-  const diffState = useBuildDiffState();
-  const getDiffEvaluationStatus = useGetDiffEvaluationStatus();
-  if (diffState.ready && getDiffEvaluationStatus) {
-    const toReview = diffState.allDiffs.filter((diff) =>
-      checkDiffCanBeReviewed(diff.status, {
-        isSubsetBuild: diffState.isSubsetBuild,
-      }),
-    );
-    const reviewed = toReview.filter(
-      (diff) => getDiffEvaluationStatus(diff.id) !== EvaluationStatus.Pending,
-    );
-    const accepted = toReview.filter(
-      (diff) => getDiffEvaluationStatus(diff.id) === EvaluationStatus.Accepted,
-    );
-    const rejected = toReview.filter(
-      (diff) => getDiffEvaluationStatus(diff.id) === EvaluationStatus.Rejected,
-    );
-    return { toReview, reviewed, accepted, rejected };
-  }
-  return null;
-}
-
 function LoggedReviewButton(props: {
   project: ComponentProps<typeof BuildReviewButton>["project"];
   build: DocumentType<typeof _BuildFragment>;
@@ -137,46 +108,18 @@ function LoggedReviewButton(props: {
   if (progression.toReview.length === 0) {
     return <DisabledBuildReviewButton tooltip="No changes to review" />;
   }
-  const reviewComplete =
-    progression.reviewed.length === progression.toReview.length;
-  const { color, tooltip, icon } = (() => {
-    if (progression.rejected.length > 0) {
-      return {
-        color: "danger" as const,
-        tooltip: "Some changes have been rejected",
-        icon: ThumbsDownIcon,
-      };
-    }
-    if (reviewComplete) {
-      return {
-        color: "success" as const,
-        tooltip: "All changes have been accepted",
-        icon: ThumbsUpIcon,
-      };
-    }
-    return {
-      color: "neutral" as const,
-      tooltip: "Track your review progress",
-      icon: EllipsisIcon,
-    };
-  })();
   return (
     <div className="flex items-center gap-4">
-      <Tooltip content={tooltip}>
-        <div className="flex flex-col gap-1.5">
-          <Chip scale="xs" color={color} className="tabular-nums" icon={icon}>
-            {progression.reviewed.length} / {progression.toReview.length}{" "}
-            reviewed
-          </Chip>
-          <Progress
-            scale="sm"
-            value={progression.reviewed.length}
-            min={0}
-            max={progression.toReview.length}
-            className="w-full"
-          />
-        </div>
-      </Tooltip>
+      <div className="flex flex-col gap-1.5">
+        <ReviewProgressBadge scale="xs" progression={progression} />
+        <Progress
+          scale="sm"
+          value={progression.reviewed.length}
+          min={0}
+          max={progression.toReview.length}
+          className="w-full"
+        />
+      </div>
       <div className="flex items-center gap-1">
         <BuildReviewButton project={props.project} />
         <CopyBuildReviewPromptButton

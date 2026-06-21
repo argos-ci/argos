@@ -67,10 +67,13 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
 
   const permissions = use(ProjectPermissionsContext);
   const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
-  const showCommentTools = canComment && checkCanCommentOnDiff(diff);
-  // Text diffs use the gutter "+" (no hand/comment tool switch), so they only
-  // get the show/hide toggle.
-  const showTextCommentTools = canComment && checkCanCommentOnTextDiff(diff);
+  // The hand/comment tool switch only makes sense on image diffs (point
+  // comments). Text diffs use the gutter "+" instead.
+  const showCommentTool = canComment && checkCanCommentOnDiff(diff);
+  // The show/hide toggle applies whenever comments can exist on the diff,
+  // whether image (point) or text (line) comments.
+  const showComments =
+    showCommentTool || (canComment && checkCanCommentOnTextDiff(diff));
 
   return (
     <div className="flex shrink-0 items-center gap-1.5">
@@ -90,16 +93,10 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
           <SettingsButton />
         </>
       )}
-      {showCommentTools && (
+      {showComments && (
         <>
           <Separator orientation="vertical" className="mx-1 h-6" />
-          <CommentToolToggle />
-          <CommentsVisibilityToggle />
-        </>
-      )}
-      {showTextCommentTools && (
-        <>
-          <Separator orientation="vertical" className="mx-1 h-6" />
+          {showCommentTool && <CommentToolToggle />}
           <CommentsVisibilityToggle />
         </>
       )}
