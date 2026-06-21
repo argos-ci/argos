@@ -21,6 +21,7 @@ import {
 } from "@/comment/resolveCommentThread";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
+import { BuildReview } from "@/database/models/BuildReview";
 import {
   Comment,
   CommentAnchorSchema,
@@ -547,8 +548,15 @@ export const resolvers: IResolvers = {
       // a review with no submit path and stay hidden forever. When it can't, we
       // fall back to posting a standalone (immediately visible) comment.
       let buildReviewId: string | null = null;
+      let pending = false;
       if (thread) {
         buildReviewId = thread.buildReviewId;
+        if (buildReviewId) {
+          const review = await BuildReview.query()
+            .findById(buildReviewId)
+            .select("state");
+          pending = review?.state === "pending";
+        }
       } else if (input.addToReview) {
         const status = await ctx.loaders.BuildAggregatedStatus.load(build);
         if (isReviewableBuildStatus(status)) {
@@ -557,6 +565,7 @@ export const resolvers: IResolvers = {
             userId: auth.user.id,
           });
           buildReviewId = pendingReview.id;
+          pending = pendingReview.state === "pending";
         }
       }
 
@@ -568,6 +577,7 @@ export const resolvers: IResolvers = {
         screenshotDiffId,
         anchor,
         buildReviewId,
+        pending,
       });
 
       return build;

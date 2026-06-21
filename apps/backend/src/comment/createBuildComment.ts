@@ -1,7 +1,7 @@
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 
-import { Build, BuildReview, Comment, Project } from "@/database/models";
+import { Build, Comment, Project } from "@/database/models";
 import type { CommentAnchor } from "@/database/models/Comment";
 import {
   autoSubscribeUserToBuild,
@@ -31,11 +31,13 @@ import {
  * Post a comment on a build, auto-subscribe the author and notify the other
  * subscribers.
  *
- * When `buildReviewId` points to a review still in the `pending` state, the
- * comment is a draft: it is visible only to its author until the review is
+ * When `pending` is set, the comment belongs to a review still in the `pending`
+ * state — it is a draft, visible only to its author until the review is
  * submitted, so all notifications and the live broadcast are deferred to
  * submission time (see `notifyReviewCommentsWentLive` in `createBuildReview`).
- * Mentions are still persisted now so we know whom to notify then.
+ * Mentions are still persisted now so we know whom to notify then. The caller
+ * already knows the review state, so it passes `pending` rather than us
+ * re-reading the review.
  */
 export async function createBuildComment(input: {
   build: Build;
@@ -45,6 +47,7 @@ export async function createBuildComment(input: {
   screenshotDiffId?: string | null;
   anchor?: CommentAnchor | null;
   buildReviewId?: string | null;
+  pending?: boolean;
 }): Promise<Comment> {
   const {
     build,
@@ -53,6 +56,7 @@ export async function createBuildComment(input: {
     screenshotDiffId = null,
     anchor = null,
     buildReviewId = null,
+    pending = false,
   } = input;
 
   if (!validateCommentJson(input.body)) {
@@ -98,11 +102,6 @@ export async function createBuildComment(input: {
         autoSubscribeUserToBuild({ buildId: build.id, userId }),
         subscribeUserToCommentThread({ commentId: comment.id, userId }),
       ];
-
-  // A comment is a draft when it belongs to a review that is still pending.
-  const pending = buildReviewId
-    ? (await BuildReview.query().findById(buildReviewId))?.state === "pending"
-    : false;
 
   if (pending) {
     // Defer notifications and the live broadcast to submission time. The
