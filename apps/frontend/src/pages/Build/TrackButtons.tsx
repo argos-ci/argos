@@ -9,7 +9,7 @@ import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useNonNullable } from "@/util/useNonNullable";
 
-import { Diff } from "./BuildDiffState";
+import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
   useAcknowledgeMarkedDiff,
   useBuildDiffStatusState,
@@ -25,6 +25,7 @@ function useEvaluationToggle(props: {
   const { diffId, diffGroup, target } = props;
   const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff();
   const promptRejectComment = useRejectCommentInvite();
+  const { diffs } = useBuildDiffState();
   const [status, setStatus] = useBuildDiffStatusState({
     diffId,
     diffGroup,
@@ -38,14 +39,16 @@ function useEvaluationToggle(props: {
     setStatus(nextStatus);
     if (nextStatus !== EvaluationStatus.Pending) {
       // On a fresh rejection with no note yet, invite the reviewer to explain
-      // why. When the dialog opens we skip the usual auto-advance/review-dialog
-      // so it isn't buried; otherwise proceed as normal.
-      if (
-        target === EvaluationStatus.Rejected &&
-        !diffGroup &&
-        promptRejectComment?.(diffId)
-      ) {
-        return;
+      // why. A whole-group rejection anchors the note to the group's first
+      // snapshot. When the dialog opens we skip the usual auto-advance/review
+      // dialog so it isn't buried; otherwise proceed as normal.
+      if (target === EvaluationStatus.Rejected) {
+        const rejectDiffId = diffGroup
+          ? (diffs.find((diff) => diff.group === diffGroup)?.id ?? diffId)
+          : diffId;
+        if (promptRejectComment?.(rejectDiffId)) {
+          return;
+        }
       }
       acknowledge();
     }
