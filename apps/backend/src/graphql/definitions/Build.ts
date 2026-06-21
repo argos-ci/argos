@@ -3,11 +3,7 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
-import {
-  Build,
-  BuildNotificationSubscription,
-  BuildReview,
-} from "@/database/models";
+import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { getProjectMemberIds } from "@/project/members";
 
@@ -330,13 +326,13 @@ export const resolvers: IResolvers = {
       if (!ctx.auth) {
         return false;
       }
-      const review = await BuildReview.query()
-        .where("buildId", build.id)
-        .where("userId", ctx.auth.user.id)
-        .whereNot("state", "pending")
-        .whereNull("dismissedAt")
-        .resultSize();
-      return review > 0;
+      // Reuse the batched, non-pending reviews already loaded for `reviews`
+      // rather than issuing a separate count query.
+      const userId = ctx.auth.user.id;
+      const reviews = await ctx.loaders.BuildReviews.load(build.id);
+      return reviews.some(
+        (review) => review.userId === userId && !review.dismissedAt,
+      );
     },
     comments: async (build, _args, ctx) => {
       return ctx.loaders.BuildPublishedComments.load({
