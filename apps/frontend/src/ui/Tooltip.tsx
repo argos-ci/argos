@@ -30,9 +30,7 @@ export type TooltipProps = {
   closeDelay?: TooltipTriggerComponentProps["closeDelay"];
 };
 
-export function getTooltipAnimationClassName(
-  props: TooltipRenderProps,
-): string {
+function getTooltipAnimationClassName(props: TooltipRenderProps): string {
   return clsx(
     "fill-mode-forwards",
     props.placement &&
