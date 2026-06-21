@@ -111,7 +111,7 @@ function LoggedReviewButton(props: {
   return (
     <div className="flex items-center gap-4">
       <div className="flex flex-col gap-1.5">
-        <ReviewProgressBadge scale="xs" />
+        <ReviewProgressBadge scale="xs" progression={progression} />
         <Progress
           scale="sm"
           value={progression.reviewed.length}

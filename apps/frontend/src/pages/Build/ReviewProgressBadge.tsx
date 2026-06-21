@@ -75,10 +75,15 @@ function getProgressionDisplay(progression: BuildReviewProgression): {
  *
  * The chip is sized to its host: `xs` in the build header, `sm` in the
  * review form.
+ *
+ * Hosts pass the already-computed `progression` (via `useBuildReviewProgression`)
+ * so it isn't recomputed per render. Renders nothing while it's still null.
  */
-export function ReviewProgressBadge(props: { scale?: "xs" | "sm" }) {
-  const { scale = "sm" } = props;
-  const progression = useBuildReviewProgression();
+export function ReviewProgressBadge(props: {
+  scale?: "xs" | "sm";
+  progression: BuildReviewProgression | null;
+}) {
+  const { scale = "sm", progression } = props;
   if (!progression || progression.toReview.length === 0) {
     return null;
   }

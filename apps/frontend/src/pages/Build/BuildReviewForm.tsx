@@ -23,7 +23,10 @@ import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
 import { useBuildReviewSummary } from "./BuildReviewState";
 import { EvaluationStatus } from "./EvaluationStatus";
 import { PendingCommentChip } from "./PendingCommentsSection";
-import { ReviewProgressBadge } from "./ReviewProgressBadge";
+import {
+  ReviewProgressBadge,
+  useBuildReviewProgression,
+} from "./ReviewProgressBadge";
 
 const _BuildFragment = graphql(`
   fragment BuildReviewForm_Build on Build {
@@ -89,6 +92,7 @@ export function BuildReviewForm(props: {
   //   is expected;
   // - otherwise (all accepted, or nothing reviewed yet) → Approve, so pressing
   //   Enter accepts the changes.
+  const progression = useBuildReviewProgression();
   const summary = useBuildReviewSummary();
   const hasRejected = summary
     ? summary[EvaluationStatus.Rejected].length > 0
@@ -139,7 +143,7 @@ export function BuildReviewForm(props: {
     >
       <div className="flex items-center justify-between gap-3 p-3">
         <div className="flex items-center gap-2">
-          <ReviewProgressBadge scale="sm" />
+          <ReviewProgressBadge scale="sm" progression={progression} />
           <PendingCommentChip build={build} />
         </div>
         <HotkeyTooltip keys={["Esc"]} description="Hide">
