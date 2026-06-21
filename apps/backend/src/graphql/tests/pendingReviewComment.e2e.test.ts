@@ -311,4 +311,45 @@ describe("pending review comments", () => {
     expect(memberView.body.data.project.build.comments).toHaveLength(1);
     expect(memberView.body.data.project.build.comments[0].pending).toBe(false);
   });
+
+  test("addToReview falls back to a standalone comment when the build is not reviewable", async ({
+    fixture,
+  }) => {
+    // A build with no diffs concludes as "no-changes" — there's nothing to
+    // review, so a draft would be stranded.
+    const unreviewable = await factory.Build.create({
+      projectId: fixture.project.id,
+      conclusion: null,
+    });
+    await concludeBuild({ build: unreviewable, notify: false });
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user: fixture.author.user!, account: fixture.author },
+    );
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: ADD_COMMENT,
+        variables: {
+          input: {
+            buildId: unreviewable.id,
+            body: commentBody("Heads up"),
+            addToReview: true,
+          },
+        },
+      });
+    expectNoGraphQLError(res);
+    // Posted immediately (not a draft), and no pending review was created.
+    expect(res.body.data.addBuildComment.comments).toHaveLength(1);
+    expect(res.body.data.addBuildComment.comments[0].pending).toBe(false);
+    const reviews = await BuildReview.query().where({
+      buildId: unreviewable.id,
+    });
+    expect(reviews).toHaveLength(0);
+    const comment = await Comment.query().findOne({ buildId: unreviewable.id });
+    invariant(comment);
+    expect(comment.buildReviewId).toBeNull();
+  });
 });

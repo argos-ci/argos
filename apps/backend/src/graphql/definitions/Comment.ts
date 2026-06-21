@@ -1,3 +1,4 @@
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
@@ -45,6 +46,19 @@ import { assertCanViewBuild } from "../buildAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
+
+/**
+ * Whether a build is in a state where a review can be submitted. Mirrors the
+ * statuses the frontend offers "Submit review" for; outside these, attaching a
+ * comment to a pending review would strand it with no way to submit.
+ */
+function isReviewableBuildStatus(status: BuildAggregatedStatus): boolean {
+  return (
+    status === "accepted" ||
+    status === "rejected" ||
+    status === "changes-detected"
+  );
+}
 
 /**
  * Turn the comment-anchor input into the stored anchor shape, enforcing that
@@ -528,16 +542,22 @@ export const resolvers: IResolvers = {
 
       // A reply inherits its thread's review (so a reply to a draft comment
       // stays a draft); a root comment joins the user's pending review when
-      // `addToReview` is set, creating that review on first use.
+      // `addToReview` is set, creating that review on first use — but only when
+      // the build can actually be reviewed, otherwise the draft would attach to
+      // a review with no submit path and stay hidden forever. When it can't, we
+      // fall back to posting a standalone (immediately visible) comment.
       let buildReviewId: string | null = null;
       if (thread) {
         buildReviewId = thread.buildReviewId;
       } else if (input.addToReview) {
-        const pendingReview = await getOrCreatePendingBuildReview({
-          build,
-          userId: auth.user.id,
-        });
-        buildReviewId = pendingReview.id;
+        const status = await ctx.loaders.BuildAggregatedStatus.load(build);
+        if (isReviewableBuildStatus(status)) {
+          const pendingReview = await getOrCreatePendingBuildReview({
+            build,
+            userId: auth.user.id,
+          });
+          buildReviewId = pendingReview.id;
+        }
       }
 
       await createBuildComment({
