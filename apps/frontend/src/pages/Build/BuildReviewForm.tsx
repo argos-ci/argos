@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import { XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -14,6 +14,7 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form, handleFormError } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { ModalActionContext } from "@/ui/Modal";
 import { getMentionUser } from "@/ui/UserCard";
 import { lowTextColorClassNames } from "@/util/colors";
 
@@ -56,6 +57,10 @@ export function BuildReviewForm(props: {
   const { build, onSubmitted, size = "default" } = props;
 
   const state = useOverlayTriggerState();
+  // When hosted in a modal, lock dismissal (Escape/backdrop) while a review is
+  // in flight. Submitting through the buttons bypasses `Form`'s `onSubmit`
+  // wrapper, so we drive the pending state here instead.
+  const actionContext = use(ModalActionContext);
   const mentions = useMemo(
     () => build.members.map(getMentionUser),
     [build.members],
@@ -103,16 +108,19 @@ export function BuildReviewForm(props: {
     }
     form.clearErrors();
     setPendingEvent(event);
+    actionContext?.setIsPending(true);
     try {
       await createReview({
         event,
         body: hasEditorContent(body) ? body : undefined,
       });
       // The mutation closes the dialog through `onCompleted`; keep the pending
-      // state until then so the form doesn't flash back to idle.
+      // state until then so the form doesn't flash back to idle and the modal
+      // stays locked through the closing animation.
     } catch (error) {
       handleFormError(form, error);
       setPendingEvent(null);
+      actionContext?.setIsPending(false);
     }
   };
 
