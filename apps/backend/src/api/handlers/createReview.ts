@@ -4,7 +4,6 @@ import {
 } from "@argos/schemas/build-review";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import type { JSONContent } from "@tiptap/core";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -12,6 +11,7 @@ import {
   createBuildReview,
   ScreenshotDiffReviewState,
 } from "@/build/createBuildReview";
+import { resolveCommentBody } from "@/comment/body";
 import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
@@ -21,6 +21,10 @@ import {
   getAuthPayloadFromExpressReq,
 } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
+import {
+  BuildReviewSchema,
+  serializeBuildReview,
+} from "../schema/primitives/buildReview";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
 import {
   forbidden,
@@ -51,20 +55,27 @@ const CreateReviewBodySchema = z.object({
   body: z
     .unknown()
     .optional()
-    .refine((value) => value === undefined || validateCommentJson(value), {
-      message:
-        "Invalid comment body. Expected a valid rich-text JSON document.",
-    })
     .refine(
       (value) =>
         value === undefined ||
+        typeof value === "string" ||
+        validateCommentJson(value),
+      {
+        message:
+          "Invalid comment body. Expected Markdown text or a valid rich-text JSON document.",
+      },
+    )
+    .refine(
+      (value) =>
+        value === undefined ||
+        typeof value === "string" ||
         !validateCommentJson(value) ||
         !isCommentTooLarge(value),
       { message: "Comment is too large." },
     )
     .meta({
       description:
-        "Optional comment to attach to the review. Expected as the JSON representation of a rich-text document.",
+        "Optional comment to attach to the review. Either Markdown text or the JSON representation of a rich-text document.",
     }),
   snapshots: z
     .array(
@@ -85,13 +96,6 @@ const CreateReviewBodySchema = z.object({
         "Optional per-snapshot review decisions. When omitted, only the build-level review is recorded.",
     }),
 });
-
-const BuildReviewSchema = z
-  .object({
-    id: z.string(),
-    state: z.enum(["approved", "rejected", "commented", "pending"]),
-  })
-  .meta({ description: "Build review" });
 
 export const createReviewOperation = {
   operationId: "createReview",
@@ -209,14 +213,15 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         build,
         userId: auth.user.id,
         event,
-        body: body.body as JSONContent | undefined,
+        body:
+          body.body !== undefined ? resolveCommentBody(body.body) : undefined,
         snapshotReviews: body.snapshots.map((snapshotReview) => ({
           screenshotDiffId: snapshotReview.id,
           state: getScreenshotReviewState(snapshotReview.conclusion),
         })),
       });
 
-      res.send(buildReview);
+      res.send(serializeBuildReview(buildReview));
     },
   );
 };

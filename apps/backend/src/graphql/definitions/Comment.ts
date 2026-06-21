@@ -1,9 +1,9 @@
-import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { invariant } from "@argos/util/invariant";
 import type { JSONContent } from "@tiptap/core";
 import gqlTag from "graphql-tag";
 
 import { getOrCreatePendingBuildReview } from "@/build/pendingReview";
+import { isReviewableBuildStatus } from "@/build/reviewableStatus";
 import { addCommentReaction } from "@/comment/addCommentReaction";
 import {
   subscribeToCommentChanges,
@@ -19,6 +19,7 @@ import {
   resolveCommentThread,
   unresolveCommentThread,
 } from "@/comment/resolveCommentThread";
+import { getCommentThreadRoot } from "@/comment/thread";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { Build } from "@/database/models/Build";
 import { BuildReview } from "@/database/models/BuildReview";
@@ -47,19 +48,6 @@ import { assertCanViewBuild } from "../buildAccess";
 import { badUserInput, forbidden, notFound, unauthenticated } from "../util";
 
 const { gql } = gqlTag;
-
-/**
- * Whether a build is in a state where a review can be submitted. Mirrors the
- * statuses the frontend offers "Submit review" for; outside these, attaching a
- * comment to a pending review would strand it with no way to submit.
- */
-function isReviewableBuildStatus(status: BuildAggregatedStatus): boolean {
-  return (
-    status === "accepted" ||
-    status === "rejected" ||
-    status === "changes-detected"
-  );
-}
 
 /**
  * Turn the comment-anchor input into the stored anchor shape, enforcing that
@@ -123,16 +111,14 @@ async function assertCanReactToComment(
 }
 
 async function getCommentThreadByGraphqlId(id: string): Promise<Comment> {
-  const comment = await getCommentByGraphqlId(id);
-  if (comment.deletedAt) {
+  let commentId: string;
+  try {
+    commentId = parseCommentId(id);
+  } catch {
     throw notFound("Thread not found");
   }
-  const threadId = comment.threadId ?? comment.id;
-  const thread =
-    threadId === comment.id
-      ? comment
-      : await Comment.query().findById(threadId);
-  if (!thread || thread.deletedAt) {
+  const thread = await getCommentThreadRoot(commentId);
+  if (!thread) {
     throw notFound("Thread not found");
   }
   return thread;
