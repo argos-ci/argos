@@ -43,19 +43,19 @@ type ButtonOptions = {
 
 const variantClassNames: Record<ButtonVariant, string> = {
   primary:
-    "data-focus-visible:ring-primary text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-primary-solid data-hovered:bg-primary-solid-hover data-pressed:bg-primary-solid-active aria-expanded:bg-primary-solid-active group-[*]/button-group:not-first:border-l-white/20",
   secondary:
-    "data-focus-visible:ring-default text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
+    "text-default border bg-transparent data-hovered:bg-hover data-hovered:border-hover data-pressed:bg-active",
   ghost:
-    "data-focus-visible:ring-default text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
+    "text-default border-transparent bg-transparent data-hovered:bg-hover data-pressed:bg-active aria-expanded:bg-active",
   destructive:
-    "data-focus-visible:ring-danger text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-danger-solid data-hovered:bg-danger-solid-hover data-pressed:bg-danger-solid-active aria-expanded:bg-danger-solid-active group-[*]/button-group:not-first:border-l-white/20",
   github:
-    "data-focus-visible:ring-default text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-github data-hovered:bg-github-hover data-pressed:bg-github-active aria-expanded:bg-github-active group-[*]/button-group:not-first:border-l-white/20",
   gitlab:
-    "data-focus-visible:ring-default text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active group-[*]/button-group:not-first:border-l-white/20",
+    "text-white border-transparent bg-gitlab data-hovered:bg-gitlab-hover data-pressed:bg-gitlab-active aria-expanded:bg-gitlab-active group-[*]/button-group:not-first:border-l-white/20",
   google:
-    "data-focus-visible:ring-default text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google group-[*]/button-group:not-first:border-l-black/15",
+    "text-default border-transparent bg-google data-hovered:bg-google-hover data-pressed:bg-google-active aria-expanded:bg-google-active ring-1 ring-google group-[*]/button-group:not-first:border-l-black/15",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
@@ -74,17 +74,43 @@ const iconOnlySizeClassNames: Record<ButtonSize, string> = {
   large: "py-3 px-3 text-base",
 };
 
-// Ring color used by `highlight`, mirroring each variant's
-// `data-focus-visible:ring-*`. With `showFocusRing`, the ring is drawn on any
-// `data-focused` state (e.g. an autofocused button), not just keyboard focus.
-const focusedRingClassNames: Record<ButtonVariant, string> = {
-  primary: "data-focused:ring-4 data-focused:ring-primary",
-  secondary: "data-focused:ring-4 data-focused:ring-default",
-  ghost: "data-focused:ring-4 data-focused:ring-default",
-  destructive: "data-focused:ring-4 data-focused:ring-danger",
-  github: "data-focused:ring-4 data-focused:ring-default",
-  gitlab: "data-focused:ring-4 data-focused:ring-default",
-  google: "data-focused:ring-4 data-focused:ring-default",
+// Ring color per variant, the single source of truth for both the
+// keyboard-focus ring (`data-focus-visible`) and the always-on ring drawn by
+// `showFocusRing` (`data-focused`, e.g. an autofocused default action). Keeping
+// the two states side by side stops them from drifting apart; the values are
+// full literals so Tailwind keeps generating the classes.
+const ringClassNames: Record<
+  ButtonVariant,
+  { focusVisible: string; focused: string }
+> = {
+  primary: {
+    focusVisible: "data-focus-visible:ring-primary",
+    focused: "data-focused:ring-primary",
+  },
+  secondary: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  ghost: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  destructive: {
+    focusVisible: "data-focus-visible:ring-danger",
+    focused: "data-focused:ring-danger",
+  },
+  github: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  gitlab: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
+  google: {
+    focusVisible: "data-focus-visible:ring-default",
+    focused: "data-focused:ring-default",
+  },
 };
 
 // Default corner rounding per size (overridden by `rounded` for a pill shape).
@@ -103,6 +129,7 @@ function getButtonClassName(options: {
 }) {
   const { variant, size, iconOnly, rounded, showFocusRing } = options;
   const variantClassName = variantClassNames[variant];
+  const ring = ringClassNames[variant];
   const sizeClassName = (iconOnly ? iconOnlySizeClassNames : sizeClassNames)[
     size
   ];
@@ -110,7 +137,8 @@ function getButtonClassName(options: {
     "group/button",
     variantClassName,
     sizeClassName,
-    showFocusRing && focusedRingClassNames[variant],
+    ring.focusVisible,
+    showFocusRing && ["data-focused:ring-4", ring.focused],
     rounded ? "rounded-full" : roundingClassNames[size],
     // ButtonGroup integration: drop the inner rounded corners and overlap
     // adjacent borders so each variant's `border-l-*` acts as the separator.
