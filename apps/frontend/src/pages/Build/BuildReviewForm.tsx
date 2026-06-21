@@ -127,7 +127,7 @@ export function BuildReviewForm(props: {
     >
       <div className="flex items-center justify-between gap-3 p-3">
         <div className="flex items-center gap-2">
-          <ReviewProgressBadge />
+          <ReviewProgressBadge scale="sm" />
           <PendingCommentChip build={build} />
         </div>
         <HotkeyTooltip keys={["Esc"]} description="Hide">

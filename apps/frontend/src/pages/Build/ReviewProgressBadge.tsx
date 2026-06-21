@@ -72,8 +72,12 @@ function getProgressionDisplay(progression: BuildReviewProgression): {
 /**
  * Compact "X / Y reviewed" counter chip summarizing the viewer's review
  * progress. Renders nothing until there is at least one diff to review.
+ *
+ * The chip is sized to its host: `xs` in the build header, `sm` in the
+ * review form.
  */
-export function ReviewProgressBadge() {
+export function ReviewProgressBadge(props: { scale?: "xs" | "sm" }) {
+  const { scale = "sm" } = props;
   const progression = useBuildReviewProgression();
   if (!progression || progression.toReview.length === 0) {
     return null;
@@ -81,7 +85,7 @@ export function ReviewProgressBadge() {
   const { color, tooltip, icon } = getProgressionDisplay(progression);
   return (
     <Tooltip content={tooltip}>
-      <Chip scale="sm" color={color} className="tabular-nums" icon={icon}>
+      <Chip scale={scale} color={color} className="tabular-nums" icon={icon}>
         {progression.reviewed.length} / {progression.toReview.length} reviewed
       </Chip>
     </Tooltip>
