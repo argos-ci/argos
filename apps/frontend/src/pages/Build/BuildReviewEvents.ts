@@ -8,12 +8,10 @@ import {
 import { BuildReviewEvent } from "@/gql/graphql";
 import type { UIColor } from "@/util/colors";
 
-export type ReviewEventRadioVariant = "primary" | "secondary" | "destructive";
-
 export type BuildReviewEventDefinition = {
   label: string;
   description: string;
-  variant: ReviewEventRadioVariant;
+  variant: "primary" | "secondary" | "destructive";
   icon: LucideIcon;
   iconColor: UIColor | null;
 };
