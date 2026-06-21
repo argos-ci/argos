@@ -346,8 +346,8 @@ function handleDocumentKeyDown(event: KeyboardEvent) {
   }
 
   const isTextInput =
-    event.target instanceof HTMLInputElement &&
-    (event.target.type === "text" || event.target.type === "textarea");
+    event.target instanceof HTMLTextAreaElement ||
+    (event.target instanceof HTMLInputElement && event.target.type === "text");
 
   for (const registration of hotkeyRegistry) {
     const { hotkey, ref } = registration;
