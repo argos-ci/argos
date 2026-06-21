@@ -78,15 +78,19 @@ export function BuildReviewForm(props: {
   );
   const isSubmitting = pendingEvent !== null;
 
-  // Focus rules driven by the current review state:
-  // - at least one rejection → focus the comment field, a note is expected;
-  // - otherwise (all accepted, or nothing reviewed yet) → make Approve the
-  //   default so pressing Enter accepts the changes.
+  // The default action drives both focus and the implicit submit (Enter on the
+  // focused button, Cmd+Enter in the editor):
+  // - at least one rejection → Reject, and focus the comment field since a note
+  //   is expected;
+  // - otherwise (all accepted, or nothing reviewed yet) → Approve, so pressing
+  //   Enter accepts the changes.
   const summary = useBuildReviewSummary();
   const hasRejected = summary
     ? summary[EvaluationStatus.Rejected].length > 0
     : false;
-  const defaultApprove = !hasRejected;
+  const defaultEvent = hasRejected
+    ? BuildReviewEvent.Reject
+    : BuildReviewEvent.Approve;
 
   const submitReview = async (event: BuildReviewEvent) => {
     const { body } = form.getValues();
@@ -117,7 +121,7 @@ export function BuildReviewForm(props: {
   return (
     <Form
       form={form}
-      onSubmit={() => submitReview(BuildReviewEvent.Approve)}
+      onSubmit={() => submitReview(defaultEvent)}
       className={clsx("flex flex-col", size === "large" ? "w-lg" : "w-md")}
       onKeyDown={(event) => {
         if (event.key === "Escape" && !isSubmitting) {
@@ -155,7 +159,7 @@ export function BuildReviewForm(props: {
               form.clearErrors("body");
             }
           }}
-          onSubmit={() => submitReview(BuildReviewEvent.Approve)}
+          onSubmit={() => submitReview(defaultEvent)}
           aria-label="Review comment"
           placeholder="Add review summary…"
           className="text-sm"
@@ -174,9 +178,7 @@ export function BuildReviewForm(props: {
         {SUBMIT_EVENTS.map((event) => {
           const definition = BUILD_REVIEW_EVENT_DEFINITIONS[event];
           const Icon = definition.icon;
-          // Approve is the default action unless something was rejected.
-          const isDefault =
-            defaultApprove && event === BuildReviewEvent.Approve;
+          const isDefault = event === defaultEvent;
           return (
             <Button
               key={event}
