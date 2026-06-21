@@ -642,18 +642,30 @@ function DiffPreview(props: {
     left: number;
   } | null>(null);
 
-  // Anchor to the trigger when opening. We keep the last position during the
+  // Anchor to the trigger while open, and keep it anchored as the list scrolls
+  // or the window resizes (the card is `position: fixed`, so a moving trigger
+  // would otherwise leave it stranded). We keep the last position during the
   // exit animation, so the card fades out where it was shown.
   useLayoutEffect(() => {
     if (!open) {
       return;
     }
-    const trigger = triggerRef.current;
-    if (!trigger) {
-      return;
-    }
-    const rect = trigger.getBoundingClientRect();
-    setPosition({ top: rect.top, left: rect.right + 8 });
+    const update = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) {
+        return;
+      }
+      const rect = trigger.getBoundingClientRect();
+      setPosition({ top: rect.top, left: rect.right + 8 });
+    };
+    update();
+    // Capture phase so scrolls on the ancestor list container are caught too.
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
   }, [open, triggerRef]);
 
   return createPortal(
