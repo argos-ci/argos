@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.162",
-    "@types/node": "^24.13.2",
+    "@types/node": "catalog:",
     "aws-cdk": "^2.1128.0",
     "zod": "catalog:"
   }
