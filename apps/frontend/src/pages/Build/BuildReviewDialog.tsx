@@ -1,49 +1,17 @@
 import { createContext, memo, use, useMemo, useState } from "react";
 import { invariant } from "@argos/util/invariant";
-import { ChevronDownIcon } from "lucide-react";
-import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { DocumentType, graphql } from "@/gql";
-import { BuildReviewEvent } from "@/gql/graphql";
-import { Button, ButtonIcon } from "@/ui/Button";
-import { ButtonGroup } from "@/ui/ButtonGroup";
-import {
-  Dialog,
-  DialogBody,
-  DialogDismiss,
-  DialogFooter,
-  DialogText,
-  DialogTitle,
-} from "@/ui/Dialog";
-import { type EditorValue } from "@/ui/Editor/Editor";
-import { EditorField } from "@/ui/Editor/EditorField";
-import { hasEditorContent } from "@/ui/Editor/util";
-import { ErrorMessage } from "@/ui/ErrorMessage";
-import { Form } from "@/ui/Form";
-import { FormRootError } from "@/ui/FormRootError";
-import { FormSubmit } from "@/ui/FormSubmit";
-import { Label } from "@/ui/Label";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
-import { Modal, ModalActionContext, ModalProps } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
-import { getMentionUser } from "@/ui/UserCard";
+import { Dialog } from "@/ui/Dialog";
+import { Modal, ModalProps } from "@/ui/Modal";
 
-import { useCreateBuildReviewMutation } from "./BuildReviewAction";
-import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
-import { useBuildReviewSummary } from "./BuildReviewState";
-import { EvaluationStatus } from "./EvaluationStatus";
-import { PendingCommentsSection } from "./PendingCommentsSection";
+import { BuildReviewForm } from "./BuildReviewForm";
 
 const _ProjectFragment = graphql(`
   fragment BuildReviewDialog_Project on Project {
     build(number: $buildNumber) {
       id
-      status
-      members {
-        ...UserCard_user
-      }
-      ...BuildReviewAction_Build
-      ...PendingCommentsSection_Build
+      ...BuildReviewForm_Build
     }
   }
 `);
@@ -81,204 +49,17 @@ const BuildReviewModal = memo(function BuildReviewModal(props: {
   }
   return (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable>
-      <BuildReviewDialog
-        build={project.build}
-        onClose={() => onOpenChange(false)}
-      />
+      {/* Same review surface as the header popover, just hosted in a modal. */}
+      <Dialog aria-label="Submit your review">
+        <BuildReviewForm
+          build={project.build}
+          onSubmitted={() => onOpenChange(false)}
+          size="large"
+        />
+      </Dialog>
     </Modal>
   );
 });
-
-type Inputs = {
-  body: EditorValue;
-};
-
-const MENU_EVENTS: BuildReviewEvent[] = [
-  BuildReviewEvent.Approve,
-  BuildReviewEvent.Reject,
-  BuildReviewEvent.Comment,
-];
-
-function BuildReviewDialog(props: {
-  build: NonNullable<DocumentType<typeof _ProjectFragment>["build"]>;
-  onClose: () => void;
-}) {
-  const { build, onClose } = props;
-  const mentions = useMemo(
-    () => build.members.map(getMentionUser),
-    [build.members],
-  );
-  const summary = useBuildReviewSummary();
-  invariant(summary, "BuildReviewDialog requires a summary");
-  const hasRejected = summary[EvaluationStatus.Rejected].length > 0;
-  const pendingCount = summary[EvaluationStatus.Pending].length;
-  const rejectedCount = summary[EvaluationStatus.Rejected].length;
-  const allAccepted = !hasRejected && pendingCount === 0;
-
-  const [event, setEvent] = useState<BuildReviewEvent>(
-    hasRejected ? BuildReviewEvent.Reject : BuildReviewEvent.Approve,
-  );
-
-  const form = useForm<Inputs>({
-    defaultValues: { body: null },
-  });
-
-  const [createReview] = useCreateBuildReviewMutation(build, {
-    onCompleted: () => onClose(),
-  });
-
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    if (event === BuildReviewEvent.Comment && !hasEditorContent(data.body)) {
-      form.setError("body", {
-        type: "validate",
-        message: "A comment is required when leaving a neutral review.",
-      });
-      return;
-    }
-    await createReview({
-      event,
-      body: hasEditorContent(data.body) ? data.body : undefined,
-    });
-    // The dialog closes itself once the mutation completes (see `onCompleted`).
-    // Never resolve so the form stays pending through the closing animation,
-    // instead of flashing back to its idle state before the dialog disappears.
-    await new Promise(() => {});
-  };
-
-  const bodyError = form.formState.errors.body;
-  const definition = BUILD_REVIEW_EVENT_DEFINITIONS[event];
-  const Icon = definition.icon;
-  const actionContext = use(ModalActionContext);
-
-  return (
-    <Dialog size="medium">
-      <Form form={form} onSubmit={onSubmit}>
-        <DialogBody>
-          <DialogTitle>Submit your review</DialogTitle>
-          <DialogText>
-            {hasRejected ? (
-              <>
-                During your review,{" "}
-                <strong>
-                  {rejectedCount === 1
-                    ? "1 change has been marked as rejected"
-                    : `${rejectedCount} changes have been marked as rejected`}
-                </strong>
-                .
-              </>
-            ) : pendingCount > 0 ? (
-              <>
-                <strong>
-                  {pendingCount === 1
-                    ? "1 change is still pending review"
-                    : `${pendingCount} changes are still pending review`}
-                </strong>
-                .
-              </>
-            ) : (
-              <>
-                <strong>All changes have been marked as accepted.</strong>
-              </>
-            )}
-          </DialogText>
-          <PendingCommentsSection build={build} />
-          {allAccepted ? null : (
-            <div>
-              <Label>Comment</Label>
-              <EditorField
-                control={form.control}
-                name="body"
-                mentions={mentions}
-                onChange={() => {
-                  if (bodyError) {
-                    form.clearErrors("body");
-                  }
-                }}
-                aria-label="Review comment"
-                placeholder="Leave a comment"
-                className="w-full"
-                autoFocus={hasRejected}
-                disabled={actionContext?.isPending}
-              />
-              {bodyError?.message ? (
-                <ErrorMessage className="mt-2">
-                  {String(bodyError.message)}
-                </ErrorMessage>
-              ) : null}
-            </div>
-          )}
-        </DialogBody>
-        <DialogFooter>
-          <FormRootError control={form.control} className="flex-1" />
-          <DialogDismiss>Cancel</DialogDismiss>
-          {allAccepted ? (
-            <FormSubmit
-              control={form.control}
-              variant={definition.variant}
-              autoFocus
-            >
-              <ButtonIcon>
-                <Icon />
-              </ButtonIcon>
-              {definition.label}
-            </FormSubmit>
-          ) : (
-            <ButtonGroup>
-              <FormSubmit
-                control={form.control}
-                variant={definition.variant}
-                autoFocus={!hasRejected}
-              >
-                <ButtonIcon>
-                  <Icon />
-                </ButtonIcon>
-                {definition.label}
-              </FormSubmit>
-              <MenuTrigger>
-                <Button
-                  variant={definition.variant}
-                  iconOnly
-                  aria-label="Change action"
-                  isDisabled={actionContext?.isPending}
-                >
-                  <ChevronDownIcon />
-                </Button>
-                <Popover placement="bottom end">
-                  <Menu
-                    selectionMode="single"
-                    disallowEmptySelection
-                    selectedKeys={[event]}
-                    onSelectionChange={(keys) => {
-                      if (keys && keys !== "all") {
-                        const [key] = keys;
-                        if (key) {
-                          setEvent(key as BuildReviewEvent);
-                        }
-                      }
-                    }}
-                  >
-                    {MENU_EVENTS.map((eventKey) => {
-                      const eventDef = BUILD_REVIEW_EVENT_DEFINITIONS[eventKey];
-                      const EventIcon = eventDef.icon;
-                      return (
-                        <MenuItem key={eventKey} id={eventKey}>
-                          <MenuItemIcon>
-                            <EventIcon />
-                          </MenuItemIcon>
-                          {eventDef.label}
-                        </MenuItem>
-                      );
-                    })}
-                  </Menu>
-                </Popover>
-              </MenuTrigger>
-            </ButtonGroup>
-          )}
-        </DialogFooter>
-      </Form>
-    </Dialog>
-  );
-}
 
 export function BuildReviewDialogProvider(props: {
   children: React.ReactNode;

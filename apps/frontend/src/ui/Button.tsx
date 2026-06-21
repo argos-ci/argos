@@ -33,6 +33,12 @@ type ButtonOptions = {
   iconOnly?: boolean;
   /** Fully round the edges (pill shape) instead of the default rounded corners. */
   rounded?: boolean;
+  /**
+   * Show the focus ring whenever the button is focused, not only when it is
+   * `focus-visible`. Use it to make an autofocused default action visible even
+   * to pointer users, so they can see which button Enter will trigger.
+   */
+  showFocusRing?: boolean;
 };
 
 const variantClassNames: Record<ButtonVariant, string> = {
@@ -59,11 +65,26 @@ const sizeClassNames: Record<ButtonSize, string> = {
 };
 
 // Keep the same vertical padding as the regular sizes so an iconOnly button
-// matches the height of a text button (e.g. when placed in a ButtonGroup).
+// matches the height of a text button (e.g. when placed in a ButtonGroup), and
+// mirror it horizontally so the button stays a perfect square around the
+// `size-[1em]` icon.
 const iconOnlySizeClassNames: Record<ButtonSize, string> = {
-  small: "py-1 px-1.5 text-xs",
-  medium: "py-[calc(0.375rem-1px)] px-2 text-sm",
-  large: "py-3 px-4 text-base",
+  small: "py-1 px-1 text-xs",
+  medium: "py-[calc(0.375rem-1px)] px-[calc(0.375rem-1px)] text-sm",
+  large: "py-3 px-3 text-base",
+};
+
+// Ring color used by `highlight`, mirroring each variant's
+// `data-focus-visible:ring-*`. With `showFocusRing`, the ring is drawn on any
+// `data-focused` state (e.g. an autofocused button), not just keyboard focus.
+const focusedRingClassNames: Record<ButtonVariant, string> = {
+  primary: "data-focused:ring-4 data-focused:ring-primary",
+  secondary: "data-focused:ring-4 data-focused:ring-default",
+  ghost: "data-focused:ring-4 data-focused:ring-default",
+  destructive: "data-focused:ring-4 data-focused:ring-danger",
+  github: "data-focused:ring-4 data-focused:ring-default",
+  gitlab: "data-focused:ring-4 data-focused:ring-default",
+  google: "data-focused:ring-4 data-focused:ring-default",
 };
 
 // Default corner rounding per size (overridden by `rounded` for a pill shape).
@@ -78,8 +99,9 @@ function getButtonClassName(options: {
   size: ButtonSize;
   iconOnly: boolean;
   rounded: boolean;
+  showFocusRing: boolean;
 }) {
-  const { variant, size, iconOnly, rounded } = options;
+  const { variant, size, iconOnly, rounded, showFocusRing } = options;
   const variantClassName = variantClassNames[variant];
   const sizeClassName = (iconOnly ? iconOnlySizeClassNames : sizeClassNames)[
     size
@@ -88,6 +110,7 @@ function getButtonClassName(options: {
     "group/button",
     variantClassName,
     sizeClassName,
+    showFocusRing && focusedRingClassNames[variant],
     rounded ? "rounded-full" : roundingClassNames[size],
     // ButtonGroup integration: drop the inner rounded corners and overlap
     // adjacent borders so each variant's `border-l-*` acts as the separator.
@@ -108,9 +131,16 @@ function getButtonProps(options: ButtonOptions) {
     size = "medium",
     iconOnly = false,
     rounded = false,
+    showFocusRing = false,
   } = options;
   return {
-    className: getButtonClassName({ variant, size, iconOnly, rounded }),
+    className: getButtonClassName({
+      variant,
+      size,
+      iconOnly,
+      rounded,
+      showFocusRing,
+    }),
     "data-size": size ?? "medium",
     "data-icon-only": iconOnly ? "true" : undefined,
   };
@@ -143,12 +173,19 @@ export function Button({
   size,
   iconOnly,
   rounded,
+  showFocusRing,
   children,
   onAction,
   onPress,
   ...props
 }: ButtonProps) {
-  const buttonProps = getButtonProps({ variant, size, iconOnly, rounded });
+  const buttonProps = getButtonProps({
+    variant,
+    size,
+    iconOnly,
+    rounded,
+    showFocusRing,
+  });
   const [isPending, setIsPending] = useState(false);
   return (
     <RACButton
@@ -203,9 +240,16 @@ export function LinkButton({
   size,
   iconOnly,
   rounded,
+  showFocusRing,
   ...props
 }: LinkButtonProps) {
-  const buttonProps = getButtonProps({ variant, size, iconOnly, rounded });
+  const buttonProps = getButtonProps({
+    variant,
+    size,
+    iconOnly,
+    rounded,
+    showFocusRing,
+  });
   return (
     <RACLink
       ref={ref}
