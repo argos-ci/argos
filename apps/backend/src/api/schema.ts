@@ -1,4 +1,3 @@
-import type { OpenAPIObject } from "openapi3-ts/oas31";
 import { createDocument, ZodOpenApiObject } from "zod-openapi";
 
 import config from "@/config";
@@ -95,4 +94,5 @@ export const zodSchema = {
   },
 } satisfies ZodOpenApiObject;
 
-export const schema: OpenAPIObject = createDocument(zodSchema);
+export const schema: ReturnType<typeof createDocument> =
+  createDocument(zodSchema);
