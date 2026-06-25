@@ -28,7 +28,13 @@ const CommentReactionGroupSchema = z
   })
   .meta({ description: "Reactions of a single emoji on a comment." });
 
-const CommentAnchorSchema = z
+/**
+ * Where on the referenced screenshot diff a comment points. A point uses
+ * normalized (0–1) coordinates; lines is a 1-based inclusive range. Shared by
+ * the comment output and the comment-creation input so both speak the same
+ * anchor shape.
+ */
+export const CommentAnchorSchema = z
   .discriminatedUnion("type", [
     z.object({
       type: z.literal("point"),
@@ -41,10 +47,9 @@ const CommentAnchorSchema = z
       to: z.number().int(),
     }),
   ])
-  .nullable()
   .meta({
     description:
-      "Where on the referenced screenshot diff the comment points. A point uses normalized (0–1) coordinates; lines is a 1-based inclusive range. Null means the whole diff.",
+      "Where on the referenced screenshot diff the comment points. A point uses normalized (0–1) coordinates; lines is a 1-based inclusive range.",
   });
 
 export const CommentSchema = z
@@ -65,7 +70,10 @@ export const CommentSchema = z
     screenshotDiffId: z.string().nullable().meta({
       description: "Screenshot diff this comment is anchored to, if any.",
     }),
-    anchor: CommentAnchorSchema,
+    anchor: CommentAnchorSchema.nullable().meta({
+      description:
+        "Where the comment points on its screenshot diff. Null means the whole diff.",
+    }),
     pending: z.boolean().meta({
       description:
         "Whether the comment belongs to a pending (unsubmitted) review and is only visible to its author.",

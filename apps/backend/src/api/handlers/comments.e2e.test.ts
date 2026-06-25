@@ -227,12 +227,49 @@ describe("createComment", () => {
       .send({
         body: "Off by a pixel",
         screenshotDiffId: screenshotDiffs[0]!.id,
-        anchor: { point: { x: 0.5, y: 0.5 } },
+        anchor: { type: "point", x: 0.5, y: 0.5 },
       })
       .expect(201);
 
     expect(res.body.screenshotDiffId).toBe(screenshotDiffs[0]!.id);
     expect(res.body.anchor).toEqual({ type: "point", x: 0.5, y: 0.5 });
+  });
+
+  test("anchors a comment to a line range", async ({
+    build,
+    screenshotDiffs,
+    scopedPatToken,
+  }) => {
+    const res = await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .send({
+        body: "These lines regressed",
+        screenshotDiffId: screenshotDiffs[0]!.id,
+        anchor: { type: "lines", from: 2, to: 5 },
+      })
+      .expect(201);
+
+    expect(res.body.anchor).toEqual({ type: "lines", from: 2, to: 5 });
+  });
+
+  test("rejects an inverted line range", async ({
+    build,
+    screenshotDiffs,
+    scopedPatToken,
+  }) => {
+    await request(app)
+      .post(`/projects/acme/web/builds/${build.number}/comments`)
+      .set(auth(scopedPatToken))
+      .send({
+        body: "bad range",
+        screenshotDiffId: screenshotDiffs[0]!.id,
+        anchor: { type: "lines", from: 5, to: 2 },
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toEqual(expect.any(String));
+      });
   });
 
   test("rejects an anchor without a screenshot diff", async ({
@@ -242,7 +279,7 @@ describe("createComment", () => {
     await request(app)
       .post(`/projects/acme/web/builds/${build.number}/comments`)
       .set(auth(scopedPatToken))
-      .send({ body: "x", anchor: { point: { x: 0.5, y: 0.5 } } })
+      .send({ body: "x", anchor: { type: "point", x: 0.5, y: 0.5 } })
       .expect(400)
       .expect((res) => {
         expect(res.body.error).toEqual(expect.any(String));

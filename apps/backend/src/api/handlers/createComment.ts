@@ -7,7 +7,7 @@ import { resolveCommentBody } from "@/comment/body";
 import { createBuildComment } from "@/comment/createBuildComment";
 import { Build, BuildReview, ScreenshotDiff } from "@/database/models";
 import {
-  CommentAnchorSchema,
+  CommentAnchorSchema as StoredCommentAnchorSchema,
   type CommentAnchor,
 } from "@/database/models/Comment";
 import { boom } from "@/util/error";
@@ -19,6 +19,7 @@ import {
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
+  CommentAnchorSchema,
   CommentBodyInputSchema,
   CommentSchema,
   serializeComment,
@@ -33,21 +34,6 @@ import {
 } from "../schema/util/error";
 import { CreateAPIHandler } from "../util";
 
-const AnchorInputSchema = z
-  .object({
-    point: z.object({ x: z.number(), y: z.number() }).optional().meta({
-      description: "A point on the diff, in normalized (0–1) coordinates.",
-    }),
-    lines: z
-      .object({ from: z.number().int(), to: z.number().int() })
-      .optional()
-      .meta({ description: "A 1-based inclusive line range on a text diff." }),
-  })
-  .meta({
-    description:
-      "Where on the screenshot diff the comment points. Provide exactly one of point or lines.",
-  });
-
 const CreateCommentBodySchema = z.object({
   body: CommentBodyInputSchema,
   threadId: z
@@ -58,7 +44,7 @@ const CreateCommentBodySchema = z.object({
     description:
       "Screenshot diff to anchor the comment to. Required when anchor is set.",
   }),
-  anchor: AnchorInputSchema.optional(),
+  anchor: CommentAnchorSchema.optional(),
   addToReview: z.boolean().optional().meta({
     description:
       "Attach the comment to your pending review (created if needed) instead of posting it immediately. Ignored for replies, which inherit their thread's review.",
@@ -101,21 +87,12 @@ export const createCommentOperation = {
 } satisfies ZodOpenApiOperationObject;
 
 /**
- * Turn the comment-anchor input into the stored anchor shape, enforcing that
- * exactly one positioning is given. Bounds and shape are validated by the
- * model's {@link CommentAnchorSchema}.
+ * Validate a comment anchor against the model's bounds and inverted-range rules,
+ * turning a failure into a clean 400. The input already has the stored shape,
+ * so this only enforces the constraints the request schema can't express.
  */
-function commentAnchorFromInput(
-  input: z.infer<typeof AnchorInputSchema>,
-): CommentAnchor {
-  const { point, lines } = input;
-  if (Number(point != null) + Number(lines != null) !== 1) {
-    throw boom(400, "A comment anchor must set exactly one of point or lines");
-  }
-  const candidate = point
-    ? { type: "point", x: point.x, y: point.y }
-    : { type: "lines", from: lines!.from, to: lines!.to };
-  const result = CommentAnchorSchema.safeParse(candidate);
+function parseCommentAnchor(input: CommentAnchor): CommentAnchor {
+  const result = StoredCommentAnchorSchema.safeParse(input);
   if (!result.success) {
     throw boom(
       400,
@@ -168,7 +145,7 @@ export const createComment: CreateAPIHandler = ({ post }) => {
         screenshotDiffId = diff.id;
       }
 
-      const anchor = input.anchor ? commentAnchorFromInput(input.anchor) : null;
+      const anchor = input.anchor ? parseCommentAnchor(input.anchor) : null;
 
       // A reply inherits its thread's review (so a reply to a draft comment
       // stays a draft); a root comment joins the user's pending review when
