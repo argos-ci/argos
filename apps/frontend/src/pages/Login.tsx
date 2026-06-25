@@ -54,9 +54,9 @@ export function Component() {
                 Error message: {error}
               </p>
               <p>
-                Try again, if the error persists, please reach us on{" "}
-                <Link href="https://argos-ci.com/discord" target="_blank">
-                  Discord
+                Try again, if the error persists, please{" "}
+                <Link href="https://argos-ci.com/contact" target="_blank">
+                  contact us
                 </Link>
                 .
               </p>
