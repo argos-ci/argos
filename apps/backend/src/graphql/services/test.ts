@@ -207,18 +207,20 @@ export function queryActiveTests(input: {
     })
     .as("active_tests");
 
-  return Test.query()
-    .whereIn("tests.projectId", projectIds)
-    .where((qb) => {
-      if (filters?.buildName) {
-        qb.where("tests.buildName", filters.buildName);
-      }
-    })
-    // only ongoing
-    .join(activeTests, "active_tests.testId", "tests.id")
-    .orderByRaw(FLAKINESS_ORDER_BY, {
-      from: getStartDateFromPeriod(period).toISOString(),
-      to: new Date().toISOString(),
-    })
-    .range(after, after + first - 1);
+  return (
+    Test.query()
+      .whereIn("tests.projectId", projectIds)
+      .where((qb) => {
+        if (filters?.buildName) {
+          qb.where("tests.buildName", filters.buildName);
+        }
+      })
+      // only ongoing
+      .join(activeTests, "active_tests.testId", "tests.id")
+      .orderByRaw(FLAKINESS_ORDER_BY, {
+        from: getStartDateFromPeriod(period).toISOString(),
+        to: new Date().toISOString(),
+      })
+      .range(after, after + first - 1)
+  );
 }

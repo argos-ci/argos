@@ -4,3 +4,4 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 /skills
 .agents
+.claude/worktrees
