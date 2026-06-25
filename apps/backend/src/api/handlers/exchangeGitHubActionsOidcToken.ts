@@ -42,6 +42,7 @@ export const exchangeGitHubActionsOidcTokenOperation = {
   operationId: "exchangeGitHubActionsOidcToken",
   summary: "Exchange a GitHub Actions OIDC token for an Argos token",
   tags: ["Authentication"],
+  "x-internal": true,
   description:
     "Called by GitHub Actions to exchange an OIDC token for a short-lived Argos project token.",
   security: noAuth,

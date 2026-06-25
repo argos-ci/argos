@@ -40,6 +40,7 @@ export const exchangeGitHubActionsTokenlessTokenOperation = {
   operationId: "exchangeGitHubActionsTokenlessToken",
   summary: "Exchange a tokenless GitHub Actions token for an Argos token",
   tags: ["Authentication"],
+  "x-internal": true,
   description:
     "Called by GitHub Actions to exchange a tokenless bearer token for a short-lived Argos project token. The provided commit and branch must match the GitHub workflow run.",
   security: noAuth,
