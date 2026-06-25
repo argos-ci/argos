@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useSuspenseQuery } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { MarkGithubIcon } from "@primer/octicons-react";
@@ -21,7 +21,6 @@ import {
   LinkButtonProps,
 } from "@/ui/Button";
 import { Link } from "@/ui/Link";
-import { PageLoader } from "@/ui/PageLoader";
 import { TextInput } from "@/ui/TextInput";
 import * as storage from "@/util/storage";
 
@@ -305,23 +304,11 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
     }
   }, []);
 
-  const result = useQuery(ConnectRepositoryQuery, {
+  const result = useSuspenseQuery(ConnectRepositoryQuery, {
     variables: {
       accountSlug: props.accountSlug,
     },
   });
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (!result.data) {
-    return (
-      <div className="h-full">
-        <PageLoader />
-      </div>
-    );
-  }
 
   const { me, account } = result.data;
 
@@ -465,32 +452,31 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
     case "import": {
       return (
         <div className="flex h-full flex-col items-center justify-center gap-4 py-4">
-          <div className="text-low">
+          <div className="text-low text-center text-sm">
             Select a Git provider to import an existing project from a Git
             Repository.
           </div>
-          <GitHubButton
-            size="large"
-            onPress={() => setAndStoreProvider(GitProvider.GitHub)}
-            hasInstallations={hasGhInstallations}
-            isLoggedIntoGitHub={!!me.githubAccount}
-          >
-            Continue with GitHub
-          </GitHubButton>
-          {ghLightGhInstallation && (
-            <GitHubBaseButton
-              size="large"
-              onPress={() => setAndStoreProvider(GitProvider.GitHubLight)}
+          <div className="flex flex-col items-center gap-3">
+            <GitHubButton
+              onPress={() => setAndStoreProvider(GitProvider.GitHub)}
+              hasInstallations={hasGhInstallations}
+              isLoggedIntoGitHub={!!me.githubAccount}
             >
-              Continue with GitHub (no content-access)
-            </GitHubBaseButton>
-          )}
-          <GitLabButton
-            size="large"
-            onPress={() => setAndStoreProvider(GitProvider.GitLab)}
-          >
-            Continue with GitLab
-          </GitLabButton>
+              Continue with GitHub
+            </GitHubButton>
+            {ghLightGhInstallation && (
+              <GitHubBaseButton
+                onPress={() => setAndStoreProvider(GitProvider.GitHubLight)}
+              >
+                Continue with GitHub (no content-access)
+              </GitHubBaseButton>
+            )}
+            <GitLabButton
+              onPress={() => setAndStoreProvider(GitProvider.GitLab)}
+            >
+              Continue with GitLab
+            </GitLabButton>
+          </div>
         </div>
       );
     }

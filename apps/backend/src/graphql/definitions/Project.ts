@@ -217,6 +217,11 @@ export const typeDefs = gql`
     edges: [Project!]!
   }
 
+  input CreateProjectInput {
+    name: String!
+    accountSlug: String!
+  }
+
   input ImportGithubProjectInput {
     repo: String!
     owner: String!
@@ -297,6 +302,8 @@ export const typeDefs = gql`
   }
 
   extend type Mutation {
+    "Create a project without connecting a Git provider"
+    createProject(input: CreateProjectInput!): Project!
     "Import a project from GitHub"
     importGithubProject(input: ImportGithubProjectInput!): Project!
     "Import a project from GitLab"
@@ -348,13 +355,15 @@ async function notifyProjectCreation(input: {
   project: Project;
   account: Account;
   email: string | null;
-  source: "GitHub" | "GitLab";
+  source: "GitHub" | "GitLab" | null;
 }) {
   await notifyDiscord({
     content: `
-New project from ${input.account.name} (${
-      input.email ?? "unknown email"
-    }) imported from ${input.source}:
+New project from ${input.account.name} (${input.email ?? "unknown email"}) ${
+      input.source
+        ? `imported from ${input.source}`
+        : "created without a Git provider"
+    }:
 ${input.account.slug} / ${input.project.name}
 `.trim(),
   }).catch((error) => {
@@ -976,6 +985,34 @@ export const resolvers: IResolvers = {
     level: (projectUser) => projectUser.userLevel as IProjectUserLevel,
   },
   Mutation: {
+    createProject: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const account = await Account.query()
+        .findOne({ slug: args.input.accountSlug })
+        .throwIfNotFound();
+
+      const permissions = await account.$getPermissions(ctx.auth.user);
+      if (!permissions.includes("admin")) {
+        throw forbidden();
+      }
+
+      const name = args.input.name.trim();
+      await checkGqlProjectName({ name, accountId: account.id });
+
+      const project = await createProject({ name, accountId: account.id });
+
+      await notifyProjectCreation({
+        project,
+        email: ctx.auth.user.email,
+        account,
+        source: null,
+      });
+
+      return project;
+    },
     importGithubProject: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
