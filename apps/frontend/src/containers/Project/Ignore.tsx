@@ -89,9 +89,9 @@ function IgnoreFeatureCard(props: { project: Project }) {
           <CardTitle>Ignore changes</CardTitle>
           <CardParagraph>
             Let reviewers mark recurring or flaky changes as ignored so they no
-            longer require review. When disabled, changes can no longer be
-            ignored and automatic flaky-change detection is turned off. Changes
-            that were already ignored stay ignored.
+            longer require review. When disabled, new builds ignore nothing —
+            every change is treated as not ignored and auto-ignore is turned
+            off. Previous builds are not affected.
           </CardParagraph>
           <FormSwitch
             control={form.control}

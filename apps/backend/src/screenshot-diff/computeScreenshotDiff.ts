@@ -106,12 +106,13 @@ export async function computeScreenshotDiff(
     : null;
 
   // Resolve the project's ignore configuration. When the ignore feature is
-  // disabled, auto-ignore is also disabled (existing ignored changes are still
-  // applied so previously ignored diffs stay ignored).
+  // disabled, new builds ignore nothing: existing ignored changes are not
+  // applied and auto-ignore is disabled. Previously computed builds keep their
+  // persisted `ignored` flag, so they are not affected.
   const ignoreConfig = resolveIgnoreConfig(build.project?.ignoreConfig);
 
   const ignoredChange =
-    diffFile && !diffFile.isCreated
+    ignoreConfig.enabled && diffFile && !diffFile.isCreated
       ? await IgnoredChange.query().select("fingerprint").findOne({
           projectId: build.projectId,
           testId: screenshotDiff.testId,

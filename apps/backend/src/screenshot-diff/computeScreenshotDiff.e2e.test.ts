@@ -250,6 +250,48 @@ describe("#computeScreenshotDiff", () => {
       });
       expect(ignoredChange).toBeFalsy();
     });
+
+    test("does not apply existing ignored changes when the ignore feature is disabled", async ({
+      fixture,
+    }) => {
+      // Compute a first diff to learn its fingerprint.
+      await computeScreenshotDiff(screenshotDiff, {
+        s3: fixture.s3,
+        bucket: config.get("s3.screenshotsBucket"),
+      });
+      await screenshotDiff.reload();
+      expect(screenshotDiff.fingerprint).toBeTruthy();
+
+      // Register that fingerprint as an ignored change. With the feature
+      // enabled this would mark matching diffs as ignored.
+      await IgnoredChange.query().insert({
+        projectId: fixture.project.id,
+        testId: screenshotTest.id,
+        fingerprint: screenshotDiff.fingerprint!,
+      });
+
+      // Disable the ignore feature for the project.
+      await fixture.project.$query().patch({
+        ignoreConfig: { enabled: false },
+      });
+
+      // A new build computing the same change must not be ignored.
+      const secondScreenshotDiff = await factory.ScreenshotDiff.create({
+        buildId: fixture.build.id,
+        baseScreenshotId: screenshotDiff.baseScreenshotId,
+        compareScreenshotId: screenshotDiff.compareScreenshotId,
+        jobStatus: "pending",
+        testId: screenshotTest.id,
+      });
+
+      await computeScreenshotDiff(secondScreenshotDiff, {
+        s3: fixture.s3,
+        bucket: config.get("s3.screenshotsBucket"),
+      });
+      await secondScreenshotDiff.reload();
+
+      expect(secondScreenshotDiff.ignored).toBe(false);
+    });
   });
 
   describe("with two same screenshots", () => {
