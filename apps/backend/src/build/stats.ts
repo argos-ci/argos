@@ -22,5 +22,8 @@ export function getStatsMessage(
   if (stats.failure > 0) {
     parts.push(`${stats.failure} failure${stats.failure > 1 ? "s" : ""}`);
   }
+  if (stats.ignored > 0) {
+    parts.push(`${stats.ignored} ignored`);
+  }
   return parts.join(", ");
 }
