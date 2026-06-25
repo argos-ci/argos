@@ -4,6 +4,7 @@ import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
 import {
+  Account,
   Build,
   Comment,
   CommentNotificationSubscription,
@@ -495,8 +496,15 @@ describe("reactions", () => {
       .send({ emoji: "👍" })
       .expect(200);
 
+    const account = await Account.query().findOne({ userId: user.id });
     expect(added.body.reactions).toEqual([
-      { emoji: "👍", count: 1, userIds: [user.id] },
+      {
+        emoji: "👍",
+        count: 1,
+        users: [
+          { id: account!.id, slug: account!.slug, name: account!.displayName },
+        ],
+      },
     ]);
 
     const removed = await request(app)

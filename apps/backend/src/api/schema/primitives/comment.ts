@@ -1,12 +1,9 @@
 import { z } from "zod";
 
 import { schema as proseMirrorSchema } from "@/comment/schema";
-import {
-  Account,
-  BuildReview,
-  Comment,
-  CommentReaction,
-} from "@/database/models";
+import { BuildReview, Comment, CommentReaction } from "@/database/models";
+
+import { getUserAccountsByUserId, serializeUser, UserSchema } from "./user";
 
 /**
  * Body of a comment as accepted by the write endpoints: either Markdown text or
@@ -25,19 +22,11 @@ const CommentReactionGroupSchema = z
     count: z
       .number()
       .meta({ description: "Number of users who reacted with this emoji." }),
-    userIds: z
-      .array(z.string())
-      .meta({ description: "IDs of the users who reacted with this emoji." }),
+    users: z
+      .array(UserSchema)
+      .meta({ description: "The users who reacted with this emoji." }),
   })
   .meta({ description: "Reactions of a single emoji on a comment." });
-
-const CommentAuthorSchema = z
-  .object({
-    id: z.string(),
-    slug: z.string(),
-    name: z.string().nullable(),
-  })
-  .meta({ description: "Author of a comment.", id: "CommentAuthor" });
 
 const CommentAnchorSchema = z
   .discriminatedUnion("type", [
@@ -72,7 +61,7 @@ export const CommentSchema = z
     text: z
       .string()
       .meta({ description: "Plain-text rendering of the comment content." }),
-    author: CommentAuthorSchema.nullable(),
+    author: UserSchema.nullable(),
     screenshotDiffId: z.string().nullable().meta({
       description: "Screenshot diff this comment is anchored to, if any.",
     }),
@@ -104,7 +93,7 @@ function commentText(content: unknown): string {
 
 /**
  * Serialize comments into the public API shape, batching the relations (author
- * accounts, reactions, owning reviews) to avoid N+1 queries.
+ * and reaction accounts, reactions, owning reviews) to avoid N+1 queries.
  */
 export async function serializeComments(
   comments: Comment[],
@@ -117,15 +106,8 @@ export async function serializeComments(
         .filter((id): id is string => id !== null),
     ),
   ];
-  const userIds = [
-    ...new Set(
-      comments
-        .map((comment) => comment.userId)
-        .filter((id): id is string => id !== null),
-    ),
-  ];
 
-  const [reactions, reviews, accounts] = await Promise.all([
+  const [reactions, reviews] = await Promise.all([
     commentIds.length > 0
       ? CommentReaction.query()
           .whereIn("commentId", commentIds)
@@ -134,9 +116,13 @@ export async function serializeComments(
     reviewIds.length > 0
       ? BuildReview.query().findByIds(reviewIds)
       : ([] as BuildReview[]),
-    userIds.length > 0
-      ? Account.query().whereIn("userId", userIds)
-      : ([] as Account[]),
+  ]);
+
+  // Resolve the accounts for both comment authors and everyone who reacted in a
+  // single batched query.
+  const accountByUserId = await getUserAccountsByUserId([
+    ...comments.map((comment) => comment.userId),
+    ...reactions.map((reaction) => reaction.userId),
   ]);
 
   // Group reactions per comment, preserving insertion order so the emoji groups
@@ -149,21 +135,16 @@ export async function serializeComments(
   }
 
   const reviewById = new Map(reviews.map((review) => [review.id, review]));
-  const accountByUserId = new Map(
-    accounts.flatMap((account) =>
-      account.userId ? [[account.userId, account] as const] : [],
-    ),
-  );
 
   return comments.map((comment) => {
     const account = comment.userId
       ? (accountByUserId.get(comment.userId) ?? null)
       : null;
 
-    const groups = new Map<string, string[]>();
+    const groups = new Map<string, CommentReaction[]>();
     for (const reaction of reactionsByComment.get(comment.id) ?? []) {
       const list = groups.get(reaction.emoji) ?? [];
-      list.push(reaction.userId);
+      list.push(reaction);
       groups.set(reaction.emoji, list);
     }
 
@@ -177,19 +158,20 @@ export async function serializeComments(
       threadId: comment.threadId,
       body: comment.content,
       text: commentText(comment.content),
-      author: account
-        ? { id: account.id, slug: account.slug, name: account.displayName }
-        : null,
+      author: account ? serializeUser(account) : null,
       screenshotDiffId: comment.screenshotDiffId,
       anchor: comment.anchor,
       pending,
       resolvedAt: comment.resolvedAt,
       editedAt: comment.editedAt,
       createdAt: comment.createdAt,
-      reactions: Array.from(groups.entries()).map(([emoji, ids]) => ({
+      reactions: Array.from(groups.entries()).map(([emoji, list]) => ({
         emoji,
-        count: ids.length,
-        userIds: ids,
+        count: list.length,
+        users: list.flatMap((reaction) => {
+          const reactionAccount = accountByUserId.get(reaction.userId);
+          return reactionAccount ? [serializeUser(reactionAccount)] : [];
+        }),
       })),
     };
   });
