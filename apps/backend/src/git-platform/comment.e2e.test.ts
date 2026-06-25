@@ -129,6 +129,40 @@ describe("getCommentBody", () => {
     expect(body).not.toContain(olderDeployment.url);
   });
 
+  test("shows ignored screenshots in the build details column", async ({
+    project,
+  }) => {
+    const compareBucket = await factory.ScreenshotBucket.create({
+      projectId: project.id,
+      commit,
+    });
+    const build = await factory.Build.create({
+      projectId: project.id,
+      compareScreenshotBucketId: compareBucket.id,
+      name: "default",
+      jobStatus: "complete",
+      conclusion: "no-changes",
+      updatedAt: "2026-05-07T12:00:00.000Z",
+      stats: {
+        failure: 0,
+        added: 0,
+        unchanged: 0,
+        changed: 4,
+        removed: 0,
+        total: 7,
+        retryFailure: 0,
+        ignored: 3,
+      },
+    });
+
+    const buildUrl = await build.getUrl();
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain(
+      `| **default** ([Inspect](${buildUrl})) | ✅ No changes detected | 4 changed, 3 ignored | May 7, 2026, 12:00 PM |`,
+    );
+  });
+
   test("prefixes rows when multiple projects share the commit", async ({
     project,
   }) => {
