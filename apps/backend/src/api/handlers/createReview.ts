@@ -33,6 +33,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const SnapshotConclusionSchema = z.enum(["APPROVE", "REQUEST_CHANGES"]);
@@ -99,7 +100,11 @@ const CreateReviewBodySchema = z.object({
 
 export const createReviewOperation = {
   operationId: "createReview",
-  summary: "Create a review on a specified build",
+  summary: "Create a review on a build",
+  description:
+    "Submit a review on a build to approve or reject the changes it captured.",
+  tags: ["Reviews"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

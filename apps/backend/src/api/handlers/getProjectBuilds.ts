@@ -17,6 +17,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { anyTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const GetProjectBuildsParams = PageParamsSchema.extend({
@@ -42,6 +43,11 @@ const GetProjectBuildsParams = PageParamsSchema.extend({
 
 export const getProjectBuildsOperation = {
   operationId: "getProjectBuilds",
+  summary: "List a project's builds",
+  description:
+    "List the builds of a project, most recent first. Results are paginated. Use `distinctName` to return only the latest build per name and commit.",
+  tags: ["Builds"],
+  security: anyTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

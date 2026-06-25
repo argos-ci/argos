@@ -15,10 +15,15 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const getDeploymentOperation = {
   operationId: "getDeployment",
+  summary: "Get a deployment",
+  description: "Retrieve a single deployment by its ID.",
+  tags: ["Deployments"],
+  security: projectTokenAuth,
   requestParams: {
     path: z.object({
       deploymentId: z.string().meta({ description: "The deployment ID" }),

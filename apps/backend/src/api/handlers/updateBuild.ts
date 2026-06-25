@@ -28,6 +28,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
@@ -45,6 +46,11 @@ type RequestBody = z.infer<typeof RequestBodySchema>;
 
 export const updateBuildOperation = {
   operationId: "updateBuild",
+  summary: "Update a build",
+  description:
+    "Add screenshots to an existing build and update its metadata. Used to push the screenshots of a parallel shard, identified by `parallelIndex` and `parallelTotal`.",
+  tags: ["Builds"],
+  security: projectTokenAuth,
   requestParams: {
     path: z.object({
       buildId: BuildIdSchema,

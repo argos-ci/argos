@@ -18,11 +18,16 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const removeCommentReactionOperation = {
   operationId: "removeCommentReaction",
   summary: "Remove an emoji reaction from a comment",
+  description:
+    "Remove an emoji reaction previously added by the authenticated user from a comment.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

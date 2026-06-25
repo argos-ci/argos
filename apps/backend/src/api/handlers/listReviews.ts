@@ -17,11 +17,15 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const listReviewsOperation = {
   operationId: "listReviews",
   summary: "List the reviews submitted on a build",
+  description: "List the reviews submitted on a build, with pagination.",
+  tags: ["Reviews"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

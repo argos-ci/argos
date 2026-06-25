@@ -12,6 +12,7 @@ import {
   serviceUnavailable,
   unauthorized,
 } from "../schema/util/error";
+import { noAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const GitHubActionsTokenlessExchangeRequestSchema = z.object({
@@ -38,9 +39,10 @@ const GitHubActionsTokenlessExchangeResponseSchema = z.object({
 export const exchangeGitHubActionsTokenlessTokenOperation = {
   operationId: "exchangeGitHubActionsTokenlessToken",
   summary: "Exchange a tokenless GitHub Actions token for an Argos token",
+  tags: ["Authentication"],
   description:
     "Called by GitHub Actions to exchange a tokenless bearer token for a short-lived Argos project token. The provided commit and branch must match the GitHub workflow run.",
-  security: [],
+  security: noAuth,
   requestBody: {
     content: {
       "application/json": {

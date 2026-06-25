@@ -21,10 +21,16 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { anyTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const getBuildOperation = {
   operationId: "getBuild",
+  summary: "Get a build",
+  description:
+    "Retrieve a single build by its number within a project, including its status and metadata.",
+  tags: ["Builds"],
+  security: anyTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

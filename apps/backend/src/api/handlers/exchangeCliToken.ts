@@ -9,6 +9,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { noAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const CliTokenExchangeRequestSchema = z.object({
@@ -28,7 +29,9 @@ const CliTokenResponseSchema = z.object({
 
 export const exchangeCliTokenOperation = {
   operationId: "exchangeCliToken",
-  summary: "Exchange CLI authorization code for a token",
+  summary: "Exchange a CLI authorization code for a token",
+  tags: ["Authentication"],
+  security: noAuth,
   description:
     "Called by the CLI to exchange a PKCE authorization code for an API token.",
   requestBody: {

@@ -20,6 +20,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({ parallelNonce: z.string().min(1) });
@@ -28,6 +29,11 @@ const ResponseSchema = z.object({ builds: z.array(BuildSchema) });
 
 export const finalizeBuildsOperation = {
   operationId: "finalizeBuilds",
+  summary: "Finalize parallel builds",
+  description:
+    "Mark every parallel shard sharing the given `parallelNonce` as complete. Once finalized, Argos compares the aggregated screenshots and starts processing the build.",
+  tags: ["Builds"],
+  security: projectTokenAuth,
   requestBody: {
     content: {
       "application/json": {

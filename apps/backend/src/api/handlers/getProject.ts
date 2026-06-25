@@ -14,10 +14,16 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { anyTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const getProjectOperation = {
   operationId: "getProject",
+  summary: "Get a project",
+  description:
+    "Retrieve a project by its owner (account slug) and project name.",
+  tags: ["Projects"],
+  security: anyTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

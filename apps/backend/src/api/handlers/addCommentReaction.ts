@@ -18,6 +18,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const AddReactionBodySchema = z.object({
@@ -27,6 +28,10 @@ const AddReactionBodySchema = z.object({
 export const addCommentReactionOperation = {
   operationId: "addCommentReaction",
   summary: "Add an emoji reaction to a comment",
+  description:
+    "Add an emoji reaction to a comment on behalf of the authenticated user.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

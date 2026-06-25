@@ -9,6 +9,7 @@ import {
 import { boom } from "@/util/error";
 
 import { invalidParameters, notFound, serverError } from "../schema/util/error";
+import { noAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const ResponseSchema = z.object({
@@ -23,7 +24,11 @@ const CACHE_CONTROL =
 
 export const resolveDeploymentDomainOperation = {
   operationId: "resolveDeploymentDomain",
-  security: [],
+  summary: "Resolve a deployment domain",
+  description:
+    "Resolve a deployment domain or URL to the deployment it currently serves. This endpoint is public and does not require authentication.",
+  tags: ["Deployments"],
+  security: noAuth,
   requestParams: {
     path: z.object({
       domain: z.string().meta({ description: "A deployment domain or URL" }),

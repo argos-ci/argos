@@ -33,5 +33,7 @@ tsconfig.tsbuildinfo
 # Storybook
 *storybook.log
 storybook-static
+# Generated OpenAPI specification
+/apps/backend/openapi.yaml
 # Claude
 .claude/settings.local.json
