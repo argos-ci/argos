@@ -422,7 +422,7 @@ async function importGithubProject(props: {
     accountId: account.id,
   });
 
-  const project = await createProject({
+  const project = await Project.query().insertAndFetch({
     name,
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
@@ -493,7 +493,7 @@ const importGitlabProject = async (props: {
     accountId: account.id,
   });
 
-  const project = await createProject({
+  const project = await Project.query().insertAndFetch({
     name,
     accountId: account.id,
     gitlabProjectId: glProject.id,
@@ -508,14 +508,6 @@ const importGitlabProject = async (props: {
 
   return project;
 };
-
-function createProject(
-  attrs: { name: string; accountId: string } & PartialModelObject<Project>,
-) {
-  // The ignore feature and auto-ignore are enabled by default (represented by
-  // a null `ignoreConfig`), so no explicit configuration is needed.
-  return Project.query().insertAndFetch({ ...attrs });
-}
 
 function toGraphQLDeploymentAuth(
   deploymentAuth: Project["deploymentAuth"],
@@ -1018,7 +1010,10 @@ export const resolvers: IResolvers = {
       const name = args.input.name.trim();
       await checkGqlProjectName({ name, accountId: account.id });
 
-      const project = await createProject({ name, accountId: account.id });
+      const project = await Project.query().insertAndFetch({
+        name,
+        accountId: account.id,
+      });
 
       await notifyProjectCreation({
         project,
