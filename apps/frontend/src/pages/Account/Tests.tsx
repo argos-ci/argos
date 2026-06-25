@@ -1,4 +1,11 @@
-import { Suspense, useDeferredValue, useEffect, useMemo, useRef } from "react";
+import {
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useTransition,
+} from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -127,29 +134,32 @@ function PageContent(props: { accountSlug: string }) {
     },
   });
   const tests = data.account?.tests;
+  const [isFetchingMore, startFetchMoreTransition] = useTransition();
   const fetchNextPage = useEventCallback(() => {
     invariant(tests);
-    fetchMore({
-      variables: { after: tests.edges.length },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!prev.account?.tests?.edges || !fetchMoreResult?.account?.tests) {
-          return fetchMoreResult;
-        }
-        return {
-          ...prev,
-          account: {
-            ...prev.account,
-            tests: {
-              ...prev.account.tests,
-              ...fetchMoreResult.account.tests,
-              edges: [
-                ...prev.account.tests.edges,
-                ...fetchMoreResult.account.tests.edges,
-              ],
+    startFetchMoreTransition(() => {
+      fetchMore({
+        variables: { after: tests.edges.length },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!prev.account?.tests?.edges || !fetchMoreResult?.account?.tests) {
+            return fetchMoreResult;
+          }
+          return {
+            ...prev,
+            account: {
+              ...prev.account,
+              tests: {
+                ...prev.account.tests,
+                ...fetchMoreResult.account.tests,
+                edges: [
+                  ...prev.account.tests.edges,
+                  ...fetchMoreResult.account.tests.edges,
+                ],
+              },
             },
-          },
-        };
-      },
+          };
+        },
+      });
     });
   });
 
@@ -191,6 +201,7 @@ function PageContent(props: { accountSlug: string }) {
       accountSlug={accountSlug}
       tests={tests}
       fetchNextPage={fetchNextPage}
+      isFetchingMore={isFetchingMore}
       isUpdating={isUpdating}
     />
   );
@@ -200,9 +211,11 @@ function TestsList(props: {
   accountSlug: string;
   tests: Tests;
   isUpdating: boolean;
+  isFetchingMore: boolean;
   fetchNextPage: () => void;
 }) {
-  const { accountSlug, tests, isUpdating, fetchNextPage } = props;
+  const { accountSlug, tests, isUpdating, isFetchingMore, fetchNextPage } =
+    props;
   const parentRef = useRef<HTMLDivElement>(null);
   const { hasNextPage } = tests.pageInfo;
   const displayCount = tests.edges.length;
@@ -217,10 +230,15 @@ function TestsList(props: {
   const virtualItems = rowVirtualizer.getVirtualItems();
   const lastItem = virtualItems[virtualItems.length - 1];
   useEffect(() => {
-    if (lastItem && lastItem.index === displayCount && hasNextPage) {
+    if (
+      lastItem &&
+      lastItem.index === displayCount &&
+      !isFetchingMore &&
+      hasNextPage
+    ) {
       fetchNextPage();
     }
-  }, [lastItem, displayCount, hasNextPage, fetchNextPage]);
+  }, [lastItem, displayCount, isFetchingMore, hasNextPage, fetchNextPage]);
 
   return (
     <List
@@ -255,7 +273,10 @@ function TestsList(props: {
         </div>
       </ListHeaderRow>
       <div ref={parentRef} className="overflow-auto">
-        <div className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>
+        <div
+          className="relative"
+          style={{ height: rowVirtualizer.getTotalSize() }}
+        >
           {virtualItems.map((virtualRow) => {
             const test = tests.edges[virtualRow.index];
             const style: React.CSSProperties = {
@@ -320,7 +341,11 @@ function TestRow(props: {
     >
       <div className="flex flex-1 gap-4 truncate">
         {test.screenshot ? (
-          <DiffCard isActive={false} variant="neutral" className="w-28 shrink-0">
+          <DiffCard
+            isActive={false}
+            variant="neutral"
+            className="w-28 shrink-0"
+          >
             <SingleImage
               contentType={test.screenshot.contentType}
               dimensions={

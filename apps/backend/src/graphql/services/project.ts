@@ -1,5 +1,6 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { TransactionOrKnex } from "objection";
+import { QueryBuilder, TransactionOrKnex } from "objection";
 
 import {
   Account,
@@ -91,45 +92,37 @@ export async function getAdminProject(args: {
 }
 
 /**
- * Resolve the ids of the projects an authenticated user can see within an
- * account, applying the same visibility rules as the `Account.projects`
- * resolver:
+ * Apply the project-visibility rules for a user to a `Project` query, returning
+ * the filtered query — or `null` when the user can see no project at all, so the
+ * caller can decide whether to throw or return an empty result.
+ *
+ * This is the single source of truth shared by the `Account.projects` resolver
+ * and {@link getVisibleProjectIds}:
  * - staff see every project
  * - on a user account, only the owner
  * - on a team, owners/members see all; contributors see projects they are a
  *   contributor on (or that expose a default user level)
- *
- * Returns an empty array when the user can see nothing, so callers can short
- * circuit without a query.
  */
-export async function getVisibleProjectIds(args: {
-  account: Account;
-  user: { id: string; staff: boolean };
-}): Promise<string[]> {
+export function applyProjectVisibility<R>(
+  query: QueryBuilder<Project, R>,
+  args: { account: Account; user: { id: string; staff: boolean } },
+): QueryBuilder<Project, R> | null {
   const { account, user } = args;
-  const query = Project.query()
-    .where("accountId", account.id)
-    .select("projects.id");
 
+  // Staff can view all projects
   if (user.staff) {
-    const rows = await query;
-    return rows.map((row) => row.id);
+    return query;
   }
 
   switch (account.type) {
-    case "user": {
-      if (account.userId !== user.id) {
-        return [];
-      }
-      const rows = await query;
-      return rows.map((row) => row.id);
-    }
+    case "user":
+      return account.userId === user.id ? query : null;
     case "team": {
       const teamUserQuery = TeamUser.query().where({
         teamId: account.teamId,
         userId: user.id,
       });
-      const rows = await query.where((qb) => {
+      return query.where((qb) => {
         // User is a team member or owner
         qb.whereExists(
           teamUserQuery
@@ -153,11 +146,32 @@ export async function getVisibleProjectIds(args: {
           });
         });
       });
-      return rows.map((row) => row.id);
     }
     default:
-      return [];
+      return assertNever(account.type);
   }
+}
+
+/**
+ * Resolve the ids of the projects an authenticated user can see within an
+ * account.
+ *
+ * Returns an empty array when the user can see nothing, so callers can short
+ * circuit without a query.
+ */
+export async function getVisibleProjectIds(args: {
+  account: Account;
+  user: { id: string; staff: boolean };
+}): Promise<string[]> {
+  const query = applyProjectVisibility(
+    Project.query().where("accountId", args.account.id).select("projects.id"),
+    args,
+  );
+  if (!query) {
+    return [];
+  }
+  const rows = await query;
+  return rows.map((row) => row.id);
 }
 
 /**
