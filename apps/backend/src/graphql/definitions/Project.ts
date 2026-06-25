@@ -13,6 +13,7 @@ import {
   Deployment,
   GithubInstallation,
   GitlabProject,
+  normalizeIgnoreConfig,
   Project,
   ProjectUser,
   Screenshot,
@@ -86,6 +87,20 @@ export const typeDefs = gql`
 
   input AutoIgnoreSettingsInput {
     changes: Int!
+  }
+
+  type IgnoreConfig {
+    "Whether the ignore feature is enabled for this project"
+    enabled: Boolean!
+    "Auto-ignore settings, null when auto-ignore (or the ignore feature) is disabled"
+    autoIgnore: AutoIgnoreSettings
+  }
+
+  input IgnoreConfigInput {
+    "Whether the ignore feature is enabled for this project"
+    enabled: Boolean!
+    "Auto-ignore settings, null to disable auto-ignore"
+    autoIgnore: AutoIgnoreSettingsInput
   }
 
   type ProjectContributor implements Node {
@@ -190,8 +205,8 @@ export const typeDefs = gql`
     automationRules(after: Int = 0, first: Int = 30): AutomationRuleConnection!
     "Default user access level applied to members that are not contributors"
     defaultUserLevel: ProjectUserLevel
-    "Auto ignore configuration for flaky changes"
-    autoIgnore: AutoIgnoreSettings
+    "Ignore feature configuration"
+    ignoreConfig: IgnoreConfig!
     "List all tests in a project"
     tests(
       after: Int = 0
@@ -243,7 +258,7 @@ export const typeDefs = gql`
     name: String
     summaryCheck: SummaryCheck
     defaultUserLevel: ProjectUserLevel
-    autoIgnore: AutoIgnoreSettingsInput
+    ignoreConfig: IgnoreConfigInput
     deploymentEnabled: Boolean
     deploymentAuth: DeploymentAuth
     githubActionsOidcEnabled: Boolean
@@ -407,7 +422,7 @@ async function importGithubProject(props: {
     accountId: account.id,
   });
 
-  const project = await createProject({
+  const project = await Project.query().insertAndFetch({
     name,
     accountId: account.id,
     githubRepositoryId: ghRepo.id,
@@ -478,7 +493,7 @@ const importGitlabProject = async (props: {
     accountId: account.id,
   });
 
-  const project = await createProject({
+  const project = await Project.query().insertAndFetch({
     name,
     accountId: account.id,
     gitlabProjectId: glProject.id,
@@ -493,16 +508,6 @@ const importGitlabProject = async (props: {
 
   return project;
 };
-
-function createProject(
-  attrs: { name: string; accountId: string } & PartialModelObject<Project>,
-) {
-  return Project.query().insertAndFetch({
-    ...attrs,
-    // Automatically enable auto-ignore
-    autoIgnore: { changes: 3 },
-  });
-}
 
 function toGraphQLDeploymentAuth(
   deploymentAuth: Project["deploymentAuth"],
@@ -538,6 +543,9 @@ export const resolvers: IResolvers = {
   Project: {
     buildsCount: async (project, _args, ctx) => {
       return ctx.loaders.ProjectBuildsCountByProjectId.load(project.id);
+    },
+    ignoreConfig: (project) => {
+      return project.$getIgnoreConfig();
     },
     token: async (project, _args, ctx) => {
       if (!ctx.auth) {
@@ -1002,7 +1010,10 @@ export const resolvers: IResolvers = {
       const name = args.input.name.trim();
       await checkGqlProjectName({ name, accountId: account.id });
 
-      const project = await createProject({ name, accountId: account.id });
+      const project = await Project.query().insertAndFetch({
+        name,
+        accountId: account.id,
+      });
 
       await notifyProjectCreation({
         project,
@@ -1068,8 +1079,14 @@ export const resolvers: IResolvers = {
         data.defaultUserLevel = args.input.defaultUserLevel;
       }
 
-      if (args.input.autoIgnore !== undefined) {
-        data.autoIgnore = args.input.autoIgnore;
+      if (args.input.ignoreConfig !== undefined) {
+        const { ignoreConfig } = args.input;
+        data.ignoreConfig = ignoreConfig
+          ? normalizeIgnoreConfig({
+              enabled: ignoreConfig.enabled,
+              autoIgnore: ignoreConfig.autoIgnore ?? null,
+            })
+          : null;
       }
 
       if (

@@ -12,7 +12,6 @@ import { Heading, Text } from "react-aria-components";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
-import { ProjectAutoIgnore } from "@/containers/Project/AutoIgnore";
 import { ProjectBadge } from "@/containers/Project/Badge";
 import { ProjectBranches } from "@/containers/Project/Branches";
 import { ProjectChangeName } from "@/containers/Project/ChangeName";
@@ -21,6 +20,7 @@ import { ProjectDelete } from "@/containers/Project/Delete";
 import { ProjectDeployments } from "@/containers/Project/Deployments/Deployments";
 import { ProjectGitHubActionsOIDC } from "@/containers/Project/GitHubActionsOIDC";
 import { ProjectGitRepository } from "@/containers/Project/GitRepository";
+import { ProjectIgnore } from "@/containers/Project/Ignore";
 import { ProjectStatusChecks } from "@/containers/Project/StatusChecks";
 import { ProjectToken } from "@/containers/Project/Token";
 import { ProjectTokenlessAuth } from "@/containers/Project/TokenlessAuth";
@@ -63,7 +63,7 @@ const ProjectQuery = graphql(`
       ...ProjectToken_Project
       ...ProjectBranches_Project
       ...ProjectStatusChecks_Project
-      ...ProjectAutoIgnore_Project
+      ...ProjectIgnore_Project
       ...ProjectVisibility_Project
       ...ProjectTransfer_Project
       ...ProjectDelete_Project
@@ -195,7 +195,7 @@ function PageContent() {
     {
       name: "Flaky detection",
       slug: "flaky-detection",
-      element: hasAdminPermission && <ProjectAutoIgnore project={project} />,
+      element: hasAdminPermission && <ProjectIgnore project={project} />,
     },
     {
       name: "Deployments",

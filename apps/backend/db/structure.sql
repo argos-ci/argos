@@ -1619,12 +1619,13 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
-    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
+    "autoIgnore" jsonb,
+    "ignoreConfig" jsonb,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
     CONSTRAINT "projects_summaryCheck_check" CHECK (("summaryCheck" = ANY (ARRAY['always'::text, 'auto'::text, 'never'::text])))
@@ -5188,3 +5189,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260614202438_build-requested-reviewers.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260616120000_comment-anchor.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260620120000_pending-review-unique.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260625120000_project-ignore-config.js', 1, NOW());
