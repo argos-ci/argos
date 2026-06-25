@@ -29,9 +29,81 @@ type ProjectPermission =
   | "view_settings"
   | "view";
 export type DeploymentAuth = "public" | "domain-private" | "private";
+
+/**
+ * Default number of occurrences before a change is considered flaky and
+ * automatically ignored.
+ */
+export const DEFAULT_AUTO_IGNORE_CHANGES = 3;
+
 export type ProjectAutoIgnore = {
   changes: number;
 };
+
+/**
+ * Configuration of the ignore feature for a project.
+ *
+ * It only stores values that differ from the default. The default is:
+ * - The ignore feature is enabled.
+ * - Auto-ignore is enabled with {@link DEFAULT_AUTO_IGNORE_CHANGES} occurrences.
+ *
+ * - `enabled` absent means the ignore feature is enabled.
+ * - `autoIgnore` absent means auto-ignore is enabled with the default threshold.
+ * - `autoIgnore` set to `false` means auto-ignore is disabled.
+ */
+export type ProjectIgnoreConfig = {
+  enabled?: boolean;
+  autoIgnore?: false | ProjectAutoIgnore;
+};
+
+/**
+ * Resolved ignore configuration with all defaults applied.
+ */
+export type ResolvedIgnoreConfig = {
+  /** Whether the ignore feature is enabled. */
+  enabled: boolean;
+  /** Auto-ignore settings, or `null` when auto-ignore is disabled. */
+  autoIgnore: ProjectAutoIgnore | null;
+};
+
+/**
+ * Resolve a stored ignore configuration into its effective values.
+ */
+export function resolveIgnoreConfig(
+  config: ProjectIgnoreConfig | null | undefined,
+): ResolvedIgnoreConfig {
+  const enabled = config?.enabled !== false;
+  if (!enabled) {
+    return { enabled: false, autoIgnore: null };
+  }
+  const autoIgnore = config?.autoIgnore;
+  if (autoIgnore === false) {
+    return { enabled: true, autoIgnore: null };
+  }
+  return {
+    enabled: true,
+    autoIgnore: { changes: autoIgnore?.changes ?? DEFAULT_AUTO_IGNORE_CHANGES },
+  };
+}
+
+/**
+ * Normalize an ignore configuration so that only values differing from the
+ * default are stored. Returns `null` when the configuration matches the default.
+ */
+export function normalizeIgnoreConfig(
+  input: ResolvedIgnoreConfig,
+): ProjectIgnoreConfig | null {
+  if (!input.enabled) {
+    return { enabled: false };
+  }
+  const config: ProjectIgnoreConfig = {};
+  if (input.autoIgnore === null) {
+    config.autoIgnore = false;
+  } else if (input.autoIgnore.changes !== DEFAULT_AUTO_IGNORE_CHANGES) {
+    config.autoIgnore = { changes: input.autoIgnore.changes };
+  }
+  return Object.keys(config).length === 0 ? null : config;
+}
 
 const ALL_PROJECT_PERMISSIONS: ProjectPermission[] = [
   "admin",
@@ -79,14 +151,25 @@ export class Project extends Model {
           defaultUserLevel: {
             anyOf: [{ type: "null" }, UserLevelJsonSchema as JSONSchema],
           },
-          autoIgnore: {
+          ignoreConfig: {
             anyOf: [
               { type: "null" },
               {
                 type: "object",
-                required: ["changes"],
                 properties: {
-                  changes: { type: "integer", minimum: 1 },
+                  enabled: { type: "boolean" },
+                  autoIgnore: {
+                    anyOf: [
+                      { type: "boolean" },
+                      {
+                        type: "object",
+                        required: ["changes"],
+                        properties: {
+                          changes: { type: "integer", minimum: 1 },
+                        },
+                      },
+                    ],
+                  },
                 },
               },
             ],
@@ -111,8 +194,15 @@ export class Project extends Model {
   deploymentAuth!: DeploymentAuth;
   summaryCheck!: "always" | "never" | "auto";
   defaultUserLevel!: UserLevel | null;
-  autoIgnore!: ProjectAutoIgnore | null;
+  ignoreConfig!: ProjectIgnoreConfig | null;
   deploymentProdBranchGlob!: string | null;
+
+  /**
+   * Resolve the effective ignore configuration of the project.
+   */
+  $getIgnoreConfig(): ResolvedIgnoreConfig {
+    return resolveIgnoreConfig(this.ignoreConfig);
+  }
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

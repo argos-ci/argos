@@ -29,6 +29,7 @@ import {
 } from "@/containers/Build/toolbar/NavButtons";
 import { ZoomerSyncProvider } from "@/containers/Build/Zoomer";
 import { PeriodSelect } from "@/containers/PeriodSelect";
+import { ProjectIgnoreEnabledProvider } from "@/containers/Project/IgnoreContext";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import {
   useTestPeriodState,
@@ -71,6 +72,9 @@ const TestQuery = graphql(`
     project(accountSlug: $accountSlug, projectName: $projectName) {
       id
       permissions
+      ignoreConfig {
+        enabled
+      }
       test(id: $testId) {
         id
         name
@@ -217,7 +221,11 @@ export function Component() {
               </span>
             </Heading>
             <ProjectPermissionsContext value={project.permissions}>
-              <ChangesExplorer test={test} periodState={periodState} />
+              <ProjectIgnoreEnabledProvider
+                enabled={project.ignoreConfig.enabled}
+              >
+                <ChangesExplorer test={test} periodState={periodState} />
+              </ProjectIgnoreEnabledProvider>
             </ProjectPermissionsContext>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 
 import { PaymentBanner } from "@/containers/PaymentBanner";
+import { ProjectIgnoreEnabledProvider } from "@/containers/Project/IgnoreContext";
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
@@ -28,6 +29,9 @@ const ProjectQuery = graphql(`
       ...BuildWorkspace_Project
       ...BuildReviewDialog_Project
       permissions
+      ignoreConfig {
+        enabled
+      }
       account {
         id
         ...OvercapacityBanner_Account
@@ -82,43 +86,47 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
 
   return (
     <ProjectPermissionsContext value={data?.project?.permissions ?? null}>
-      <BuildReviewStateProvider
-        params={params}
-        buildStatus={data?.project?.build?.status ?? null}
-        buildType={data?.project?.build?.type ?? null}
+      <ProjectIgnoreEnabledProvider
+        enabled={data?.project?.ignoreConfig?.enabled ?? true}
       >
-        <BuildDiffProvider params={params} build={build}>
-          <BuildReviewDialogProvider project={data?.project ?? null}>
-            <RejectCommentDialogProvider build={build}>
-              <div className="flex h-screen min-h-0 flex-col">
-                {data?.project?.account && (
-                  <>
-                    <PaymentBanner account={data.project.account} />
-                    <OvercapacityBanner
-                      account={data.project.account}
-                      accountSlug={params.accountSlug}
-                    />
-                  </>
-                )}
-                <BuildHeader
-                  buildNumber={params.buildNumber}
-                  accountSlug={params.accountSlug}
-                  projectName={params.projectName}
-                  build={build}
-                  project={data?.project ?? null}
-                />
-                {project && build ? (
-                  <BuildWorkspace
-                    params={params}
+        <BuildReviewStateProvider
+          params={params}
+          buildStatus={data?.project?.build?.status ?? null}
+          buildType={data?.project?.build?.type ?? null}
+        >
+          <BuildDiffProvider params={params} build={build}>
+            <BuildReviewDialogProvider project={data?.project ?? null}>
+              <RejectCommentDialogProvider build={build}>
+                <div className="flex h-screen min-h-0 flex-col">
+                  {data?.project?.account && (
+                    <>
+                      <PaymentBanner account={data.project.account} />
+                      <OvercapacityBanner
+                        account={data.project.account}
+                        accountSlug={params.accountSlug}
+                      />
+                    </>
+                  )}
+                  <BuildHeader
+                    buildNumber={params.buildNumber}
+                    accountSlug={params.accountSlug}
+                    projectName={params.projectName}
                     build={build}
-                    project={project}
+                    project={data?.project ?? null}
                   />
-                ) : null}
-              </div>
-            </RejectCommentDialogProvider>
-          </BuildReviewDialogProvider>
-        </BuildDiffProvider>
-      </BuildReviewStateProvider>
+                  {project && build ? (
+                    <BuildWorkspace
+                      params={params}
+                      build={build}
+                      project={project}
+                    />
+                  ) : null}
+                </div>
+              </RejectCommentDialogProvider>
+            </BuildReviewDialogProvider>
+          </BuildDiffProvider>
+        </BuildReviewStateProvider>
+      </ProjectIgnoreEnabledProvider>
     </ProjectPermissionsContext>
   );
 };

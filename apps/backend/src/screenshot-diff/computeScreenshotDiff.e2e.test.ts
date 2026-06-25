@@ -164,8 +164,8 @@ describe("#computeScreenshotDiff", () => {
       fixture,
     }) => {
       await fixture.project.$query().patch({
-        autoIgnore: {
-          changes: 1,
+        ignoreConfig: {
+          autoIgnore: { changes: 1 },
         },
       });
 
@@ -222,8 +222,8 @@ describe("#computeScreenshotDiff", () => {
       });
 
       await fixture.project.$query().patch({
-        autoIgnore: {
-          changes: 1,
+        ignoreConfig: {
+          autoIgnore: { changes: 1 },
         },
       });
 

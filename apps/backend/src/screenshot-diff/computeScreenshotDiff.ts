@@ -10,6 +10,7 @@ import {
   AuditTrail,
   File,
   IgnoredChange,
+  resolveIgnoreConfig,
   Screenshot,
   ScreenshotDiff,
   type ProjectAutoIgnore,
@@ -104,6 +105,11 @@ export async function computeScreenshotDiff(
     ? await processDiffResultFile(resultFile, context)
     : null;
 
+  // Resolve the project's ignore configuration. When the ignore feature is
+  // disabled, auto-ignore is also disabled (existing ignored changes are still
+  // applied so previously ignored diffs stay ignored).
+  const ignoreConfig = resolveIgnoreConfig(build.project?.ignoreConfig);
+
   const ignoredChange =
     diffFile && !diffFile.isCreated
       ? await IgnoredChange.query().select("fingerprint").findOne({
@@ -126,7 +132,7 @@ export async function computeScreenshotDiff(
         : null,
     });
 
-    const autoIgnore = build.project?.autoIgnore;
+    const autoIgnore = ignoreConfig.autoIgnore;
     if (!ignored && diffFile && autoIgnore) {
       const [shouldIgnore, latestActionIsManualUnignore] = await Promise.all([
         shouldAutoIgnoreChange({

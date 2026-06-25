@@ -6,6 +6,7 @@ import { DialogTrigger } from "react-aria-components";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
+import { useProjectIgnoreEnabled } from "@/containers/Project/IgnoreContext";
 import { graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
@@ -242,6 +243,12 @@ export const IgnoreButton = memo(function IgnoreButton(props: {
   onIgnoreChange?: () => void;
 }) {
   const { diff, onIgnoreChange } = props;
+  const ignoreEnabled = useProjectIgnoreEnabled();
+
+  // Hide the button entirely when the ignore feature is disabled.
+  if (!ignoreEnabled) {
+    return null;
+  }
 
   if (diff.change) {
     return <EnabledIgnoreButton diff={diff} onIgnoreChange={onIgnoreChange} />;

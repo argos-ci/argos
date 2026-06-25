@@ -21,7 +21,7 @@ import {
   safeParseTestChangeId,
   type TestChangeIdPayload,
 } from "../services/test";
-import { forbidden, notFound } from "../util";
+import { badUserInput, forbidden, notFound } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
@@ -385,6 +385,10 @@ async function runChangeMutaton(
   }
 
   invariant(user, "User should be defined because of permissions check");
+
+  if (!project.$getIgnoreConfig().enabled) {
+    throw badUserInput("The ignore feature is disabled for this project.");
+  }
 
   await run({ changeIdPayload, project, user });
 
