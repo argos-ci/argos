@@ -21,6 +21,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const PathParams = z.object({
@@ -35,6 +36,9 @@ const PathParams = z.object({
 export const resolveCommentThreadOperation = {
   operationId: "resolveCommentThread",
   summary: "Mark a comment thread as resolved",
+  description: "Mark a comment thread as resolved.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: { path: PathParams },
   responses: {
     "200": {
@@ -56,6 +60,9 @@ export const resolveCommentThreadOperation = {
 export const unresolveCommentThreadOperation = {
   operationId: "unresolveCommentThread",
   summary: "Reopen a resolved comment thread",
+  description: "Reopen a previously resolved comment thread.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: { path: PathParams },
   responses: {
     "200": {

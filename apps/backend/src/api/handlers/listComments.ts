@@ -14,11 +14,15 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const listCommentsOperation = {
   operationId: "listComments",
   summary: "List the comments on a build",
+  description: "List the comments on a build, with pagination.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

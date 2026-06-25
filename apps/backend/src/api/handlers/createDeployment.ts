@@ -29,6 +29,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const FileEntrySchema = z.object({
@@ -67,6 +68,11 @@ const ResponseSchema = z.object({
 
 export const createDeploymentOperation = {
   operationId: "createDeployment",
+  summary: "Create a deployment",
+  description:
+    "Create a deployment and receive signed upload URLs for the files Argos doesn't already store. Files already present (matched by content hash) are reused and omitted from `uploadFiles`. The environment is inferred from the branch when omitted.",
+  tags: ["Deployments"],
+  security: projectTokenAuth,
   requestBody: {
     content: {
       "application/json": {

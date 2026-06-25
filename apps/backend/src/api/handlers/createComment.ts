@@ -32,6 +32,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const CreateCommentBodySchema = z.object({
@@ -54,6 +55,10 @@ const CreateCommentBodySchema = z.object({
 export const createCommentOperation = {
   operationId: "createComment",
   summary: "Post a comment (or reply) on a build",
+  description:
+    "Post a comment on a build. Start a new thread, reply to an existing one with `threadId`, optionally anchor the comment to a screenshot diff, or attach it to your pending review with `addToReview`.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

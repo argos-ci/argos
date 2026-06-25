@@ -19,11 +19,15 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const getCommentOperation = {
   operationId: "getComment",
   summary: "Get a single comment on a build",
+  description: "Retrieve a single comment on a build by its ID.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

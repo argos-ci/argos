@@ -10,6 +10,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { noAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const GitHubActionsOidcExchangeRequestSchema = z.object({
@@ -40,9 +41,10 @@ const GitHubActionsOidcExchangeResponseSchema = z.object({
 export const exchangeGitHubActionsOidcTokenOperation = {
   operationId: "exchangeGitHubActionsOidcToken",
   summary: "Exchange a GitHub Actions OIDC token for an Argos token",
+  tags: ["Authentication"],
   description:
     "Called by GitHub Actions to exchange an OIDC token for a short-lived Argos project token.",
-  security: [],
+  security: noAuth,
   requestBody: {
     content: {
       "application/json": {

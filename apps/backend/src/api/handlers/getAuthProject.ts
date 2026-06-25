@@ -3,6 +3,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import { ProjectSchema, serializeProject } from "../schema/primitives/project";
 import { serverError, unauthorized } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const responses = {
@@ -20,6 +21,11 @@ const responses = {
 
 export const getAuthProjectOperation = {
   operationId: "getAuthProject",
+  summary: "Get the current project",
+  description:
+    "Retrieve the project associated with the project token used to authenticate the request.",
+  tags: ["Projects"],
+  security: projectTokenAuth,
   responses,
 } satisfies ZodOpenApiOperationObject;
 

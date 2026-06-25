@@ -21,6 +21,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const UpdateCommentBodySchema = z.object({
@@ -30,6 +31,10 @@ const UpdateCommentBodySchema = z.object({
 export const updateCommentOperation = {
   operationId: "updateComment",
   summary: "Update a comment on a build",
+  description:
+    "Update the body of a comment on a build. Only the comment's author can edit it.",
+  tags: ["Comments"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

@@ -30,6 +30,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 /**
@@ -186,6 +187,11 @@ const ResponseSchema = z.object({
 
 export const createBuildOperation = {
   operationId: "createBuild",
+  summary: "Create a build",
+  description:
+    "Create a build and receive signed upload targets for its screenshots and Playwright traces. The response lists, for every file Argos doesn't already have, a secure `postUrl` with `fields` (or a legacy `putUrl`) to upload it to. Supports single and parallel builds.",
+  tags: ["Builds"],
+  security: projectTokenAuth,
   requestBody: {
     content: {
       "application/json": {

@@ -22,6 +22,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { anyTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 const GetBuildDiffsParams = PageParamsSchema.extend({
@@ -46,6 +47,11 @@ const GetBuildDiffsParams = PageParamsSchema.extend({
 
 export const getBuildDiffsOperation = {
   operationId: "getBuildDiffs",
+  summary: "List a build's screenshot diffs",
+  description:
+    "List the screenshot diffs of a build, with pagination. Each diff compares a baseline screenshot to the one captured by the build. Use `onlyChanged` to return only the diffs that require review.",
+  tags: ["Builds"],
+  security: anyTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

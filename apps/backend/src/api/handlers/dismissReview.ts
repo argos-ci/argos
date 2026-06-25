@@ -19,11 +19,16 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { personalAccessTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 export const dismissReviewOperation = {
   operationId: "dismissReview",
   summary: "Dismiss a submitted review on a build",
+  description:
+    "Dismiss a previously submitted review on a build, clearing its effect on the build's review status.",
+  tags: ["Reviews"],
+  security: personalAccessTokenAuth,
   requestParams: {
     path: z.object({
       owner: AccountSlug,

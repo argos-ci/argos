@@ -20,6 +20,7 @@
     "db:migrate:rollback": "knex migrate:rollback",
     "db:migrate:make": "knex migrate:make",
     "db:reset": "pnpm run db:drop && pnpm run db:create && pnpm run db:load",
+    "generate-openapi": "pnpm run build && node dist/api/bin/generate-openapi.js",
     "watch-server-worker": "node --watch ./dist/processes/proc/worker.js",
     "watch-server-web": "node --watch ./dist/processes/proc/web.js",
     "watch-server": "concurrently \"npm:watch-server-*\"",

@@ -29,6 +29,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
+import { projectTokenAuth } from "../schema/util/security";
 import { CreateAPIHandler } from "../util";
 
 /**
@@ -180,6 +181,11 @@ async function updateDeploymentAliases(input: {
 
 export const finalizeDeploymentOperation = {
   operationId: "finalizeDeployment",
+  summary: "Finalize a deployment",
+  description:
+    "Mark a deployment as ready once all of its files have been uploaded. Argos assigns the deployment's aliases and starts serving it.",
+  tags: ["Deployments"],
+  security: projectTokenAuth,
   requestParams: {
     path: z.object({
       deploymentId: z.string().meta({ description: "The deployment ID" }),

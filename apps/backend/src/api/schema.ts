@@ -37,10 +37,45 @@ import { updateBuildOperation } from "./handlers/updateBuild";
 import { updateCommentOperation } from "./handlers/updateComment";
 
 export const zodSchema = {
-  openapi: "3.1.1",
+  openapi: "3.2.0",
   info: {
     title: "Argos API",
     version: "2.0.0",
+    description: [
+      "The Argos API lets you create and inspect visual testing builds, review",
+      "screenshot diffs, collaborate through comments, and ship deployments.",
+      "",
+      "## Authentication",
+      "",
+      "Requests are authenticated with a bearer token in the `Authorization`",
+      "header:",
+      "",
+      "```http",
+      "Authorization: Bearer <token>",
+      "```",
+      "",
+      "Two kinds of token exist, and each endpoint documents which one it",
+      "accepts:",
+      "",
+      "- **Project token** — identifies a project. Used by CI and the SDK to",
+      "  create builds and deployments. Find it in your Argos project settings.",
+      "- **Personal access token** — identifies a user. Required by endpoints",
+      "  that perform user actions, such as reviewing builds and posting",
+      "  comments.",
+      "",
+      "A few endpoints are public, including those under **Authentication** used",
+      "to obtain a token in the first place.",
+    ].join("\n"),
+    contact: {
+      name: "Argos Support",
+      url: "https://argos-ci.com",
+      email: "contact@argos-ci.com",
+    },
+    termsOfService: "https://argos-ci.com/terms",
+  },
+  externalDocs: {
+    description: "Argos API reference",
+    url: "https://argos-ci.com/docs/api-reference",
   },
   servers: [
     {
@@ -48,17 +83,85 @@ export const zodSchema = {
       description: "API Endpoint",
     },
   ],
+  tags: [
+    {
+      name: "Authentication",
+      description:
+        "Exchange CI and CLI credentials for an Argos project token. Use these endpoints to obtain the bearer token that authenticates every other request.",
+      "x-page-icon": "key",
+    },
+    {
+      name: "Projects",
+      description:
+        "Retrieve project metadata, either by slug or for the project tied to the current token.",
+      "x-page-icon": "folder-open",
+    },
+    {
+      name: "Builds",
+      description:
+        "Create, finalize, update, and inspect visual testing builds, including their screenshot diffs. This is the core of the visual testing workflow.",
+      "x-page-icon": "images",
+    },
+    {
+      name: "Reviews",
+      description:
+        "Submit, list, and dismiss reviews to approve or reject the changes captured in a build.",
+      "x-page-icon": "clipboard-check",
+    },
+    {
+      name: "Comments",
+      description:
+        "Collaborate on builds with threaded comments: post and edit comments, react with emojis, resolve threads, and manage notification subscriptions.",
+      "x-page-icon": "comments",
+    },
+    {
+      name: "Deployments",
+      description:
+        "Create, finalize, and resolve deployments to publish and serve project artifacts.",
+      "x-page-icon": "rocket",
+    },
+  ],
   components: {
     securitySchemes: {
-      tokenAuth: {
+      projectToken: {
         type: "http",
         scheme: "bearer",
         bearerFormat: "Project Token",
-        description: "A project token is required to access the API.",
+        description: [
+          "Authenticate as a **project** with a project token.",
+          "",
+          "Send it as a bearer token in the `Authorization` header:",
+          "",
+          "```http",
+          "Authorization: Bearer <project-token>",
+          "```",
+          "",
+          "You can find your project token in your Argos project settings.",
+          "Project tokens are used by CI and the SDK to create builds and",
+          "deployments.",
+        ].join("\n"),
+      },
+      personalAccessToken: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "Personal Access Token",
+        description: [
+          "Authenticate as a **user** with a personal access token.",
+          "",
+          "Send it as a bearer token in the `Authorization` header:",
+          "",
+          "```http",
+          "Authorization: Bearer <personal-access-token>",
+          "```",
+          "",
+          "Personal access tokens act on behalf of the user that created them",
+          "and are required by endpoints that perform user actions, such as",
+          "reviewing builds and posting comments.",
+        ].join("\n"),
       },
     },
   },
-  security: [{ tokenAuth: [] }],
+  security: [{ projectToken: [] }],
   paths: {
     "/builds": {
       post: createBuildOperation,
