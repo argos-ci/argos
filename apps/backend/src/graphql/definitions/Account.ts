@@ -8,7 +8,7 @@ import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
 import { startSession } from "@/auth/login";
-import { Account, Project, ProjectUser, TeamUser } from "@/database/models";
+import { Account, Project } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
@@ -37,6 +37,11 @@ import {
 import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getAccountAvatar } from "../services/avatar";
+import {
+  applyProjectVisibility,
+  getVisibleProjectIds,
+} from "../services/project";
+import { queryActiveTests } from "../services/test";
 import { badUserInput, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
@@ -137,6 +142,13 @@ export const typeDefs = gql`
     hasForcedPlan: Boolean!
     permissions: [AccountPermission!]!
     projects(after: Int = 0, first: Int = 30): ProjectConnection!
+    "List all tests across the account's visible projects, sorted by flakiness."
+    tests(
+      after: Int = 0
+      first: Int = 30
+      period: MetricsPeriod!
+      filters: TestsFilterInput
+    ): TestConnection!
     avatar: AccountAvatar!
     gitlabAccessToken: String
     gitlabBaseUrl: String
@@ -253,77 +265,46 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!auth) {
       throw unauthenticated();
     }
-    const projectsQuery = Project.query()
-      .where("accountId", account.id)
-      // Sort by most recently created project or build
-      .orderByRaw(
-        `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
-      )
-      .range(args.after, args.after + args.first - 1);
-
-    // Staff can view all projects
-    if (auth.user.staff) {
-      const result = await projectsQuery;
-      return paginateResult({
-        after: args.after,
-        first: args.first,
-        result,
-      });
+    const query = applyProjectVisibility(
+      Project.query()
+        .where("accountId", account.id)
+        // Sort by most recently created project or build
+        .orderByRaw(
+          `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
+        )
+        .range(args.after, args.after + args.first - 1),
+      { account, user: auth.user },
+    );
+    if (!query) {
+      throw unauthenticated();
     }
-
-    switch (account.type) {
-      case "user": {
-        if (account.userId !== auth.user.id) {
-          throw unauthenticated();
-        }
-
-        const result = await projectsQuery;
-        return paginateResult({
-          after: args.after,
-          first: args.first,
-          result,
-        });
-      }
-      case "team": {
-        const teamUserQuery = TeamUser.query().where({
-          teamId: account.teamId,
-          userId: auth.user.id,
-        });
-
-        const result = await projectsQuery.where((qb) => {
-          // User is a team member or owner
-          qb.whereExists(
-            teamUserQuery
-              .select(1)
-              .clone()
-              .whereIn("userLevel", ["owner", "member"]),
-          ).orWhere((qb) => {
-            // User is a contributor
-            qb.whereExists(
-              teamUserQuery.select(1).clone().where("userLevel", "contributor"),
-            ).where((qb) => {
-              // And is a contributor to the project
-              qb.whereExists(
-                ProjectUser.query()
-                  .select(1)
-                  .whereRaw(`projects.id = project_users."projectId"`)
-                  .where("userId", auth.user.id),
-              )
-                // Or where there is a default user level set on the project
-                .orWhereNotNull("projects.defaultUserLevel");
-            });
-          });
-        });
-
-        return paginateResult({
-          after: args.after,
-          first: args.first,
-          result,
-        });
-      }
-      default:
-        assertNever(account.type);
+    const result = await query;
+    return paginateResult({
+      after: args.after,
+      first: args.first,
+      result,
+    });
+  },
+  tests: async (account, { first, after, period, filters }, ctx) => {
+    const { auth } = ctx;
+    if (!auth) {
+      throw unauthenticated();
     }
+    const projectIds = await getVisibleProjectIds({
+      account,
+      user: auth.user,
+    });
+    if (projectIds.length === 0) {
+      return { pageInfo: { totalCount: 0, hasNextPage: false }, edges: [] };
+    }
+    const result = await queryActiveTests({
+      projectIds,
+      period,
+      filters: filters ?? null,
+      after,
+      first,
+    });
+    return paginateResult({ result, first, after });
   },
   consumptionRatio: async (account) => {
     const manager = account.$getSubscriptionManager();
