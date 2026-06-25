@@ -5,7 +5,7 @@ import type { BuildReview } from "@/database/models";
 
 import { getUserAccountsByUserId, serializeUser, UserSchema } from "./user";
 
-export const ReviewStateSchema = z
+const ReviewStateSchema = z
   .enum(["approved", "rejected", "commented", "pending"])
   .meta({
     description:
