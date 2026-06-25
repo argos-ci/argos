@@ -42,9 +42,9 @@ export function BuildStatusChip(props: {
       <Chip icon={descriptor.icon} color={descriptor.color} scale={props.scale}>
         <span
           aria-label={getChipLabel(build) ?? undefined}
-          className="flex items-center gap-(--chip-gap)"
+          className="flex min-w-0 items-center gap-(--chip-gap)"
         >
-          {descriptor.label}
+          <span className="min-w-0 truncate">{descriptor.label}</span>
           <BuildReviewUsers reviews={reviewWithUsers} />
         </span>
       </Chip>
@@ -93,7 +93,7 @@ function BuildReviewUsers(props: {
     return null;
   }
   return (
-    <StackedItems>
+    <StackedItems className="shrink-0">
       {props.reviews.map((review) => {
         if (!review.user) {
           return null;
