@@ -86,6 +86,8 @@ function EnabledIgnoreButton(props: {
           action: "files.ignored",
           authPayload,
           testId: diff.test.id,
+          accountSlug: params.accountSlug,
+          projectName: params.projectName,
         });
       }
     },
@@ -123,6 +125,8 @@ function EnabledIgnoreButton(props: {
           action: "files.unignored",
           authPayload,
           testId: diff.test.id,
+          accountSlug: params.accountSlug,
+          projectName: params.projectName,
         });
       }
     },

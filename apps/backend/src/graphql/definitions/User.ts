@@ -29,6 +29,7 @@ import { sendNotification } from "@/notification";
 import {
   type IResolvers,
   type ITeamUserLevel,
+  type IUserType,
 } from "../__generated__/resolver-types";
 import type { Context } from "../context";
 import { deleteAccount, getAdminAccount } from "../services/account";
@@ -124,6 +125,13 @@ export const typeDefs = gql`
     timezone: String
     "Team role of the user on the given project, null if not a team member"
     role(accountSlug: String!, projectName: String!): TeamUserLevel
+    "Whether the account is a real person or an automated account (e.g. the Argos bot)."
+    type: UserType!
+  }
+
+  enum UserType {
+    user
+    bot
   }
 
   type UserPresenceChangeEvent {
@@ -541,6 +549,12 @@ export const resolvers: IResolvers = {
       }
       const presence = await loadVisiblePresence(ctx, account.userId);
       return presence?.timezone ?? null;
+    },
+    type: async (account, _args, ctx) => {
+      invariant(account.userId, "account.userId is undefined");
+      const user = await ctx.loaders.User.load(account.userId);
+      invariant(user, "user is undefined");
+      return user.type as IUserType;
     },
   },
   Subscription: {
