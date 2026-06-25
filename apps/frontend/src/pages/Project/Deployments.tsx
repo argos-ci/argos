@@ -2,7 +2,6 @@ import { useEffect, useRef, useTransition } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { GitBranchIcon, GitCommitIcon } from "@primer/octicons-react";
-import { useFlag } from "@reflag/react-sdk";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import { BoxesIcon, CircleArrowUpIcon, GlobeIcon } from "lucide-react";
@@ -438,15 +437,6 @@ function PageContent() {
 export function Component() {
   const params = useProjectParams();
   invariant(params, "it is a project route");
-  const deploymentsFlag = useFlag("deployments");
-
-  if (deploymentsFlag.isLoading) {
-    return null;
-  }
-
-  if (!deploymentsFlag.isEnabled) {
-    return <NotFound />;
-  }
 
   return (
     <Page>

@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { useFlag } from "@reflag/react-sdk";
 import { Outlet } from "react-router-dom";
 
 import { useVisitAccount } from "@/containers/AccountHistory";
@@ -50,7 +49,7 @@ function ProjectTabs(props: {
       <TabList className="px-4" aria-label="Project navigation">
         <TabLink href="">Builds</TabLink>
         <TabLink href="tests">Tests</TabLink>
-        {deploymentEnabled && <DeploymentsTab />}
+        {deploymentEnabled && <TabLink href="deployments">Deployments</TabLink>}
         {showAutomationsTab && (
           <TabLink href="automations">Automations</TabLink>
         )}
@@ -65,14 +64,6 @@ function ProjectTabs(props: {
       </TabLinkPanel>
     </TabsLink>
   );
-}
-
-function DeploymentsTab() {
-  const deploymentsFlag = useFlag("deployments");
-  if (!deploymentsFlag.isEnabled) {
-    return null;
-  }
-  return <TabLink href="deployments">Deployments</TabLink>;
 }
 
 function Project(props: { params: ProjectParams }) {
