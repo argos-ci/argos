@@ -31,6 +31,7 @@ export const exchangeCliTokenOperation = {
   operationId: "exchangeCliToken",
   summary: "Exchange a CLI authorization code for a token",
   tags: ["Authentication"],
+  "x-internal": true,
   security: noAuth,
   description:
     "Called by the CLI to exchange a PKCE authorization code for an API token.",
