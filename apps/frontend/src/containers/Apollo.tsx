@@ -91,6 +91,13 @@ const ApolloProvider = (props: { children: React.ReactNode }) => {
           CommentReactionGroup: {
             merge: false,
           },
+          // BuildStats is an embedded value object with no id to normalize on,
+          // and the server always returns the complete, authoritative stats.
+          // Replace it wholesale instead of merging, which silences Apollo's
+          // "cache data may be lost" warning when partial stats are queried.
+          BuildStats: {
+            merge: false,
+          },
           Team: {
             keyFields: (obj) => {
               invariant(obj.id, "Team.id is undefined");
