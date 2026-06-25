@@ -3,9 +3,13 @@ import cors from "cors";
 import { Router } from "express";
 import { stringify } from "yaml";
 
+import { addCommentReaction } from "./handlers/addCommentReaction";
 import { createBuild } from "./handlers/createBuild";
+import { createComment } from "./handlers/createComment";
 import { createDeployment } from "./handlers/createDeployment";
 import { createReview } from "./handlers/createReview";
+import { deleteComment } from "./handlers/deleteComment";
+import { dismissReview } from "./handlers/dismissReview";
 import { exchangeCliToken } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcToken } from "./handlers/exchangeGitHubActionsOidcToken";
 import { exchangeGitHubActionsTokenlessToken } from "./handlers/exchangeGitHubActionsTokenlessToken";
@@ -14,11 +18,24 @@ import { finalizeDeployment } from "./handlers/finalizeDeployment";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getBuild } from "./handlers/getBuild";
 import { getBuildDiffs } from "./handlers/getBuildDiffs";
+import { getComment } from "./handlers/getComment";
 import { getDeployment } from "./handlers/getDeployment";
 import { getProject } from "./handlers/getProject";
 import { getProjectBuilds } from "./handlers/getProjectBuilds";
+import { listComments } from "./handlers/listComments";
+import { listReviews } from "./handlers/listReviews";
+import { removeCommentReaction } from "./handlers/removeCommentReaction";
+import {
+  resolveCommentThread,
+  unresolveCommentThread,
+} from "./handlers/resolveCommentThread";
 import { resolveDeploymentDomain } from "./handlers/resolveDeploymentDomain";
+import {
+  subscribeCommentThread,
+  unsubscribeCommentThread,
+} from "./handlers/subscribeCommentThread";
 import { updateBuild } from "./handlers/updateBuild";
+import { updateComment } from "./handlers/updateComment";
 import { schema } from "./schema";
 import { errorHandler, registerHandler } from "./util";
 
@@ -49,6 +66,19 @@ router.get(
 // Register the handlers.
 registerHandler(router, createBuild);
 registerHandler(router, createReview);
+registerHandler(router, listReviews);
+registerHandler(router, dismissReview);
+registerHandler(router, listComments);
+registerHandler(router, createComment);
+registerHandler(router, getComment);
+registerHandler(router, updateComment);
+registerHandler(router, deleteComment);
+registerHandler(router, addCommentReaction);
+registerHandler(router, removeCommentReaction);
+registerHandler(router, resolveCommentThread);
+registerHandler(router, unresolveCommentThread);
+registerHandler(router, subscribeCommentThread);
+registerHandler(router, unsubscribeCommentThread);
 registerHandler(router, exchangeCliToken);
 registerHandler(router, exchangeGitHubActionsOidcToken);
 registerHandler(router, exchangeGitHubActionsTokenlessToken);

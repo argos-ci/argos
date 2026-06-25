@@ -5,6 +5,7 @@ import { memoize } from "lodash-es";
 import type { ModelClass } from "objection";
 
 import { getPresences, type UserPresence } from "@/auth/presence";
+import { filterVisibleComments } from "@/comment/getVisibleBuildComments";
 import { knex } from "@/database";
 import {
   Account,
@@ -748,23 +749,10 @@ function createBuildPublishedCommentsLoader() {
       const buildIds = inputs.map((input) => input.buildId);
       // A single request carries one viewer, so all inputs share it.
       const viewerUserId = inputs[0]?.viewerUserId ?? null;
-      const comments = await Comment.query()
-        .whereIn("buildId", buildIds)
-        .whereNull("deletedAt")
-        .where((qb) => {
-          qb.whereNull("buildReviewId").orWhereExists(
-            BuildReview.query()
-              .select(1)
-              .whereColumn("build_reviews.id", "comments.buildReviewId")
-              .where((sub) => {
-                sub.whereNot("build_reviews.state", "pending");
-                if (viewerUserId) {
-                  sub.orWhere("build_reviews.userId", viewerUserId);
-                }
-              }),
-          );
-        })
-        .orderBy("createdAt", "asc");
+      const comments = await filterVisibleComments(
+        Comment.query().whereIn("buildId", buildIds),
+        viewerUserId,
+      ).orderBy("createdAt", "asc");
       const commentsMap = comments.reduce<Record<string, Comment[]>>(
         (map, comment) => {
           const array = map[comment.buildId] ?? [];

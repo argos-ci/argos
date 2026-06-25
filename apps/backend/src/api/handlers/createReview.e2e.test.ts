@@ -4,6 +4,7 @@ import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
 import {
+  Account,
   Build,
   BuildReview,
   Comment,
@@ -127,11 +128,12 @@ describe("createReview", () => {
       })
       .expect(200);
 
+    const userAccount = await Account.query().findOne({ userId: user.id });
     expect(res.body).toMatchObject({
       id: expect.any(String),
       buildId: build.id,
       state: "rejected",
-      userId: user.id,
+      user: { id: userAccount!.id, slug: userAccount!.slug },
     });
 
     const review = await BuildReview.query()

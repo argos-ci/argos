@@ -2,9 +2,13 @@ import { createDocument, ZodOpenApiObject } from "zod-openapi";
 
 import config from "@/config";
 
+import { addCommentReactionOperation } from "./handlers/addCommentReaction";
 import { createBuildOperation } from "./handlers/createBuild";
+import { createCommentOperation } from "./handlers/createComment";
 import { createDeploymentOperation } from "./handlers/createDeployment";
 import { createReviewOperation } from "./handlers/createReview";
+import { deleteCommentOperation } from "./handlers/deleteComment";
+import { dismissReviewOperation } from "./handlers/dismissReview";
 import { exchangeCliTokenOperation } from "./handlers/exchangeCliToken";
 import { exchangeGitHubActionsOidcTokenOperation } from "./handlers/exchangeGitHubActionsOidcToken";
 import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchangeGitHubActionsTokenlessToken";
@@ -13,11 +17,24 @@ import { finalizeDeploymentOperation } from "./handlers/finalizeDeployment";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
+import { getCommentOperation } from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getProjectOperation } from "./handlers/getProject";
 import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
+import { listCommentsOperation } from "./handlers/listComments";
+import { listReviewsOperation } from "./handlers/listReviews";
+import { removeCommentReactionOperation } from "./handlers/removeCommentReaction";
+import {
+  resolveCommentThreadOperation,
+  unresolveCommentThreadOperation,
+} from "./handlers/resolveCommentThread";
 import { resolveDeploymentDomainOperation } from "./handlers/resolveDeploymentDomain";
+import {
+  subscribeCommentThreadOperation,
+  unsubscribeCommentThreadOperation,
+} from "./handlers/subscribeCommentThread";
 import { updateBuildOperation } from "./handlers/updateBuild";
+import { updateCommentOperation } from "./handlers/updateComment";
 
 export const zodSchema = {
   openapi: "3.1.1",
@@ -89,8 +106,40 @@ export const zodSchema = {
       get: getBuildDiffsOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews": {
+      get: listReviewsOperation,
       post: createReviewOperation,
     },
+    "/projects/{owner}/{project}/builds/{buildNumber}/reviews/{reviewId}/dismiss":
+      {
+        post: dismissReviewOperation,
+      },
+    "/projects/{owner}/{project}/builds/{buildNumber}/comments": {
+      get: listCommentsOperation,
+      post: createCommentOperation,
+    },
+    "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}": {
+      get: getCommentOperation,
+      patch: updateCommentOperation,
+      delete: deleteCommentOperation,
+    },
+    "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions":
+      {
+        post: addCommentReactionOperation,
+        delete: removeCommentReactionOperation,
+      },
+    "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/resolve":
+      {
+        post: resolveCommentThreadOperation,
+      },
+    "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/unresolve":
+      {
+        post: unresolveCommentThreadOperation,
+      },
+    "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription":
+      {
+        post: subscribeCommentThreadOperation,
+        delete: unsubscribeCommentThreadOperation,
+      },
   },
 } satisfies ZodOpenApiObject;
 

@@ -78,6 +78,7 @@
     "jsonwebtoken": "^9.0.3",
     "knex": "^3.2.10",
     "lodash-es": "catalog:",
+    "marked": "^15.0.0",
     "mime": "^4.1.0",
     "minimatch": "catalog:",
     "moment": "^2.30.1",

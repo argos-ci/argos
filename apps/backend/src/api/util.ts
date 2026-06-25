@@ -90,6 +90,18 @@ type PutOperationHandler<TPath extends Path> = OperationRequestHandler<
     : never
 >;
 
+type PatchOperationHandler<TPath extends Path> = OperationRequestHandler<
+  paths[TPath] extends { patch: ZodOpenApiOperationObject }
+    ? paths[TPath]["patch"]
+    : never
+>;
+
+type DeleteOperationHandler<TPath extends Path> = OperationRequestHandler<
+  paths[TPath] extends { delete: ZodOpenApiOperationObject }
+    ? paths[TPath]["delete"]
+    : never
+>;
+
 /**
  * Convert OpenAPI path to Express path
  */
@@ -145,12 +157,20 @@ type Context = {
     path: TPath,
     ...handlers: HandlerParams<PutOperationHandler<TPath>>
   ): void;
+  patch<TPath extends Path>(
+    path: TPath,
+    ...handlers: HandlerParams<PatchOperationHandler<TPath>>
+  ): void;
+  delete<TPath extends Path>(
+    path: TPath,
+    ...handlers: HandlerParams<DeleteOperationHandler<TPath>>
+  ): void;
 };
 
 /**
- * Register a GET handler.
+ * Register a handler for the given HTTP method.
  */
-function handler<TMethod extends "get" | "post" | "put">(
+function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
   router: Router,
   method: TMethod,
 ) {
@@ -249,6 +269,8 @@ export function registerHandler(router: Router, create: CreateAPIHandler) {
     get: handler(router, "get"),
     post: handler(router, "post"),
     put: handler(router, "put"),
+    patch: handler(router, "patch"),
+    delete: handler(router, "delete"),
   };
   return create(context);
 }
