@@ -4,6 +4,7 @@ import z from "zod";
 
 import { concludeBuild } from "@/build/concludeBuild";
 import {
+  Account,
   Build,
   BuildReview,
   Project,
@@ -152,6 +153,16 @@ describe("listReviews", () => {
     expect(res.body).toContainEqual(
       expect.objectContaining({ id: approved.id, state: "approved" }),
     );
+
+    // The viewer's own pending review exposes the resolved user object.
+    const userAccount = await Account.query().findOne({ userId: user.id });
+    const pending = res.body.find(
+      (r: { state: string }) => r.state === "pending",
+    );
+    expect(pending.user).toMatchObject({
+      id: userAccount!.id,
+      slug: userAccount!.slug,
+    });
   });
 
   test("rejects project tokens", async ({ build }) => {
@@ -187,10 +198,11 @@ describe("dismissReview", () => {
       .set("Authorization", `Bearer ${scopedPatToken}`)
       .expect(200);
 
+    const userAccount = await Account.query().findOne({ userId: user.id });
     expect(res.body).toMatchObject({
       id: review.id,
       state: "approved",
-      dismissedById: user.id,
+      dismissedBy: { id: userAccount!.id, slug: userAccount!.slug },
     });
     expect(res.body.dismissedAt).toEqual(expect.any(String));
 

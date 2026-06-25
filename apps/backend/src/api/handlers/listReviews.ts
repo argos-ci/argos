@@ -68,7 +68,7 @@ export const listReviews: CreateAPIHandler = ({ get }) => {
         )
         .orderBy("createdAt", "asc");
 
-      res.send(serializeBuildReviews(reviews));
+      res.send(await serializeBuildReviews(reviews));
     },
   );
 };

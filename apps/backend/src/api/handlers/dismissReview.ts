@@ -82,7 +82,7 @@ export const dismissReview: CreateAPIHandler = ({ post }) => {
         dismissedById: auth.user.id,
       });
 
-      res.send(serializeBuildReview(dismissedReview));
+      res.send(await serializeBuildReview(dismissedReview));
     },
   );
 };

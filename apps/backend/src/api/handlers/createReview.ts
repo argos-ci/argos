@@ -221,7 +221,7 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         })),
       });
 
-      res.send(serializeBuildReview(buildReview));
+      res.send(await serializeBuildReview(buildReview));
     },
   );
 };
