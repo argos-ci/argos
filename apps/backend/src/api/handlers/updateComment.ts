@@ -82,7 +82,7 @@ export const updateComment: CreateAPIHandler = ({ patch }) => {
 
       const updated = await updateBuildComment({
         comment,
-        body: resolveCommentBody(input.body),
+        body: await resolveCommentBody(input.body),
       });
 
       res.send(await serializeComment(updated));

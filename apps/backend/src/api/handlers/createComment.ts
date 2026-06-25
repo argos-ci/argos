@@ -177,7 +177,7 @@ export const createComment: CreateAPIHandler = ({ post }) => {
       const comment = await createBuildComment({
         build,
         userId: auth.user.id,
-        body: resolveCommentBody(input.body),
+        body: await resolveCommentBody(input.body),
         threadId: thread?.id ?? null,
         screenshotDiffId,
         anchor,

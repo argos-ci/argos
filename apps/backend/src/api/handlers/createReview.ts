@@ -214,7 +214,9 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         userId: auth.user.id,
         event,
         body:
-          body.body !== undefined ? resolveCommentBody(body.body) : undefined,
+          body.body !== undefined
+            ? await resolveCommentBody(body.body)
+            : undefined,
         snapshotReviews: body.snapshots.map((snapshotReview) => ({
           screenshotDiffId: snapshotReview.id,
           state: getScreenshotReviewState(snapshotReview.conclusion),

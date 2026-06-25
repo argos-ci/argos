@@ -25,11 +25,13 @@ import { validateCommentJson } from "./validate";
  * Length/empty/sanitize limits are enforced downstream by `createBuildComment`,
  * `updateBuildComment` and `createBuildReview`; this only produces the document.
  */
-export function resolveCommentBody(input: string | object): JSONContent {
+export async function resolveCommentBody(
+  input: string | object,
+): Promise<JSONContent> {
   if (typeof input === "string") {
-    // marked is synchronous unless async extensions are registered; force the
-    // sync return so the type is a plain string rather than a promise.
-    const html = marked.parse(input, { async: false });
+    // `marked` may run async extensions, so await covers both the sync and the
+    // async cases without forcing a particular return type.
+    const html = await marked.parse(input);
     // generateJSON builds the doc against the comment schema, so the output is
     // structurally valid by construction; nodes Markdown can produce that the
     // schema doesn't allow are simply dropped.
