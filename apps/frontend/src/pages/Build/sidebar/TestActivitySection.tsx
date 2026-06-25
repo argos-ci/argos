@@ -5,6 +5,7 @@ import { graphql, type DocumentType } from "@/gql";
 import { Activity, ActivityItem } from "@/ui/Activity";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { Time } from "@/ui/Time";
+import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
 
 const _TestFragment = graphql(`
   fragment TestActivitySection_Test on Test {
@@ -41,10 +42,14 @@ export function TestActivitySection(props: {
             <ActivityItem
               key={trail.id}
               icon={
-                <AccountAvatar
-                  avatar={trail.user.avatar}
-                  className="size-3.5 border"
-                />
+                <UserHoverCard user={getUserCardData(trail.user)}>
+                  <span tabIndex={0} className="shrink-0">
+                    <AccountAvatar
+                      avatar={trail.user.avatar}
+                      className="size-3.5 border"
+                    />
+                  </span>
+                </UserHoverCard>
               }
             >
               {getActionLabel(trail.action)} · <Time date={trail.date} />

@@ -7,6 +7,7 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql, type DocumentType } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
 import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
 
 import { useProjectParams } from "../../Project/ProjectParams";
 import { getTestURL } from "../../Test/TestParams";
@@ -89,11 +90,18 @@ export function TestChangeSection(props: {
               {lastIgnoredTrail ? (
                 <>
                   by{" "}
-                  <AccountAvatar
-                    avatar={lastIgnoredTrail.user.avatar}
-                    className="size-3.5 border"
-                  />
-                  {lastIgnoredTrail.user.name || lastIgnoredTrail.user.slug}
+                  <UserHoverCard user={getUserCardData(lastIgnoredTrail.user)}>
+                    <span
+                      tabIndex={0}
+                      className="inline-flex items-center gap-1.5"
+                    >
+                      <AccountAvatar
+                        avatar={lastIgnoredTrail.user.avatar}
+                        className="size-3.5 border"
+                      />
+                      {lastIgnoredTrail.user.name || lastIgnoredTrail.user.slug}
+                    </span>
+                  </UserHoverCard>
                 </>
               ) : null}
               .

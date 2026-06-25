@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSubscription } from "@apollo/client/react";
 import { clsx } from "clsx";
-import { ClockIcon } from "lucide-react";
+import { BotIcon, ClockIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { UserType } from "@/gql/graphql";
 
 import { type MentionUser } from "./Editor/mention";
 import { Time } from "./Time";
@@ -27,6 +28,7 @@ export const UserCardFragment = graphql(`
     lastSeenAt
     timezone
     role(accountSlug: $accountSlug, projectName: $projectName)
+    type
   }
 `);
 
@@ -60,6 +62,8 @@ export interface UserCardData {
   lastSeenAt?: string | null;
   /** IANA timezone (e.g. "Europe/Paris"); null when unknown/not visible. */
   timezone?: string | null;
+  /** Automated account (e.g. the Argos bot) — shown instead of presence. */
+  isBot?: boolean;
 }
 
 /** Map the `UserCard_user` fragment to the data the card renders. */
@@ -75,6 +79,7 @@ export function getUserCardData(
     role: user.role,
     lastSeenAt: user.lastSeenAt,
     timezone: user.timezone,
+    isBot: user.type === UserType.Bot,
   };
 }
 
@@ -227,6 +232,21 @@ function UserCardPresence(props: {
 }
 
 /**
+ * Shown below the divider for automated accounts (e.g. the Argos bot) in place
+ * of the presence/local-time block — a bot has no presence to report.
+ */
+function UserCardBotInfo() {
+  return (
+    <div className="text-low border-t-thin mt-3 flex items-center gap-2 pt-3 text-xs">
+      <BotIcon className="size-3.5 shrink-0 opacity-70" />
+      <span>
+        Automated account — actions are performed by Argos, not a person.
+      </span>
+    </div>
+  );
+}
+
+/**
  * The body of the user hover card: avatar, name, slug, role, then a live
  * presence dot and local time. Rendered inside a {@link Tooltip} by
  * {@link UserHoverCard}, but exported so it can be embedded elsewhere if needed.
@@ -240,14 +260,15 @@ function UserCard(props: { user: UserCardData }) {
 
   // Keep presence live while the card is open. Apollo merges the normalized
   // `user` result into the cache, so the dot recolors without an explicit
-  // handler. Skipped for cards built without an id (e.g. mention resolution).
+  // handler. Skipped for cards built without an id (e.g. mention resolution)
+  // and for bots, which have no presence.
   useSubscription(UserPresenceChangedSubscription, {
     variables: { userId: user.id ?? "" },
-    skip: !user.id,
+    skip: !user.id || user.isBot,
   });
 
   return (
-    <div className="min-w-52">
+    <div className="max-w-80 min-w-52">
       <div className="flex items-center gap-3">
         <UserCardAvatar user={user} className="size-10 shrink-0" />
         <div className="min-w-0 leading-tight">
@@ -265,7 +286,9 @@ function UserCard(props: { user: UserCardData }) {
           </div>
         </div>
       </div>
-      {user.id ? (
+      {user.isBot ? (
+        <UserCardBotInfo />
+      ) : user.id ? (
         <UserCardPresence
           lastSeenAt={user.lastSeenAt}
           timezone={user.timezone}
