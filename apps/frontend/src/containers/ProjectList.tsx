@@ -1,5 +1,4 @@
 import { GitBranchIcon } from "@primer/octicons-react";
-import { useFlag } from "@reflag/react-sdk";
 import { FolderIcon, PlusCircleIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 
@@ -72,7 +71,6 @@ function RepositoryChip(props: { repository: Project["repository"] }) {
 }
 
 function ProjectCard({ project }: { project: Project }) {
-  const deploymentsFlag = useFlag("deployments");
   return (
     <div
       key={project.id}
@@ -85,27 +83,25 @@ function ProjectCard({ project }: { project: Project }) {
       />
       <div className="w-full min-w-0">
         <div className="truncate font-medium">{project.name}</div>
-        {deploymentsFlag.isEnabled && (
-          <div className="text-low mt-1 truncate text-sm">
-            {project.latestProductionDeployment?.status ===
-              DeploymentStatus.Ready && project.domain ? (
-              <Link
-                className="relative"
-                variant="neutral"
-                href={`https://${project.domain}`}
-                target="_blank"
-                external={false}
-              >
-                {project.domain}
-              </Link>
-            ) : (
-              "Not deployed"
-            )}
-          </div>
-        )}
+        <div className="text-low mt-1 truncate text-sm">
+          {project.latestProductionDeployment?.status ===
+            DeploymentStatus.Ready && project.domain ? (
+            <Link
+              className="relative"
+              variant="neutral"
+              href={`https://${project.domain}`}
+              target="_blank"
+              external={false}
+            >
+              {project.domain}
+            </Link>
+          ) : (
+            "Not deployed"
+          )}
+        </div>
       </div>
       <RepositoryChip repository={project.repository} />
-      {deploymentsFlag.isEnabled && project.latestProductionDeployment ? (
+      {project.latestProductionDeployment ? (
         <div className="text-low relative text-xs">
           Deployed <Time date={project.latestProductionDeployment.createdAt} />{" "}
           on <GitBranchIcon className="inline size-3 align-middle" />{" "}

@@ -7,7 +7,6 @@ import {
 } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { useFlag } from "@reflag/react-sdk";
 import { Heading, Text } from "react-aria-components";
 import { Navigate, Route, Routes } from "react-router-dom";
 
@@ -119,7 +118,6 @@ function PageContent() {
   invariant(params, "it is a project route");
   const { accountSlug, projectName } = params;
   const { permissions } = useProjectOutletContext();
-  const deploymentsFlag = useFlag("deployments");
   const {
     data: { account, project },
   } = useSuspenseQuery(ProjectQuery, {
@@ -200,7 +198,7 @@ function PageContent() {
     {
       name: "Deployments",
       slug: "deployments",
-      element: hasAdminPermission && deploymentsFlag.isEnabled && (
+      element: hasAdminPermission && (
         <ProjectDeployments project={project} isTeam={isTeam} />
       ),
     },
