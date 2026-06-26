@@ -160,7 +160,7 @@ export const installAppRouter = async (app: express.Application) => {
         await revokeSessionByToken(rawToken);
       }
       clearSessionCookies(res);
-      res.setHeader("Clear-Site-Data", '"cookies", "storage", "cache"');
+      res.setHeader("Clear-Site-Data", '"cookies", "storage"');
       res.sendStatus(204);
     }),
   );
