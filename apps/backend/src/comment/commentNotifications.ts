@@ -5,7 +5,7 @@ import { subscribeUserToCommentThread } from "@/database/services/comment-notifi
 import { sendNotification } from "@/notification";
 
 import { publishCommentChange } from "./commentEvents";
-import { formatCommentId } from "./id";
+import { getCommentUrl } from "./id";
 import {
   getCommentMentionedUserIds,
   renderCommentHtmlWithMentions,
@@ -23,12 +23,11 @@ export async function getCommentNotificationData(input: {
 }) {
   const { build, project, comment, userId } = input;
   invariant(project.account, "Build project account not found");
-  const [author, buildUrl, bodyHtml] = await Promise.all([
+  const [author, commentUrl, bodyHtml] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
-    build.getUrl(),
+    getCommentUrl({ build, comment }),
     renderCommentHtmlWithMentions(comment),
   ]);
-  const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
   return {
     accountSlug: project.account.slug,
     projectName: project.name,

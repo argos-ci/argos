@@ -7,7 +7,7 @@ import { sendNotification } from "@/notification";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
-import { formatCommentId } from "./id";
+import { getCommentUrl } from "./id";
 import { renderCommentHtmlWithMentions } from "./mentions";
 import { isValidEmoji } from "./reactions";
 
@@ -82,13 +82,12 @@ async function notifyCommentThreadSubscribers(input: {
   invariant(build.project, "project not found");
   invariant(build.project.account, "project account not found");
 
-  const [reactor, buildUrl] = await Promise.all([
+  const [reactor, commentUrl] = await Promise.all([
     User.query().findById(userId).withGraphFetched("account"),
-    build.getUrl(),
+    getCommentUrl({ build, comment }),
   ]);
 
   const reactorName = reactor?.account?.displayName ?? null;
-  const commentUrl = `${buildUrl}#${formatCommentId(comment.id)}`;
 
   await sendNotification({
     type: "comment_reaction",
