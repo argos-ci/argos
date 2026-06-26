@@ -19,13 +19,18 @@ import {
   BlendIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CodeIcon,
+  CopyIcon,
   DownloadIcon,
+  EllipsisVerticalIcon,
   FileDownIcon,
   Layers2Icon,
+  LinkIcon,
   type LucideIcon,
 } from "lucide-react";
 import { useObjectRef } from "react-aria";
 import { toast } from "sonner";
+import { useClipboard } from "use-clipboard-copy";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
@@ -35,7 +40,14 @@ import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/Screens
 import { Code } from "@/ui/Code";
 import { IconButton } from "@/ui/IconButton";
 import { ImageKitPicture, imgkit } from "@/ui/ImageKitPicture";
-import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
+import {
+  Menu,
+  MenuItem,
+  MenuItemIcon,
+  MenuSeparator,
+  MenuTrigger,
+  SubmenuTrigger,
+} from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { Tooltip } from "@/ui/Tooltip";
@@ -245,32 +257,113 @@ const _DiffFragment = graphql(`
 type BuildFragmentDocument = DocumentType<typeof _BuildFragment>;
 export type BuildDiffDetailDocument = DocumentType<typeof _DiffFragment>;
 
-const DownloadScreenshotButton = memo(
-  (props: { url: string; tooltip: string; name: string }) => {
-    const [loading, setLoading] = useState(false);
+const SCREENSHOT_COPY_TOAST_ID = "screenshot-copied";
 
-    return (
+/**
+ * Menu shell rendered as a generic actions button for a screenshot pane.
+ */
+function ScreenshotActionsMenu(props: {
+  tooltip: string;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <MenuTrigger>
       <Tooltip placement="left" content={props.tooltip}>
-        <IconButton
-          variant="contained"
-          isDisabled={loading}
-          onPress={() => {
-            setLoading(true);
-            fetchBlob(props.url)
-              .then((blob) => {
-                downloadBlob(blob, props.name);
-              })
-              .finally(() => {
-                setLoading(false);
-              });
-          }}
-        >
-          <DownloadIcon />
+        <IconButton variant="contained">
+          <EllipsisVerticalIcon />
         </IconButton>
       </Tooltip>
-    );
-  },
-);
+      <Popover placement="bottom end">
+        <Menu aria-label={props.ariaLabel}>{props.children}</Menu>
+      </Popover>
+    </MenuTrigger>
+  );
+}
+
+/**
+ * "Copy" submenu sharing the link and Markdown embed actions across screenshot
+ * panes.
+ */
+function CopyScreenshotSubmenu(props: { url: string; alt: string }) {
+  const { url, alt } = props;
+  const clipboard = useClipboard();
+  return (
+    <SubmenuTrigger>
+      <MenuItem>
+        <MenuItemIcon>
+          <CopyIcon />
+        </MenuItemIcon>
+        Copy
+      </MenuItem>
+      <Popover>
+        <Menu aria-label="Copy screenshot">
+          <MenuItem
+            onAction={() => {
+              clipboard.copy(url);
+              toast.success("Link copied", {
+                id: SCREENSHOT_COPY_TOAST_ID,
+                description:
+                  "The screenshot link was copied to your clipboard.",
+              });
+            }}
+          >
+            <MenuItemIcon>
+              <LinkIcon />
+            </MenuItemIcon>
+            Copy link
+          </MenuItem>
+          <MenuItem
+            onAction={() => {
+              clipboard.copy(`![${alt}](${url})`);
+              toast.success("Markdown copied", {
+                id: SCREENSHOT_COPY_TOAST_ID,
+                description:
+                  "The screenshot embed as Markdown was copied to your clipboard.",
+              });
+            }}
+          >
+            <MenuItemIcon>
+              <CodeIcon />
+            </MenuItemIcon>
+            Copy embed as Markdown
+          </MenuItem>
+        </Menu>
+      </Popover>
+    </SubmenuTrigger>
+  );
+}
+
+/**
+ * "Download" submenu grouping the download variants of a screenshot pane.
+ */
+function DownloadScreenshotSubmenu(props: { children: ReactNode }) {
+  return (
+    <SubmenuTrigger>
+      <MenuItem>
+        <MenuItemIcon>
+          <DownloadIcon />
+        </MenuItemIcon>
+        Download
+      </MenuItem>
+      <Popover>
+        <Menu aria-label="Download screenshot">{props.children}</Menu>
+      </Popover>
+    </SubmenuTrigger>
+  );
+}
+
+function downloadWithToast(promise: Promise<void>) {
+  toast.promise(promise, {
+    loading: "Downloading image…",
+    success: "Image downloaded",
+    error: (data) => {
+      console.error(data);
+      captureException(data);
+      return getErrorMessage(data);
+    },
+  });
+}
 
 function downloadBlob(blob: Blob, name: string) {
   const objectUrl = URL.createObjectURL(blob);
@@ -559,19 +652,40 @@ function ScreenshotContainer(props: {
   );
 }
 
-function DownloadBaseScreenshotButton({
+function BaseScreenshotActionsMenu({
   diff,
   buildId,
 }: {
   diff: BuildDiffDetailDocument;
   buildId: string;
 }) {
+  const { baseScreenshot } = diff;
+  invariant(baseScreenshot);
   return (
-    <DownloadScreenshotButton
-      url={diff.baseScreenshot!.originalUrl}
-      tooltip="Download baseline screenshot"
-      name={`Build #${buildId} - ${diff.name} - baseline.png`}
-    />
+    <ScreenshotActionsMenu
+      tooltip="Baseline screenshot actions"
+      ariaLabel="Baseline screenshot actions"
+    >
+      <CopyScreenshotSubmenu url={baseScreenshot.originalUrl} alt={diff.name} />
+      <MenuSeparator />
+      <MenuItem
+        onAction={() => {
+          downloadWithToast(
+            fetchBlob(baseScreenshot.originalUrl).then((blob) => {
+              downloadBlob(
+                blob,
+                `Build #${buildId} - ${diff.name} - baseline.png`,
+              );
+            }),
+          );
+        }}
+      >
+        <MenuItemIcon>
+          <DownloadIcon />
+        </MenuItemIcon>
+        Download
+      </MenuItem>
+    </ScreenshotActionsMenu>
   );
 }
 
@@ -660,7 +774,7 @@ function BaseScreenshot({
           <ZoomPane
             dimensions={dimensions}
             controls={
-              <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
+              <BaseScreenshotActionsMenu diff={diff} buildId={buildId} />
             }
           >
             <ScreenshotContainer dimensions={dimensions} contained={contained}>
@@ -687,9 +801,7 @@ function BaseScreenshot({
       return (
         <ZoomPane
           dimensions={dimensions}
-          controls={
-            <DownloadBaseScreenshotButton diff={diff} buildId={buildId} />
-          }
+          controls={<BaseScreenshotActionsMenu diff={diff} buildId={buildId} />}
         >
           <ScreenshotContainer dimensions={dimensions} contained={contained}>
             <ScreenshotPicture
@@ -715,7 +827,7 @@ function BaseScreenshot({
   }
 }
 
-function DownloadCompareScreenshotButton({
+function CompareScreenshotActionsMenu({
   diff,
   buildId,
 }: {
@@ -727,90 +839,74 @@ function DownloadCompareScreenshotButton({
   const getName = (identifier: string) => {
     return `Build #${buildId} - ${diff.name} - ${identifier}.png`;
   };
-  const runDownload = (promise: Promise<void>) => {
-    toast.promise(promise, {
-      loading: "Downloading image…",
-      success: "Image downloaded",
-      error: (data) => {
-        console.error(data);
-        captureException(data);
-        return getErrorMessage(data);
-      },
-    });
-  };
 
   const { url: diffUrl, compareScreenshot } = diff;
   invariant(compareScreenshot);
 
-  if (!diffUrl) {
-    return (
-      <DownloadScreenshotButton
-        url={compareScreenshot.originalUrl}
-        tooltip="Download"
-        name={getName("head")}
-      />
-    );
-  }
-
   return (
-    <MenuTrigger>
-      <Tooltip placement="left" content="Download changes screenshot">
-        <IconButton variant="contained">
-          <DownloadIcon />
-        </IconButton>
-      </Tooltip>
-      <Popover placement="bottom end">
-        <Menu aria-label="Download changes screenshot">
-          <MenuItem
-            onAction={() => {
-              runDownload(
-                fetchBlob(compareScreenshot.originalUrl).then((blob) => {
-                  downloadBlob(blob, getName("head"));
-                }),
-              );
-            }}
-          >
-            <MenuItemIcon>
-              <FileDownIcon />
-            </MenuItemIcon>
-            Download changes screenshot
-          </MenuItem>
-          <MenuItem
-            onAction={() => {
-              runDownload(
-                fetchBlob(diffUrl).then((blob) => {
-                  downloadBlob(blob, getName("mask"));
-                }),
-              );
-            }}
-          >
-            <MenuItemIcon>
-              <BlendIcon />
-            </MenuItemIcon>
-            Download changes mask
-          </MenuItem>
-          <MenuItem
-            onAction={() => {
-              runDownload(
-                createMaskedCompareBlob({
-                  compareUrl: compareScreenshot.originalUrl,
-                  maskUrl: diffUrl,
-                  color: overlayColor,
-                  opacity: overlayOpacity,
-                }).then((blob) => {
-                  downloadBlob(blob, getName("composite"));
-                }),
-              );
-            }}
-          >
-            <MenuItemIcon>
-              <Layers2Icon />
-            </MenuItemIcon>
-            Download composed changes
-          </MenuItem>
-        </Menu>
-      </Popover>
-    </MenuTrigger>
+    <ScreenshotActionsMenu
+      tooltip="Changes screenshot actions"
+      ariaLabel="Changes screenshot actions"
+    >
+      <CopyScreenshotSubmenu
+        url={compareScreenshot.originalUrl}
+        alt={diff.name}
+      />
+      <MenuSeparator />
+      <DownloadScreenshotSubmenu>
+        <MenuItem
+          onAction={() => {
+            downloadWithToast(
+              fetchBlob(compareScreenshot.originalUrl).then((blob) => {
+                downloadBlob(blob, getName("head"));
+              }),
+            );
+          }}
+        >
+          <MenuItemIcon>
+            <FileDownIcon />
+          </MenuItemIcon>
+          Download screenshot
+        </MenuItem>
+        {diffUrl ? (
+          <>
+            <MenuItem
+              onAction={() => {
+                downloadWithToast(
+                  fetchBlob(diffUrl).then((blob) => {
+                    downloadBlob(blob, getName("mask"));
+                  }),
+                );
+              }}
+            >
+              <MenuItemIcon>
+                <BlendIcon />
+              </MenuItemIcon>
+              Download diff mask
+            </MenuItem>
+            <MenuItem
+              onAction={() => {
+                downloadWithToast(
+                  createMaskedCompareBlob({
+                    compareUrl: compareScreenshot.originalUrl,
+                    maskUrl: diffUrl,
+                    color: overlayColor,
+                    opacity: overlayOpacity,
+                  }).then((blob) => {
+                    downloadBlob(blob, getName("composite"));
+                  }),
+                );
+              }}
+            >
+              <MenuItemIcon>
+                <Layers2Icon />
+              </MenuItemIcon>
+              Download composed changes
+            </MenuItem>
+          </>
+        ) : null}
+      </DownloadScreenshotSubmenu>
+    </ScreenshotActionsMenu>
   );
 }
 
@@ -832,7 +928,7 @@ function CompareScreenshot(props: {
           <ZoomPane
             dimensions={dimensions}
             controls={
-              <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+              <CompareScreenshotActionsMenu diff={diff} buildId={buildId} />
             }
             overlay={
               dimensions
@@ -872,7 +968,7 @@ function CompareScreenshot(props: {
         <ZoomPane
           dimensions={dimensions}
           controls={
-            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+            <CompareScreenshotActionsMenu diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer dimensions={dimensions} contained={contained}>
@@ -892,7 +988,7 @@ function CompareScreenshot(props: {
         <ZoomPane
           dimensions={dimensions}
           controls={
-            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+            <CompareScreenshotActionsMenu diff={diff} buildId={buildId} />
           }
         >
           <ScreenshotContainer dimensions={dimensions} contained={contained}>
@@ -913,7 +1009,7 @@ function CompareScreenshot(props: {
           <ZoomPane
             dimensions={dimensions}
             controls={
-              <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+              <CompareScreenshotActionsMenu diff={diff} buildId={buildId} />
             }
           >
             <ScreenshotContainer dimensions={dimensions} contained={contained}>
@@ -996,7 +1092,7 @@ function CompareScreenshotChanged(props: {
           ref={paneRef}
           dimensions={dimensions}
           controls={
-            <DownloadCompareScreenshotButton diff={diff} buildId={buildId} />
+            <CompareScreenshotActionsMenu diff={diff} buildId={buildId} />
           }
           overlay={
             dimensions
