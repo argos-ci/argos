@@ -319,14 +319,14 @@ function CopyScreenshotSubmenu(props: { url: string; alt: string }) {
               toast.success("Markdown copied", {
                 id: SCREENSHOT_COPY_TOAST_ID,
                 description:
-                  "The screenshot link as Markdown was copied to your clipboard.",
+                  "The screenshot embed as Markdown was copied to your clipboard.",
               });
             }}
           >
             <MenuItemIcon>
               <CodeIcon />
             </MenuItemIcon>
-            Copy link as Markdown
+            Copy embed as Markdown
           </MenuItem>
         </Menu>
       </Popover>
