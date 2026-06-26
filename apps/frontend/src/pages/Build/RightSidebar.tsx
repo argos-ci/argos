@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import clsx from "clsx";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom } from "jotai";
 import { PanelRightIcon } from "lucide-react";
 import {
   Tab as RACTab,
@@ -80,17 +80,18 @@ export function RightSidebar(
     build: DocumentType<typeof _BuildFragment>;
   },
 ) {
-  const open = useAtomValue(rightSidebarOpenAtom);
+  const [open, setOpen] = useAtom(rightSidebarOpenAtom);
   const [tab, setTab] = useAtom(rightSidebarTabAtom);
   const { activeDiff, siblingDiffs } = useBuildDiffState();
   const { build, ...context } = props;
   const { hash } = useLocation();
-  // Open the Review tab when arriving on a link to a specific comment.
+  // Open the sidebar on the Review tab when arriving on a link to a specific comment.
   useEffect(() => {
     if (hash.startsWith("#comment-")) {
+      setOpen(true);
       setTab("review");
     }
-  }, [hash, setTab]);
+  }, [hash, setOpen, setTab]);
   if (!open || !activeDiff) {
     return null;
   }
