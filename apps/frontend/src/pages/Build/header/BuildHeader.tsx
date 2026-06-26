@@ -4,6 +4,7 @@ import { CheckIcon, RefreshCcwIcon, SparklesIcon } from "lucide-react";
 import { useClipboard } from "use-clipboard-copy";
 
 import { useIsLoggedIn } from "@/containers/Auth";
+import { BuildBaselineEligibilityChip } from "@/containers/BuildBaselineEligibilityChip";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
@@ -44,6 +45,7 @@ const _BuildFragment = graphql(`
     }
     ...BuildStatusChip_Build
     ...BuildTestStatusChip_Build
+    ...BuildBaselineEligibilityChip_Build
   }
 `);
 
@@ -240,6 +242,7 @@ export const BuildHeader = memo(
           </div>
           {build ? <BuildStatusChip build={build} /> : null}
           {build ? <BuildTestStatusChip build={build} /> : null}
+          {build ? <BuildBaselineEligibilityChip build={build} /> : null}
         </div>
         <div className="flex min-w-0 items-center gap-4">
           <div className="flex items-center gap-2 empty:hidden">

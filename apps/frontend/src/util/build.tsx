@@ -2,6 +2,8 @@ import { assertNever } from "@argos/util/assertNever";
 import {
   AlertTriangleIcon,
   BadgeCheckIcon,
+  BookmarkCheckIcon,
+  BookmarkXIcon,
   CheckCircle2Icon,
   CheckIcon,
   CircleCheckIcon,
@@ -18,7 +20,12 @@ import {
   XIcon,
 } from "lucide-react";
 
-import { BuildStatus, BuildType, TestReportStatus } from "@/gql/graphql";
+import {
+  BuildBaselineIneligibilityReason,
+  BuildStatus,
+  BuildType,
+  TestReportStatus,
+} from "@/gql/graphql";
 
 export const buildStatusDescriptors: Record<
   BuildStatus,
@@ -131,6 +138,47 @@ export function getBuildDescriptor(
     }
     default:
       assertNever(type);
+  }
+}
+
+/**
+ * Get the descriptor for the baseline eligibility of a build.
+ */
+export function getBaselineEligibilityDescriptor(eligible: boolean) {
+  return eligible
+    ? {
+        label: "Eligible as baseline",
+        color: "success" as const,
+        icon: BookmarkCheckIcon,
+        description:
+          "This build is eligible to be used as a baseline by future builds.",
+      }
+    : {
+        label: "Not eligible as baseline",
+        color: "neutral" as const,
+        icon: BookmarkXIcon,
+        description:
+          "This build is not eligible to be used as a baseline by future builds.",
+      };
+}
+
+/**
+ * Get a human readable explanation of why a build is not eligible as a baseline.
+ */
+export function getBaselineIneligibilityReasonLabel(
+  reason: BuildBaselineIneligibilityReason,
+): string {
+  switch (reason) {
+    case BuildBaselineIneligibilityReason.BuildIncomplete:
+      return "The build is not complete yet.";
+    case BuildBaselineIneligibilityReason.TestsFailed:
+      return "Some end-to-end tests did not pass.";
+    case BuildBaselineIneligibilityReason.Subset:
+      return "The build is marked as a subset, so it only contains part of the snapshots.";
+    case BuildBaselineIneligibilityReason.NotApproved:
+      return "The build is not auto-approved, manually approved, or an orphan.";
+    default:
+      assertNever(reason);
   }
 }
 
