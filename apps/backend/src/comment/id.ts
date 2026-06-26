@@ -1,3 +1,4 @@
+import type { Build, Comment } from "@/database/models";
 import { sqids } from "@/util/sqids";
 
 const COMMENT_ID_PREFIX = "comment-";
@@ -25,4 +26,16 @@ export function parseCommentId(input: string): string {
   }
 
   return String(decoded);
+}
+
+/**
+ * Build the shareable URL pointing at a specific comment, i.e. the comment's
+ * build page with the comment ID as the fragment so the page scrolls to it.
+ */
+export async function getCommentUrl(input: {
+  build: Build;
+  comment: Comment;
+}): Promise<string> {
+  const buildUrl = await input.build.getUrl();
+  return `${buildUrl}#${formatCommentId(input.comment.id)}`;
 }
