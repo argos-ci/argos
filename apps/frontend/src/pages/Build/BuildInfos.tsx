@@ -9,12 +9,17 @@ import {
 import { DocumentType, graphql } from "@/gql";
 import {
   BaseBranchResolution,
+  BuildBaselineIneligibilityReason,
   BuildStatus,
   TestReportStatus,
 } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Time } from "@/ui/Time";
-import { getTestReportStatusDescriptor } from "@/util/build";
+import {
+  getBaselineEligibilityDescriptor,
+  getBaselineIneligibilityReasonLabel,
+  getTestReportStatusDescriptor,
+} from "@/util/build";
 import { lowTextColorClassNames } from "@/util/colors";
 
 import { getProjectURL } from "../Project/ProjectParams";
@@ -53,6 +58,10 @@ const _BuildFragment = graphql(`
       testReport {
         status
       }
+    }
+    baselineEligibility {
+      eligible
+      reasons
     }
     baseBranch
     baseBranchResolvedFrom
@@ -142,6 +151,35 @@ function TestReportStatusLabel(props: { status: TestReportStatus }) {
         {descriptor.label}
       </div>
       <Description>{descriptor.description}</Description>
+    </>
+  );
+}
+
+function BaselineEligibilityLabel(props: {
+  eligibility: DocumentType<typeof _BuildFragment>["baselineEligibility"];
+}) {
+  const { eligibility } = props;
+  const descriptor = getBaselineEligibilityDescriptor(eligibility.eligible);
+  return (
+    <>
+      <div>
+        <descriptor.icon
+          className={clsx(
+            "mr-1 inline-block",
+            lowTextColorClassNames[descriptor.color],
+          )}
+          size="1em"
+        />
+        {descriptor.label}
+      </div>
+      <Description>{descriptor.description}</Description>
+      {eligibility.reasons.length > 0 ? (
+        <ul className="text-low mt-1 list-disc pl-4 text-xs font-normal">
+          {eligibility.reasons.map((reason) => (
+            <li key={reason}>{getBaselineIneligibilityReasonLabel(reason)}</li>
+          ))}
+        </ul>
+      ) : null}
     </>
   );
 }
@@ -289,6 +327,17 @@ export function BuildInfos(props: {
           <Dt>Tests status</Dt>
           <Dd>
             <TestReportStatusLabel status={build.metadata.testReport.status} />
+          </Dd>
+        </>
+      )}
+
+      {build.baselineEligibility.reasons.includes(
+        BuildBaselineIneligibilityReason.BuildIncomplete,
+      ) ? null : (
+        <>
+          <Dt>Baseline eligibility</Dt>
+          <Dd>
+            <BaselineEligibilityLabel eligibility={build.baselineEligibility} />
           </Dd>
         </>
       )}

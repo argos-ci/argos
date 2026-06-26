@@ -3,12 +3,17 @@ import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
 import { getPreviousDiffApprovalIds } from "@/build/approval";
+import {
+  getBuildBaselineEligibility,
+  type BuildBaselineIneligibilityReason,
+} from "@/build/baselineEligibility";
 import { Build, BuildNotificationSubscription } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { getProjectMemberIds } from "@/project/members";
 
 import {
   IBaseBranchResolution,
+  IBuildBaselineIneligibilityReason,
   IBuildStatus,
   type IResolvers,
 } from "../__generated__/resolver-types";
@@ -141,6 +146,27 @@ export const typeDefs = gql`
     members: [User!]!
     "Users requested to review this build"
     reviewers: [User!]!
+    "Whether this build is eligible to be used as a baseline by future builds"
+    baselineEligibility: BuildBaselineEligibility!
+  }
+
+  "Whether a build is eligible to be used as a baseline, with the reasons when it is not."
+  type BuildBaselineEligibility {
+    "Whether the build is eligible to be used as a baseline"
+    eligible: Boolean!
+    "Reasons why the build is not eligible (empty when eligible)"
+    reasons: [BuildBaselineIneligibilityReason!]!
+  }
+
+  enum BuildBaselineIneligibilityReason {
+    "The build is not complete yet"
+    BUILD_INCOMPLETE
+    "Some framework tests did not pass"
+    TESTS_FAILED
+    "The build is marked as a subset"
+    SUBSET
+    "The build is not auto-approved, manually approved, or an orphan"
+    NOT_APPROVED
   }
 
   type BuildMetadata {
@@ -189,6 +215,16 @@ async function getProject(ctx: Context, build: Build) {
   invariant(project, "project not found");
   return project;
 }
+
+const baselineIneligibilityReasonMap: Record<
+  BuildBaselineIneligibilityReason,
+  IBuildBaselineIneligibilityReason
+> = {
+  "build-incomplete": IBuildBaselineIneligibilityReason.BuildIncomplete,
+  "tests-failed": IBuildBaselineIneligibilityReason.TestsFailed,
+  subset: IBuildBaselineIneligibilityReason.Subset,
+  "not-approved": IBuildBaselineIneligibilityReason.NotApproved,
+};
 
 export const resolvers: IResolvers = {
   Build: {
@@ -402,6 +438,40 @@ export const resolvers: IResolvers = {
         ),
       );
       return accounts.filter((account) => account !== null);
+    },
+    baselineEligibility: async (build, _args, ctx) => {
+      const eligibility = await (async () => {
+        // Until the build is complete, eligibility cannot be determined and we
+        // can skip the extra loads.
+        if (build.jobStatus !== "complete") {
+          return getBuildBaselineEligibility({
+            build,
+            valid: false,
+            hasAcceptedReview: false,
+            hasMergedPullRequest: false,
+          });
+        }
+        const [compareBucket, aggregatedStatus, pullRequest] =
+          await Promise.all([
+            ctx.loaders.ScreenshotBucket.load(build.compareScreenshotBucketId),
+            ctx.loaders.BuildAggregatedStatus.load(build),
+            build.githubPullRequestId
+              ? ctx.loaders.GithubPullRequest.load(build.githubPullRequestId)
+              : null,
+          ]);
+        return getBuildBaselineEligibility({
+          build,
+          valid: compareBucket?.valid ?? false,
+          hasAcceptedReview: aggregatedStatus === "accepted",
+          hasMergedPullRequest: pullRequest?.merged ?? false,
+        });
+      })();
+      return {
+        eligible: eligibility.eligible,
+        reasons: eligibility.reasons.map(
+          (reason) => baselineIneligibilityReasonMap[reason],
+        ),
+      };
     },
   },
 };

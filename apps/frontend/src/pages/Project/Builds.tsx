@@ -19,6 +19,7 @@ import { useQueryStates } from "nuqs";
 import { Heading, Text } from "react-aria-components";
 import { useResolvedPath } from "react-router-dom";
 
+import { BuildBaselineEligibilityChip } from "@/containers/BuildBaselineEligibilityChip";
 import { BuildMergeQueueIndicator } from "@/containers/BuildMergeQueueIndicator";
 import { BuildModeIndicator } from "@/containers/BuildModeIndicator";
 import { BuildStatusChip } from "@/containers/BuildStatusChip";
@@ -109,6 +110,7 @@ const ProjectBuildsQuery = graphql(`
           }
           ...BuildStatusChip_Build
           ...BuildTestStatusChip_Build
+          ...BuildBaselineEligibilityChip_Build
         }
       }
     }
@@ -147,8 +149,9 @@ function BuildRow({
       <div className="flex w-38 shrink-0 flex-col items-start gap-1">
         <BuildStatusChip build={build} scale="sm" />
       </div>
-      <div className="hidden w-28 shrink-0 items-start lg:flex">
+      <div className="hidden w-28 shrink-0 items-start gap-1 lg:flex">
         <BuildTestStatusChip build={build} scale="sm" />
+        <BuildBaselineEligibilityChip build={build} scale="sm" />
       </div>
       <div className="flex grow">
         <div className="hidden lg:flex">
