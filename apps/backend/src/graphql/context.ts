@@ -2,11 +2,10 @@ import type { IncomingMessage } from "node:http";
 import type { BaseContext } from "@apollo/server";
 import { captureException } from "@sentry/node";
 import type { Request, Response } from "express";
-import { GraphQLError } from "graphql";
 
 import type { AuthSessionPayload } from "@/auth/payload";
 import { touchPresence } from "@/auth/presence";
-import { readSessionCookie } from "@/auth/session-cookie";
+import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import {
   safeSessionAuthFromExpressReq,
   sessionAuthFromExpressReq,
@@ -52,8 +51,8 @@ async function getContextAuth(
   }
 
   // No cookie → anonymous request (allowed). A present-but-invalid cookie
-  // throws a 401, which surfaces as UNAUTHENTICATED below so the client logs
-  // out.
+  // throws a 401, which the caller turns into an anonymous request (clearing
+  // the stale cookie) rather than failing the whole request.
   const rawToken = readSessionCookie(request);
   if (!rawToken) {
     return null;
@@ -65,38 +64,42 @@ export async function getContext(
   request: Request,
   response: Response,
 ): Promise<Context> {
+  const requestLocation = extractLocationFromRequest(request);
+
+  let auth: AuthSessionPayload | null;
   try {
-    const auth = await getContextAuth(request);
-    const requestLocation = extractLocationFromRequest(request);
-    if (auth) {
-      // Record live presence. Best-effort and fire-and-forget — a presence
-      // write must never turn a query into a 500. Timezone rides on the
-      // Cloudflare `cf-timezone` header (absent locally).
-      void touchPresence({
-        userId: auth.user.id,
-        timezone: getHeaderString(request, "cf-timezone"),
-      }).catch(captureException);
-    }
-    return {
-      auth,
-      requestLocation,
-      loaders: createLoaders(),
-      req: request,
-      res: response,
-    };
+    auth = await getContextAuth(request);
   } catch (error) {
     if (error instanceof HTTPError && error.statusCode === 401) {
-      throw new GraphQLError("User is not authenticated", {
-        originalError: error,
-        extensions: {
-          code: "UNAUTHENTICATED",
-          http: { status: 401 },
-        },
-      });
+      // The request carries a session cookie that is invalid, expired, or
+      // revoked. Treat the request as anonymous and clear the stale cookies so
+      // the client stops sending them — failing here would block public
+      // operations like signup and signin. Resolvers that require auth still
+      // throw UNAUTHENTICATED on their own, which drives the client logout.
+      clearSessionCookies(response);
+      auth = null;
+    } else {
+      throw error;
     }
-
-    throw error;
   }
+
+  if (auth) {
+    // Record live presence. Best-effort and fire-and-forget — a presence
+    // write must never turn a query into a 500. Timezone rides on the
+    // Cloudflare `cf-timezone` header (absent locally).
+    void touchPresence({
+      userId: auth.user.id,
+      timezone: getHeaderString(request, "cf-timezone"),
+    }).catch(captureException);
+  }
+
+  return {
+    auth,
+    requestLocation,
+    loaders: createLoaders(),
+    req: request,
+    res: response,
+  };
 }
 
 /**
