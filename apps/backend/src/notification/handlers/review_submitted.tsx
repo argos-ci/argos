@@ -9,7 +9,10 @@ import {
   Link,
   Paragraph,
 } from "../../email/components";
-import { defineNotificationHandler } from "../workflow-types";
+import {
+  defineNotificationHandler,
+  REVIEW_ACTIVITY_BATCH,
+} from "../workflow-types";
 
 const reviewStateSchema = z.enum(["approved", "rejected", "commented"]);
 
@@ -44,6 +47,7 @@ function getSubjectLabel(state: ReviewState): string {
 export const handler = defineNotificationHandler({
   type: "review_submitted",
   category: "review",
+  batch: REVIEW_ACTIVITY_BATCH,
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),

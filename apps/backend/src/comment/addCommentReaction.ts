@@ -4,6 +4,7 @@ import { knex } from "@/database";
 import { Comment, User } from "@/database/models";
 import { getCommentThreadSubscribedUserIds } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
+import { reviewBuildBatchKey } from "@/notification/batch";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
@@ -103,5 +104,6 @@ async function notifyCommentThreadSubscribers(input: {
       bodyHtml: await renderCommentHtmlWithMentions(comment),
     },
     recipients,
+    batchKey: reviewBuildBatchKey(build.id),
   });
 }

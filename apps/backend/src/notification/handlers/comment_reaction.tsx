@@ -8,11 +8,15 @@ import {
   Link,
   Paragraph,
 } from "../../email/components";
-import { defineNotificationHandler } from "../workflow-types";
+import {
+  defineNotificationHandler,
+  REVIEW_ACTIVITY_BATCH,
+} from "../workflow-types";
 
 export const handler = defineNotificationHandler({
   type: "comment_reaction",
   category: "review",
+  batch: REVIEW_ACTIVITY_BATCH,
   schema: z.object({
     accountSlug: z.string(),
     projectName: z.string(),

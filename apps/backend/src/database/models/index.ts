@@ -29,6 +29,8 @@ export * from "./GitlabProject";
 export * from "./GitlabUser";
 export * from "./GoogleUser";
 export * from "./IgnoredChange";
+export * from "./NotificationBatch";
+export * from "./NotificationBatchItem";
 export * from "./NotificationMessage";
 export * from "./NotificationWorkflow";
 export * from "./NotificationWorkflowRecipient";

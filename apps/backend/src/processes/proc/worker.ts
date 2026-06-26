@@ -7,6 +7,10 @@ import { job as buildNotificationJob } from "@/build-notification";
 import { job as deploymentNotificationJob } from "@/deployment-notification";
 import { githubPullRequestJob } from "@/github-pull-request/job";
 import { createJobWorker } from "@/job-core";
+import {
+  notificationBatchJob,
+  queueDueNotificationBatches,
+} from "@/notification/batch-job";
 import { notificationMessageJob } from "@/notification/message-job";
 import { notificationWorkflowJob } from "@/notification/workflow-job";
 import { job as screenshotDiffJob } from "@/screenshot-diff";
@@ -17,12 +21,18 @@ scheduleCron("saml-certificate-expiration", "0 * * * *", (context) =>
   checkExpiringSamlCertificates(context.date),
 );
 
+// Deliver due notification batches every minute.
+scheduleCron("notification-batches", "* * * * *", (context) =>
+  queueDueNotificationBatches(context.date),
+);
+
 createJobWorker(
   automationActionRunJob,
   buildJob,
   buildNotificationJob,
   deploymentNotificationJob,
   githubPullRequestJob,
+  notificationBatchJob,
   notificationMessageJob,
   notificationWorkflowJob,
   synchronizeJob,

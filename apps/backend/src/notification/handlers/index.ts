@@ -7,6 +7,7 @@ import * as email_added from "./email_added";
 import * as email_removed from "./email_removed";
 import * as invalid_gitlab_token from "./invalid_gitlab_token";
 import * as project_deleted from "./project_deleted";
+import * as review_activity_summary from "./review_activity_summary";
 import * as review_dismissed from "./review_dismissed";
 import * as review_requested from "./review_requested";
 import * as review_submitted from "./review_submitted";
@@ -24,6 +25,7 @@ export const notificationHandlers = [
   email_removed.handler,
   invalid_gitlab_token.handler,
   project_deleted.handler,
+  review_activity_summary.handler,
   review_dismissed.handler,
   review_requested.handler,
   review_submitted.handler,

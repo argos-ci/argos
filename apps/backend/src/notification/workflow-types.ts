@@ -25,6 +25,38 @@ export type NotificationCategory =
   | "project"
   | "integration";
 
+/**
+ * Kind of digest a batchable notification rolls up into. Each kind maps to a
+ * single digest handler (e.g. `review_activity` → `review_activity_summary`).
+ */
+export type NotificationBatchKind = "review_activity";
+
+/**
+ * Batching metadata a handler opts into. When present (and the workflow carries
+ * a `batchKey`), the workflow job rolls events into a debounced digest instead
+ * of sending immediately.
+ */
+export type NotificationBatchConfig = {
+  kind: NotificationBatchKind;
+  /** Delay added on each new event before the batch becomes due. */
+  debounceMs: number;
+  /** Hard cap from the first event, so an active discussion can't postpone delivery forever. */
+  maxDelayMs: number;
+  /** Once this many events accumulate, the batch flushes early. */
+  maxItems: number;
+};
+
+/**
+ * Shared batching config for review/comment activity. All review-activity
+ * handlers reference this so a single user gets one digest per build.
+ */
+export const REVIEW_ACTIVITY_BATCH: NotificationBatchConfig = {
+  kind: "review_activity",
+  debounceMs: 5 * 60 * 1000,
+  maxDelayMs: 30 * 60 * 1000,
+  maxItems: 20,
+};
+
 export type NotificationHandler<TType extends string = string, TData = any> = {
   type: TType;
   /**
@@ -32,6 +64,11 @@ export type NotificationHandler<TType extends string = string, TData = any> = {
    * derived from the category metadata.
    */
   category: NotificationCategory;
+  /**
+   * When set, notifications of this type can be batched into a digest. Only
+   * applies to workflows that also carry a `batchKey`.
+   */
+  batch?: NotificationBatchConfig;
   schema: z.ZodType<TData>;
   previewData: TData;
   email: (props: TData & { ctx: HandlerContext }) => {

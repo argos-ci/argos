@@ -26,6 +26,13 @@ export class NotificationWorkflow<
       timestampsSchema,
       jobModelSchema,
       {
+        type: "object",
+        properties: {
+          // Scope key (e.g. `build:42`) opting the workflow into batching.
+          batchKey: { type: ["string", "null"] },
+        },
+      },
+      {
         anyOf: notificationHandlers.map((h) => ({
           type: "object",
           properties: {
@@ -41,6 +48,11 @@ export class NotificationWorkflow<
   jobStatus!: JobStatus;
   type!: Type;
   data!: NotificationWorkflowProps<Type>["data"];
+  /**
+   * When set, the workflow is eligible for batching into a digest keyed by this
+   * value. Null workflows send immediately.
+   */
+  batchKey!: string | null;
 
   static override get relationMappings(): RelationMappings {
     return {

@@ -25,6 +25,7 @@ import {
 import { subscribeUserToCommentThread } from "@/database/services/comment-notification-subscription";
 import { transaction } from "@/database/transaction";
 import { sendNotification } from "@/notification";
+import { reviewBuildBatchKey } from "@/notification/batch";
 import { boom } from "@/util/error";
 
 import { getViewerPendingReview } from "./pendingReview";
@@ -235,5 +236,6 @@ async function notifyBuildSubscribers(input: {
       bodyHtml: comment ? await renderCommentHtmlWithMentions(comment) : null,
     },
     recipients,
+    batchKey: reviewBuildBatchKey(build.id),
   });
 }

@@ -595,6 +595,16 @@ export function createConfig() {
         env: "SQIDS_ALPHABET",
       },
     },
+    notifications: {
+      reviewBatching: {
+        enabled: {
+          doc: "Whether review/comment email notifications are batched into a periodic digest. Acts as a global kill switch; workflows without a batchKey always send immediately.",
+          format: Boolean,
+          default: true,
+          env: "NOTIFICATIONS_REVIEW_BATCHING_ENABLED",
+        },
+      },
+    },
   });
 
   const env = config.get("env");

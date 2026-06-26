@@ -250,6 +250,8 @@ describe("GraphQL addBuildComment mutation", () => {
     expect(call.type).toBe("comment_added");
     // The author is excluded, the subscriber is notified.
     expect(call.recipients).toEqual([subscriberUserId]);
+    // Comments batch into the build's review-activity digest.
+    expect(call.batchKey).toBe(`build:${fixture.build.id}`);
   });
 
   test("posts a reply in the root comment thread", async ({ fixture }) => {
@@ -310,6 +312,7 @@ describe("GraphQL addBuildComment mutation", () => {
     invariant(call);
     expect(call.type).toBe("comment_replied");
     expect(call.recipients).toEqual([subscriberAccount.userId]);
+    expect(call.batchKey).toBe(`build:${fixture.build.id}`);
   });
 
   test("subscribes and unsubscribes from a comment thread", async ({
@@ -475,6 +478,8 @@ describe("GraphQL addBuildComment mutation", () => {
     invariant(call);
     expect(call.type).toBe("comment_mention");
     expect(call.recipients).toEqual([mentionedAccount.userId]);
+    // Mentions stay immediate: they are not batched.
+    expect(call.batchKey).toBeUndefined();
   });
 
   test("ignores a mention of a user without project access", async ({

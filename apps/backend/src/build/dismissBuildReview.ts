@@ -2,6 +2,7 @@ import { invariant } from "@argos/util/invariant";
 
 import { Build, BuildReview, User } from "@/database/models";
 import { sendNotification } from "@/notification";
+import { reviewBuildBatchKey } from "@/notification/batch";
 
 import { publishReviewChange } from "./reviewEvents";
 
@@ -71,5 +72,6 @@ async function notifyReviewDismissed(input: {
       state,
     },
     recipients: [review.userId],
+    batchKey: reviewBuildBatchKey(build.id),
   });
 }

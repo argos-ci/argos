@@ -12,6 +12,7 @@ import {
   subscribeUserToCommentThread,
 } from "@/database/services/comment-notification-subscription";
 import { sendNotification } from "@/notification";
+import { reviewBuildBatchKey } from "@/notification/batch";
 import { boom } from "@/util/error";
 
 import { publishCommentChange } from "./commentEvents";
@@ -177,7 +178,12 @@ async function notifyBuildSubscribers(input: {
     comment,
     userId,
   });
-  await sendNotification({ type: "comment_added", data, recipients });
+  await sendNotification({
+    type: "comment_added",
+    data,
+    recipients,
+    batchKey: reviewBuildBatchKey(build.id),
+  });
 }
 
 async function notifyCommentThreadSubscribers(input: {
@@ -201,5 +207,10 @@ async function notifyCommentThreadSubscribers(input: {
     comment,
     userId,
   });
-  await sendNotification({ type: "comment_replied", data, recipients });
+  await sendNotification({
+    type: "comment_replied",
+    data,
+    recipients,
+    batchKey: reviewBuildBatchKey(build.id),
+  });
 }
