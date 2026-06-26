@@ -195,7 +195,6 @@ function UserCardPresence(props: {
 }) {
   const { lastSeenAt, timezone } = props;
   const now = useNow(PRESENCE_TICK_MS);
-
   // No `lastSeenAt` means no recent activity (or presence isn't visible to the
   // viewer) — treat the user as offline.
   const status: PresenceStatus = lastSeenAt
@@ -206,25 +205,35 @@ function UserCardPresence(props: {
   return (
     <div className="text-low border-t-thin mt-3 flex flex-col gap-1.5 pt-3 text-xs">
       <div className="flex items-center gap-2">
-        <span
-          className={clsx("size-2 shrink-0 rounded-full", PRESENCE_DOT[status])}
-        />
+        <span className="flex size-3.5 shrink-0 items-center justify-center">
+          <span className={clsx("size-2 rounded-full", PRESENCE_DOT[status])} />
+        </span>
         {status === "offline" ? (
           lastSeenAt ? (
             <span>
-              Last seen <Time date={lastSeenAt} tooltip="none" />
+              Last seen{" "}
+              <Time
+                date={lastSeenAt}
+                tooltip="none"
+                className="text-default font-medium"
+              />
             </span>
           ) : (
             <span>Offline</span>
           )
+        ) : status === "online" ? (
+          <span className="text-default font-medium">Online</span>
         ) : (
-          <span>{status === "online" ? "Online" : "Away"}</span>
+          <span>Away</span>
         )}
       </div>
       {localTime ? (
-        <div className="flex items-center gap-2">
-          <ClockIcon className="size-3.5 shrink-0 opacity-70" />
-          <span>{localTime} local time</span>
+        <div className="text-low flex items-center gap-2">
+          <ClockIcon className="text-default size-3.5 shrink-0" />
+          <span>
+            <span className="text-default font-medium">{localTime}</span> local
+            time
+          </span>
         </div>
       ) : null}
     </div>
