@@ -146,7 +146,7 @@ function BuildRow({
           <Truncable className="text-low mt-1 text-xs">{build.name}</Truncable>
         ) : null}
       </div>
-      <div className="flex w-38 shrink-0 flex-col items-start gap-1">
+      <div className="flex w-44 shrink-0 flex-col items-start gap-1">
         <BuildStatusChip build={build} scale="sm" />
       </div>
       <div className="hidden w-28 shrink-0 items-start gap-1 lg:flex">

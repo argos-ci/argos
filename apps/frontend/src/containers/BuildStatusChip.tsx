@@ -93,7 +93,7 @@ function BuildReviewUsers(props: {
     return null;
   }
   return (
-    <StackedItems className="shrink-0">
+    <StackedItems className="shrink-0" data-chip-end-avatar>
       {props.reviews.map((review) => {
         if (!review.user) {
           return null;
