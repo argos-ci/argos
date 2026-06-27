@@ -1,4 +1,4 @@
-import { Build, ScreenshotDiff, Test } from "@/database/models";
+import { Build, Screenshot, ScreenshotDiff, Test } from "@/database/models";
 import { getStartDateFromPeriod } from "@/metrics/test";
 import { sqids } from "@/util/sqids";
 
@@ -162,17 +162,78 @@ const FLAKINESS_ORDER_BY = `
 `;
 
 /**
+ * Resolve the id of the latest reference build for each distinct build name in a
+ * project.
+ *
+ * Teams can accumulate a massive reference-build history under only a handful of
+ * build names (millions of builds, a few names). A plain `DISTINCT ON (name)`
+ * has to read every reference build to dedupe — which is what made this step
+ * take seconds. Instead we emulate a loose index scan ("skip scan") with a
+ * recursive CTE: jump to the first build name, then to each next name via the
+ * `(projectId, type, name, createdAt desc)` index, and grab that name's latest
+ * build. That's ~2 index probes per build name instead of scanning the whole
+ * history, so it no longer scales with the number of builds.
+ */
+async function getLatestReferenceBuildIds(projectIds: string[]) {
+  const perProject = await Promise.all(
+    projectIds.map(async (projectId) => {
+      const result = (await Build.knex().raw(
+        `WITH RECURSIVE build_names AS (
+           SELECT min(name) AS name
+           FROM builds
+           WHERE "projectId" = :projectId AND "type" = 'reference'
+           UNION ALL
+           SELECT (
+             SELECT min(b.name)
+             FROM builds b
+             WHERE b."projectId" = :projectId
+               AND b."type" = 'reference'
+               AND b.name > build_names.name
+           )
+           FROM build_names
+           WHERE build_names.name IS NOT NULL
+         )
+         SELECT (
+           SELECT b.id
+           FROM builds b
+           WHERE b."projectId" = :projectId
+             AND b."type" = 'reference'
+             AND b.name = build_names.name
+           ORDER BY b."createdAt" DESC
+           LIMIT 1
+         ) AS id
+         FROM build_names
+         WHERE build_names.name IS NOT NULL`,
+        { projectId },
+      )) as { rows: { id: string | null }[] };
+      return result.rows;
+    }),
+  );
+  return perProject
+    .flat()
+    .map((row) => row.id)
+    .filter((id): id is string => id !== null);
+}
+
+/**
  * Query the "active" tests for a set of projects, sorted by flakiness.
  *
  * A test is active when it appears in the latest reference build of its build
- * name (per project) as a non-orphan compare screenshot. Pass a single project
- * id for the per-project Tests page, or every visible project id for the
- * account-wide aggregate.
+ * name (per project) as a non-child compare screenshot (`parentName IS NULL`).
+ * Pass a single project id for the per-project Tests page, or every visible
+ * project id for the account-wide aggregate.
+ *
+ * The active set is resolved in a few small, well-indexed steps rather than one
+ * statement. The candidate set is tiny (≈ the number of active tests), so doing
+ * the child-screenshot check and the final pagination on concrete id lists lets
+ * Postgres use primary-key lookups throughout — instead of sorting every
+ * reference build and hash-joining the whole `screenshots` table, which it picks
+ * when it has to plan the whole thing from (badly wrong) row estimates.
  *
  * Returns Objection's `{ total, results }` range page so the caller can hand it
  * straight to `paginateResult`.
  */
-export function queryActiveTests(input: {
+export async function queryActiveTests(input: {
   projectIds: string[];
   period: IMetricsPeriod;
   filters?: { buildName?: string | null; search?: string | null } | null;
@@ -182,45 +243,77 @@ export function queryActiveTests(input: {
   const { projectIds, period, filters, after, first } = input;
   const search = filters?.search?.trim();
 
-  const latestRef = Build.query()
-    .alias("b")
-    .select("b.id", "b.projectId", "b.name")
-    .distinctOn(["b.projectId", "b.name"])
-    .where("b.type", "reference")
-    .whereIn("b.projectId", projectIds)
-    .orderBy("b.projectId")
-    .orderBy("b.name")
-    .orderBy("b.createdAt", "desc")
-    .as("latest_reference_build");
+  // Step 1 — the latest reference build per (project, name).
+  const latestBuildIds = await getLatestReferenceBuildIds(projectIds);
+  if (latestBuildIds.length === 0) {
+    return { total: 0, results: [] };
+  }
 
-  const activeTests = ScreenshotDiff.query()
-    .alias("sd")
-    .distinct("sd.testId")
-    .join(latestRef, "latest_reference_build.id", "sd.buildId")
-    .whereNotNull("sd.testId")
-    .joinRelated("compareScreenshot")
-    .whereNull("compareScreenshot.parentName")
-    .modify((query) => {
-      if (search) {
-        query.whereILike("compareScreenshot.name", `%${search}%`);
+  // Step 2 — the candidate `(testId, compareScreenshotId)` pairs in those builds.
+  const diffs = await ScreenshotDiff.query()
+    .distinct("testId", "compareScreenshotId")
+    .whereIn("buildId", latestBuildIds)
+    .whereNotNull("testId")
+    .whereNotNull("compareScreenshotId");
+  if (diffs.length === 0) {
+    return { total: 0, results: [] };
+  }
+
+  // Step 3 — drop the rare child screenshots (those with a `parentName`, ~0.4%).
+  // Looking them up by id is a handful of primary-key probes against the small
+  // candidate set, instead of hash-joining every child screenshot (~1.4M rows).
+  const compareScreenshotIds = [
+    ...new Set(
+      diffs
+        .map((diff) => diff.compareScreenshotId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const childScreenshots = await Screenshot.query()
+    .select("id")
+    .whereIn("id", compareScreenshotIds)
+    .whereNotNull("parentName");
+  const childScreenshotIds = new Set(
+    childScreenshots.map((screenshot) => screenshot.id),
+  );
+
+  const activeTestIds = [
+    ...new Set(
+      diffs
+        .filter(
+          (diff) =>
+            diff.compareScreenshotId !== null &&
+            !childScreenshotIds.has(diff.compareScreenshotId),
+        )
+        .map((diff) => diff.testId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  if (activeTestIds.length === 0) {
+    return { total: 0, results: [] };
+  }
+
+  // Step 4 — rank the active tests by flakiness and paginate. `activeTestIds`
+  // already scopes the result to the requested projects, so the id filter is all
+  // we need.
+  return Test.query()
+    .whereIn("tests.id", activeTestIds)
+    .where((qb) => {
+      if (filters?.buildName) {
+        qb.where("tests.buildName", filters.buildName);
       }
     })
-    .as("active_tests");
-
-  return (
-    Test.query()
-      .whereIn("tests.projectId", projectIds)
-      .where((qb) => {
-        if (filters?.buildName) {
-          qb.where("tests.buildName", filters.buildName);
-        }
-      })
-      // only ongoing
-      .join(activeTests, "active_tests.testId", "tests.id")
-      .orderByRaw(FLAKINESS_ORDER_BY, {
-        from: getStartDateFromPeriod(period).toISOString(),
-        to: new Date().toISOString(),
-      })
-      .range(after, after + first - 1)
-  );
+    .modify((qb) => {
+      if (search) {
+        // A test's name is its screenshot's name (see
+        // `insertFilesAndScreenshots`), so matching `tests.name` is equivalent to
+        // matching the compare screenshot name.
+        qb.whereILike("tests.name", `%${search}%`);
+      }
+    })
+    .orderByRaw(FLAKINESS_ORDER_BY, {
+      from: getStartDateFromPeriod(period).toISOString(),
+      to: new Date().toISOString(),
+    })
+    .range(after, after + first - 1);
 }
