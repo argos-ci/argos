@@ -165,26 +165,54 @@ const FLAKINESS_ORDER_BY = `
  * Resolve the id of the latest reference build for each distinct build name in a
  * project.
  *
- * Done one project at a time on purpose: with `projectId` and `type` fixed, the
- * `(projectId, type, name, createdAt desc)` index already yields rows in the
- * `DISTINCT ON (name)` order, so Postgres can satisfy this with an ordered index
- * scan. Folding every project into a single `whereIn(projectId)` instead forces
- * a sort over the project's *entire* reference-build history (hundreds of
- * thousands of rows for active teams), which spills to disk.
+ * Teams can accumulate a massive reference-build history under only a handful of
+ * build names (millions of builds, a few names). A plain `DISTINCT ON (name)`
+ * has to read every reference build to dedupe — which is what made this step
+ * take seconds. Instead we emulate a loose index scan ("skip scan") with a
+ * recursive CTE: jump to the first build name, then to each next name via the
+ * `(projectId, type, name, createdAt desc)` index, and grab that name's latest
+ * build. That's ~2 index probes per build name instead of scanning the whole
+ * history, so it no longer scales with the number of builds.
  */
 async function getLatestReferenceBuildIds(projectIds: string[]) {
   const perProject = await Promise.all(
-    projectIds.map((projectId) =>
-      Build.query()
-        .select("id")
-        .distinctOn("name")
-        .where("projectId", projectId)
-        .where("type", "reference")
-        .orderBy("name")
-        .orderBy("createdAt", "desc"),
-    ),
+    projectIds.map(async (projectId) => {
+      const result = (await Build.knex().raw(
+        `WITH RECURSIVE build_names AS (
+           SELECT min(name) AS name
+           FROM builds
+           WHERE "projectId" = :projectId AND "type" = 'reference'
+           UNION ALL
+           SELECT (
+             SELECT min(b.name)
+             FROM builds b
+             WHERE b."projectId" = :projectId
+               AND b."type" = 'reference'
+               AND b.name > build_names.name
+           )
+           FROM build_names
+           WHERE build_names.name IS NOT NULL
+         )
+         SELECT (
+           SELECT b.id
+           FROM builds b
+           WHERE b."projectId" = :projectId
+             AND b."type" = 'reference'
+             AND b.name = build_names.name
+           ORDER BY b."createdAt" DESC
+           LIMIT 1
+         ) AS id
+         FROM build_names
+         WHERE build_names.name IS NOT NULL`,
+        { projectId },
+      )) as { rows: { id: string | null }[] };
+      return result.rows;
+    }),
   );
-  return perProject.flat().map((build) => build.id);
+  return perProject
+    .flat()
+    .map((row) => row.id)
+    .filter((id): id is string => id !== null);
 }
 
 /**
