@@ -61,6 +61,13 @@ export const Default: Story = {
         </Chip>
       </div>
 
+      <StoryTitle>Icon only</StoryTitle>
+      <div className="flex flex-wrap items-center gap-3">
+        <Chip scale="xs" color="primary" icon={FlameIcon} />
+        <Chip scale="sm" color="warning" icon={ZapIcon} />
+        <Chip scale="md" color="info" icon={CircleIcon} />
+      </div>
+
       <StoryTitle>Interactive</StoryTitle>
       <div className="flex flex-wrap gap-3">
         <ChipButton color="primary" onPress={() => {}}>
