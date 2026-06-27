@@ -116,7 +116,7 @@ function getChipClassName(props: {
   // top/right spacing instead of looking lost in a wide right gap.
   const spacingClassName: Record<ChipScale, string> = {
     xs: clsx(
-      isEmpty ? "p-0.5" : "px-2 py-0.5 has-data-chip-end-avatar:pr-0.5",
+      isEmpty ? "p-0" : "px-2.5 has-data-chip-end-avatar:pr-0",
       "[--chip-gap:--spacing(1)]",
     ),
     sm: clsx(
@@ -124,7 +124,7 @@ function getChipClassName(props: {
       "[--chip-gap:--spacing(1.5)]",
     ),
     md: clsx(
-      isEmpty ? "p-2.5" : "px-4 py-2.5 has-data-chip-end-avatar:pr-2.5",
+      isEmpty ? "p-2" : "px-4.5 py-2 has-data-chip-end-avatar:pr-2",
       "[--chip-gap:--spacing(2)]",
     ),
   };
