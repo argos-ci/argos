@@ -1,4 +1,4 @@
-import { Build, ScreenshotDiff, Test } from "@/database/models";
+import { Build, Screenshot, ScreenshotDiff, Test } from "@/database/models";
 import { getStartDateFromPeriod } from "@/metrics/test";
 import { sqids } from "@/util/sqids";
 
@@ -198,13 +198,18 @@ export function queryActiveTests(input: {
     .distinct("sd.testId")
     .join(latestRef, "latest_reference_build.id", "sd.buildId")
     .whereNotNull("sd.testId")
-    .joinRelated("compareScreenshot")
-    .whereNull("compareScreenshot.parentName")
-    .modify((query) => {
-      if (search) {
-        query.whereILike("compareScreenshot.name", `%${search}%`);
-      }
-    })
+    .whereNotNull("sd.compareScreenshotId")
+    // Don't hash-join the whole `screenshots` table (300M+ rows, ~99.6% with a
+    // null `parentName`) just to keep the non-child ones. Instead exclude the
+    // rare child screenshots (those with a `parentName`) via an anti-join backed
+    // by `screenshots_id_has_parent_idx`. Equivalent to
+    // `compareScreenshot.parentName IS NULL` since the foreign key guarantees the
+    // screenshot exists when `compareScreenshotId` is set.
+    .whereNotExists(
+      Screenshot.query()
+        .whereRaw('"screenshots"."id" = "sd"."compareScreenshotId"')
+        .whereNotNull("parentName"),
+    )
     .as("active_tests");
 
   return (
@@ -213,6 +218,16 @@ export function queryActiveTests(input: {
       .where((qb) => {
         if (filters?.buildName) {
           qb.where("tests.buildName", filters.buildName);
+        }
+      })
+      .modify((qb) => {
+        if (search) {
+          // A test's name is its screenshot's name (see
+          // `insertFilesAndScreenshots`) and a diff's `testId` always points to
+          // its compare screenshot's test (see `createBuildDiffs`), so matching
+          // `tests.name` is equivalent to matching the compare screenshot name —
+          // and avoids joining the huge `screenshots` table for search too.
+          qb.whereILike("tests.name", `%${search}%`);
         }
       })
       // only ongoing
