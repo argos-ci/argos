@@ -111,22 +111,11 @@ function getChipClassName(props: {
   };
   // For an icon-only chip we mirror the non-empty vertical padding on every
   // side so it ends up square (a circle) and the same height as a text chip of
-  // the same scale. When a trailing avatar sits flush at the end, we shrink the
-  // right padding down to the vertical padding so the round avatar has equal
-  // top/right spacing instead of looking lost in a wide right gap.
+  // the same scale.
   const spacingClassName: Record<ChipScale, string> = {
-    xs: clsx(
-      isEmpty ? "p-0" : "px-2.5 has-data-chip-end-avatar:pr-0",
-      "[--chip-gap:--spacing(1)]",
-    ),
-    sm: clsx(
-      isEmpty ? "p-1" : "px-2.5 py-1 has-data-chip-end-avatar:pr-1",
-      "[--chip-gap:--spacing(1.5)]",
-    ),
-    md: clsx(
-      isEmpty ? "p-2" : "px-4.5 py-2 has-data-chip-end-avatar:pr-2",
-      "[--chip-gap:--spacing(2)]",
-    ),
+    xs: clsx(isEmpty ? "p-0" : "px-2.5", "[--chip-gap:--spacing(1)]"),
+    sm: clsx(isEmpty ? "p-1" : "px-2.5 py-1", "[--chip-gap:--spacing(1.5)]"),
+    md: clsx(isEmpty ? "p-2" : "px-4.5 py-2", "[--chip-gap:--spacing(2)]"),
   };
   const colorClassNames: Record<ChipColor, string> = {
     primary: clsx(

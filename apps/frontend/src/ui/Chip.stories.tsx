@@ -68,21 +68,6 @@ export const Default: Story = {
         <Chip scale="md" color="info" icon={CircleIcon} />
       </div>
 
-      <StoryTitle>Trailing avatar</StoryTitle>
-      <div className="flex flex-wrap items-center gap-3">
-        {(["xs", "sm", "md"] as const).map((scale) => (
-          <Chip key={scale} scale={scale} color="success" icon={CircleIcon}>
-            <span className="flex items-center gap-(--chip-gap)">
-              Approved
-              <span
-                data-chip-end-avatar
-                className="bg-primary-solid size-4 shrink-0 rounded-full"
-              />
-            </span>
-          </Chip>
-        ))}
-      </div>
-
       <StoryTitle>Interactive</StoryTitle>
       <div className="flex flex-wrap gap-3">
         <ChipButton color="primary" onPress={() => {}}>
