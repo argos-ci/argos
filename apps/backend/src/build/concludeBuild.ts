@@ -143,18 +143,18 @@ export async function concludeBuild(input: {
                   payload: { build: updatedBuild, compareScreenshotBucket },
                 },
               }),
-            ]);
-
-            // Auto-approve on behalf of users whose previous approvals already
-            // cover all of this build's changes. Runs after the notification
-            // above so its `diff-accepted` notification supersedes the
-            // `diff-detected` one in the coalesced build-notification job.
-            if (conclusion === "changes-detected") {
-              await autoApproveBuild({
+              // Auto-approve on behalf of users whose previous approvals already
+              // cover all of this build's changes (a no-op unless the build
+              // detected changes). Safe to run concurrently with the
+              // diff-detected notification above: that notification row is
+              // already inserted in the transaction, so auto-approval's
+              // diff-accepted notification gets a higher id and supersedes it in
+              // the coalesced build-notification job.
+              autoApproveBuild({
                 build: updatedBuild,
                 compareScreenshotBucket,
-              });
-            }
+              }),
+            ]);
           } else {
             await Build.query()
               .findById(buildId)
