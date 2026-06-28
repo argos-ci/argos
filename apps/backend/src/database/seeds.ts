@@ -499,6 +499,128 @@ export async function createBuildScenario(input: {
 }
 
 /**
+ * Seeds a single test that has a detected change within the default metrics
+ * period (last 7 days), so the test trends page renders its snapshot diff
+ * viewer.
+ *
+ * A change is surfaced by `Test.changes`, which requires a `reference` build —
+ * created within the period — carrying a screenshot diff with a score > 0 and
+ * a non-null fingerprint. Kept separate from {@link createBuildScenario} so it
+ * can be used in isolation (e.g. the test-view visual test) without perturbing
+ * the other scenarios' baselines.
+ *
+ * @param keyPrefix - A unique prefix for file keys to avoid conflicts across
+ *   parallel test workers.
+ */
+export async function createTestChangeScenario(input: {
+  projectId: string;
+  keyPrefix?: string;
+}): Promise<{ test: Test; build: Build }> {
+  const { projectId, keyPrefix = "" } = input;
+  const now = new Date().toISOString();
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 0,
+    storybookScreenshotCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "029b662f3ae57bae7a215301067262c1e95bbc95" },
+      { ...bucketProps, commit: "5a23b6f173d9596a09a73864ab051ea5972e8804" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [test] = await Test.query().insertAndFetch([
+    { name: "penelope-argos.jpg", buildName: "default", projectId },
+  ]);
+  invariant(test);
+
+  const [baseFile, compareFile, diffFile] = await File.query().insertAndFetch([
+    {
+      type: "screenshot" as const,
+      width: 375,
+      height: 1024,
+      key: `${keyPrefix}dummy-375x1024.png`,
+      contentType: "image/png",
+    },
+    {
+      type: "screenshot" as const,
+      width: 375,
+      height: 720,
+      key: `${keyPrefix}dummy-375x720.png`,
+      contentType: "image/png",
+    },
+    {
+      type: "screenshotDiff" as const,
+      width: 375,
+      height: 1024,
+      key: `${keyPrefix}diff-1024-to-720.png`,
+      contentType: "image/png",
+    },
+  ]);
+  invariant(baseFile && compareFile && diffFile);
+
+  const [baseScreenshot, compareScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        screenshotBucketId: baseBucket.id,
+        testId: test.id,
+        name: "penelope-argos.jpg",
+        s3Id: "dummy-375x1024.png",
+        fileId: baseFile.id,
+      },
+      {
+        screenshotBucketId: compareBucket.id,
+        testId: test.id,
+        name: "penelope-argos.jpg",
+        s3Id: "dummy-375x720.png",
+        fileId: compareFile.id,
+      },
+    ]);
+  invariant(baseScreenshot && compareScreenshot);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "main",
+      number: 1,
+      type: "reference" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+  invariant(build);
+
+  await ScreenshotDiff.query().insert([
+    {
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      testId: test.id,
+      score: 0.3,
+      jobStatus: "complete" as const,
+      s3Id: "diff-1024-to-720.png",
+      fileId: diffFile.id,
+      fingerprint: "penelope-argos-change",
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  return { test, build };
+}
+
+/**
  * Manifest for the "real world" build scenario below.
  *
  * The referenced assets (screenshots, diffs, Playwright traces and markdown

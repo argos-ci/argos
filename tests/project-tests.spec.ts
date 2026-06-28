@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test";
 
+import { createTestChangeScenario } from "../apps/backend/src/database/seeds";
+import { formatTestId } from "../apps/backend/src/graphql/services/test";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
@@ -35,4 +37,39 @@ loggedTest("test detail", async ({ page, team, project, builds }) => {
       [testId]: "SPARKLE-XXX",
     },
   });
+});
+
+/**
+ * The test trends page reuses the build diff viewer to show a detected change.
+ * This guards the two fixes made to that view:
+ *
+ * 1. The snapshot diff viewer must stay within its container (it used to
+ *    overflow the layout horizontally).
+ * 2. Comments belong to a build review, so the comment tool and visibility
+ *    toggle must not appear here — even for a user who can review.
+ */
+loggedTest("test view with a change", async ({ page, team, project }) => {
+  const { test } = await createTestChangeScenario({
+    projectId: project.id,
+    keyPrefix: `${project.id}-`,
+  });
+  const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+  await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+
+  // The change's snapshot diff viewer (the part that overflowed) is rendered.
+  await expect(
+    page.getByRole("heading", { name: "penelope-argos.jpg" }),
+  ).toBeVisible();
+  await expect(page.getByText("Occurrences")).toBeVisible();
+  await expect(page.getByText("Baseline", { exact: false })).toBeVisible();
+
+  // No comment affordances in this view, despite the user being able to review.
+  await expect(page.getByRole("button", { name: "Comment tool" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("button", { name: "Move tool" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /comments$/ })).toHaveCount(0);
+
+  await screenshot(page, "test-view-change");
 });
