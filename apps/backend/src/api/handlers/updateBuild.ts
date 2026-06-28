@@ -1,4 +1,8 @@
-import { BuildMetadataSchema } from "@argos/schemas/build-metadata";
+import {
+  BuildMetadata,
+  BuildMetadataSchema,
+} from "@argos/schemas/build-metadata";
+import { TransactionOrKnex } from "objection";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -127,16 +131,14 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
 
     if (build.compareScreenshotBucket.complete) {
       // The request that finalized the build may be retried (e.g. its response
-      // was lost). If it has already been processed, we return the build
-      // instead of failing so retries are idempotent.
-      const duplicateRequest = body.parallel
-        ? requestId
-          ? await hasShardBeenProcessed({ buildId: build.id, requestId })
-          : false
-        : await areAllScreenshotsInserted({
-            build,
-            screenshots: body.screenshots,
-          });
+      // was lost). If it has already been processed — every screenshot it
+      // carries is already stored — we return the build instead of failing so
+      // retries are idempotent. This holds for both single and parallel builds
+      // and does not rely on a request id (not every SDK sends one).
+      const duplicateRequest = await areAllScreenshotsInserted({
+        build,
+        screenshots: body.screenshots,
+      });
       if (duplicateRequest) {
         res.send({
           build: await serializeBuild(build),
@@ -175,21 +177,10 @@ type Context = {
   requestId: string | null;
 };
 
-async function hasShardBeenProcessed(params: {
-  buildId: string;
-  requestId: string;
-}) {
-  const shard = await BuildShard.query().select("id").findOne({
-    buildId: params.buildId,
-    nonce: params.requestId,
-  });
-  return Boolean(shard);
-}
-
 /**
  * Whether every screenshot of the request is already stored in the build with
  * the same file, meaning the request has already been processed. Used to make
- * non-parallel build updates idempotent against retries.
+ * build updates idempotent against retries.
  */
 async function areAllScreenshotsInserted(params: {
   build: Build;
@@ -217,6 +208,8 @@ async function areAllScreenshotsInserted(params: {
  */
 async function handleUpdateParallel(ctx: Context) {
   const { body, build, requestId } = ctx;
+  const final = body.final ?? true;
+  const parallelIndex = body.parallelIndex ?? null;
   const parallelTotal =
     typeof body.parallelTotal === "number" ? body.parallelTotal : null;
   const expectedTotal =
@@ -226,32 +219,28 @@ async function handleUpdateParallel(ctx: Context) {
     throw boom(400, "`parallelTotal` must be the same on every batch");
   }
 
+  // A shard uploaded across several requests is identified by its
+  // `parallelIndex`, so it is required as soon as the upload is split.
+  if (!final && parallelIndex === null) {
+    throw boom(400, "`parallelIndex` is required when `final` is `false`");
+  }
+
   const complete = await redisLock.acquire(
     ["update-build-parallel", build.id],
-    async () => {
-      return transaction(async (trx) => {
-        const shard = await BuildShard.query(trx)
-          .insert({
-            buildId: build.id,
-            index: body.parallelIndex ?? null,
-            nonce: requestId,
-            metadata: body.metadata ?? null,
-          })
-          .onConflict(["buildId", "nonce"])
-          .ignore();
+    () =>
+      transaction(async (trx) => {
+        const shard = await resolveParallelShard({
+          trx,
+          build,
+          requestId,
+          parallelIndex,
+        });
 
-        // If a shard already exists for this (buildId, nonce), the insert is a no-op:
-        // this is a retried request that has already been processed.
-        if (!shard.id) {
+        // The request has already been fully processed: a retry of a completed
+        // shard or of an index-less request.
+        if (!shard) {
           return false;
         }
-
-        const patchedBuild = await Build.query(trx)
-          .patchAndFetchById(build.id, {
-            batchCount: raw('"batchCount" + 1'),
-            totalBatch: parallelTotal,
-          })
-          .select("batchCount");
 
         await insertFilesAndScreenshots({
           screenshots: body.screenshots,
@@ -260,25 +249,124 @@ async function handleUpdateParallel(ctx: Context) {
           trx,
         });
 
-        if (expectedTotal && expectedTotal === patchedBuild.batchCount) {
-          await Promise.all([
-            finalizeBuild({ build, trx }),
-            // If the build was marked as partial, then it was obviously an error, we unmark it.
-            build.partial
-              ? Build.query(trx).where("id", build.id).patch({ partial: false })
-              : null,
-          ]);
-          return true;
+        // The shard isn't complete yet: more requests of the same shard will
+        // follow before it counts towards the build's batches.
+        if (!final) {
+          return false;
         }
 
-        return false;
-      });
-    },
+        return completeParallelShard({
+          trx,
+          build,
+          shard,
+          requestId,
+          metadata: body.metadata ?? null,
+          parallelTotal,
+          expectedTotal,
+        });
+      }),
   );
 
   if (complete) {
     await buildJob.push(build.id);
   }
+}
+
+/**
+ * Resolve the shard a parallel request belongs to, creating it if needed.
+ *
+ * Like a single build, a parallel shard can be uploaded across several
+ * requests. Requests of the same shard share their `parallelIndex` and the
+ * shard's `nonce` stays null until its last request (`final`). Index-less
+ * shards (manual finalization) can't be split and are identified by the request
+ * nonce, as before.
+ *
+ * Returns `null` when the request has already been fully processed (a retry).
+ */
+async function resolveParallelShard(params: {
+  trx: TransactionOrKnex;
+  build: Build;
+  requestId: string | null;
+  parallelIndex: number | null;
+}): Promise<BuildShard | null> {
+  const { trx, build, requestId, parallelIndex } = params;
+
+  if (parallelIndex === null) {
+    const shard = await BuildShard.query(trx)
+      .insert({ buildId: build.id, index: null, nonce: requestId })
+      .onConflict(["buildId", "nonce"])
+      .ignore();
+    // If a shard already exists for this (buildId, nonce), the insert is a
+    // no-op: this is a retried request that has already been processed.
+    return shard.id ? shard : null;
+  }
+
+  const existingShard = await BuildShard.query(trx).findOne({
+    buildId: build.id,
+    index: parallelIndex,
+  });
+
+  if (existingShard) {
+    // A completed shard (nonce set) hit again is a retried finalizing request:
+    // screenshots are idempotent, so there is nothing left to do.
+    return existingShard.nonce ? null : existingShard;
+  }
+
+  return BuildShard.query(trx).insert({
+    buildId: build.id,
+    index: parallelIndex,
+    nonce: null,
+  });
+}
+
+/**
+ * Complete a parallel shard: mark it done and count it towards the build's
+ * batches, finalizing the build once every batch has been received.
+ */
+async function completeParallelShard(params: {
+  trx: TransactionOrKnex;
+  build: Build;
+  shard: BuildShard;
+  requestId: string | null;
+  metadata: BuildMetadata | null;
+  parallelTotal: number | null;
+  expectedTotal: number | null;
+}): Promise<boolean> {
+  const {
+    trx,
+    build,
+    shard,
+    requestId,
+    metadata,
+    parallelTotal,
+    expectedTotal,
+  } = params;
+
+  // `nonce` marks the shard as complete, so it must be non-null even when the
+  // request carries no id; the shard's own id is a safe fallback marker.
+  await BuildShard.query(trx)
+    .findById(shard.id)
+    .patch({ nonce: requestId ?? shard.id, metadata });
+
+  const patchedBuild = await Build.query(trx)
+    .patchAndFetchById(build.id, {
+      batchCount: raw('"batchCount" + 1'),
+      totalBatch: parallelTotal,
+    })
+    .select("batchCount");
+
+  if (expectedTotal && expectedTotal === patchedBuild.batchCount) {
+    await Promise.all([
+      finalizeBuild({ build, trx }),
+      // If the build was marked as partial, then it was obviously an error, we unmark it.
+      build.partial
+        ? Build.query(trx).where("id", build.id).patch({ partial: false })
+        : null,
+    ]);
+    return true;
+  }
+
+  return false;
 }
 
 /**
