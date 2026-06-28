@@ -113,10 +113,12 @@ export async function concludeBuild(input: {
             const [updatedBuild, buildNotification] = await transaction(
               async (trx) => {
                 return Promise.all([
-                  Build.query(trx).patchAndFetchById(
-                    buildId,
-                    getBuildData({ conclusion, stats }),
-                  ),
+                  Build.query(trx)
+                    .patchAndFetchById(
+                      buildId,
+                      getBuildData({ conclusion, stats }),
+                    )
+                    .withGraphFetched("compareScreenshotBucket"),
                   BuildNotification.query(trx).insert({
                     buildId,
                     type: getNotificationType(conclusion),
@@ -126,9 +128,7 @@ export async function concludeBuild(input: {
               },
             );
 
-            const compareScreenshotBucket = await updatedBuild.$relatedQuery(
-              "compareScreenshotBucket",
-            );
+            const { compareScreenshotBucket } = updatedBuild;
             invariant(
               compareScreenshotBucket,
               `Compare screenshot bucket not found for build: ${updatedBuild.id}`,
