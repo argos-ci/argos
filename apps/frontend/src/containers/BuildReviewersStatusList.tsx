@@ -4,7 +4,6 @@ import { BanIcon } from "lucide-react";
 import moment from "moment";
 
 import { ReviewState } from "@/gql/graphql";
-import { BrandShield } from "@/ui/BrandShield";
 import { Tooltip } from "@/ui/Tooltip";
 import { UserHoverCard, type UserCardData } from "@/ui/UserCard";
 import {
@@ -86,7 +85,11 @@ export function BuildReviewersStatusList<
             <Tooltip
               content={`Approved automatically based on a previous approval by ${user.name || user.slug}.`}
             >
-              <BrandShield className="bg-app absolute -right-1 -bottom-1 size-3 rounded-full" />
+              <img
+                src="/static/argos-bot.svg"
+                alt="Argos bot"
+                className="bg-app absolute -right-1 -bottom-1 size-3 rounded-full"
+              />
             </Tooltip>
           ) : null}
         </span>
