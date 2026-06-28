@@ -369,14 +369,25 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!client) {
       return null;
     }
-    const namespaces = await client.Namespaces.all();
-    return {
-      edges: namespaces,
-      pageInfo: {
-        hasNextPage: false,
-        totalCount: namespaces.length,
-      },
-    };
+    // Listing namespaces hits the GitLab API and can fail for reasons we can't
+    // control (transient 5xx, rate limiting, network). Degrade to `null` rather
+    // than throwing a field error: with the default `errorPolicy: "none"`, a
+    // GraphQL error makes Apollo discard the whole response, which then surfaces
+    // client-side as a `MissingFieldError` and crashes the New Project page. The
+    // frontend already treats `null` as "no namespaces" and shows the GitLab
+    // setup prompt.
+    try {
+      const namespaces = await client.Namespaces.all();
+      return {
+        edges: namespaces,
+        pageInfo: {
+          hasNextPage: false,
+          totalCount: namespaces.length,
+        },
+      };
+    } catch {
+      return null;
+    }
   },
   slackInstallation: async (account, _args, ctx) => {
     if (!account.slackInstallationId) {
