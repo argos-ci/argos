@@ -153,6 +153,10 @@ async function getPreviousDiffApprovals(
   const buildReviewQuery = BuildReview.query()
     .select("build_reviews.id")
     .whereIn("build_reviews.buildId", buildQuery)
+    // Never reapply a dismissed review: a dismissal explicitly revokes its
+    // approvals. This also keeps matching consistent with the candidate set
+    // from `getPreviousApproverUserIds`, which excludes dismissed reviews.
+    .whereNull("build_reviews.dismissedAt")
     .where((qb) => {
       if (userId) {
         qb.where("build_reviews.userId", userId);
