@@ -20,6 +20,13 @@ All checks must pass.
 
 - Do not use `!` (non-null assertion)
 - Use `invariant` for required values
+- Program by assertion, not by defense: when a value is _expected_ to be
+  present (a context provided by an ancestor, a required param, an invariant of
+  the call site), assert it with `invariant` (or a hook built on it, e.g.
+  `useNonNullable` / `useProjectPermission`) and then use it directly. Do not
+  paper over the expectation with optional chaining or `?? <fallback>` — that
+  silently degrades instead of surfacing a broken assumption. Reserve `?.` /
+  `??` for values that are genuinely, legitimately optional.
 - Avoid `as` type assertions; prefer proper typing, type guards, or
   `satisfies`. `as const` is fine.
 
