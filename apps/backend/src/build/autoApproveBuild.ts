@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import type { Build } from "@/database/models";
+import { BuildReview, type Build } from "@/database/models";
 
 import {
   getBuildReviewableDiffIds,
@@ -55,7 +55,24 @@ export async function autoApproveBuild(input: { build: Build }): Promise<void> {
     return;
   }
 
+  // Never override a decision a user already made on this build: skip anyone
+  // who already has a review (e.g. they manually rejected the build before it
+  // concluded). An automatic approval would otherwise become their latest
+  // review and silently flip their rejection.
+  const existingReviewerIds = new Set(
+    (
+      await BuildReview.query()
+        .select("userId")
+        .where("buildId", build.id)
+        .whereNotNull("userId")
+    ).map((review) => review.userId),
+  );
+
   for (const userId of approverUserIds) {
+    if (existingReviewerIds.has(userId)) {
+      continue;
+    }
+
     const approvedDiffIds = await getPreviousDiffApprovalIds({
       build,
       compareBucket,

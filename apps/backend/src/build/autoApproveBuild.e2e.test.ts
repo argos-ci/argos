@@ -203,6 +203,33 @@ describe("autoApproveBuild", () => {
     expect(reviews).toHaveLength(0);
   });
 
+  test("does not override an existing review the user already made on the build", async ({
+    previousBuild,
+    build,
+  }) => {
+    const user = await factory.User.create();
+    const previousDiff = await createFingerprintedDiff(
+      previousBuild.id,
+      "fp-1",
+    );
+    await approvePreviousDiffs(previousBuild.id, [previousDiff], user.id);
+    await createFingerprintedDiff(build.id, "fp-1");
+    // The user explicitly rejected the current build (e.g. before it concluded).
+    const rejection = await factory.BuildReview.create({
+      buildId: build.id,
+      state: "rejected",
+      userId: user.id,
+    });
+
+    await autoApproveBuild({ build });
+
+    // No automatic approval is created; the user's rejection stands.
+    const reviews = await BuildReview.query().where("buildId", build.id);
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0]!.id).toBe(rejection.id);
+    expect(reviews[0]!.state).toBe("rejected");
+  });
+
   test("ignores dismissed previous approvals", async ({
     previousBuild,
     build,
