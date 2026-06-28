@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test";
 
+import { createTestChangeScenario } from "../apps/backend/src/database/seeds";
+import { formatTestId } from "../apps/backend/src/graphql/services/test";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
@@ -35,4 +37,38 @@ loggedTest("test detail", async ({ page, team, project, builds }) => {
       [testId]: "SPARKLE-XXX",
     },
   });
+});
+
+loggedTest("test view with a change", async ({ page, team, project }) => {
+  const { test } = await createTestChangeScenario({ projectId: project.id });
+  const testId = formatTestId({ projectName: project.name, testId: test.id });
+
+  await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
+
+  // The change's snapshot diff viewer is rendered.
+  await expect(
+    page.getByRole("heading", { name: "penelope-argos.jpg" }),
+  ).toBeVisible();
+  await expect(page.getByText("Occurrences")).toBeVisible();
+  await expect(page.getByText("Baseline", { exact: false })).toBeVisible();
+
+  // No comment affordances in this view, despite the user being able to review.
+  await expect(page.getByRole("button", { name: "Comment tool" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("button", { name: "Move tool" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /comments$/ })).toHaveCount(0);
+
+  // The change image is served from the CDN and actually renders (it isn't a
+  // broken image).
+  await expect
+    .poll(() =>
+      page
+        .getByRole("img", { name: "Changes screenshot" })
+        .first()
+        .evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0),
+    )
+    .toBe(true);
+
+  await screenshot(page, "test-view-change");
 });

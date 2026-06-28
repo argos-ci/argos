@@ -499,6 +499,141 @@ export async function createBuildScenario(input: {
 }
 
 /**
+ * Seeds a single test that has a detected change within the default metrics
+ * period (last 7 days), so the test trends page renders its snapshot diff
+ * viewer.
+ *
+ * A change is surfaced by `Test.changes`, which requires a `reference` build —
+ * created within the period — carrying a screenshot diff with a score > 0 and
+ * a non-null fingerprint. Kept separate from {@link createBuildScenario} so it
+ * can be used in isolation (e.g. the test-view visual test) without perturbing
+ * the other scenarios' baselines.
+ */
+export async function createTestChangeScenario(input: {
+  projectId: string;
+}): Promise<{ test: Test; build: Build }> {
+  const { projectId } = input;
+  const now = new Date().toISOString();
+
+  const bucketProps = {
+    name: "default",
+    branch: "main",
+    projectId,
+    complete: true,
+    valid: true,
+    screenshotCount: 0,
+    storybookScreenshotCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const [baseBucket, compareBucket] =
+    await ScreenshotBucket.query().insertAndFetch([
+      { ...bucketProps, commit: "029b662f3ae57bae7a215301067262c1e95bbc95" },
+      { ...bucketProps, commit: "5a23b6f173d9596a09a73864ab051ea5972e8804" },
+    ]);
+  invariant(baseBucket && compareBucket);
+
+  const [test] = await Test.query().insertAndFetch([
+    { name: "penelope-argos.jpg", buildName: "default", projectId },
+  ]);
+  invariant(test);
+
+  // Point at the shared image fixtures already hosted on the CDN
+  // (`files.argos-ci.com/<env>/<key>`) so the screenshots actually render. Each
+  // `key` is globally unique, so reuse an existing row when present — the DB
+  // isn't truncated between a test's retries.
+  const ensureFile = async (props: {
+    type: "screenshot" | "screenshotDiff";
+    width: number;
+    height: number;
+    key: string;
+    contentType: string;
+  }): Promise<File> => {
+    const existing = await File.query().findOne({ key: props.key });
+    if (existing) {
+      return existing;
+    }
+    return File.query().insertAndFetch(props);
+  };
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 1024,
+      key: "dummy-375x1024.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshot",
+      width: 375,
+      height: 720,
+      key: "dummy-375x720.png",
+      contentType: "image/png",
+    }),
+    ensureFile({
+      type: "screenshotDiff",
+      width: 375,
+      height: 1024,
+      key: "diff-1024-to-720.png",
+      contentType: "image/png",
+    }),
+  ]);
+
+  const [baseScreenshot, compareScreenshot] =
+    await Screenshot.query().insertAndFetch([
+      {
+        screenshotBucketId: baseBucket.id,
+        testId: test.id,
+        name: "penelope-argos.jpg",
+        s3Id: baseFile.key,
+        fileId: baseFile.id,
+      },
+      {
+        screenshotBucketId: compareBucket.id,
+        testId: test.id,
+        name: "penelope-argos.jpg",
+        s3Id: compareFile.key,
+        fileId: compareFile.id,
+      },
+    ]);
+  invariant(baseScreenshot && compareScreenshot);
+
+  const [build] = await Build.query().insertAndFetch([
+    {
+      name: "main",
+      number: 1,
+      type: "reference" as const,
+      jobStatus: "complete" as const,
+      baseScreenshotBucketId: baseBucket.id,
+      compareScreenshotBucketId: compareBucket.id,
+      projectId,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+  invariant(build);
+
+  await ScreenshotDiff.query().insert([
+    {
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      testId: test.id,
+      score: 0.3,
+      jobStatus: "complete" as const,
+      s3Id: diffFile.key,
+      fileId: diffFile.id,
+      fingerprint: "penelope-argos-change",
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  return { test, build };
+}
+
+/**
  * Manifest for the "real world" build scenario below.
  *
  * The referenced assets (screenshots, diffs, Playwright traces and markdown

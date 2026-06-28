@@ -284,9 +284,13 @@ function ScreenshotActionsMenu(props: {
 /**
  * "Copy" submenu sharing the link and Markdown embed actions across screenshot
  * panes.
+ *
+ * `publicUrl` should be the screenshot's public (files.argos-ci.com CDN) URL — a
+ * stable, shareable link — not the expiring signed original: a copied link or
+ * Markdown embed needs to keep working for whoever it's shared with.
  */
-function CopyScreenshotSubmenu(props: { url: string; alt: string }) {
-  const { url, alt } = props;
+function CopyScreenshotSubmenu(props: { publicUrl: string; alt: string }) {
+  const { publicUrl, alt } = props;
   const clipboard = useClipboard();
   return (
     <SubmenuTrigger>
@@ -300,7 +304,7 @@ function CopyScreenshotSubmenu(props: { url: string; alt: string }) {
         <Menu aria-label="Copy screenshot">
           <MenuItem
             onAction={() => {
-              clipboard.copy(url);
+              clipboard.copy(publicUrl);
               toast.success("Link copied", {
                 id: SCREENSHOT_COPY_TOAST_ID,
                 description:
@@ -315,7 +319,7 @@ function CopyScreenshotSubmenu(props: { url: string; alt: string }) {
           </MenuItem>
           <MenuItem
             onAction={() => {
-              clipboard.copy(`![${alt}](${url})`);
+              clipboard.copy(`![${alt}](${publicUrl})`);
               toast.success("Markdown copied", {
                 id: SCREENSHOT_COPY_TOAST_ID,
                 description:
@@ -666,7 +670,7 @@ function BaseScreenshotActionsMenu({
       tooltip="Baseline screenshot actions"
       ariaLabel="Baseline screenshot actions"
     >
-      <CopyScreenshotSubmenu url={baseScreenshot.originalUrl} alt={diff.name} />
+      <CopyScreenshotSubmenu publicUrl={baseScreenshot.url} alt={diff.name} />
       <MenuSeparator />
       <MenuItem
         onAction={() => {
@@ -849,7 +853,7 @@ function CompareScreenshotActionsMenu({
       ariaLabel="Changes screenshot actions"
     >
       <CopyScreenshotSubmenu
-        url={compareScreenshot.originalUrl}
+        publicUrl={compareScreenshot.url}
         alt={diff.name}
       />
       <MenuSeparator />

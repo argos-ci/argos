@@ -1,7 +1,7 @@
 import { use } from "react";
 import { invariant } from "@argos/util/invariant";
 
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission, ScreenshotDiffStatus } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { ButtonGroup } from "@/ui/ButtonGroup";
@@ -9,6 +9,7 @@ import { Separator } from "@/ui/Separator";
 import { checkIsImageContentType } from "@/util/content-type";
 
 import type { BuildDiffDetailDocument } from "./BuildDiffDetail";
+import { CommentsEnabledContext } from "./CommentsContext";
 import { CommentsVisibilityToggle } from "./toolbar/CommentsVisibilityToggle";
 import { CommentToolToggle } from "./toolbar/CommentToolToggle";
 import { FitToggle } from "./toolbar/FitToggle";
@@ -65,8 +66,9 @@ export function BuildDiffDetailToolbar(props: BuildDiffDetailToolbarProps) {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
 
-  const permissions = use(ProjectPermissionsContext);
-  const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
+  const commentsEnabled = use(CommentsEnabledContext);
+  const canReview = useProjectPermission(ProjectPermission.Review);
+  const canComment = commentsEnabled && canReview;
   // The hand/comment tool switch only makes sense on image diffs (point
   // comments). Text diffs use the gutter "+" instead.
   const showCommentTool = canComment && checkCanCommentOnDiff(diff);

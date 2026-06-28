@@ -1,7 +1,6 @@
-import { use } from "react";
 import { ArrowUpIcon, MessageSquarePlusIcon } from "lucide-react";
 
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, ProjectPermission } from "@/gql/graphql";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
@@ -33,11 +32,11 @@ const REVIEWABLE_STATUSES: BuildStatus[] = [
 export function useCanAddToReview(
   build: DocumentType<typeof ReviewCommentSubmitButton_Build>,
 ): boolean {
-  const permissions = use(ProjectPermissionsContext);
+  const canReview = useProjectPermission(ProjectPermission.Review);
   return (
     !build.viewerHasSubmittedReview &&
     REVIEWABLE_STATUSES.includes(build.status) &&
-    Boolean(permissions?.includes(ProjectPermission.Review))
+    canReview
   );
 }
 

@@ -2,12 +2,11 @@ import { memo } from "react";
 import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { ProjectPermission } from "@/gql/graphql";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { useEventCallback } from "@/ui/useEventCallback";
-import { useNonNullable } from "@/util/useNonNullable";
 
 import { Diff, useBuildDiffState } from "./BuildDiffState";
 import {
@@ -125,8 +124,8 @@ export const TrackButtons = memo(function TrackButtons(props: {
   diff: Diff;
   disabled: boolean;
 }) {
-  const permissions = useNonNullable(ProjectPermissionsContext);
-  if (!permissions.includes(ProjectPermission.Review)) {
+  const canReview = useProjectPermission(ProjectPermission.Review);
+  if (!canReview) {
     return null;
   }
   return (
