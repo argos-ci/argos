@@ -508,15 +508,11 @@ export async function createBuildScenario(input: {
  * a non-null fingerprint. Kept separate from {@link createBuildScenario} so it
  * can be used in isolation (e.g. the test-view visual test) without perturbing
  * the other scenarios' baselines.
- *
- * @param keyPrefix - A unique prefix for file keys to avoid conflicts across
- *   parallel test workers.
  */
 export async function createTestChangeScenario(input: {
   projectId: string;
-  keyPrefix?: string;
 }): Promise<{ test: Test; build: Build }> {
-  const { projectId, keyPrefix = "" } = input;
+  const { projectId } = input;
   const now = new Date().toISOString();
 
   const bucketProps = {
@@ -542,30 +538,47 @@ export async function createTestChangeScenario(input: {
   ]);
   invariant(test);
 
-  const [baseFile, compareFile, diffFile] = await File.query().insertAndFetch([
-    {
-      type: "screenshot" as const,
+  // Point at the shared image fixtures already hosted on the CDN
+  // (`files.argos-ci.com/<env>/<key>`) so the screenshots actually render. Each
+  // `key` is globally unique, so reuse an existing row when present — the DB
+  // isn't truncated between a test's retries.
+  const ensureFile = async (props: {
+    type: "screenshot" | "screenshotDiff";
+    width: number;
+    height: number;
+    key: string;
+    contentType: string;
+  }): Promise<File> => {
+    const existing = await File.query().findOne({ key: props.key });
+    if (existing) {
+      return existing;
+    }
+    return File.query().insertAndFetch(props);
+  };
+
+  const [baseFile, compareFile, diffFile] = await Promise.all([
+    ensureFile({
+      type: "screenshot",
       width: 375,
       height: 1024,
-      key: `${keyPrefix}dummy-375x1024.png`,
+      key: "dummy-375x1024.png",
       contentType: "image/png",
-    },
-    {
-      type: "screenshot" as const,
+    }),
+    ensureFile({
+      type: "screenshot",
       width: 375,
       height: 720,
-      key: `${keyPrefix}dummy-375x720.png`,
+      key: "dummy-375x720.png",
       contentType: "image/png",
-    },
-    {
-      type: "screenshotDiff" as const,
+    }),
+    ensureFile({
+      type: "screenshotDiff",
       width: 375,
       height: 1024,
-      key: `${keyPrefix}diff-1024-to-720.png`,
+      key: "diff-1024-to-720.png",
       contentType: "image/png",
-    },
+    }),
   ]);
-  invariant(baseFile && compareFile && diffFile);
 
   const [baseScreenshot, compareScreenshot] =
     await Screenshot.query().insertAndFetch([
@@ -573,14 +586,14 @@ export async function createTestChangeScenario(input: {
         screenshotBucketId: baseBucket.id,
         testId: test.id,
         name: "penelope-argos.jpg",
-        s3Id: "dummy-375x1024.png",
+        s3Id: baseFile.key,
         fileId: baseFile.id,
       },
       {
         screenshotBucketId: compareBucket.id,
         testId: test.id,
         name: "penelope-argos.jpg",
-        s3Id: "dummy-375x720.png",
+        s3Id: compareFile.key,
         fileId: compareFile.id,
       },
     ]);
@@ -609,7 +622,7 @@ export async function createTestChangeScenario(input: {
       testId: test.id,
       score: 0.3,
       jobStatus: "complete" as const,
-      s3Id: "diff-1024-to-720.png",
+      s3Id: diffFile.key,
       fileId: diffFile.id,
       fingerprint: "penelope-argos-change",
       createdAt: now,

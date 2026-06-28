@@ -40,10 +40,7 @@ loggedTest("test detail", async ({ page, team, project, builds }) => {
 });
 
 loggedTest("test view with a change", async ({ page, team, project }) => {
-  const { test } = await createTestChangeScenario({
-    projectId: project.id,
-    keyPrefix: `${project.id}-`,
-  });
+  const { test } = await createTestChangeScenario({ projectId: project.id });
   const testId = formatTestId({ projectName: project.name, testId: test.id });
 
   await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
@@ -61,6 +58,17 @@ loggedTest("test view with a change", async ({ page, team, project }) => {
   );
   await expect(page.getByRole("button", { name: "Move tool" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /comments$/ })).toHaveCount(0);
+
+  // The change image is served from the CDN and actually renders (it isn't a
+  // broken image).
+  await expect
+    .poll(() =>
+      page
+        .getByRole("img", { name: "Changes screenshot" })
+        .first()
+        .evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0),
+    )
+    .toBe(true);
 
   await screenshot(page, "test-view-change");
 });
