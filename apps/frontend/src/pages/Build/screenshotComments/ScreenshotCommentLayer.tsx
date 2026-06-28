@@ -13,6 +13,7 @@ import { useAtom, useAtomValue } from "jotai/react";
 import { toast } from "sonner";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
+import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
 import {
   commentsVisibleAtom,
   commentToolModeAtom,
@@ -22,7 +23,7 @@ import {
   ZOOMER_OVERLAY_INTERACTIVE_CLASS,
   type PaneSize,
 } from "@/containers/Build/Zoomer";
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
@@ -119,10 +120,11 @@ export function ScreenshotCommentLayer(props: {
   paneSize: PaneSize | null;
 }) {
   const { build, screenshotDiffId, imgSize, paneSize } = props;
+  const commentsEnabled = use(CommentsEnabledContext);
   const mode = useAtomValue(commentToolModeAtom);
   const visible = useAtomValue(commentsVisibleAtom);
-  const permissions = use(ProjectPermissionsContext);
-  const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
+  const canReview = useProjectPermission(ProjectPermission.Review);
+  const canComment = commentsEnabled && canReview;
   const canAddToReview = useCanAddToReview(build);
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
@@ -358,7 +360,7 @@ export function ScreenshotCommentLayer(props: {
     ],
   );
 
-  if (!ready) {
+  if (!ready || !commentsEnabled) {
     return null;
   }
 

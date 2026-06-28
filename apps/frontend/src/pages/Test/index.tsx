@@ -22,6 +22,7 @@ import {
   DiffImage,
   ListItemButton,
 } from "@/containers/Build/BuildDiffListPrimitives";
+import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
 import { IgnoreButton } from "@/containers/Build/toolbar/IgnoreButton";
 import {
   NextButton,
@@ -331,20 +332,23 @@ function ChangesExplorer(props: {
       {activeChange && (
         <ZoomerSyncProvider id={activeChange.stats.lastSeenDiff.build.id}>
           <BuildDiffHighlighterProvider>
-            <div className="flex flex-col">
-              <div className="border-b-thin sticky top-0 z-20 shrink-0 p-2">
-                <BuildHeader
-                  change={activeChange}
-                  test={test}
-                  onActiveTestChange={setActiveChangeId}
+            {/* Comments belong to a build review, not to the test trends view. */}
+            <CommentsEnabledContext value={false}>
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <div className="border-b-thin sticky top-0 z-20 shrink-0 p-2">
+                  <BuildHeader
+                    change={activeChange}
+                    test={test}
+                    onActiveTestChange={setActiveChangeId}
+                  />
+                </div>
+                <BuildDiffDetail
+                  build={activeChange.stats.lastSeenDiff.build}
+                  diff={activeChange.stats.lastSeenDiff}
+                  repoUrl={null}
                 />
               </div>
-              <BuildDiffDetail
-                build={activeChange.stats.lastSeenDiff.build}
-                diff={activeChange.stats.lastSeenDiff}
-                repoUrl={null}
-              />
-            </div>
+            </CommentsEnabledContext>
           </BuildDiffHighlighterProvider>
         </ZoomerSyncProvider>
       )}

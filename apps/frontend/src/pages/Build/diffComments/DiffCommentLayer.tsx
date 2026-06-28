@@ -10,9 +10,10 @@ import { useAtomValue } from "jotai/react";
 import { toast } from "sonner";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
+import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
 import { commentsVisibleAtom } from "@/containers/Build/CommentTool";
 import { DiffEditor } from "@/containers/Build/DiffEditor";
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
@@ -104,9 +105,10 @@ export function DiffCommentLayer(props: {
     modifiedLanguage,
     renderSideBySide,
   } = props;
-  const visible = useAtomValue(commentsVisibleAtom);
-  const permissions = use(ProjectPermissionsContext);
-  const canComment = permissions?.includes(ProjectPermission.Review) ?? false;
+  const commentsEnabled = use(CommentsEnabledContext);
+  const visible = useAtomValue(commentsVisibleAtom) && commentsEnabled;
+  const canReview = useProjectPermission(ProjectPermission.Review);
+  const canComment = commentsEnabled && canReview;
   const canAddToReview = useCanAddToReview(build);
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
