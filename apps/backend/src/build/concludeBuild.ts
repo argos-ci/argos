@@ -149,11 +149,8 @@ export async function concludeBuild(input: {
             // cover all of this build's changes. Runs after the notification
             // above so its `diff-accepted` notification supersedes the
             // `diff-detected` one in the coalesced build-notification job.
-            // Never let auto-approval failures break build conclusion.
             if (conclusion === "changes-detected") {
-              await autoApproveBuild({ build: updatedBuild }).catch((err) => {
-                Sentry.captureException(err);
-              });
+              await autoApproveBuild({ build: updatedBuild });
             }
           } else {
             await Build.query()
