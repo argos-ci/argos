@@ -39,15 +39,6 @@ loggedTest("test detail", async ({ page, team, project, builds }) => {
   });
 });
 
-/**
- * The test trends page reuses the build diff viewer to show a detected change.
- * This guards the two fixes made to that view:
- *
- * 1. The snapshot diff viewer must stay within its container (it used to
- *    overflow the layout horizontally).
- * 2. Comments belong to a build review, so the comment tool and visibility
- *    toggle must not appear here — even for a user who can review.
- */
 loggedTest("test view with a change", async ({ page, team, project }) => {
   const { test } = await createTestChangeScenario({
     projectId: project.id,
@@ -57,7 +48,7 @@ loggedTest("test view with a change", async ({ page, team, project }) => {
 
   await page.goto(`/${team.account.slug}/${project.name}/tests/${testId}`);
 
-  // The change's snapshot diff viewer (the part that overflowed) is rendered.
+  // The change's snapshot diff viewer is rendered.
   await expect(
     page.getByRole("heading", { name: "penelope-argos.jpg" }),
   ).toBeVisible();
