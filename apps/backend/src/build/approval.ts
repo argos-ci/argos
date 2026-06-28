@@ -1,4 +1,4 @@
-import { raw } from "objection";
+import { raw, type QueryBuilder } from "objection";
 
 import {
   Build,
@@ -56,9 +56,18 @@ export async function getPreviousDiffApprovalIds(
   return diffs.map((diff) => diff.id);
 }
 
-type GetPreviousFilesApprovalQueryArgs = {
+type PreviousBuildsScope = {
   build: Build;
   compareBucket: ScreenshotBucket;
+  /**
+   * Pre-resolved ids of the previous builds (see {@link getPreviousBuildIds}).
+   * When omitted, they are resolved lazily as a subquery. Pass this to avoid
+   * re-running the lookup once per user.
+   */
+  previousBuildIds?: string[];
+};
+
+type GetPreviousFilesApprovalQueryArgs = PreviousBuildsScope & {
   /**
    * If passed, reviews are filtered on this specific user id.
    */
@@ -95,19 +104,44 @@ function getPreviousBuildsQuery(args: {
 }
 
 /**
+ * Resolve the previous builds (see {@link getPreviousBuildsQuery}) to a concrete
+ * list of ids. Resolving once and passing the result through
+ * {@link PreviousBuildsScope.previousBuildIds} avoids re-running the same
+ * subquery for every candidate user.
+ */
+export async function getPreviousBuildIds(args: {
+  build: Build;
+  compareBucket: ScreenshotBucket;
+}): Promise<string[]> {
+  const builds = await getPreviousBuildsQuery(args);
+  return builds.map((build) => build.id);
+}
+
+/**
+ * Restrict a BuildReview query to reviews on the previous builds, matching
+ * against either the pre-resolved id list or a lazy subquery.
+ */
+function whereInPreviousBuilds<R>(
+  qb: QueryBuilder<BuildReview, R>,
+  args: PreviousBuildsScope,
+): QueryBuilder<BuildReview, R> {
+  return args.previousBuildIds
+    ? qb.whereIn("build_reviews.buildId", args.previousBuildIds)
+    : qb.whereIn("build_reviews.buildId", getPreviousBuildsQuery(args));
+}
+
+/**
  * Get the distinct ids of users who approved a previous build on the same
  * branch (see {@link getPreviousBuildsQuery}). These are the candidates for an
  * automatic approval of the current build. Dismissed reviews are ignored.
  */
-export async function getPreviousApproverUserIds(args: {
-  build: Build;
-  compareBucket: ScreenshotBucket;
-}): Promise<string[]> {
-  const buildQuery = getPreviousBuildsQuery(args);
-
-  const reviews = await BuildReview.query()
-    .distinct("build_reviews.userId")
-    .whereIn("build_reviews.buildId", buildQuery)
+export async function getPreviousApproverUserIds(
+  args: PreviousBuildsScope,
+): Promise<string[]> {
+  const reviews = await whereInPreviousBuilds(
+    BuildReview.query().distinct("build_reviews.userId"),
+    args,
+  )
     .where("build_reviews.state", "approved")
     .whereNull("build_reviews.dismissedAt")
     .whereNotNull("build_reviews.userId");
@@ -148,11 +182,10 @@ async function getPreviousDiffApprovals(
 ) {
   const { userId } = args;
 
-  const buildQuery = getPreviousBuildsQuery(args);
-
-  const buildReviewQuery = BuildReview.query()
-    .select("build_reviews.id")
-    .whereIn("build_reviews.buildId", buildQuery)
+  const buildReviewQuery = whereInPreviousBuilds(
+    BuildReview.query().select("build_reviews.id"),
+    args,
+  )
     // Never reapply a dismissed review: a dismissal explicitly revokes its
     // approvals. This also keeps matching consistent with the candidate set
     // from `getPreviousApproverUserIds`, which excludes dismissed reviews.

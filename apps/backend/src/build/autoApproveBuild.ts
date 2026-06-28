@@ -5,6 +5,7 @@ import { BuildReview, type Build } from "@/database/models";
 import {
   getBuildReviewableDiffIds,
   getPreviousApproverUserIds,
+  getPreviousBuildIds,
   getPreviousDiffApprovalIds,
 } from "./approval";
 import { createBuildReview } from "./createBuildReview";
@@ -47,9 +48,17 @@ export async function autoApproveBuild(input: { build: Build }): Promise<void> {
     return;
   }
 
+  // Resolve the previous builds once and reuse the ids for every candidate user
+  // instead of re-running the lookup per user.
+  const previousBuildIds = await getPreviousBuildIds({ build, compareBucket });
+  if (previousBuildIds.length === 0) {
+    return;
+  }
+
   const approverUserIds = await getPreviousApproverUserIds({
     build,
     compareBucket,
+    previousBuildIds,
   });
   if (approverUserIds.length === 0) {
     return;
@@ -76,6 +85,7 @@ export async function autoApproveBuild(input: { build: Build }): Promise<void> {
     const approvedDiffIds = await getPreviousDiffApprovalIds({
       build,
       compareBucket,
+      previousBuildIds,
       userId,
     });
     const approvedDiffIdSet = new Set(approvedDiffIds);
