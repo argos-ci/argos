@@ -83,7 +83,7 @@ export function BuildReviewersStatusList<
           />
           {options?.automatic ? (
             <Tooltip
-              content={`Approved automatically based on a previous approval by ${user.name || user.slug}.`}
+              content={`Approved automatically on behalf of ${user.name || user.slug} because these changes were already approved on an earlier build of this branch.`}
             >
               <img
                 src="/static/argos-bot.svg"
