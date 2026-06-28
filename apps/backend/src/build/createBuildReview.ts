@@ -81,8 +81,24 @@ export async function createBuildReview(input: {
     screenshotDiffId: string;
     state: ScreenshotDiffReviewState;
   }[];
+  /**
+   * Mark the review as submitted automatically (on behalf of the user, by the
+   * system) because their previous approvals already matched all the changes.
+   * Automatic reviews are silent: they don't email subscribers and don't
+   * auto-subscribe the user, but they still update the build status and push
+   * the review live to clients.
+   * @default false
+   */
+  automatic?: boolean;
 }): Promise<BuildReview> {
-  const { build, userId, event, body, snapshotReviews } = input;
+  const {
+    build,
+    userId,
+    event,
+    body,
+    snapshotReviews,
+    automatic = false,
+  } = input;
 
   if (body !== undefined && !validateCommentJson(body)) {
     throw boom(400, "Invalid comment body");
@@ -104,11 +120,12 @@ export async function createBuildReview(input: {
         trx,
       });
       const buildReview = pendingReview
-        ? await pendingReview.$query(trx).patchAndFetch({ state })
+        ? await pendingReview.$query(trx).patchAndFetch({ state, automatic })
         : await BuildReview.query(trx).insert({
             buildId: build.id,
             userId,
             state,
+            automatic,
           });
 
       if (snapshotReviews.length > 0) {
@@ -180,8 +197,14 @@ export async function createBuildReview(input: {
         payload: { build, compareScreenshotBucket, buildReview },
       },
     }),
-    autoSubscribeUserToBuild({ buildId: build.id, userId }),
-    notifyBuildSubscribers({ build, buildReview, comment }),
+    // Automatic reviews are silent: the user didn't act, so don't subscribe
+    // them to the build and don't email subscribers about the review.
+    automatic
+      ? Promise.resolve()
+      : autoSubscribeUserToBuild({ buildId: build.id, userId }),
+    automatic
+      ? Promise.resolve()
+      : notifyBuildSubscribers({ build, buildReview, comment }),
     goLivePromise,
     // Notify clients watching this build so the review appears live in the
     // activity feed. The review is now submitted (not pending), so it belongs

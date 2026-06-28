@@ -58,6 +58,7 @@ const _BuildFragment = graphql(`
       date
       state
       dismissedAt
+      automatic
       user {
         ...UserCard_user
       }

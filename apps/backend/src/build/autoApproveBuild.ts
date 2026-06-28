@@ -1,0 +1,87 @@
+import { invariant } from "@argos/util/invariant";
+
+import type { Build } from "@/database/models";
+
+import {
+  getBuildReviewableDiffIds,
+  getPreviousApproverUserIds,
+  getPreviousDiffApprovalIds,
+} from "./approval";
+import { createBuildReview } from "./createBuildReview";
+
+/**
+ * Automatically approve a freshly concluded build on behalf of every user whose
+ * previous approvals (on a prior build of the same branch/PR) already cover all
+ * of the build's changes.
+ *
+ * This is the server-side counterpart of the "Reapply previous approvals"
+ * dialog: instead of asking a user to reapply their approvals when they open
+ * the build, we submit the approval for them as soon as the build concludes —
+ * but only when *all* changes match, so a human still reviews anything new.
+ *
+ * The created reviews are flagged as `automatic` and submitted silently (no
+ * subscriber emails). They still update the build status so the build passes.
+ */
+export async function autoApproveBuild(input: { build: Build }): Promise<void> {
+  const { build } = input;
+
+  // Only builds that detected changes can be approved. Merge queue builds have
+  // their own flow and are excluded (mirroring the reapply dialog).
+  if (build.conclusion !== "changes-detected" || build.mergeQueue) {
+    return;
+  }
+
+  const compareBucket = await build.$relatedQuery("compareScreenshotBucket");
+  invariant(
+    compareBucket,
+    `Compare screenshot bucket not found for build: ${build.id}`,
+  );
+
+  // Reapplying approvals only makes sense within a branch's history.
+  if (!compareBucket.branch) {
+    return;
+  }
+
+  const reviewableDiffIds = await getBuildReviewableDiffIds(build);
+  if (reviewableDiffIds.length === 0) {
+    return;
+  }
+
+  const approverUserIds = await getPreviousApproverUserIds({
+    build,
+    compareBucket,
+  });
+  if (approverUserIds.length === 0) {
+    return;
+  }
+
+  for (const userId of approverUserIds) {
+    const approvedDiffIds = await getPreviousDiffApprovalIds({
+      build,
+      compareBucket,
+      userId,
+    });
+    const approvedDiffIdSet = new Set(approvedDiffIds);
+
+    // The user's previous approvals must cover *every* change in this build,
+    // otherwise a human still needs to review the unmatched diffs.
+    const coversAllChanges = reviewableDiffIds.every((diffId) =>
+      approvedDiffIdSet.has(diffId),
+    );
+
+    if (!coversAllChanges) {
+      continue;
+    }
+
+    await createBuildReview({
+      build,
+      userId,
+      event: "APPROVE",
+      automatic: true,
+      snapshotReviews: reviewableDiffIds.map((screenshotDiffId) => ({
+        screenshotDiffId,
+        state: "approved",
+      })),
+    });
+  }
+}

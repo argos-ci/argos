@@ -10,7 +10,11 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { getPreviousDiffApprovalIds } from "./approval";
+import {
+  getBuildReviewableDiffIds,
+  getPreviousApproverUserIds,
+  getPreviousDiffApprovalIds,
+} from "./approval";
 
 const test = it.extend<{
   project: Project;
@@ -309,5 +313,81 @@ describe("getPreviousDiffApprovalIds", () => {
       userId: approvingUser.id,
     });
     expect(matchingIds).toEqual([currentDiff.id]);
+  });
+});
+
+describe("getPreviousApproverUserIds", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  test("returns distinct users who approved a previous build, ignoring dismissed reviews", async ({
+    previousBuild,
+    build,
+    compareBucket,
+  }) => {
+    const userA = await factory.User.create();
+    const userB = await factory.User.create();
+    const dismissedUser = await factory.User.create();
+    await factory.BuildReview.create({
+      buildId: previousBuild.id,
+      state: "approved",
+      userId: userA.id,
+    });
+    await factory.BuildReview.create({
+      buildId: previousBuild.id,
+      state: "approved",
+      userId: userB.id,
+    });
+    // A rejected review must not make its author a candidate.
+    await factory.BuildReview.create({
+      buildId: previousBuild.id,
+      state: "rejected",
+      userId: (await factory.User.create()).id,
+    });
+    // A dismissed approval must be ignored.
+    await factory.BuildReview.create({
+      buildId: previousBuild.id,
+      state: "approved",
+      userId: dismissedUser.id,
+      dismissedAt: new Date().toISOString(),
+      dismissedById: dismissedUser.id,
+    });
+
+    const userIds = await getPreviousApproverUserIds({ build, compareBucket });
+    expect(userIds.sort()).toEqual([userA.id, userB.id].sort());
+  });
+});
+
+describe("getBuildReviewableDiffIds", () => {
+  beforeEach(async () => {
+    await setupDatabase();
+  });
+
+  test("returns added/changed/removed diffs but not unchanged ones", async ({
+    build,
+  }) => {
+    const [base, compare] = await factory.Screenshot.createMany(2);
+    const changedDiff = await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      baseScreenshotId: base!.id,
+      compareScreenshotId: compare!.id,
+      score: 0.3,
+    });
+    const addedDiff = await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      baseScreenshotId: null,
+      compareScreenshotId: compare!.id,
+    });
+    // Unchanged: has both screenshots but a zero score.
+    await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      baseScreenshotId: base!.id,
+      compareScreenshotId: compare!.id,
+      score: 0,
+    });
+
+    const diffIds = await getBuildReviewableDiffIds(build);
+    expect(diffIds.sort()).toEqual([changedDiff.id, addedDiff.id].sort());
   });
 });

@@ -11,6 +11,8 @@ import { Build, BuildNotification } from "@/database/models";
 import { redisLock } from "@/util/redis";
 import { getRedisClient } from "@/util/redis/client";
 
+import { autoApproveBuild } from "./autoApproveBuild";
+
 // Diff IDs published by each caller are pooled in this Redis set so the
 // single coalesced execution can treat all callers' diffs as completed,
 // not just the winner's. Bailed callers would otherwise drop their IDs
@@ -142,6 +144,17 @@ export async function concludeBuild(input: {
                 },
               }),
             ]);
+
+            // Auto-approve on behalf of users whose previous approvals already
+            // cover all of this build's changes. Runs after the notification
+            // above so its `diff-accepted` notification supersedes the
+            // `diff-detected` one in the coalesced build-notification job.
+            // Never let auto-approval failures break build conclusion.
+            if (conclusion === "changes-detected") {
+              await autoApproveBuild({ build: updatedBuild }).catch((err) => {
+                Sentry.captureException(err);
+              });
+            }
           } else {
             await Build.query()
               .findById(buildId)
