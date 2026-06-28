@@ -1,6 +1,8 @@
-import { invariant } from "@argos/util/invariant";
-
-import { BuildReview, type Build } from "@/database/models";
+import {
+  BuildReview,
+  type Build,
+  type ScreenshotBucket,
+} from "@/database/models";
 
 import {
   getBuildReviewableDiffIds,
@@ -23,20 +25,18 @@ import { createBuildReview } from "./createBuildReview";
  * The created reviews are flagged as `automatic` and submitted silently (no
  * subscriber emails). They still update the build status so the build passes.
  */
-export async function autoApproveBuild(input: { build: Build }): Promise<void> {
-  const { build } = input;
+export async function autoApproveBuild(input: {
+  build: Build;
+  /** The build's compare screenshot bucket, passed in to avoid re-fetching. */
+  compareScreenshotBucket: ScreenshotBucket;
+}): Promise<void> {
+  const { build, compareScreenshotBucket: compareBucket } = input;
 
   // Only builds that detected changes can be approved. Merge queue builds have
   // their own flow and are excluded (mirroring the reapply dialog).
   if (build.conclusion !== "changes-detected" || build.mergeQueue) {
     return;
   }
-
-  const compareBucket = await build.$relatedQuery("compareScreenshotBucket");
-  invariant(
-    compareBucket,
-    `Compare screenshot bucket not found for build: ${build.id}`,
-  );
 
   // Reapplying approvals only makes sense within a branch's history.
   if (!compareBucket.branch) {

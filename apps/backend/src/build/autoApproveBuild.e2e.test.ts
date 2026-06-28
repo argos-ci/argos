@@ -107,6 +107,7 @@ describe("autoApproveBuild", () => {
   test("approves on behalf of a user whose previous approvals cover all changes", async ({
     previousBuild,
     build,
+    compareBucket,
   }) => {
     const user = await factory.User.create();
     const previousDiff = await createFingerprintedDiff(
@@ -116,7 +117,7 @@ describe("autoApproveBuild", () => {
     await approvePreviousDiffs(previousBuild.id, [previousDiff], user.id);
     const currentDiff = await createFingerprintedDiff(build.id, "fp-1");
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     const reviews = await BuildReview.query()
       .where("buildId", build.id)
@@ -136,6 +137,7 @@ describe("autoApproveBuild", () => {
   test("does not approve when a change is not covered by previous approvals", async ({
     previousBuild,
     build,
+    compareBucket,
   }) => {
     const user = await factory.User.create();
     const previousDiff = await createFingerprintedDiff(
@@ -148,7 +150,7 @@ describe("autoApproveBuild", () => {
     // Unmatched change → a human still needs to review.
     await createFingerprintedDiff(build.id, "fp-new");
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     const reviews = await BuildReview.query().where("buildId", build.id);
     expect(reviews).toHaveLength(0);
@@ -157,6 +159,7 @@ describe("autoApproveBuild", () => {
   test("creates one automatic approval per matching approver", async ({
     previousBuild,
     build,
+    compareBucket,
   }) => {
     const userA = await factory.User.create();
     const userB = await factory.User.create();
@@ -168,7 +171,7 @@ describe("autoApproveBuild", () => {
     await approvePreviousDiffs(previousBuild.id, [previousDiff], userB.id);
     await createFingerprintedDiff(build.id, "fp-1");
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     const reviews = await BuildReview.query().where("buildId", build.id);
     expect(reviews).toHaveLength(2);
@@ -178,7 +181,11 @@ describe("autoApproveBuild", () => {
     );
   });
 
-  test("skips merge queue builds", async ({ previousBuild, build }) => {
+  test("skips merge queue builds", async ({
+    previousBuild,
+    build,
+    compareBucket,
+  }) => {
     const user = await factory.User.create();
     const previousDiff = await createFingerprintedDiff(
       previousBuild.id,
@@ -188,16 +195,19 @@ describe("autoApproveBuild", () => {
     await createFingerprintedDiff(build.id, "fp-1");
     await build.$query().patch({ mergeQueue: true });
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     const reviews = await BuildReview.query().where("buildId", build.id);
     expect(reviews).toHaveLength(0);
   });
 
-  test("does nothing when there is no previous approval", async ({ build }) => {
+  test("does nothing when there is no previous approval", async ({
+    build,
+    compareBucket,
+  }) => {
     await createFingerprintedDiff(build.id, "fp-1");
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     const reviews = await BuildReview.query().where("buildId", build.id);
     expect(reviews).toHaveLength(0);
@@ -206,6 +216,7 @@ describe("autoApproveBuild", () => {
   test("does not override an existing review the user already made on the build", async ({
     previousBuild,
     build,
+    compareBucket,
   }) => {
     const user = await factory.User.create();
     const previousDiff = await createFingerprintedDiff(
@@ -221,7 +232,7 @@ describe("autoApproveBuild", () => {
       userId: user.id,
     });
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     // No automatic approval is created; the user's rejection stands.
     const reviews = await BuildReview.query().where("buildId", build.id);
@@ -233,6 +244,7 @@ describe("autoApproveBuild", () => {
   test("ignores dismissed previous approvals", async ({
     previousBuild,
     build,
+    compareBucket,
   }) => {
     const user = await factory.User.create();
     const previousDiff = await createFingerprintedDiff(
@@ -250,7 +262,7 @@ describe("autoApproveBuild", () => {
     });
     await createFingerprintedDiff(build.id, "fp-1");
 
-    await autoApproveBuild({ build });
+    await autoApproveBuild({ build, compareScreenshotBucket: compareBucket });
 
     const reviews = await BuildReview.query().where("buildId", build.id);
     expect(reviews).toHaveLength(0);

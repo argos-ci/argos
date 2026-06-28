@@ -150,7 +150,10 @@ export async function concludeBuild(input: {
             // above so its `diff-accepted` notification supersedes the
             // `diff-detected` one in the coalesced build-notification job.
             if (conclusion === "changes-detected") {
-              await autoApproveBuild({ build: updatedBuild });
+              await autoApproveBuild({
+                build: updatedBuild,
+                compareScreenshotBucket,
+              });
             }
           } else {
             await Build.query()
