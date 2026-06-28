@@ -71,6 +71,8 @@ export const typeDefs = gql`
     state: ReviewState!
     dismissedAt: DateTime
     dismissedBy: User
+    "Whether the review was submitted automatically on behalf of the user, because their previous approvals already matched all the changes."
+    automatic: Boolean!
   }
 
   input CreateBuildReviewInput {

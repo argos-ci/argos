@@ -21,6 +21,7 @@ export class BuildReview extends Model {
           userId: { type: ["string", "null"] },
           dismissedAt: { type: ["string", "null"] },
           dismissedById: { type: ["string", "null"] },
+          automatic: { type: "boolean" },
           state: {
             type: "string",
             enum: ["approved", "rejected", "commented", "pending"],
@@ -34,6 +35,7 @@ export class BuildReview extends Model {
   userId!: string | null;
   dismissedAt!: string | null;
   dismissedById!: string | null;
+  automatic!: boolean;
   state!: "approved" | "rejected" | "commented" | "pending";
 
   static override get relationMappings(): RelationMappings {

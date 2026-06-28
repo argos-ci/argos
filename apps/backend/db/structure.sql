@@ -427,6 +427,7 @@ CREATE TABLE public.build_reviews (
     state text NOT NULL,
     "dismissedAt" timestamp with time zone,
     "dismissedById" bigint,
+    automatic boolean DEFAULT false NOT NULL,
     CONSTRAINT build_reviews_dismissed_together CHECK ((("dismissedAt" IS NULL) = ("dismissedById" IS NULL))),
     CONSTRAINT build_reviews_state_check CHECK ((state = ANY (ARRAY['approved'::text, 'rejected'::text, 'commented'::text, 'pending'::text])))
 );
@@ -4021,6 +4022,13 @@ CREATE INDEX screenshots_fileid_index ON public.screenshots USING btree ("fileId
 
 
 --
+-- Name: screenshots_id_has_parent_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshots_id_has_parent_idx ON public.screenshots USING btree (id) WHERE ("parentName" IS NOT NULL);
+
+
+--
 -- Name: screenshots_name_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5190,3 +5198,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026061
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260616120000_comment-anchor.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260620120000_pending-review-unique.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260625120000_project-ignore-config.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260627120000_add-screenshots-has-parent-index.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260628120000_build-review-automatic.js', 1, NOW());

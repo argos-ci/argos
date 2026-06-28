@@ -6,6 +6,6 @@ export default defineConfig({
   },
   test: {
     globalSetup: "./vitest/vitest.global-setup.mts",
-    exclude: ["./tests", "**/node_modules", "**/dist"],
+    exclude: ["./tests", "**/node_modules", "**/dist", "**/.claude/**"],
   },
 });

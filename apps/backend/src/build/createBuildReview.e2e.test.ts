@@ -3,6 +3,7 @@ import { test as base, describe, expect } from "vitest";
 import {
   Build,
   BuildNotification,
+  BuildNotificationSubscription,
   BuildReview,
   Comment,
   ScreenshotDiff,
@@ -66,6 +67,41 @@ describe("#createBuildReview", () => {
     expect(refreshed?.state).toBe("approved");
     expect(refreshed?.userId).toBe(user.id);
     expect(refreshed?.buildId).toBe(build.id);
+  });
+
+  test("defaults to a non-automatic review", async ({ user, build }) => {
+    const review = await createBuildReview({
+      build,
+      userId: user.id,
+      event: "APPROVE",
+      snapshotReviews: [],
+    });
+
+    const refreshed = await BuildReview.query().findById(review.id);
+    expect(refreshed?.automatic).toBe(false);
+  });
+
+  test("marks the review as automatic when requested", async ({
+    user,
+    build,
+  }) => {
+    const review = await createBuildReview({
+      build,
+      userId: user.id,
+      event: "APPROVE",
+      automatic: true,
+      snapshotReviews: [],
+    });
+
+    const refreshed = await BuildReview.query().findById(review.id);
+    expect(refreshed?.state).toBe("approved");
+    expect(refreshed?.automatic).toBe(true);
+    // Automatic reviews are silent: the user is not auto-subscribed to the build.
+    const subscriptionCount = await BuildNotificationSubscription.query()
+      .where("buildId", build.id)
+      .where("userId", user.id)
+      .resultSize();
+    expect(subscriptionCount).toBe(0);
   });
 
   test("creates a rejected review when event is REJECT", async ({

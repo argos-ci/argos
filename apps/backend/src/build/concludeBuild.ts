@@ -11,6 +11,8 @@ import { Build, BuildNotification } from "@/database/models";
 import { redisLock } from "@/util/redis";
 import { getRedisClient } from "@/util/redis/client";
 
+import { autoApproveBuild } from "./autoApproveBuild";
+
 // Diff IDs published by each caller are pooled in this Redis set so the
 // single coalesced execution can treat all callers' diffs as completed,
 // not just the winner's. Bailed callers would otherwise drop their IDs
@@ -111,10 +113,12 @@ export async function concludeBuild(input: {
             const [updatedBuild, buildNotification] = await transaction(
               async (trx) => {
                 return Promise.all([
-                  Build.query(trx).patchAndFetchById(
-                    buildId,
-                    getBuildData({ conclusion, stats }),
-                  ),
+                  Build.query(trx)
+                    .patchAndFetchById(
+                      buildId,
+                      getBuildData({ conclusion, stats }),
+                    )
+                    .withGraphFetched("compareScreenshotBucket"),
                   BuildNotification.query(trx).insert({
                     buildId,
                     type: getNotificationType(conclusion),
@@ -124,9 +128,7 @@ export async function concludeBuild(input: {
               },
             );
 
-            const compareScreenshotBucket = await updatedBuild.$relatedQuery(
-              "compareScreenshotBucket",
-            );
+            const { compareScreenshotBucket } = updatedBuild;
             invariant(
               compareScreenshotBucket,
               `Compare screenshot bucket not found for build: ${updatedBuild.id}`,
@@ -140,6 +142,17 @@ export async function concludeBuild(input: {
                   event: AutomationEvents.BuildCompleted,
                   payload: { build: updatedBuild, compareScreenshotBucket },
                 },
+              }),
+              // Auto-approve on behalf of users whose previous approvals already
+              // cover all of this build's changes (a no-op unless the build
+              // detected changes). Safe to run concurrently with the
+              // diff-detected notification above: that notification row is
+              // already inserted in the transaction, so auto-approval's
+              // diff-accepted notification gets a higher id and supersedes it in
+              // the coalesced build-notification job.
+              autoApproveBuild({
+                build: updatedBuild,
+                compareScreenshotBucket,
               }),
             ]);
           } else {

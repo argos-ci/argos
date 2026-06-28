@@ -23,6 +23,7 @@ const _BuildFragment = graphql(`
   fragment BuildPreviousReviewDialog_Build on Build {
     branchApprovedDiffs
     mergeQueue
+    viewerHasSubmittedReview
   }
 `);
 
@@ -37,6 +38,9 @@ export function useBuildPreviousReviewDialogState(props: {
 
   if (
     build.mergeQueue ||
+    // If the viewer already has a submitted review (e.g. their approvals were
+    // reapplied automatically server-side), there's nothing left to reapply.
+    build.viewerHasSubmittedReview ||
     build.branchApprovedDiffs.length === 0 ||
     !api ||
     Object.keys(api.getDiffStatuses()).length !== 0

@@ -202,6 +202,7 @@ const _ReviewDescriptionBuildFragment = graphql(`
       date
       state
       dismissedAt
+      automatic
       user {
         id
         name

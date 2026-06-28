@@ -25,6 +25,7 @@ type ReviewerStatusReview = {
   date: string;
   state: ReviewState;
   dismissedAt?: string | null;
+  automatic?: boolean;
   user: ReviewerUser | null;
 };
 
@@ -68,14 +69,30 @@ export function BuildReviewersStatusList<
   const pendingDescriptor = buildReviewDescriptors[ReviewState.Pending];
   const PendingIcon = pendingDescriptor.icon;
 
-  const renderUserContent = (user: NonNullable<T["user"]>) => {
+  const renderUserContent = (
+    user: NonNullable<T["user"]>,
+    options?: { automatic?: boolean },
+  ) => {
     const content = (
       <span className="flex min-w-0 flex-1 items-center gap-2">
-        <AccountAvatar
-          className={clsx("size-5 shrink-0", props.avatarClassName)}
-          avatar={user.avatar}
-          alt={user.name ?? undefined}
-        />
+        <span className="relative shrink-0">
+          <AccountAvatar
+            className={clsx("size-5", props.avatarClassName)}
+            avatar={user.avatar}
+            alt={user.name ?? undefined}
+          />
+          {options?.automatic ? (
+            <Tooltip
+              content={`Approved automatically on behalf of ${user.name || user.slug} because these changes were already approved on an earlier build of this branch.`}
+            >
+              <img
+                src="/static/argos-bot.svg"
+                alt="Argos bot"
+                className="bg-app absolute -right-1 -bottom-1 size-3 rounded-full"
+              />
+            </Tooltip>
+          ) : null}
+        </span>
         <strong className="truncate font-medium">
           {user.name || user.slug}
         </strong>
@@ -106,7 +123,7 @@ export function BuildReviewersStatusList<
             )}
           >
             {user ? (
-              renderUserContent(user)
+              renderUserContent(user, { automatic: review.automatic })
             ) : (
               <span className="flex-1 truncate font-medium">Unknown user</span>
             )}
