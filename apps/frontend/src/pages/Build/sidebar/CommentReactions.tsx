@@ -4,14 +4,13 @@ import { SmilePlusIcon } from "lucide-react";
 import { Button } from "react-aria-components";
 import { toast } from "sonner";
 
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { EmojiPickerPopover, EmojiPickerTrigger } from "@/ui/EmojiPicker";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
-import { useNonNullable } from "@/util/useNonNullable";
 
 const _CommentFragment = graphql(`
   fragment CommentReactions_Comment on Comment {
@@ -57,8 +56,7 @@ type ReactionGroup = Comment["reactions"][number];
  * "review" permission on the project as commenting does.
  */
 function useCanReact(): boolean {
-  const permissions = useNonNullable(ProjectPermissionsContext);
-  return permissions.includes(ProjectPermission.Review);
+  return useProjectPermission(ProjectPermission.Review);
 }
 
 /**

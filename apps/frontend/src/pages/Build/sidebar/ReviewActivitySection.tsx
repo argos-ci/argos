@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import {
   CommentChangeType,
@@ -31,7 +31,6 @@ import { useLiveRef } from "@/ui/useLiveRef";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { buildReviewDescriptors } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
-import { useNonNullable } from "@/util/useNonNullable";
 
 import { AddCommentForm } from "./AddCommentForm";
 import { CommentCard } from "./CommentCard";
@@ -337,8 +336,7 @@ export function ReviewActivitySection(props: { build: Build }) {
       });
     },
   });
-  const permissions = useNonNullable(ProjectPermissionsContext);
-  const canComment = permissions.includes(ProjectPermission.Review);
+  const canComment = useProjectPermission(ProjectPermission.Review);
   const entries = getActivityEntries(build);
   const highlightedCommentId = useHighlightedCommentId(
     build.comments.map((comment) => comment.id),

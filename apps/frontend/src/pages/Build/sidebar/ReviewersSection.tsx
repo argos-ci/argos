@@ -20,7 +20,7 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { BuildReviewersStatusList } from "@/containers/BuildReviewersStatusList";
-import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
+import { useProjectPermissions } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType, ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
@@ -46,7 +46,6 @@ import {
   getLatestReviewByUser,
 } from "@/util/build-review";
 import { getErrorMessage } from "@/util/error";
-import { useNonNullable } from "@/util/useNonNullable";
 
 const _BuildFragment = graphql(`
   fragment ReviewersSection_Build on Build {
@@ -149,7 +148,7 @@ function getEmptyStateMessage(build: Build): string {
 
 export function ReviewersSection(props: { build: Build }) {
   const { build } = props;
-  const permissions = useNonNullable(ProjectPermissionsContext);
+  const permissions = useProjectPermissions();
   const projectParams = useProjectParams();
   invariant(projectParams);
   const [reviewToDismiss, setReviewToDismiss] = useState<Review | null>(null);
