@@ -47,6 +47,24 @@ const MAX_UPLOAD_FILE_BYTES = 25 * 1024 * 1024;
  */
 const PLAYWRIGHT_TRACE_CONTENT_TYPE = "application/zip";
 
+/**
+ * Maximum number of screenshots that can be registered in a single
+ * (non-parallel) build. Larger test suites must use parallel mode to split the
+ * screenshots across several builds.
+ */
+const MAX_SCREENSHOTS_PER_BUILD = 5000;
+
+const tooManyScreenshotsMessage =
+  `A build cannot contain more than ${MAX_SCREENSHOTS_PER_BUILD} screenshots. ` +
+  `Use parallel mode to split a larger test suite across several builds.`;
+
+const tooManyTracesMessage =
+  `A build cannot contain more than ${MAX_SCREENSHOTS_PER_BUILD} Playwright traces. ` +
+  `Use parallel mode to split a larger test suite across several builds.`;
+
+const withinScreenshotLimit = (items: unknown[]) =>
+  items.length <= MAX_SCREENSHOTS_PER_BUILD;
+
 const CommonRequestBodySchema = z.object({
   commit: Sha1HashSchema.meta({
     description: "The commit the build is running on",
@@ -54,9 +72,13 @@ const CommonRequestBodySchema = z.object({
   branch: GitBranchSchema.meta({
     description: "The branch the build is running on",
   }),
-  pwTraceKeys: UniqueSha256HashArraySchema.optional().meta({
-    description: "Keys of Playwright trace files",
-  }),
+  pwTraceKeys: UniqueSha256HashArraySchema.refine(withinScreenshotLimit, {
+    message: tooManyTracesMessage,
+  })
+    .optional()
+    .meta({
+      description: "Keys of Playwright trace files",
+    }),
   name: z.string().nullish().meta({
     description: "The name of the build (for multi-build setups)",
   }),
@@ -133,13 +155,16 @@ type ScreenshotUploadRequest = z.infer<typeof ScreenshotUploadRequestSchema>;
 
 const UniqueScreenshotUploadsSchema = z
   .array(ScreenshotUploadRequestSchema)
+  .max(MAX_SCREENSHOTS_PER_BUILD, { message: tooManyScreenshotsMessage })
   .refine(
     (items) => new Set(items.map((item) => item.key)).size === items.length,
     { message: "Must be an array of uploads with unique keys" },
   );
 
 const LegacyUploadRequestSchema = z.object({
-  screenshotKeys: UniqueSha256HashArraySchema.meta({
+  screenshotKeys: UniqueSha256HashArraySchema.refine(withinScreenshotLimit, {
+    message: tooManyScreenshotsMessage,
+  }).meta({
     deprecated: true,
     description: "Keys of screenshot files",
   }),
@@ -359,7 +384,8 @@ async function createSkippedBuild(ctx: BuildContext): Promise<Build> {
   const build = await createBuildFromRequest(ctx);
   await finalizeBuild({
     build,
-    single: { metadata: null, screenshots: { all: 0, storybook: 0 } },
+    metadata: null,
+    screenshotCount: { all: 0, storybook: 0 },
   });
   await buildJob.push(build.id);
   return build;

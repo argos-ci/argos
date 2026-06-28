@@ -5,7 +5,13 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { job as buildJob } from "@/build";
 import { finalizeBuild } from "@/build/finalizeBuild";
 import { raw, transaction } from "@/database";
-import { Build, BuildShard, Project } from "@/database/models";
+import {
+  Build,
+  BuildShard,
+  Project,
+  Screenshot,
+  ScreenshotBucket,
+} from "@/database/models";
 import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
@@ -36,6 +42,17 @@ const RequestBodySchema = z.object({
   parallel: z.boolean().nullish(),
   parallelTotal: z.number().int().min(-1).nullish(),
   parallelIndex: z.number().int().min(1).nullish(),
+  final: z
+    .boolean()
+    .nullish()
+    .meta({
+      description:
+        "Only used for non-parallel builds. Indicates that this is the last " +
+        "request of the build, so Argos can finalize it. A build whose " +
+        "screenshots are too large to fit in a single request can split them " +
+        "across several sequential requests, leaving `final` falsy on every " +
+        "request but the last. Defaults to `true`.",
+    }),
   metadata: BuildMetadataSchema.optional().meta({
     description: "Build metadata",
     id: "BuildMetadata",
@@ -109,11 +126,18 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
     });
 
     if (build.compareScreenshotBucket.complete) {
-      const duplicateParallelRequest =
-        body.parallel && requestId
+      // The request that finalized the build may be retried (e.g. its response
+      // was lost). If it has already been processed, we return the build
+      // instead of failing so retries are idempotent.
+      const duplicateRequest = body.parallel
+        ? requestId
           ? await hasShardBeenProcessed({ buildId: build.id, requestId })
-          : false;
-      if (duplicateParallelRequest) {
+          : false
+        : await areAllScreenshotsInserted({
+            build,
+            screenshots: body.screenshots,
+          });
+      if (duplicateRequest) {
         res.send({
           build: await serializeBuild(build),
         });
@@ -160,6 +184,32 @@ async function hasShardBeenProcessed(params: {
     nonce: params.requestId,
   });
   return Boolean(shard);
+}
+
+/**
+ * Whether every screenshot of the request is already stored in the build with
+ * the same file, meaning the request has already been processed. Used to make
+ * non-parallel build updates idempotent against retries.
+ */
+async function areAllScreenshotsInserted(params: {
+  build: Build;
+  screenshots: RequestBody["screenshots"];
+}) {
+  const { build, screenshots } = params;
+  if (screenshots.length === 0) {
+    return true;
+  }
+  const existing = await Screenshot.query()
+    .select("name", "s3Id")
+    .where("screenshotBucketId", build.compareScreenshotBucketId)
+    .whereIn(
+      "name",
+      screenshots.map((screenshot) => screenshot.name),
+    );
+  const keyByName = new Map(existing.map((row) => [row.name, row.s3Id]));
+  return screenshots.every(
+    (screenshot) => keyByName.get(screenshot.name) === screenshot.key,
+  );
 }
 
 /**
@@ -233,17 +283,49 @@ async function handleUpdateParallel(ctx: Context) {
 
 /**
  * Single build update.
+ *
+ * A single build can be uploaded in one request or, when its screenshots are
+ * too large to fit in a single request, split across several sequential
+ * requests sharing the same build. Every request inserts its own screenshots;
+ * only the last one (`final`) finalizes the build. Unlike parallel builds, the
+ * screenshots all belong to the same bucket (no shard).
  */
 async function handleUpdateSingle(ctx: Context) {
   const { body, build } = ctx;
-  const metadata = ctx.body.metadata ?? null;
-  await transaction(async (trx) => {
-    const screenshots = await insertFilesAndScreenshots({
-      screenshots: body.screenshots,
-      build,
-      trx,
-    });
-    await finalizeBuild({ trx, build, single: { metadata, screenshots } });
-  });
-  await buildJob.push(build.id);
+  const final = body.final ?? true;
+  const metadata = body.metadata ?? null;
+  // Serialize the requests of a single build. The api-client aborts and retries
+  // a request after a timeout while the server may still be processing the
+  // original one, so two requests can run concurrently. Without a unique
+  // constraint to rely on, concurrent runs would otherwise double-insert
+  // screenshots or finalize the build twice.
+  const finalized = await redisLock.acquire(
+    ["update-build-single", build.id],
+    () =>
+      transaction(async (trx) => {
+        await insertFilesAndScreenshots({
+          screenshots: body.screenshots,
+          build,
+          trx,
+        });
+        if (!final) {
+          return false;
+        }
+        // A retry that overlapped the original finalizing request must not
+        // finalize the build twice.
+        const bucket = await ScreenshotBucket.query(trx)
+          .findById(build.compareScreenshotBucketId)
+          .select("complete");
+        if (bucket?.complete) {
+          return false;
+        }
+        // The screenshot counts are computed from the database so they account
+        // for the screenshots inserted by every request of the build.
+        await finalizeBuild({ trx, build, metadata });
+        return true;
+      }),
+  );
+  if (finalized) {
+    await buildJob.push(build.id);
+  }
 }

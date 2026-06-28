@@ -80,42 +80,48 @@ export async function finalizeBuild(input: {
    */
   build: Build;
   /**
-   * Options passed when the build is a single one, it means no shards are involved.
+   * Explicit build metadata, used for builds that are not split into shards
+   * (single builds and chunked single builds). When provided (even as `null`),
+   * shard metadata aggregation is skipped. When omitted, metadata is aggregated
+   * from the build shards.
    */
-  single?: {
-    metadata: BuildMetadata | null;
-    screenshots: { all: number; storybook: number };
-  };
+  metadata?: BuildMetadata | null;
+  /**
+   * Pre-computed screenshot counts. When omitted, the counts are computed from
+   * the database. Chunked single builds omit this so the counts reflect the
+   * screenshots inserted across every chunk.
+   */
+  screenshotCount?: { all: number; storybook: number };
   /**
    * Transaction object for database operations.
    */
   trx?: TransactionOrKnex;
 }) {
-  const { trx, build, single } = input;
+  const { trx, build, screenshotCount } = input;
+  const hasExplicitMetadata = input.metadata !== undefined;
   const countQuery = Screenshot.query(trx).where(
     "screenshotBucketId",
     build.compareScreenshotBucketId,
   );
-  const [screenshotCount, storybookScreenshotCount, shards] = await Promise.all(
-    [
-      single?.screenshots.all ?? countQuery.resultSize(),
-      single?.screenshots.storybook ??
+  const [screenshotCountResult, storybookScreenshotCount, shards] =
+    await Promise.all([
+      screenshotCount?.all ?? countQuery.resultSize(),
+      screenshotCount?.storybook ??
         countQuery
           .clone()
           .where(ref("metadata:sdk.name").castText(), ARGOS_STORYBOOK_SDK_NAME)
           .resultSize(),
-      single
+      hasExplicitMetadata
         ? []
         : BuildShard.query(trx).select("metadata").where("buildId", build.id),
-    ],
-  );
+    ]);
 
   const buildData: Partial<Pick<Build, "metadata" | "finalizedAt">> = {
     finalizedAt: new Date().toISOString(),
   };
 
-  if (single) {
-    buildData.metadata = single.metadata;
+  if (hasExplicitMetadata) {
+    buildData.metadata = input.metadata ?? null;
   } else if (shards.length > 0) {
     buildData.metadata = aggregateMetadata(
       shards.map((shard) => shard.metadata),
@@ -131,7 +137,7 @@ export async function finalizeBuild(input: {
       build.$clone().$query(trx).patch(buildData),
       build.$relatedQuery("compareScreenshotBucket", trx).patch({
         complete: true,
-        screenshotCount,
+        screenshotCount: screenshotCountResult,
         storybookScreenshotCount,
         valid,
       }),

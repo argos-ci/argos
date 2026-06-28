@@ -118,7 +118,7 @@ export async function insertFilesAndScreenshots(
         .ignore();
     }
 
-    const [files, tests, duplicates] = await Promise.all([
+    const [files, tests, existing] = await Promise.all([
       File.query(trx)
         .select("id", "key", "type")
         .whereIn("key", [...screenshotKeys, ...pwTraceKeys]),
@@ -131,69 +131,92 @@ export async function insertFilesAndScreenshots(
         trx,
       }),
       Screenshot.query(trx)
-        .select("name")
-        .where({
-          name: params.screenshots.map((screenshot) => screenshot.name),
-          screenshotBucketId: params.build.compareScreenshotBucketId,
-        }),
+        .select("name", "s3Id")
+        .where("screenshotBucketId", params.build.compareScreenshotBucketId)
+        .whereIn(
+          "name",
+          params.screenshots.map((screenshot) => screenshot.name),
+        ),
     ]);
 
-    if (duplicates.length > 0) {
+    // A build can be uploaded across several requests, and a request can be
+    // retried. A screenshot already stored with the same file is considered
+    // already inserted by a previous (retried) request and is skipped, making
+    // the insert idempotent. A screenshot stored with a different file is a real
+    // conflict: the same name was uploaded for two different screenshots.
+    const existingKeyByName = new Map(
+      existing.map((screenshot) => [screenshot.name, screenshot.s3Id]),
+    );
+    const conflicts: string[] = [];
+    const screenshotsToInsert = params.screenshots.filter((screenshot) => {
+      const existingKey = existingKeyByName.get(screenshot.name);
+      if (existingKey === undefined) {
+        return true;
+      }
+      if (existingKey !== screenshot.key) {
+        conflicts.push(screenshot.name);
+      }
+      return false;
+    });
+
+    if (conflicts.length > 0) {
       throw new Error(
-        `Screenshots already uploaded for ${duplicates
-          .map((screenshot) => screenshot.name)
-          .join(
-            ", ",
-          )}. Please ensure to not upload a screenshot with the same name multiple times.`,
+        `Screenshots already uploaded for ${conflicts.join(
+          ", ",
+        )}. Please ensure to not upload a screenshot with the same name multiple times.`,
       );
     }
 
     // Insert screenshots
-    await Screenshot.query(trx).insert(
-      params.screenshots.map((screenshot): PartialModelObject<Screenshot> => {
-        const file = files.find((f) => f.key === screenshot.key);
-        invariant(file, `File not found for key ${screenshot.key}`);
+    if (screenshotsToInsert.length > 0) {
+      await Screenshot.query(trx).insert(
+        screenshotsToInsert.map(
+          (screenshot): PartialModelObject<Screenshot> => {
+            const file = files.find((f) => f.key === screenshot.key);
+            invariant(file, `File not found for key ${screenshot.key}`);
 
-        const test = tests.find((t) => t.name === screenshot.name);
-        invariant(test, `Test not found for screenshot ${screenshot.name}`);
+            const test = tests.find((t) => t.name === screenshot.name);
+            invariant(test, `Test not found for screenshot ${screenshot.name}`);
 
-        const pwTraceFile = (() => {
-          if (screenshot.pwTraceKey) {
-            const pwTraceFile = files.find(
-              (f) => f.key === screenshot.pwTraceKey,
-            );
-            invariant(
-              pwTraceFile,
-              `File not found for key ${screenshot.pwTraceKey}`,
-            );
-            invariant(
-              pwTraceFile.type === "playwrightTrace",
-              `File ${screenshot.pwTraceKey} is not a playwright trace`,
-            );
-            return pwTraceFile;
-          }
-          return null;
-        })();
+            const pwTraceFile = (() => {
+              if (screenshot.pwTraceKey) {
+                const pwTraceFile = files.find(
+                  (f) => f.key === screenshot.pwTraceKey,
+                );
+                invariant(
+                  pwTraceFile,
+                  `File not found for key ${screenshot.pwTraceKey}`,
+                );
+                invariant(
+                  pwTraceFile.type === "playwrightTrace",
+                  `File ${screenshot.pwTraceKey} is not a playwright trace`,
+                );
+                return pwTraceFile;
+              }
+              return null;
+            })();
 
-        return {
-          screenshotBucketId: params.build.compareScreenshotBucketId,
-          name: screenshot.name,
-          s3Id: screenshot.key,
-          fileId: file.id,
-          testId: test.id,
-          metadata: screenshot.metadata ?? null,
-          playwrightTraceFileId: pwTraceFile?.id ?? null,
-          buildShardId: params.shard?.id ?? null,
-          threshold: screenshot.threshold ?? null,
-          baseName: screenshot.baseName ?? null,
-          parentName: screenshot.parentName ?? null,
-        };
-      }),
-    );
+            return {
+              screenshotBucketId: params.build.compareScreenshotBucketId,
+              name: screenshot.name,
+              s3Id: screenshot.key,
+              fileId: file.id,
+              testId: test.id,
+              metadata: screenshot.metadata ?? null,
+              playwrightTraceFileId: pwTraceFile?.id ?? null,
+              buildShardId: params.shard?.id ?? null,
+              threshold: screenshot.threshold ?? null,
+              baseName: screenshot.baseName ?? null,
+              parentName: screenshot.parentName ?? null,
+            };
+          },
+        ),
+      );
+    }
 
     return {
-      all: params.screenshots.length,
-      storybook: params.screenshots.filter(
+      all: screenshotsToInsert.length,
+      storybook: screenshotsToInsert.filter(
         (screenshot) =>
           screenshot.metadata?.sdk.name === ARGOS_STORYBOOK_SDK_NAME,
       ).length,
