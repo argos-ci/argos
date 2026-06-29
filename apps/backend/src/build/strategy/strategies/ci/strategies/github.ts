@@ -53,10 +53,15 @@ export const GithubStrategy: MergeBaseStrategy<{
     return { octokit, owner, repo, installation };
   },
 
+  // The "light" app has no read access to the repository, so it can't resolve
+  // the commit ancestry from the GitHub API.
+  hasCommitHistoryAccess: (ctx) => ctx.installation.app !== "light",
+
   getMergeBaseCommitSha: async (args) => {
-    // If the app is light, then we rely on the base commit provided by the user in CLI.
-    // It is already handled in the common logic, so at this point we return null.
-    // Note it may indicates a bad setup.
+    // The light app has no read access to the repository, so it can't resolve
+    // the merge base. We rely on the base commit provided by the user in the CLI
+    // and, as a fallback, on the latest bucket of the base branch (see
+    // `hasCommitHistoryAccess` handling in the common logic).
     if (args.ctx.installation.app === "light") {
       return null;
     }
@@ -85,11 +90,9 @@ export const GithubStrategy: MergeBaseStrategy<{
     );
   },
   listParentCommitShas: async (args) => {
-    // If the app is light, we just find the last bucket ancest on the base branch.
-    // We can't know for sure that it's a parent, but it's the best we can do.
-    // It can result into diffs that includes changes more recent than the current branch.
-    // It is already handled in the common logic, so at this point we return [].
-    // Note it may indicates a bad setup.
+    // The light app has no read access to the repository, so it can't list the
+    // parent commits. The common logic falls back to the latest bucket of the
+    // base branch (see `hasCommitHistoryAccess`), so we return [] here.
     if (args.ctx.installation.app === "light") {
       return [];
     }

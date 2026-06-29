@@ -31,6 +31,8 @@ export const GitlabStrategy: MergeBaseStrategy<{
 
     return { client, gitlabProjectId: project.gitlabProject.gitlabId };
   },
+  // GitLab always grants repository read access.
+  hasCommitHistoryAccess: () => true,
   getMergeBaseCommitSha: async (args) => {
     const result = await args.ctx.client.Repositories.mergeBase(
       args.ctx.gitlabProjectId,

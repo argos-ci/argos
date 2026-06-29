@@ -88,6 +88,24 @@ function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
 }
 
 /**
+ * Get the most recent valid bucket on a given branch.
+ *
+ * Used as a best-effort baseline when we can't resolve the commit ancestry
+ * (e.g. the GitHub "light" app, which has no read access to the repository).
+ * The returned bucket is not guaranteed to be an ancestor of the build commit.
+ */
+export async function getLatestBaseBucketForBranch(args: {
+  build: Build;
+  branch: string;
+  options?: QueryBaseBucketOptions;
+}) {
+  const bucket = await queryBaseBucket(args.build, args.options)
+    .where("branch", args.branch)
+    .first();
+  return bucket ?? null;
+}
+
+/**
  * Get the bucket from a list of commits, ordered by the order of the commits.
  */
 export async function getBucketFromCommits(args: {

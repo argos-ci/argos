@@ -9,7 +9,11 @@ import {
 
 import type { CIStrategyContext } from ".";
 import type { GetBaseResult } from "../../types";
-import { getBaseBucketForBuildAndCommit, getBucketFromCommits } from "./query";
+import {
+  getBaseBucketForBuildAndCommit,
+  getBucketFromCommits,
+  getLatestBaseBucketForBranch,
+} from "./query";
 import { GithubStrategy } from "./strategies/github";
 import { GitlabStrategy } from "./strategies/gitlab";
 import type { MergeBaseStrategy } from "./types";
@@ -114,17 +118,41 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
     });
   })();
 
+  const isBaseBranchAutoApproved = baseBranch
+    ? context.checkIsAutoApproved(baseBranch)
+    : false;
+
+  // The "light" GitHub app has no read access to the repository, so we can't
+  // resolve the commit ancestry (merge base / parent commits) from the API and
+  // rely entirely on what the CLI sent. When that isn't enough to find a base
+  // bucket, fall back to the most recent valid bucket on the base branch.
+  // It is a best effort: the bucket is not guaranteed to be an ancestor of the
+  // build commit, but it is far better than reporting the build as orphan.
+  const resolveBaseBucket = async (baseBucket: ScreenshotBucket | null) => {
+    if (baseBucket) {
+      return baseBucket;
+    }
+    if (baseBranch && !gitProvider.hasCommitHistoryAccess(ctx)) {
+      return getLatestBaseBucketForBranch({
+        build,
+        branch: baseBranch,
+        options: {
+          // If the base branch is auto-approved, then we don't need to check if
+          // the build is approved.
+          approved: isBaseBranchAutoApproved ? undefined : true,
+        },
+      });
+    }
+    return null;
+  };
+
   if (!mergeBaseCommitSha) {
     return {
-      baseBucket: null,
+      baseBucket: await resolveBaseBucket(null),
       baseBranch,
       baseBranchResolvedFrom,
     };
   }
-
-  const isBaseBranchAutoApproved = baseBranch
-    ? context.checkIsAutoApproved(baseBranch)
-    : false;
 
   // If the merge base is the same as the head, then we have to found an ancestor
   // It happens when we are on a auto-approved branch.
@@ -142,7 +170,7 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
       build,
     });
     return {
-      baseBucket,
+      baseBucket: await resolveBaseBucket(baseBucket),
       baseBranch,
       baseBranchResolvedFrom,
     };
@@ -183,7 +211,7 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
   });
 
   return {
-    baseBucket,
+    baseBucket: await resolveBaseBucket(baseBucket),
     baseBranch,
     baseBranchResolvedFrom,
   };
