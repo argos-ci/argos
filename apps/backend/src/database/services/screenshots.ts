@@ -6,6 +6,7 @@ import type { PartialModelObject, TransactionOrKnex } from "objection";
 import { transaction } from "@/database";
 import { Build, BuildShard, File, Screenshot, Test } from "@/database/models";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
+import { boom } from "@/util/error";
 
 import { getUnknownFileKeys } from "./file";
 
@@ -160,7 +161,8 @@ export async function insertFilesAndScreenshots(
     });
 
     if (conflicts.length > 0) {
-      throw new Error(
+      throw boom(
+        400,
         `Screenshots already uploaded for ${conflicts.join(
           ", ",
         )}. Please ensure to not upload a screenshot with the same name multiple times.`,
