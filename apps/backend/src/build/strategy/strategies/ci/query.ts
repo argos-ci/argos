@@ -56,7 +56,11 @@ function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
     .where("jobStatus", "complete")
     .whereNot("id", build.id)
     .where("subset", false)
-    .whereNot("type", "skipped");
+    .whereNot("type", "skipped")
+    // A build with an active (non-dismissed) rejection can never be used as a
+    // baseline, whatever its type and even when an explicit approval is not
+    // required (e.g. auto-approved branches or the ancestor-commit fallback).
+    .whereNotExists(Build.rejectedReviewQuery());
 
   if (options?.approved) {
     buildQuery.where((qb) => {

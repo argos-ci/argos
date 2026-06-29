@@ -9,6 +9,7 @@ type EligibilityArgs = Parameters<typeof getBuildBaselineEligibility>[0];
 function getEligibility(overrides: {
   build?: Partial<Pick<Build, "jobStatus" | "subset" | "type">>;
   valid?: boolean;
+  rejected?: boolean;
   hasAcceptedReview?: boolean;
   hasMergedPullRequest?: boolean;
 }) {
@@ -20,6 +21,7 @@ function getEligibility(overrides: {
       ...overrides.build,
     },
     valid: overrides.valid ?? true,
+    rejected: overrides.rejected ?? false,
     hasAcceptedReview: overrides.hasAcceptedReview ?? false,
     hasMergedPullRequest: overrides.hasMergedPullRequest ?? false,
   };
@@ -58,6 +60,34 @@ describe("getBuildBaselineEligibility", () => {
       eligible: false,
       reasons: ["not-approved"],
     });
+  });
+
+  it("is not eligible for a rejected check build", () => {
+    expect(
+      getEligibility({ build: { type: "check" }, rejected: true }),
+    ).toEqual({ eligible: false, reasons: ["rejected"] });
+  });
+
+  it("is not eligible for a rejected reference build", () => {
+    expect(
+      getEligibility({ build: { type: "reference" }, rejected: true }),
+    ).toEqual({ eligible: false, reasons: ["rejected"] });
+  });
+
+  it("is not eligible for a rejected orphan build", () => {
+    expect(
+      getEligibility({ build: { type: "orphan" }, rejected: true }),
+    ).toEqual({ eligible: false, reasons: ["rejected"] });
+  });
+
+  it("reports rejection instead of approval when both could apply", () => {
+    expect(
+      getEligibility({
+        build: { type: "check" },
+        rejected: true,
+        hasAcceptedReview: true,
+      }),
+    ).toEqual({ eligible: false, reasons: ["rejected"] });
   });
 
   it("is not eligible for a skipped build", () => {

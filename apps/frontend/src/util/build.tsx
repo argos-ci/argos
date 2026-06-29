@@ -175,6 +175,8 @@ export function getBaselineIneligibilityReasonLabel(
       return "Some end-to-end tests did not pass.";
     case BuildBaselineIneligibilityReason.Subset:
       return "The build is marked as a subset, so it only contains part of the snapshots.";
+    case BuildBaselineIneligibilityReason.Rejected:
+      return "The build has been rejected.";
     case BuildBaselineIneligibilityReason.NotApproved:
       return "The build is not auto-approved, manually approved, or an orphan.";
     default:
