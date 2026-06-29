@@ -166,11 +166,12 @@ describe("updateBuild", () => {
         final: false,
       }).expect(200);
 
-      await put(build.id, {
+      const res = await put(build.id, {
         screenshots: [screenshot("a", "b")],
         final: true,
-      }).expect(500);
+      }).expect(400);
 
+      expect(res.body.error).toMatch(/already uploaded/);
       expect(await countScreenshots(compareScreenshotBucket.id)).toBe(1);
     });
   });
