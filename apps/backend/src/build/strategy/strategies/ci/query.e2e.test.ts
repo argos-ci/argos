@@ -148,6 +148,25 @@ describe("#getBaseBucketForBuildAndCommit", () => {
         expect(result).toEqual(baseBucket);
       });
     });
+
+    describe("if the associated reference build has been rejected", () => {
+      beforeEach(async () => {
+        await factory.BuildReview.create({
+          buildId: baseBucketBuild.id,
+          state: "rejected",
+        });
+      });
+
+      it("does not return the bucket even when approval is not required", async () => {
+        const result = await getBaseBucketForBuildAndCommit(
+          build,
+          "766b744bc5fa27a330283dfd47ffafdaf905a941",
+          // No `approved` option: mimics an auto-approved base branch, where a
+          // rejection must still prevent the build from being a baseline.
+        );
+        expect(result).toBeNull();
+      });
+    });
   });
 
   describe("when the build is triggered normally on main", () => {
@@ -283,6 +302,32 @@ describe("#getBucketFromCommits", () => {
     await createEligibleBucket("fe709bb92b38564a7547d0136206fca1b2e2d73f");
     const result = await getBucketFromCommits({
       shas: ["15c4ef8807c45a8af00eed56ccd3e3227a0bfd6d"],
+      build,
+    });
+    expect(result).toBeNull();
+  });
+
+  it("does not return a bucket from a rejected build", async () => {
+    const bucket = await factory.ScreenshotBucket.create({
+      projectId: build.projectId,
+      commit: "b779e503ff5163689cf480c5c58548cb98f735c7",
+      mode: build.mode,
+      name: build.name,
+    });
+    const rejectedBuild = await factory.Build.create({
+      projectId: build.projectId,
+      compareScreenshotBucketId: bucket.id,
+      jobStatus: "complete",
+      name: build.name,
+      mode: build.mode,
+      type: "reference",
+    });
+    await factory.BuildReview.create({
+      buildId: rejectedBuild.id,
+      state: "rejected",
+    });
+    const result = await getBucketFromCommits({
+      shas: ["b779e503ff5163689cf480c5c58548cb98f735c7"],
       build,
     });
     expect(result).toBeNull();

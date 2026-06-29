@@ -165,6 +165,8 @@ export const typeDefs = gql`
     TESTS_FAILED
     "The build is marked as a subset"
     SUBSET
+    "The build has been rejected"
+    REJECTED
     "The build is not auto-approved, manually approved, or an orphan"
     NOT_APPROVED
   }
@@ -223,6 +225,7 @@ const baselineIneligibilityReasonMap: Record<
   "build-incomplete": IBuildBaselineIneligibilityReason.BuildIncomplete,
   "tests-failed": IBuildBaselineIneligibilityReason.TestsFailed,
   subset: IBuildBaselineIneligibilityReason.Subset,
+  rejected: IBuildBaselineIneligibilityReason.Rejected,
   "not-approved": IBuildBaselineIneligibilityReason.NotApproved,
 };
 
@@ -447,6 +450,7 @@ export const resolvers: IResolvers = {
           return getBuildBaselineEligibility({
             build,
             valid: false,
+            rejected: false,
             hasAcceptedReview: false,
             hasMergedPullRequest: false,
           });
@@ -462,6 +466,7 @@ export const resolvers: IResolvers = {
         return getBuildBaselineEligibility({
           build,
           valid: compareBucket?.valid ?? false,
+          rejected: aggregatedStatus === "rejected",
           hasAcceptedReview: aggregatedStatus === "accepted",
           hasMergedPullRequest: pullRequest?.merged ?? false,
         });
