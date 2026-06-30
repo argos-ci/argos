@@ -15,6 +15,7 @@ import { exchangeGitHubActionsOidcToken } from "./handlers/exchangeGitHubActions
 import { exchangeGitHubActionsTokenlessToken } from "./handlers/exchangeGitHubActionsTokenlessToken";
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
 import { finalizeDeployment } from "./handlers/finalizeDeployment";
+import { findBaseline } from "./handlers/findBaseline";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getBuild } from "./handlers/getBuild";
 import { getBuildDiffs } from "./handlers/getBuildDiffs";
@@ -84,6 +85,7 @@ registerHandler(router, exchangeGitHubActionsOidcToken);
 registerHandler(router, exchangeGitHubActionsTokenlessToken);
 registerHandler(router, createDeployment);
 registerHandler(router, finalizeBuilds);
+registerHandler(router, findBaseline);
 registerHandler(router, finalizeDeployment);
 registerHandler(router, getDeployment);
 registerHandler(router, getAuthProject);
