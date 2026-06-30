@@ -36,7 +36,7 @@ export const buildStatusDescriptors: Record<
   }
 > = {
   [BuildStatus.NoChanges]: {
-    label: "No changes detected",
+    label: "No changes",
     color: "success" as const,
     icon: CheckCircle2Icon,
   },

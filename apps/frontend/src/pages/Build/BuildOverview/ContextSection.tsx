@@ -5,20 +5,27 @@ import {
   GitPullRequestIcon,
   ImagesIcon,
   MonitorSmartphoneIcon,
-  MoonIcon,
-  SunIcon,
   SunMoonIcon,
   TowerControlIcon,
 } from "lucide-react";
 
 import { BuildModeLabel } from "@/containers/BuildModeIndicator";
 import { DocumentType, graphql } from "@/gql";
-import { BuildMode, BuildType } from "@/gql/graphql";
+import {
+  BuildMode,
+  BuildType,
+  ScreenshotMetadataColorScheme,
+} from "@/gql/graphql";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 
-import { AutomationLibraryIcon } from "../metadata/automationLibrary/AutomationLibraryIcon";
+import {
+  AutomationLibraryIcon,
+  getAutomationLibraryLabel,
+} from "../metadata/automationLibrary/AutomationLibraryIcon";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
+import { getBrowserLabel } from "../metadata/browser/browserLabels";
+import { colorSchemeIcons } from "../metadata/metadataIcons";
 import { SectionHeader } from "./shared";
 
 const _BuildFragment = graphql(`
@@ -47,42 +54,6 @@ const _BuildFragment = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 
-const browserLabels: Record<string, string> = {
-  chrome: "Chrome",
-  chromium: "Chromium",
-  edge: "Edge",
-  firefox: "Firefox",
-  safari: "Safari",
-  webkit: "WebKit",
-};
-
-function getBrowserLabel(browser: string): string {
-  return (
-    browserLabels[browser.toLowerCase()] ??
-    browser.charAt(0).toUpperCase() + browser.slice(1)
-  );
-}
-
-const automationLibraryLabels: Record<string, string> = {
-  storybook: "Storybook",
-  "@storybook/test-runner": "Storybook",
-  "@storybook/addon-vitest": "Storybook",
-  playwright: "Playwright",
-  "@playwright/test": "Playwright",
-  "playwright-core": "Playwright",
-  cypress: "Cypress",
-  puppeteer: "Puppeteer",
-  webdriverio: "WebdriverIO",
-  selenium: "Selenium",
-};
-
-function getAutomationLibraryLabel(library: string): string {
-  return (
-    automationLibraryLabels[library.toLowerCase()] ??
-    library.charAt(0).toUpperCase() + library.slice(1)
-  );
-}
-
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -93,13 +64,14 @@ function ColorSchemeIcon(props: {
   className?: string;
 }) {
   const { colorSchemes, className } = props;
-  const Icon =
-    colorSchemes.length === 1
-      ? colorSchemes[0] === "dark"
-        ? MoonIcon
-        : SunIcon
-      : SunMoonIcon;
-  return <Icon className={className} />;
+  if (colorSchemes.length === 1) {
+    const Icon =
+      colorSchemes[0] === "dark"
+        ? colorSchemeIcons[ScreenshotMetadataColorScheme.Dark]
+        : colorSchemeIcons[ScreenshotMetadataColorScheme.Light];
+    return <Icon className={className} />;
+  }
+  return <SunMoonIcon className={className} />;
 }
 
 function DefinitionRow(props: {

@@ -321,7 +321,7 @@ export function useGoToNextDiff() {
   });
 }
 
-function useHasPreviousDiff() {
+export function useHasPreviousDiff() {
   const activeDiffIndex = useActiveDiffIndex();
   return activeDiffIndex > 0;
 }
@@ -376,6 +376,16 @@ export function useGoToPreviousDiff() {
     }
     // From the first diff, going up returns to the build overview.
     if (activeDiff && params) {
+      navigate(getBuildOverviewURL(params), { replace: true });
+    }
+  });
+}
+
+export function useGoToBuildOverview() {
+  const params = useBuildParams();
+  const navigate = useNavigate();
+  return useEventCallback(() => {
+    if (params) {
       navigate(getBuildOverviewURL(params), { replace: true });
     }
   });
@@ -719,9 +729,7 @@ export function BuildDiffProvider(props: {
         projectName: params.projectName,
         diffId: diff.id,
       }),
-      // Coming from the overview, push a new history entry so that
-      // the back button returns to it. Between diffs, keep replacing.
-      { replace: params.diffId != null },
+      { replace: true },
     );
 
     if (scroll) {

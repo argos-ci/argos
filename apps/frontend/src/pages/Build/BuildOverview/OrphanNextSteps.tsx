@@ -21,17 +21,12 @@ const _BuildFragment = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 
-/**
- * Onboarding guidance shown in the briefing of an orphan build — a build with
- * no baseline to compare against (typically a project's first builds), since
- * setting up a baseline is the main expected action. Replaces the former modal.
- */
 export function OrphanNextSteps(props: { build: Build }) {
   const { build } = props;
   const params = useBuildParams();
   if (build.mode === BuildMode.Monitoring) {
     return (
-      <div className="max-w-xl">
+      <div className="mt-8 mb-4 max-w-xl">
         <SectionHeader>Next step</SectionHeader>
         <p className="text-low text-sm text-balance">
           Approve this build to use it as the <Emphasis>baseline</Emphasis> for
@@ -42,7 +37,7 @@ export function OrphanNextSteps(props: { build: Build }) {
   }
 
   return (
-    <div className="max-w-xl">
+    <div className="mt-8 mb-4 max-w-xl">
       <SectionHeader>Next steps</SectionHeader>
       <ol className="flex flex-col gap-3 text-sm">
         <GuidanceStep index={1}>
@@ -55,18 +50,16 @@ export function OrphanNextSteps(props: { build: Build }) {
           builds will automatically compare against that baseline.
         </GuidanceStep>
       </ol>
-      <p className="text-low mt-4 text-sm">
-        {params ? (
-          <>
-            <LightBulbIcon className="text-low mr-2 inline-block size-4" />
-            You can configure baseline branch in the{" "}
-            <Link href={`${getProjectURL(params)}/settings/baseline-builds`}>
-              project settings
-            </Link>
-            .
-          </>
-        ) : null}
-      </p>
+      {params ? (
+        <p className="text-low mt-4 text-sm">
+          <LightBulbIcon className="text-low mr-2 inline-block size-4" />
+          You can configure baseline branch in the{" "}
+          <Link href={`${getProjectURL(params)}/settings/baseline-builds`}>
+            project settings
+          </Link>
+          .
+        </p>
+      ) : null}
     </div>
   );
 }

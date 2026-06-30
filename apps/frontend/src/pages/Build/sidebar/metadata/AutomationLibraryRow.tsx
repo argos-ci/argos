@@ -1,6 +1,6 @@
 import { Chip } from "@/ui/Chip";
 
-import { automationLibraryIcons } from "../../metadata/automationLibrary/AutomationLibraryIcon";
+import { getAutomationLibraryIcon } from "../../metadata/automationLibrary/AutomationLibraryIcon";
 import { MetadataRow } from "./MetadataRow";
 import type { AutomationLibrary } from "./utils";
 
@@ -11,7 +11,7 @@ export function AutomationLibraryRow(props: {
   if (!automationLibrary) {
     return null;
   }
-  const icon = automationLibraryIcons[automationLibrary.name];
+  const icon = getAutomationLibraryIcon(automationLibrary.name);
   if (!icon) {
     return null;
   }

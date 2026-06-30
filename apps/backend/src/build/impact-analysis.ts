@@ -2,7 +2,7 @@ import { raw } from "objection";
 
 import { Screenshot, ScreenshotDiff, type Build } from "@/database/models";
 
-export type BuildImpactItem = {
+type BuildImpactItem = {
   name: string;
   count: number;
 };

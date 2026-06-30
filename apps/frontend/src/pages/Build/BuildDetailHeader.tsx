@@ -19,9 +19,11 @@ import { getTestURL } from "../Test/TestParams";
 import {
   checkDiffCanBeReviewed,
   Diff,
+  useGoToBuildOverview,
   useGoToNextDiff,
   useGoToPreviousDiff,
   useHasNextDiff,
+  useHasPreviousDiff,
 } from "./BuildDiffState";
 import {
   useAcknowledgeMarkedDiff,
@@ -109,11 +111,15 @@ const BuildNavButtons = memo(function BuildNavButtons() {
   const goToNextDiff = useGoToNextDiff();
   const hasNextDiff = useHasNextDiff();
   const goToPreviousDiff = useGoToPreviousDiff();
-  // The previous action is always available: from the first screenshot, going
-  // up returns to the build overview.
+  const hasPreviousDiff = useHasPreviousDiff();
+  const goToBuildOverview = useGoToBuildOverview();
   return (
     <div className="flex shrink-0 gap-1">
-      <PreviousButton onPress={goToPreviousDiff} isDisabled={false} />
+      <PreviousButton
+        onPress={() =>
+          hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
+        }
+      />
       <NextButton onPress={goToNextDiff} isDisabled={!hasNextDiff} />
     </div>
   );

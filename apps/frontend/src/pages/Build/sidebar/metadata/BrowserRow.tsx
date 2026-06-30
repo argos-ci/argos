@@ -11,6 +11,7 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
+import { getBrowserLabel } from "../../metadata/browser/browserLabels";
 import { MetadataRow } from "./MetadataRow";
 import {
   getUniqueBrowsers,
@@ -33,19 +34,6 @@ function BrowserIcon(props: { browser: MetadataBrowser; className?: string }) {
       <LazyBrowserIcon browser={browser} {...rest} />
     </Suspense>
   );
-}
-
-const Labels: Record<string, string> = {
-  edge: "Edge",
-  firefox: "Firefox",
-  safari: "Safari",
-  chrome: "Chrome",
-  chromium: "Chromium",
-  electron: "Electron",
-};
-
-function getBrowserLabel(name: string) {
-  return Labels[name.toLowerCase()] ?? name;
 }
 
 export function BrowserRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
