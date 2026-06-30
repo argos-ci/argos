@@ -63,43 +63,33 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
     };
   })();
 
-  // If we don't have a strategy then we could only count on baseCommit
-  // specified by the user in the build.
-  if (!gitProvider) {
-    if (build.baseCommit) {
-      const baseBucket = await getBaseBucketForBuildAndCommit(
-        build,
-        build.baseCommit,
-      );
-      return {
-        baseBucket,
-        baseBranch,
-        baseBranchResolvedFrom,
-      };
-    }
-
-    return {
-      baseBucket: null,
-      baseBranch,
-      baseBranchResolvedFrom,
-    };
-  }
+  const result = (baseBucket: ScreenshotBucket | null) => ({
+    baseBucket,
+    baseBranch,
+    baseBranchResolvedFrom,
+  });
 
   const head = compareScreenshotBucket.commit;
 
-  const ctx = await gitProvider.getContext(project);
+  // Resolve the git provider context when a provider is detected. The context
+  // lets us query the provider (GitHub/GitLab) to compute the merge base and
+  // list parent commits. Without a provider — or for "light" apps — we rely
+  // solely on the information sent by the build (baseCommit & parentCommits).
+  const ctx = gitProvider ? await gitProvider.getContext(project) : null;
 
-  if (!ctx) {
-    return {
-      baseBucket: null,
-      baseBranch,
-      baseBranchResolvedFrom,
-    };
+  // A git provider was detected but its context could not be resolved.
+  if (gitProvider && !ctx) {
+    return result(null);
   }
 
   const mergeBaseCommitSha = await (() => {
     if (build.baseCommit) {
       return build.baseCommit;
+    }
+    // Without a git provider context, we can't compute a merge base from the
+    // base branch, so we only rely on the build's baseCommit (handled above).
+    if (!gitProvider || !ctx) {
+      return null;
     }
     invariant(
       baseBranch,
@@ -114,77 +104,59 @@ export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
     });
   })();
 
-  if (!mergeBaseCommitSha) {
-    return {
-      baseBucket: null,
-      baseBranch,
-      baseBranchResolvedFrom,
-    };
+  // When a git provider is detected, a merge base commit is required to find a
+  // base bucket, otherwise the build is considered an orphan.
+  // When there is no git provider, we can still fall back to the build's parent
+  // commits below to find a base bucket.
+  if (gitProvider && !mergeBaseCommitSha) {
+    return result(null);
   }
 
-  const isBaseBranchAutoApproved = baseBranch
-    ? context.checkIsAutoApproved(baseBranch)
-    : false;
+  // Lists the parent commits used to find an ancestor bucket. We prefer the
+  // parent commits sent by the build (CLI), and fall back to the git provider
+  // when one is available.
+  const listParentCommitShas = async (sha: string): Promise<string[]> => {
+    if (build.parentCommits) {
+      return build.parentCommits;
+    }
+    if (gitProvider && ctx) {
+      return gitProvider.listParentCommitShas({ project, build, ctx, sha });
+    }
+    return [];
+  };
 
-  // If the merge base is the same as the head, then we have to found an ancestor
-  // It happens when we are on a auto-approved branch.
-  if (mergeBaseCommitSha === head) {
-    const shas =
-      build.parentCommits ??
-      (await gitProvider.listParentCommitShas({
-        project,
-        build,
-        ctx,
-        sha: mergeBaseCommitSha,
-      }));
-    const baseBucket = await getBucketFromCommits({
-      shas: shas.slice(1),
+  // When we have a merge base commit that differs from the head, we first try
+  // to find a bucket for that exact commit.
+  if (mergeBaseCommitSha && mergeBaseCommitSha !== head) {
+    const isBaseBranchAutoApproved = baseBranch
+      ? context.checkIsAutoApproved(baseBranch)
+      : false;
+
+    const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
       build,
-    });
-    return {
-      baseBucket,
-      baseBranch,
-      baseBranchResolvedFrom,
-    };
+      mergeBaseCommitSha,
+      {
+        // If the base branch is auto-approved, then we don't need to check if the build is approved.
+        // We assume that by merging the base branch, the user has approved the build.
+        approved: isBaseBranchAutoApproved ? undefined : true,
+      },
+    );
+
+    // A bucket exists for the merge base commit.
+    if (mergeBaseBucket) {
+      return result(mergeBaseBucket);
+    }
   }
 
-  const mergeBaseBucket = await getBaseBucketForBuildAndCommit(
-    build,
-    mergeBaseCommitSha,
-    {
-      // If the base branch is auto-approved, then we don't need to check if the build is approved.
-      // We assume that by merging the base branch, the user has approved the build.
-      approved: isBaseBranchAutoApproved ? undefined : true,
-    },
-  );
-
-  // A bucket exists for the merge base commit
-  if (mergeBaseBucket) {
-    return {
-      baseBucket: mergeBaseBucket,
-      baseBranch,
-      baseBranchResolvedFrom,
-    };
-  }
-
-  // If we don't have a bucket for the merge base commit, then we have to found an ancestor
-  const shas =
-    build.parentCommits ??
-    (await gitProvider.listParentCommitShas({
-      project,
-      build,
-      ctx,
-      sha: mergeBaseCommitSha,
-    }));
-
+  // Otherwise we have to find an ancestor. This happens when:
+  // - the merge base is the same as the head (e.g. on an auto-approved branch),
+  // - no bucket exists for the merge base commit,
+  // - there is no merge base at all (no git provider and no baseCommit).
+  const shas = await listParentCommitShas(mergeBaseCommitSha ?? head);
   const baseBucket = await getBucketFromCommits({
     shas: shas.slice(1),
     build,
   });
 
-  return {
-    baseBucket,
-    baseBranch,
-    baseBranchResolvedFrom,
-  };
+  return result(baseBucket);
 }

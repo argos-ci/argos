@@ -14,6 +14,7 @@ import { exchangeGitHubActionsOidcTokenOperation } from "./handlers/exchangeGitH
 import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchangeGitHubActionsTokenlessToken";
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { finalizeDeploymentOperation } from "./handlers/finalizeDeployment";
+import { findBaselineOperation } from "./handlers/findBaseline";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
@@ -162,6 +163,9 @@ export const zodSchema = {
     },
     "/builds/finalize": {
       post: finalizeBuildsOperation,
+    },
+    "/baseline": {
+      post: findBaselineOperation,
     },
     "/auth/cli/token": {
       post: exchangeCliTokenOperation,
