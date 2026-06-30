@@ -26,7 +26,7 @@ const _BuildFragment = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 
 const Aside = ({ children }: { children: React.ReactNode }) => (
-  <aside className="lg:border-l-thin flex shrink-0 flex-col lg:w-96 lg:pl-8">
+  <aside className="lg:border-l-thin mt-10 flex shrink-0 flex-col lg:w-96 lg:pl-8">
     {children}
   </aside>
 );
@@ -49,7 +49,7 @@ export function BuildOverview(props: { build: Build; hasRepository: boolean }) {
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 p-6 lg:flex-row lg:gap-8">
-        <main className="flex flex-1 flex-col gap-10 overflow-hidden">
+        <main className="flex flex-1 flex-col gap-10">
           <BuildSummary build={build} hasRepository={hasRepository} />
           <ImpactAnalysisSection build={build} />
         </main>

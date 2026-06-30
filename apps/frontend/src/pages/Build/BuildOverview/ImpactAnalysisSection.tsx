@@ -99,13 +99,13 @@ function AffectedItemsSection(props: {
         {visibleItems.map((item, index) => (
           <li
             key={item.name}
-            className="flex items-center justify-between gap-3 py-1 first:pt-0"
+            className="flex items-center justify-between gap-3 border-b py-3 first:pt-0 last:border-b-0"
           >
             <div className="flex min-w-0 items-center gap-3">
-              <div className="bg-primary-ui text-primary-low flex size-4 shrink-0 items-center justify-center rounded-lg">
+              <div className="bg-primary-ui text-primary-low flex size-8 shrink-0 items-center justify-center rounded-lg">
                 <props.icon className="size-4" strokeWidth={1.75} />
               </div>
-              <Tooltip content={displayNames[index]}>
+              <Tooltip content={item.name}>
                 <span className="text-default min-w-0 truncate text-sm font-semibold">
                   {displayNames[index]}
                 </span>

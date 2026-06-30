@@ -5,20 +5,27 @@ import {
   GitPullRequestIcon,
   ImagesIcon,
   MonitorSmartphoneIcon,
-  MoonIcon,
-  SunIcon,
   SunMoonIcon,
   TowerControlIcon,
 } from "lucide-react";
 
 import { BuildModeLabel } from "@/containers/BuildModeIndicator";
 import { DocumentType, graphql } from "@/gql";
-import { BuildMode, BuildType } from "@/gql/graphql";
+import {
+  BuildMode,
+  BuildType,
+  ScreenshotMetadataColorScheme,
+} from "@/gql/graphql";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 
-import { AutomationLibraryIcon } from "../metadata/automationLibrary/AutomationLibraryIcon";
+import {
+  AutomationLibraryIcon,
+  getAutomationLibraryLabel,
+} from "../metadata/automationLibrary/AutomationLibraryIcon";
 import { BrowserIcon } from "../metadata/browser/BrowserIcon";
+import { getBrowserLabel } from "../metadata/browser/browserLabels";
+import { colorSchemeIcons } from "../metadata/metadataIcons";
 import { SectionHeader } from "./shared";
 
 const _BuildFragment = graphql(`
@@ -63,35 +70,12 @@ function getBrowserLabel(browser: string): string {
   );
 }
 
-const automationLibraryLabels: Record<string, string> = {
-  storybook: "Storybook",
-  "@storybook/test-runner": "Storybook",
-  "@storybook/addon-vitest": "Storybook",
-  playwright: "Playwright",
-  "@playwright/test": "Playwright",
-  "playwright-core": "Playwright",
-  cypress: "Cypress",
-  puppeteer: "Puppeteer",
-  webdriverio: "WebdriverIO",
-  selenium: "Selenium",
-};
-
-function getAutomationLibraryLabel(library: string): string {
-  return (
-    automationLibraryLabels[library.toLowerCase()] ??
-    library.charAt(0).toUpperCase() + library.slice(1)
-  );
-}
-
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 /** Single icon representing the color schemes covered by the build. */
-function ColorSchemeIcon(props: {
-  colorSchemes: string[];
-  className?: string;
-}) {
+function ColorSchemeIcon(props: { colorSchemes: string[]; className?: string }) {
   const { colorSchemes, className } = props;
   const Icon =
     colorSchemes.length === 1
@@ -208,7 +192,18 @@ export function ContextSection(props: { build: Build }) {
             <span className="font-mono">{branch}</span>
           </DefinitionRow>
         ) : null}
-
+        <DefinitionRow
+          label="Mode"
+          icon={
+            build.mode === BuildMode.Monitoring ? (
+              <TowerControlIcon className="text-low size-4" />
+            ) : (
+              <GitPullRequestIcon className="text-low size-4" />
+            )
+          }
+        >
+          <BuildModeLabel mode={build.mode} />
+        </DefinitionRow>
         {build.type === BuildType.Orphan ? (
           <DefinitionRow
             label="Compared to"
@@ -227,18 +222,6 @@ export function ContextSection(props: { build: Build }) {
             ) : null}
           </DefinitionRow>
         ) : null}
-        <DefinitionRow
-          label="Mode"
-          icon={
-            build.mode === BuildMode.Monitoring ? (
-              <TowerControlIcon className="text-low size-4" />
-            ) : (
-              <GitPullRequestIcon className="text-low size-4" />
-            )
-          }
-        >
-          <BuildModeLabel mode={build.mode} />
-        </DefinitionRow>
         <DefinitionRow
           label="Created"
           icon={<ClockIcon className="text-low size-4" />}

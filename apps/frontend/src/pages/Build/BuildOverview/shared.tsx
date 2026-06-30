@@ -1,15 +1,22 @@
 import { clsx } from "clsx";
 
+import type { UIColor } from "@/util/colors";
+
+/** Background tints for the status discs, keyed by UI color. */
+export const uiBgColorClassNames: Record<UIColor, string> = {
+  primary: "bg-primary-ui",
+  info: "bg-info-ui",
+  success: "bg-success-ui",
+  storybook: "bg-storybook-ui",
+  neutral: "bg-ui",
+  pending: "bg-pending-ui",
+  danger: "bg-danger-ui",
+  warning: "bg-warning-ui",
+};
+
 /** Bolded inline text used to highlight a phrase within a sentence. */
-export function Emphasis(props: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <strong className={clsx("font-medium", props.className)}>
-      {props.children}
-    </strong>
-  );
+export function Emphasis(props: { children: React.ReactNode }) {
+  return <strong className="font-medium">{props.children}</strong>;
 }
 
 /**

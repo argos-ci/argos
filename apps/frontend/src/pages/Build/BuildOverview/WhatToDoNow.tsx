@@ -4,12 +4,7 @@ import { DocumentType, graphql } from "@/gql";
 import { BuildMode } from "@/gql/graphql";
 import { Details, Summary } from "@/ui/Details";
 
-import {
-  Emphasis,
-  GuidanceStep,
-  GuidanceStepTitle,
-  SectionHeader,
-} from "./shared";
+import { Emphasis, GuidanceStep, GuidanceStepTitle, SectionHeader } from "./shared";
 
 const _BuildFragment = graphql(`
   fragment WhatToDoNow_Build on Build {
@@ -44,12 +39,12 @@ export function WhatToDoNow(props: { build: Build; hasRepository: boolean }) {
           Browse the screenshots and approve or reject each change.
         </GuidanceStep>
         <GuidanceStep index={2}>
-          <GuidanceStepTitle>Submit a build review</GuidanceStepTitle>
+          <GuidanceStepTitle>Approve the build</GuidanceStepTitle>
           {isCi ? (
             hasRepository ? (
               <>
                 This updates the <Emphasis>status check</Emphasis> so the pull
-                request can be merged confidently.
+                request can be merged.
               </>
             ) : (
               <>This confirms the changes are expected.</>

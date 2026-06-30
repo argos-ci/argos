@@ -2,6 +2,8 @@ import { clsx } from "clsx";
 import { ComponentIcon, ImagesIcon, SparklesIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { Button } from "@/ui/Button";
+import { Kbd } from "@/ui/Kbd";
 
 import { SectionHeader, Stat } from "./shared";
 
@@ -73,12 +75,15 @@ function ScopeStat(props: {
 
 /**
  * Summary of what reviewing this build entails — estimated effort plus the key
- * counts (screenshots, unique changes, affected entities). `screenshotCount` is
- * the number of screenshots to look at (changed + added + removed), which can
- * exceed the unique change count and includes brand-new screenshots.
+ * counts (screenshots, unique changes, affected entities) — with the call to
+ * action to start the review.
  */
-export function ReviewScope(props: { build: Build; screenshotCount: number }) {
-  const { build, screenshotCount } = props;
+export function ReviewScope(props: {
+  build: Build;
+  isDisabled: boolean;
+  onStart: () => void;
+}) {
+  const { build, isDisabled, onStart } = props;
   const analysis = build.impactAnalysis;
   const componentCount = analysis?.affectedComponents.length ?? 0;
   const testCount = analysis?.affectedTests.length ?? 0;
@@ -89,7 +94,7 @@ export function ReviewScope(props: { build: Build; screenshotCount: number }) {
     ? getReviewDifficulty(analysis.uniqueChangeCount)
     : null;
   return (
-    <div className="border-thin bg-primary-ui rounded-lg p-5 shadow-xs">
+    <div className="bg-primary-ui border-thin mt-6 rounded-lg p-5">
       <div className="flex">
         {difficulty && (
           <div className="flex shrink-0 flex-col gap-2 pr-6">
@@ -105,7 +110,7 @@ export function ReviewScope(props: { build: Build; screenshotCount: number }) {
           <div className="flex flex-1 items-start overflow-x-auto">
             <ScopeStat
               icon={ImagesIcon}
-              value={screenshotCount}
+              value={analysis.changedCount}
               label="Screenshots"
             />
             {analysis.uniqueChangeCount > 0 ? (
@@ -124,6 +129,13 @@ export function ReviewScope(props: { build: Build; screenshotCount: number }) {
             ) : null}
           </div>
         )}
+      </div>
+
+      <div className="mt-5 flex items-center gap-3">
+        <Button autoFocus isDisabled={isDisabled} onPress={onStart}>
+          Start review
+          <Kbd className="ml-2 bg-white/25 text-white">↵</Kbd>
+        </Button>
       </div>
     </div>
   );
