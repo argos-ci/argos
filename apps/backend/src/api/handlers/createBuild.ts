@@ -39,7 +39,7 @@ import { CreateAPIHandler } from "../util";
  * PUT upload path is kept for backward compatibility and does not enforce this
  * policy.
  */
-const MAX_UPLOAD_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_UPLOAD_FILE_BYTES = 50 * 1024 * 1024;
 
 /**
  * Content type of Playwright trace files. Hard-coded because the SDK always
