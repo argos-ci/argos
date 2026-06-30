@@ -19,6 +19,7 @@ import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
 import { getCommentOperation } from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
+import { getMeOperation } from "./handlers/getMe";
 import { getProjectOperation } from "./handlers/getProject";
 import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
 import { listCommentsOperation } from "./handlers/listComments";
@@ -64,6 +65,12 @@ export const zodSchema = {
       description:
         "Exchange CI and CLI credentials for an Argos project token. Use these endpoints to obtain the bearer token that authenticates every other request.",
       "x-page-icon": "key",
+    },
+    {
+      name: "Users",
+      description:
+        "Retrieve information about the user authenticated by the current personal access token.",
+      "x-page-icon": "user",
     },
     {
       name: "Projects",
@@ -164,6 +171,9 @@ export const zodSchema = {
     },
     "/auth/github-actions/tokenless/exchange": {
       post: exchangeGitHubActionsTokenlessTokenOperation,
+    },
+    "/me": {
+      get: getMeOperation,
     },
     "/project": {
       get: getAuthProjectOperation,
