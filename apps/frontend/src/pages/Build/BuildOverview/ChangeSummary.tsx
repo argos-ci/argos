@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { lowTextColorClassNames, UIColor } from "@/util/colors";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
@@ -90,17 +91,8 @@ function getTimeEstimate(uniqueChangeCount: number): string {
   return "30+ min";
 }
 
-type ChipTone = "neutral" | "danger" | "warning" | "success";
-
-const chipIconToneClassNames: Record<ChipTone, string> = {
-  neutral: "text-low",
-  danger: "text-danger-low",
-  warning: "text-warning-low",
-  success: "text-success-low",
-};
-
 /** Severity of the build, derived from its single largest diff score. */
-function getSeverity(score: number): { label: string; tone: ChipTone } {
+function getSeverity(score: number): { label: string; tone: UIColor } {
   if (score >= 0.3) {
     return { label: "Major change", tone: "danger" };
   }
@@ -113,14 +105,14 @@ function getSeverity(score: number): { label: string; tone: ChipTone } {
 /** A small contextual signal (severity, matrix scope, new/removed…). */
 function Chip(props: {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  tone?: ChipTone;
+  tone?: UIColor;
   children: React.ReactNode;
 }) {
   const tone = props.tone ?? "neutral";
   return (
     <span className="border-thin bg-primary-ui text-default inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium">
       <props.icon
-        className={clsx("size-3.5 shrink-0", chipIconToneClassNames[tone])}
+        className={clsx("size-3.5 shrink-0", lowTextColorClassNames[tone])}
         strokeWidth={2}
       />
       {props.children}

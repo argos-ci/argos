@@ -122,7 +122,7 @@ const RemoveBuildReviewersMutation = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type Review = Build["reviews"][number];
 
-function getReviewersEmptyStateMessage(
+function getEmptyStateMessage(
   build: Pick<Build, "status" | "type" | "mergeQueue">,
 ): string {
   if (build.mergeQueue) {
@@ -188,7 +188,7 @@ export function ReviewersSection(props: { build: Build }) {
       </SidebarHeader>
       {!hasReviewers ? (
         <div className="text-low px-4 text-xs">
-          {getReviewersEmptyStateMessage(build)}
+          {getEmptyStateMessage(build)}
         </div>
       ) : (
         <BuildReviewersStatusList
