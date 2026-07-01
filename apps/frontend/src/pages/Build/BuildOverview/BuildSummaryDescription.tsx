@@ -1,8 +1,10 @@
 import React from "react";
+import { GitBranch } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 
+import { Code } from "../../../ui/Code";
 import { useBuildDiffState } from "../BuildDiffState";
 import { Emphasis } from "./shared";
 
@@ -11,6 +13,7 @@ const _BuildFragment = graphql(`
     type
     status
     mode
+    baseBranch
   }
 `);
 
@@ -38,9 +41,17 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
       <>
         <Paragraph>Argos has nothing to compare this build against.</Paragraph>
         <Paragraph>
-          It's common for a project&apos;s first builds, or when the current
-          branch <Emphasis>hasn't been rebased</Emphasis> on a branch with an
-          Argos build.
+          This is expected for a project's first builds. Otherwise, it usually
+          means{" "}
+          {build.baseBranch ? (
+            <Code className="whitespace-nowrap">
+              <GitBranch className="mr-1 inline h-4 w-4" />
+              {build.baseBranch}
+            </Code>
+          ) : (
+            "your base branch"
+          )}{" "}
+          doesn't have an Argos build yet that this branch can compare against.
         </Paragraph>
       </>
     );
