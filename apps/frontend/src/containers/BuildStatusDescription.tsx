@@ -27,9 +27,14 @@ const _BuildFragment = graphql(`
   }
 `);
 
-export function BuildStatusDescription(props: {
-  build: DocumentType<typeof _BuildFragment>;
-}) {
+type Build = DocumentType<typeof _BuildFragment>;
+
+/**
+ * One-line (or short) description of a build's current status, dispatched by
+ * build type. Terminal error/expired states are handled first since they cut
+ * across every type; the per-type descriptions live in their own components.
+ */
+export function BuildStatusDescription(props: { build: Build }) {
   const { build } = props;
 
   if (build.status === BuildStatus.Error) {
@@ -37,76 +42,13 @@ export function BuildStatusDescription(props: {
   }
 
   if (build.status === BuildStatus.Expired) {
-    if (build.parallel) {
-      if (build.parallel.total === -1) {
-        return (
-          <>
-            <div>
-              This build expired while waiting for <Code>argos finalize</Code>.
-            </div>
-            <div>
-              <Link
-                external
-                target="_blank"
-                href="https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding#modes"
-              >
-                How to finalize in manual mode
-              </Link>
-            </div>
-
-            <div className="text-low mt-1">
-              Received {build.parallel.received} batch
-              {build.parallel.received === 1 ? "" : "es"} for nonce{" "}
-              <span className="font-mono">{build.parallel.nonce}</span>.
-            </div>
-          </>
-        );
-      }
-      return (
-        <>
-          The build was aborted because it took too long to receive all the
-          batches.
-          <br />
-          Received {build.parallel.received}/{build.parallel.total} batches with
-          nonce <span className="font-mono">{build.parallel.nonce}</span>.
-        </>
-      );
-    }
-    return <>Build has been killed because it took too much time.</>;
+    return <ExpiredBuildDescription build={build} />;
   }
 
   switch (build.type) {
     case BuildType.Orphan:
-      switch (build.status) {
-        case BuildStatus.Accepted: {
-          return <ReviewDescription build={build} />;
-        }
-        case BuildStatus.Rejected:
-          return <ReviewDescription build={build} />;
-        default: {
-          switch (build.mode) {
-            case BuildMode.Ci:
-              return (
-                <ReviewDescription build={build}>
-                  Comparing screenshot is not possible because no baseline build
-                  was found.
-                </ReviewDescription>
-              );
-            case BuildMode.Monitoring:
-              return (
-                <ReviewDescription build={build}>
-                  This build has no comparison because no previous build has
-                  been approved yet. To start comparing screenshots, you need to
-                  approve this build.
-                </ReviewDescription>
-              );
-            default:
-              assertNever(build.mode);
-          }
-        }
-      }
+      return <OrphanBuildDescription build={build} />;
 
-    // eslint-disable-next-line no-fallthrough
     case BuildType.Reference:
       return (
         <>
@@ -115,62 +57,158 @@ export function BuildStatusDescription(props: {
         </>
       );
 
-    case BuildType.Check: {
-      switch (build.status) {
-        case BuildStatus.NoChanges: {
-          invariant(build.stats, "Concluded build should have stats");
-          if (build.stats.total === 0) {
-            return (
-              <>
-                No screenshot has been uploaded. Follow one of our{" "}
-                <Link href="https://argos-ci.com/docs/quickstart">
-                  quick start guides
-                </Link>{" "}
-                to start taking screenshots.
-              </>
-            );
-          }
-          return <>This build is stable: no changes found.</>;
-        }
+    case BuildType.Check:
+      return <CheckBuildDescription build={build} />;
 
-        case BuildStatus.Aborted:
-          return <>This build has been voluntarily aborted.</>;
+    case BuildType.Skipped:
+      return <>This build has been skipped in your CI configuration.</>;
 
-        case BuildStatus.ChangesDetected:
+    case undefined:
+    case null:
+      return build.status === BuildStatus.Pending ? (
+        <>This build is scheduled to be processed.</>
+      ) : null;
+
+    default:
+      assertNever(build.type);
+  }
+}
+
+/** Why an expired build stopped — distinguishes the parallel finalize cases. */
+function ExpiredBuildDescription(props: { build: Build }) {
+  const { build } = props;
+  if (!build.parallel) {
+    return <>Build has been killed because it took too much time.</>;
+  }
+
+  if (build.parallel.total === -1) {
+    return (
+      <>
+        <div>
+          This build expired while waiting for <Code>argos finalize</Code>.
+        </div>
+        <div>
+          <Link
+            external
+            target="_blank"
+            href="https://argos-ci.com/docs/learn/how-to-guides/ci-pipelines/parallel-testing-sharding#modes"
+          >
+            How to finalize in manual mode
+          </Link>
+        </div>
+
+        <div className="text-low mt-1">
+          Received {build.parallel.received} batch
+          {build.parallel.received === 1 ? "" : "es"} for nonce{" "}
+          <span className="font-mono">{build.parallel.nonce}</span>.
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      The build was aborted because it took too long to receive all the batches.
+      <br />
+      Received {build.parallel.received}/{build.parallel.total} batches with
+      nonce <span className="font-mono">{build.parallel.nonce}</span>.
+    </>
+  );
+}
+
+/** Orphan builds: reviewed outcome, or why there is no baseline to compare. */
+function OrphanBuildDescription(props: { build: Build }) {
+  const { build } = props;
+  switch (build.status) {
+    case BuildStatus.Accepted:
+    case BuildStatus.Rejected:
+      return <ReviewDescription build={build} />;
+
+    case BuildStatus.Pending:
+    case BuildStatus.Progress:
+    case BuildStatus.NoChanges:
+    case BuildStatus.Aborted:
+    case BuildStatus.ChangesDetected:
+    case BuildStatus.Error:
+    case BuildStatus.Expired:
+      switch (build.mode) {
+        case BuildMode.Ci:
           return (
             <ReviewDescription build={build}>
-              Some changes have been detected between baseline and current
-              screenshots.
+              Comparing screenshot is not possible because no baseline build was
+              found.
             </ReviewDescription>
           );
 
-        case BuildStatus.Progress:
-          return <>This build is in progress.</>;
-        case BuildStatus.Accepted:
-          return <ReviewDescription build={build} />;
-        case BuildStatus.Rejected:
-          return <ReviewDescription build={build} />;
-        case BuildStatus.Pending:
-          return <>This build is scheduled to be processed.</>;
+        case BuildMode.Monitoring:
+          return (
+            <ReviewDescription build={build}>
+              This build has no comparison because no previous build has been
+              approved yet. To start comparing screenshots, you need to approve
+              this build.
+            </ReviewDescription>
+          );
+
         default:
-          assertNever(build.status);
+          assertNever(build.mode);
       }
-    }
+
     // eslint-disable-next-line no-fallthrough
-    case BuildType.Skipped: {
-      return <>This build has been skipped in your CI configuration.</>;
+    default:
+      assertNever(build.status);
+  }
+}
+
+/** Check builds: the common CI path (stable / changes / reviewed / running). */
+function CheckBuildDescription(props: { build: Build }) {
+  const { build } = props;
+  switch (build.status) {
+    case BuildStatus.NoChanges: {
+      invariant(build.stats, "Concluded build should have stats");
+      if (build.stats.total === 0) {
+        return (
+          <>
+            No screenshot has been uploaded. Follow one of our{" "}
+            <Link href="https://argos-ci.com/docs/quickstart">
+              quick start guides
+            </Link>{" "}
+            to start taking screenshots.
+          </>
+        );
+      }
+
+      return <>This build is stable: no changes found.</>;
     }
 
-    case undefined:
-    case null: {
-      switch (build.status) {
-        case BuildStatus.Pending:
-          return <>This build is scheduled to be processed.</>;
-      }
+    case BuildStatus.Aborted:
+      return <>This build has been voluntarily aborted.</>;
+
+    case BuildStatus.ChangesDetected:
+      return (
+        <ReviewDescription build={build}>
+          Some changes have been detected between baseline and current
+          screenshots.
+        </ReviewDescription>
+      );
+
+    case BuildStatus.Progress:
+      return <>This build is in progress.</>;
+
+    case BuildStatus.Accepted:
+    case BuildStatus.Rejected:
+      return <ReviewDescription build={build} />;
+
+    case BuildStatus.Pending:
+      return <>This build is scheduled to be processed.</>;
+
+    // Handled before dispatching on type; listed to keep the switch exhaustive.
+
+    case BuildStatus.Error:
+    case BuildStatus.Expired:
       return null;
-    }
+
     default:
-      assertNever(build.type);
+      assertNever(build.status);
   }
 }
 

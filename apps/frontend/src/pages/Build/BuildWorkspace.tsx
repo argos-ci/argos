@@ -146,10 +146,12 @@ export function BuildWorkspace(props: {
                   if (
                     !params.diffId &&
                     build.type !== BuildType.Skipped &&
-                    (build.stats?.total ?? 0) > 0
+                    ((build.stats?.total ?? 0) > 0 ||
+                      build.type === BuildType.Orphan)
                   ) {
                     return <BuildOverview build={build} />;
                   }
+
                   return (
                     build && <BuildDetail build={build} repoUrl={repoUrl} />
                   );

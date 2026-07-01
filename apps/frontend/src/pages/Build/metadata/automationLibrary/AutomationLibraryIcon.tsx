@@ -1,5 +1,7 @@
 import { FlaskConicalIcon } from "lucide-react";
 
+import { capitalize } from "@/util/string";
+
 import cypressIcon from "./logos/cypress.svg";
 import playwrightIcon from "./logos/playwright.svg";
 import puppeteerIcon from "./logos/puppeteer.svg";
@@ -31,10 +33,7 @@ const automationLibraries: Record<string, AutomationLibrary> = {
 
 /** Returns the display label for an automation library package name. */
 export function getAutomationLibraryLabel(name: string): string {
-  return (
-    automationLibraries[name.toLowerCase()]?.label ??
-    name.charAt(0).toUpperCase() + name.slice(1)
-  );
+  return automationLibraries[name.toLowerCase()]?.label ?? capitalize(name);
 }
 
 /** Returns the logo for an automation library package name, if any. */

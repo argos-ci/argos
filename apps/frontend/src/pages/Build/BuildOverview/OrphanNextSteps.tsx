@@ -1,14 +1,13 @@
 import { LightBulbIcon } from "@primer/octicons-react";
-import { GitBranch } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode } from "@/gql/graphql";
-import { Code } from "@/ui/Code";
 import { Link } from "@/ui/Link";
 
 import { getProjectURL } from "../../Project/ProjectParams";
 import { useBuildParams } from "../BuildParams";
 import {
+  BranchTag,
   Emphasis,
   GuidanceStep,
   GuidanceStepTitle,
@@ -26,18 +25,6 @@ const _BuildFragment = graphql(`
 `);
 
 type Build = DocumentType<typeof _BuildFragment>;
-
-/** The base branch name, or a generic fallback when it isn't known. */
-function BaseBranch(props: { branch: string | null }) {
-  return props.branch ? (
-    <Code className="whitespace-nowrap">
-      <GitBranch className="mr-1 inline h-4 w-4" />
-      {props.branch}
-    </Code>
-  ) : (
-    <>your base branch</>
-  );
-}
 
 export function OrphanNextSteps(props: { build: Build }) {
   const { build } = props;
@@ -60,7 +47,8 @@ export function OrphanNextSteps(props: { build: Build }) {
       <ol className="flex flex-col gap-3 text-sm">
         <GuidanceStep index={1}>
           <GuidanceStepTitle>Record a baseline</GuidanceStepTitle>
-          Run Argos in CI on <BaseBranch branch={build.baseBranch} />
+          Run Argos in CI on{" "}
+          <BranchTag name={build.baseBranch} fallback="your base branch" />
           {build.pullRequest ? " — usually by merging this pull request" : ""}.
           Its first build there is approved automatically and becomes the{" "}
           <Link
@@ -73,8 +61,9 @@ export function OrphanNextSteps(props: { build: Build }) {
         </GuidanceStep>
         <GuidanceStep index={2}>
           <GuidanceStepTitle>Compare on future builds</GuidanceStepTitle> Once{" "}
-          <BaseBranch branch={build.baseBranch} /> has a build, your following
-          builds compare against it automatically and surface visual changes.
+          <BranchTag name={build.baseBranch} fallback="your base branch" /> has
+          a build, your following builds compare against it automatically and
+          surface visual changes.
         </GuidanceStep>
       </ol>
       {params ? (

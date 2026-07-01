@@ -108,8 +108,10 @@ export function ReviewStatusIndicator(props: { build: Build }) {
       );
 
     case BuildStatus.ChangesDetected:
-      throw new Error(
-        "Changes detected should be handled by the `reviewNeeded` check above, and should not be displayed in this component.",
+      return (
+        <ReviewStatusItem color="warning">
+          Review required before merging
+        </ReviewStatusItem>
       );
 
     case BuildStatus.Error:

@@ -38,11 +38,15 @@ function stripCommonWords(names: string[]): string[] {
     return names;
   }
   const rows = names.map((name) => name.split(" "));
+  const firstRow = rows[0];
+  if (!firstRow) {
+    return names;
+  }
   const minLength = Math.min(...rows.map((row) => row.length));
   let prefix = 0;
   while (
     prefix < minLength &&
-    rows.every((row) => row[prefix] === rows[0]![prefix])
+    rows.every((row) => row[prefix] === firstRow[prefix])
   ) {
     prefix++;
   }
@@ -51,7 +55,7 @@ function stripCommonWords(names: string[]): string[] {
     suffix < minLength - prefix &&
     rows.every(
       (row) =>
-        row[row.length - 1 - suffix] === rows[0]![rows[0]!.length - 1 - suffix],
+        row[row.length - 1 - suffix] === firstRow[firstRow.length - 1 - suffix],
     )
   ) {
     suffix++;

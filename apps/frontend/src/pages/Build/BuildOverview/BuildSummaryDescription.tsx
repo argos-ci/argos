@@ -1,12 +1,10 @@
 import React from "react";
-import { GitBranch } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildStatus, BuildType } from "@/gql/graphql";
 
-import { Code } from "../../../ui/Code";
 import { useBuildDiffState } from "../BuildDiffState";
-import { Emphasis } from "./shared";
+import { BranchTag, Emphasis } from "./shared";
 
 const _BuildFragment = graphql(`
   fragment BuildSummaryDescription_Build on Build {
@@ -22,18 +20,6 @@ type Build = DocumentType<typeof _BuildFragment>;
 
 function Paragraph(props: { children: React.ReactNode }) {
   return <div className="mt-2 text-balance">{props.children}</div>;
-}
-
-/** A branch name rendered as a chip, or a plain-text fallback when unknown. */
-function BranchTag(props: { name: string | null; fallback: string }) {
-  return props.name ? (
-    <Code className="whitespace-nowrap">
-      <GitBranch className="mr-1 inline h-4 w-4" />
-      {props.name}
-    </Code>
-  ) : (
-    <>{props.fallback}</>
-  );
 }
 
 function ChangesResume() {
