@@ -103,7 +103,8 @@ export const typeDefs = gql`
     lastSubscription: AccountSubscription
     teams: [Team!]!
     invites: [TeamInvite!]!
-    ghInstallations: GhApiInstallationConnection!
+    "The GitHub app installations accessible to the user. Null when the user has no usable GitHub connection (never linked, or the token has expired or been revoked)."
+    ghInstallations: GhApiInstallationConnection
     projectsContributedOn(
       after: Int = 0
       first: Int = 30
@@ -444,12 +445,15 @@ export const resolvers: IResolvers = {
         account.id === ctx.auth.account.id,
         "ghInstallations can only be accessed by the authenticated user",
       );
+      // Return `null` when there is no usable GitHub connection so the client
+      // can tell "the token is invalid, ask the user to (re)connect" apart from
+      // "the token is valid but no app is installed".
       if (!account.githubAccountId) {
-        return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
+        return null;
       }
       const githubAccount = await account.$relatedQuery("githubAccount");
       if (!githubAccount?.accessToken) {
-        return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
+        return null;
       }
       const octokit = getTokenOctokit({
         token: githubAccount.accessToken,
@@ -467,9 +471,9 @@ export const resolvers: IResolvers = {
           },
         };
       } catch (error) {
-        // If the token has been revoked, we should return an empty list.
+        // If the token has been revoked, the connection is no longer usable.
         if (checkOctokitErrorStatus(401, error)) {
-          return { edges: [], pageInfo: { hasNextPage: false, totalCount: 0 } };
+          return null;
         }
 
         throw error;
