@@ -78,6 +78,14 @@ export function ReviewStatusIndicator(props: { build: Build }) {
     );
   }
 
+  if (build.type === BuildType.Reference) {
+    return (
+      <ReviewStatusItem color="success">
+        Approved automatically
+      </ReviewStatusItem>
+    );
+  }
+
   if (build.type !== BuildType.Check) {
     return null;
   }

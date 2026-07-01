@@ -13,6 +13,7 @@ const _BuildFragment = graphql(`
     type
     status
     mode
+    branch
     baseBranch
   }
 `);
@@ -21,6 +22,18 @@ type Build = DocumentType<typeof _BuildFragment>;
 
 function Paragraph(props: { children: React.ReactNode }) {
   return <div className="mt-2 text-balance">{props.children}</div>;
+}
+
+/** A branch name rendered as a chip, or a plain-text fallback when unknown. */
+function BranchTag(props: { name: string | null; fallback: string }) {
+  return props.name ? (
+    <Code className="whitespace-nowrap">
+      <GitBranch className="mr-1 inline h-4 w-4" />
+      {props.name}
+    </Code>
+  ) : (
+    <>{props.fallback}</>
+  );
 }
 
 function ChangesResume() {
@@ -43,14 +56,7 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
         <Paragraph>
           This is expected for a project's first builds. Otherwise, it usually
           means{" "}
-          {build.baseBranch ? (
-            <Code className="whitespace-nowrap">
-              <GitBranch className="mr-1 inline h-4 w-4" />
-              {build.baseBranch}
-            </Code>
-          ) : (
-            "your base branch"
-          )}{" "}
+          <BranchTag name={build.baseBranch} fallback="your base branch" />{" "}
           doesn't have an Argos build yet that this branch can compare against.
         </Paragraph>
       </>
@@ -78,8 +84,9 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
   if (build.type === BuildType.Reference) {
     return (
       <Paragraph>
-        This build ran on the <Emphasis>base branch</Emphasis> and was
-        automatically approved. It serves as a baseline for future comparisons.
+        This build ran on{" "}
+        <BranchTag name={build.branch} fallback="your base branch" />, so it now
+        serves as the baseline that future builds are compared against.
       </Paragraph>
     );
   }

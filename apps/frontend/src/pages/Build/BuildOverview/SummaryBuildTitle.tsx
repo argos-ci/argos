@@ -27,7 +27,7 @@ function getBuildSummaryTitle(props: { build: Build; hasFailures: boolean }) {
   }
 
   if (props.build.type === BuildType.Reference) {
-    return descriptor.label;
+    return "New baseline";
   }
 
   switch (props.build.status) {
