@@ -1,10 +1,23 @@
 import { raw } from "objection";
 
-import { Screenshot, ScreenshotDiff, type Build } from "@/database/models";
+import {
+  Screenshot,
+  ScreenshotBucket,
+  ScreenshotDiff,
+  type Build,
+} from "@/database/models";
+
+import { getPreviousDiffApprovalIds } from "./approval";
 
 type BuildImpactItem = {
   name: string;
   count: number;
+};
+
+/** The single most-changed entity of a build, with its diff score. */
+type BuildImpactChange = {
+  name: string;
+  score: number;
 };
 
 export type BuildImpactAnalysis = {
@@ -14,8 +27,11 @@ export type BuildImpactAnalysis = {
   buildBrowsers: string[];
   changedColorSchemes: string[];
   buildColorSchemes: string[];
+  changedViewports: string[];
   buildViewports: string[];
   buildAutomationLibraries: string[];
+  largestChange: BuildImpactChange | null;
+  previouslyApprovedCount: number;
   affectedComponents: BuildImpactItem[];
   affectedStories: BuildImpactItem[];
   affectedTests: BuildImpactItem[];
@@ -25,6 +41,12 @@ type ChangedRow = {
   group: string | null;
   browser: string | null;
   colorScheme: string | null;
+  viewportWidth: string | null;
+  viewportHeight: string | null;
+  score: number | null;
+  storyId: string | null;
+  testTitle: string | null;
+  name: string | null;
 };
 
 type AffectedRow = {
@@ -44,11 +66,16 @@ function distinct(values: (string | null)[]): string[] {
   return Array.from(new Set(values.filter((value) => value !== null))).sort();
 }
 
+type ViewportRow = {
+  viewportWidth: string | null;
+  viewportHeight: string | null;
+};
+
 /**
  * Distinct viewport sizes formatted as "width×height", ordered from smallest
  * to largest area (mobile → desktop).
  */
-function distinctViewports(rows: BucketRow[]): string[] {
+function distinctViewports(rows: ViewportRow[]): string[] {
   const viewports = new Map<string, number>();
   for (const row of rows) {
     const width = row.viewportWidth ? Number(row.viewportWidth) : NaN;
@@ -91,49 +118,71 @@ function getStoryComponent(storyId: string): string {
 export async function getBuildImpactAnalysis(
   build: Build,
 ): Promise<BuildImpactAnalysis> {
-  const [changedRows, affectedRows, bucketRows] = await Promise.all([
-    ScreenshotDiff.query()
-      .where("screenshot_diffs.buildId", build.id)
-      .whereNotNull("screenshot_diffs.baseScreenshotId")
-      .whereNotNull("screenshot_diffs.compareScreenshotId")
-      .where("screenshot_diffs.score", ">", 0)
-      .where("screenshot_diffs.ignored", false)
-      .joinRelated("compareScreenshot")
-      .select(
-        "screenshot_diffs.group",
-        raw(`"compareScreenshot"."metadata"->'browser'->>'name'`).as("browser"),
-        raw(`"compareScreenshot"."metadata"->>'colorScheme'`).as("colorScheme"),
-      )
-      .castTo<ChangedRow[]>(),
-    // Components/tests impacted by the build: changed screenshots AND brand-new
-    // (added) ones. Added screenshots have no base, so they're excluded from
-    // `changedRows`, but they still affect their component/test.
-    ScreenshotDiff.query()
-      .where("screenshot_diffs.buildId", build.id)
-      .whereNotNull("screenshot_diffs.compareScreenshotId")
-      .where("screenshot_diffs.ignored", false)
-      .where((qb) =>
-        qb
-          .whereNull("screenshot_diffs.baseScreenshotId")
-          .orWhere("screenshot_diffs.score", ">", 0),
-      )
-      .joinRelated("compareScreenshot")
-      .select(
-        raw(`"compareScreenshot"."metadata"->'story'->>'id'`).as("storyId"),
-        raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as("testTitle"),
-      )
-      .castTo<AffectedRow[]>(),
-    Screenshot.query()
-      .where("screenshotBucketId", build.compareScreenshotBucketId)
-      .distinct(
-        raw(`"metadata"->'browser'->>'name'`).as("browser"),
-        raw(`"metadata"->>'colorScheme'`).as("colorScheme"),
-        raw(`"metadata"->'viewport'->>'width'`).as("viewportWidth"),
-        raw(`"metadata"->'viewport'->>'height'`).as("viewportHeight"),
-        raw(`"metadata"->'automationLibrary'->>'name'`).as("automationLibrary"),
-      )
-      .castTo<BucketRow[]>(),
-  ]);
+  const [changedRows, affectedRows, bucketRows, compareBucket] =
+    await Promise.all([
+      ScreenshotDiff.query()
+        .where("screenshot_diffs.buildId", build.id)
+        .whereNotNull("screenshot_diffs.baseScreenshotId")
+        .whereNotNull("screenshot_diffs.compareScreenshotId")
+        .where("screenshot_diffs.score", ">", 0)
+        .where("screenshot_diffs.ignored", false)
+        .joinRelated("compareScreenshot")
+        .select(
+          "screenshot_diffs.group",
+          "screenshot_diffs.score",
+          raw(`"compareScreenshot"."name"`).as("name"),
+          raw(`"compareScreenshot"."metadata"->'browser'->>'name'`).as(
+            "browser",
+          ),
+          raw(`"compareScreenshot"."metadata"->>'colorScheme'`).as(
+            "colorScheme",
+          ),
+          raw(`"compareScreenshot"."metadata"->'viewport'->>'width'`).as(
+            "viewportWidth",
+          ),
+          raw(`"compareScreenshot"."metadata"->'viewport'->>'height'`).as(
+            "viewportHeight",
+          ),
+          raw(`"compareScreenshot"."metadata"->'story'->>'id'`).as("storyId"),
+          raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as(
+            "testTitle",
+          ),
+        )
+        .castTo<ChangedRow[]>(),
+      // Components/tests impacted by the build: changed screenshots AND brand-new
+      // (added) ones. Added screenshots have no base, so they're excluded from
+      // `changedRows`, but they still affect their component/test.
+      ScreenshotDiff.query()
+        .where("screenshot_diffs.buildId", build.id)
+        .whereNotNull("screenshot_diffs.compareScreenshotId")
+        .where("screenshot_diffs.ignored", false)
+        .where((qb) =>
+          qb
+            .whereNull("screenshot_diffs.baseScreenshotId")
+            .orWhere("screenshot_diffs.score", ">", 0),
+        )
+        .joinRelated("compareScreenshot")
+        .select(
+          raw(`"compareScreenshot"."metadata"->'story'->>'id'`).as("storyId"),
+          raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as(
+            "testTitle",
+          ),
+        )
+        .castTo<AffectedRow[]>(),
+      Screenshot.query()
+        .where("screenshotBucketId", build.compareScreenshotBucketId)
+        .distinct(
+          raw(`"metadata"->'browser'->>'name'`).as("browser"),
+          raw(`"metadata"->>'colorScheme'`).as("colorScheme"),
+          raw(`"metadata"->'viewport'->>'width'`).as("viewportWidth"),
+          raw(`"metadata"->'viewport'->>'height'`).as("viewportHeight"),
+          raw(`"metadata"->'automationLibrary'->>'name'`).as(
+            "automationLibrary",
+          ),
+        )
+        .castTo<BucketRow[]>(),
+      ScreenshotBucket.query().findById(build.compareScreenshotBucketId),
+    ]);
 
   // Diffs sharing a group are the same visual change; ungrouped diffs each
   // count as their own change.
@@ -147,6 +196,29 @@ export async function getBuildImpactAnalysis(
     }
   }
 
+  // The single most-changed entity, used to convey the build's severity at a
+  // glance. Prefer the component, fall back to the test, then the raw name.
+  let largestChange: BuildImpactChange | null = null;
+  for (const row of changedRows) {
+    const score = row.score === null ? 0 : Number(row.score);
+    if (largestChange && score <= largestChange.score) {
+      continue;
+    }
+    const name =
+      (row.storyId ? getStoryComponent(row.storyId) : null) ??
+      row.testTitle ??
+      row.name;
+    if (name) {
+      largestChange = { name, score };
+    }
+  }
+
+  // Changes whose fingerprint was already approved on a previous build: they
+  // let the reviewer collapse the perceived scope ("N already approved").
+  const previouslyApprovedCount = compareBucket
+    ? (await getPreviousDiffApprovalIds({ build, compareBucket })).length
+    : 0;
+
   const affectedStoryIds = affectedRows.map((row) => row.storyId);
 
   return {
@@ -156,7 +228,10 @@ export async function getBuildImpactAnalysis(
     buildBrowsers: distinct(bucketRows.map((row) => row.browser)),
     changedColorSchemes: distinct(changedRows.map((row) => row.colorScheme)),
     buildColorSchemes: distinct(bucketRows.map((row) => row.colorScheme)),
+    changedViewports: distinctViewports(changedRows),
     buildViewports: distinctViewports(bucketRows),
+    largestChange,
+    previouslyApprovedCount,
     buildAutomationLibraries: distinct(
       bucketRows.map((row) => row.automationLibrary),
     ),

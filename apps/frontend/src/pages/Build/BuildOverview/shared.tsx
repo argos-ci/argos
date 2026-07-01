@@ -12,28 +12,6 @@ export function Emphasis(props: {
   );
 }
 
-/**
- * A single metric — icon, large number, caption — shared by the review-scope
- * and verified-coverage blocks. The container controls layout (grid cell,
- * divided row…) via `className`.
- */
-export function Stat(props: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  value: React.ReactNode;
-  label: string;
-  className?: string;
-}) {
-  return (
-    <div className={clsx("flex flex-col gap-1", props.className)}>
-      <props.icon className="text-primary-low size-5" strokeWidth={1.5} />
-      <div className="text-default mt-0.5 text-lg leading-none font-bold tabular-nums">
-        {props.value}
-      </div>
-      <div className="text-low text-xs">{props.label}</div>
-    </div>
-  );
-}
-
 /** A numbered step in a guidance list, with a circled index and content. */
 export function GuidanceStep(props: {
   index: number;

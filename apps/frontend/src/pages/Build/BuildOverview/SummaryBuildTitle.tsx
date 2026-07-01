@@ -1,3 +1,5 @@
+import { assertNever } from "@argos/util/assertNever";
+
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType } from "@/gql/graphql";
 import { getBuildDescriptor } from "@/util/build";
@@ -40,8 +42,15 @@ function getBuildSummaryTitle(props: { build: Build; hasFailures: boolean }) {
     case BuildStatus.NoChanges:
       return "No changes detected";
 
-    default:
+    case BuildStatus.Aborted:
+    case BuildStatus.Error:
+    case BuildStatus.Expired:
+    case BuildStatus.Pending:
+    case BuildStatus.Progress:
       return descriptor.label;
+
+    default:
+      assertNever(props.build.status);
   }
 }
 

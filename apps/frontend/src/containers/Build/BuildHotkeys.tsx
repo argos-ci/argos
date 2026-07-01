@@ -63,7 +63,7 @@ const hotkeyGroups = [
       startReview: {
         keys: ["Enter"],
         displayKeys: ["↵"],
-        description: "Start reviewing changes",
+        description: "Review changes",
         envs: ["build"],
       },
       goToPreviousDiff: {

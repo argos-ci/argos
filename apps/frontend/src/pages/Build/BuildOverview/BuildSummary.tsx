@@ -8,16 +8,15 @@ import { ShortcutHint } from "@/ui/ShortcutHint";
 
 import { useBuildDiffState, useGoToNextDiff } from "../BuildDiffState";
 import { BuildSummaryDescription } from "./BuildSummaryDescription";
+import { ChangeSummary } from "./ChangeSummary";
 import { OrphanNextSteps } from "./OrphanNextSteps";
 import perfectMatchDarkUrl from "./perfect-match-2-dark.png";
 import perfectMatchUrl from "./perfect-match-2.png";
-import { ReviewScope } from "./ReviewScope";
 import {
   ReviewStatusIndicator,
   useReviewNeeded,
 } from "./ReviewStatusIndicator";
 import { SummaryBuildTitle } from "./SummaryBuildTitle";
-import { WhatToDoNow } from "./WhatToDoNow";
 
 const _BuildFragment = graphql(`
   fragment BuildSummary_Build on Build {
@@ -27,17 +26,11 @@ const _BuildFragment = graphql(`
     stats {
       total
     }
-    impactAnalysis {
-      buildBrowsers
-      buildViewports
-      buildColorSchemes
-    }
     ...SummaryBuildTitle_Build
     ...ReviewStatusIndicator_Build
     ...BuildSummaryDescription_Build
-    ...ReviewScope_Build
+    ...ChangeSummary_Build
     ...OrphanNextSteps_Build
-    ...WhatToDoNow_Build
   }
 `);
 
@@ -52,14 +45,20 @@ function BrowseScreenshotSection(props: { build: Build }) {
 
   return (
     <div className="mt-3 space-y-4">
+      {hasFailures && (
+        <div className="mt-2 text-balance">
+          The failure screenshots can still help you understand what went wrong:
+        </div>
+      )}
+
       {reviewNeeded ? (
         <Button autoFocus onPress={browse}>
-          Start review
+          Review changes
           <Kbd className="ml-2 bg-white/25 text-white">↵</Kbd>
         </Button>
       ) : (
         <Button autoFocus variant="secondary" onPress={browse}>
-          Browse screenshots
+          {hasFailures ? "Browse test failures" : "Browse screenshots"}
           <Kbd className="ml-2">↵</Kbd>
         </Button>
       )}
@@ -88,8 +87,8 @@ function PerfectMatchIllustration() {
   );
 }
 
-export function BuildSummary(props: { build: Build; hasRepository: boolean }) {
-  const { build, hasRepository } = props;
+export function BuildSummary(props: { build: Build }) {
+  const { build } = props;
   const { stats } = useBuildDiffState();
   const hasFailures = Boolean(stats?.failure);
   const reviewableCount = stats
@@ -104,19 +103,17 @@ export function BuildSummary(props: { build: Build; hasRepository: boolean }) {
       <div className="flex flex-col gap-2">
         <SummaryBuildTitle build={build} hasFailures={hasFailures} />
         <ReviewStatusIndicator build={build} />
-        <BuildSummaryDescription build={build} />
+        {reviewNeeded ? (
+          <ChangeSummary build={build} />
+        ) : (
+          <BuildSummaryDescription build={build} />
+        )}
         {isOrphan && <OrphanNextSteps build={build} />}
 
-        <BrowseScreenshotSection build={build} />
+        <div className="mt-6 flex gap-2">
+          <BrowseScreenshotSection build={build} />
+        </div>
       </div>
-
-      {reviewNeeded && !hasFailures && (
-        <ReviewScope build={build} screenshotCount={reviewableCount} />
-      )}
-
-      {!isOrphan && reviewNeeded && (
-        <WhatToDoNow build={build} hasRepository={hasRepository} />
-      )}
 
       {perfectMatch && !isOrphan && <PerfectMatchIllustration />}
     </section>

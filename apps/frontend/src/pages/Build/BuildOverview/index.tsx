@@ -35,8 +35,8 @@ const AsideSection = ({ children }: { children: React.ReactNode }) => (
   <div className="border-t-thin mt-8 pt-8">{children}</div>
 );
 
-export function BuildOverview(props: { build: Build; hasRepository: boolean }) {
-  const { build, hasRepository } = props;
+export function BuildOverview(props: { build: Build }) {
+  const { build } = props;
   const goToFirstDiff = useGoToNextDiff();
   useBuildHotkey("goToNextDiff", goToFirstDiff);
   useBuildHotkey("acceptDiff", goToFirstDiff);
@@ -49,8 +49,8 @@ export function BuildOverview(props: { build: Build; hasRepository: boolean }) {
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 p-6 lg:flex-row lg:gap-8">
-        <main className="flex flex-1 flex-col gap-10 overflow-hidden">
-          <BuildSummary build={build} hasRepository={hasRepository} />
+        <main className="flex min-w-0 flex-1 flex-col gap-10">
+          <BuildSummary build={build} />
           <ImpactAnalysisSection build={build} />
         </main>
         <Aside>

@@ -55,7 +55,7 @@ buildExamples.forEach((build) => {
     if (build.compare !== false) {
       await expect(page).toHaveURL(new RegExp(`/builds/${number}/overview$`));
       const startButton = page.getByRole("button", {
-        name: /^(Start review|Browse screenshots)/,
+        name: /^(Review changes|Browse screenshots)/,
       });
       await expect(startButton).toBeVisible();
       await screenshot(page, `build-overview-${build.name}`, {

@@ -31,7 +31,7 @@ function ChangesResume() {
 
 export function BuildSummaryDescription({ build }: { build: Build }) {
   const { stats } = useBuildDiffState();
-  const hasFailures = Boolean(stats?.failure);
+  const hasFailures = stats && Boolean(stats.failure);
 
   if (build.type === BuildType.Orphan) {
     return (
@@ -51,11 +51,11 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
       <>
         <Paragraph>
           <Emphasis className="text-danger-low">
-            At least one test failed in this build.
+            {stats.failure} test{stats.failure > 1 ? "s" : ""} failed in this
+            build.
           </Emphasis>{" "}
           Its screenshots may be incomplete or show a broken state, so reviewing
-          the changes won't be meaningful. The failure screenshots can still
-          help you understand what went wrong.
+          the changes won't be meaningful.
         </Paragraph>
         <Paragraph>
           Fix the failing tests and re-run to get a build worth comparing.
@@ -78,36 +78,25 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
       return <ChangesResume />;
 
     case BuildStatus.Accepted:
-      return (
-        <>
-          {build.mode === BuildMode.Monitoring ? (
-            <Paragraph>
-              The visual changes were approved. This build is now the baseline
-              for future comparisons.
-            </Paragraph>
-          ) : (
-            <Paragraph>
-              The visual changes were approved — the status check now passes.
-              This build will become the baseline once its pull request is
-              merged.
-            </Paragraph>
-          )}
-        </>
+      return build.mode === BuildMode.Monitoring ? (
+        <Paragraph>
+          The visual changes were approved. This build is now the baseline for
+          future comparisons.
+        </Paragraph>
+      ) : (
+        <Paragraph>
+          The visual changes were approved — the status check now passes. This
+          build will become the baseline once its pull request is merged.
+        </Paragraph>
       );
 
     case BuildStatus.Rejected:
       return (
-        <>
-          <Paragraph>The visual changes in this build were rejected.</Paragraph>
-        </>
+        <Paragraph>The visual changes in this build were rejected.</Paragraph>
       );
 
     case BuildStatus.NoChanges:
-      return (
-        <>
-          <Paragraph>Every screenshot matches the baseline.</Paragraph>
-        </>
-      );
+      return <Paragraph>All screenshots match the baseline.</Paragraph>;
 
     default:
       return null;

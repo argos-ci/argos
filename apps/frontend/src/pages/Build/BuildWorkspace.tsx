@@ -148,12 +148,7 @@ export function BuildWorkspace(props: {
                     build.type !== BuildType.Skipped &&
                     (build.stats?.total ?? 0) > 0
                   ) {
-                    return (
-                      <BuildOverview
-                        build={build}
-                        hasRepository={Boolean(project.repository)}
-                      />
-                    );
+                    return <BuildOverview build={build} />;
                   }
                   return (
                     build && <BuildDetail build={build} repoUrl={repoUrl} />

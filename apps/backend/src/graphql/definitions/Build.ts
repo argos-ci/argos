@@ -183,6 +183,13 @@ export const typeDefs = gql`
     count: Int!
   }
 
+  "The single most-changed entity of a build, with its diff score"
+  type BuildImpactChange {
+    name: String!
+    "Diff score of the change, between 0 and 1"
+    score: Float!
+  }
+
   "Aggregated analysis of the visual changes of a build"
   type BuildImpactAnalysis {
     "Number of changed screenshots"
@@ -197,10 +204,16 @@ export const typeDefs = gql`
     changedColorSchemes: [String!]!
     "Distinct color schemes among all screenshots of the build"
     buildColorSchemes: [String!]!
+    "Distinct viewport sizes among changed screenshots, smallest first"
+    changedViewports: [String!]!
     "Distinct viewport sizes among all screenshots of the build, smallest first"
     buildViewports: [String!]!
     "Distinct automation libraries (Storybook, Playwright…) used in the build"
     buildAutomationLibraries: [String!]!
+    "The single most-changed entity, conveying the build's severity"
+    largestChange: BuildImpactChange
+    "Number of changed screenshots already approved on a previous build"
+    previouslyApprovedCount: Int!
     "Storybook components affected by changes, most affected first"
     affectedComponents: [BuildImpactItem!]!
     "Storybook stories affected by changes, most affected first"
