@@ -56,7 +56,7 @@ function capitalize(value: string): string {
  * gets the one accent-colored treatment of the sentence (counts stay plain).
  */
 function EntityName(props: { children: React.ReactNode }) {
-  return <span className="text-primary-low font-medium">{props.children}</span>;
+  return <span className="text-primary-low font-thin">{props.children}</span>;
 }
 
 /** Render entity names as accent anchors, joined with commas and "and". */
