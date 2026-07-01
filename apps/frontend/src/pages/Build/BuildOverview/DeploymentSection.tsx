@@ -52,7 +52,7 @@ export function DeploymentSection(props: { build: Build }) {
             </span>
           </div>
           <div className="max-w-full min-w-0 truncate">
-            <Link href={deployment.url} target="_blank">
+            <Link href={deployment.url} external target="_blank">
               {deployment.url}
             </Link>
           </div>
@@ -61,6 +61,7 @@ export function DeploymentSection(props: { build: Build }) {
         <p className="text-sm">
           <Link
             href="https://argos-ci.com/docs/learn/deployments"
+            external
             target="_blank"
           >
             Set up Storybook deployments

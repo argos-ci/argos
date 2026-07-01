@@ -91,6 +91,7 @@ export function BuildSummary(props: { build: Build }) {
   const reviewNeeded = useReviewNeeded(build);
   const perfectMatch = reviewableCount === 0 && !hasFailures;
   const isOrphan = build.type === BuildType.Orphan;
+  const hasScreenshots = (stats?.total ?? 0) > 0;
 
   return (
     <section className="flex flex-col gap-10">
@@ -105,7 +106,7 @@ export function BuildSummary(props: { build: Build }) {
           )}
         </div>
         {isOrphan && <OrphanNextSteps build={build} />}
-        <BrowseScreenshotSection build={build} />
+        {hasScreenshots && <BrowseScreenshotSection build={build} />}
       </div>
 
       {perfectMatch && !isOrphan && <PerfectMatchIllustration />}

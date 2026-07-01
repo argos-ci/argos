@@ -1,3 +1,5 @@
+import { capitalize } from "@/util/string";
+
 /**
  * Maps a browser name to its display label. Kept free of logo imports so it can
  * be used eagerly without pulling in the (lazily-loaded) `BrowserIcon` assets.
@@ -14,8 +16,5 @@ const browserLabels: Record<string, string> = {
 
 /** Returns the display label for a browser name. */
 export function getBrowserLabel(name: string): string {
-  return (
-    browserLabels[name.toLowerCase()] ??
-    name.charAt(0).toUpperCase() + name.slice(1)
-  );
+  return browserLabels[name.toLowerCase()] ?? capitalize(name);
 }

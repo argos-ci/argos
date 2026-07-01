@@ -1,4 +1,7 @@
 import { clsx } from "clsx";
+import { GitBranch } from "lucide-react";
+
+import { Code } from "@/ui/Code";
 
 /** Bolded inline text used to highlight a phrase within a sentence. */
 export function Emphasis(props: {
@@ -9,6 +12,21 @@ export function Emphasis(props: {
     <strong className={clsx("font-medium", props.className)}>
       {props.children}
     </strong>
+  );
+}
+
+/**
+ * A branch name rendered as a chip with a git-branch icon, or a plain-text
+ * fallback when the name is unknown.
+ */
+export function BranchTag(props: { name: string | null; fallback: string }) {
+  return props.name ? (
+    <Code className="whitespace-nowrap">
+      <GitBranch className="mr-1 inline h-4 w-4" />
+      {props.name}
+    </Code>
+  ) : (
+    <>{props.fallback}</>
   );
 }
 

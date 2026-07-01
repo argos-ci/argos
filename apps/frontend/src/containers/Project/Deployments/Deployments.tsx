@@ -100,6 +100,7 @@ function DeploymentsCard(props: {
           Learn more about{" "}
           <Link
             href="https://argos-ci.com/docs/learn/deployments"
+            external
             target="_blank"
           >
             deployments

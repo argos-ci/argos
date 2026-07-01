@@ -18,6 +18,7 @@ import {
 } from "@/gql/graphql";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
+import { capitalize } from "@/util/string";
 
 import {
   AutomationLibraryIcon,
@@ -54,10 +55,6 @@ const _BuildFragment = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 /** Single icon representing the color schemes covered by the build. */
 function ColorSchemeIcon(props: {
   colorSchemes: string[];
@@ -91,6 +88,25 @@ function DefinitionRow(props: {
         <Truncable className="min-w-0">{props.children}</Truncable>
       </span>
     </div>
+  );
+}
+
+function CompareToField(props: {
+  baseBranch?: string | null;
+  baseBuild?: { number: number } | null;
+}) {
+  const { baseBranch, baseBuild } = props;
+
+  if (!baseBranch && !baseBuild) {
+    return <span className="text-low">No baseline yet</span>;
+  }
+
+  return (
+    <>
+      {baseBranch ? <span className="font-mono">{baseBranch}</span> : null}
+      {baseBranch && baseBuild ? <span className="text-low"> · </span> : null}
+      {baseBuild ? <span className="text-low">#{baseBuild.number}</span> : null}
+    </>
   );
 }
 
@@ -130,12 +146,12 @@ export function ContextSection(props: { build: Build }) {
             {frameworkLabel}
           </DefinitionRow>
         ) : null}
-        {browsers.length > 0 ? (
+        {browsers.length > 0 && browsers[0] ? (
           <DefinitionRow
             label="Browser"
             icon={
               <BrowserIcon
-                browser={{ name: browsers[0]! }}
+                browser={{ name: browsers[0] }}
                 className="size-4 shrink-0"
               />
             }
@@ -181,22 +197,12 @@ export function ContextSection(props: { build: Build }) {
           </DefinitionRow>
         ) : null}
 
-        {build.type === BuildType.Orphan ? (
+        {build.type === BuildType.Orphan || baseBranch || baseBuild ? (
           <DefinitionRow
             label="Compared to"
             icon={<GitPullRequestArrowIcon className="text-low size-4" />}
           >
-            <span className="text-low">No baseline yet</span>
-          </DefinitionRow>
-        ) : baseBranch || baseBuild ? (
-          <DefinitionRow
-            label="Compared to"
-            icon={<GitPullRequestArrowIcon className="text-low size-4" />}
-          >
-            {baseBranch ?? `Build #${baseBuild!.number}`}
-            {baseBranch && baseBuild ? (
-              <span className="text-low"> · #{baseBuild.number}</span>
-            ) : null}
+            <CompareToField baseBranch={baseBranch} baseBuild={baseBuild} />
           </DefinitionRow>
         ) : null}
         <DefinitionRow

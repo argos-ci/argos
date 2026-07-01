@@ -13,6 +13,7 @@ import {
 
 import { DocumentType, graphql } from "@/gql";
 import { lowTextColorClassNames, UIColor } from "@/util/colors";
+import { capitalize } from "@/util/string";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { getBrowserLabel } from "../metadata/browser/browserLabels";
@@ -47,10 +48,6 @@ const _BuildFragment = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 type ImpactAnalysis = NonNullable<Build["impactAnalysis"]>;
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 /**
  * The affected component/test name — the reviewer's recognition anchor, so it
@@ -195,12 +192,21 @@ function ChangeSentence(props: {
     );
   }
 
-  // Concentrated: one entity holds the bulk of the changes.
+  // Concentrated: one entity holds the bulk of the changes. Requires more than
+  // one unique change — a single change can't read as "mostly in X plus others".
   const totalAffected = entities.reduce((sum, entity) => sum + entity.count, 0);
-  if (entityCount >= 2 && entities[0]!.count >= totalAffected * 0.6) {
+  const topEntity = entities[0];
+  const topName = names[0];
+  if (
+    uniqueChangeCount > 1 &&
+    entityCount >= 2 &&
+    topEntity &&
+    topName &&
+    topEntity.count >= totalAffected * 0.6
+  ) {
     return (
       <>
-        {countPhrase}, mostly in {formatNames([names[0]!])} (+{entityCount - 1}{" "}
+        {countPhrase}, mostly in {formatNames([topName])} (+{entityCount - 1}{" "}
         other {entityWord}
         {entityCount - 1 > 1 ? "s" : ""}).
       </>
@@ -265,15 +271,15 @@ export function ChangeSummary(props: { build: Build }) {
   const narrowColorScheme =
     analysis.changedColorSchemes.length === 1 &&
     analysis.buildColorSchemes.length > 1
-      ? analysis.changedColorSchemes[0]!
+      ? analysis.changedColorSchemes[0]
       : null;
   const narrowBrowser =
     analysis.changedBrowsers.length === 1 && analysis.buildBrowsers.length > 1
-      ? analysis.changedBrowsers[0]!
+      ? analysis.changedBrowsers[0]
       : null;
   const narrowViewport =
     analysis.changedViewports.length === 1 && analysis.buildViewports.length > 1
-      ? analysis.changedViewports[0]!
+      ? analysis.changedViewports[0]
       : null;
 
   const severity = analysis.largestChange
