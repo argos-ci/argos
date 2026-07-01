@@ -63,7 +63,10 @@ export function OrphanNextSteps(props: { build: Build }) {
           Run Argos in CI on <BaseBranch branch={build.baseBranch} />
           {build.pullRequest ? " — usually by merging this pull request" : ""}.
           Its first build there is approved automatically and becomes the{" "}
-          <Link href="https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build">
+          <Link
+            href="https://argos-ci.com/docs/learn/platform-fundamentals/baseline-build"
+            external
+          >
             baseline
           </Link>
           .

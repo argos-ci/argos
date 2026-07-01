@@ -75,7 +75,9 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
           the changes won't be meaningful.
         </Paragraph>
         <Paragraph>
-          Fix the failing tests and re-run to get a build worth comparing.
+          The failure screenshots below reveal what went wrong — fix the
+          underlying issues and re-run your tests to get a build worth
+          comparing.
         </Paragraph>
       </>
     );
