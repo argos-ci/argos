@@ -44,34 +44,26 @@ function BrowseScreenshotSection(props: { build: Build }) {
   const browse = () => goToFirstDiff();
 
   return (
-    <div className="mt-3 w-full space-y-4">
-      {hasFailures && (
-        <div className="mt-2 text-balance">
-          The failure screenshots can still help you understand what went wrong:
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+      {reviewNeeded ? (
+        <Button autoFocus onPress={browse}>
+          Review changes
+          <Kbd className="ml-2 bg-white/25 text-white">↵</Kbd>
+        </Button>
+      ) : (
+        <Button autoFocus variant="secondary" onPress={browse}>
+          {hasFailures ? "Browse test failures" : "Browse screenshots"}
+          <Kbd className="ml-2">↵</Kbd>
+        </Button>
+      )}
+      {!hasFailures && reviewNeeded && (
+        <div className="text-low flex items-center gap-4 text-xs">
+          <ShortcutHint keys={["↓", "↑"]}>Navigate</ShortcutHint>
+          <ShortcutHint keys={["y"]}>Approve</ShortcutHint>
+          <ShortcutHint keys={["n"]}>Reject</ShortcutHint>
+          <ShortcutHint keys={["?"]}>Shortcuts</ShortcutHint>
         </div>
       )}
-
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-        {reviewNeeded ? (
-          <Button autoFocus onPress={browse}>
-            Review changes
-            <Kbd className="ml-2 bg-white/25 text-white">↵</Kbd>
-          </Button>
-        ) : (
-          <Button autoFocus variant="secondary" onPress={browse}>
-            {hasFailures ? "Browse test failures" : "Browse screenshots"}
-            <Kbd className="ml-2">↵</Kbd>
-          </Button>
-        )}
-        {!hasFailures && reviewNeeded && (
-          <div className="text-low flex items-center gap-4 text-xs">
-            <ShortcutHint keys={["↓", "↑"]}>Navigate</ShortcutHint>
-            <ShortcutHint keys={["y"]}>Approve</ShortcutHint>
-            <ShortcutHint keys={["n"]}>Reject</ShortcutHint>
-            <ShortcutHint keys={["?"]}>Shortcuts</ShortcutHint>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -102,19 +94,18 @@ export function BuildSummary(props: { build: Build }) {
 
   return (
     <section className="flex flex-col gap-10">
-      <div className="flex flex-col gap-2">
-        <SummaryBuildTitle build={build} hasFailures={hasFailures} />
-        <ReviewStatusIndicator build={build} />
-        {reviewNeeded ? (
-          <ChangeSummary build={build} />
-        ) : (
-          <BuildSummaryDescription build={build} />
-        )}
-        {isOrphan && <OrphanNextSteps build={build} />}
-
-        <div className="mt-6 flex gap-2">
-          <BrowseScreenshotSection build={build} />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <SummaryBuildTitle build={build} hasFailures={hasFailures} />
+          <ReviewStatusIndicator build={build} />
+          {reviewNeeded ? (
+            <ChangeSummary build={build} />
+          ) : (
+            <BuildSummaryDescription build={build} />
+          )}
         </div>
+        {isOrphan && <OrphanNextSteps build={build} />}
+        <BrowseScreenshotSection build={build} />
       </div>
 
       {perfectMatch && !isOrphan && <PerfectMatchIllustration />}

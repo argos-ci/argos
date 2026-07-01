@@ -44,7 +44,7 @@ export function OrphanNextSteps(props: { build: Build }) {
   const params = useBuildParams();
   if (build.mode === BuildMode.Monitoring) {
     return (
-      <div className="mt-8 mb-4 max-w-xl">
+      <div className="max-w-xl">
         <SectionHeader>Next step</SectionHeader>
         <p className="text-low text-sm text-balance">
           Approve this build to use it as the <Emphasis>baseline</Emphasis> for
@@ -55,7 +55,7 @@ export function OrphanNextSteps(props: { build: Build }) {
   }
 
   return (
-    <div className="mt-8 mb-4 max-w-xl">
+    <div className="max-w-xl">
       <SectionHeader>Next steps</SectionHeader>
       <ol className="flex flex-col gap-3 text-sm">
         <GuidanceStep index={1}>

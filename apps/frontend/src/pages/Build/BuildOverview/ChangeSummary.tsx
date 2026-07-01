@@ -249,7 +249,7 @@ export function ChangeSummary(props: { build: Build }) {
 
   if (!analysis) {
     return (
-      <div className="mt-2 text-balance">
+      <div className="text-balance">
         Visual changes were detected in this build. Please review the
         screenshots and confirm whether these changes are expected.
       </div>
@@ -289,7 +289,7 @@ export function ChangeSummary(props: { build: Build }) {
     : null;
 
   return (
-    <div className="mt-2 flex flex-col gap-3">
+    <div className="mt-2 mb-1 flex flex-col gap-3">
       <div className="text-balance">
         <ChangeSentence analysis={analysis} added={added} removed={removed} />
       </div>
@@ -297,30 +297,37 @@ export function ChangeSummary(props: { build: Build }) {
         <Chip icon={ClockIcon}>
           {getTimeEstimate(analysis.uniqueChangeCount)}
         </Chip>
+
         {severity ? (
           <Chip icon={GaugeIcon} tone={severity.tone}>
             {severity.label}
           </Chip>
         ) : null}
+
         {previouslyApproved > 0 ? (
           <Chip icon={CheckCheckIcon} tone="success">
             {previouslyApproved} already approved
           </Chip>
         ) : null}
+
         {removed > 0 ? (
           <Chip icon={ImageMinusIcon} tone="warning">
             {removed} removed
           </Chip>
         ) : null}
+
         {added > 0 ? <Chip icon={ImagePlusIcon}>{added} new</Chip> : null}
+
         {narrowColorScheme ? (
           <Chip icon={SunMoonIcon}>
             Only in {capitalize(narrowColorScheme)}
           </Chip>
         ) : null}
+
         {narrowBrowser ? (
           <Chip icon={GlobeIcon}>Only on {getBrowserLabel(narrowBrowser)}</Chip>
         ) : null}
+
         {narrowViewport ? (
           <Chip icon={MonitorSmartphoneIcon}>Only at {narrowViewport}</Chip>
         ) : null}
