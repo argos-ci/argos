@@ -23,7 +23,9 @@ export const GitlabStrategy: MergeBaseStrategy<{
       UnretryableError,
     );
 
-    const client = await getGitlabClientFromAccount(project.account);
+    const client = await getGitlabClientFromAccount(project.account, {
+      mode: "headless",
+    });
 
     if (!client) {
       return null;

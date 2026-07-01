@@ -365,7 +365,9 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return getAccountAvatar(account, ctx.loaders);
   },
   glNamespaces: async (account) => {
-    const client = await getGitlabClientFromAccount(account);
+    const client = await getGitlabClientFromAccount(account, {
+      mode: "manual",
+    });
     if (!client) {
       return null;
     }

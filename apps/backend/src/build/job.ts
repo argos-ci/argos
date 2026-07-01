@@ -93,7 +93,9 @@ async function syncGitlabProject(project: Project) {
 
   invariant(project.account, "no account found", UnretryableError);
 
-  const gitlabClient = await getGitlabClientFromAccount(project.account);
+  const gitlabClient = await getGitlabClientFromAccount(project.account, {
+    mode: "headless",
+  });
 
   if (!gitlabClient) {
     return;
