@@ -58,9 +58,6 @@ const ConnectRepositoryQuery = graphql(`
     }
     me {
       id
-      githubAccount {
-        id
-      }
       ghInstallations {
         edges {
           id
@@ -75,8 +72,10 @@ const ConnectRepositoryQuery = graphql(`
 `);
 
 type GithubInstallation = NonNullable<
-  DocumentType<typeof ConnectRepositoryQuery>["me"]
->["ghInstallations"]["edges"][0];
+  NonNullable<
+    DocumentType<typeof ConnectRepositoryQuery>["me"]
+  >["ghInstallations"]
+>["edges"][0];
 
 type GitlabNamespace = NonNullable<
   NonNullable<
@@ -223,14 +222,18 @@ enum GitProvider {
 function GitHubButton(props: {
   onPress: LinkButtonProps["onPress"];
   hasInstallations: boolean;
-  isLoggedIntoGitHub: boolean;
+  hasValidGitHubToken: boolean;
   children?: React.ReactNode;
   size?: ButtonProps["size"];
 }) {
-  if (!props.isLoggedIntoGitHub) {
-    return (
-      <GitHubLoginButton {...props} redirect={getMainGitHubAppInstallURL()} />
-    );
+  if (!props.hasValidGitHubToken) {
+    // The user has no usable GitHub connection: they never linked GitHub, or
+    // their token has expired/been revoked. Ask them to log in first — without
+    // forcing the app-install flow. After login they return here with a fresh
+    // token and we either show their installations or, if the app really isn't
+    // installed, prompt them to install it. This is what prevents a user with a
+    // stale token from getting stuck on an "install" link they don't need.
+    return <GitHubLoginButton {...props} />;
   }
   if (!props.hasInstallations) {
     return (
@@ -325,7 +328,11 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
     );
   }
 
-  const hasGhInstallations = me.ghInstallations.edges.length > 0;
+  // `ghInstallations` is `null` when the user has no usable GitHub connection
+  // (never linked, or an expired/revoked token). An empty list means the token
+  // is valid but no app is installed.
+  const hasValidGitHubToken = me.ghInstallations != null;
+  const hasGhInstallations = (me.ghInstallations?.edges.length ?? 0) > 0;
   const ghLightGhInstallation =
     account.__typename === "Team"
       ? account.githubLightInstallation?.ghInstallation
@@ -337,7 +344,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
         return (
           <GithubInstallations
             onSelectRepository={props.onSelectRepository}
-            installations={me.ghInstallations.edges}
+            installations={me.ghInstallations?.edges ?? []}
             disabled={props.disabled}
             connectButtonLabel={buttonLabels[props.variant]}
             onSwitch={() => setAndStoreProvider(null)}
@@ -423,7 +430,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             <GitHubButton
               onPress={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}
-              isLoggedIntoGitHub={!!me.githubAccount}
+              hasValidGitHubToken={hasValidGitHubToken}
             >
               GitHub
             </GitHubButton>
@@ -460,7 +467,7 @@ export function ConnectRepository(props: ConnectRepositoryProps) {
             <GitHubButton
               onPress={() => setAndStoreProvider(GitProvider.GitHub)}
               hasInstallations={hasGhInstallations}
-              isLoggedIntoGitHub={!!me.githubAccount}
+              hasValidGitHubToken={hasValidGitHubToken}
             >
               Continue with GitHub
             </GitHubButton>

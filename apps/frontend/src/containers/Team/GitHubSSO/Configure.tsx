@@ -84,7 +84,7 @@ function GitHubInstallationsSelectControl<
       return [];
     }
     invariant(data.me, "Expected me");
-    return data.me.ghInstallations.edges;
+    return data.me.ghInstallations?.edges ?? [];
   })();
 
   const installationType = (() => {
