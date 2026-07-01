@@ -19,6 +19,7 @@ import { getTestURL } from "../Test/TestParams";
 import {
   checkDiffCanBeReviewed,
   Diff,
+  useGoToBuildOverview,
   useGoToNextDiff,
   useGoToPreviousDiff,
   useHasNextDiff,
@@ -111,11 +112,13 @@ const BuildNavButtons = memo(function BuildNavButtons() {
   const hasNextDiff = useHasNextDiff();
   const goToPreviousDiff = useGoToPreviousDiff();
   const hasPreviousDiff = useHasPreviousDiff();
+  const goToBuildOverview = useGoToBuildOverview();
   return (
     <div className="flex shrink-0 gap-1">
       <PreviousButton
-        onPress={goToPreviousDiff}
-        isDisabled={!hasPreviousDiff}
+        onPress={() =>
+          hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
+        }
       />
       <NextButton onPress={goToNextDiff} isDisabled={!hasNextDiff} />
     </div>

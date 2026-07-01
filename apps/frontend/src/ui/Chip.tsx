@@ -154,7 +154,7 @@ function getChipClassName(props: {
     "group-[*]/button-group:first:rounded-l-chip group-[*]/button-group:not-first:border-l-0",
     "group-[*]/button-group:last:rounded-r-chip",
     isEmpty ? "rounded-full" : "rounded-chip",
-    "gap-(--chip-gap) inline-flex min-w-0 select-none items-center border-thin font-medium leading-4",
+    "gap-(--chip-gap) inline-flex min-w-0 max-w-full select-none items-center border-thin font-medium leading-4",
   );
 }
 

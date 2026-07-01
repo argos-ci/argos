@@ -53,6 +53,23 @@ buildExamples.forEach((build) => {
     await page.goto(`/${team.account.slug}/${project.name}/builds/${number}`);
     await expect(page.getByText(`Build ${number}`)).toBeVisible();
     if (build.compare !== false) {
+      await expect(page).toHaveURL(new RegExp(`/builds/${number}/overview$`));
+      const startButton = page.getByRole("button", {
+        name: /^(Review changes|Browse screenshots|Browse test failures)/,
+      });
+      await expect(startButton).toBeVisible();
+      await screenshot(page, `build-overview-${build.name}`, {
+        replacements: {
+          [team.account.slug]: "acme",
+        },
+      });
+      // Starting the review replaces the overview in history (the whole build
+      // view is a single history entry), so navigate forward rather than relying
+      // on `goBack` to return to the overview.
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(
+        new RegExp(`/builds/${number}/(?!overview)[^/]+$`),
+      );
       await expect(page.getByText(`Changes from`)).toBeVisible();
     }
     await screenshot(page, `build-${build.name}`, {

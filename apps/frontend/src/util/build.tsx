@@ -119,23 +119,28 @@ export function getBuildDescriptor(
   if (status === BuildStatus.Expired || status === BuildStatus.Error) {
     return buildStatusDescriptors[status];
   }
+
   switch (type) {
     case BuildType.Skipped:
     case BuildType.Reference:
       return buildTypeDescriptors[type];
+
     case BuildType.Orphan: {
       if (status === BuildStatus.Accepted || status === BuildStatus.Rejected) {
         return buildStatusDescriptors[status];
       }
-      return buildTypeDescriptors[BuildType.Orphan];
+      return buildTypeDescriptors[type];
     }
+
     case BuildType.Check: {
       return buildStatusDescriptors[status];
     }
+
     case null:
     case undefined: {
       return buildStatusDescriptors.PENDING;
     }
+
     default:
       assertNever(type);
   }

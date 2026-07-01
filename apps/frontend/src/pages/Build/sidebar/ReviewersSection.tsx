@@ -122,7 +122,9 @@ const RemoveBuildReviewersMutation = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type Review = Build["reviews"][number];
 
-function getEmptyStateMessage(build: Build): string {
+function getEmptyStateMessage(
+  build: Pick<Build, "status" | "type" | "mergeQueue">,
+): string {
   if (build.mergeQueue) {
     return "This build was triggered in a merge queue and doesn't require a review.";
   }

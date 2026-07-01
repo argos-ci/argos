@@ -25,9 +25,9 @@ export function NextButton(props: {
 
 export function PreviousButton(props: {
   onPress: () => void;
-  isDisabled: boolean;
+  isDisabled?: boolean;
 }) {
-  const { onPress, isDisabled } = props;
+  const { onPress, isDisabled = false } = props;
   const hotkey = useBuildHotkey("goToPreviousDiff", onPress, {
     preventDefault: true,
     enabled: !isDisabled,
