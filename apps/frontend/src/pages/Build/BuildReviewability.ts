@@ -8,14 +8,14 @@ import {
   type BuildReviewProgression,
 } from "./ReviewProgressBadge";
 
-export const BuildReviewability_Build = graphql(`
+const _BuildFragment = graphql(`
   fragment BuildReviewability_Build on Build {
     type
     mergeQueue
   }
 `);
 
-type Build = DocumentType<typeof BuildReviewability_Build>;
+type Build = DocumentType<typeof _BuildFragment>;
 
 /**
  * Why a build's changes can or can't be reviewed, independent of who is
