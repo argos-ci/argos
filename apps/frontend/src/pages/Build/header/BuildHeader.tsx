@@ -12,7 +12,7 @@ import { BuildTestStatusChip } from "@/containers/BuildTestStatusChip";
 import { NavUserControl } from "@/containers/NavUserControl";
 import { PullRequestButton } from "@/containers/PullRequestButton";
 import { DocumentType, graphql } from "@/gql";
-import { BuildMode, BuildType } from "@/gql/graphql";
+import { BuildMode } from "@/gql/graphql";
 import { getProjectURL } from "@/pages/Project/ProjectParams";
 import { BrandShield } from "@/ui/BrandShield";
 import { HeadlessLink } from "@/ui/Link";
@@ -22,14 +22,12 @@ import { Tooltip } from "@/ui/Tooltip";
 import { IconButton } from "../../../ui/IconButton";
 import { useBuildDiffState } from "../BuildDiffState";
 import { getBuildOverviewURL } from "../BuildParams";
+import { useBuildReviewability } from "../BuildReviewability";
 import {
   BuildReviewButton,
   DisabledBuildReviewButton,
 } from "../BuildReviewButton";
-import {
-  ReviewProgressBadge,
-  useBuildReviewProgression,
-} from "../ReviewProgressBadge";
+import { ReviewProgressBadge } from "../ReviewProgressBadge";
 import { createBuildReviewPrompt } from "./BuildReviewPrompt";
 
 const _BuildFragment = graphql(`
@@ -47,6 +45,7 @@ const _BuildFragment = graphql(`
     ...BuildStatusChip_Build
     ...BuildTestStatusChip_Build
     ...BuildBaselineEligibilityChip_Build
+    ...BuildReviewability_Build
   }
 `);
 
@@ -96,21 +95,22 @@ function LoggedReviewButton(props: {
   project: ComponentProps<typeof BuildReviewButton>["project"];
   build: DocumentType<typeof _BuildFragment>;
 }) {
-  const progression = useBuildReviewProgression();
-  if (props.build.mergeQueue) {
-    return (
-      <DisabledBuildReviewButton tooltip="This build was triggered in a merge queue." />
-    );
+  const reviewability = useBuildReviewability(props.build);
+  if (!reviewability.reviewable) {
+    switch (reviewability.reason) {
+      case "merge-queue":
+        return (
+          <DisabledBuildReviewButton tooltip="This build was triggered in a merge queue." />
+        );
+      case "reference":
+        return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
+      case "loading":
+        return <DisabledBuildReviewButton tooltip="Loading…" />;
+      case "no-changes":
+        return <DisabledBuildReviewButton tooltip="No changes to review" />;
+    }
   }
-  if (props.build.type === BuildType.Reference) {
-    return <DisabledBuildReviewButton tooltip="Build is auto-approved" />;
-  }
-  if (!progression) {
-    return <DisabledBuildReviewButton tooltip="Loading…" />;
-  }
-  if (progression.toReview.length === 0) {
-    return <DisabledBuildReviewButton tooltip="No changes to review" />;
-  }
+  const { progression } = reviewability;
   return (
     <div className="flex items-center gap-4">
       <div className="flex flex-col gap-1.5">

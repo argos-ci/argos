@@ -149,7 +149,7 @@ export function BuildWorkspace(props: {
                     ((build.stats?.total ?? 0) > 0 ||
                       build.type === BuildType.Orphan)
                   ) {
-                    return <BuildOverview build={build} />;
+                    return <BuildOverview build={build} repoUrl={repoUrl} />;
                   }
 
                   return (

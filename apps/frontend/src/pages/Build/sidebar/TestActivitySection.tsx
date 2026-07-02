@@ -3,7 +3,7 @@ import { FileUpIcon } from "lucide-react";
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql, type DocumentType } from "@/gql";
 import { Activity, ActivityItem } from "@/ui/Activity";
-import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
 import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
 
@@ -29,10 +29,10 @@ export function TestActivitySection(props: {
 }) {
   const { test, change } = props;
   return (
-    <SidebarSection>
-      <SidebarHeader>
-        <SidebarHeading>Activity</SidebarHeading>
-      </SidebarHeader>
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>Activity</PanelTitle>
+      </PanelHeader>
       <div className="px-3">
         <Activity>
           <ActivityItem icon={<FileUpIcon className="size-3.5" />}>
@@ -57,7 +57,7 @@ export function TestActivitySection(props: {
           ))}
         </Activity>
       </div>
-    </SidebarSection>
+    </Panel>
   );
 }
 

@@ -1,4 +1,4 @@
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, HomeIcon } from "lucide-react";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
@@ -26,17 +26,22 @@ export function NextButton(props: {
 export function PreviousButton(props: {
   onPress: () => void;
   isDisabled?: boolean;
+  /** On the first snapshot, the button returns to the build overview. */
+  toOverview?: boolean;
 }) {
-  const { onPress, isDisabled = false } = props;
+  const { onPress, isDisabled = false, toOverview = false } = props;
   const hotkey = useBuildHotkey("goToPreviousDiff", onPress, {
     preventDefault: true,
     enabled: !isDisabled,
     allowInInput: true,
   });
   return (
-    <HotkeyTooltip description={hotkey.description} keys={hotkey.displayKeys}>
+    <HotkeyTooltip
+      description={toOverview ? "Go to overview" : hotkey.description}
+      keys={hotkey.displayKeys}
+    >
       <IconButton isDisabled={isDisabled} onPress={onPress}>
-        <ArrowUpIcon />
+        {toOverview ? <HomeIcon /> : <ArrowUpIcon />}
       </IconButton>
     </HotkeyTooltip>
   );

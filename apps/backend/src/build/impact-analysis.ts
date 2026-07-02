@@ -9,9 +9,17 @@ import {
 
 import { getPreviousDiffApprovalIds } from "./approval";
 
+/** Source location of a test in its repository. */
+type ImpactItemLocation = {
+  file: string;
+  line: number;
+  column: number;
+};
+
 type BuildImpactItem = {
   name: string;
   count: number;
+  location?: ImpactItemLocation | null;
 };
 
 /** The single most-changed entity of a build, with its diff score. */
@@ -46,12 +54,17 @@ type ChangedRow = {
   score: number | null;
   storyId: string | null;
   testTitle: string | null;
+  testTitlePath: string[] | null;
   name: string | null;
 };
 
 type AffectedRow = {
   storyId: string | null;
   testTitle: string | null;
+  testTitlePath: string[] | null;
+  testFile: string | null;
+  testLine: string | null;
+  testColumn: string | null;
 };
 
 type BucketRow = {
@@ -102,6 +115,76 @@ function countByName(values: (string | null)[]): BuildImpactItem[] {
 }
 
 /**
+ * The full path of a test ("Suite › nested › case"), matching how tests are
+ * displayed in screenshot metadata, falling back to its leaf title.
+ */
+function getTestName(row: {
+  testTitlePath: string[] | null;
+  testTitle: string | null;
+}): string | null {
+  // `titlePath` comes from JSON metadata (jsonb `->`), so guard against a
+  // malformed non-array value before treating it as one.
+  if (Array.isArray(row.testTitlePath) && row.testTitlePath.length > 0) {
+    const joined = row.testTitlePath
+      .filter((title): title is string => typeof title === "string")
+      .map((title) => title.trim())
+      .filter(Boolean)
+      .join(" › ");
+    if (joined) {
+      return joined;
+    }
+  }
+  return row.testTitle;
+}
+
+/**
+ * Aggregate affected tests by their full path, keeping each test's source
+ * location (from the first row that carries one) so the UI can link back to it.
+ */
+function countTests(rows: AffectedRow[]): BuildImpactItem[] {
+  const tests = new Map<string, BuildImpactItem>();
+  for (const row of rows) {
+    const name = getTestName(row);
+    if (name === null) {
+      continue;
+    }
+    const existing = tests.get(name);
+    if (existing) {
+      existing.count++;
+      existing.location ??= parseLocation(row);
+    } else {
+      tests.set(name, {
+        name,
+        count: 1,
+        location: parseLocation(row),
+      });
+    }
+  }
+  return Array.from(tests.values()).sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name),
+  );
+}
+
+/** Build a location from an affected row, or null when it lacks a usable one. */
+function parseLocation(row: AffectedRow): ImpactItemLocation | null {
+  if (row.testFile === null || row.testLine === null) {
+    return null;
+  }
+  // `line`/`column` come from JSON metadata, so a non-numeric value would yield
+  // NaN and break the non-null GraphQL Int fields — drop the location instead.
+  const line = Number(row.testLine);
+  if (!Number.isFinite(line)) {
+    return null;
+  }
+  const column = Number(row.testColumn);
+  return {
+    file: row.testFile,
+    line,
+    column: Number.isFinite(column) ? column : 0,
+  };
+}
+
+/**
  * Extract the component part of a Storybook story id
  * (e.g. "components-actions-button--primary" → "components-actions-button").
  */
@@ -147,6 +230,9 @@ export async function getBuildImpactAnalysis(
           raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as(
             "testTitle",
           ),
+          raw(`"compareScreenshot"."metadata"->'test'->'titlePath'`).as(
+            "testTitlePath",
+          ),
         )
         .castTo<ChangedRow[]>(),
       // Components/tests impacted by the build: changed screenshots AND brand-new
@@ -167,6 +253,18 @@ export async function getBuildImpactAnalysis(
           raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as(
             "testTitle",
           ),
+          raw(`"compareScreenshot"."metadata"->'test'->'titlePath'`).as(
+            "testTitlePath",
+          ),
+          raw(`"compareScreenshot"."metadata"->'test'->'location'->>'file'`).as(
+            "testFile",
+          ),
+          raw(`"compareScreenshot"."metadata"->'test'->'location'->>'line'`).as(
+            "testLine",
+          ),
+          raw(
+            `"compareScreenshot"."metadata"->'test'->'location'->>'column'`,
+          ).as("testColumn"),
         )
         .castTo<AffectedRow[]>(),
       Screenshot.query()
@@ -206,7 +304,7 @@ export async function getBuildImpactAnalysis(
     }
     const name =
       (row.storyId ? getStoryComponent(row.storyId) : null) ??
-      row.testTitle ??
+      getTestName(row) ??
       row.name;
     if (name) {
       largestChange = { name, score };
@@ -241,6 +339,6 @@ export async function getBuildImpactAnalysis(
       ),
     ),
     affectedStories: countByName(affectedStoryIds),
-    affectedTests: countByName(affectedRows.map((row) => row.testTitle)),
+    affectedTests: countTests(affectedRows),
   };
 }

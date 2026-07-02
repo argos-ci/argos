@@ -181,6 +181,8 @@ export const typeDefs = gql`
     name: String!
     "Number of changed screenshots in this entity"
     count: Int!
+    "Source location of the entity, when it is a test"
+    location: ScreenshotMetadataLocation
   }
 
   "The single most-changed entity of a build, with its diff score"

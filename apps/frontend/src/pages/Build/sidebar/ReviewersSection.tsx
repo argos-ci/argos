@@ -38,8 +38,8 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Popover } from "@/ui/Popover";
-import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
 import { getUserCardData } from "@/ui/UserCard";
 import {
   getLatestActiveReviewByUser,
@@ -181,11 +181,11 @@ export function ReviewersSection(props: { build: Build }) {
   const hasReviewers = reviewedUserIds.size > 0 || pendingReviewers.length > 0;
 
   return (
-    <SidebarSection>
-      <SidebarHeader>
-        <SidebarHeading>Reviewers</SidebarHeading>
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>Reviewers</PanelTitle>
         {canRequestReviewers ? <RequestReviewersMenu build={build} /> : null}
-      </SidebarHeader>
+      </PanelHeader>
       {!hasReviewers ? (
         <div className="text-low px-4 text-xs">
           {getEmptyStateMessage(build)}
@@ -240,7 +240,7 @@ export function ReviewersSection(props: { build: Build }) {
           />
         ) : null}
       </Modal>
-    </SidebarSection>
+    </Panel>
   );
 }
 

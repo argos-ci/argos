@@ -24,6 +24,7 @@ import { lowTextColorClassNames } from "@/util/colors";
 
 import { getProjectURL } from "../Project/ProjectParams";
 import { BuildParams, getBuildURL } from "./BuildParams";
+import { BranchLink, CommitLink } from "./GitLink";
 
 const _BuildFragment = graphql(`
   fragment BuildInfos_Build on Build {
@@ -74,57 +75,12 @@ const _BuildFragment = graphql(`
 `);
 
 function Dt(props: { children: React.ReactNode }) {
-  return (
-    <dt className="text-low mb-1 text-xs font-medium">{props.children}</dt>
-  );
+  return <dt className="text-low mb-1 text-xs font-[450]">{props.children}</dt>;
 }
 
 function Dd(props: { children: React.ReactNode }) {
   return (
     <dd className="text-default mb-6 text-sm font-medium">{props.children}</dd>
-  );
-}
-
-function CommitLink({
-  repoUrl,
-  commit,
-}: {
-  repoUrl: string | null;
-  commit: string;
-}) {
-  const shortCommit = commit.slice(0, 7);
-  if (!repoUrl) {
-    return <>{shortCommit}</>;
-  }
-  return (
-    <Link
-      className="font-mono"
-      href={`${repoUrl}/commit/${commit}`}
-      target="_blank"
-    >
-      {shortCommit}
-    </Link>
-  );
-}
-
-function BranchLink({
-  repoUrl,
-  branch,
-}: {
-  repoUrl: string | null;
-  branch: string;
-}) {
-  if (!repoUrl) {
-    return <span className="font-mono">{branch}</span>;
-  }
-  return (
-    <Link
-      className="font-mono"
-      href={`${repoUrl}/tree/${branch}`}
-      target="_blank"
-    >
-      {branch}
-    </Link>
   );
 }
 

@@ -332,3 +332,26 @@ export function UserHoverCard(props: {
     </Tooltip>
   );
 }
+
+/**
+ * An inline reference to a user — their avatar and name — styled like an editor
+ * mention and backed by the same hover card. For naming a user within prose
+ * (e.g. "approved by …").
+ */
+export function UserMention(props: { user: UserCardData; className?: string }) {
+  const { user } = props;
+  return (
+    <UserHoverCard user={user}>
+      <span
+        tabIndex={0}
+        className={clsx(
+          "text-default mx-0.5 inline-flex items-center gap-1 align-[-0.2em] font-medium",
+          props.className,
+        )}
+      >
+        <UserCardAvatar user={user} className="size-[1.15em]" />
+        {user.name || user.slug}
+      </span>
+    </UserHoverCard>
+  );
+}

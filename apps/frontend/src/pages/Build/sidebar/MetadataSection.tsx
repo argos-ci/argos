@@ -1,5 +1,5 @@
 import { ChipContext } from "@/ui/Chip";
-import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 
 import type { Diff } from "../BuildDiffState";
 import { AnnotationsRow } from "./metadata/AnnotationsRow";
@@ -52,10 +52,10 @@ export function MetadataSection(props: MetadataSectionProps) {
       : compareBranch;
 
   return (
-    <SidebarSection className="has-[[data-rows]:empty]:hidden">
-      <SidebarHeader>
-        <SidebarHeading>Metadata</SidebarHeading>
-      </SidebarHeader>
+    <Panel className="has-[[data-rows]:empty]:hidden">
+      <PanelHeader>
+        <PanelTitle>Metadata</PanelTitle>
+      </PanelHeader>
       <ChipContext value={CHIP_DEFAULTS}>
         <div data-rows className="flex flex-col gap-1 empty:hidden">
           <SdkRow sdk={metadata?.sdk ?? null} />
@@ -90,6 +90,6 @@ export function MetadataSection(props: MetadataSectionProps) {
           <TraceRow diff={diff} siblingDiffs={siblingDiffs} />
         </div>
       </ChipContext>
-    </SidebarSection>
+    </Panel>
   );
 }

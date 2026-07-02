@@ -5,7 +5,7 @@ import { useNumberFormatter } from "react-aria";
 import { FlakinessCircleIndicator } from "@/containers/Test/FlakinessCircleIndicator";
 import { graphql, type DocumentType } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
-import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Tooltip } from "@/ui/Tooltip";
 import { TooltipIndicator } from "@/ui/TooltipIndicator";
 
@@ -43,21 +43,21 @@ export function TestInsightsSection(props: {
   const params = useProjectParams();
   invariant(params, "can't be used outside of a project route");
   return (
-    <SidebarSection>
-      <SidebarHeader>
-        <SidebarHeading>
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>
           Test Insights
           <Tooltip content="Over the last 7 days">
             <TooltipIndicator />
           </Tooltip>
-        </SidebarHeading>
+        </PanelTitle>
         <HeadlessLink
           className="hover:text-default text-low flex items-center text-xs"
           href={getTestURL({ ...params, testId: test.id })}
         >
           See all
         </HeadlessLink>
-      </SidebarHeader>
+      </PanelHeader>
       <div className="flex">
         <div className="px-4">
           <InsightTitle
@@ -112,7 +112,7 @@ export function TestInsightsSection(props: {
           </InsightRow>
         </div>
       </div>
-    </SidebarSection>
+    </Panel>
   );
 }
 

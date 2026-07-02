@@ -3,15 +3,19 @@ import { clsx } from "clsx";
 import {
   CheckCheckIcon,
   ClockIcon,
+  ComponentIcon,
+  FlaskConicalIcon,
   GaugeIcon,
   GlobeIcon,
   ImageMinusIcon,
   ImagePlusIcon,
   MonitorSmartphoneIcon,
+  ScanEyeIcon,
   SunMoonIcon,
 } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { lowTextColorClassNames, UIColor } from "@/util/colors";
 import { capitalize } from "@/util/string";
 
@@ -49,23 +53,34 @@ const _BuildFragment = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type ImpactAnalysis = NonNullable<Build["impactAnalysis"]>;
 
+type EntityIcon = React.ComponentType<{
+  className?: string;
+  strokeWidth?: number;
+}>;
+
 /**
- * The affected component/test name — the reviewer's recognition anchor, so it
- * gets the one accent-colored treatment of the sentence (counts stay plain).
+ * The affected component/test name — the reviewer's recognition anchor. Reads
+ * as inline prose (same font) lightly highlighted, with a leading entity icon.
  */
-function EntityName(props: { children: React.ReactNode }) {
-  return <span className="text-primary-low font-thin">{props.children}</span>;
+function EntityName(props: { icon: EntityIcon; children: React.ReactNode }) {
+  const { icon: Icon } = props;
+  return (
+    <span className="bg-primary-ui text-primary-low mx-0.5 rounded px-1 py-0.5 wrap-break-word">
+      <Icon className="mr-1 inline size-3.5 align-[-0.125em]" strokeWidth={2} />
+      {props.children}
+    </span>
+  );
 }
 
-/** Render entity names as accent anchors, joined with commas and "and". */
-function formatNames(names: string[]): React.ReactNode {
+/** Render entity names as tags, joined with commas and "and". */
+function formatNames(names: string[], icon: EntityIcon): React.ReactNode {
   return names.map((name, index) => {
     const separator =
       index === 0 ? null : index === names.length - 1 ? " and " : ", ";
     return (
       <React.Fragment key={name}>
         {separator}
-        <EntityName>{name}</EntityName>
+        <EntityName icon={icon}>{name}</EntityName>
       </React.Fragment>
     );
   });
@@ -134,15 +149,16 @@ function ChangeSentence(props: {
     ? analysis.affectedComponents
     : analysis.affectedTests;
   const entityWord = useComponents ? "component" : "test";
+  const entityIcon = useComponents ? ComponentIcon : FlaskConicalIcon;
   const names = entities.map((entity) => entity.name);
   const entityCount = names.length;
 
-  // No modified screenshots: the build is purely additions and/or removals.
+  // No modified snapshots: the build is purely additions and/or removals.
   if (uniqueChangeCount === 0) {
     if (added > 0 && removed === 0) {
       return (
         <>
-          {added} new screenshot{added > 1 ? "s" : ""} added — no changes to
+          {added} new snapshot{added > 1 ? "s" : ""} added — no changes to
           existing baselines.
         </>
       );
@@ -150,8 +166,7 @@ function ChangeSentence(props: {
     if (removed > 0 && added === 0) {
       return (
         <>
-          {removed} screenshot{removed > 1 ? "s" : ""} removed from the
-          baseline.
+          {removed} snapshot{removed > 1 ? "s" : ""} removed from the baseline.
         </>
       );
     }
@@ -168,15 +183,15 @@ function ChangeSentence(props: {
     if (changedCount >= 4) {
       return (
         <>
-          A single visual change to {formatNames(names)}, seen across{" "}
-          {changedCount} screenshots.
+          A single visual change to {formatNames(names, entityIcon)}, seen
+          across {changedCount} snapshots.
         </>
       );
     }
-    return <>A single visual change to {formatNames(names)}.</>;
+    return <>A single visual change to {formatNames(names, entityIcon)}.</>;
   }
 
-  // Amplified: few changes echoed across many screenshots and entities —
+  // Amplified: few changes echoed across many snapshots and entities —
   // usually a shared style or token update.
   if (
     uniqueChangeCount <= 2 &&
@@ -186,7 +201,7 @@ function ChangeSentence(props: {
     return (
       <>
         {countPhrase} rippling across {entityCount} {entityWord}s (
-        {changedCount} screenshots) — likely a shared{" "}
+        {changedCount} snapshots) — likely a shared{" "}
         {useComponents ? "style" : "change"}.
       </>
     );
@@ -206,8 +221,8 @@ function ChangeSentence(props: {
   ) {
     return (
       <>
-        {countPhrase}, mostly in {formatNames([topName])} (+{entityCount - 1}{" "}
-        other {entityWord}
+        {countPhrase}, mostly in {formatNames([topName], entityIcon)} (+
+        {entityCount - 1} other {entityWord}
         {entityCount - 1 > 1 ? "s" : ""}).
       </>
     );
@@ -217,7 +232,7 @@ function ChangeSentence(props: {
   if (entityCount > 0 && entityCount <= 3) {
     return (
       <>
-        {countPhrase} across {formatNames(names)}.
+        {countPhrase} across {formatNames(names, entityIcon)}.
       </>
     );
   }
@@ -227,7 +242,7 @@ function ChangeSentence(props: {
     return (
       <>
         {countPhrase} spread across {entityCount} {entityWord}s, led by{" "}
-        {formatNames(names.slice(0, 3))}.
+        {formatNames(names.slice(0, 3), entityIcon)}.
       </>
     );
   }
@@ -236,22 +251,31 @@ function ChangeSentence(props: {
   return <>{countPhrase} detected in this build.</>;
 }
 
+/** Card shell for the change summary, so both branches share the same chrome. */
+function ChangeSummaryPanel(props: { children: React.ReactNode }) {
+  return (
+    <Panel elevation={0}>
+      <PanelHeader className="mb-2">
+        <PanelTitle icon={ScanEyeIcon}>Review insights</PanelTitle>
+      </PanelHeader>
+      <div className="px-4 text-sm leading-6">{props.children}</div>
+    </Panel>
+  );
+}
+
 /**
  * Build-overview summary of the changes to review: a generated sentence backed
  * by a row of contextual signals (effort, severity, already-approved,
- * new/removed screenshots, matrix scope). Replaces the old review-scope card.
+ * new/removed snapshots, matrix scope), presented in a card.
  */
 export function ChangeSummary(props: { build: Build }) {
   const analysis = props.build.impactAnalysis;
   const { stats } = useBuildDiffState();
 
+  // No analysis to summarize: don't render an insights card at all — the build
+  // description already prompts the reviewer.
   if (!analysis) {
-    return (
-      <div className="text-balance">
-        Visual changes were detected in this build. Please review the
-        screenshots and confirm whether these changes are expected.
-      </div>
-    );
+    return null;
   }
 
   const added = stats?.added ?? 0;
@@ -260,7 +284,7 @@ export function ChangeSummary(props: { build: Build }) {
     ? stats.changed + stats.added + stats.removed
     : 0;
   // Clamp: the approval count is fingerprint-based and should never read as
-  // more than the screenshots actually up for review.
+  // more than the snapshots actually up for review.
   const previouslyApproved = Math.min(
     analysis.previouslyApprovedCount,
     reviewableCount,
@@ -287,49 +311,53 @@ export function ChangeSummary(props: { build: Build }) {
     : null;
 
   return (
-    <div className="mt-2 mb-1 flex flex-col gap-3">
-      <div className="text-balance">
-        <ChangeSentence analysis={analysis} added={added} removed={removed} />
+    <ChangeSummaryPanel>
+      <div className="flex flex-col gap-3">
+        <div>
+          <ChangeSentence analysis={analysis} added={added} removed={removed} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Chip icon={ClockIcon}>
+            {getTimeEstimate(analysis.uniqueChangeCount)}
+          </Chip>
+
+          {severity ? (
+            <Chip icon={GaugeIcon} tone={severity.tone}>
+              {severity.label}
+            </Chip>
+          ) : null}
+
+          {previouslyApproved > 0 ? (
+            <Chip icon={CheckCheckIcon} tone="success">
+              {previouslyApproved} already approved
+            </Chip>
+          ) : null}
+
+          {removed > 0 ? (
+            <Chip icon={ImageMinusIcon} tone="warning">
+              {removed} removed
+            </Chip>
+          ) : null}
+
+          {added > 0 ? <Chip icon={ImagePlusIcon}>{added} new</Chip> : null}
+
+          {narrowColorScheme ? (
+            <Chip icon={SunMoonIcon}>
+              Only in {capitalize(narrowColorScheme)}
+            </Chip>
+          ) : null}
+
+          {narrowBrowser ? (
+            <Chip icon={GlobeIcon}>
+              Only on {getBrowserLabel(narrowBrowser)}
+            </Chip>
+          ) : null}
+
+          {narrowViewport ? (
+            <Chip icon={MonitorSmartphoneIcon}>Only at {narrowViewport}</Chip>
+          ) : null}
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Chip icon={ClockIcon}>
-          {getTimeEstimate(analysis.uniqueChangeCount)}
-        </Chip>
-
-        {severity ? (
-          <Chip icon={GaugeIcon} tone={severity.tone}>
-            {severity.label}
-          </Chip>
-        ) : null}
-
-        {previouslyApproved > 0 ? (
-          <Chip icon={CheckCheckIcon} tone="success">
-            {previouslyApproved} already approved
-          </Chip>
-        ) : null}
-
-        {removed > 0 ? (
-          <Chip icon={ImageMinusIcon} tone="warning">
-            {removed} removed
-          </Chip>
-        ) : null}
-
-        {added > 0 ? <Chip icon={ImagePlusIcon}>{added} new</Chip> : null}
-
-        {narrowColorScheme ? (
-          <Chip icon={SunMoonIcon}>
-            Only in {capitalize(narrowColorScheme)}
-          </Chip>
-        ) : null}
-
-        {narrowBrowser ? (
-          <Chip icon={GlobeIcon}>Only on {getBrowserLabel(narrowBrowser)}</Chip>
-        ) : null}
-
-        {narrowViewport ? (
-          <Chip icon={MonitorSmartphoneIcon}>Only at {narrowViewport}</Chip>
-        ) : null}
-      </div>
-    </div>
+    </ChangeSummaryPanel>
   );
 }

@@ -5,6 +5,7 @@ import { StackedItems } from "@/ui/StackedItems";
 import { Tooltip } from "@/ui/Tooltip";
 import { getBuildDescriptor } from "@/util/build";
 import { getLatestActiveReviewByUser } from "@/util/build-review";
+import { formatNameListText } from "@/util/nameList";
 
 import { AccountAvatar } from "./AccountAvatar";
 import { BuildStatusDescription } from "./BuildStatusDescription";
@@ -78,12 +79,7 @@ function getReviewerList(
   if (reviewerNames.length === 0) {
     return null;
   }
-  const displayedReviewers = reviewerNames.slice(0, 2);
-  const remainingCount = reviewerNames.length - displayedReviewers.length;
-  if (remainingCount > 0) {
-    return `${displayedReviewers.join(", ")} and ${remainingCount} others`;
-  }
-  return displayedReviewers.join(", ");
+  return formatNameListText(reviewerNames, { max: 2 });
 }
 
 function BuildReviewUsers(props: {

@@ -40,7 +40,7 @@ const hotkeyGroups = [
       enterSearchMode: {
         keys: ["⌘", "KeyF"],
         displayKeys: ["⌘", "F"],
-        description: "Find screenshot",
+        description: "Find snapshot",
         envs: ["build"],
       },
       leaveSearchMode: {
@@ -69,13 +69,13 @@ const hotkeyGroups = [
       goToPreviousDiff: {
         keys: ["ArrowUp"],
         displayKeys: ["↑"],
-        description: "Go to previous screenshot",
+        description: "Go to previous snapshot",
         envs: ["test", "build"],
       },
       goToNextDiff: {
         keys: ["ArrowDown"],
         displayKeys: ["↓"],
-        description: "Go to next screenshot",
+        description: "Go to next snapshot",
         envs: ["test", "build"],
       },
       toggleDiffGroup: {
@@ -93,25 +93,25 @@ const hotkeyGroups = [
       goToFirstChanged: {
         keys: ["Digit2"],
         displayKeys: ["2"],
-        description: "Go to first changed screenshot",
+        description: "Go to first changed snapshot",
         envs: ["build"],
       },
       goToFirstAdded: {
         keys: ["Digit3"],
         displayKeys: ["3"],
-        description: "Go to first added screenshot",
+        description: "Go to first added snapshot",
         envs: ["build"],
       },
       goToFirstRemoved: {
         keys: ["Digit4"],
         displayKeys: ["4"],
-        description: "Go to first removed screenshot",
+        description: "Go to first removed snapshot",
         envs: ["build"],
       },
       goToFirstUnchanged: {
         keys: ["Digit5"],
         displayKeys: ["5"],
-        description: "Go to first unchanged screenshot",
+        description: "Go to first unchanged snapshot",
         envs: ["build"],
       },
       goToFirstRetryFailure: {
@@ -123,7 +123,7 @@ const hotkeyGroups = [
       goToFirstIgnored: {
         keys: ["Digit7"],
         displayKeys: ["7"],
-        description: "Go to first ignored screenshot",
+        description: "Go to first ignored snapshot",
         envs: ["build"],
       },
       switchViewport: {

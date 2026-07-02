@@ -116,6 +116,7 @@ const BuildNavButtons = memo(function BuildNavButtons() {
   return (
     <div className="flex shrink-0 gap-1">
       <PreviousButton
+        toOverview={!hasPreviousDiff}
         onPress={() =>
           hasPreviousDiff ? goToPreviousDiff() : goToBuildOverview()
         }
