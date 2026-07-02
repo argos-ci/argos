@@ -153,12 +153,12 @@ function ChangeSentence(props: {
   const names = entities.map((entity) => entity.name);
   const entityCount = names.length;
 
-  // No modified screenshots: the build is purely additions and/or removals.
+  // No modified snapshots: the build is purely additions and/or removals.
   if (uniqueChangeCount === 0) {
     if (added > 0 && removed === 0) {
       return (
         <>
-          {added} new screenshot{added > 1 ? "s" : ""} added — no changes to
+          {added} new snapshot{added > 1 ? "s" : ""} added — no changes to
           existing baselines.
         </>
       );
@@ -166,8 +166,7 @@ function ChangeSentence(props: {
     if (removed > 0 && added === 0) {
       return (
         <>
-          {removed} screenshot{removed > 1 ? "s" : ""} removed from the
-          baseline.
+          {removed} snapshot{removed > 1 ? "s" : ""} removed from the baseline.
         </>
       );
     }
@@ -185,14 +184,14 @@ function ChangeSentence(props: {
       return (
         <>
           A single visual change to {formatNames(names, entityIcon)}, seen
-          across {changedCount} screenshots.
+          across {changedCount} snapshots.
         </>
       );
     }
     return <>A single visual change to {formatNames(names, entityIcon)}.</>;
   }
 
-  // Amplified: few changes echoed across many screenshots and entities —
+  // Amplified: few changes echoed across many snapshots and entities —
   // usually a shared style or token update.
   if (
     uniqueChangeCount <= 2 &&
@@ -202,7 +201,7 @@ function ChangeSentence(props: {
     return (
       <>
         {countPhrase} rippling across {entityCount} {entityWord}s (
-        {changedCount} screenshots) — likely a shared{" "}
+        {changedCount} snapshots) — likely a shared{" "}
         {useComponents ? "style" : "change"}.
       </>
     );
@@ -267,7 +266,7 @@ function ChangeSummaryPanel(props: { children: React.ReactNode }) {
 /**
  * Build-overview summary of the changes to review: a generated sentence backed
  * by a row of contextual signals (effort, severity, already-approved,
- * new/removed screenshots, matrix scope), presented in a card.
+ * new/removed snapshots, matrix scope), presented in a card.
  */
 export function ChangeSummary(props: { build: Build }) {
   const analysis = props.build.impactAnalysis;
@@ -285,7 +284,7 @@ export function ChangeSummary(props: { build: Build }) {
     ? stats.changed + stats.added + stats.removed
     : 0;
   // Clamp: the approval count is fingerprint-based and should never read as
-  // more than the screenshots actually up for review.
+  // more than the snapshots actually up for review.
   const previouslyApproved = Math.min(
     analysis.previouslyApprovedCount,
     reviewableCount,

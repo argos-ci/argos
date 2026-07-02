@@ -34,7 +34,7 @@ export function OrphanNextSteps(props: { build: Build }) {
       <div className="max-w-xl">
         <SectionHeader>Next step</SectionHeader>
         <p className="text-low text-sm text-balance">
-          Review this build and approve its screenshots to set them as the{" "}
+          Review this build and approve its snapshots to set them as the{" "}
           <Emphasis>baseline</Emphasis> future comparisons are measured against.
         </p>
       </div>

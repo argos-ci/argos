@@ -33,7 +33,7 @@ const _BuildFragment = graphql(`
 
 type Build = DocumentType<typeof _BuildFragment>;
 
-function BrowseScreenshotSection(props: { build: Build }) {
+function BrowseSnapshotSection(props: { build: Build }) {
   const { build } = props;
   const { stats } = useBuildDiffState();
   const hasFailures = Boolean(stats?.failure);
@@ -55,7 +55,7 @@ function BrowseScreenshotSection(props: { build: Build }) {
         </Button>
       ) : (
         <Button autoFocus variant="secondary" onPress={browse}>
-          {hasFailures ? "Browse test failures" : "Browse screenshots"}
+          {hasFailures ? "Browse test failures" : "Browse snapshots"}
           <Kbd className="ml-2">↵</Kbd>
         </Button>
       )}
@@ -97,7 +97,7 @@ export function BuildSummary(props: { build: Build }) {
   const showReviewInsights = canReview && !hasFailures;
   const perfectMatch = reviewableCount === 0 && !hasFailures;
   const isOrphan = build.type === BuildType.Orphan;
-  const hasScreenshots = (stats?.total ?? 0) > 0;
+  const hasSnapshots = (stats?.total ?? 0) > 0;
 
   return (
     <section className="flex flex-col gap-10 pt-4">
@@ -108,7 +108,7 @@ export function BuildSummary(props: { build: Build }) {
         </div>
         {showReviewInsights && <ChangeSummary build={build} />}
         {isOrphan && <OrphanNextSteps build={build} />}
-        {hasScreenshots && <BrowseScreenshotSection build={build} />}
+        {hasSnapshots && <BrowseSnapshotSection build={build} />}
       </div>
 
       {perfectMatch && !isOrphan && <PerfectMatchIllustration />}

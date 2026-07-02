@@ -130,7 +130,7 @@ function ChangesResume() {
   return (
     <Paragraph>
       <Emphasis>Changes were detected in this build.</Emphasis> Please review
-      the screenshots and confirm whether these changes are expected.
+      the snapshots and confirm whether these changes are expected.
     </Paragraph>
   );
 }
@@ -205,7 +205,7 @@ export function BuildSummaryDescription({
       );
 
     case BuildStatus.NoChanges:
-      return <Paragraph>All screenshots match the baseline.</Paragraph>;
+      return <Paragraph>All snapshots match the baseline.</Paragraph>;
 
     default:
       return null;
