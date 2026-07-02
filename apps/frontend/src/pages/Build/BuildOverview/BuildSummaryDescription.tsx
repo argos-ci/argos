@@ -3,6 +3,8 @@ import React from "react";
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { getUserCardData, UserMention } from "@/ui/UserCard";
+import { getLatestActiveReviewByUser } from "@/util/build-review";
+import { formatNameList } from "@/util/nameList";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { BranchTag, Emphasis } from "./shared";
@@ -39,24 +41,27 @@ function Paragraph(props: { children: React.ReactNode }) {
  * build, most recent first, each counted once.
  */
 function getApprovers(build: Build): ReviewUser[] {
-  const seen = new Set<string>();
-  return build.reviews
-    .filter(
-      (review) =>
-        review.state === ReviewState.Approved &&
-        !review.dismissedAt &&
-        review.user,
-    )
-    .slice()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .map((review) => review.user as ReviewUser)
-    .filter((user) => {
-      if (seen.has(user.id)) {
-        return false;
-      }
-      seen.add(user.id);
-      return true;
-    });
+  return getLatestActiveReviewByUser(build.reviews)
+    .filter((review) => review.state === ReviewState.Approved && review.user)
+    .map((review) => review.user as ReviewUser);
+}
+
+/** A list of users rendered as mentions, collapsed to "A, B and N others". */
+function UserMentionList(props: { users: ReviewUser[] }) {
+  return (
+    <>
+      {formatNameList(props.users, { max: 2 }).map((segment, index) =>
+        segment.type === "item" ? (
+          <UserMention
+            key={segment.item.id}
+            user={getUserCardData(segment.item)}
+          />
+        ) : (
+          <React.Fragment key={`sep-${index}`}>{segment.text}</React.Fragment>
+        ),
+      )}
+    </>
+  );
 }
 
 /**
@@ -64,28 +69,14 @@ function getApprovers(build: Build): ReviewUser[] {
  * known. Names beyond the first two collapse into "and N others".
  */
 function ApprovalCredit(props: { build: Build }) {
-  const [first, second, ...rest] = getApprovers(props.build);
-  if (!first) {
+  const approvers = getApprovers(props.build);
+  if (approvers.length === 0) {
     return null;
   }
   return (
     <>
       {" by "}
-      <UserMention user={getUserCardData(first)} />
-      {second ? (
-        rest.length > 0 ? (
-          <>
-            {", "}
-            <UserMention user={getUserCardData(second)} />
-            {` and ${rest.length} other${rest.length > 1 ? "s" : ""}`}
-          </>
-        ) : (
-          <>
-            {" and "}
-            <UserMention user={getUserCardData(second)} />
-          </>
-        )
-      ) : null}
+      <UserMentionList users={approvers} />
     </>
   );
 }
