@@ -15,11 +15,6 @@ const _BuildFragment = graphql(`
       affectedComponents {
         name
         count
-        location {
-          file
-          line
-          column
-        }
       }
       affectedTests {
         name
@@ -37,6 +32,17 @@ const _BuildFragment = graphql(`
 type Build = DocumentType<typeof _BuildFragment>;
 type ImpactAnalysis = NonNullable<Build["impactAnalysis"]>;
 
+/**
+ * An impacted entity to list. Tests carry a source `location` (so their chip
+ * links back to code); components don't, so it's optional.
+ */
+type AffectedItem = Pick<
+  ImpactAnalysis["affectedTests"][number],
+  "name" | "count"
+> & {
+  location?: ImpactAnalysis["affectedTests"][number]["location"];
+};
+
 const COLLAPSED_ITEM_COUNT = 5;
 
 /**
@@ -46,9 +52,7 @@ const COLLAPSED_ITEM_COUNT = 5;
  * to the most affected ones by default since each name takes a full row.
  */
 function AffectedItemsSection(props: {
-  items: ImpactAnalysis["affectedComponents"];
-  /** Icon for the card title, conveying the "impact" of the changes. */
-  titleIcon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  items: readonly AffectedItem[];
   /** Icon shown on each entity chip (a test, a component…). */
   itemIcon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   title: string;
@@ -64,7 +68,7 @@ function AffectedItemsSection(props: {
   return (
     <Panel elevation={0}>
       <PanelHeader className="mb-2">
-        <PanelTitle icon={props.titleIcon}>{props.title}</PanelTitle>
+        <PanelTitle icon={RadarIcon}>{props.title}</PanelTitle>
       </PanelHeader>
       <ul className="flex flex-col px-2">
         {visibleItems.map((item) => (
@@ -124,7 +128,6 @@ export function ImpactAnalysisSection(props: {
     return (
       <AffectedItemsSection
         items={components}
-        titleIcon={RadarIcon}
         itemIcon={ComponentIcon}
         title="Affected components"
         seeAllLabel={(count) => `View all ${count} components`}
@@ -137,7 +140,6 @@ export function ImpactAnalysisSection(props: {
   return (
     <AffectedItemsSection
       items={tests}
-      titleIcon={RadarIcon}
       itemIcon={FlaskConicalIcon}
       title="Affected tests"
       seeAllLabel={(count) => `View all ${count} tests`}
