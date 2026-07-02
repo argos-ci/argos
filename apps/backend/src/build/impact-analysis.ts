@@ -235,19 +235,16 @@ export async function getBuildImpactAnalysis(
           ),
         )
         .castTo<ChangedRow[]>(),
-      // Components/tests impacted by the build: changed screenshots AND brand-new
-      // (added) ones. Added screenshots have no base, so they're excluded from
-      // `changedRows`, but they still affect their component/test.
+      // Components/tests impacted by the build's changes: modified ("changed")
+      // and brand-new ("added") screenshots. Added screenshots have no base, so
+      // they're excluded from `changedRows`, but they still affect their
+      // component/test. Failures and retried failures also lack a base, but they
+      // are test failures rather than visual changes to review — so, like
+      // removed, unchanged and ignored diffs, they must not be counted here.
       ScreenshotDiff.query()
         .where("screenshot_diffs.buildId", build.id)
-        .whereNotNull("screenshot_diffs.compareScreenshotId")
-        .where("screenshot_diffs.ignored", false)
-        .where((qb) =>
-          qb
-            .whereNull("screenshot_diffs.baseScreenshotId")
-            .orWhere("screenshot_diffs.score", ">", 0),
-        )
         .joinRelated("compareScreenshot")
+        .whereIn(raw(ScreenshotDiff.selectDiffStatus), ["added", "changed"])
         .select(
           raw(`"compareScreenshot"."metadata"->'story'->>'id'`).as("storyId"),
           raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as(

@@ -32,6 +32,10 @@ export async function getPreviousDiffApprovalIds(
     .select("screenshot_diffs.id")
     .leftJoinRelated("[compareScreenshot,baseScreenshot]")
     .where("screenshot_diffs.buildId", args.build.id)
+    // Ignored diffs are not part of the review, so they never count as a
+    // previously-approved change — even when their fingerprint or file matches
+    // a prior approval.
+    .where("screenshot_diffs.ignored", false)
     .where((qb) => {
       if (previousApprovals.fingerprints.size > 0) {
         qb.orWhereIn(

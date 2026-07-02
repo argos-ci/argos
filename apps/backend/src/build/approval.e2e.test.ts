@@ -270,6 +270,44 @@ describe("getPreviousDiffApprovalIds", () => {
     expect(diffIds).toEqual([]);
   });
 
+  test("excludes ignored diffs of the current build", async ({
+    previousBuild,
+    build,
+    compareBucket,
+  }) => {
+    const fingerprint = "fp-ignored-diff";
+    const previousScreenshot = await factory.Screenshot.create();
+    const previousDiff = await factory.ScreenshotDiff.create({
+      buildId: previousBuild.id,
+      compareScreenshotId: previousScreenshot.id,
+      fingerprint,
+    });
+    const buildReview = await factory.BuildReview.create({
+      buildId: previousBuild.id,
+      state: "approved",
+    });
+    await factory.ScreenshotDiffReview.create({
+      buildReviewId: buildReview.id,
+      screenshotDiffId: previousDiff.id,
+      state: "approved",
+    });
+    // The current diff matches the previous approval by fingerprint, but it is
+    // ignored — so it must not count as a previously-approved change.
+    const currentScreenshot = await factory.Screenshot.create();
+    const currentDiff = await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      compareScreenshotId: currentScreenshot.id,
+      fingerprint,
+    });
+    await currentDiff.$query().patch({ ignored: true });
+
+    const diffIds = await getPreviousDiffApprovalIds({
+      build,
+      compareBucket,
+    });
+    expect(diffIds).toEqual([]);
+  });
+
   test("filters approvals by user id", async ({
     previousBuild,
     build,

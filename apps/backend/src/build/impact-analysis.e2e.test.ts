@@ -177,6 +177,130 @@ describe("getBuildImpactAnalysis", () => {
     });
   });
 
+  test("excludes failed and retried screenshots from affected tests", async ({
+    compareBucket,
+    build,
+  }) => {
+    const [addedScreenshot, failedScreenshot, retriedFailedScreenshot] =
+      await factory.Screenshot.createMany(3, [
+        {
+          screenshotBucketId: compareBucket.id,
+          metadata: {
+            browser: { name: "chromium", version: "120.0" },
+            story: { id: "forms-input--default" },
+            sdk: { name: "@argos-ci/storybook", version: "1.0.0" },
+            automationLibrary: { name: "storybook", version: "8.0.0" },
+          },
+        },
+        {
+          screenshotBucketId: compareBucket.id,
+          name: "Login flow (failed).png",
+          metadata: {
+            test: { title: "Login flow", titlePath: ["Login flow"] },
+            sdk: { name: "@argos-ci/playwright", version: "1.0.0" },
+            automationLibrary: { name: "playwright", version: "1.0.0" },
+          },
+        },
+        {
+          screenshotBucketId: compareBucket.id,
+          name: "Signup flow (failed).png",
+          metadata: {
+            // A retried failure: `retry` differs from `retries`.
+            test: {
+              title: "Signup flow",
+              titlePath: ["Signup flow"],
+              retry: 0,
+              retries: 2,
+            },
+            sdk: { name: "@argos-ci/playwright", version: "1.0.0" },
+            automationLibrary: { name: "playwright", version: "1.0.0" },
+          },
+        },
+      ]);
+    // Only the added screenshot is a real change; the (retried) failures have
+    // no base either, but they must not be counted as affected.
+    await factory.ScreenshotDiff.createMany(
+      3,
+      [addedScreenshot!, failedScreenshot!, retriedFailedScreenshot!].map(
+        (screenshot) => ({
+          buildId: build.id,
+          baseScreenshotId: null,
+          compareScreenshotId: screenshot.id,
+          score: null,
+        }),
+      ),
+    );
+
+    const analysis = await getBuildImpactAnalysis(build);
+
+    expect(analysis.affectedComponents).toEqual([
+      { name: "forms-input", count: 1 },
+    ]);
+    expect(analysis.affectedStories).toEqual([
+      { name: "forms-input--default", count: 1 },
+    ]);
+    expect(analysis.affectedTests).toEqual([]);
+  });
+
+  test("excludes ignored screenshots from the analysis", async ({
+    project,
+    compareBucket,
+    build,
+  }) => {
+    const [changedScreenshot, ignoredScreenshot] =
+      await factory.Screenshot.createMany(2, [
+        {
+          screenshotBucketId: compareBucket.id,
+          metadata: {
+            browser: { name: "chromium", version: "120.0" },
+            story: { id: "actions-button--primary" },
+            sdk: { name: "@argos-ci/storybook", version: "1.0.0" },
+            automationLibrary: { name: "storybook", version: "8.0.0" },
+          },
+        },
+        {
+          screenshotBucketId: compareBucket.id,
+          metadata: {
+            browser: { name: "chromium", version: "120.0" },
+            story: { id: "actions-menu--open" },
+            sdk: { name: "@argos-ci/storybook", version: "1.0.0" },
+            automationLibrary: { name: "storybook", version: "8.0.0" },
+          },
+        },
+      ]);
+    const baseScreenshots = await factory.Screenshot.createMany(2, {
+      screenshotBucketId: (
+        await factory.ScreenshotBucket.create({ projectId: project.id })
+      ).id,
+    });
+    await factory.ScreenshotDiff.createMany(2, [
+      {
+        buildId: build.id,
+        baseScreenshotId: baseScreenshots[0]!.id,
+        compareScreenshotId: changedScreenshot!.id,
+        score: 0.4,
+      },
+      // An ignored change must be excluded from every aggregate.
+      {
+        buildId: build.id,
+        baseScreenshotId: baseScreenshots[1]!.id,
+        compareScreenshotId: ignoredScreenshot!.id,
+        score: 0.4,
+        ignored: true,
+      },
+    ]);
+
+    const analysis = await getBuildImpactAnalysis(build);
+
+    expect(analysis.changedCount).toBe(1);
+    expect(analysis.affectedComponents).toEqual([
+      { name: "actions-button", count: 1 },
+    ]);
+    expect(analysis.affectedStories).toEqual([
+      { name: "actions-button--primary", count: 1 },
+    ]);
+  });
+
   test("returns empty aggregates without metadata", async ({ build }) => {
     const analysis = await getBuildImpactAnalysis(build);
     expect(analysis).toEqual({
