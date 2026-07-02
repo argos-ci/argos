@@ -65,7 +65,7 @@ type EntityIcon = React.ComponentType<{
 function EntityName(props: { icon: EntityIcon; children: React.ReactNode }) {
   const { icon: Icon } = props;
   return (
-    <span className="bg-primary-ui text-primary-low mx-0.5 rounded px-1 py-0.5">
+    <span className="bg-primary-ui text-primary-low mx-0.5 rounded px-1 py-0.5 wrap-break-word">
       <Icon className="mr-1 inline size-3.5 align-[-0.125em]" strokeWidth={2} />
       {props.children}
     </span>
@@ -273,13 +273,10 @@ export function ChangeSummary(props: { build: Build }) {
   const analysis = props.build.impactAnalysis;
   const { stats } = useBuildDiffState();
 
+  // No analysis to summarize: don't render an insights card at all — the build
+  // description already prompts the reviewer.
   if (!analysis) {
-    return (
-      <ChangeSummaryPanel>
-        Visual changes were detected in this build. Please review the
-        screenshots and confirm whether these changes are expected.
-      </ChangeSummaryPanel>
-    );
+    return null;
   }
 
   const added = stats?.added ?? 0;
