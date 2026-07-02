@@ -34,6 +34,19 @@ export function getGitlabClient(params: {
 
 export async function getGitlabClientFromAccount(
   account: Account,
+  options: {
+    /**
+     * Controls whether the account owners are notified by email when the token
+     * turns out to be invalid:
+     * - `"headless"`: the client is used server-side with no user watching (e.g.
+     *   build processing). The failure is invisible to the user, so we email the
+     *   owners to ask them to reconnect GitLab.
+     * - `"manual"`: the client serves an interactive request (e.g. selecting
+     *   repositories in the UI). The failure is surfaced in the UI directly, so
+     *   we don't send an email.
+     */
+    mode: "manual" | "headless";
+  },
 ): Promise<GitlabClient | null> {
   if (!account.gitlabAccessToken) {
     return null;
@@ -58,20 +71,25 @@ export async function getGitlabClientFromAccount(
         error.message === "Not Found" ||
         error.message === "invalid_token")
     ) {
-      const ownerIds = await account.$getOwnerIds();
-      await sendNotification({
-        type: "invalid_gitlab_token",
-        data: {
-          account: {
-            name: account.name || account.slug,
-            settingsURL: new URL(
-              `/${account.slug}/settings/integrations#gitlab`,
-              config.get("server.url"),
-            ).toString(),
+      // Only notify the owners when the failure happens headlessly. In manual
+      // mode the caller surfaces the error to the user directly, so an email
+      // would be redundant noise.
+      if (options.mode === "headless") {
+        const ownerIds = await account.$getOwnerIds();
+        await sendNotification({
+          type: "invalid_gitlab_token",
+          data: {
+            account: {
+              name: account.name || account.slug,
+              settingsURL: new URL(
+                `/${account.slug}/settings/integrations#gitlab`,
+                config.get("server.url"),
+              ).toString(),
+            },
           },
-        },
-        recipients: ownerIds,
-      });
+          recipients: ownerIds,
+        });
+      }
       return null;
     }
     throw error;

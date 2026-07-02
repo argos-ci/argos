@@ -47,7 +47,9 @@ export const resolvers: IResolvers = {
       if (!account.gitlabAccessToken) {
         throw notFound("Account has no GitLab access token.");
       }
-      const client = await getGitlabClientFromAccount(account);
+      const client = await getGitlabClientFromAccount(account, {
+        mode: "manual",
+      });
       if (!client) {
         throw notFound("Invalid GitLab access token.");
       }

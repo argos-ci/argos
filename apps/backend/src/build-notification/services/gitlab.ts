@@ -30,7 +30,9 @@ export async function getGitLabNotificationContext(
     return null;
   }
 
-  const gitlabClient = await getGitlabClientFromAccount(account);
+  const gitlabClient = await getGitlabClientFromAccount(account, {
+    mode: "headless",
+  });
 
   if (!gitlabClient) {
     return null;

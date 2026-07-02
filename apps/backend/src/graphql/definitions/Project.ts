@@ -439,7 +439,9 @@ const getOrCreateGitlabProject = async (props: {
   account: Account;
   gitlabProjectId: string;
 }): Promise<GitlabProject> => {
-  const client = await getGitlabClientFromAccount(props.account);
+  const client = await getGitlabClientFromAccount(props.account, {
+    mode: "manual",
+  });
   invariant(client, "Gitlab client not found");
 
   const gitlabProjectId = Number(props.gitlabProjectId);
