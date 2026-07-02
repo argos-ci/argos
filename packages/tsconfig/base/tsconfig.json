@@ -5,7 +5,7 @@
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",
-        "schema": "../backend/src/graphql/__generated__/schema.gql"
+        "schema": "../../../apps/backend/src/graphql/__generated__/schema.gql"
       }
     ]
   }
