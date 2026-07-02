@@ -11,6 +11,7 @@ import { EmojiPickerPopover, EmojiPickerTrigger } from "@/ui/EmojiPicker";
 import { IconButton } from "@/ui/IconButton";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
+import { formatNameListText } from "@/util/nameList";
 
 const _CommentFragment = graphql(`
   fragment CommentReactions_Comment on Comment {
@@ -96,16 +97,7 @@ function getReactionTooltip(group: ReactionGroup): string {
   if (names.length === 0) {
     return "";
   }
-  if (names.length === 1) {
-    return `${names[0]} reacted with ${group.emoji}`;
-  }
-  const head = names.slice(0, 3);
-  const rest = names.length - head.length;
-  const list =
-    rest > 0
-      ? `${head.join(", ")} and ${rest} other${rest > 1 ? "s" : ""}`
-      : `${head.slice(0, -1).join(", ")} and ${head[head.length - 1]}`;
-  return `${list} reacted with ${group.emoji}`;
+  return `${formatNameListText(names, { max: 3 })} reacted with ${group.emoji}`;
 }
 
 /**
