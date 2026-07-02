@@ -30,7 +30,7 @@ const LazyBrowserIcon = lazy(() =>
 function BrowserIcon(props: { browser: MetadataBrowser; className?: string }) {
   const { browser, ...rest } = props;
   return (
-    <Suspense fallback={<GlobeIcon {...rest} />}>
+    <Suspense fallback={<GlobeIcon aria-busy {...rest} />}>
       <LazyBrowserIcon browser={browser} {...rest} />
     </Suspense>
   );
