@@ -100,11 +100,11 @@ export function BuildSummary(props: { build: Build }) {
   const hasScreenshots = (stats?.total ?? 0) > 0;
 
   return (
-    <section className="flex flex-col gap-10">
+    <section className="flex flex-col gap-10 pt-4">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col">
           <SummaryBuildTitle build={build} hasFailures={hasFailures} />
-          <BuildSummaryDescription build={build} />
+          <BuildSummaryDescription build={build} canReview={canReview} />
         </div>
         {showReviewInsights && <ChangeSummary build={build} />}
         {isOrphan && <OrphanNextSteps build={build} />}

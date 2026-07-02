@@ -1,5 +1,6 @@
 import React from "react";
 
+import { useAuthTokenPayload } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
 import { BuildMode, BuildStatus, BuildType, ReviewState } from "@/gql/graphql";
 import { getUserCardData, UserMention } from "@/ui/UserCard";
@@ -65,19 +66,63 @@ function UserMentionList(props: { users: ReviewUser[] }) {
 }
 
 /**
- * " by <names>" credit for an approved build, or nothing when no approver is
- * known. Names beyond the first two collapse into "and N others".
+ * Reminder that a build whose decision is already made can still be reviewed
+ * again. Rendered only for viewers who actually have the right to review.
  */
-function ApprovalCredit(props: { build: Build }) {
-  const approvers = getApprovers(props.build);
-  if (approvers.length === 0) {
+function ReReviewNote(props: { canReview: boolean }) {
+  if (!props.canReview) {
     return null;
   }
+  return <> You can still review it if you need to revisit the decision.</>;
+}
+
+/**
+ * Description of an approved build: who approved it — phrased in the first
+ * person when the viewer is one of them — what that means (baseline or
+ * merge-ready), and that it can still be reviewed again.
+ */
+function ApprovedDescription(props: { build: Build; canReview: boolean }) {
+  const { build, canReview } = props;
+  const authPayload = useAuthTokenPayload();
+  const viewerId = authPayload?.account.id ?? null;
+  const approvers = getApprovers(build);
+  const viewerApproved =
+    viewerId !== null && approvers.some((user) => user.id === viewerId);
+  const others = approvers.filter((user) => user.id !== viewerId);
+
+  const outcome =
+    build.mode === BuildMode.Monitoring
+      ? "This build is now eligible as a baseline for future comparisons."
+      : "This build is considered safe to merge.";
+
   return (
-    <>
-      {" by "}
-      <UserMentionList users={approvers} />
-    </>
+    <Paragraph>
+      {viewerApproved ? (
+        <>
+          You approved the changes
+          {others.length > 0 ? (
+            <>
+              {" along with "}
+              <UserMentionList users={others} />
+            </>
+          ) : null}
+          .
+        </>
+      ) : (
+        <>
+          The changes were approved
+          {approvers.length > 0 ? (
+            <>
+              {" by "}
+              <UserMentionList users={approvers} />
+            </>
+          ) : null}
+          .
+        </>
+      )}{" "}
+      {outcome}
+      <ReReviewNote canReview={canReview} />
+    </Paragraph>
   );
 }
 
@@ -90,7 +135,13 @@ function ChangesResume() {
   );
 }
 
-export function BuildSummaryDescription({ build }: { build: Build }) {
+export function BuildSummaryDescription({
+  build,
+  canReview,
+}: {
+  build: Build;
+  canReview: boolean;
+}) {
   const { stats } = useBuildDiffState();
   const hasFailures = stats && Boolean(stats.failure);
 
@@ -143,22 +194,15 @@ export function BuildSummaryDescription({ build }: { build: Build }) {
       return <ChangesResume />;
 
     case BuildStatus.Accepted:
-      return build.mode === BuildMode.Monitoring ? (
-        <Paragraph>
-          The changes were approved
-          <ApprovalCredit build={build} />. This build is now eligible as a
-          baseline for future comparisons.
-        </Paragraph>
-      ) : (
-        <Paragraph>
-          The changes were approved
-          <ApprovalCredit build={build} />, it means this build is considered
-          safe to be merged.
-        </Paragraph>
-      );
+      return <ApprovedDescription build={build} canReview={canReview} />;
 
     case BuildStatus.Rejected:
-      return <Paragraph>The changes in this build were rejected.</Paragraph>;
+      return (
+        <Paragraph>
+          The changes in this build were rejected.
+          <ReReviewNote canReview={canReview} />
+        </Paragraph>
+      );
 
     case BuildStatus.NoChanges:
       return <Paragraph>All screenshots match the baseline.</Paragraph>;
