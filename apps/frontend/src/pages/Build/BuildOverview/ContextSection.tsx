@@ -1,8 +1,8 @@
 import { clsx } from "clsx";
-import { MonitorSmartphoneIcon } from "lucide-react";
+import { MonitorSmartphoneIcon, SunMoonIcon } from "lucide-react";
 
 import { DocumentType, graphql } from "@/gql";
-import { BuildType, ScreenshotMetadataColorScheme } from "@/gql/graphql";
+import { BuildType } from "@/gql/graphql";
 import { Link } from "@/ui/Link";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { StackedItems } from "@/ui/StackedItems";
@@ -20,6 +20,7 @@ import { getBrowserLabel } from "../metadata/browser/browserLabels";
 import {
   colorSchemeIcons,
   getViewportIconKind,
+  isColorScheme,
   viewportIcons,
 } from "../metadata/metadataIcons";
 
@@ -51,9 +52,9 @@ const STACKED_ICON_CLASSNAME =
 
 /** Icon component for a color scheme name (`light` / `dark`). */
 function getColorSchemeIcon(colorScheme: string) {
-  return colorScheme === "dark"
-    ? colorSchemeIcons[ScreenshotMetadataColorScheme.Dark]
-    : colorSchemeIcons[ScreenshotMetadataColorScheme.Light];
+  return isColorScheme(colorScheme)
+    ? colorSchemeIcons[colorScheme]
+    : SunMoonIcon;
 }
 
 /** Pick the singular or plural label depending on how many items there are. */
