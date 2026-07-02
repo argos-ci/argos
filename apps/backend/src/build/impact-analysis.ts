@@ -54,6 +54,7 @@ type ChangedRow = {
   score: number | null;
   storyId: string | null;
   testTitle: string | null;
+  testTitlePath: string[] | null;
   name: string | null;
 };
 
@@ -117,11 +118,17 @@ function countByName(values: (string | null)[]): BuildImpactItem[] {
  * The full path of a test ("Suite › nested › case"), matching how tests are
  * displayed in screenshot metadata, falling back to its leaf title.
  */
-function getTestName(row: AffectedRow): string | null {
-  if (row.testTitlePath && row.testTitlePath.length > 0) {
+function getTestName(row: {
+  testTitlePath: string[] | null;
+  testTitle: string | null;
+}): string | null {
+  // `titlePath` comes from JSON metadata (jsonb `->`), so guard against a
+  // malformed non-array value before treating it as one.
+  if (Array.isArray(row.testTitlePath) && row.testTitlePath.length > 0) {
     const joined = row.testTitlePath
-      .filter(Boolean)
+      .filter((title): title is string => typeof title === "string")
       .map((title) => title.trim())
+      .filter(Boolean)
       .join(" › ");
     if (joined) {
       return joined;
@@ -158,15 +165,22 @@ function countTests(rows: AffectedRow[]): BuildImpactItem[] {
   );
 }
 
-/** Build a location from an affected row, or null when it lacks one. */
+/** Build a location from an affected row, or null when it lacks a usable one. */
 function parseLocation(row: AffectedRow): ImpactItemLocation | null {
   if (row.testFile === null || row.testLine === null) {
     return null;
   }
+  // `line`/`column` come from JSON metadata, so a non-numeric value would yield
+  // NaN and break the non-null GraphQL Int fields — drop the location instead.
+  const line = Number(row.testLine);
+  if (!Number.isFinite(line)) {
+    return null;
+  }
+  const column = Number(row.testColumn);
   return {
     file: row.testFile,
-    line: Number(row.testLine),
-    column: row.testColumn === null ? 0 : Number(row.testColumn),
+    line,
+    column: Number.isFinite(column) ? column : 0,
   };
 }
 
@@ -215,6 +229,9 @@ export async function getBuildImpactAnalysis(
           raw(`"compareScreenshot"."metadata"->'story'->>'id'`).as("storyId"),
           raw(`"compareScreenshot"."metadata"->'test'->>'title'`).as(
             "testTitle",
+          ),
+          raw(`"compareScreenshot"."metadata"->'test'->'titlePath'`).as(
+            "testTitlePath",
           ),
         )
         .castTo<ChangedRow[]>(),
@@ -287,7 +304,7 @@ export async function getBuildImpactAnalysis(
     }
     const name =
       (row.storyId ? getStoryComponent(row.storyId) : null) ??
-      row.testTitle ??
+      getTestName(row) ??
       row.name;
     if (name) {
       largestChange = { name, score };
