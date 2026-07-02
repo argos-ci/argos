@@ -38,8 +38,8 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { Menu, MenuItem, MenuItemIcon, MenuTrigger } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
-import { Popover } from "@/ui/Popover";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
+import { Popover } from "@/ui/Popover";
 import { getUserCardData } from "@/ui/UserCard";
 import {
   getLatestActiveReviewByUser,
