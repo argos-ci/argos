@@ -1,6 +1,6 @@
 import { memo, startTransition, useCallback, useRef } from "react";
 import clsx from "clsx";
-import { PanelsTopLeftIcon, SearchIcon, XIcon } from "lucide-react";
+import { HomeIcon, SearchIcon, XIcon } from "lucide-react";
 import {
   Tab as RACTab,
   TabList as RACTabList,
@@ -24,20 +24,42 @@ import { BuildParams, getBuildOverviewURL } from "./BuildParams";
 import { FilterButton } from "./metadata/filters/FilterButton";
 import { FilterChips } from "./metadata/filters/FilterChips";
 
+const tabItemClassName = clsx(
+  "text-low rac-focus cursor-default rounded-sm px-2 text-sm leading-6 font-medium",
+  "data-hovered:bg-ui",
+  "data-selected:text-default data-selected:bg-ui",
+);
+
 function Tab(
   props: TabProps & {
     ref?: React.Ref<HTMLDivElement>;
   },
 ) {
+  return <RACTab className={tabItemClassName} {...props} />;
+}
+
+/**
+ * Link to the build overview, styled to match — and sit alongside — the sidebar
+ * tabs (same pill style and height).
+ */
+function OverviewButton(props: { params: BuildParams }) {
+  const { params } = props;
+  const selected = params.diffId == null;
   return (
-    <RACTab
-      className={clsx(
-        "text-low rac-focus cursor-default rounded-sm px-2 text-sm leading-6 font-medium",
-        "data-hovered:bg-ui",
-        "data-selected:text-default data-selected:bg-ui",
-      )}
-      {...props}
-    />
+    <Tooltip content="Overview">
+      <HeadlessLink
+        href={getBuildOverviewURL(params)}
+        aria-label="Overview"
+        aria-current={selected ? "page" : undefined}
+        className={clsx(
+          tabItemClassName,
+          "flex h-6 items-center",
+          selected && "bg-ui text-default",
+        )}
+      >
+        <HomeIcon className="size-4" />
+      </HeadlessLink>
+    </Tooltip>
   );
 }
 
@@ -55,13 +77,13 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
   const { search, setSearch } = useSearchState();
   return (
     <div className="relative flex-1">
-      <SearchIcon className="text-low pointer-events-none absolute my-3 size-4" />
+      <SearchIcon className="text-low pointer-events-none absolute my-4 size-4" />
       <input
         ref={ref}
         type="text"
         autoFocus
         placeholder="Find..."
-        className="text-default placeholder:text-low w-full bg-transparent p-2 pl-6 text-xs leading-6 outline-hidden"
+        className="text-default placeholder:text-low w-full bg-transparent py-3 pr-2 pl-6 text-xs leading-6 outline-hidden"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onKeyDown={(event) => {
@@ -71,28 +93,6 @@ function SearchInput({ ref }: { ref: React.Ref<HTMLInputElement> }) {
         }}
       />
     </div>
-  );
-}
-
-function OverviewButton(props: { params: BuildParams }) {
-  const { params } = props;
-  const selected = params.diffId == null;
-  return (
-    <Tooltip content="Overview">
-      <HeadlessLink
-        href={getBuildOverviewURL(params)}
-        aria-label="Overview"
-        aria-current={selected ? "page" : undefined}
-        className={clsx(
-          "rac-focus flex size-7 shrink-0 items-center justify-center rounded-sm transition",
-          selected
-            ? "bg-ui text-default"
-            : "text-low data-hovered:bg-ui data-hovered:text-default",
-        )}
-      >
-        <PanelsTopLeftIcon className="size-4" strokeWidth={1.75} />
-      </HeadlessLink>
-    </Tooltip>
   );
 }
 
@@ -138,7 +138,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
   });
   return (
     <Tabs
-      defaultSelectedKey={!build.stats?.total ? "info" : "screenshots"}
+      defaultSelectedKey={!build.stats?.total ? "info" : "snapshots"}
       className="group/sidebar flex min-h-0 flex-1 shrink-0 flex-col"
     >
       {build.type !== BuildType.Skipped ? (
@@ -162,7 +162,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
                 className="flex flex-1 shrink-0 gap-2 py-3"
                 aria-label="Build details"
               >
-                <Tab id="screenshots">Screenshots</Tab>
+                <Tab id="snapshots">Snapshots</Tab>
                 <Tab id="info">Info</Tab>
               </RACTabList>
               <HotkeyTooltip
@@ -191,7 +191,7 @@ const LeftSidebarTabs = memo(function LeftSidebarTabs(props: {
       ) : (
         <>
           {build.type !== BuildType.Skipped ? (
-            <TabPanel id="screenshots" className="flex min-h-0 flex-1 flex-col">
+            <TabPanel id="snapshots" className="flex min-h-0 flex-1 flex-col">
               <FilterChips />
               <BuildDiffList />
             </TabPanel>
