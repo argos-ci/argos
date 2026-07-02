@@ -37,7 +37,7 @@ export function GuidanceStep(props: {
 }) {
   return (
     <li className="flex gap-3">
-      <span className="bg-info-ui text-info-low flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums">
+      <span className="bg-primary-ui text-primary-low flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums">
         {props.index}
       </span>
       <span className="min-w-0 flex-1 text-balance">{props.children}</span>
@@ -59,7 +59,7 @@ export function SectionHeader(props: {
   return (
     <h2
       className={clsx(
-        "text-primary-low text-xs font-bold tracking-wider uppercase",
+        "font-medium",
         { "mb-4": !props.noMargin },
         props.className,
       )}

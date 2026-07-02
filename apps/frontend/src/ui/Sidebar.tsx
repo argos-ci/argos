@@ -1,47 +1,6 @@
-import clsx from "clsx";
-
 export function Sidebar(props: { children: React.ReactNode }) {
   const { children } = props;
   return (
     <div className="flex min-h-0 max-w-80 flex-1 flex-col">{children}</div>
   );
-}
-
-export function SidebarSection(props: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const { children, className } = props;
-  return (
-    <div
-      className={clsx(
-        "bg-app border-thin rounded-xl py-3 shadow-xs",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-export function SidebarHeader(props: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const { children, className } = props;
-  return (
-    <div
-      className={clsx(
-        "mb-3 flex shrink-0 items-center justify-between gap-4 px-4 pr-3",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-export function SidebarHeading(props: { children: React.ReactNode }) {
-  const { children } = props;
-  return <h2 className="text-low text-sm font-medium">{children}</h2>;
 }

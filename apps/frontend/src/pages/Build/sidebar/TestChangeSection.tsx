@@ -6,7 +6,7 @@ import { useNumberFormatter } from "react-aria";
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { graphql, type DocumentType } from "@/gql";
 import { HeadlessLink } from "@/ui/Link";
-import { SidebarHeader, SidebarHeading, SidebarSection } from "@/ui/Sidebar";
+import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { getUserCardData, UserHoverCard } from "@/ui/UserCard";
 
 import { useProjectParams } from "../../Project/ProjectParams";
@@ -47,9 +47,9 @@ export function TestChangeSection(props: {
   const lastIgnoredTrail =
     lastTrail?.action === "files.ignored" ? lastTrail : null;
   return (
-    <SidebarSection>
-      <SidebarHeader>
-        <SidebarHeading>Change</SidebarHeading>
+    <Panel>
+      <PanelHeader>
+        <PanelTitle>Change</PanelTitle>
         <HeadlessLink
           className="hover:text-default text-low flex items-center text-xs"
           href={getTestURL(
@@ -59,7 +59,7 @@ export function TestChangeSection(props: {
         >
           See details
         </HeadlessLink>
-      </SidebarHeader>
+      </PanelHeader>
       <div className="shrink-0 px-4">
         <InsightTitle
           className="mb-2"
@@ -124,6 +124,6 @@ export function TestChangeSection(props: {
           </>
         )}
       </div>
-    </SidebarSection>
+    </Panel>
   );
 }

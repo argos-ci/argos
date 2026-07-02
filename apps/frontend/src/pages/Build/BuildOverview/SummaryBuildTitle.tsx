@@ -2,7 +2,11 @@ import { assertNever } from "@argos/util/assertNever";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType } from "@/gql/graphql";
-import { getBuildDescriptor } from "@/util/build";
+import {
+  buildStatusDescriptors,
+  buildTypeDescriptors,
+  getBuildDescriptor,
+} from "@/util/build";
 
 const _BuildFragment = graphql(`
   fragment SummaryBuildTitle_Build on Build {
@@ -27,7 +31,7 @@ function getBuildSummaryTitle(props: { build: Build; hasFailures: boolean }) {
   }
 
   if (props.build.type === BuildType.Reference) {
-    return "New baseline";
+    return buildTypeDescriptors.reference.label;
   }
 
   switch (props.build.status) {
@@ -37,11 +41,9 @@ function getBuildSummaryTitle(props: { build: Build; hasFailures: boolean }) {
     case BuildStatus.ChangesDetected:
     case BuildStatus.Accepted:
     case BuildStatus.Rejected:
-      return "Visual changes detected";
+      return buildStatusDescriptors.CHANGES_DETECTED.label;
 
     case BuildStatus.NoChanges:
-      return "No changes detected";
-
     case BuildStatus.Aborted:
     case BuildStatus.Error:
     case BuildStatus.Expired:
@@ -62,5 +64,5 @@ export function SummaryBuildTitle(props: {
     build: props.build,
     hasFailures: props.hasFailures,
   });
-  return <h1 className="text-3xl font-bold tracking-tight">{title}</h1>;
+  return <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>;
 }

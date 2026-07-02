@@ -1,7 +1,7 @@
 import {
   BookMarkedIcon,
   GlobeIcon,
-  LaptopIcon,
+  MonitorSmartphoneIcon,
   PrinterIcon,
   SunMoonIcon,
   TagIcon,
@@ -30,7 +30,7 @@ const metadataCategoryDefinitions = {
   [MetadataCategory.viewport]: {
     label: "Viewport",
     pluralLabel: "viewports",
-    icon: LaptopIcon,
+    icon: MonitorSmartphoneIcon,
   },
   [MetadataCategory.colorScheme]: {
     label: "Color scheme",
