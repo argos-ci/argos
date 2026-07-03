@@ -38,6 +38,7 @@ export function BuildBaselineEligibilityChip(props: {
       }
     >
       <Chip
+        className="shrink-0"
         icon={descriptor.icon}
         color={descriptor.color}
         scale={props.scale}
