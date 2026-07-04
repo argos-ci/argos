@@ -85,7 +85,6 @@
     "moment": "^2.30.1",
     "node-cron": "^4.4.1",
     "objection": "^3.1.5",
-    "odiff-bin": "^4.3.8",
     "ora": "^9.4.0",
     "p-memoize": "^8.0.0",
     "p-retry": "^8.0.0",

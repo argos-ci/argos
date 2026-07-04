@@ -13,7 +13,7 @@ exports[`diff E2E > generates different sizes images 1`] = `
 {
   "contentType": "image/png",
   "height": 15,
-  "score": 0.5156000000000001,
+  "score": 0.52,
   "width": 15,
 }
 `;
@@ -22,7 +22,7 @@ exports[`diff E2E > generates images with big diff 1`] = `
 {
   "contentType": "image/png",
   "height": 4469,
-  "score": 0.8096,
+  "score": 0.8109,
   "width": 1000,
 }
 `;
@@ -49,7 +49,7 @@ exports[`diff E2E > works with large size image 1`] = `
 {
   "contentType": "image/png",
   "height": 13358,
-  "score": 0.2332,
+  "score": 0.2372,
   "width": 900,
 }
 `;

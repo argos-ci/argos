@@ -37,6 +37,13 @@ export class ImageHandle {
   }
 
   /**
+   * Get the path of the original image file.
+   */
+  getFilepath(): Promise<string> {
+    return this.#fileHandle.getFilepath();
+  }
+
+  /**
    * Get the image dimensions.
    */
   getDimensions(): Promise<Dimensions> {
