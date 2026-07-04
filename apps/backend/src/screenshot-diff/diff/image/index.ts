@@ -1,18 +1,15 @@
+import { diffScreenshots } from "@argos-ci/mask-fingerprint";
 import * as Sentry from "@sentry/node";
-import { compare } from "odiff-bin";
 
 import { tmpName, type Dimensions, type ImageHandle } from "@/storage";
 
 import type { DiffOptions, DiffResult } from "../types";
 
-// Generate an image diff result.
-//
-// We have been benchmarking other libraries, they are way too slow
-// https://github.com/mapbox/pixelmatch
-// https://github.com/gemini-testing/looks-same
-//
-// Some documentation
-// https://en.wikipedia.org/wiki/Color_difference
+// The pixel comparison runs in @argos-ci/mask-fingerprint (Rust, N-API):
+// both images are decoded once, the two thresholds are evaluated in a single
+// pass, and layout-shift compensation realigns rows in memory before the
+// diff. See https://en.wikipedia.org/wiki/Color_difference for the YIQ
+// distance used by the pixelmatch algorithm.
 
 // On 100x100 images we want to ignore 2 pixels, so:
 // $nbPixels = 100 * 100
@@ -51,59 +48,97 @@ function getConfiguration(threshold: number) {
   };
 }
 
+type DiffConfiguration = ReturnType<typeof getConfiguration>;
+
 /**
- * Wrap odiff `compare` with tracing.
+ * The default threshold for the diff.
  */
-async function odiffCompare(args: {
-  basePath: string;
-  headPath: string;
-  diffPath: string;
-  threshold: number;
-}) {
-  return Sentry.startSpan(
-    {
-      name: "odiff.compare",
-      attributes: {
-        "argos.diff.base_path": args.basePath,
-        "argos.diff.head_path": args.headPath,
-        "argos.diff.diff_path": args.diffPath,
-        "argos.diff.threshold": args.threshold,
-      },
-    },
-    () =>
-      compare(args.basePath, args.headPath, args.diffPath, {
-        outputDiffMask: true,
-        threshold: args.threshold,
-        antialiasing: true,
-      }),
-  );
+const DEFAULT_THRESHOLD = 0.5;
+
+/**
+ * odiff reported its diff percentage rounded to two decimals, so diffs under
+ * 0.005% of the image were treated as a perfect match. Scores are quantized
+ * the same way to keep historical behavior.
+ */
+function quantizeScore(score: number) {
+  return Math.round(score * 10_000) / 10_000;
 }
 
 /**
- * Compute the diff between two images and returns the score.
+ * Layout-shift compensation settings (see mask-fingerprint for semantics).
  */
-async function computeDiff(args: {
-  basePath: string;
-  headPath: string;
-  diffPath: string;
-  threshold: number;
-}): Promise<number> {
-  const result = await odiffCompare(args);
+const LAYOUT_SHIFT_OPTIONS = {
+  /** Minimum consecutive matching rows to accept an equal segment. */
+  minRun: 16,
+  /** Minimum fraction of matched rows for the alignment to be trusted. */
+  minEqualCoverage: 0.3,
+  /** Maximum number of alignment segments. */
+  maxSegments: 32,
+  /** Minimum classic score to attempt alignment when heights are equal. */
+  minClassicScore: 0.05,
+  /** The aligned residual score must be below classic * ratio. */
+  maxResidualRatio: 0.5,
+};
 
-  if (result.match) {
-    return 0;
+/**
+ * Apply threshold gates to both diff scores and pick the resulting diff
+ * (score + mask file).
+ */
+function selectDiffResult(args: {
+  baseScore: number;
+  colorSensitiveScore: number;
+  baseDiffPath: string;
+  colorDiffPath: string;
+  diffConfig: DiffConfiguration;
+  maxDimensions: Dimensions;
+}): DiffResult {
+  const {
+    baseScore,
+    colorSensitiveScore,
+    baseDiffPath,
+    colorDiffPath,
+    diffConfig,
+    maxDimensions,
+  } = args;
+
+  const maxBaseScore = Math.min(
+    diffConfig.baseMaxScore,
+    diffConfig.maximumPixelsToIgnore /
+      (maxDimensions.width * maxDimensions.height),
+  );
+  const adjustedBaseScore = baseScore < maxBaseScore ? 0 : baseScore;
+
+  const adjustedSensitiveScore =
+    colorSensitiveScore < diffConfig.colorSensitiveMaxScore
+      ? 0
+      : colorSensitiveScore;
+
+  if (adjustedBaseScore > 0 && adjustedBaseScore >= adjustedSensitiveScore) {
+    return {
+      score: adjustedBaseScore,
+      file: {
+        path: baseDiffPath,
+        contentType: "image/png",
+        ...maxDimensions,
+      },
+    };
   }
 
-  switch (result.reason) {
-    case "file-not-exists":
-      throw new Error("File not exists");
-    case "layout-diff":
-      return 1;
-    case "pixel-diff":
-      return result.diffPercentage / 100;
-    default:
-      throw new Error("Unknown reason");
+  if (
+    adjustedSensitiveScore > 0 &&
+    adjustedSensitiveScore > adjustedBaseScore
+  ) {
+    return {
+      score: adjustedSensitiveScore,
+      file: {
+        path: colorDiffPath,
+        contentType: "image/png",
+        ...maxDimensions,
+      },
+    };
   }
+
+  return { score: 0 };
 }
 
 /**
@@ -116,30 +151,6 @@ const MAX_PIXELS = 80_000_000;
  * Used when the width or height of the image is not available.
  */
 const DEFAULT_MAX_WIDTH = 2048;
-
-/**
- * Get the maximum dimensions of a list of images.
- */
-async function getMaxDimensions(...images: ImageHandle[]) {
-  const imagesDimensions = await Promise.all(
-    images.map(async (image) => image.getDimensions()),
-  );
-
-  const width = Math.max(...imagesDimensions.map(({ width }) => width));
-  const height = Math.max(...imagesDimensions.map(({ height }) => height));
-
-  const nbPixels = width * height;
-
-  // If the orientation is portrait, we will use the default maximum width.
-  if (nbPixels > MAX_PIXELS && width < height) {
-    return fitIntoMaxPixels({
-      width: DEFAULT_MAX_WIDTH,
-      height: Math.floor(MAX_PIXELS / DEFAULT_MAX_WIDTH),
-    });
-  }
-
-  return fitIntoMaxPixels({ width, height });
-}
 
 /**
  * Make the image scale into the allowed limit of pixels.
@@ -157,9 +168,42 @@ function fitIntoMaxPixels(size: Dimensions) {
 }
 
 /**
- * The default threshold for the diff.
+ * Resolve the file paths to compare. Same-width images are compared as-is:
+ * the diff pads the shorter one with transparency, and row alignment works
+ * on unpadded rows. When widths differ, the smaller image is scaled to fit
+ * the largest dimensions (historical behavior).
  */
-const DEFAULT_THRESHOLD = 0.5;
+async function resolveComparablePaths(
+  base: ImageHandle,
+  head: ImageHandle,
+): Promise<[string, string]> {
+  const [baseDimensions, headDimensions] = await Promise.all([
+    base.getDimensions(),
+    head.getDimensions(),
+  ]);
+
+  if (baseDimensions.width === headDimensions.width) {
+    return Promise.all([base.getFilepath(), head.getFilepath()]);
+  }
+
+  const width = Math.max(baseDimensions.width, headDimensions.width);
+  const height = Math.max(baseDimensions.height, headDimensions.height);
+  const nbPixels = width * height;
+
+  // If the orientation is portrait, we will use the default maximum width.
+  const maxDimensions =
+    nbPixels > MAX_PIXELS && width < height
+      ? fitIntoMaxPixels({
+          width: DEFAULT_MAX_WIDTH,
+          height: Math.floor(MAX_PIXELS / DEFAULT_MAX_WIDTH),
+        })
+      : fitIntoMaxPixels({ width, height });
+
+  // Resize images to the maximum dimensions (sequentially to avoid memory issues)
+  const basePath = await base.enlarge(maxDimensions);
+  const headPath = await head.enlarge(maxDimensions);
+  return [basePath, headPath];
+}
 
 /**
  * Compute the difference between two images.
@@ -178,75 +222,59 @@ export async function diffImages(
     },
     async () => {
       const { threshold = DEFAULT_THRESHOLD } = options;
-      // Get dimensions and diff paths
-      const [maxDimensions, baseDiffPath, colorDiffPath] = await Promise.all([
-        getMaxDimensions(base, head),
-        tmpName({ postfix: ".png" }),
-        tmpName({ postfix: ".png" }),
-      ]);
-
-      // Resize images to the maximum dimensions (sequentially to avoid memory issues)
-      const basePath = await base.enlarge(maxDimensions);
-      const headPath = await head.enlarge(maxDimensions);
-
       const diffConfig = getConfiguration(threshold);
 
-      const [baseScore, colorSensitiveScore] = await Promise.all([
-        computeDiff({
-          basePath,
-          headPath,
-          diffPath: baseDiffPath,
-          threshold: diffConfig.baseThreshold,
-        }),
-        computeDiff({
-          basePath,
-          headPath,
-          diffPath: colorDiffPath,
-          threshold: diffConfig.colorSensitiveThreshold,
-        }),
+      const [basePath, headPath] = await resolveComparablePaths(base, head);
+      const [baseDiffPath, colorDiffPath] = await Promise.all([
+        tmpName({ postfix: ".png" }),
+        tmpName({ postfix: ".png" }),
       ]);
 
-      const maxBaseScore = Math.min(
-        diffConfig.baseMaxScore,
-        diffConfig.maximumPixelsToIgnore /
-          (maxDimensions.width * maxDimensions.height),
+      const result = await Sentry.startSpan({ name: "diffScreenshots" }, () =>
+        diffScreenshots(basePath, headPath, {
+          baseThreshold: diffConfig.baseThreshold,
+          colorThreshold: diffConfig.colorSensitiveThreshold,
+          baseDiffPath,
+          colorDiffPath,
+          layoutShift: LAYOUT_SHIFT_OPTIONS,
+        }),
       );
-      const adjustedBaseScore = baseScore < maxBaseScore ? 0 : baseScore;
 
-      const adjustedSensitiveScore =
-        colorSensitiveScore < diffConfig.colorSensitiveMaxScore
-          ? 0
-          : colorSensitiveScore;
+      const maxDimensions = { width: result.width, height: result.height };
 
-      if (
-        adjustedBaseScore > 0 &&
-        adjustedBaseScore >= adjustedSensitiveScore
-      ) {
-        return {
-          score: adjustedBaseScore,
-          file: {
-            path: baseDiffPath,
-            contentType: "image/png",
-            ...maxDimensions,
-          },
-        };
+      const picked = selectDiffResult({
+        baseScore: quantizeScore(result.baseScore),
+        colorSensitiveScore: quantizeScore(result.colorScore),
+        baseDiffPath,
+        colorDiffPath,
+        diffConfig,
+        maxDimensions,
+      });
+
+      if (!result.layoutShiftApplied) {
+        return picked;
       }
 
-      if (
-        adjustedSensitiveScore > 0 &&
-        adjustedSensitiveScore > adjustedBaseScore
-      ) {
-        return {
-          score: adjustedSensitiveScore,
-          file: {
-            path: colorDiffPath,
-            contentType: "image/png",
-            ...maxDimensions,
-          },
-        };
+      // Inserted rows diff to zero against the realigned base and deleted
+      // rows have no head coordinates: both are counted explicitly on top of
+      // the residual pixel score. The mask is already painted accordingly.
+      const shiftFraction =
+        (result.insertedRows + result.deletedRows) / result.height;
+      const score = Math.min(picked.score + shiftFraction, 1);
+
+      if (score === 0) {
+        return { score: 0 };
       }
 
-      return { score: 0 };
+      // When the residual pixel diff is below the gates, the painted mask
+      // still exists (the base mask is always written on layout shift).
+      const file = picked.file ?? {
+        path: baseDiffPath,
+        contentType: "image/png",
+        ...maxDimensions,
+      };
+
+      return { score, file };
     },
   );
 }

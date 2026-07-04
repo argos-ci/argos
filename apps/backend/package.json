@@ -89,7 +89,6 @@
     "minimatch": "^10.2.6",
     "node-cron": "^4.6.0",
     "objection": "^3.1.5",
-    "odiff-bin": "^4.5.0",
     "ora": "^9.4.1",
     "p-memoize": "^8.0.0",
     "p-retry": "^8.0.0",

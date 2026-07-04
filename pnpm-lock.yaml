@@ -273,9 +273,6 @@ importers:
       objection:
         specifier: ^3.1.5
         version: 3.1.5(knex@3.3.0(pg@8.22.0)(supports-color@10.2.2))
-      odiff-bin:
-        specifier: ^4.5.0
-        version: 4.5.0
       ora:
         specifier: ^9.4.1
         version: 9.4.1
@@ -2307,41 +2304,6 @@ packages:
   '@octokit/webhooks@14.2.0':
     resolution: {integrity: sha512-da6KbdNCV5sr1/txD896V+6W0iamFWrvVl8cHkBSPT+YlvmT3DwXa4jxZnQc+gnuTEqSWbBeoSZYTayXH9wXcw==}
     engines: {node: '>= 20'}
-
-  '@odiff/darwin-arm64@4.5.0':
-    resolution: {integrity: sha512-fztpr/73BNwJqua2xSjGaxkZr9xMVDqYFIKFnZS/MAW1MzHg6lN9r0kno2aY9FSIbCyE6c6/0MqbHs/+AkDhXw==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@odiff/darwin-x64@4.5.0':
-    resolution: {integrity: sha512-UXm/Ak+arL5tP8fwUNKR8vuuUGtm9aYOPS2oLzhkoV5/GfK5vY09nusW6Z5c5ka9VYQQyDHRKOUieXTIZKNdxg==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@odiff/linux-arm64@4.5.0':
-    resolution: {integrity: sha512-tAuSZSW4H6D6rscqpTtZ68dzK+FxbeSSzJHfJqcAmn9k7WWzXIseNRH6XLgFQE8t3bY1u6DqtOxQbE7nQV3ciw==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@odiff/linux-riscv64@4.5.0':
-    resolution: {integrity: sha512-LZ42duK8HpPWNTJplqPufQWD9d5ce26imO1DOHWJoq6sGrYaNaihHJNXOX6EV363lmSEeEZNXZr+xOMgOGJoVg==}
-    cpu: [riscv64]
-    os: [linux]
-
-  '@odiff/linux-x64@4.5.0':
-    resolution: {integrity: sha512-9Png/tO5M70Btcsv68wvIGk2GXIbc2CAw71rbeSOyUm7acFK/rOOCt5m4aJR4ZPC+bqEpB5RBp0kccNv9/Ji3A==}
-    cpu: [x64]
-    os: [linux]
-
-  '@odiff/win32-arm64@4.5.0':
-    resolution: {integrity: sha512-Icz19TRoJXU6hEHppbEd8p4bGhDkE/aeECC/lnQuMMrUE14Meqmj+8Dwr+9/KWifIqDhgebwtH8wnNwH98x5/A==}
-    cpu: [arm64]
-    os: [win32]
-
-  '@odiff/win32-x64@4.5.0':
-    resolution: {integrity: sha512-KSwUwFSmIbLxM+aJPrQggqLhMD+AUJMtsxX531Oiskp1n3z3o2V/6meIBdY6w7ZXb6ZvU/M1WjojPViCqiQFLw==}
-    cpu: [x64]
-    os: [win32]
 
   '@open-draft/deferred-promise@2.2.0':
     resolution: {integrity: sha512-CecwLWx3rhxVQF6V4bAgPS5t+So2sTbPgAzafKkVizyi7tlwpcFpdFqq+wqF2OwNBmqFuu6tOyouTuxgpMfzmA==}
@@ -6735,10 +6697,6 @@ packages:
     resolution: {integrity: sha512-4a+OsYv9UktOJKE+l1A4OufDgdRF9PifWj+tJnHURo/P+WOxpG4GzUFL9qCalmWauao6ogiG+QvnCovwPoyAWA==}
     engines: {node: '>=12.20.0'}
 
-  odiff-bin@4.5.0:
-    resolution: {integrity: sha512-FaXidbI0XDLCjLAet5n5OvRDfr6Fwt/C5SyWPfwgSUvYhCej1rjZjDXb/xdk+N6yTOCeAFaJ5mwTmU4ZthvPaA==}
-    hasBin: true
-
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
@@ -10101,27 +10059,6 @@ snapshots:
       '@octokit/openapi-webhooks-types': 12.1.0
       '@octokit/request-error': 7.1.1
       '@octokit/webhooks-methods': 6.0.0
-
-  '@odiff/darwin-arm64@4.5.0':
-    optional: true
-
-  '@odiff/darwin-x64@4.5.0':
-    optional: true
-
-  '@odiff/linux-arm64@4.5.0':
-    optional: true
-
-  '@odiff/linux-riscv64@4.5.0':
-    optional: true
-
-  '@odiff/linux-x64@4.5.0':
-    optional: true
-
-  '@odiff/win32-arm64@4.5.0':
-    optional: true
-
-  '@odiff/win32-x64@4.5.0':
-    optional: true
 
   '@open-draft/deferred-promise@2.2.0': {}
 
@@ -13914,16 +13851,6 @@ snapshots:
   obliterator@1.6.1: {}
 
   obug@2.1.4: {}
-
-  odiff-bin@4.5.0:
-    optionalDependencies:
-      '@odiff/darwin-arm64': 4.5.0
-      '@odiff/darwin-x64': 4.5.0
-      '@odiff/linux-arm64': 4.5.0
-      '@odiff/linux-riscv64': 4.5.0
-      '@odiff/linux-x64': 4.5.0
-      '@odiff/win32-arm64': 4.5.0
-      '@odiff/win32-x64': 4.5.0
 
   on-exit-leak-free@2.1.2: {}
 
