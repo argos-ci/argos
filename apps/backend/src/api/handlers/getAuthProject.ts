@@ -1,9 +1,8 @@
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import { ProjectSchema, serializeProject } from "../schema/primitives/project";
 import { serverError, unauthorized } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const responses = {
@@ -31,7 +30,7 @@ export const getAuthProjectOperation = {
 
 export const getAuthProject: CreateAPIHandler = ({ get }) => {
   get("/project", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
+    const auth = await req.ctx.auth();
     res.send(await serializeProject(auth.project));
   });
 };

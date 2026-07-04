@@ -95,29 +95,18 @@ export async function getAuthPayloadFromExpressReq(
   return auth;
 }
 
-export async function getAuthProjectPayloadFromExpressReq(
-  request: Request,
-  attributes?: AuthAttributes,
-) {
-  const authHeader = getAuthHeaderFromExpressReq(request);
-  const bearer = parseBearerFromHeader(authHeader);
-  const auth = await getAuthProjectPayloadFromBearerToken(bearer);
-  assertAuthAttributes(auth, attributes);
-  return auth;
-}
-
-export async function getProjectFromReqAndParams(
-  request: Request,
+export async function getProjectForAuth(
+  authPromise: Promise<AuthPATPayload | AuthProjectPayload>,
   params: {
     owner: string;
     project: string;
   },
 ) {
-  // Load the auth payload and the routed project together, then authorize the
+  // Authenticate and load the routed project in parallel, then authorize the
   // resolved account/project pair before deciding whether this route is a 401
-  // or a genuine 404.
+  // or a genuine 404. Pass `req.ctx.auth()` so both run concurrently.
   const [auth, project] = await Promise.all([
-    getAuthPayloadFromExpressReq(request),
+    authPromise,
     Project.query()
       .joinRelated("account")
       .where("account.slug", params.owner)

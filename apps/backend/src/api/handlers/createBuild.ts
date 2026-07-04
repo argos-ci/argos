@@ -16,7 +16,7 @@ import { getSignedObjectUrl } from "@/storage/signed-url";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
+import { assertAuthAttributes } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import {
@@ -30,7 +30,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 /**
@@ -242,9 +242,8 @@ export const createBuildOperation = {
 
 export const createBuild: CreateAPIHandler = ({ post }) => {
   return post("/builds", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req, {
-      sha: req.ctx.body.commit,
-    });
+    const auth = await req.ctx.auth();
+    assertAuthAttributes(auth, { sha: req.ctx.body.commit });
 
     const ctx = {
       body: req.ctx.body,

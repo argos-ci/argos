@@ -1,11 +1,8 @@
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { boom } from "@/util/error";
-
-import { getAuthPayloadFromExpressReq } from "../auth/project";
 import { serializeUser, UserSchema } from "../schema/primitives/user";
 import { serverError, unauthorized } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const responses = {
@@ -33,14 +30,7 @@ export const getMeOperation = {
 
 export const getMe: CreateAPIHandler = ({ get }) => {
   get("/me", async (req, res) => {
-    const auth = await getAuthPayloadFromExpressReq(req);
-
-    if (auth.type !== "pat") {
-      throw boom(
-        401,
-        "Getting the current user requires a personal access token. See https://argos-ci.com/docs for details.",
-      );
-    }
+    const auth = await req.ctx.auth();
 
     res.send(serializeUser(auth.account));
   });

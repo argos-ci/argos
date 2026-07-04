@@ -86,7 +86,7 @@ describe("getMe", () => {
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toContain(
-          "Getting the current user requires a personal access token.",
+          "This endpoint requires a personal access token.",
         );
       });
   });

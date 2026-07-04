@@ -16,10 +16,7 @@ import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
-import {
-  assertProjectAccess,
-  getAuthPayloadFromExpressReq,
-} from "../auth/project";
+import { assertProjectAccess } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -33,7 +30,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const SnapshotConclusionSchema = z.enum(["APPROVE", "REQUEST_CHANGES"]);
@@ -180,7 +177,7 @@ export const createReview: CreateAPIHandler = ({ post }) => {
       }
 
       const [auth, build] = await Promise.all([
-        getAuthPayloadFromExpressReq(req),
+        req.ctx.auth(),
         Build.query()
           .joinRelated("project.account")
           .where("project:account.slug", params.owner)
@@ -189,13 +186,6 @@ export const createReview: CreateAPIHandler = ({ post }) => {
           .withGraphFetched("project.account")
           .first(),
       ]);
-
-      if (auth.type !== "pat") {
-        throw boom(
-          401,
-          "Creating a review requires a personal access token. See https://argos-ci.com/docs for details.",
-        );
-      }
 
       assertProjectAccess(auth, {
         projectId: build?.projectId ?? null,

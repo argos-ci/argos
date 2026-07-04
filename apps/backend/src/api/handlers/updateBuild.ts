@@ -20,10 +20,7 @@ import { insertFilesAndScreenshots } from "@/database/services/screenshots";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
-import {
-  assertAuthAttributes,
-  getAuthProjectPayloadFromExpressReq,
-} from "../auth/project";
+import { assertAuthAttributes } from "../auth/project";
 import {
   BuildIdSchema,
   BuildSchema,
@@ -38,7 +35,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
@@ -104,8 +101,6 @@ export const updateBuildOperation = {
 
 export const updateBuild: CreateAPIHandler = ({ put }) => {
   return put("/builds/{buildId}", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
-
     const { body, params } = req.ctx;
     const requestIdHeader = req.headers["x-argos-request-id"];
     const requestId =
@@ -113,9 +108,12 @@ export const updateBuild: CreateAPIHandler = ({ put }) => {
 
     const buildId = params["buildId"];
 
-    const build = await Build.query()
-      .findById(buildId)
-      .withGraphFetched("compareScreenshotBucket");
+    const [auth, build] = await Promise.all([
+      req.ctx.auth(),
+      Build.query()
+        .findById(buildId)
+        .withGraphFetched("compareScreenshotBucket"),
+    ]);
 
     if (!build) {
       throw boom(404, "Build not found");

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import { getProjectFromReqAndParams } from "../auth/project";
+import { getProjectForAuth } from "../auth/project";
 import {
   BuildSchema,
   listBuilds,
@@ -17,7 +17,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { anyTokenAuth } from "../schema/util/security";
+import { anyTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const GetProjectBuildsParams = PageParamsSchema.extend({
@@ -75,7 +75,7 @@ export const getProjectBuildsOperation = {
 export const getProjectBuilds: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/builds", async (req, res) => {
     const { page, perPage } = req.ctx.query;
-    const project = await getProjectFromReqAndParams(req, req.ctx.params);
+    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
     const builds = await listBuilds({ projectId: project.id }, req.ctx.query);
     const results = await serializeBuilds(builds.results);
     res.send({

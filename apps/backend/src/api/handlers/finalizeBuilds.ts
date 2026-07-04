@@ -7,10 +7,7 @@ import { finalizeBuild as finalizeBuildService } from "@/build/finalizeBuild";
 import { Build } from "@/database/models";
 import { transaction } from "@/database/transaction";
 
-import {
-  assertAuthAttributes,
-  getAuthProjectPayloadFromExpressReq,
-} from "../auth/project";
+import { assertAuthAttributes } from "../auth/project";
 import { BuildSchema, serializeBuilds } from "../schema/primitives/build";
 import {
   conflict,
@@ -20,7 +17,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({ parallelNonce: z.string().min(1) });
@@ -61,7 +58,7 @@ export const finalizeBuildsOperation = {
 
 export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
   return post("/builds/finalize", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
+    const auth = await req.ctx.auth();
 
     const { parallelNonce } = req.body;
 

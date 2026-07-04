@@ -1,6 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
+import { waitUntil } from "@/api/request-context";
 import { Account, UserAccessToken } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 
@@ -67,9 +68,15 @@ export async function getAuthPayloadFromUserAccessToken(
     );
   }
 
-  await UserAccessToken.query()
-    .patch({ lastUsedAt: new Date().toISOString() })
-    .findById(userAccessToken.id);
+  // Refreshing `lastUsedAt` is bookkeeping, not part of the auth decision, so
+  // don't make the request wait on it: within an API request it runs in the
+  // background (awaited before the response is flushed), and elsewhere it runs
+  // directly.
+  await waitUntil(
+    UserAccessToken.query()
+      .patch({ lastUsedAt: new Date().toISOString() })
+      .findById(userAccessToken.id),
+  );
 
   return { type: "pat", account: user.account, user, scope: scopeAccounts };
 }

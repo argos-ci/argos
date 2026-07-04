@@ -1,32 +1,32 @@
 import { invariant } from "@argos/util/invariant";
-import type { Request } from "express";
 
 import type { AuthPATPayload } from "@/auth/payload";
 import { getCommentThreadRoot } from "@/comment/thread";
 import { Build, Comment, type User } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { assertProjectAccess, getAuthPayloadFromExpressReq } from "./project";
+import { assertProjectAccess } from "./project";
 
 /** Project permissions checked by the review/comment endpoints. */
 type BuildActionPermission = "view" | "review" | "review_dismiss";
 
 /**
- * Load the build addressed by `{owner}/{project}/builds/{buildNumber}` and the
- * authenticated caller, enforcing the rules shared by every review/comment
- * endpoint: the caller must use a personal access token (these are user
- * actions, and pending-draft visibility depends on the viewer's identity), the
- * token must be scoped to the owner account, and the build must exist.
+ * Load the build addressed by `{owner}/{project}/builds/{buildNumber}` for a
+ * personal-access-token caller, enforcing the rules shared by every
+ * review/comment endpoint: the token must be scoped to the owner account, and
+ * the build must exist. These routes declare `personalAccessTokenAuth`, so the
+ * global handler resolves and type-checks the auth; pass `req.ctx.auth()` and
+ * the build load runs in parallel with authentication.
  *
- * Returns the build with `project.account` fetched so callers can check
- * permissions and serialize without a second round-trip.
+ * Returns the resolved auth and the build (with `project.account` fetched so
+ * callers can check permissions and serialize without a second round-trip).
  */
-export async function getPatAuthAndBuild(
-  request: Request,
+export async function loadBuildForPatAuth(
+  authPromise: Promise<AuthPATPayload>,
   params: { owner: string; project: string; buildNumber: number },
 ): Promise<{ auth: AuthPATPayload; build: Build }> {
   const [auth, build] = await Promise.all([
-    getAuthPayloadFromExpressReq(request),
+    authPromise,
     Build.query()
       .joinRelated("project.account")
       .where("project:account.slug", params.owner)
@@ -35,13 +35,6 @@ export async function getPatAuthAndBuild(
       .withGraphFetched("project.account")
       .first(),
   ]);
-
-  if (auth.type !== "pat") {
-    throw boom(
-      401,
-      "This action requires a personal access token. See https://argos-ci.com/docs for details.",
-    );
-  }
 
   assertProjectAccess(auth, {
     projectId: build?.projectId ?? null,
@@ -60,7 +53,7 @@ export async function getPatAuthAndBuild(
 /**
  * Assert the user holds a project permission on the build's project, throwing a
  * 403 with the given message otherwise. The build must have `project` fetched
- * (as returned by {@link getPatAuthAndBuild}).
+ * (as returned by {@link loadBuildForPatAuth}).
  */
 export async function assertBuildPermission(input: {
   build: Build;

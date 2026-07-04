@@ -5,10 +5,7 @@ import { Build, ScreenshotDiff } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { boom } from "@/util/error";
 
-import {
-  assertProjectAccess,
-  getAuthPayloadFromExpressReq,
-} from "../auth/project";
+import { assertProjectAccess } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -22,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { anyTokenAuth } from "../schema/util/security";
+import { anyTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const GetBuildDiffsParams = PageParamsSchema.extend({
@@ -86,7 +83,7 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
       } = req.ctx;
 
       const [auth, build] = await Promise.all([
-        getAuthPayloadFromExpressReq(req),
+        req.ctx.auth(),
         Build.query()
           .joinRelated("project.account")
           .where("project:account.slug", params.owner)

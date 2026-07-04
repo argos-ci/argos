@@ -6,7 +6,7 @@ import { addCommentReaction as addCommentReactionService } from "@/comment/addCo
 import {
   assertBuildPermission,
   getBuildComment,
-  getPatAuthAndBuild,
+  loadBuildForPatAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -18,7 +18,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const AddReactionBodySchema = z.object({
@@ -70,7 +70,7 @@ export const addCommentReaction: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await getPatAuthAndBuild(req, params);
+      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
 
       await assertBuildPermission({
         build,

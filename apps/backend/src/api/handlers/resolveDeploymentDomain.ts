@@ -9,7 +9,7 @@ import {
 import { boom } from "@/util/error";
 
 import { invalidParameters, notFound, serverError } from "../schema/util/error";
-import { noAuth } from "../schema/util/security";
+import { noAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const ResponseSchema = z.object({

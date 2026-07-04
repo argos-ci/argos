@@ -5,7 +5,7 @@ import { dismissBuildReview } from "@/build/dismissBuildReview";
 import { BuildReview } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { assertBuildPermission, getPatAuthAndBuild } from "../auth/build";
+import { assertBuildPermission, loadBuildForPatAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -19,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const dismissReviewOperation = {
@@ -59,7 +59,7 @@ export const dismissReview: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews/{reviewId}/dismiss",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await getPatAuthAndBuild(req, params);
+      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
 
       await assertBuildPermission({
         build,

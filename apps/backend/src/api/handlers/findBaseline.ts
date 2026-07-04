@@ -3,7 +3,6 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { getEligibleBaselineBuildFromCommits } from "@/build/strategy/strategies/ci/query";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import { BuildSchema, serializeBuild } from "../schema/primitives/build";
 import { Sha1HashSchema } from "../schema/primitives/sha";
 import {
@@ -11,7 +10,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const RequestBodySchema = z.object({
@@ -68,7 +67,7 @@ export const findBaselineOperation = {
 
 export const findBaseline: CreateAPIHandler = ({ post }) => {
   post("/baseline", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
+    const auth = await req.ctx.auth();
     const { commits, name, mode } = req.ctx.body;
 
     const build = await getEligibleBaselineBuildFromCommits({

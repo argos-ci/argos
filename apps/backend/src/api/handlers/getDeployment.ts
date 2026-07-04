@@ -4,7 +4,6 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { Deployment } from "@/database/models/Deployment";
 import { boom } from "@/util/error";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
@@ -15,7 +14,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const getDeploymentOperation = {
@@ -47,10 +46,11 @@ export const getDeploymentOperation = {
 
 export const getDeployment: CreateAPIHandler = ({ get }) => {
   return get("/deployments/{deploymentId}", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
     const { deploymentId } = req.ctx.params;
-
-    const deployment = await Deployment.query().findById(deploymentId);
+    const [auth, deployment] = await Promise.all([
+      req.ctx.auth(),
+      Deployment.query().findById(deploymentId),
+    ]);
     if (!deployment) {
       throw boom(404, "Deployment not found");
     }
