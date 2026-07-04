@@ -12,8 +12,7 @@ import {
   assertAuthAttributes,
   assertProjectAccess,
   getAuthPayloadFromExpressReq,
-  getAuthProjectPayloadFromExpressReq,
-  getProjectFromReqAndParams,
+  getProjectForAuth,
 } from "./project";
 
 const test = base.extend<{
@@ -277,58 +276,15 @@ describe("api/auth/project", () => {
     });
   });
 
-  describe("getAuthProjectPayloadFromExpressReq", () => {
-    test("returns project auth payloads", async ({ project }) => {
-      await expect(
-        getAuthProjectPayloadFromExpressReq(
-          createRequest("Bearer project-token"),
-        ),
-      ).resolves.toMatchObject({
-        type: "project",
-        project: { id: project.id },
-      });
-    });
-
-    test("rejects user access tokens", async ({ scopedPatToken }) => {
-      await expect(
-        getAuthProjectPayloadFromExpressReq(
-          createRequest(`Bearer ${scopedPatToken}`),
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 401,
-        message:
-          "This endpoint is not accessible with a user access token, only with a an Argos project token.",
-      });
-    });
-
-    test("rejects invalid authorization schemes", async () => {
-      await expect(
-        getAuthProjectPayloadFromExpressReq(
-          createRequest("Basic bearer-token"),
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        message:
-          'Invalid authorization header scheme "Basic", please use "Bearer"',
-      });
-    });
-
-    test("rejects requests without an authorization header", async () => {
-      await expect(
-        getAuthProjectPayloadFromExpressReq(createRequest()),
-      ).rejects.toMatchObject({
-        statusCode: 401,
-        message: "Authorization header is missing",
-      });
-    });
-  });
-
-  describe("getProjectFromReqAndParams", () => {
+  describe("getProjectForAuth", () => {
     test("returns the routed project for a project token", async ({
       project,
     }) => {
+      const auth = await getAuthPayloadFromExpressReq(
+        createRequest("Bearer project-token"),
+      );
       await expect(
-        getProjectFromReqAndParams(createRequest("Bearer project-token"), {
+        getProjectForAuth(auth, {
           owner: "acme",
           project: "web",
         }),
@@ -339,8 +295,11 @@ describe("api/auth/project", () => {
       project,
       scopedPatToken,
     }) => {
+      const auth = await getAuthPayloadFromExpressReq(
+        createRequest(`Bearer ${scopedPatToken}`),
+      );
       await expect(
-        getProjectFromReqAndParams(createRequest(`Bearer ${scopedPatToken}`), {
+        getProjectForAuth(auth, {
           owner: "acme",
           project: "web",
         }),
@@ -349,14 +308,18 @@ describe("api/auth/project", () => {
 
     test("rejects project tokens for another project route", async ({
       account,
+      project: _project,
     }) => {
       await factory.Project.create({
         accountId: account.id,
         name: "docs",
       });
 
+      const auth = await getAuthPayloadFromExpressReq(
+        createRequest("Bearer project-token"),
+      );
       await expect(
-        getProjectFromReqAndParams(createRequest("Bearer project-token"), {
+        getProjectForAuth(auth, {
           owner: "acme",
           project: "docs",
         }),
@@ -368,14 +331,14 @@ describe("api/auth/project", () => {
     test("rejects PATs outside the requested account", async ({
       otherScopedPatToken,
     }) => {
+      const auth = await getAuthPayloadFromExpressReq(
+        createRequest(`Bearer ${otherScopedPatToken}`),
+      );
       await expect(
-        getProjectFromReqAndParams(
-          createRequest(`Bearer ${otherScopedPatToken}`),
-          {
-            owner: "acme",
-            project: "web",
-          },
-        ),
+        getProjectForAuth(auth, {
+          owner: "acme",
+          project: "web",
+        }),
       ).rejects.toMatchObject({
         statusCode: 401,
       });
@@ -384,8 +347,11 @@ describe("api/auth/project", () => {
     test("returns 404 when the account is authorized but the project does not exist", async ({
       scopedPatToken,
     }) => {
+      const auth = await getAuthPayloadFromExpressReq(
+        createRequest(`Bearer ${scopedPatToken}`),
+      );
       await expect(
-        getProjectFromReqAndParams(createRequest(`Bearer ${scopedPatToken}`), {
+        getProjectForAuth(auth, {
           owner: "acme",
           project: "missing-project",
         }),
@@ -395,9 +361,14 @@ describe("api/auth/project", () => {
       });
     });
 
-    test("returns 401 before 404 when a project token targets a missing project route", async () => {
+    test("returns 401 before 404 when a project token targets a missing project route", async ({
+      project: _project,
+    }) => {
+      const auth = await getAuthPayloadFromExpressReq(
+        createRequest("Bearer project-token"),
+      );
       await expect(
-        getProjectFromReqAndParams(createRequest("Bearer project-token"), {
+        getProjectForAuth(auth, {
           owner: "acme",
           project: "missing-project",
         }),

@@ -19,6 +19,7 @@ import { boom, HTTPError } from "@/util/error";
 import { asyncHandler } from "@/web/util";
 
 import { zodSchema } from "./schema";
+import { authenticateRequest, type AuthFromSecurity } from "./security";
 
 type paths = typeof zodSchema.paths;
 
@@ -49,6 +50,7 @@ type RequestCtx<TOperation extends ZodOpenApiOperationObject> = {
         TOperation["requestBody"]["content"]["application/json"]["schema"]
       >
     : null;
+  auth: AuthFromSecurity<TOperation["security"]>;
 };
 
 type OperationRequestHandler<TOperation extends ZodOpenApiOperationObject> = (
@@ -190,11 +192,12 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
       // Temporary increase the limit
       // we should find a way to split the upload in several requests
       json({ limit: "3mb" }),
-      asyncHandler((req, _res, next) => {
+      asyncHandler(async (req, _res, next) => {
         const ctx: RequestCtx<ZodOpenApiOperationObject> = {
           params: null,
           query: null,
           body: null,
+          auth: null,
         };
         (req as Request & { ctx: RequestCtx<ZodOpenApiOperationObject> }).ctx =
           ctx;
@@ -238,6 +241,8 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
           }
           throw error;
         }
+
+        ctx.auth = await authenticateRequest(req, operation.security);
 
         next();
       }),

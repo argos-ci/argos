@@ -21,7 +21,7 @@ import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { getS3Client } from "@/storage/s3";
 import { boom } from "@/util/error";
 
-import { getAuthProjectPayloadFromExpressReq } from "../auth/project";
+import { assertAuthAttributes } from "../auth/project";
 import { GitBranchSchema, GitPRNumberSchema } from "../schema/primitives/git";
 import { Sha1HashSchema, Sha256HashSchema } from "../schema/primitives/sha";
 import {
@@ -29,7 +29,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const FileEntrySchema = z.object({
@@ -231,9 +231,8 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       throw boom(400, "Request body is required");
     }
 
-    const auth = await getAuthProjectPayloadFromExpressReq(req, {
-      sha: body.commit,
-    });
+    const auth = req.ctx.auth;
+    assertAuthAttributes(auth, { sha: body.commit });
 
     const project = auth.project;
 

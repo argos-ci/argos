@@ -275,7 +275,7 @@ describe("createReview", () => {
       .expect(401)
       .expect((res) => {
         expect(res.body.error).toContain(
-          "Creating a review requires a personal access token.",
+          "This endpoint requires a personal access token.",
         );
         expect(res.body.error).toContain("https://argos-ci.com/docs");
       });

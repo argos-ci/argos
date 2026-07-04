@@ -9,7 +9,7 @@ import {
 import {
   assertBuildPermission,
   getBuildCommentThread,
-  getPatAuthAndBuild,
+  loadBuildForPatAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -21,7 +21,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const PathParams = z.object({
@@ -88,7 +88,8 @@ export const subscribeCommentThread: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await getPatAuthAndBuild(req, params);
+      const { auth } = req.ctx;
+      const { build } = await loadBuildForPatAuth(auth, params);
 
       await assertBuildPermission({
         build,
@@ -117,7 +118,8 @@ export const unsubscribeCommentThread: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await getPatAuthAndBuild(req, params);
+      const { auth } = req.ctx;
+      const { build } = await loadBuildForPatAuth(auth, params);
 
       await assertBuildPermission({
         build,

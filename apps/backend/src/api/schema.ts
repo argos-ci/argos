@@ -37,6 +37,7 @@ import {
 } from "./handlers/subscribeCommentThread";
 import { updateBuildOperation } from "./handlers/updateBuild";
 import { updateCommentOperation } from "./handlers/updateComment";
+import { securitySchemes } from "./security";
 
 export const zodSchema = {
   openapi: "3.2.0",
@@ -105,44 +106,7 @@ export const zodSchema = {
     },
   ],
   components: {
-    securitySchemes: {
-      projectToken: {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "Project Token",
-        description: [
-          "Authenticate as a **project** with a project token.",
-          "",
-          "Send it as a bearer token in the `Authorization` header:",
-          "",
-          "```http",
-          "Authorization: Bearer <project-token>",
-          "```",
-          "",
-          "You can find your project token in your Argos project settings.",
-          "Project tokens are used by CI and the SDK to create builds and",
-          "deployments.",
-        ].join("\n"),
-      },
-      personalAccessToken: {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "Personal Access Token",
-        description: [
-          "Authenticate as a **user** with a personal access token.",
-          "",
-          "Send it as a bearer token in the `Authorization` header:",
-          "",
-          "```http",
-          "Authorization: Bearer <personal-access-token>",
-          "```",
-          "",
-          "Personal access tokens act on behalf of the user that created them",
-          "and are required by endpoints that perform user actions, such as",
-          "reviewing builds and posting comments.",
-        ].join("\n"),
-      },
-    },
+    securitySchemes,
   },
   security: [{ projectToken: [] }],
   paths: {

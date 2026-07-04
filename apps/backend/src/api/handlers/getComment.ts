@@ -7,7 +7,7 @@ import { boom } from "@/util/error";
 import {
   assertBuildPermission,
   getBuildComment,
-  getPatAuthAndBuild,
+  loadBuildForPatAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -19,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const getCommentOperation = {
@@ -58,7 +58,8 @@ export const getComment: CreateAPIHandler = ({ get }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await getPatAuthAndBuild(req, params);
+      const { auth } = req.ctx;
+      const { build } = await loadBuildForPatAuth(auth, params);
 
       await assertBuildPermission({
         build,

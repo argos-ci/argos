@@ -16,10 +16,7 @@ import { isCommentTooLarge, validateCommentJson } from "@/comment/validate";
 import { Build } from "@/database/models/Build";
 import { boom } from "@/util/error";
 
-import {
-  assertProjectAccess,
-  getAuthPayloadFromExpressReq,
-} from "../auth/project";
+import { assertProjectAccess } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -33,7 +30,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const SnapshotConclusionSchema = z.enum(["APPROVE", "REQUEST_CHANGES"]);
@@ -179,23 +176,14 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         throw boom(400, "Either `event` or `conclusion` is required");
       }
 
-      const [auth, build] = await Promise.all([
-        getAuthPayloadFromExpressReq(req),
-        Build.query()
-          .joinRelated("project.account")
-          .where("project:account.slug", params.owner)
-          .where("project.name", params.project)
-          .where("number", params.buildNumber)
-          .withGraphFetched("project.account")
-          .first(),
-      ]);
-
-      if (auth.type !== "pat") {
-        throw boom(
-          401,
-          "Creating a review requires a personal access token. See https://argos-ci.com/docs for details.",
-        );
-      }
+      const auth = req.ctx.auth;
+      const build = await Build.query()
+        .joinRelated("project.account")
+        .where("project:account.slug", params.owner)
+        .where("project.name", params.project)
+        .where("number", params.buildNumber)
+        .withGraphFetched("project.account")
+        .first();
 
       assertProjectAccess(auth, {
         projectId: build?.projectId ?? null,

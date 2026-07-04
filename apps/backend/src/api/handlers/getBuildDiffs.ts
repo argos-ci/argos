@@ -5,10 +5,7 @@ import { Build, ScreenshotDiff } from "@/database/models";
 import { sortScreenshotDiffsForBuild } from "@/database/services/screenshot-diffs";
 import { boom } from "@/util/error";
 
-import {
-  assertProjectAccess,
-  getAuthPayloadFromExpressReq,
-} from "../auth/project";
+import { assertProjectAccess } from "../auth/project";
 import { BuildNumber } from "../schema/primitives/build";
 import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -22,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { anyTokenAuth } from "../schema/util/security";
+import { anyTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const GetBuildDiffsParams = PageParamsSchema.extend({
@@ -85,15 +82,13 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
         query: { page, perPage, needsReview },
       } = req.ctx;
 
-      const [auth, build] = await Promise.all([
-        getAuthPayloadFromExpressReq(req),
-        Build.query()
-          .joinRelated("project.account")
-          .where("project:account.slug", params.owner)
-          .where("project.name", params.project)
-          .where("number", params.buildNumber)
-          .first(),
-      ]);
+      const auth = req.ctx.auth;
+      const build = await Build.query()
+        .joinRelated("project.account")
+        .where("project:account.slug", params.owner)
+        .where("project.name", params.project)
+        .where("number", params.buildNumber)
+        .first();
 
       assertProjectAccess(auth, {
         projectId: build?.projectId ?? null,

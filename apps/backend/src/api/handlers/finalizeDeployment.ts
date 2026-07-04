@@ -15,10 +15,7 @@ import { invalidateDeploymentCache } from "@/deployment/invalidate";
 import { getDynamoDBClient, getTableName } from "@/storage/dynamodb";
 import { boom } from "@/util/error";
 
-import {
-  assertAuthAttributes,
-  getAuthProjectPayloadFromExpressReq,
-} from "../auth/project";
+import { assertAuthAttributes } from "../auth/project";
 import {
   DeploymentSchema,
   serializeDeployment,
@@ -29,7 +26,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { projectTokenAuth } from "../schema/util/security";
+import { projectTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 /**
@@ -209,7 +206,7 @@ export const finalizeDeploymentOperation = {
 
 export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
   return post("/deployments/{deploymentId}/finalize", async (req, res) => {
-    const auth = await getAuthProjectPayloadFromExpressReq(req);
+    const auth = req.ctx.auth;
     const { project } = auth;
     const { deploymentId } = req.ctx.params;
 

@@ -3,7 +3,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { BuildReview } from "@/database/models";
 
-import { assertBuildPermission, getPatAuthAndBuild } from "../auth/build";
+import { assertBuildPermission, loadBuildForPatAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -17,7 +17,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const listReviewsOperation = {
@@ -54,7 +54,8 @@ export const listReviews: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews",
     async (req, res) => {
-      const { auth, build } = await getPatAuthAndBuild(req, req.ctx.params);
+      const { auth } = req.ctx;
+      const { build } = await loadBuildForPatAuth(auth, req.ctx.params);
 
       await assertBuildPermission({
         build,

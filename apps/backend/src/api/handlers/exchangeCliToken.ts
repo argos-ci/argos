@@ -9,7 +9,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { noAuth } from "../schema/util/security";
+import { noAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const CliTokenExchangeRequestSchema = z.object({

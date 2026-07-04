@@ -4,10 +4,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import { Build } from "@/database/models";
 import { boom } from "@/util/error";
 
-import {
-  assertProjectAccess,
-  getAuthPayloadFromExpressReq,
-} from "../auth/project";
+import { assertProjectAccess } from "../auth/project";
 import {
   BuildNumber,
   BuildSchema,
@@ -21,7 +18,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { anyTokenAuth } from "../schema/util/security";
+import { anyTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const getBuildOperation = {
@@ -54,15 +51,13 @@ export const getBuildOperation = {
 export const getBuild: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/builds/{buildNumber}", async (req, res) => {
     const { params } = req.ctx;
-    const [auth, build] = await Promise.all([
-      getAuthPayloadFromExpressReq(req),
-      Build.query()
-        .joinRelated("project.account")
-        .where("project:account.slug", params.owner)
-        .where("project.name", params.project)
-        .where("number", params.buildNumber)
-        .first(),
-    ]);
+    const auth = req.ctx.auth;
+    const build = await Build.query()
+      .joinRelated("project.account")
+      .where("project:account.slug", params.owner)
+      .where("project.name", params.project)
+      .where("number", params.buildNumber)
+      .first();
 
     assertProjectAccess(auth, {
       projectId: build?.projectId ?? null,

@@ -3,7 +3,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { getVisibleBuildComments } from "@/comment/getVisibleBuildComments";
 
-import { assertBuildPermission, getPatAuthAndBuild } from "../auth/build";
+import { assertBuildPermission, loadBuildForPatAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComments } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -14,7 +14,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const listCommentsOperation = {
@@ -52,7 +52,8 @@ export const listComments: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/comments",
     async (req, res) => {
-      const { auth, build } = await getPatAuthAndBuild(req, req.ctx.params);
+      const { auth } = req.ctx;
+      const { build } = await loadBuildForPatAuth(auth, req.ctx.params);
 
       await assertBuildPermission({
         build,

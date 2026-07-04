@@ -15,7 +15,7 @@ import { boom } from "@/util/error";
 import {
   assertBuildPermission,
   getBuildCommentThread,
-  getPatAuthAndBuild,
+  loadBuildForPatAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
@@ -32,7 +32,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../schema/util/security";
+import { personalAccessTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const CreateCommentBodySchema = z.object({
@@ -112,7 +112,8 @@ export const createComment: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await getPatAuthAndBuild(req, params);
+      const { auth } = req.ctx;
+      const { build } = await loadBuildForPatAuth(auth, params);
 
       await assertBuildPermission({
         build,
