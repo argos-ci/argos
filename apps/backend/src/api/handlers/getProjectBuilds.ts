@@ -75,7 +75,7 @@ export const getProjectBuildsOperation = {
 export const getProjectBuilds: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/builds", async (req, res) => {
     const { page, perPage } = req.ctx.query;
-    const project = await getProjectForAuth(req.ctx.auth, req.ctx.params);
+    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
     const builds = await listBuilds({ projectId: project.id }, req.ctx.query);
     const results = await serializeBuilds(builds.results);
     res.send({

@@ -70,8 +70,7 @@ export const addCommentReaction: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth } = req.ctx;
-      const { build } = await loadBuildForPatAuth(auth, params);
+      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
 
       await assertBuildPermission({
         build,

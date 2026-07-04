@@ -61,8 +61,7 @@ export const removeCommentReaction: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
       const { params, query } = req.ctx;
-      const { auth } = req.ctx;
-      const { build } = await loadBuildForPatAuth(auth, params);
+      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
 
       await assertBuildPermission({
         build,

@@ -206,11 +206,14 @@ export const finalizeDeploymentOperation = {
 
 export const finalizeDeployment: CreateAPIHandler = ({ post }) => {
   return post("/deployments/{deploymentId}/finalize", async (req, res) => {
-    const auth = req.ctx.auth;
-    const { project } = auth;
     const { deploymentId } = req.ctx.params;
+    const [auth, initialDeployment] = await Promise.all([
+      req.ctx.auth(),
+      Deployment.query().findById(deploymentId),
+    ]);
+    const { project } = auth;
 
-    let deployment = await Deployment.query().findById(deploymentId);
+    let deployment = initialDeployment;
     if (!deployment) {
       throw boom(404, "Deployment not found");
     }

@@ -231,7 +231,7 @@ export const createDeployment: CreateAPIHandler = ({ post }) => {
       throw boom(400, "Request body is required");
     }
 
-    const auth = req.ctx.auth;
+    const auth = await req.ctx.auth();
     assertAuthAttributes(auth, { sha: body.commit });
 
     const project = auth.project;

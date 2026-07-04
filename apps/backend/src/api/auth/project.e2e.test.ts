@@ -284,7 +284,7 @@ describe("api/auth/project", () => {
         createRequest("Bearer project-token"),
       );
       await expect(
-        getProjectForAuth(auth, {
+        getProjectForAuth(Promise.resolve(auth), {
           owner: "acme",
           project: "web",
         }),
@@ -299,7 +299,7 @@ describe("api/auth/project", () => {
         createRequest(`Bearer ${scopedPatToken}`),
       );
       await expect(
-        getProjectForAuth(auth, {
+        getProjectForAuth(Promise.resolve(auth), {
           owner: "acme",
           project: "web",
         }),
@@ -319,7 +319,7 @@ describe("api/auth/project", () => {
         createRequest("Bearer project-token"),
       );
       await expect(
-        getProjectForAuth(auth, {
+        getProjectForAuth(Promise.resolve(auth), {
           owner: "acme",
           project: "docs",
         }),
@@ -335,7 +335,7 @@ describe("api/auth/project", () => {
         createRequest(`Bearer ${otherScopedPatToken}`),
       );
       await expect(
-        getProjectForAuth(auth, {
+        getProjectForAuth(Promise.resolve(auth), {
           owner: "acme",
           project: "web",
         }),
@@ -351,7 +351,7 @@ describe("api/auth/project", () => {
         createRequest(`Bearer ${scopedPatToken}`),
       );
       await expect(
-        getProjectForAuth(auth, {
+        getProjectForAuth(Promise.resolve(auth), {
           owner: "acme",
           project: "missing-project",
         }),
@@ -368,7 +368,7 @@ describe("api/auth/project", () => {
         createRequest("Bearer project-token"),
       );
       await expect(
-        getProjectForAuth(auth, {
+        getProjectForAuth(Promise.resolve(auth), {
           owner: "acme",
           project: "missing-project",
         }),

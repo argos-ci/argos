@@ -54,8 +54,10 @@ export const listReviews: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews",
     async (req, res) => {
-      const { auth } = req.ctx;
-      const { build } = await loadBuildForPatAuth(auth, req.ctx.params);
+      const { auth, build } = await loadBuildForPatAuth(
+        req.ctx.auth(),
+        req.ctx.params,
+      );
 
       await assertBuildPermission({
         build,

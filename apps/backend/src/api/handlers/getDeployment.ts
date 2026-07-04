@@ -46,10 +46,11 @@ export const getDeploymentOperation = {
 
 export const getDeployment: CreateAPIHandler = ({ get }) => {
   return get("/deployments/{deploymentId}", async (req, res) => {
-    const auth = req.ctx.auth;
     const { deploymentId } = req.ctx.params;
-
-    const deployment = await Deployment.query().findById(deploymentId);
+    const [auth, deployment] = await Promise.all([
+      req.ctx.auth(),
+      Deployment.query().findById(deploymentId),
+    ]);
     if (!deployment) {
       throw boom(404, "Deployment not found");
     }

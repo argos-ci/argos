@@ -30,7 +30,7 @@ export const getAuthProjectOperation = {
 
 export const getAuthProject: CreateAPIHandler = ({ get }) => {
   get("/project", async (req, res) => {
-    const auth = req.ctx.auth;
+    const auth = await req.ctx.auth();
     res.send(await serializeProject(auth.project));
   });
 };

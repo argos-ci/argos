@@ -176,14 +176,16 @@ export const createReview: CreateAPIHandler = ({ post }) => {
         throw boom(400, "Either `event` or `conclusion` is required");
       }
 
-      const auth = req.ctx.auth;
-      const build = await Build.query()
-        .joinRelated("project.account")
-        .where("project:account.slug", params.owner)
-        .where("project.name", params.project)
-        .where("number", params.buildNumber)
-        .withGraphFetched("project.account")
-        .first();
+      const [auth, build] = await Promise.all([
+        req.ctx.auth(),
+        Build.query()
+          .joinRelated("project.account")
+          .where("project:account.slug", params.owner)
+          .where("project.name", params.project)
+          .where("number", params.buildNumber)
+          .withGraphFetched("project.account")
+          .first(),
+      ]);
 
       assertProjectAccess(auth, {
         projectId: build?.projectId ?? null,

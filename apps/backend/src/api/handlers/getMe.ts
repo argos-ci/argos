@@ -30,7 +30,7 @@ export const getMeOperation = {
 
 export const getMe: CreateAPIHandler = ({ get }) => {
   get("/me", async (req, res) => {
-    const auth = req.ctx.auth;
+    const auth = await req.ctx.auth();
 
     res.send(serializeUser(auth.account));
   });

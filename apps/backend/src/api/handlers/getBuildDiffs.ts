@@ -82,13 +82,15 @@ export const getBuildDiffs: CreateAPIHandler = ({ get }) => {
         query: { page, perPage, needsReview },
       } = req.ctx;
 
-      const auth = req.ctx.auth;
-      const build = await Build.query()
-        .joinRelated("project.account")
-        .where("project:account.slug", params.owner)
-        .where("project.name", params.project)
-        .where("number", params.buildNumber)
-        .first();
+      const [auth, build] = await Promise.all([
+        req.ctx.auth(),
+        Build.query()
+          .joinRelated("project.account")
+          .where("project:account.slug", params.owner)
+          .where("project.name", params.project)
+          .where("number", params.buildNumber)
+          .first(),
+      ]);
 
       assertProjectAccess(auth, {
         projectId: build?.projectId ?? null,

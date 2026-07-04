@@ -59,8 +59,7 @@ export const dismissReview: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews/{reviewId}/dismiss",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth } = req.ctx;
-      const { build } = await loadBuildForPatAuth(auth, params);
+      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
 
       await assertBuildPermission({
         build,

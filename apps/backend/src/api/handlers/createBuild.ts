@@ -242,7 +242,7 @@ export const createBuildOperation = {
 
 export const createBuild: CreateAPIHandler = ({ post }) => {
   return post("/builds", async (req, res) => {
-    const auth = req.ctx.auth;
+    const auth = await req.ctx.auth();
     assertAuthAttributes(auth, { sha: req.ctx.body.commit });
 
     const ctx = {

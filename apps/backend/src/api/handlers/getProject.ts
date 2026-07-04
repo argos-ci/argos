@@ -48,7 +48,7 @@ export const getProjectOperation = {
 
 export const getProject: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}", async (req, res) => {
-    const project = await getProjectForAuth(req.ctx.auth, req.ctx.params);
+    const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
     res.send(await serializeProject(project));
   });
 };

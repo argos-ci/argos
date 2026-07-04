@@ -18,6 +18,10 @@ import logger from "@/logger";
 import { boom, HTTPError } from "@/util/error";
 import { asyncHandler } from "@/web/util";
 
+import {
+  gateResponseOnRequestScope,
+  runInRequestScope,
+} from "./request-context";
 import { zodSchema } from "./schema";
 import { authenticateRequest, type AuthFromSecurity } from "./security";
 
@@ -50,7 +54,15 @@ type RequestCtx<TOperation extends ZodOpenApiOperationObject> = {
         TOperation["requestBody"]["content"]["application/json"]["schema"]
       >
     : null;
-  auth: AuthFromSecurity<TOperation["security"]>;
+  /**
+   * Resolve the authenticated payload for this request, memoized. Exposed as a
+   * function (rather than an eagerly-resolved value) so handlers can start
+   * authentication in parallel with their own queries — e.g.
+   * `Promise.all([req.ctx.auth(), Build.query()...])`. The global handler also
+   * kicks it off eagerly so authentication always runs and is enforced even
+   * when a handler doesn't consume the result.
+   */
+  auth: () => Promise<AuthFromSecurity<TOperation["security"]>>;
 };
 
 type OperationRequestHandler<TOperation extends ZodOpenApiOperationObject> = (
@@ -119,6 +131,13 @@ export const errorHandler: ErrorRequestHandler = (
   res,
   _next,
 ) => {
+  // The same error can reach here twice (e.g. eager auth enforcement and a
+  // handler that also awaited `req.ctx.auth()`); once the response is committed
+  // there is nothing left to do.
+  if (res.headersSent) {
+    return;
+  }
+
   const details =
     error instanceof Error && "details" in error
       ? DetailsSchema.safeParse(error.details).data
@@ -192,59 +211,88 @@ function handler<TMethod extends "get" | "post" | "put" | "patch" | "delete">(
       // Temporary increase the limit
       // we should find a way to split the upload in several requests
       json({ limit: "3mb" }),
-      asyncHandler(async (req, _res, next) => {
-        const ctx: RequestCtx<ZodOpenApiOperationObject> = {
-          params: null,
-          query: null,
-          body: null,
-          auth: null,
-        };
-        (req as Request & { ctx: RequestCtx<ZodOpenApiOperationObject> }).ctx =
-          ctx;
-        try {
-          if (
-            operation.requestParams?.path &&
-            operation.requestParams.path instanceof ZodType
-          ) {
-            ctx.params = operation.requestParams.path.parse(
-              req.params,
-            ) as RequestCtx<ZodOpenApiOperationObject>["params"];
+      asyncHandler((req, res, next) => {
+        runInRequestScope(() => {
+          // Memoized, lazily-resolved auth. Handlers call `req.ctx.auth()`,
+          // often in parallel with their own queries.
+          let authPromise: ReturnType<typeof authenticateRequest> | null = null;
+          const auth = () => {
+            authPromise ??= authenticateRequest(req, operation.security);
+            return authPromise;
+          };
+
+          const ctx: RequestCtx<ZodOpenApiOperationObject> = {
+            params: null,
+            query: null,
+            body: null,
+            auth: auth as RequestCtx<ZodOpenApiOperationObject>["auth"],
+          };
+          (
+            req as Request & { ctx: RequestCtx<ZodOpenApiOperationObject> }
+          ).ctx = ctx;
+
+          try {
+            if (
+              operation.requestParams?.path &&
+              operation.requestParams.path instanceof ZodType
+            ) {
+              ctx.params = operation.requestParams.path.parse(
+                req.params,
+              ) as RequestCtx<ZodOpenApiOperationObject>["params"];
+            }
+            if (
+              operation.requestParams?.query &&
+              operation.requestParams?.query instanceof ZodType
+            ) {
+              ctx.query = operation.requestParams.query.parse(
+                req.query,
+              ) as RequestCtx<ZodOpenApiOperationObject>["query"];
+            }
+            if (
+              operation.requestBody?.content?.["application/json"]?.schema &&
+              operation.requestBody.content["application/json"]
+                .schema instanceof ZodType
+            ) {
+              ctx.body = operation.requestBody.content[
+                "application/json"
+              ].schema.parse(
+                req.body,
+              ) as RequestCtx<ZodOpenApiOperationObject>["body"];
+            }
+          } catch (error) {
+            if (error instanceof ZodError) {
+              const errorMessages = error.issues.map((issue) => ({
+                message: `${issue.path.join(".")} is ${issue.message}`,
+              }));
+              next(
+                boom(400, "Invalid request", {
+                  cause: error,
+                  details: errorMessages,
+                }),
+              );
+              return;
+            }
+            next(error);
+            return;
           }
-          if (
-            operation.requestParams?.query &&
-            operation.requestParams?.query instanceof ZodType
-          ) {
-            ctx.query = operation.requestParams.query.parse(
-              req.query,
-            ) as RequestCtx<ZodOpenApiOperationObject>["query"];
-          }
-          if (
-            operation.requestBody?.content?.["application/json"]?.schema &&
-            operation.requestBody.content["application/json"].schema instanceof
-              ZodType
-          ) {
-            ctx.body = operation.requestBody.content[
-              "application/json"
-            ].schema.parse(
-              req.body,
-            ) as RequestCtx<ZodOpenApiOperationObject>["body"];
-          }
-        } catch (error) {
-          if (error instanceof ZodError) {
-            const errorMessages = error.issues.map((issue) => ({
-              message: `${issue.path.join(".")} is ${issue.message}`,
-            }));
-            throw boom(400, "Invalid request", {
-              cause: error,
-              details: errorMessages,
+
+          // Hold the response until background `waitUntil` work (e.g. the token
+          // `lastUsedAt` refresh) has settled.
+          gateResponseOnRequestScope(res);
+
+          // Kick authentication off eagerly so it runs in parallel and is
+          // enforced even if the handler never consumes it: a rejection is
+          // forwarded to the error handler when nothing else has responded yet.
+          if (operation.security && operation.security.length > 0) {
+            auth().catch((error: unknown) => {
+              if (!res.headersSent) {
+                next(error);
+              }
             });
           }
-          throw error;
-        }
 
-        ctx.auth = await authenticateRequest(req, operation.security);
-
-        next();
+          next();
+        });
       }),
       ...wrappedHandlers,
       // @ts-expect-error wrong type from Sentry

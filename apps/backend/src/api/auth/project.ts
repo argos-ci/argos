@@ -96,20 +96,23 @@ export async function getAuthPayloadFromExpressReq(
 }
 
 export async function getProjectForAuth(
-  auth: AuthPATPayload | AuthProjectPayload,
+  authPromise: Promise<AuthPATPayload | AuthProjectPayload>,
   params: {
     owner: string;
     project: string;
   },
 ) {
-  // Authorize the resolved account/project pair before deciding whether this
-  // route is a 401 or a genuine 404. The caller is already authenticated by the
-  // global handler (`req.ctx.auth`).
-  const project = await Project.query()
-    .joinRelated("account")
-    .where("account.slug", params.owner)
-    .where("projects.name", params.project)
-    .first();
+  // Authenticate and load the routed project in parallel, then authorize the
+  // resolved account/project pair before deciding whether this route is a 401
+  // or a genuine 404. Pass `req.ctx.auth()` so both run concurrently.
+  const [auth, project] = await Promise.all([
+    authPromise,
+    Project.query()
+      .joinRelated("account")
+      .where("account.slug", params.owner)
+      .where("projects.name", params.project)
+      .first(),
+  ]);
 
   assertProjectAccess(auth, {
     projectId: project?.id ?? null,

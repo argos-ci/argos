@@ -67,7 +67,7 @@ export const findBaselineOperation = {
 
 export const findBaseline: CreateAPIHandler = ({ post }) => {
   post("/baseline", async (req, res) => {
-    const auth = req.ctx.auth;
+    const auth = await req.ctx.auth();
     const { commits, name, mode } = req.ctx.body;
 
     const build = await getEligibleBaselineBuildFromCommits({

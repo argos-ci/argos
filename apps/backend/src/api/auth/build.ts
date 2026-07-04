@@ -14,24 +14,27 @@ type BuildActionPermission = "view" | "review" | "review_dismiss";
  * Load the build addressed by `{owner}/{project}/builds/{buildNumber}` for a
  * personal-access-token caller, enforcing the rules shared by every
  * review/comment endpoint: the token must be scoped to the owner account, and
- * the build must exist. The caller is already known to hold a personal access
- * token — these routes declare `personalAccessTokenAuth`, so the global handler
- * has resolved and type-checked `req.ctx.auth`.
+ * the build must exist. These routes declare `personalAccessTokenAuth`, so the
+ * global handler resolves and type-checks the auth; pass `req.ctx.auth()` and
+ * the build load runs in parallel with authentication.
  *
- * Returns the build with `project.account` fetched so callers can check
- * permissions and serialize without a second round-trip.
+ * Returns the resolved auth and the build (with `project.account` fetched so
+ * callers can check permissions and serialize without a second round-trip).
  */
 export async function loadBuildForPatAuth(
-  auth: AuthPATPayload,
+  authPromise: Promise<AuthPATPayload>,
   params: { owner: string; project: string; buildNumber: number },
-): Promise<{ build: Build }> {
-  const build = await Build.query()
-    .joinRelated("project.account")
-    .where("project:account.slug", params.owner)
-    .where("project.name", params.project)
-    .where("number", params.buildNumber)
-    .withGraphFetched("project.account")
-    .first();
+): Promise<{ auth: AuthPATPayload; build: Build }> {
+  const [auth, build] = await Promise.all([
+    authPromise,
+    Build.query()
+      .joinRelated("project.account")
+      .where("project:account.slug", params.owner)
+      .where("project.name", params.project)
+      .where("number", params.buildNumber)
+      .withGraphFetched("project.account")
+      .first(),
+  ]);
 
   assertProjectAccess(auth, {
     projectId: build?.projectId ?? null,
@@ -44,7 +47,7 @@ export async function loadBuildForPatAuth(
 
   invariant(build.project?.account, "Build project account not found");
 
-  return { build };
+  return { auth, build };
 }
 
 /**

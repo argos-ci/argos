@@ -58,7 +58,7 @@ export const finalizeBuildsOperation = {
 
 export const finalizeBuilds: CreateAPIHandler = ({ post }) => {
   return post("/builds/finalize", async (req, res) => {
-    const auth = req.ctx.auth;
+    const auth = await req.ctx.auth();
 
     const { parallelNonce } = req.body;
 
