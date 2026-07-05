@@ -4,9 +4,10 @@ import {
   useCallback,
   useId,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { toast } from "sonner";
 
@@ -23,7 +24,7 @@ import {
 } from "@/ui/Dialog";
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";
-import { Modal } from "@/ui/Modal";
+import { Modal, ModalActionContext } from "@/ui/Modal";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 
@@ -154,13 +155,21 @@ function RejectCommentDialog(props: {
     [build.members],
   );
   const [value, setValue] = useState<EditorValue>(null);
-  const [isPending, setIsPending] = useState(false);
   const emptyToastId = useId();
   const isEmpty = !hasEditorContent(value);
-  const [addBuildComment] = useMutation(AddBuildCommentMutation);
+  const client = useApolloClient();
+  // Drive the modal's pending state (rather than a local one) so the footer
+  // buttons disable and the modal can't be dismissed while submitting — the
+  // same mechanism a dialog `Form` uses. We call the Apollo client directly
+  // instead of `useMutation` to avoid re-rendering on the mutation's own state.
+  const actionContext = use(ModalActionContext);
+  const isPending = actionContext?.isPending ?? false;
+  // Synchronous guard against a double submit, since the pending state above
+  // only updates on the next render.
+  const submittingRef = useRef(false);
 
   const submit = () => {
-    if (isPending) {
+    if (submittingRef.current) {
       return;
     }
     if (isEmpty) {
@@ -170,19 +179,22 @@ function RejectCommentDialog(props: {
       });
       return;
     }
-    setIsPending(true);
-    addBuildComment({
-      variables: {
-        input: {
-          buildId: build.id,
-          screenshotDiffId,
-          body: value,
-          addToReview: true,
+    submittingRef.current = true;
+    actionContext?.setIsPending(true);
+    client
+      .mutate({
+        mutation: AddBuildCommentMutation,
+        variables: {
+          input: {
+            buildId: build.id,
+            screenshotDiffId,
+            body: value,
+            addToReview: true,
+          },
+          accountSlug: projectParams.accountSlug,
+          projectName: projectParams.projectName,
         },
-        accountSlug: projectParams.accountSlug,
-        projectName: projectParams.projectName,
-      },
-    })
+      })
       .then(() => {
         // Close, reveal the new comment in the review panel, and move on to the
         // next snapshot so the reviewer can keep going.
@@ -193,7 +205,12 @@ function RejectCommentDialog(props: {
       .catch((error) => {
         toast.error(getErrorMessage(error));
         // Keep the content so the user can retry.
-        setIsPending(false);
+        submittingRef.current = false;
+      })
+      .finally(() => {
+        // Reset even on success: the parent Modal (and its pending state) is
+        // reused across opens, so leaving it pending would lock the next one.
+        actionContext?.setIsPending(false);
       });
   };
 
@@ -229,7 +246,8 @@ function RejectCommentDialog(props: {
         />
       </DialogBody>
       <DialogFooter>
-        <DialogDismiss isDisabled={isPending}>Skip</DialogDismiss>
+        {/* DialogDismiss disables itself while the modal action is pending. */}
+        <DialogDismiss>Skip</DialogDismiss>
         <Button
           variant="primary"
           isPending={isPending}
