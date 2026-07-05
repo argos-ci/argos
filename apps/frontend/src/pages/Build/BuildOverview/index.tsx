@@ -1,6 +1,7 @@
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
 import { DocumentType, graphql } from "@/gql";
 
+import { BuildDialogs } from "../BuildDialogs";
 import { useGoToNextDiff } from "../BuildDiffState";
 import { ReviewActivitySection } from "../sidebar/ReviewActivitySection";
 import { ReviewersSection } from "../sidebar/ReviewersSection";
@@ -22,6 +23,7 @@ const _BuildFragment = graphql(`
     ...DeploymentSection_Build
     ...ReviewersSection_Build
     ...ReviewActivitySection_Build
+    ...BuildDialogs_Build
   }
 `);
 
@@ -40,6 +42,7 @@ export function BuildOverview(props: { build: Build; repoUrl: string | null }) {
   const showDeployment = Boolean(build.deployment) || build.storybook;
   return (
     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <BuildDialogs build={build} />
       <div className="flex flex-col gap-10 p-6 lg:flex-row lg:gap-8">
         <div className="flex min-w-0 flex-1 justify-center">
           <main className="flex w-full max-w-3xl flex-col gap-10">

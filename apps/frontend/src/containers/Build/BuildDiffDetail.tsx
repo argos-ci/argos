@@ -34,7 +34,6 @@ import { useClipboard } from "use-clipboard-copy";
 
 import { DocumentType, graphql } from "@/gql";
 import { BuildType, ScreenshotDiffStatus } from "@/gql/graphql";
-import { BuildDialogs } from "@/pages/Build/BuildDialogs";
 import { DiffCommentLayer } from "@/pages/Build/diffComments/DiffCommentLayer";
 import { ScreenshotCommentLayer } from "@/pages/Build/screenshotComments/ScreenshotCommentLayer";
 import { Code } from "@/ui/Code";
@@ -104,7 +103,6 @@ const _BuildFragment = graphql(`
     pullRequest {
       merged
     }
-    ...BuildDialogs_Build
     ...ScreenshotCommentLayer_Build
     ...DiffCommentLayer_Build
   }
@@ -1637,10 +1635,7 @@ export function BuildDiffDetail(props: {
       )}
     >
       {diff ? (
-        <>
-          <BuildScreenshots build={build} diff={diff} />
-          <BuildDialogs build={build} />
-        </>
+        <BuildScreenshots build={build} diff={diff} />
       ) : build.type === BuildType.Skipped ? (
         <Centered>
           <SkippedBuildEmptyState />
