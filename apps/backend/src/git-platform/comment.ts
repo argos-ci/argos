@@ -1,9 +1,17 @@
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
+import type { BuildType } from "@argos/schemas/build-type";
 import { invariant } from "@argos/util/invariant";
 
-import { getBuildLabel } from "@/build/label";
+import { getApprovalEmoji, getBuildLabel } from "@/build/label";
 import { getStatsMessage } from "@/build/stats";
 import { getCommentHeader } from "@/database";
-import { Build, Deployment, Project } from "@/database/models";
+import {
+  Build,
+  BuildReview,
+  Comment,
+  Deployment,
+  Project,
+} from "@/database/models";
 
 const dateFormatter = Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
@@ -53,12 +61,168 @@ function getDeploymentLabel(deployment: Deployment): string {
   }
 }
 
+const reviewerListFormatter = new Intl.ListFormat("en-US", {
+  style: "long",
+  type: "conjunction",
+});
+
+/**
+ * Who reviewed a build and how much discussion it drew, used to enrich the
+ * status column of the PR comment.
+ */
+type BuildReviewSummary = {
+  /** Display names of users whose latest active review approved the build. */
+  approvedBy: string[];
+  /** Display names of users whose latest active review rejected the build. */
+  rejectedBy: string[];
+  /** Number of comment threads (root comments) on the build. */
+  commentCount: number;
+};
+
+function getOrCreateReviewSummary(
+  summaries: Map<string, BuildReviewSummary>,
+  buildId: string,
+): BuildReviewSummary {
+  let summary = summaries.get(buildId);
+  if (!summary) {
+    summary = { approvedBy: [], rejectedBy: [], commentCount: 0 };
+    summaries.set(buildId, summary);
+  }
+  return summary;
+}
+
+/**
+ * Build a review summary per build: the reviewers grouped by their latest active
+ * decision and the number of comment threads. Mirrors the aggregation done in
+ * {@link Build.getReviewStatuses} (latest review per user, dismissed reviews
+ * ignored) so the names shown match the aggregated status.
+ */
+async function getBuildReviewSummaries(
+  builds: Build[],
+): Promise<Map<string, BuildReviewSummary>> {
+  const summaries = new Map<string, BuildReviewSummary>();
+  const buildIds = builds.map((build) => build.id);
+  if (buildIds.length === 0) {
+    return summaries;
+  }
+
+  const [reviews, commentCounts] = await Promise.all([
+    BuildReview.query()
+      .select(
+        "build_reviews.buildId",
+        "build_reviews.state",
+        "build_reviews.dismissedAt",
+        "accounts.name as reviewerName",
+        "accounts.slug as reviewerSlug",
+      )
+      .distinctOn(["build_reviews.buildId", "build_reviews.userId"])
+      .leftJoin("accounts", "accounts.userId", "build_reviews.userId")
+      .whereIn("build_reviews.buildId", buildIds)
+      .orderBy("build_reviews.buildId")
+      .orderBy("build_reviews.userId")
+      .orderBy("build_reviews.createdAt", "desc")
+      .orderBy("build_reviews.id", "desc") as unknown as Promise<
+      {
+        buildId: string;
+        state: BuildReview["state"];
+        dismissedAt: string | null;
+        reviewerName: string | null;
+        reviewerSlug: string | null;
+      }[]
+    >,
+    Comment.query()
+      .select("buildId")
+      .count("* as count")
+      .whereIn("buildId", buildIds)
+      .whereNull("deletedAt")
+      // Only count thread roots so a discussion with replies stays "1 comment".
+      .whereNull("threadId")
+      .groupBy("buildId") as unknown as Promise<
+      { buildId: string; count: string | number }[]
+    >,
+  ]);
+
+  for (const review of reviews) {
+    // The latest active review per user wins; a dismissed latest review means
+    // the user no longer has an active decision.
+    if (review.dismissedAt) {
+      continue;
+    }
+    if (review.state !== "approved" && review.state !== "rejected") {
+      continue;
+    }
+    const name = review.reviewerName || review.reviewerSlug;
+    if (!name) {
+      continue;
+    }
+    const summary = getOrCreateReviewSummary(summaries, review.buildId);
+    const list =
+      review.state === "approved" ? summary.approvedBy : summary.rejectedBy;
+    list.push(name);
+  }
+
+  for (const { buildId, count } of commentCounts) {
+    getOrCreateReviewSummary(summaries, buildId).commentCount = Number(count);
+  }
+
+  return summaries;
+}
+
+/**
+ * Append the number of comment threads, e.g. " (3 comments)".
+ */
+function formatCommentCount(count: number): string {
+  if (count <= 0) {
+    return "";
+  }
+  return ` (${count} comment${count === 1 ? "" : "s"})`;
+}
+
+/**
+ * Status label for the build, enriched with the reviewers when the build has
+ * been approved or rejected, e.g. "👍 Approved by Alice and Bob (3 comments)".
+ * Falls back to the plain {@link getBuildLabel} for every other status.
+ */
+function getReviewAwareBuildLabel(input: {
+  type: BuildType | null;
+  status: BuildAggregatedStatus;
+  summary: BuildReviewSummary | undefined;
+}): string {
+  const { type, status, summary } = input;
+  // Only "check" builds (and legacy builds with no type) carry reviews; other
+  // types always resolve to a fixed label.
+  if (type === "check" || type == null) {
+    if (status === "accepted") {
+      const label = formatReviewLabel("approved", summary?.approvedBy ?? []);
+      return `${label}${formatCommentCount(summary?.commentCount ?? 0)}`;
+    }
+    if (status === "rejected") {
+      const label = formatReviewLabel("rejected", summary?.rejectedBy ?? []);
+      return `${label}${formatCommentCount(summary?.commentCount ?? 0)}`;
+    }
+  }
+  return getBuildLabel(type, status);
+}
+
+function formatReviewLabel(
+  state: "approved" | "rejected",
+  names: string[],
+): string {
+  const emoji = getApprovalEmoji(state);
+  const verb = state === "approved" ? "Approved" : "Rejected";
+  if (names.length === 0) {
+    return `${emoji} ${verb}`;
+  }
+  return `${emoji} ${verb} by ${reviewerListFormatter.format(names)}`;
+}
+
 function getBuildRows(input: {
   builds: Build[];
   hasMultipleProjects: boolean;
   aggregateStatuses: Awaited<
     ReturnType<typeof Build.getAggregatedBuildStatuses>
   >;
+  reviewSummaries: Map<string, BuildReviewSummary>;
   urls: string[];
 }) {
   return input.builds
@@ -79,7 +243,11 @@ function getBuildRows(input: {
         ? getStatsMessage(build.stats, { isSubsetBuild: build.subset })
         : null;
 
-      const label = getBuildLabel(build.type, status);
+      const label = getReviewAwareBuildLabel({
+        type: build.type,
+        status,
+        summary: input.reviewSummaries.get(build.id),
+      });
       const review =
         status === "changes-detected" && build.type !== "reference"
           ? ` ([Review](${url}))`
@@ -150,14 +318,16 @@ export async function getCommentBody(props: {
       ...builds.map((build) => build.projectId),
       ...deployments.map((deployment) => deployment.projectId),
     ]).size > 1;
-  const [aggregateStatuses, urls] = await Promise.all([
+  const [aggregateStatuses, urls, reviewSummaries] = await Promise.all([
     Build.getAggregatedBuildStatuses(builds),
     Promise.all(builds.map((build) => build.getUrl())),
+    getBuildReviewSummaries(builds),
   ]);
   const buildRows = getBuildRows({
     builds,
     hasMultipleProjects,
     aggregateStatuses,
+    reviewSummaries,
     urls,
   });
   const deploymentRows = getDeploymentRows({

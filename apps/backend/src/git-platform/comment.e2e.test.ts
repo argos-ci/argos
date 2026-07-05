@@ -28,6 +28,7 @@ async function createBuild(input: {
   projectId: string;
   name?: string;
   updatedAt?: string;
+  conclusion?: Build["conclusion"];
 }): Promise<Build> {
   const compareBucket = await factory.ScreenshotBucket.create({
     projectId: input.projectId,
@@ -38,9 +39,19 @@ async function createBuild(input: {
     compareScreenshotBucketId: compareBucket.id,
     name: input.name ?? "default",
     jobStatus: "complete",
-    conclusion: "no-changes",
+    conclusion: input.conclusion ?? "no-changes",
     updatedAt: input.updatedAt,
   });
+}
+
+/**
+ * Create a user with an account named `name`, so their reviews show a display
+ * name in the PR comment.
+ */
+async function createReviewer(name: string) {
+  const user = await factory.User.create();
+  await factory.UserAccount.create({ userId: user.id, name });
+  return user;
 }
 
 async function createDeployment(input: {
@@ -181,5 +192,93 @@ describe("getCommentBody", () => {
     invariant(project.name, "project name should exist");
     expect(body).toContain(`| **${project.name}/default**`);
     expect(body).toContain(`| **${otherProject.name}/production**`);
+  });
+
+  test("shows the reviewers and comment count for an approved build", async ({
+    project,
+  }) => {
+    const [build, alice, bob] = await Promise.all([
+      createBuild({
+        projectId: project.id,
+        conclusion: "changes-detected",
+        updatedAt: "2026-05-07T12:00:00.000Z",
+      }),
+      createReviewer("Alice"),
+      createReviewer("Bob"),
+    ]);
+    await factory.BuildReview.createMany(2, [
+      { buildId: build.id, userId: alice.id, state: "approved" },
+      { buildId: build.id, userId: bob.id, state: "approved" },
+    ]);
+    const rootComment = await factory.Comment.create({
+      buildId: build.id,
+      userId: alice.id,
+    });
+    await factory.Comment.createMany(2, [
+      { buildId: build.id, userId: bob.id },
+      // A reply must not inflate the count.
+      { buildId: build.id, userId: bob.id, threadId: rootComment.id },
+    ]);
+
+    const buildUrl = await build.getUrl();
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain(
+      `| **default** ([Inspect](${buildUrl})) | 👍 Approved by Alice and Bob (2 comments) | - | May 7, 2026, 12:00 PM |`,
+    );
+  });
+
+  test("shows the reviewer who rejected a build", async ({ project }) => {
+    const [build, carol] = await Promise.all([
+      createBuild({
+        projectId: project.id,
+        conclusion: "changes-detected",
+        updatedAt: "2026-05-07T12:00:00.000Z",
+      }),
+      createReviewer("Carol"),
+    ]);
+    await factory.BuildReview.create({
+      buildId: build.id,
+      userId: carol.id,
+      state: "rejected",
+    });
+
+    const buildUrl = await build.getUrl();
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain(
+      `| **default** ([Inspect](${buildUrl})) | 👎 Rejected by Carol | - | May 7, 2026, 12:00 PM |`,
+    );
+  });
+
+  test("ignores dismissed reviews when listing reviewers", async ({
+    project,
+  }) => {
+    const [build, alice, bob] = await Promise.all([
+      createBuild({
+        projectId: project.id,
+        conclusion: "changes-detected",
+        updatedAt: "2026-05-07T12:00:00.000Z",
+      }),
+      createReviewer("Alice"),
+      createReviewer("Bob"),
+    ]);
+    await factory.BuildReview.createMany(2, [
+      {
+        buildId: build.id,
+        userId: alice.id,
+        state: "approved",
+        dismissedAt: "2026-05-07T12:30:00.000Z",
+        dismissedById: bob.id,
+      },
+      { buildId: build.id, userId: bob.id, state: "approved" },
+    ]);
+
+    const buildUrl = await build.getUrl();
+    const body = await getCommentBody({ commit });
+
+    expect(body).toContain(
+      `| **default** ([Inspect](${buildUrl})) | 👍 Approved by Bob | - | May 7, 2026, 12:00 PM |`,
+    );
   });
 });
