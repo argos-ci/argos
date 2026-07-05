@@ -1,12 +1,4 @@
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import {
@@ -22,14 +14,12 @@ import {
   SquareStackIcon,
 } from "lucide-react";
 import memoize from "memoize";
-import { AnimatePresence, motion } from "motion/react";
 import {
   Heading,
   Button as RACButton,
   ButtonProps as RACButtonProps,
   Text,
 } from "react-aria-components";
-import { createPortal } from "react-dom";
 
 import {
   checkIsDiffGroupName,
@@ -63,10 +53,8 @@ import {
   useSearchModeState,
 } from "./BuildDiffState";
 import {
-  useGetDiffEvaluationStatus,
   useGetDiffGroupEvaluationStatus,
   useGetDiffStatus,
-  useWatchItemReview,
 } from "./BuildReviewState";
 import { BuildStatsIndicator } from "./BuildStatsIndicator";
 import { EvaluationStatus } from "./EvaluationStatus";
@@ -420,51 +408,6 @@ function DiffStatusIndicator(props: { group: DiffGroupName }) {
   );
 }
 
-let warmup = false;
-let cooldownTimeout: NodeJS.Timeout | null = null;
-
-function useDelayedHover(props: {
-  delay: number;
-  cooldownDelay: number;
-  onHoverChange: (isHovered: boolean) => void;
-}) {
-  const [entered, setEntered] = useState(false);
-  const onHoverChangeRef = useLiveRef(props.onHoverChange);
-  useLayoutEffect(() => {
-    const onHoverChange = onHoverChangeRef.current;
-
-    if (entered) {
-      const timeout = setTimeout(
-        () => {
-          onHoverChange(true);
-          warmup = true;
-          if (cooldownTimeout) {
-            clearTimeout(cooldownTimeout);
-            cooldownTimeout = null;
-          }
-        },
-        warmup ? 0 : props.delay,
-      );
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-
-    onHoverChange(false);
-    cooldownTimeout = setTimeout(() => {
-      warmup = false;
-    }, props.cooldownDelay);
-    return undefined;
-  }, [entered, onHoverChangeRef, props.delay, props.cooldownDelay]);
-
-  return {
-    hoverProps: {
-      onMouseEnter: () => setEntered(true),
-      onMouseLeave: () => setEntered(false),
-    },
-  };
-}
-
 const ListItem = memo(function ListItem(props: {
   item: ListItemRow | ListGroupItemRow;
   index: number;
@@ -473,8 +416,6 @@ const ListItem = memo(function ListItem(props: {
   setActiveDiff: (diff: Diff) => void;
   observer: IntersectionObserver | null;
   onToggleGroupItem: (groupId: string | null) => void;
-  isHovered: boolean;
-  onHoverChange: (isHovered: boolean, index: number) => void;
   groupStatus: EvaluationStatus | null;
 }) {
   const {
@@ -485,8 +426,6 @@ const ListItem = memo(function ListItem(props: {
     setActiveDiff,
     observer,
     onToggleGroupItem,
-    isHovered,
-    onHoverChange,
     groupStatus,
   } = props;
   const ref = useRef<HTMLDivElement>(null);
@@ -503,13 +442,8 @@ const ListItem = memo(function ListItem(props: {
   const { searchMode } = useSearchModeState();
   const isGroupItem = item.type === "group-item" && item.group.size > 1;
   const isSubItem = item.type === "item" && item.parent;
-  const { hoverProps } = useDelayedHover({
-    onHoverChange: (isHovered) => onHoverChange(isHovered, index),
-    delay: 1000,
-    cooldownDelay: 800,
-  });
 
-  const rowStyle = getRowStyle(item, status);
+  const rowStyle = getRowStyle(item);
 
   const button = (
     <ListItemButton
@@ -522,7 +456,6 @@ const ListItem = memo(function ListItem(props: {
       }}
       isDisabled={!item.diff}
       className="size-full"
-      {...hoverProps}
     >
       <StatusDiffCard isActive={active} status={status}>
         {item.diff ? (
@@ -580,10 +513,6 @@ const ListItem = memo(function ListItem(props: {
     </ListItemButton>
   );
 
-  const isEvaluated =
-    status === EvaluationStatus.Accepted ||
-    status === EvaluationStatus.Rejected;
-
   return (
     <div
       className={clsx("relative w-full px-4", isSubItem && "pl-10")}
@@ -604,95 +533,9 @@ const ListItem = memo(function ListItem(props: {
         />
       )}
       {button}
-      {isEvaluated && item.diff ? (
-        <DiffPreview
-          status={status}
-          diff={item.diff}
-          triggerRef={ref}
-          open={isHovered}
-        />
-      ) : null}
     </div>
   );
 });
-
-/**
- * Hover preview of an evaluated (accepted/rejected) diff. These rows are
- * collapsed in the list, so we float a full-size card to their right.
- *
- * We deliberately avoid react-aria's `Tooltip`: it registers a global
- * capture-phase `keydown` listener that calls `stopPropagation()` on Escape to
- * dismiss itself. Since this preview is controlled (`isOpen`), that close is a
- * no-op but the `stopPropagation()` still fires, swallowing Escape for every
- * open modal while a preview is shown.
- *
- * The preview is portaled to `document.body` because the list rows live inside
- * an `overflow-y-auto` container with `translateY` transforms, which would both
- * clip the card and break `position: fixed` positioning.
- */
-function DiffPreview(props: {
-  diff: Diff;
-  status: EvaluationStatus;
-  triggerRef: React.RefObject<HTMLElement | null>;
-  open: boolean;
-}) {
-  const { diff, status, triggerRef, open } = props;
-  const [position, setPosition] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
-  // Anchor to the trigger while open, and keep it anchored as the list scrolls
-  // or the window resizes (the card is `position: fixed`, so a moving trigger
-  // would otherwise leave it stranded). We keep the last position during the
-  // exit animation, so the card fades out where it was shown.
-  useLayoutEffect(() => {
-    if (!open) {
-      return;
-    }
-    const update = () => {
-      const trigger = triggerRef.current;
-      if (!trigger) {
-        return;
-      }
-      const rect = trigger.getBoundingClientRect();
-      setPosition({ top: rect.top, left: rect.right + 8 });
-    };
-    update();
-    // Capture phase so scrolls on the ancestor list container are caught too.
-    window.addEventListener("scroll", update, true);
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("scroll", update, true);
-      window.removeEventListener("resize", update);
-    };
-  }, [open, triggerRef]);
-
-  return createPortal(
-    <AnimatePresence>
-      {open && position ? (
-        <motion.div
-          key="diff-preview"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          style={{
-            top: position.top,
-            left: position.left,
-            transformOrigin: "top left",
-          }}
-          className="z-hover-card pointer-events-none fixed w-60"
-        >
-          <StatusDiffCard isActive={false} status={status}>
-            <DiffImage diff={diff} config={DIFF_IMAGE_CONFIG} />
-          </StatusDiffCard>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>,
-    document.body,
-  );
-}
 
 function StatusDiffCard(
   props: Omit<DiffCardProps, "variant"> & {
@@ -779,61 +622,17 @@ const preloadListItemRow = (row: ListItemRow | ListGroupItemRow) => {
 };
 
 function useEstimateListItemHeight() {
-  const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
-  const getDiffStatus = useGetDiffEvaluationStatus();
-  return useCallback(
-    (row: ListItemRow | ListGroupItemRow) => {
-      const status = (() => {
-        switch (row.type) {
-          case "group-item":
-            invariant(
-              row.diff?.group,
-              "Expected group item to have a diff and a group",
-            );
-            return getDiffGroupStatus?.(row.diff.group) ?? null;
-          case "item":
-            if (!row.diff) {
-              return null;
-            }
-            return getDiffStatus?.(row.diff.id) ?? null;
-          default:
-            assertNever(row);
-        }
-      })();
-
-      const style = getRowStyle(row, status);
-      return style.height;
-    },
-    [getDiffGroupStatus, getDiffStatus],
-  );
+  return useCallback((row: ListItemRow | ListGroupItemRow) => {
+    return getRowStyle(row).height;
+  }, []);
 }
 
 /**
- * Get the height and padding of the row based on the row type and status.
+ * Get the height and padding of the row based on the row type.
  */
-function getRowStyle(
-  row: ListItemRow | ListGroupItemRow,
-  status: EvaluationStatus | null,
-) {
-  const isEvaluated =
-    status === EvaluationStatus.Accepted ||
-    status === EvaluationStatus.Rejected;
-
-  const innerHeight = (() => {
-    if (isEvaluated) {
-      switch (row.type) {
-        case "group-item":
-          return 42;
-        case "item":
-          return 26;
-        default:
-          assertNever(row);
-      }
-    }
-
-    const dimensions = getDiffDimensions(row.diff, DIFF_IMAGE_CONFIG);
-    return Math.max(dimensions.height, DIFF_IMAGE_CONFIG.minHeight);
-  })();
+function getRowStyle(row: ListItemRow | ListGroupItemRow) {
+  const dimensions = getDiffDimensions(row.diff, DIFF_IMAGE_CONFIG);
+  const innerHeight = Math.max(dimensions.height, DIFF_IMAGE_CONFIG.minHeight);
 
   const gap = 12;
   const paddingTop = row.first ? gap : gap / 2;
@@ -865,7 +664,6 @@ const InternalBuildDiffList = memo(() => {
     () => getRows(groups, expanded, results, searchMode),
     [groups, expanded, results, searchMode],
   );
-  const rowsRef = useLiveRef(rows);
   const containerRef = useRef<HTMLDivElement>(null);
   const getDiffIndex = useEventCallback((diff: Diff | null) => {
     if (!diff) {
@@ -952,30 +750,6 @@ const InternalBuildDiffList = memo(() => {
     ),
   });
 
-  const { resizeItem } = rowVirtualizer;
-
-  const watchItemReview = useWatchItemReview();
-  useEffect(() => {
-    if (!watchItemReview) {
-      return;
-    }
-    return watchItemReview((value) => {
-      const rows = rowsRef.current;
-      rows.forEach((row, index) => {
-        if (row.type === "item" && row.diff?.id === value.id) {
-          resizeItem(index, estimateSize(index));
-          return;
-        }
-        if (
-          row.type === "group-item" &&
-          Array.from(row.group)?.some((diff) => diff.id === value.id)
-        ) {
-          resizeItem(index, estimateSize(index));
-        }
-      });
-    });
-  }, [estimateSize, resizeItem, rowsRef, watchItemReview]);
-
   const rowVirtualizerRef = useLiveRef(rowVirtualizer);
 
   useEffect(() => {
@@ -1004,8 +778,6 @@ const InternalBuildDiffList = memo(() => {
     }
   }, [scrolledDiff, getDiffIndex, getIndicesInViewport, rowVirtualizerRef]);
 
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   const handleToggleGroupItem = useCallback(
     (groupId: string | null) => {
       if (groupId) {
@@ -1014,10 +786,6 @@ const InternalBuildDiffList = memo(() => {
     },
     [toggleGroup],
   );
-
-  const handleHoverChange = useCallback((isHovered: boolean, index: number) => {
-    setHoveredIndex(isHovered ? index : null);
-  }, []);
 
   const getDiffGroupStatus = useGetDiffGroupEvaluationStatus();
   const getDiffStatus = useGetDiffStatus();
@@ -1120,8 +888,6 @@ const InternalBuildDiffList = memo(() => {
                         setActiveDiff={setActiveDiff}
                         observer={observer}
                         onToggleGroupItem={handleToggleGroupItem}
-                        onHoverChange={handleHoverChange}
-                        isHovered={hoveredIndex === virtualRow.index}
                         groupStatus={groupStatus}
                         status={getDiffStatus(item.diff?.id ?? null)}
                       />
