@@ -1,10 +1,19 @@
-import { createContext, use, useCallback, useMemo, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
+import { Button } from "@/ui/Button";
 import {
   Dialog,
   DialogBody,
@@ -13,11 +22,15 @@ import {
   DialogText,
   DialogTitle,
 } from "@/ui/Dialog";
-import { type EditorValue } from "@/ui/Editor/Editor";
-import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
-import { Modal } from "@/ui/Modal";
+import { Editor, type EditorValue } from "@/ui/Editor/Editor";
+import { hasEditorContent } from "@/ui/Editor/util";
+import { Modal, ModalActionContext } from "@/ui/Modal";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
+
+import { useBuildDiffState, useGoToNextDiff } from "./BuildDiffState";
+import { useOpenReviewSidebar } from "./RightSidebarState";
+import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
 
 const _BuildFragment = graphql(`
   fragment RejectCommentDialog_Build on Build {
@@ -127,32 +140,80 @@ function RejectCommentDialog(props: {
   const { build, screenshotDiffId, onClose } = props;
   const projectParams = useProjectParams();
   invariant(projectParams);
+  const { diffs, allDiffs } = useBuildDiffState();
+  const goToNextDiff = useGoToNextDiff();
+  const openReviewSidebar = useOpenReviewSidebar();
+  // The snapshot the note will be attached to, shown above the field so the
+  // reviewer sees what they're commenting on (the reject flow always acts on a
+  // loaded diff, so this is normally found).
+  const diff =
+    diffs.find((candidate) => candidate.id === screenshotDiffId) ??
+    allDiffs.find((candidate) => candidate.id === screenshotDiffId) ??
+    null;
   const mentions = useMemo(
     () => build.members.map(getMentionUser),
     [build.members],
   );
-  const [addBuildComment] = useMutation(AddBuildCommentMutation);
-  const handleSubmit = async (body: EditorValue) => {
-    try {
-      await addBuildComment({
+  const [value, setValue] = useState<EditorValue>(null);
+  const emptyToastId = useId();
+  const isEmpty = !hasEditorContent(value);
+  const client = useApolloClient();
+  // Drive the modal's pending state (rather than a local one) so the footer
+  // buttons disable and the modal can't be dismissed while submitting — the
+  // same mechanism a dialog `Form` uses. We call the Apollo client directly
+  // instead of `useMutation` to avoid re-rendering on the mutation's own state.
+  const actionContext = use(ModalActionContext);
+  const isPending = actionContext?.isPending ?? false;
+  // Synchronous guard against a double submit, since the pending state above
+  // only updates on the next render.
+  const submittingRef = useRef(false);
+
+  const submit = () => {
+    if (submittingRef.current) {
+      return;
+    }
+    if (isEmpty) {
+      toast.warning("Comment required", {
+        id: emptyToastId,
+        description: "Please add a comment before submitting.",
+      });
+      return;
+    }
+    submittingRef.current = true;
+    actionContext?.setIsPending(true);
+    client
+      .mutate({
+        mutation: AddBuildCommentMutation,
         variables: {
           input: {
             buildId: build.id,
             screenshotDiffId,
-            body,
+            body: value,
             addToReview: true,
           },
           accountSlug: projectParams.accountSlug,
           projectName: projectParams.projectName,
         },
+      })
+      .then(() => {
+        // Close, reveal the new comment in the review panel, and move on to the
+        // next snapshot so the reviewer can keep going.
+        onClose();
+        openReviewSidebar();
+        goToNextDiff();
+      })
+      .catch((error) => {
+        toast.error(getErrorMessage(error));
+        // Keep the content so the user can retry.
+        submittingRef.current = false;
+      })
+      .finally(() => {
+        // Reset even on success: the parent Modal (and its pending state) is
+        // reused across opens, so leaving it pending would lock the next one.
+        actionContext?.setIsPending(false);
       });
-      onClose();
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-      // Rethrow so the editor keeps the content and the user can retry.
-      throw error;
-    }
   };
+
   return (
     <Dialog size="medium">
       <DialogBody>
@@ -161,21 +222,40 @@ function RejectCommentDialog(props: {
           Let your team know why you're rejecting this snapshot. Your comment is
           added to your review and becomes visible once you submit it.
         </DialogText>
-        <StandaloneEditor
-          onSubmit={handleSubmit}
+        {diff ? (
+          <div className="border-thin bg-subtle mb-3 flex items-center gap-2.5 rounded-md p-2">
+            <ScreenshotDiffThumbnail
+              screenshotDiff={diff}
+              className="size-8"
+              iconClassName="size-5"
+              fit="cover"
+            />
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+              {diff.name}
+            </span>
+          </div>
+        ) : null}
+        <Editor
+          onChange={setValue}
+          onSubmit={submit}
           mentions={mentions}
           placeholder="Leave a comment…"
-          submitLabel="Add to review"
-          emptyMessage={{
-            title: "Comment required",
-            description: "Please add a comment before submitting.",
-          }}
+          disabled={isPending}
           autoFocus
           aria-label="Rejection comment"
         />
       </DialogBody>
       <DialogFooter>
+        {/* DialogDismiss disables itself while the modal action is pending. */}
         <DialogDismiss>Skip</DialogDismiss>
+        <Button
+          variant="primary"
+          isPending={isPending}
+          aria-disabled={isEmpty}
+          onPress={submit}
+        >
+          Add to review
+        </Button>
       </DialogFooter>
     </Dialog>
   );
