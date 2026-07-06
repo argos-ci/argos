@@ -19,7 +19,6 @@ import {
 } from "@/gql/graphql";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useLiveRef } from "@/ui/useLiveRef";
-import { usePrevious } from "@/ui/usePrevious";
 
 import {
   checkDiffCanBeReviewed,
@@ -31,8 +30,6 @@ import {
 import { BuildParams } from "./BuildParams";
 import { useReviewDialog } from "./BuildReviewDialog";
 import { EvaluationStatus } from "./EvaluationStatus";
-
-type Listener = (value: { id: Diff["id"]; status: EvaluationStatus }) => void;
 
 type BuildReviewStateValue = {
   /**
@@ -67,11 +64,6 @@ type BuildReviewAPI = {
    * Similar to `state.diffStatuses`, but do not re-render the component.
    */
   getDiffStatuses: () => Record<Diff["id"], EvaluationStatus>;
-
-  /**
-   * The map of listeners for diff status changes.
-   */
-  listenersRef: React.RefObject<Listener[]>;
 };
 
 const BuildReviewAPIContext = createContext<BuildReviewAPI | null>(null);
@@ -101,30 +93,6 @@ function useReviewStatus(): "initializing" | "pending" | "complete" | null {
     ).length;
     return expected === reviewed ? "complete" : "pending";
   }, [stats, diffStatuses, isSubsetBuild]);
-}
-
-/**
- * Watch the review status of the diffs.
- */
-export function useWatchItemReview():
-  | ((callback: Listener) => () => void)
-  | null {
-  const api = use(BuildReviewAPIContext);
-  const listenersRef = api?.listenersRef;
-  return useMemo(() => {
-    if (!listenersRef) {
-      return null;
-    }
-    return (callback: Listener) => {
-      const listener: Listener = (value) => callback(value);
-      listenersRef.current.push(listener);
-      return () => {
-        listenersRef.current = listenersRef.current.filter(
-          (v) => v !== listener,
-        );
-      };
-    };
-  }, [listenersRef]);
 }
 
 export function useBuildReviewAPI(): BuildReviewAPI | null {
@@ -428,21 +396,6 @@ export function BuildReviewStateProvider(props: {
   const [diffStatuses, setDiffStatuses] = useAtom(
     diffStatusesFamily(stableParams),
   );
-  const listenersRef = useRef<Listener[]>([]);
-  const previousDiffStatuses = usePrevious(diffStatuses);
-  useEffect(() => {
-    if (!previousDiffStatuses || diffStatuses === previousDiffStatuses) {
-      return;
-    }
-    for (const [id, status] of Object.entries(diffStatuses)) {
-      const previousStatus = previousDiffStatuses[id];
-      if (status !== previousStatus) {
-        listenersRef.current.forEach((callback) => {
-          callback({ id, status });
-        });
-      }
-    }
-  }, [diffStatuses, previousDiffStatuses]);
   const getDiffStatuses = useEventCallback(() => diffStatuses);
   const state = useMemo<BuildReviewStateValue | null>(() => {
     if (buildType === BuildType.Reference) {
@@ -454,8 +407,8 @@ export function BuildReviewStateProvider(props: {
     if (buildType === BuildType.Reference) {
       return null;
     }
-    return { getDiffStatuses, setDiffStatuses, listenersRef };
-  }, [buildType, getDiffStatuses, setDiffStatuses, listenersRef]);
+    return { getDiffStatuses, setDiffStatuses };
+  }, [buildType, getDiffStatuses, setDiffStatuses]);
   return (
     <BuildReviewStateContext value={state}>
       <BuildReviewAPIContext value={api}>
