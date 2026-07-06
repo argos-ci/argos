@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
@@ -43,18 +43,21 @@ export function GitLabAuth(props: {
   account: DocumentType<typeof _AccountFragment>;
 }) {
   const { account } = props;
-  const [disconnect] = useMutation(DisconnectGitLabMutation, {
-    variables: {
-      accountId: account.id,
-    },
-    optimisticResponse: {
-      disconnectGitLabAuth: {
-        __typename: "User",
-        id: account.id,
-        gitlabUser: null,
-      } as GitLabAuth_AccountFragment,
-    },
-  });
+  const client = useApolloClient();
+  const disconnect = () =>
+    client.mutate({
+      mutation: DisconnectGitLabMutation,
+      variables: {
+        accountId: account.id,
+      },
+      optimisticResponse: {
+        disconnectGitLabAuth: {
+          __typename: "User",
+          id: account.id,
+          gitlabUser: null,
+        } as GitLabAuth_AccountFragment,
+      },
+    });
   return (
     <ProviderCard>
       {account.gitlabUser ? (

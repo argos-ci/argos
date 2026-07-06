@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import {
   ExternalLinkIcon,
   MoreVerticalIcon,
@@ -45,15 +45,18 @@ export function TeamSlack(props: {
   const { account } = props;
   const { permissions } = useAccountContext();
   const hasAdminPermission = permissions.includes(AccountPermission.Admin);
-  const [uninstallSlack] = useMutation(UninstallSlackMutation, {
-    variables: { accountId: props.account.id },
-    optimisticResponse: {
-      uninstallSlack: {
-        ...props.account,
-        slackInstallation: null,
-      } as TeamSlack_AccountFragment,
-    },
-  });
+  const client = useApolloClient();
+  const uninstallSlack = () =>
+    client.mutate({
+      mutation: UninstallSlackMutation,
+      variables: { accountId: props.account.id },
+      optimisticResponse: {
+        uninstallSlack: {
+          ...props.account,
+          slackInstallation: null,
+        } as TeamSlack_AccountFragment,
+      },
+    });
   const authURL = getSlackAuthURL({ accountId: props.account.id });
   return (
     <Card id="slack">

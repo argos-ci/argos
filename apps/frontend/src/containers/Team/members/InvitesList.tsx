@@ -1,6 +1,6 @@
 import { useDeferredValue, useState } from "react";
 import type { Reference } from "@apollo/client";
-import { useMutation, useSuspenseQuery } from "@apollo/client/react";
+import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
   CircleXIcon,
@@ -93,8 +93,7 @@ const ResendInviteMutation = graphql(`
 export function TeamInvitesList(props: TeamInvitesListProps) {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [cancelInvite] = useMutation(TeamInviteCancelMutation);
-  const [resendInvite] = useMutation(ResendInviteMutation);
+  const client = useApolloClient();
   const { data, fetchMore } = useSuspenseQuery(TeamInvitesQuery, {
     variables: {
       id: props.team.id,
@@ -158,7 +157,8 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                           variant="danger"
                           onAction={() => {
                             toast.promise(
-                              cancelInvite({
+                              client.mutate({
+                                mutation: TeamInviteCancelMutation,
                                 variables: { teamInviteId: invite.id },
                                 update(cache, { data }) {
                                   if (data?.cancelInvite) {
@@ -208,7 +208,8 @@ export function TeamInvitesList(props: TeamInvitesListProps) {
                         <MenuItem
                           onAction={() => {
                             toast.promise(
-                              resendInvite({
+                              client.mutate({
+                                mutation: ResendInviteMutation,
                                 variables: {
                                   input: {
                                     teamAccountId: props.team.id,

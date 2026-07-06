@@ -1,5 +1,5 @@
 import { ComponentProps, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { EyeOffIcon } from "lucide-react";
@@ -110,10 +110,11 @@ export function AddCommentForm(props: {
   const attachedDiff = detached ? null : activeDiff;
   const canAddToReview = useCanAddToReview(build);
   const altHeld = useAltKeyHeld();
-  const [addBuildComment] = useMutation(AddBuildCommentMutation);
+  const client = useApolloClient();
   const handleSubmit = async (body: EditorValue) => {
     try {
-      await addBuildComment({
+      await client.mutate({
+        mutation: AddBuildCommentMutation,
         variables: {
           input: {
             buildId: build.id,

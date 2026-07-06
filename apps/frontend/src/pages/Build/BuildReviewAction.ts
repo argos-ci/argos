@@ -1,14 +1,9 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { DocumentType, graphql } from "@/gql";
-import {
-  BuildReviewEvent,
-  ScreenshotDiffReviewState,
-  type BuildReviewAction_CreateBuildReviewMutation,
-  type BuildReviewAction_CreateBuildReviewMutationVariables,
-} from "@/gql/graphql";
+import { BuildReviewEvent, ScreenshotDiffReviewState } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { EditorValue } from "@/ui/Editor/Editor";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -49,20 +44,12 @@ const _BuildFragment = graphql(`
 
 export function useCreateBuildReviewMutation(
   build: DocumentType<typeof _BuildFragment>,
-  options?: Pick<
-    useMutation.Options<
-      BuildReviewAction_CreateBuildReviewMutation,
-      BuildReviewAction_CreateBuildReviewMutationVariables
-    >,
-    "onCompleted"
-  >,
+  options?: { onCompleted?: () => void },
 ) {
   const api = useBuildReviewAPI();
   const openReviewSidebar = useOpenReviewSidebar();
   const projectParams = useProjectParams();
-  const [mutate, data] = useMutation(CreateBuildReviewMutation, {
-    ...options,
-  });
+  const client = useApolloClient();
 
   const getReviewedDiffStatuses = useGetReviewedDiffStatuses();
   const createReview = useEventCallback(
@@ -86,7 +73,8 @@ export function useCreateBuildReviewMutation(
           };
         })
         .filter((x) => x !== null);
-      const result = await mutate({
+      const result = await client.mutate({
+        mutation: CreateBuildReviewMutation,
         variables: {
           input: {
             buildId: build.id,
@@ -98,13 +86,14 @@ export function useCreateBuildReviewMutation(
           projectName: projectParams.projectName,
         },
       });
+      options?.onCompleted?.();
       api.setDiffStatuses(diffStatuses);
       openReviewSidebar();
       return result;
     },
   );
 
-  return [createReview, data] as const;
+  return [createReview] as const;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient, useMutation } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
@@ -256,8 +256,7 @@ function RequestReviewersMenu(props: { build: Build }) {
   const { contains } = useFilter({ sensitivity: "base" });
   const [isOpen, setIsOpen] = useState(false);
   const hotkey = useBuildHotkey("requestReviewers", () => setIsOpen(true));
-  const [addReviewers] = useMutation(AddBuildReviewersMutation);
-  const [removeReviewers] = useMutation(RemoveBuildReviewersMutation);
+  const client = useApolloClient();
 
   // You can't request yourself as a reviewer, so exclude the current user from
   // the picker (the server enforces this too).
@@ -325,22 +324,28 @@ function RequestReviewersMenu(props: { build: Build }) {
     setRequested(next);
     const revert = () => setRequested(new Set(requestedKeys));
     if (added.length > 0) {
-      addReviewers({
-        variables: {
-          input: { buildId: build.id, userIds: added },
-          accountSlug: projectParams.accountSlug,
-          projectName: projectParams.projectName,
-        },
-      }).catch(revert);
+      client
+        .mutate({
+          mutation: AddBuildReviewersMutation,
+          variables: {
+            input: { buildId: build.id, userIds: added },
+            accountSlug: projectParams.accountSlug,
+            projectName: projectParams.projectName,
+          },
+        })
+        .catch(revert);
     }
     if (removed.length > 0) {
-      removeReviewers({
-        variables: {
-          input: { buildId: build.id, userIds: removed },
-          accountSlug: projectParams.accountSlug,
-          projectName: projectParams.projectName,
-        },
-      }).catch(revert);
+      client
+        .mutate({
+          mutation: RemoveBuildReviewersMutation,
+          variables: {
+            input: { buildId: build.id, userIds: removed },
+            accountSlug: projectParams.accountSlug,
+            projectName: projectParams.projectName,
+          },
+        })
+        .catch(revert);
     }
   };
 

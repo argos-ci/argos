@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
@@ -45,18 +45,21 @@ export function GitHubAuth(props: {
   account: DocumentType<typeof _AccountFragment>;
 }) {
   const { account } = props;
-  const [disconnect] = useMutation(DisconnectGitHubMutation, {
-    variables: {
-      accountId: account.id,
-    },
-    optimisticResponse: {
-      disconnectGitHubAuth: {
-        __typename: "User",
-        id: account.id,
-        githubAccount: null,
-      } as GitHubAuth_AccountFragment,
-    },
-  });
+  const client = useApolloClient();
+  const disconnect = () =>
+    client.mutate({
+      mutation: DisconnectGitHubMutation,
+      variables: {
+        accountId: account.id,
+      },
+      optimisticResponse: {
+        disconnectGitHubAuth: {
+          __typename: "User",
+          id: account.id,
+          githubAccount: null,
+        } as GitHubAuth_AccountFragment,
+      },
+    });
   return (
     <ProviderCard>
       {account.githubAccount ? (

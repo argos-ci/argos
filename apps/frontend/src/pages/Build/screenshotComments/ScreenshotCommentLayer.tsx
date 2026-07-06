@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useAtom, useAtomValue } from "jotai/react";
 import { toast } from "sonner";
@@ -129,7 +129,7 @@ export function ScreenshotCommentLayer(props: {
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
   const accountId = useAuthTokenPayload()?.account.id;
-  const [addBuildComment] = useMutation(AddBuildCommentMutation);
+  const client = useApolloClient();
 
   const { toScreen, toNormalized, ready } = useScreenshotProjection({
     paneSize,
@@ -323,7 +323,8 @@ export function ScreenshotCommentLayer(props: {
       }
       const priorIds = new Set(build.comments.map((comment) => comment.id));
       try {
-        const result = await addBuildComment({
+        const result = await client.mutate({
+          mutation: AddBuildCommentMutation,
           variables: {
             input: {
               buildId: build.id,
@@ -350,7 +351,7 @@ export function ScreenshotCommentLayer(props: {
       }
     },
     [
-      addBuildComment,
+      client,
       build.comments,
       build.id,
       draft,

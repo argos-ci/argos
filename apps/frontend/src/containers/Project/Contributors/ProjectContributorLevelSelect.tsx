@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 
@@ -37,7 +37,7 @@ export function ProjectContributorLevelSelect(props: {
   userId: string;
   level: ProjectUserLevel | "";
 }) {
-  const [addOrUpdateContributor] = useMutation(AddOrUpdateContributorMutation);
+  const client = useApolloClient();
 
   return (
     <Select
@@ -45,7 +45,8 @@ export function ProjectContributorLevelSelect(props: {
       value={props.level}
       onChange={(value) => {
         invariant(typeof value === "string");
-        addOrUpdateContributor({
+        client.mutate({
+          mutation: AddOrUpdateContributorMutation,
           variables: {
             projectId: props.projectId,
             userAccountId: props.userId,
