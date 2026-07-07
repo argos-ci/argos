@@ -118,8 +118,10 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
   const diffStatusesRef = useRef<Record<string, EvaluationStatus> | null>(null);
   const nextDiffRef = useRef<Diff | null>(null);
 
-  const acknowledge = useEventCallback(() => {
-    const nextDiff = nextDiffRef.current;
+  // Navigate to the next diff to review, or show the review dialog once every
+  // diff has been reviewed. `reviewStatus` is read fresh at call time, so the
+  // diff that was just marked is already accounted for.
+  const acknowledgeNextDiff = useEventCallback((nextDiff: Diff | null) => {
     if (reviewStatus === "complete") {
       reviewDialog.show();
     } else if (
@@ -128,6 +130,10 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
     ) {
       setActiveDiff(nextDiff, true);
     }
+  });
+
+  const acknowledge = useEventCallback(() => {
+    acknowledgeNextDiff(nextDiffRef.current);
   });
 
   useEffect(() => {
@@ -142,11 +148,20 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
     nextDiffRef.current = getNextDiff();
   });
 
+  // Snapshot the next diff to review *now* — before marking re-sorts the list —
+  // but defer the navigation to the returned callback instead of firing it on
+  // the next render. Used by the reject-note dialog so moving to the next diff
+  // waits until the reviewer submits or skips the note.
+  const planDeferredAck = useEventCallback(() => {
+    const nextDiff = getNextDiff();
+    return () => acknowledgeNextDiff(nextDiff);
+  });
+
   const checkIsPending = useEventCallback(() => {
     return Boolean(diffStatusesRef.current);
   });
 
-  return [checkIsPending, planAck] as const;
+  return [checkIsPending, planAck, planDeferredAck] as const;
 }
 
 /**

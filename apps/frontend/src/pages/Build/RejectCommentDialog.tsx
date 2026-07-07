@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { Button } from "@/ui/Button";
+import { Checkbox } from "@/ui/Checkbox";
 import {
   Dialog,
   DialogBody,
@@ -27,10 +28,15 @@ import { hasEditorContent } from "@/ui/Editor/util";
 import { Modal, ModalActionContext } from "@/ui/Modal";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
+import * as sessionStorage from "@/util/session-storage";
 
-import { useBuildDiffState, useGoToNextDiff } from "./BuildDiffState";
+import { useBuildDiffState } from "./BuildDiffState";
 import { useOpenReviewSidebar } from "./RightSidebarState";
 import { ScreenshotDiffThumbnail } from "./sidebar/ScreenshotDiffThumbnail";
+
+// Key used to remember, for the current session, that the reviewer opted out of
+// the reject-note prompt (mirrors the "ignore change" dialog's opt-out).
+const dontAskAgainKey = "rejectCommentDontShowAgain";
 
 const _BuildFragment = graphql(`
   fragment RejectCommentDialog_Build on Build {
@@ -68,10 +74,16 @@ const AddBuildCommentMutation = graphql(`
 /**
  * Returns a function to invite the user to comment on why they're rejecting a
  * snapshot. It opens the dialog only when no pending comment already exists on
- * that snapshot, returning whether it did so — callers use this to skip the
- * usual auto-advance while the dialog is open. Null when no provider is mounted.
+ * that snapshot and the reviewer hasn't opted out for the session, returning
+ * whether it did so — callers use this to skip the usual auto-advance while the
+ * dialog is open. When it opens, `onProceed` is invoked once the reviewer
+ * submits or skips the note, so the caller can advance to the next diff.
+ * Null when no provider is mounted.
  */
-type PromptRejectComment = (screenshotDiffId: string) => boolean;
+type PromptRejectComment = (
+  screenshotDiffId: string,
+  onProceed: () => void,
+) => boolean;
 
 const RejectCommentDialogContext = createContext<PromptRejectComment | null>(
   null,
@@ -86,11 +98,18 @@ export function RejectCommentDialogProvider(props: {
   children: React.ReactNode;
 }) {
   const { build, children } = props;
-  const [diffId, setDiffId] = useState<string | null>(null);
+  const [state, setState] = useState<{
+    diffId: string;
+    onProceed: () => void;
+  } | null>(null);
 
   const comments = build?.comments;
   const promptRejectComment = useCallback<PromptRejectComment>(
-    (screenshotDiffId) => {
+    (screenshotDiffId, onProceed) => {
+      // Respect the session-wide opt-out, just like the "ignore change" dialog.
+      if (sessionStorage.getItem(dontAskAgainKey) === "true") {
+        return false;
+      }
       const hasPendingComment = (comments ?? []).some(
         (comment) =>
           comment.pending && comment.screenshotDiff?.id === screenshotDiffId,
@@ -98,7 +117,7 @@ export function RejectCommentDialogProvider(props: {
       if (hasPendingComment) {
         return false;
       }
-      setDiffId(screenshotDiffId);
+      setState({ diffId: screenshotDiffId, onProceed });
       return true;
     },
     [comments],
@@ -109,19 +128,20 @@ export function RejectCommentDialogProvider(props: {
       {children}
       {build ? (
         <Modal
-          isOpen={diffId != null}
+          isOpen={state != null}
           onOpenChange={(open) => {
             if (!open) {
-              setDiffId(null);
+              setState(null);
             }
           }}
           isDismissable
         >
-          {diffId ? (
+          {state ? (
             <RejectCommentDialog
               build={build}
-              screenshotDiffId={diffId}
-              onClose={() => setDiffId(null)}
+              screenshotDiffId={state.diffId}
+              onProceed={state.onProceed}
+              onClose={() => setState(null)}
             />
           ) : (
             <span />
@@ -135,13 +155,13 @@ export function RejectCommentDialogProvider(props: {
 function RejectCommentDialog(props: {
   build: Build;
   screenshotDiffId: string;
+  onProceed: () => void;
   onClose: () => void;
 }) {
-  const { build, screenshotDiffId, onClose } = props;
+  const { build, screenshotDiffId, onProceed, onClose } = props;
   const projectParams = useProjectParams();
   invariant(projectParams);
   const { diffs, allDiffs } = useBuildDiffState();
-  const goToNextDiff = useGoToNextDiff();
   const openReviewSidebar = useOpenReviewSidebar();
   // The snapshot the note will be attached to, shown above the field so the
   // reviewer sees what they're commenting on (the reject flow always acts on a
@@ -197,10 +217,10 @@ function RejectCommentDialog(props: {
       })
       .then(() => {
         // Close, reveal the new comment in the review panel, and move on to the
-        // next snapshot so the reviewer can keep going.
+        // next snapshot to review so the reviewer can keep going.
         onClose();
         openReviewSidebar();
-        goToNextDiff();
+        onProceed();
       })
       .catch((error) => {
         toast.error(getErrorMessage(error));
@@ -246,8 +266,25 @@ function RejectCommentDialog(props: {
         />
       </DialogBody>
       <DialogFooter>
-        {/* DialogDismiss disables itself while the modal action is pending. */}
-        <DialogDismiss>Skip</DialogDismiss>
+        <div className="flex flex-1">
+          <Checkbox
+            onChange={(value) => {
+              if (value) {
+                sessionStorage.setItem(dontAskAgainKey, "true");
+              } else {
+                sessionStorage.removeItem(dontAskAgainKey);
+              }
+            }}
+          >
+            Don’t ask again for this session
+          </Checkbox>
+        </div>
+        {/*
+          DialogDismiss disables itself while the modal action is pending and
+          closes the dialog after `onPress`. Skipping still advances to the next
+          diff to review, matching a submitted note.
+        */}
+        <DialogDismiss onPress={onProceed}>Skip</DialogDismiss>
         <Button
           variant="primary"
           isPending={isPending}
