@@ -39,6 +39,7 @@ import {
 } from "./CommentReactions";
 import {
   CommentScreenshotReference,
+  useGoToCommentDiff,
   type CommentAnchor,
 } from "./CommentScreenshotReference";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
@@ -47,6 +48,20 @@ import { useCollapsedThread } from "./useCollapsedThread";
 
 // Shared id so copying a comment link reuses a single toast instead of stacking.
 const COPY_TOAST_ID = "comment-link-copied";
+
+/**
+ * Elements whose clicks must not trigger the card-level "go to snapshot"
+ * navigation: interactive controls handle their own clicks, and zones marked
+ * `data-no-card-nav` (composer, comment being edited) are input surfaces where
+ * a missed click must not teleport the user away.
+ */
+const CARD_NAV_EXCLUDE_SELECTOR =
+  'a, button, input, select, textarea, [role="button"], [contenteditable="true"], [tabindex], [data-no-card-nav]';
+
+function isSelectionCollapsed() {
+  const selection = window.getSelection();
+  return !selection || selection.isCollapsed;
+}
 
 // Detailed date format used in the date tooltip, e.g. "Thu May 21, 2026, 15:47:43".
 const DETAILED_DATE_FORMAT = "ddd MMM D, YYYY, HH:mm:ss";
@@ -253,6 +268,42 @@ export function CommentCard(props: {
       },
     });
 
+  const anchor = (comment.anchor as CommentAnchor | null) ?? null;
+  const goToDiff = useGoToCommentDiff({
+    commentId: comment.id,
+    screenshotDiff: comment.screenshotDiff ?? null,
+    anchor,
+  });
+  // The whole card navigates to the referenced snapshot, not just the
+  // reference header — but only where that header is shown; on the screenshot
+  // itself (`hideScreenshotReference`) there is nowhere to go.
+  const cardNavigates = !hideScreenshotReference && goToDiff != null;
+  // Whether a text selection existed at mousedown: the browser collapses the
+  // selection before `click` fires, and a click that merely dismisses a
+  // selection must not also navigate.
+  const hadSelectionRef = useRef(false);
+  const handleCardMouseDown = () => {
+    hadSelectionRef.current = !isSelectionCollapsed();
+  };
+  const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!goToDiff || !(event.target instanceof Element)) {
+      return;
+    }
+    // Clicks bubbling in from portaled content (menus, dialogs, hover cards)
+    // are not on the card itself.
+    if (!event.currentTarget.contains(event.target)) {
+      return;
+    }
+    if (event.target.closest(CARD_NAV_EXCLUDE_SELECTOR)) {
+      return;
+    }
+    // Selecting comment text must not navigate.
+    if (hadSelectionRef.current || !isSelectionCollapsed()) {
+      return;
+    }
+    goToDiff();
+  };
+
   const resolved = Boolean(comment.resolvedAt);
   // `collapsed` is the stored preference and drives the header label and toggle.
   const [collapsed, setCollapsed] = useCollapsedThread(comment.id, resolved);
@@ -333,13 +384,23 @@ export function CommentCard(props: {
   const onToggleResolved = canReply ? toggleResolved : undefined;
 
   return (
-    <div className={clsx(!embedded && "border-thin bg-app -mx-2.5 rounded-md")}>
+    <div
+      onMouseDown={cardNavigates ? handleCardMouseDown : undefined}
+      onClick={cardNavigates ? handleCardClick : undefined}
+      className={clsx(
+        !embedded && "border-thin bg-app -mx-2.5 rounded-md",
+        // Interactive children keep their own cursor (UA styles on buttons,
+        // links, editors), so the pointer only shows where a click navigates.
+        cardNavigates &&
+          "hover:ring-primary-hover cursor-pointer hover:ring-1 **:data-no-card-nav:cursor-auto",
+      )}
+    >
       {!hideScreenshotReference && comment.screenshotDiff ? (
         <div className="border-b-thin">
           <CommentScreenshotReference
             commentId={comment.id}
             screenshotDiff={comment.screenshotDiff}
-            anchor={(comment.anchor as CommentAnchor | null) ?? null}
+            anchor={anchor}
           />
         </div>
       ) : null}
@@ -605,7 +666,10 @@ function CommentMessage(props: {
             />
           </div>
         </div>
-        <div className="text-default px-1 pb-2 text-sm select-text">
+        <div
+          className="text-default px-1 pb-2 text-sm select-text"
+          data-no-card-nav={isEditing ? "" : undefined}
+        >
           {isEditing ? (
             <StandaloneEditor
               variant="plain"
@@ -695,7 +759,7 @@ function ReplyComposer(props: {
   };
 
   return (
-    <div className="border-t-thin px-2 py-1">
+    <div className="border-t-thin px-2 py-1" data-no-card-nav="">
       <div className="flex items-start gap-1.5">
         <Editor
           key={editorKey}

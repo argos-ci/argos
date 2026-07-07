@@ -1,3 +1,4 @@
+import { invariant } from "@argos/util/invariant";
 import { useSetAtom } from "jotai/react";
 import { MapPinIcon } from "lucide-react";
 import { Button } from "react-aria-components";
@@ -7,7 +8,6 @@ import {
   requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
 import { DocumentType, graphql } from "@/gql";
-import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";
@@ -49,24 +49,27 @@ function getAnchorLabel(anchor: CommentAnchor | null): string | null {
 }
 
 /**
- * A quote of the screenshot a comment is anchored to, shown at the top of the
- * comment thread. Clicking it navigates to that diff in the viewer.
+ * Navigate to the diff a comment is anchored to, or `null` when the comment
+ * has no linked snapshot. The diff may not be in the current list (filtered
+ * out, or not yet loaded), in which case the callback leaves the view
+ * untouched.
  */
-export function CommentScreenshotReference(props: {
+export function useGoToCommentDiff(input: {
   commentId: string;
-  screenshotDiff: ScreenshotDiff;
+  screenshotDiff: ScreenshotDiff | null;
   anchor: CommentAnchor | null;
-}) {
-  const { commentId, screenshotDiff, anchor } = props;
+}): (() => void) | null {
+  const { commentId, screenshotDiff, anchor } = input;
   const { allDiffs, setActiveDiff } = useBuildDiffState();
   const setCommentsVisible = useSetAtom(commentsVisibleAtom);
   const requestOpenComment = useSetAtom(requestedScreenshotCommentIdAtom);
-  const linesLabel = getAnchorLabel(anchor);
   const isPoint = anchor?.__typename === "CommentPointAnchor";
 
-  // Jump to the referenced diff. It may not be in the current list (filtered
-  // out, or not yet loaded), in which case we leave the view untouched.
-  const goToDiff = () => {
+  if (!screenshotDiff) {
+    return null;
+  }
+
+  return () => {
     const diff = allDiffs.find(
       (candidate) => candidate.id === screenshotDiff.id,
     );
@@ -83,32 +86,47 @@ export function CommentScreenshotReference(props: {
       requestOpenComment(commentId);
     }
   };
+}
+
+/**
+ * A quote of the screenshot a comment is anchored to, shown at the top of the
+ * comment thread. Clicking it navigates to that diff in the viewer; the whole
+ * card shares that behavior (see {@link useGoToCommentDiff} in `CommentCard`),
+ * this button remains the keyboard-accessible control for it.
+ */
+export function CommentScreenshotReference(props: {
+  commentId: string;
+  screenshotDiff: ScreenshotDiff;
+  anchor: CommentAnchor | null;
+}) {
+  const { commentId, screenshotDiff, anchor } = props;
+  const goToDiff = useGoToCommentDiff({ commentId, screenshotDiff, anchor });
+  invariant(goToDiff, "always navigable: screenshotDiff is provided");
+  const linesLabel = getAnchorLabel(anchor);
+  const isPoint = anchor?.__typename === "CommentPointAnchor";
 
   return (
-    <Tooltip content="Go to this snapshot">
-      <Button
-        onPress={goToDiff}
-        aria-label={`Go to snapshot ${screenshotDiff.name}`}
-        className="text-low hover:bg-hover hover:text-default rac-focus flex w-full items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs transition select-none"
-      >
-        <ScreenshotDiffThumbnail
-          screenshotDiff={screenshotDiff}
-          className="size-6"
-          iconClassName="size-4"
-        />
-        <span className="min-w-0 flex-1 truncate font-medium">
-          {screenshotDiff.name}
-        </span>
-        {isPoint ? (
-          <MapPinIcon
-            className="size-3.5 shrink-0"
-            aria-label="Pinned comment"
-          />
-        ) : null}
-        {linesLabel ? (
-          <span className="shrink-0 tabular-nums">{linesLabel}</span>
-        ) : null}
-      </Button>
-    </Tooltip>
+    <Button
+      onPress={goToDiff}
+      aria-label={`Go to snapshot ${screenshotDiff.name}`}
+      // No hover style or default cursor of its own: the surrounding card
+      // shares this button's navigation and carries the hover affordance.
+      className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
+    >
+      <ScreenshotDiffThumbnail
+        screenshotDiff={screenshotDiff}
+        className="size-6"
+        iconClassName="size-4"
+      />
+      <span className="min-w-0 flex-1 truncate font-medium">
+        {screenshotDiff.name}
+      </span>
+      {isPoint ? (
+        <MapPinIcon className="size-3.5 shrink-0" aria-label="Pinned comment" />
+      ) : null}
+      {linesLabel ? (
+        <span className="shrink-0 tabular-nums">{linesLabel}</span>
+      ) : null}
+    </Button>
   );
 }
