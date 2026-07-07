@@ -1,5 +1,5 @@
 import { use, useCallback, useMemo, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import type {
   DiffLineAnnotation,
@@ -113,7 +113,7 @@ export function DiffCommentLayer(props: {
   const { accountSlug, projectName } = useProjectParams() ?? {};
   invariant(accountSlug && projectName, "Missing project route params");
   const accountId = useAuthTokenPayload()?.account.id;
-  const [addBuildComment] = useMutation(AddBuildCommentMutation);
+  const client = useApolloClient();
 
   const [draft, setDraft] = useState<LineRange | null>(null);
   // The range being drag-selected right now (before it's committed to a draft).
@@ -210,7 +210,8 @@ export function DiffCommentLayer(props: {
         return;
       }
       try {
-        await addBuildComment({
+        await client.mutate({
+          mutation: AddBuildCommentMutation,
           variables: {
             input: {
               buildId: build.id,
@@ -231,7 +232,7 @@ export function DiffCommentLayer(props: {
       }
     },
     [
-      addBuildComment,
+      client,
       build.id,
       draft,
       screenshotDiffId,

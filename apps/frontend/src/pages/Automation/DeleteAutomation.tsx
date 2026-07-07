@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -25,48 +25,52 @@ export function DeleteAutomationDialog(props: {
   onCompleted?: () => void;
 }) {
   const { automationRuleId, projectId, onCompleted } = props;
-  const [deactivateAutomationRule] = useMutation(
-    DeactivateAutomationRuleMutation,
-    {
-      variables: { id: automationRuleId },
-      onCompleted,
-      update(cache, { data }) {
-        if (!data?.deactivateAutomationRule?.id) {
-          return;
-        }
-        const { id } = data.deactivateAutomationRule;
-        // Find the project id in the cache
-        const projectGqlID = cache.identify({
-          __typename: "Project",
-          id: projectId,
-        });
-
-        if (projectGqlID) {
-          cache.modify({
-            id: projectGqlID,
-            fields: {
-              automationRules(existingAutomationRules = {}, { readField }) {
-                if (!existingAutomationRules.edges) {
-                  return existingAutomationRules;
-                }
-
-                return {
-                  ...existingAutomationRules,
-                  edges: existingAutomationRules.edges.filter(
-                    (ruleRef: any) => readField("id", ruleRef) !== id,
-                  ),
-                  pageInfo: {
-                    ...existingAutomationRules.pageInfo,
-                    totalCount: existingAutomationRules.pageInfo.totalCount - 1,
-                  },
-                };
-              },
-            },
+  const client = useApolloClient();
+  const deactivateAutomationRule = () =>
+    client
+      .mutate({
+        mutation: DeactivateAutomationRuleMutation,
+        variables: { id: automationRuleId },
+        update(cache, { data }) {
+          if (!data?.deactivateAutomationRule?.id) {
+            return;
+          }
+          const { id } = data.deactivateAutomationRule;
+          // Find the project id in the cache
+          const projectGqlID = cache.identify({
+            __typename: "Project",
+            id: projectId,
           });
-        }
-      },
-    },
-  );
+
+          if (projectGqlID) {
+            cache.modify({
+              id: projectGqlID,
+              fields: {
+                automationRules(existingAutomationRules = {}, { readField }) {
+                  if (!existingAutomationRules.edges) {
+                    return existingAutomationRules;
+                  }
+
+                  return {
+                    ...existingAutomationRules,
+                    edges: existingAutomationRules.edges.filter(
+                      (ruleRef: any) => readField("id", ruleRef) !== id,
+                    ),
+                    pageInfo: {
+                      ...existingAutomationRules.pageInfo,
+                      totalCount:
+                        existingAutomationRules.pageInfo.totalCount - 1,
+                    },
+                  };
+                },
+              },
+            });
+          }
+        },
+      })
+      .then(() => {
+        onCompleted?.();
+      });
   return (
     <Dialog size="medium">
       <DialogBody>

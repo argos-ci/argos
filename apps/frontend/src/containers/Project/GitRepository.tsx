@@ -102,17 +102,20 @@ const UpdateEnablePrCommentMutation = graphql(`
 function UnlinkGithubRepositoryButton(props: {
   project: ProjectGitRepository_ProjectFragment;
 }) {
-  const [unlink] = useMutation(UnlinkGithubRepositoryMutation, {
-    variables: {
-      projectId: props.project.id,
-    },
-    optimisticResponse: {
-      unlinkGithubRepository: {
-        id: props.project.id,
-        repository: null,
-      } as ProjectGitRepository_ProjectFragment,
-    },
-  });
+  const client = useApolloClient();
+  const unlink = () =>
+    client.mutate({
+      mutation: UnlinkGithubRepositoryMutation,
+      variables: {
+        projectId: props.project.id,
+      },
+      optimisticResponse: {
+        unlinkGithubRepository: {
+          id: props.project.id,
+          repository: null,
+        } as ProjectGitRepository_ProjectFragment,
+      },
+    });
   return (
     <Button
       variant="secondary"
@@ -128,17 +131,20 @@ function UnlinkGithubRepositoryButton(props: {
 const UnlinkGitlabProjectButton = (props: {
   project: ProjectGitRepository_ProjectFragment;
 }) => {
-  const [unlink] = useMutation(UnlinkGitlabProjectMutation, {
-    variables: {
-      projectId: props.project.id,
-    },
-    optimisticResponse: {
-      unlinkGitlabProject: {
-        id: props.project.id,
-        repository: null,
-      } as ProjectGitRepository_ProjectFragment,
-    },
-  });
+  const client = useApolloClient();
+  const unlink = () =>
+    client.mutate({
+      mutation: UnlinkGitlabProjectMutation,
+      variables: {
+        projectId: props.project.id,
+      },
+      optimisticResponse: {
+        unlinkGitlabProject: {
+          id: props.project.id,
+          repository: null,
+        } as ProjectGitRepository_ProjectFragment,
+      },
+    });
   return (
     <Button
       variant="secondary"

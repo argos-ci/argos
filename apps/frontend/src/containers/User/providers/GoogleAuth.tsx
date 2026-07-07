@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { ExternalLinkIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 
@@ -40,18 +40,21 @@ export function GoogleAuth(props: {
   account: DocumentType<typeof _AccountFragment>;
 }) {
   const { account } = props;
-  const [disconnect] = useMutation(DisconnectGoogleMutation, {
-    variables: {
-      accountId: account.id,
-    },
-    optimisticResponse: {
-      disconnectGoogleAuth: {
-        __typename: "User",
-        id: account.id,
-        googleUser: null,
+  const client = useApolloClient();
+  const disconnect = () =>
+    client.mutate({
+      mutation: DisconnectGoogleMutation,
+      variables: {
+        accountId: account.id,
       },
-    },
-  });
+      optimisticResponse: {
+        disconnectGoogleAuth: {
+          __typename: "User",
+          id: account.id,
+          googleUser: null,
+        },
+      },
+    });
   return (
     <ProviderCard>
       {account.googleUser ? (

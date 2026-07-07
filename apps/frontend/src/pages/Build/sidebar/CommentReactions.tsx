@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
 import { SmilePlusIcon } from "lucide-react";
 import { Button } from "react-aria-components";
@@ -65,22 +65,27 @@ function useCanReact(): boolean {
  * and the reaction pills mutate the same comment.
  */
 function useReactionActions(commentId: string) {
-  const [addReaction] = useMutation(AddCommentReactionMutation);
-  const [removeReaction] = useMutation(RemoveCommentReactionMutation);
+  const client = useApolloClient();
+  const addReaction = (emoji: string) =>
+    client.mutate({
+      mutation: AddCommentReactionMutation,
+      variables: { input: { commentId, emoji } },
+    });
+  const removeReaction = (emoji: string) =>
+    client.mutate({
+      mutation: RemoveCommentReactionMutation,
+      variables: { input: { commentId, emoji } },
+    });
 
   const react = (emoji: string) => {
-    addReaction({
-      variables: { input: { commentId, emoji } },
-    }).catch((error) => {
+    addReaction(emoji).catch((error) => {
       toast.error(getErrorMessage(error));
     });
   };
 
   const toggle = (group: ReactionGroup) => {
     const mutation = group.reactedByMe ? removeReaction : addReaction;
-    mutation({
-      variables: { input: { commentId, emoji: group.emoji } },
-    }).catch((error) => {
+    mutation(group.emoji).catch((error) => {
       toast.error(getErrorMessage(error));
     });
   };

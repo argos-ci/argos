@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import type { Reference } from "@apollo/client";
-import { useMutation, useSubscription } from "@apollo/client/react";
+import { useApolloClient, useSubscription } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import clsx from "clsx";
 import {
@@ -383,26 +383,31 @@ export function ReviewActivitySection(props: { build: Build }) {
 
 function SubscribeToggleButton(props: { build: Build }) {
   const { build } = props;
-  const [subscribeToBuild] = useMutation(SubscribeToBuildMutation, {
-    variables: { input: { buildId: build.id } },
-    optimisticResponse: {
-      subscribeToBuild: {
-        __typename: "Build",
-        id: build.id,
-        subscribed: true,
+  const client = useApolloClient();
+  const subscribeToBuild = () =>
+    client.mutate({
+      mutation: SubscribeToBuildMutation,
+      variables: { input: { buildId: build.id } },
+      optimisticResponse: {
+        subscribeToBuild: {
+          __typename: "Build",
+          id: build.id,
+          subscribed: true,
+        },
       },
-    },
-  });
-  const [unsubscribeFromBuild] = useMutation(UnsubscribeFromBuildMutation, {
-    variables: { input: { buildId: build.id } },
-    optimisticResponse: {
-      unsubscribeFromBuild: {
-        __typename: "Build",
-        id: build.id,
-        subscribed: false,
+    });
+  const unsubscribeFromBuild = () =>
+    client.mutate({
+      mutation: UnsubscribeFromBuildMutation,
+      variables: { input: { buildId: build.id } },
+      optimisticResponse: {
+        unsubscribeFromBuild: {
+          __typename: "Build",
+          id: build.id,
+          subscribed: false,
+        },
       },
-    },
-  });
+    });
   const subscribed = build.subscribed;
   const label = subscribed ? "Unsubscribe" : "Subscribe";
   const handlePress = () => {

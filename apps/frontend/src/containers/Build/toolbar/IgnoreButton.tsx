@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { FlagOffIcon } from "lucide-react";
 import { DialogTrigger } from "react-aria-components";
@@ -66,77 +66,83 @@ function EnabledIgnoreButton(props: {
   const isIgnored = diff.change.ignored;
   const [dialog, setDialog] = useState<"ignore" | "unignore" | null>(null);
   const authPayload = useAuthTokenPayload();
-  const [mutateIgnoreChange] = useMutation(IgnoreChangeMutation, {
-    variables: {
-      accountSlug: params.accountSlug,
-      changeId: diff.change.id,
-    },
-    optimisticResponse: {
-      ignoreChange: {
-        __typename: "TestChange",
-        id: diff.change.id,
-        ignored: true,
-      },
-    },
-    update: (cache) => {
-      if (diff.test) {
-        invariant(authPayload, "User should be logged in");
-        addAuditTrailEntry({
-          cache,
-          action: "files.ignored",
-          authPayload,
-          testId: diff.test.id,
-          accountSlug: params.accountSlug,
-          projectName: params.projectName,
-        });
-      }
-    },
-  });
+  const client = useApolloClient();
+  const changeId = diff.change.id;
 
   const ignoreChange = () => {
     const auditTrailId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `local-audit-trail-${Date.now()}`;
-    mutateIgnoreChange({ context: { auditTrailId } }).catch(() => {
-      // Optimistic response will handle this
-    });
+    client
+      .mutate({
+        mutation: IgnoreChangeMutation,
+        variables: {
+          accountSlug: params.accountSlug,
+          changeId,
+        },
+        optimisticResponse: {
+          ignoreChange: {
+            __typename: "TestChange",
+            id: changeId,
+            ignored: true,
+          },
+        },
+        update: (cache) => {
+          if (diff.test) {
+            invariant(authPayload, "User should be logged in");
+            addAuditTrailEntry({
+              cache,
+              action: "files.ignored",
+              authPayload,
+              testId: diff.test.id,
+              accountSlug: params.accountSlug,
+              projectName: params.projectName,
+            });
+          }
+        },
+        context: { auditTrailId },
+      })
+      .catch(() => {
+        // Optimistic response will handle this
+      });
     onIgnoreChange?.();
     setDialog(null);
   };
 
-  const [mutateUnignoreChange] = useMutation(UnignoreChangeMutation, {
-    variables: {
-      accountSlug: params.accountSlug,
-      changeId: diff.change.id,
-    },
-    optimisticResponse: {
-      unignoreChange: {
-        __typename: "TestChange",
-        id: diff.change.id,
-        ignored: false,
-      },
-    },
-    update: (cache) => {
-      if (diff.test) {
-        invariant(authPayload, "User should be logged in");
-        addAuditTrailEntry({
-          cache,
-          action: "files.unignored",
-          authPayload,
-          testId: diff.test.id,
-          accountSlug: params.accountSlug,
-          projectName: params.projectName,
-        });
-      }
-    },
-  });
   const unignoreChange = () => {
     const auditTrailId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `local-audit-trail-${Date.now()}`;
-    mutateUnignoreChange({ context: { auditTrailId } });
+    client.mutate({
+      mutation: UnignoreChangeMutation,
+      variables: {
+        accountSlug: params.accountSlug,
+        changeId,
+      },
+      optimisticResponse: {
+        unignoreChange: {
+          __typename: "TestChange",
+          id: changeId,
+          ignored: false,
+        },
+      },
+      update: (cache) => {
+        if (diff.test) {
+          invariant(authPayload, "User should be logged in");
+          addAuditTrailEntry({
+            cache,
+            action: "files.unignored",
+            authPayload,
+            testId: diff.test.id,
+            accountSlug: params.accountSlug,
+            projectName: params.projectName,
+          });
+        }
+      },
+      context: { auditTrailId },
+    });
     setDialog(null);
   };
   const toggle = () => {

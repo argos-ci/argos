@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -203,10 +203,10 @@ export function CommentCard(props: {
   } = props;
   const projectParams = useProjectParams();
   invariant(projectParams);
-  const [addReply] = useMutation(AddReplyMutation);
-  const [subscribeToCommentThread] = useMutation(
-    SubscribeToCommentThreadMutation,
-    {
+  const client = useApolloClient();
+  const subscribeToCommentThread = () =>
+    client.mutate({
+      mutation: SubscribeToCommentThreadMutation,
       variables: { input: { commentId: comment.id } },
       optimisticResponse: {
         subscribeToCommentThread: {
@@ -215,11 +215,10 @@ export function CommentCard(props: {
           threadSubscribed: true,
         },
       },
-    },
-  );
-  const [unsubscribeFromCommentThread] = useMutation(
-    UnsubscribeFromCommentThreadMutation,
-    {
+    });
+  const unsubscribeFromCommentThread = () =>
+    client.mutate({
+      mutation: UnsubscribeFromCommentThreadMutation,
       variables: { input: { commentId: comment.id } },
       optimisticResponse: {
         unsubscribeFromCommentThread: {
@@ -228,28 +227,31 @@ export function CommentCard(props: {
           threadSubscribed: false,
         },
       },
-    },
-  );
-  const [resolveCommentThread] = useMutation(ResolveCommentThreadMutation, {
-    variables: { input: { commentId: comment.id } },
-    optimisticResponse: {
-      resolveCommentThread: {
-        __typename: "Comment",
-        id: comment.id,
-        resolvedAt: new Date().toISOString(),
+    });
+  const resolveCommentThread = () =>
+    client.mutate({
+      mutation: ResolveCommentThreadMutation,
+      variables: { input: { commentId: comment.id } },
+      optimisticResponse: {
+        resolveCommentThread: {
+          __typename: "Comment",
+          id: comment.id,
+          resolvedAt: new Date().toISOString(),
+        },
       },
-    },
-  });
-  const [unresolveCommentThread] = useMutation(UnresolveCommentThreadMutation, {
-    variables: { input: { commentId: comment.id } },
-    optimisticResponse: {
-      unresolveCommentThread: {
-        __typename: "Comment",
-        id: comment.id,
-        resolvedAt: null,
+    });
+  const unresolveCommentThread = () =>
+    client.mutate({
+      mutation: UnresolveCommentThreadMutation,
+      variables: { input: { commentId: comment.id } },
+      optimisticResponse: {
+        unresolveCommentThread: {
+          __typename: "Comment",
+          id: comment.id,
+          resolvedAt: null,
+        },
       },
-    },
-  });
+    });
 
   const resolved = Boolean(comment.resolvedAt);
   // `collapsed` is the stored preference and drives the header label and toggle.
@@ -270,7 +272,8 @@ export function CommentCard(props: {
 
   const handleReplySubmit = async (body: EditorValue) => {
     try {
-      await addReply({
+      await client.mutate({
+        mutation: AddReplyMutation,
         variables: {
           input: { buildId, threadId: comment.id, body },
           accountSlug: projectParams.accountSlug,
@@ -470,7 +473,7 @@ function CommentMessage(props: {
   const mentionedUsers = comment.mentionedUsers.map(getMentionUser);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [updateComment] = useMutation(UpdateCommentMutation);
+  const client = useApolloClient();
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -490,7 +493,8 @@ function CommentMessage(props: {
 
   const handleEditSubmit = async (body: EditorValue) => {
     try {
-      await updateComment({
+      await client.mutate({
+        mutation: UpdateCommentMutation,
         variables: {
           input: { id: comment.id, body },
           accountSlug: projectParams.accountSlug,

@@ -1,4 +1,4 @@
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 
 import { DocumentType, graphql } from "@/gql";
 import { TeamUserLevel } from "@/gql/graphql";
@@ -40,7 +40,7 @@ export function MemberLevelEditor(props: {
   member: DocumentType<typeof _TeamMemberFragment>;
 }) {
   const { member, hasFineGrainedAccessControl } = props;
-  const [setTeamMemberLevel] = useMutation(SetTeamMemberLevelMutation);
+  const client = useApolloClient();
 
   return (
     <MemberLevelSelect
@@ -49,7 +49,8 @@ export function MemberLevelEditor(props: {
       hasFineGrainedAccessControl={hasFineGrainedAccessControl}
       value={member.level}
       onChange={(value) => {
-        setTeamMemberLevel({
+        client.mutate({
+          mutation: SetTeamMemberLevelMutation,
           variables: {
             teamAccountId: props.teamId,
             userAccountId: member.user.id,

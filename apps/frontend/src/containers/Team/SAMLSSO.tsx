@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs */
 import { useId } from "react";
-import { useApolloClient, useMutation } from "@apollo/client/react";
+import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import {
   CheckCircle2Icon,
@@ -132,10 +132,11 @@ export function TeamSAMLSSO(props: {
 }) {
   const { team } = props;
   const hasSamlIncluded = team.plan?.samlIncluded;
-  const [update] = useMutation(ConfigureTeamSamlMutation);
+  const apolloClient = useApolloClient();
   const toggleEnable = (enabled: boolean) => {
     invariant(team.samlSso);
-    update({
+    apolloClient.mutate({
+      mutation: ConfigureTeamSamlMutation,
       variables: {
         input: {
           teamAccountId: team.id,
@@ -151,18 +152,20 @@ export function TeamSAMLSSO(props: {
       },
     });
   };
-  const [remove] = useMutation(RemoveTeamSamlMutation, {
-    variables: {
-      teamAccountId: team.id,
-    },
-    optimisticResponse: {
-      removeTeamSaml: {
-        __typename: "Team",
-        id: team.id,
-        samlSso: null,
+  const remove = () =>
+    apolloClient.mutate({
+      mutation: RemoveTeamSamlMutation,
+      variables: {
+        teamAccountId: team.id,
       },
-    },
-  });
+      optimisticResponse: {
+        removeTeamSaml: {
+          __typename: "Team",
+          id: team.id,
+          samlSso: null,
+        },
+      },
+    });
 
   return (
     <Card>
@@ -246,7 +249,8 @@ export function TeamSAMLSSO(props: {
                   isSelected={team.samlSso.enforced}
                   onChange={(isSelected) => {
                     invariant(team.samlSso);
-                    update({
+                    apolloClient.mutate({
+                      mutation: ConfigureTeamSamlMutation,
                       variables: {
                         input: {
                           teamAccountId: team.id,
