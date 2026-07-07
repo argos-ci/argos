@@ -111,9 +111,9 @@ export function CommentScreenshotReference(props: {
       <Button
         onPress={goToDiff}
         aria-label={`Go to snapshot ${screenshotDiff.name}`}
-        // `group-hover` mirrors the hover styles when hovering anywhere on the
-        // surrounding card, which shares this button's navigation (ARG-446).
-        className="text-low hover:bg-hover hover:text-default group-hover/comment-card:bg-hover group-hover/comment-card:text-default rac-focus flex w-full items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs transition select-none"
+        // No hover style or default cursor of its own: the surrounding card
+        // shares this button's navigation and carries the hover affordance.
+        className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
       >
         <ScreenshotDiffThumbnail
           screenshotDiff={screenshotDiff}
