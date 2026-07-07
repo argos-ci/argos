@@ -456,7 +456,7 @@ function ActivityEntryRow(props: {
   if (entry.kind === "comment") {
     return (
       <motion.div
-        className={spacing}
+        className={clsx("pb-px", spacing)}
         style={{ overflowY: "clip" }}
         exit={{ height: 0, paddingTop: 0, opacity: 0 }}
         transition={{

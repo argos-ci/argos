@@ -8,7 +8,6 @@ import {
   requestedScreenshotCommentIdAtom,
 } from "@/containers/Build/CommentTool";
 import { DocumentType, graphql } from "@/gql";
-import { Tooltip } from "@/ui/Tooltip";
 
 import { useBuildDiffState } from "../BuildDiffState";
 import { ScreenshotDiffThumbnail } from "./ScreenshotDiffThumbnail";
@@ -107,32 +106,27 @@ export function CommentScreenshotReference(props: {
   const isPoint = anchor?.__typename === "CommentPointAnchor";
 
   return (
-    <Tooltip content="Go to this snapshot">
-      <Button
-        onPress={goToDiff}
-        aria-label={`Go to snapshot ${screenshotDiff.name}`}
-        // No hover style or default cursor of its own: the surrounding card
-        // shares this button's navigation and carries the hover affordance.
-        className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
-      >
-        <ScreenshotDiffThumbnail
-          screenshotDiff={screenshotDiff}
-          className="size-6"
-          iconClassName="size-4"
-        />
-        <span className="min-w-0 flex-1 truncate font-medium">
-          {screenshotDiff.name}
-        </span>
-        {isPoint ? (
-          <MapPinIcon
-            className="size-3.5 shrink-0"
-            aria-label="Pinned comment"
-          />
-        ) : null}
-        {linesLabel ? (
-          <span className="shrink-0 tabular-nums">{linesLabel}</span>
-        ) : null}
-      </Button>
-    </Tooltip>
+    <Button
+      onPress={goToDiff}
+      aria-label={`Go to snapshot ${screenshotDiff.name}`}
+      // No hover style or default cursor of its own: the surrounding card
+      // shares this button's navigation and carries the hover affordance.
+      className="text-low rac-focus flex w-full cursor-pointer items-center gap-2 rounded-t-md px-2 py-1.5 text-left text-xs select-none"
+    >
+      <ScreenshotDiffThumbnail
+        screenshotDiff={screenshotDiff}
+        className="size-6"
+        iconClassName="size-4"
+      />
+      <span className="min-w-0 flex-1 truncate font-medium">
+        {screenshotDiff.name}
+      </span>
+      {isPoint ? (
+        <MapPinIcon className="size-3.5 shrink-0" aria-label="Pinned comment" />
+      ) : null}
+      {linesLabel ? (
+        <span className="shrink-0 tabular-nums">{linesLabel}</span>
+      ) : null}
+    </Button>
   );
 }

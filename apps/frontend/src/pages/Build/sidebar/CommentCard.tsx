@@ -392,7 +392,7 @@ export function CommentCard(props: {
         // Interactive children keep their own cursor (UA styles on buttons,
         // links, editors), so the pointer only shows where a click navigates.
         cardNavigates &&
-          "hover:border-hover cursor-pointer **:data-no-card-nav:cursor-auto",
+          "hover:ring-primary-hover cursor-pointer hover:ring-1 **:data-no-card-nav:cursor-auto",
       )}
     >
       {!hideScreenshotReference && comment.screenshotDiff ? (
