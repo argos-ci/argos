@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { S3Client } from "@aws-sdk/client-s3";
 import axios from "axios";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config";
 
@@ -16,6 +16,10 @@ describe("#getSignedObjectUrl", () => {
 
   beforeEach(() => {
     s3 = new S3Client({ region: "eu-west-1" });
+  });
+
+  afterEach(() => {
+    s3.destroy();
   });
 
   it("generate a signed URL used to upload", async () => {
@@ -49,6 +53,10 @@ describe("#getSignedObjectUrl response overrides", () => {
   const s3 = new S3Client({
     region: "eu-west-1",
     credentials: { accessKeyId: "test", secretAccessKey: "test" },
+  });
+
+  afterAll(() => {
+    s3.destroy();
   });
 
   it("serves a file as a neutralized attachment when requested", async () => {

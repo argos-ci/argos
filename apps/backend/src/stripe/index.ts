@@ -176,7 +176,7 @@ function timestampToISOString(date: number): string {
 }
 
 export const stripe = new Stripe(config.get("stripe.apiKey"), {
-  apiVersion: "2026-05-27.dahlia",
+  apiVersion: "2026-06-24.dahlia",
   typescript: true,
 });
 
