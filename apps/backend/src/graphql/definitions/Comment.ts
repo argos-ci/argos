@@ -405,9 +405,7 @@ export const resolvers: IResolvers = {
     // `side` differs nominally (model string-union vs generated enum), so cast.
     anchor: (comment) =>
       (comment.anchor ?? null) as
-        | ICommentPointAnchor
-        | ICommentLinesAnchor
-        | null,
+        ICommentPointAnchor | ICommentLinesAnchor | null,
     threadSubscribed: async (comment, _args, ctx) => {
       if (!ctx.auth) {
         return false;

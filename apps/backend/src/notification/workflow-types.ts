@@ -18,12 +18,7 @@ type HandlerContext = {
  * notifications they want to receive.
  */
 export type NotificationCategory =
-  | "account"
-  | "security"
-  | "review"
-  | "billing"
-  | "project"
-  | "integration";
+  "account" | "security" | "review" | "billing" | "project" | "integration";
 
 export type NotificationHandler<TType extends string = string, TData = any> = {
   type: TType;

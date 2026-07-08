@@ -63,8 +63,7 @@ async function getDeploymentFileHashes(
       );
     }
     exclusiveStartKey = result.LastEvaluatedKey as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
   } while (exclusiveStartKey);
 
   return items;
@@ -117,8 +116,7 @@ async function registerFileHashes(
 
           requests =
             (result.UnprocessedItems?.[tableName] as
-              | typeof requests
-              | undefined) ?? [];
+              typeof requests | undefined) ?? [];
           if (requests.length > 0) {
             throw new Error(
               `DynamoDB returned ${requests.length} unprocessed file hashes`,

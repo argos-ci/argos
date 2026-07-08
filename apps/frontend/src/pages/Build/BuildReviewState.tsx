@@ -203,8 +203,7 @@ export function useBuildReviewSummary(): Record<
  * Get the current evaluation status of the diff.
  */
 export function useGetDiffEvaluationStatus():
-  | ((diffId: string) => EvaluationStatus)
-  | null {
+  ((diffId: string) => EvaluationStatus) | null {
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
   return useMemo(() => {
@@ -222,8 +221,7 @@ export function useGetDiffEvaluationStatus():
  * Get the current evaluation status of the diff group.
  */
 export function useGetDiffGroupEvaluationStatus():
-  | ((diffGroup: string | null) => EvaluationStatus | null)
-  | null {
+  ((diffGroup: string | null) => EvaluationStatus | null) | null {
   const diffState = useBuildDiffState();
   const diffStateRef = useLiveRef(diffState);
   const getDiffEvaluationStatus = useGetDiffEvaluationStatus();

@@ -26,8 +26,7 @@ export type AccountAvatar = {
 };
 
 export type AccountSubscriptionStatus =
-  | Subscription["status"]
-  | "trial_expired";
+  Subscription["status"] | "trial_expired";
 
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
