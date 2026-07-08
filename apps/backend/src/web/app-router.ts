@@ -127,7 +127,7 @@ export const installAppRouter = async (app: express.Application) => {
       }
       next();
     },
-    express.json(),
+    express.json({ limit: "1mb" }),
     helmet({
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
       contentSecurityPolicy: {
