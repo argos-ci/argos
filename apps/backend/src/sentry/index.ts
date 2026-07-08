@@ -35,6 +35,13 @@ export function setup() {
         "statusCode" in error &&
         typeof error.statusCode === "number"
       ) {
+        // Keep 413 "Payload Too Large" at error level: we always want to be
+        // notified when a request body exceeds the configured limit.
+        if (error.statusCode === 413) {
+          event.level = "error";
+          return event;
+        }
+
         // Set level to info for 4xx errors
         if (error.statusCode >= 400 && error.statusCode < 500) {
           event.level = "info";
