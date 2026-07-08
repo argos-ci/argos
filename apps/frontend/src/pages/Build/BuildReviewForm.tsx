@@ -15,9 +15,11 @@ import { Form, handleFormError } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { ModalActionContext } from "@/ui/Modal";
+import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser } from "@/ui/UserCard";
 import { lowTextColorClassNames } from "@/util/colors";
 
+import { useBuildDiffState } from "./BuildDiffState";
 import { useCreateBuildReviewMutation } from "./BuildReviewAction";
 import { BUILD_REVIEW_EVENT_DEFINITIONS } from "./BuildReviewEvents";
 import { useBuildReviewSummary } from "./BuildReviewState";
@@ -79,6 +81,11 @@ export function BuildReviewForm(props: {
     },
   });
 
+  // Block submission until every diff has been fetched: the review progression
+  // and the accept/reject counts are computed from the loaded diffs, so
+  // submitting mid-load could approve or reject an incomplete set of changes.
+  const { isLoading } = useBuildDiffState();
+
   // Tracks the action currently being submitted: drives the per-button spinner
   // and disables the rest of the form while the review is in flight.
   const [pendingEvent, setPendingEvent] = useState<BuildReviewEvent | null>(
@@ -102,6 +109,9 @@ export function BuildReviewForm(props: {
     : BuildReviewEvent.Approve;
 
   const submitReview = async (event: BuildReviewEvent) => {
+    if (isLoading) {
+      return;
+    }
     const { body } = form.getValues();
     if (event === BuildReviewEvent.Comment && !hasEditorContent(body)) {
       form.setError("body", {
@@ -187,40 +197,50 @@ export function BuildReviewForm(props: {
       </div>
       <div className="flex flex-col gap-2 p-3">
         <FormRootError control={form.control} />
-        <div className="flex justify-end gap-2">
-          {SUBMIT_EVENTS.map((event) => {
-            const definition = BUILD_REVIEW_EVENT_DEFINITIONS[event];
-            const Icon = definition.icon;
-            const isDefault = event === defaultEvent;
-            return (
-              <Button
-                key={event}
-                variant={definition.variant}
-                rounded
-                size="small"
-                className="shrink-0"
-                isPending={pendingEvent === event}
-                isDisabled={isSubmitting && pendingEvent !== event}
-                autoFocus={isDefault}
-                // Keep the ring on the focused button (not only keyboard focus)
-                // so the default action Enter triggers stays visible.
-                showFocusRing
-                onAction={() => submitReview(event)}
-              >
-                <ButtonIcon>
-                  <Icon
-                    className={
-                      definition.iconColor
-                        ? lowTextColorClassNames[definition.iconColor]
-                        : undefined
-                    }
-                  />
-                </ButtonIcon>
-                {definition.label}
-              </Button>
-            );
-          })}
-        </div>
+        <Tooltip
+          content={
+            isLoading
+              ? "Waiting for all changes to load before you can submit a review…"
+              : null
+          }
+        >
+          <div className="flex justify-end gap-2">
+            {SUBMIT_EVENTS.map((event) => {
+              const definition = BUILD_REVIEW_EVENT_DEFINITIONS[event];
+              const Icon = definition.icon;
+              const isDefault = event === defaultEvent;
+              return (
+                <Button
+                  key={event}
+                  variant={definition.variant}
+                  rounded
+                  size="small"
+                  className="shrink-0"
+                  isPending={pendingEvent === event}
+                  isDisabled={
+                    isLoading || (isSubmitting && pendingEvent !== event)
+                  }
+                  autoFocus={isDefault}
+                  // Keep the ring on the focused button (not only keyboard focus)
+                  // so the default action Enter triggers stays visible.
+                  showFocusRing
+                  onAction={() => submitReview(event)}
+                >
+                  <ButtonIcon>
+                    <Icon
+                      className={
+                        definition.iconColor
+                          ? lowTextColorClassNames[definition.iconColor]
+                          : undefined
+                      }
+                    />
+                  </ButtonIcon>
+                  {definition.label}
+                </Button>
+              );
+            })}
+          </div>
+        </Tooltip>
       </div>
     </Form>
   );
