@@ -3,8 +3,7 @@
  * literal connector (", " / " and " / " and N others").
  */
 export type NameListSegment<T> =
-  | { type: "item"; item: T }
-  | { type: "text"; text: string };
+  { type: "item"; item: T } | { type: "text"; text: string };
 
 /**
  * Collapse a list into "A, B and N others" form, showing at most `max` items

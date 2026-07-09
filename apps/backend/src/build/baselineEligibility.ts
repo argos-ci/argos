@@ -9,11 +9,7 @@ import type { Build } from "@/database/models";
  * against, so they cannot be evaluated for a build in isolation.
  */
 export type BuildBaselineIneligibilityReason =
-  | "build-incomplete"
-  | "tests-failed"
-  | "subset"
-  | "rejected"
-  | "not-approved";
+  "build-incomplete" | "tests-failed" | "subset" | "rejected" | "not-approved";
 
 export type BuildBaselineEligibility = {
   eligible: boolean;

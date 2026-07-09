@@ -34,5 +34,10 @@ describe("#get", () => {
     });
 
     expect(result.ContentType).toBe("text/plain");
+
+    // Drain the response body so its socket is released. Leaving it unread
+    // keeps the socket in use, so `s3.destroy()` aborts it mid-response and
+    // surfaces as an uncaught "aborted" error that fails the run.
+    await result.Body?.transformToByteArray();
   });
 });

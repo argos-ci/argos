@@ -23,11 +23,7 @@ import { TeamUser } from "./TeamUser";
 import type { User } from "./User";
 
 type ProjectPermission =
-  | "admin"
-  | "review"
-  | "review_dismiss"
-  | "view_settings"
-  | "view";
+  "admin" | "review" | "review_dismiss" | "view_settings" | "view";
 export type DeploymentAuth = "public" | "domain-private" | "private";
 
 /**

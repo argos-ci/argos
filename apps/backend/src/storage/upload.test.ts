@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { S3Client } from "@aws-sdk/client-s3";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import config from "@/config";
 
@@ -14,6 +14,10 @@ describe("#uploadFromFilePath", () => {
 
   beforeEach(() => {
     s3 = new S3Client({ region: "eu-west-1" });
+  });
+
+  afterEach(() => {
+    s3.destroy();
   });
 
   it("should upload a file to S3", async () => {
