@@ -1508,11 +1508,17 @@ type SnapshotProps = { url: string; contentType: string };
 
 function SuspendedSnapshot(props: SnapshotProps) {
   const [text] = useTextContent([props.url]);
+  // Size the editor to its content instead of stretching to fill the flex row:
+  // `self-start` opts out of the row's default `align-items: stretch` so a short
+  // snapshot (e.g. a one-line ARIA tree) stays short, while the outer panel
+  // (`overflow-y-auto`) scrolls when the content is tall.
   return (
-    <Editor
-      value={text}
-      language={getLanguageFromContentType(props.contentType)}
-    />
+    <div className="w-full self-start">
+      <Editor
+        value={text}
+        language={getLanguageFromContentType(props.contentType)}
+      />
+    </div>
   );
 }
 
