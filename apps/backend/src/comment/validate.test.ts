@@ -379,7 +379,7 @@ describe("isCommentTooLarge", () => {
               marks: [
                 {
                   type: "link",
-                  attrs: { href: `https://example.com/${"a".repeat(25_000)}` },
+                  attrs: { href: `https://example.com/${"a".repeat(45_000)}` },
                 },
               ],
             },
