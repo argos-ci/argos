@@ -169,7 +169,7 @@ export function isCommentEmpty(value: JSONContent): boolean {
  * - depth protects recursive rendering from pathological nesting.
  */
 const MAX_COMMENT_CHARACTERS = 2_000;
-const MAX_COMMENT_JSON_BYTES = 20_000;
+const MAX_COMMENT_JSON_BYTES = 40_000;
 const MAX_COMMENT_NODES = 300;
 const MAX_COMMENT_DEPTH = 12;
 
