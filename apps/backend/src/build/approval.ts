@@ -92,6 +92,12 @@ function getPreviousBuildsQuery(args: {
   const buildQuery = Build.query()
     .select("builds.id")
     .joinRelated("compareScreenshotBucket")
+    // Scope to the current build's project. Bucket names ("default", …) are
+    // only unique within a project, so without this a build could inherit
+    // approvals from a same-named build in another project — and therefore
+    // another team. Scoping by project keeps automatic reviews isolated per
+    // project and per team.
+    .where("builds.projectId", build.projectId)
     .where("builds.createdAt", "<", build.createdAt)
     .where("builds.mode", build.mode)
     .where("builds.conclusion", "changes-detected")
