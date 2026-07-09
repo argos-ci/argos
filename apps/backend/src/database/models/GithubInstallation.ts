@@ -4,6 +4,8 @@ import { timestampsSchema } from "../util/schemas";
 export class GithubInstallation extends Model {
   static override tableName = "github_installations";
 
+  static override encryptedAttributes = ["githubToken"];
+
   static override jsonSchema = {
     allOf: [
       timestampsSchema,

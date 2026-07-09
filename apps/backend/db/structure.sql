@@ -944,7 +944,7 @@ CREATE TABLE public.github_installations (
     "updatedAt" timestamp with time zone NOT NULL,
     "githubId" integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL,
-    "githubToken" character varying(255),
+    "githubToken" text,
     "githubTokenExpiresAt" timestamp with time zone,
     app text DEFAULT 'main'::text NOT NULL,
     proxy boolean DEFAULT false NOT NULL,
@@ -5200,3 +5200,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026062
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260625120000_project-ignore-config.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260627120000_add-screenshots-has-parent-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260628120000_build-review-automatic.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260709120000_github-installation-token-text.js', 1, NOW());
