@@ -395,6 +395,35 @@ describe("getPreviousApproverUserIds", () => {
     const userIds = await getPreviousApproverUserIds({ build, compareBucket });
     expect(userIds.sort()).toEqual([userA.id, userB.id].sort());
   });
+
+  test("ignores approvals from a same-named build in another project", async ({
+    build,
+    compareBucket,
+  }) => {
+    // A build in a different project (and therefore a different team) that
+    // shares the same bucket name and branch must never contribute approvers.
+    const otherProject = await factory.Project.create();
+    const otherBucket = await factory.ScreenshotBucket.create({
+      projectId: otherProject.id,
+      branch: compareBucket.branch,
+      name: compareBucket.name,
+    });
+    const otherBuild = await factory.Build.create({
+      compareScreenshotBucketId: otherBucket.id,
+      conclusion: "changes-detected",
+      projectId: otherProject.id,
+      createdAt: new Date(Date.now() - 1000).toISOString(),
+    });
+    const otherUser = await factory.User.create();
+    await factory.BuildReview.create({
+      buildId: otherBuild.id,
+      state: "approved",
+      userId: otherUser.id,
+    });
+
+    const userIds = await getPreviousApproverUserIds({ build, compareBucket });
+    expect(userIds).toEqual([]);
+  });
 });
 
 describe("getBuildReviewableDiffIds", () => {
