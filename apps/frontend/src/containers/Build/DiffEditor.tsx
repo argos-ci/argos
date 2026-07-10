@@ -35,8 +35,6 @@ const BASE_OPTIONS = {
   preferredHighlighter: "shiki-js",
 } satisfies BaseCodeOptions;
 
-const CLASS_NAME = "overflow-hidden rounded border";
-
 // Styling for the gutter "+", injected into the viewer's shadow DOM via
 // `unsafeCSS` (its `unsafe` cascade layer outranks the library's own rules).
 const GUTTER_UTILITY_CSS =
@@ -148,7 +146,6 @@ export function DiffEditor<LAnnotation = undefined>(props: {
           lang: modifiedLanguage,
         }}
         options={options}
-        className={CLASS_NAME}
         lineAnnotations={comments?.lineAnnotations}
         selectedLines={comments?.selectedLines}
         renderAnnotation={comments?.renderAnnotation}
@@ -164,7 +161,6 @@ export function Editor(props: { value: string; language: SupportedLanguages }) {
       <File
         file={{ name: "snapshot", contents: props.value, lang: props.language }}
         options={{ ...BASE_OPTIONS, themeType }}
-        className={CLASS_NAME}
       />
     </Suspense>
   );

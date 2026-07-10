@@ -1513,11 +1513,19 @@ function SuspendedSnapshot(props: SnapshotProps) {
   // snapshot (e.g. a one-line ARIA tree) stays short, while the outer panel
   // (`overflow-y-auto`) scrolls when the content is tall.
   return (
-    <div className="w-full self-start">
+    <EditorContainer>
       <Editor
         value={text}
         language={getLanguageFromContentType(props.contentType)}
       />
+    </EditorContainer>
+  );
+}
+
+function EditorContainer(props: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-auto rounded border">
+      {props.children}
     </div>
   );
 }
@@ -1532,15 +1540,17 @@ function DiffSnapshots(props: {
   const { base, head, renderSideBySide, build, screenshotDiffId } = props;
   const [baseText, headText] = useTextContent([base.url, head.url]);
   return (
-    <DiffCommentLayer
-      build={build}
-      screenshotDiffId={screenshotDiffId}
-      original={baseText}
-      originalLanguage={getLanguageFromContentType(base.contentType)}
-      modified={headText}
-      modifiedLanguage={getLanguageFromContentType(head.contentType)}
-      renderSideBySide={renderSideBySide}
-    />
+    <EditorContainer>
+      <DiffCommentLayer
+        build={build}
+        screenshotDiffId={screenshotDiffId}
+        original={baseText}
+        originalLanguage={getLanguageFromContentType(base.contentType)}
+        modified={headText}
+        modifiedLanguage={getLanguageFromContentType(head.contentType)}
+        renderSideBySide={renderSideBySide}
+      />
+    </EditorContainer>
   );
 }
 
