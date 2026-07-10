@@ -1,8 +1,8 @@
+import { ProjectNameSchema } from "@argos/schemas/project";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { createProject as createProjectService } from "@/database/services/project";
-import { ProjectNameSchema } from "@/database/util/project-name";
 
 import { getAccountForAuth } from "../auth/project";
 import {

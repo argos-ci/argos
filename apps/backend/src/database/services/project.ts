@@ -1,3 +1,4 @@
+import { ProjectNameSchema } from "@argos/schemas/project";
 import * as Sentry from "@sentry/node";
 
 import { notifyDiscord } from "@/discord";
@@ -6,7 +7,6 @@ import { boom } from "@/util/error";
 import type { Account } from "../models/Account";
 import { Project } from "../models/Project";
 import type { User } from "../models/User";
-import { ProjectNameSchema } from "../util/project-name";
 
 const RESERVED_PROJECT_NAMES = ["new", "settings"];
 
@@ -79,6 +79,7 @@ export async function createProject(input: {
     throw boom(
       400,
       parsedName.error.issues[0]?.message ?? "Invalid project name.",
+      { code: "PROJECT_NAME_INVALID" },
     );
   }
   const name = parsedName.data;
@@ -90,7 +91,7 @@ export async function createProject(input: {
     throw boom(
       400,
       error instanceof Error ? error.message : "Invalid project name.",
-      { cause: error },
+      { code: "PROJECT_NAME_INVALID", cause: error },
     );
   }
 

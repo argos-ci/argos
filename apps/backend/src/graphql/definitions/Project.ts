@@ -900,14 +900,18 @@ export const resolvers: IResolvers = {
           source: null,
         });
       } catch (error) {
-        // The shared service speaks HTTP status codes; map them onto this
-        // API's GraphQL error contract.
+        // Map the shared service's errors onto this API's GraphQL error
+        // contract, keying on the error code rather than the HTTP status: a
+        // 400 does not necessarily concern the name.
         if (error instanceof HTTPError) {
+          if (error.code === "PROJECT_NAME_INVALID") {
+            throw badUserInput(error.message, {
+              field: "name",
+              code: error.code,
+            });
+          }
           if (error.statusCode === 403) {
             throw forbidden(error.message);
-          }
-          if (error.statusCode === 400) {
-            throw badUserInput(error.message, { field: "name" });
           }
         }
         throw error;

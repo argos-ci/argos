@@ -1,3 +1,4 @@
+import { ProjectNameSchema } from "@argos/schemas/project";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type {
@@ -7,12 +8,12 @@ import type {
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
+import { z } from "zod";
 
 import config from "@/config";
 
 import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
-import { projectNameJsonSchema } from "../util/project-name";
 import { timestampsSchema } from "../util/schemas";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
 import { Account } from "./Account";
@@ -122,7 +123,7 @@ export class Project extends Model {
         type: "object",
         required: ["name", "accountId"],
         properties: {
-          name: projectNameJsonSchema,
+          name: z.toJSONSchema(ProjectNameSchema) as JSONSchema,
           token: { type: "string" },
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },

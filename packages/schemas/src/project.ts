@@ -1,4 +1,3 @@
-import type { JSONSchema } from "objection";
 import { z } from "zod";
 
 /**
@@ -18,13 +17,3 @@ export const ProjectNameSchema = z
     message:
       "Project name can only contain letters, numbers, dots, hyphens and underscores.",
   });
-
-/**
- * The {@link ProjectNameSchema} rules expressed as a JSON schema for the
- * objection model definition. The `.trim()` transform is not representable in
- * JSON schema and is intentionally dropped — model validation runs on the
- * already-trimmed value.
- */
-export const projectNameJsonSchema = z.toJSONSchema(
-  ProjectNameSchema,
-) as JSONSchema;

@@ -90,7 +90,7 @@ describe("createProject service", () => {
       userLevel: "member",
     });
 
-    await expectHttpError(
+    const error = await expectHttpError(
       createProject({
         account: teamAccount,
         user: memberAccount.user,
@@ -98,26 +98,29 @@ describe("createProject service", () => {
       }),
       403,
     );
+    // A permission error is not a name problem, so it carries no name code.
+    expect(error.code).toBeNull();
 
     await expect(
       Project.query().findOne({ accountId: teamAccount.id }),
     ).resolves.toBeUndefined();
   });
 
-  it("throws 400 when the name contains invalid characters", async () => {
+  it("throws 400 PROJECT_NAME_INVALID when the name contains invalid characters", async () => {
     const { teamAccount, user } = await createTeamOwner();
 
-    await expectHttpError(
+    const error = await expectHttpError(
       createProject({ account: teamAccount, user, name: "has spaces" }),
       400,
     );
+    expect(error.code).toBe("PROJECT_NAME_INVALID");
 
     await expect(
       Project.query().findOne({ accountId: teamAccount.id }),
     ).resolves.toBeUndefined();
   });
 
-  it("throws 400 when the name is reserved", async () => {
+  it("throws 400 PROJECT_NAME_INVALID when the name is reserved", async () => {
     const { teamAccount, user } = await createTeamOwner();
 
     const error = await expectHttpError(
@@ -125,9 +128,10 @@ describe("createProject service", () => {
       400,
     );
     expect(error.message).toBe("Name is reserved for internal usage");
+    expect(error.code).toBe("PROJECT_NAME_INVALID");
   });
 
-  it("throws 400 when the name is already used (case-insensitive)", async () => {
+  it("throws 400 PROJECT_NAME_INVALID when the name is already used (case-insensitive)", async () => {
     const { teamAccount, user } = await createTeamOwner();
     await factory.Project.create({ accountId: teamAccount.id, name: "web" });
 
@@ -136,5 +140,6 @@ describe("createProject service", () => {
       400,
     );
     expect(error.message).toBe("Name is already used by another project");
+    expect(error.code).toBe("PROJECT_NAME_INVALID");
   });
 });
