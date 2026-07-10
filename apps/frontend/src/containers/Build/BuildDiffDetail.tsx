@@ -1531,16 +1531,24 @@ function DiffSnapshots(props: {
 }) {
   const { base, head, renderSideBySide, build, screenshotDiffId } = props;
   const [baseText, headText] = useTextContent([base.url, head.url]);
+  // Size the diff to its content instead of stretching to fill the flex column.
+  // The diff viewer's root is `overflow-hidden`, so as a shrinkable flex child it
+  // gets clamped to the panel height and clips (rather than scrolls) a tall diff.
+  // Wrapping it in a plain `w-full self-start` div restores content sizing, so the
+  // outer panel (`overflow-y-auto`) scrolls tall diffs and short ones stay short —
+  // mirroring the single-snapshot viewer above.
   return (
-    <DiffCommentLayer
-      build={build}
-      screenshotDiffId={screenshotDiffId}
-      original={baseText}
-      originalLanguage={getLanguageFromContentType(base.contentType)}
-      modified={headText}
-      modifiedLanguage={getLanguageFromContentType(head.contentType)}
-      renderSideBySide={renderSideBySide}
-    />
+    <div className="w-full self-start">
+      <DiffCommentLayer
+        build={build}
+        screenshotDiffId={screenshotDiffId}
+        original={baseText}
+        originalLanguage={getLanguageFromContentType(base.contentType)}
+        modified={headText}
+        modifiedLanguage={getLanguageFromContentType(head.contentType)}
+        renderSideBySide={renderSideBySide}
+      />
+    </div>
   );
 }
 
