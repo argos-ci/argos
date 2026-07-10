@@ -1,6 +1,5 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import * as Sentry from "@sentry/node";
 import gqlTag from "graphql-tag";
 import type { PartialModelObject } from "objection";
 
@@ -21,6 +20,8 @@ import {
 } from "@/database/models";
 import {
   checkProjectName,
+  createProject as createProjectService,
+  notifyProjectCreation,
   resolveProjectName,
 } from "@/database/services/project";
 import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
@@ -29,7 +30,6 @@ import {
   invalidateDeploymentCache,
   invalidateProjectDeploymentCache,
 } from "@/deployment/invalidate";
-import { notifyDiscord } from "@/discord";
 import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
@@ -362,26 +362,6 @@ const checkGqlProjectName = async (
     throw error;
   }
 };
-
-async function notifyProjectCreation(input: {
-  project: Project;
-  account: Account;
-  email: string | null;
-  source: "GitHub" | "GitLab" | null;
-}) {
-  await notifyDiscord({
-    content: `
-New project from ${input.account.name} (${input.email ?? "unknown email"}) ${
-      input.source
-        ? `imported from ${input.source}`
-        : "created without a Git provider"
-    }:
-${input.account.slug} / ${input.project.name}
-`.trim(),
-  }).catch((error) => {
-    Sentry.captureException(error);
-  });
-}
 
 async function importGithubProject(props: {
   accountSlug: string;
@@ -912,27 +892,26 @@ export const resolvers: IResolvers = {
         .findOne({ slug: args.input.accountSlug })
         .throwIfNotFound();
 
-      const permissions = await account.$getPermissions(ctx.auth.user);
-      if (!permissions.includes("admin")) {
-        throw forbidden();
+      try {
+        return await createProjectService({
+          account,
+          user: ctx.auth.user,
+          name: args.input.name,
+          source: null,
+        });
+      } catch (error) {
+        // The shared service speaks HTTP status codes; map them onto this
+        // API's GraphQL error contract.
+        if (error instanceof HTTPError) {
+          if (error.statusCode === 403) {
+            throw forbidden(error.message);
+          }
+          if (error.statusCode === 400) {
+            throw badUserInput(error.message, { field: "name" });
+          }
+        }
+        throw error;
       }
-
-      const name = args.input.name.trim();
-      await checkGqlProjectName({ name, accountId: account.id });
-
-      const project = await Project.query().insertAndFetch({
-        name,
-        accountId: account.id,
-      });
-
-      await notifyProjectCreation({
-        project,
-        email: ctx.auth.user.email,
-        account,
-        source: null,
-      });
-
-      return project;
     },
     importGithubProject: async (_root, args, ctx) => {
       if (!ctx.auth) {

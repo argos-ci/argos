@@ -12,6 +12,7 @@ import config from "@/config";
 
 import { generateRandomString } from "../services/crypto";
 import { Model } from "../util/model";
+import { projectNameJsonSchema } from "../util/project-name";
 import { timestampsSchema } from "../util/schemas";
 import { UserLevel, UserLevelJsonSchema } from "../util/user-level";
 import { Account } from "./Account";
@@ -121,12 +122,7 @@ export class Project extends Model {
         type: "object",
         required: ["name", "accountId"],
         properties: {
-          name: {
-            type: "string",
-            minLength: 1,
-            maxLength: 100,
-            pattern: "^[a-zA-Z0-9_\\-.]+$",
-          },
+          name: projectNameJsonSchema,
           token: { type: "string" },
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },

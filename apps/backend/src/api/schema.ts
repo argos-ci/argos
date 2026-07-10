@@ -6,6 +6,7 @@ import { addCommentReactionOperation } from "./handlers/addCommentReaction";
 import { createBuildOperation } from "./handlers/createBuild";
 import { createCommentOperation } from "./handlers/createComment";
 import { createDeploymentOperation } from "./handlers/createDeployment";
+import { createProjectOperation } from "./handlers/createProject";
 import { createReviewOperation } from "./handlers/createReview";
 import { deleteCommentOperation } from "./handlers/deleteComment";
 import { dismissReviewOperation } from "./handlers/dismissReview";
@@ -148,6 +149,9 @@ export const zodSchema = {
     },
     "/builds/{buildId}": {
       put: updateBuildOperation,
+    },
+    "/projects": {
+      post: createProjectOperation,
     },
     "/projects/{owner}/{project}": {
       get: getProjectOperation,

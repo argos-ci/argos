@@ -7,6 +7,7 @@ import { addCommentReaction } from "./handlers/addCommentReaction";
 import { createBuild } from "./handlers/createBuild";
 import { createComment } from "./handlers/createComment";
 import { createDeployment } from "./handlers/createDeployment";
+import { createProject } from "./handlers/createProject";
 import { createReview } from "./handlers/createReview";
 import { deleteComment } from "./handlers/deleteComment";
 import { dismissReview } from "./handlers/dismissReview";
@@ -67,6 +68,7 @@ router.get(
 
 // Register the handlers.
 registerHandler(router, createBuild);
+registerHandler(router, createProject);
 registerHandler(router, createReview);
 registerHandler(router, listReviews);
 registerHandler(router, dismissReview);
