@@ -1,11 +1,15 @@
 import { invariant } from "@argos/util/invariant";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { HTTPError } from "@/util/error";
 
 import { createProject } from "./project";
+
+// The Discord webhook is configured in the test env; stub it so creating a
+// project here doesn't post a real notification.
+vi.mock("@/discord", () => ({ notifyDiscord: vi.fn(() => Promise.resolve()) }));
 
 /**
  * Create a team account with an owner (admin) user and its personal account.
