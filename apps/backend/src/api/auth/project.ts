@@ -11,7 +11,7 @@ import type {
 } from "@/auth/payload";
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { getAuthPayloadFromUserAccessToken } from "@/auth/user-access-token";
-import { type Account, Project, UserAccessToken } from "@/database/models";
+import { Project, UserAccessToken, type Account } from "@/database/models";
 import { boom } from "@/util/error";
 
 /**
