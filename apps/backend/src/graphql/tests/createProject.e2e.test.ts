@@ -106,6 +106,7 @@ describe("GraphQL createProject", () => {
     expect(res.body.errors[0].extensions).toMatchObject({
       code: "BAD_USER_INPUT",
       field: "name",
+      argosErrorCode: "PROJECT_NAME_INVALID",
     });
   });
 

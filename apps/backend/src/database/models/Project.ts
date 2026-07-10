@@ -1,3 +1,4 @@
+import { ProjectNameSchema } from "@argos/schemas/project";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import type {
@@ -7,6 +8,7 @@ import type {
   RelationMappings,
   TransactionOrKnex,
 } from "objection";
+import { z } from "zod";
 
 import config from "@/config";
 
@@ -121,12 +123,7 @@ export class Project extends Model {
         type: "object",
         required: ["name", "accountId"],
         properties: {
-          name: {
-            type: "string",
-            minLength: 1,
-            maxLength: 100,
-            pattern: "^[a-zA-Z0-9_\\-.]+$",
-          },
+          name: z.toJSONSchema(ProjectNameSchema) as JSONSchema,
           token: { type: "string" },
           private: { type: ["null", "boolean"] },
           defaultBaseBranch: { type: ["null", "string"] },

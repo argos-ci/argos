@@ -11,7 +11,7 @@ import type {
 } from "@/auth/payload";
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { getAuthPayloadFromUserAccessToken } from "@/auth/user-access-token";
-import { Project, UserAccessToken } from "@/database/models";
+import { Project, UserAccessToken, type Account } from "@/database/models";
 import { boom } from "@/util/error";
 
 /**
@@ -124,4 +124,36 @@ export async function getProjectForAuth(
   }
 
   return project;
+}
+
+/**
+ * Resolve the account identified by `slug` for the authenticated principal, or
+ * throw. Used by account-level actions (such as creating a project) that are
+ * not scoped to an existing project.
+ *
+ * A personal access token carries an explicit account scope, and that scope is
+ * the authorization boundary: an account the token is not scoped to is
+ * indistinguishable from one that does not exist — both throw `401` — so the
+ * existence of accounts outside the token's scope is never disclosed. Project
+ * tokens are bound to a single project and cannot perform account-level
+ * actions, so they are always rejected.
+ *
+ * This only establishes that the token may act on the account; the caller must
+ * still check the user's role on it (e.g. `account.$getPermissions`).
+ */
+export function getAccountForAuth(
+  auth: AuthPATPayload | AuthProjectPayload,
+  params: { slug: string },
+): Account {
+  if (auth.type !== "pat") {
+    throw boom(401);
+  }
+  const account = auth.scope.find((account) => account.slug === params.slug);
+  if (!account) {
+    throw boom(
+      401,
+      "You do not have access to this account. Check that your personal access token is scoped to it.",
+    );
+  }
+  return account;
 }
