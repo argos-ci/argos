@@ -1513,11 +1513,19 @@ function SuspendedSnapshot(props: SnapshotProps) {
   // snapshot (e.g. a one-line ARIA tree) stays short, while the outer panel
   // (`overflow-y-auto`) scrolls when the content is tall.
   return (
-    <div className="w-full self-start">
+    <EditorContainer>
       <Editor
         value={text}
         language={getLanguageFromContentType(props.contentType)}
       />
+    </EditorContainer>
+  );
+}
+
+function EditorContainer(props: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-auto rounded border">
+      {props.children}
     </div>
   );
 }
@@ -1531,14 +1539,8 @@ function DiffSnapshots(props: {
 }) {
   const { base, head, renderSideBySide, build, screenshotDiffId } = props;
   const [baseText, headText] = useTextContent([base.url, head.url]);
-  // Size the diff to its content instead of stretching to fill the flex column.
-  // The diff viewer's root is `overflow-hidden`, so as a shrinkable flex child it
-  // gets clamped to the panel height and clips (rather than scrolls) a tall diff.
-  // Wrapping it in a plain `w-full self-start` div restores content sizing, so the
-  // outer panel (`overflow-y-auto`) scrolls tall diffs and short ones stay short —
-  // mirroring the single-snapshot viewer above.
   return (
-    <div className="w-full self-start">
+    <EditorContainer>
       <DiffCommentLayer
         build={build}
         screenshotDiffId={screenshotDiffId}
@@ -1548,7 +1550,7 @@ function DiffSnapshots(props: {
         modifiedLanguage={getLanguageFromContentType(head.contentType)}
         renderSideBySide={renderSideBySide}
       />
-    </div>
+    </EditorContainer>
   );
 }
 
