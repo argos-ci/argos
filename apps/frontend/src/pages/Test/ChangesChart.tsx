@@ -76,6 +76,7 @@ export function ChangesChart(props: {
     >
       <ComposedChart data={transformedSeries}>
         <ChartTooltip
+          isAnimationActive={false}
           cursor={false}
           content={
             <ChartTooltipContent
@@ -121,18 +122,21 @@ export function ChangesChart(props: {
           type="monotone"
           fill="var(--gray-7)"
           stroke=""
+          isAnimationActive={false}
         />
         <Bar
           dataKey="uniqueChanges"
           xAxisId="changes"
           stackId="changes"
           fill="var(--blue-10)"
+          isAnimationActive={false}
         />
         <Bar
           dataKey="nonUniqueChanges"
           xAxisId="changes"
           stackId="changes"
           fill="var(--amber-10)"
+          isAnimationActive={false}
         />
         <XAxis
           dataKey="ts"

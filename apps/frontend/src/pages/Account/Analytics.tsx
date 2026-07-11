@@ -9,10 +9,19 @@ import {
   GitCompareArrowsIcon,
   ImagesIcon,
   LayersIcon,
+  SearchIcon,
   ThumbsUpIcon,
 } from "lucide-react";
 import moment from "moment";
-import { Heading, MenuTrigger, Text } from "react-aria-components";
+import { useFilter } from "react-aria";
+import {
+  Autocomplete,
+  Heading,
+  Input,
+  MenuTrigger,
+  SearchField,
+  Text,
+} from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 import {
@@ -922,6 +931,7 @@ function SplitBar(props: {
     <Tooltip
       delay={150}
       placement="top"
+      disableAnimation
       content={
         <div className="flex min-w-40 flex-col gap-1 py-0.5">
           {props.segments.map((segment) => (
@@ -1332,12 +1342,37 @@ function ProjectFilter(props: {
   const { data } = useSuspenseQuery(ProjectsQuery, {
     variables: { slug: props.accountSlug },
   });
-  const projects = [...(data.account?.projects.edges ?? [])].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  const projects = data.account?.projects.edges ?? [];
   if (projects.length < 2) {
     return null;
   }
+  return (
+    <ProjectFilterMenu
+      projects={projects}
+      value={props.value}
+      onChange={props.onChange}
+    />
+  );
+}
+
+/**
+ * Number of projects above which the project filter shows a search field.
+ */
+const PROJECT_SEARCH_THRESHOLD = 5;
+
+/**
+ * The project filter UI, decoupled from data fetching so it can be rendered
+ * in isolation (e.g. Storybook).
+ */
+export function ProjectFilterMenu(props: {
+  projects: { id: string; name: string }[];
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const { contains } = useFilter({ sensitivity: "base" });
+  const projects = [...props.projects].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const selected = props.value.filter((id) =>
     projects.some((project) => project.id === id),
   );
@@ -1347,9 +1382,37 @@ function ProjectFilter(props: {
       : selected.length === 1
         ? projects.find((project) => project.id === selected[0])?.name
         : `${selected.length} projects`;
+  const searchable = projects.length > PROJECT_SEARCH_THRESHOLD;
+  const menu = (
+    <Menu
+      aria-label="Projects"
+      selectionMode="multiple"
+      selectedKeys={selected}
+      className={searchable ? "max-h-72" : undefined}
+      renderEmptyState={() => (
+        <div className="text-low px-3 py-1.5 text-sm">No projects found</div>
+      )}
+      onSelectionChange={(keys) => {
+        if (keys === "all") {
+          return;
+        }
+        props.onChange(
+          projects
+            .filter((project) => keys.has(project.id))
+            .map((project) => project.id),
+        );
+      }}
+    >
+      {projects.map((project) => (
+        <MenuItem key={project.id} id={project.id} textValue={project.name}>
+          {project.name}
+        </MenuItem>
+      ))}
+    </Menu>
+  );
   return (
     <MenuTrigger>
-      <SelectButton className="text-sm">
+      <SelectButton className="shrink-0 text-sm whitespace-nowrap">
         {label}
         {selected.length > 1 ? (
           <Badge>
@@ -1358,27 +1421,26 @@ function ProjectFilter(props: {
         ) : null}
       </SelectButton>
       <Popover>
-        <Menu
-          aria-label="Projects"
-          selectionMode="multiple"
-          selectedKeys={selected}
-          onSelectionChange={(keys) => {
-            if (keys === "all") {
-              return;
-            }
-            props.onChange(
-              projects
-                .filter((project) => keys.has(project.id))
-                .map((project) => project.id),
-            );
-          }}
-        >
-          {projects.map((project) => (
-            <MenuItem key={project.id} id={project.id} textValue={project.name}>
-              {project.name}
-            </MenuItem>
-          ))}
-        </Menu>
+        {searchable ? (
+          <Autocomplete filter={contains}>
+            <div className="flex w-56 flex-col">
+              <SearchField
+                aria-label="Search projects"
+                autoFocus
+                className="flex items-center gap-2 border-b px-3 py-2"
+              >
+                <SearchIcon className="text-low size-4 shrink-0" />
+                <Input
+                  placeholder="Search projects…"
+                  className="placeholder:text-placeholder search-cancel:hidden w-full bg-transparent text-sm outline-hidden"
+                />
+              </SearchField>
+              {menu}
+            </div>
+          </Autocomplete>
+        ) : (
+          menu
+        )}
       </Popover>
     </MenuTrigger>
   );
@@ -1394,7 +1456,7 @@ function PeriodSelect(props: {
       value={props.value}
       onChange={(value) => props.onChange(value as Period)}
     >
-      <SelectButton className="w-full text-sm">
+      <SelectButton className="w-full shrink-0 text-sm whitespace-nowrap">
         {PeriodLabels[props.value]}
       </SelectButton>
       <Popover>
