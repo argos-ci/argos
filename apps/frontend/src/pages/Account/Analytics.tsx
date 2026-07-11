@@ -12,7 +12,7 @@ import {
   ThumbsUpIcon,
 } from "lucide-react";
 import moment from "moment";
-import { Heading, Text } from "react-aria-components";
+import { Heading, MenuTrigger, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 import {
@@ -31,6 +31,7 @@ import {
   TimeSeriesGroupBy,
   type AccountUsage_AccountQuery,
 } from "@/gql/graphql";
+import { Badge } from "@/ui/Badge";
 import { Card } from "@/ui/Card";
 import {
   ChartConfig,
@@ -52,6 +53,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
+import { Menu, MenuItem } from "@/ui/Menu";
 import { PageLoader } from "@/ui/PageLoader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
@@ -65,11 +67,19 @@ const AccountQuery = graphql(`
     $from: DateTime!
     $to: DateTime!
     $groupBy: TimeSeriesGroupBy!
+    $projectIds: [ID!]
   ) {
     account(slug: $slug) {
       id
       permissions
-      metrics(input: { from: $from, to: $to, groupBy: $groupBy }) {
+      metrics(
+        input: {
+          from: $from
+          to: $to
+          groupBy: $groupBy
+          projectIds: $projectIds
+        }
+      ) {
         screenshots {
           all {
             total
@@ -159,6 +169,22 @@ export function Component() {
     [setSearchParams],
   );
 
+  const projectIds = parseProjectIds(searchParams);
+  const setProjectIds = useCallback(
+    (ids: string[]) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (ids.length === 0) {
+          next.delete("projects");
+        } else {
+          next.set("projects", ids.join(","));
+        }
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+
   useEffect(() => {
     setPeriod(period);
   }, [setPeriod, period]);
@@ -179,6 +205,13 @@ export function Component() {
           </PageHeaderContent>
           <PageHeaderActions>
             <div className="flex items-center gap-2">
+              <Suspense fallback={null}>
+                <ProjectFilter
+                  accountSlug={accountSlug}
+                  value={projectIds}
+                  onChange={setProjectIds}
+                />
+              </Suspense>
               <PeriodSelect value={period} onChange={setPeriod} />
               {period === "custom" && customPeriod ? (
                 <DateRangePicker
@@ -218,6 +251,7 @@ export function Component() {
             accountSlug={accountSlug}
             period={period}
             customPeriod={customPeriod}
+            projectIds={projectIds}
           />
         </Suspense>
       </PageContainer>
@@ -229,8 +263,9 @@ function Charts(props: {
   accountSlug: string;
   period: Period;
   customPeriod: { from: Date; to: Date } | null;
+  projectIds: string[];
 }) {
-  const { accountSlug, period, customPeriod } = props;
+  const { accountSlug, period, customPeriod, projectIds } = props;
   const { from, to, groupBy } = getPeriodSettings(period, customPeriod);
 
   const { data } = useSuspenseQuery(AccountQuery, {
@@ -239,6 +274,7 @@ function Charts(props: {
       from: from.toISOString(),
       to: to.toISOString(),
       groupBy,
+      projectIds: projectIds.length > 0 ? projectIds : null,
     },
   });
 
@@ -1264,6 +1300,88 @@ function formatSeriesDateLabel(ts: number, groupBy: TimeSeriesGroupBy) {
         month: "short",
       });
   }
+}
+
+const ProjectsQuery = graphql(`
+  query AccountAnalyticsProjects_account($slug: String!) {
+    account(slug: $slug) {
+      id
+      projects(first: 100, after: 0) {
+        edges {
+          id
+          name
+        }
+      }
+    }
+  }
+`);
+
+function parseProjectIds(searchParams: URLSearchParams): string[] {
+  const value = searchParams.get("projects");
+  if (!value) {
+    return [];
+  }
+  return value.split(",").filter(Boolean);
+}
+
+function ProjectFilter(props: {
+  accountSlug: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const { data } = useSuspenseQuery(ProjectsQuery, {
+    variables: { slug: props.accountSlug },
+  });
+  const projects = [...(data.account?.projects.edges ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  if (projects.length < 2) {
+    return null;
+  }
+  const selected = props.value.filter((id) =>
+    projects.some((project) => project.id === id),
+  );
+  const label =
+    selected.length === 0
+      ? "All projects"
+      : selected.length === 1
+        ? projects.find((project) => project.id === selected[0])?.name
+        : `${selected.length} projects`;
+  return (
+    <MenuTrigger>
+      <SelectButton className="text-sm">
+        {label}
+        {selected.length > 1 ? (
+          <Badge>
+            {selected.length}/{projects.length}
+          </Badge>
+        ) : null}
+      </SelectButton>
+      <Popover>
+        <Menu
+          aria-label="Projects"
+          selectionMode="multiple"
+          selectedKeys={selected}
+          onSelectionChange={(keys) => {
+            if (keys === "all") {
+              return;
+            }
+            props.onChange(
+              projects
+                .filter((project) => keys.has(project.id))
+                .map((project) => project.id),
+            );
+          }}
+        >
+          {projects.map((project) => (
+            <MenuItem key={project.id} id={project.id} textValue={project.name}>
+              {project.name}
+            </MenuItem>
+          ))}
+        </Menu>
+      </Popover>
+    </MenuTrigger>
+  );
 }
 
 function PeriodSelect(props: {
