@@ -157,7 +157,13 @@ describe("updateBuild", () => {
   });
 
   describe("when a name is uploaded with two different files", () => {
-    test("rejects the conflicting screenshot", async ({
+    const names = (bucketId: string) =>
+      Screenshot.query()
+        .where("screenshotBucketId", bucketId)
+        .orderBy("name")
+        .then((screenshots) => screenshots.map((s) => s.name));
+
+    test("keeps the conflicting screenshot under an indexed name", async ({
       build,
       compareScreenshotBucket,
     }) => {
@@ -166,13 +172,60 @@ describe("updateBuild", () => {
         final: false,
       }).expect(200);
 
-      const res = await put(build.id, {
+      await put(build.id, {
         screenshots: [screenshot("a", "b")],
         final: true,
-      }).expect(400);
+      }).expect(200);
 
-      expect(res.body.error).toMatch(/already uploaded/);
-      expect(await countScreenshots(compareScreenshotBucket.id)).toBe(1);
+      expect(await names(compareScreenshotBucket.id)).toEqual(["a", "a-1"]);
+    });
+
+    test("indexes duplicates within a single request", async ({
+      build,
+      compareScreenshotBucket,
+    }) => {
+      await put(build.id, {
+        screenshots: [
+          screenshot("a", "a"),
+          screenshot("a", "b"),
+          screenshot("a", "c"),
+        ],
+        final: true,
+      }).expect(200);
+
+      expect(await names(compareScreenshotBucket.id)).toEqual([
+        "a",
+        "a-1",
+        "a-2",
+      ]);
+    });
+
+    test("stays idempotent when a renamed screenshot is retried", async ({
+      build,
+      compareScreenshotBucket,
+    }) => {
+      await put(build.id, {
+        screenshots: [screenshot("a", "a")],
+        final: false,
+      }).expect(200);
+
+      const conflicting = { screenshots: [screenshot("a", "b")], final: false };
+      await put(build.id, conflicting).expect(200);
+      await put(build.id, conflicting).expect(200);
+
+      expect(await names(compareScreenshotBucket.id)).toEqual(["a", "a-1"]);
+    });
+
+    test("keeps identical content uploaded under different names", async ({
+      build,
+      compareScreenshotBucket,
+    }) => {
+      await put(build.id, {
+        screenshots: [screenshot("a", "a"), screenshot("b", "a")],
+        final: true,
+      }).expect(200);
+
+      expect(await names(compareScreenshotBucket.id)).toEqual(["a", "b"]);
     });
   });
 
