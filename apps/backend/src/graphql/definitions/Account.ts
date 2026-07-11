@@ -135,8 +135,6 @@ export const typeDefs = gql`
   }
 
   input AccountMetricsInput {
-    "Filter by internal project IDs."
-    projectIds: [ID!]
     "Filter by project names."
     projectNames: [String!]
     from: DateTime!
@@ -434,7 +432,6 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     try {
       return await getAccountMetrics({
         accountId: account.id,
-        projectIds: args.input.projectIds,
         projectNames: args.input.projectNames,
         from: args.input.from,
         to: args.input.to,

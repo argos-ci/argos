@@ -7,7 +7,6 @@ type AccountMetricsGroupBy = "month" | "week" | "day";
 
 type AccountMetricsFilter = {
   accountId: string;
-  projectIds?: string[] | null | undefined;
   projectNames?: string[] | null | undefined;
 };
 
@@ -43,14 +42,7 @@ function hasProjectFilter(input: AccountMetricsAggregationInput) {
 }
 
 async function resolveProjectIds(input: AccountMetricsFilter) {
-  if (input.projectNames === null || input.projectNames === undefined) {
-    return {
-      projectIds: input.projectIds,
-      projectFilterApplied: Boolean(input.projectIds?.length),
-    };
-  }
-
-  if (input.projectNames.length === 0) {
+  if (!input.projectNames || input.projectNames.length === 0) {
     return { projectIds: undefined, projectFilterApplied: false };
   }
 
