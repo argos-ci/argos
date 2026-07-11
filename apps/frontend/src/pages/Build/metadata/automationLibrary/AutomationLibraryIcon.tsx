@@ -39,11 +39,6 @@ export function getAutomationLibraryLabel(name: string): string {
   return automationLibraries[name.toLowerCase()]?.label ?? capitalize(name);
 }
 
-/** Returns the logo for an automation library package name, if any. */
-export function getAutomationLibraryIcon(name: string): string | undefined {
-  return automationLibraries[name.toLowerCase()]?.icon;
-}
-
 export function AutomationLibraryIcon(
   props: Omit<React.ComponentPropsWithRef<"img">, "src" | "alt"> &
     React.ComponentPropsWithRef<"svg"> & {
