@@ -76,7 +76,7 @@ const AccountQuery = graphql(`
     $from: DateTime!
     $to: DateTime!
     $groupBy: TimeSeriesGroupBy!
-    $projectIds: [ID!]
+    $projectNames: [String!]
   ) {
     account(slug: $slug) {
       id
@@ -86,7 +86,7 @@ const AccountQuery = graphql(`
           from: $from
           to: $to
           groupBy: $groupBy
-          projectIds: $projectIds
+          projectNames: $projectNames
         }
       ) {
         screenshots {
@@ -277,24 +277,13 @@ function Charts(props: {
   const { accountSlug, period, customPeriod, projectNames } = props;
   const { from, to, groupBy } = getPeriodSettings(period, customPeriod);
 
-  // The metrics input takes project ids; resolve the names from the URL.
-  // Deduplicated with the ProjectFilter query by Apollo cache.
-  const { data: projectsData } = useSuspenseQuery(ProjectsQuery, {
-    variables: { slug: accountSlug },
-  });
-  const accountProjects = projectsData.account?.projects.edges ?? [];
-  const projectIds = projectNames.flatMap((name) => {
-    const project = accountProjects.find((project) => project.name === name);
-    return project ? [project.id] : [];
-  });
-
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: {
       slug: accountSlug,
       from: from.toISOString(),
       to: to.toISOString(),
       groupBy,
-      projectIds: projectIds.length > 0 ? projectIds : null,
+      projectNames: projectNames.length > 0 ? projectNames : null,
     },
   });
 
