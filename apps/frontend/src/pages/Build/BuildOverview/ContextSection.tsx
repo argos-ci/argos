@@ -144,12 +144,25 @@ export function ContextSection(props: {
   const viewports = analysis?.buildViewports ?? [];
   const colorSchemes = analysis?.buildColorSchemes ?? [];
   const automationLibraries = analysis?.buildAutomationLibraries ?? [];
-  const frameworks =
+  const detectedFrameworks =
     automationLibraries.length > 0
       ? automationLibraries
       : build.storybook
         ? ["storybook"]
         : [];
+  // Collapse package names that resolve to the same tool (e.g. `vitest` and
+  // `@vitest/browser-playwright` both → "Vitest", or `playwright` and
+  // `@playwright/test`), keeping the first name for each label so its icon and
+  // label stay in sync.
+  const seenFrameworkLabels = new Set<string>();
+  const frameworks = detectedFrameworks.filter((name) => {
+    const label = getAutomationLibraryLabel(name);
+    if (seenFrameworkLabels.has(label)) {
+      return false;
+    }
+    seenFrameworkLabels.add(label);
+    return true;
+  });
   const baseBuildUrl =
     params && baseBuild
       ? getBuildURL({ ...params, buildNumber: baseBuild.number, diffId: null })

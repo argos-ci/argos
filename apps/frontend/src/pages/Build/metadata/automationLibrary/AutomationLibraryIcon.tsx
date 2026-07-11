@@ -6,6 +6,7 @@ import cypressIcon from "./logos/cypress.svg";
 import playwrightIcon from "./logos/playwright.svg";
 import puppeteerIcon from "./logos/puppeteer.svg";
 import storybookIcon from "./logos/storybook.svg";
+import vitestIcon from "./logos/vitest.svg";
 
 type AutomationLibrary = {
   label: string;
@@ -27,6 +28,8 @@ const automationLibraries: Record<string, AutomationLibrary> = {
   storybook: { label: "Storybook", icon: storybookIcon },
   "@storybook/test-runner": { label: "Storybook", icon: storybookIcon },
   "@storybook/addon-vitest": { label: "Storybook", icon: storybookIcon },
+  vitest: { label: "Vitest", icon: vitestIcon },
+  "@vitest/browser-playwright": { label: "Vitest", icon: vitestIcon },
   webdriverio: { label: "WebdriverIO" },
   selenium: { label: "Selenium" },
 };
@@ -34,11 +37,6 @@ const automationLibraries: Record<string, AutomationLibrary> = {
 /** Returns the display label for an automation library package name. */
 export function getAutomationLibraryLabel(name: string): string {
   return automationLibraries[name.toLowerCase()]?.label ?? capitalize(name);
-}
-
-/** Returns the logo for an automation library package name, if any. */
-export function getAutomationLibraryIcon(name: string): string | undefined {
-  return automationLibraries[name.toLowerCase()]?.icon;
 }
 
 export function AutomationLibraryIcon(
