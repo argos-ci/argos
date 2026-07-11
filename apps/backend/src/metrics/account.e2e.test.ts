@@ -83,22 +83,52 @@ describe("getAccountBuildMetrics", () => {
       id: "1000000",
       githubRepositoryId: null,
     });
-    await factory.Build.createMany(4, [
+    const [, approvedBuild, rejectedBuild, dismissedBuild] =
+      await factory.Build.createMany(4, [
+        {
+          createdAt: new Date("2021-01-01").toISOString(),
+          projectId: project.id,
+          conclusion: "no-changes",
+        },
+        {
+          createdAt: new Date("2021-01-01").toISOString(),
+          projectId: project.id,
+          conclusion: "changes-detected",
+        },
+        {
+          createdAt: new Date("2021-01-02").toISOString(),
+          projectId: project.id,
+          conclusion: "changes-detected",
+        },
+        {
+          createdAt: new Date("2021-01-03").toISOString(),
+          projectId: project.id,
+          conclusion: "changes-detected",
+        },
+      ]);
+    const user = await factory.User.create();
+    await factory.BuildReview.createMany(4, [
+      // Approved build.
+      { buildId: approvedBuild!.id, state: "approved" },
+      // Approved then rejected by the same user, only the latest counts.
       {
-        createdAt: new Date("2021-01-01").toISOString(),
-        projectId: project.id,
+        buildId: rejectedBuild!.id,
+        userId: user.id,
+        state: "approved",
+        createdAt: new Date("2021-01-02T10:00:00Z").toISOString(),
       },
       {
-        createdAt: new Date("2021-01-01").toISOString(),
-        projectId: project.id,
+        buildId: rejectedBuild!.id,
+        userId: user.id,
+        state: "rejected",
+        createdAt: new Date("2021-01-02T11:00:00Z").toISOString(),
       },
+      // Dismissed reviews are ignored.
       {
-        createdAt: new Date("2021-01-02").toISOString(),
-        projectId: project.id,
-      },
-      {
-        createdAt: new Date("2021-01-03").toISOString(),
-        projectId: project.id,
+        buildId: dismissedBuild!.id,
+        state: "approved",
+        dismissedAt: new Date("2021-01-03T10:00:00Z").toISOString(),
+        dismissedById: user.id,
       },
     ]);
   });

@@ -79,11 +79,19 @@ const AccountQuery = graphql(`
           all {
             total
             projects
+            changesDetected
+            noChanges
+            accepted
+            rejected
           }
           series {
             ts
             total
             projects
+            changesDetected
+            noChanges
+            accepted
+            rejected
           }
           projects {
             id
@@ -225,6 +233,12 @@ function Charts(props: {
   });
 
   const metrics = data.account?.metrics;
+  const concludedBuilds = metrics
+    ? metrics.builds.all.changesDetected + metrics.builds.all.noChanges
+    : 0;
+  const reviewedBuilds = metrics
+    ? metrics.builds.all.accepted + metrics.builds.all.rejected
+    : 0;
 
   const screenshotByBuildSeries: Metric | null = useMemo(() => {
     if (!metrics) {
@@ -303,6 +317,15 @@ function Charts(props: {
                     to,
                     groupBy,
                   }),
+                  extraColumns: [
+                    {
+                      label: "Changes detected",
+                      get: (serie) => serie.changesDetected,
+                    },
+                    { label: "No changes", get: (serie) => serie.noChanges },
+                    { label: "Approved", get: (serie) => serie.accepted },
+                    { label: "Rejected", get: (serie) => serie.rejected },
+                  ],
                 });
               }}
             >
@@ -316,7 +339,8 @@ function Charts(props: {
               <EmptyStateBuilds />
             ) : (
               <EvolutionChart
-                metric={metrics.builds}
+                series={metrics.builds.series}
+                keys={getProjectChartKeys(metrics.builds.projects)}
                 from={from}
                 to={to}
                 groupBy={groupBy}
@@ -337,7 +361,7 @@ function Charts(props: {
               onPress={() => {
                 invariant(metrics);
                 exportToCSV({
-                  metric: metrics.builds,
+                  metric: metrics.screenshots,
                   name: getCSVName({
                     account: accountSlug,
                     unit: "screenshots",
@@ -358,10 +382,75 @@ function Charts(props: {
               <EmptyStateScreenshots />
             ) : (
               <EvolutionChart
-                metric={metrics.screenshots}
+                series={metrics.screenshots.series}
+                keys={getProjectChartKeys(metrics.screenshots.projects)}
                 from={from}
                 to={to}
                 groupBy={groupBy}
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
+      <Card className="col-span-12 flex flex-col lg:col-span-6">
+        <ChartCardHeader>
+          <ChartCardDescription>Changes detected</ChartCardDescription>
+          <div className="flex items-baseline gap-2">
+            <Count
+              count={metrics ? metrics.builds.all.changesDetected : null}
+            />
+            {metrics && concludedBuilds > 0 ? (
+              <span className="text-low text-sm font-medium">
+                {formatPercent(
+                  metrics.builds.all.changesDetected / concludedBuilds,
+                )}{" "}
+                of completed builds
+              </span>
+            ) : null}
+          </div>
+        </ChartCardHeader>
+        <ChartCardBody>
+          {metrics ? (
+            concludedBuilds === 0 ? (
+              <EmptyStateBuilds />
+            ) : (
+              <EvolutionChart
+                series={metrics.builds.series}
+                keys={BuildOutcomeChartKeys}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+                legend
+              />
+            )
+          ) : null}
+        </ChartCardBody>
+      </Card>
+      <Card className="col-span-12 flex flex-col lg:col-span-6">
+        <ChartCardHeader>
+          <ChartCardDescription>Reviewed builds</ChartCardDescription>
+          <div className="flex items-baseline gap-2">
+            <Count count={metrics ? reviewedBuilds : null} />
+            {metrics && reviewedBuilds > 0 ? (
+              <span className="text-low text-sm font-medium">
+                {formatPercent(metrics.builds.all.accepted / reviewedBuilds)}{" "}
+                approved
+              </span>
+            ) : null}
+          </div>
+        </ChartCardHeader>
+        <ChartCardBody>
+          {metrics ? (
+            reviewedBuilds === 0 ? (
+              <EmptyStateReviews />
+            ) : (
+              <EvolutionChart
+                series={metrics.builds.series}
+                keys={BuildReviewChartKeys}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+                legend
               />
             )
           ) : null}
@@ -439,7 +528,8 @@ function Charts(props: {
               <EmptyStateScreenshots />
             ) : (
               <EvolutionChart
-                metric={screenshotByBuildSeries}
+                series={screenshotByBuildSeries.series}
+                keys={getProjectChartKeys(screenshotByBuildSeries.projects)}
                 from={from}
                 to={to}
                 groupBy={groupBy}
@@ -465,11 +555,20 @@ function getCSVName(props: {
   return `${account}-${unit}-${fromStr}-${toStr}-${groupBy}.csv`;
 }
 
-function exportToCSV(props: { metric: Metric; name: string }) {
-  const { metric } = props;
+function exportToCSV<TSerie extends Metric["series"][number]>(props: {
+  metric: Omit<Metric, "series"> & { series: TSerie[] };
+  name: string;
+  extraColumns?: { label: string; get: (serie: TSerie) => number }[];
+}) {
+  const { metric, extraColumns = [] } = props;
 
   const rows: (string | number)[][] = [
-    ["Date", "Total", ...metric.projects.map((p) => p.name)],
+    [
+      "Date",
+      "Total",
+      ...metric.projects.map((p) => p.name),
+      ...extraColumns.map((column) => column.label),
+    ],
   ];
 
   metric.series.forEach((serie) => {
@@ -477,6 +576,7 @@ function exportToCSV(props: { metric: Metric; name: string }) {
       new Date(serie.ts).toISOString(),
       serie.total,
       ...metric.projects.map((p) => serie.projects[p.id] ?? 0),
+      ...extraColumns.map((column) => column.get(serie)),
     ];
     rows.push(row);
   });
@@ -516,6 +616,37 @@ function EmptyStateBuilds() {
     />
   );
 }
+
+function EmptyStateReviews() {
+  return (
+    <EmptyState
+      title="No reviews"
+      description="No builds have been reviewed for this period."
+    />
+  );
+}
+
+function formatPercent(ratio: number) {
+  return ratio.toLocaleString(navigator.language, {
+    style: "percent",
+    maximumFractionDigits: 0,
+  });
+}
+
+// Colors match the build status colors (warning / success / danger).
+const BuildOutcomeChartKeys: EvolutionChartKey[] = [
+  {
+    id: "changesDetected",
+    label: "Changes detected",
+    color: "var(--orange-9)",
+  },
+  { id: "noChanges", label: "No changes", color: "var(--grass-9)" },
+];
+
+const BuildReviewChartKeys: EvolutionChartKey[] = [
+  { id: "rejected", label: "Rejected", color: "var(--tomato-9)" },
+  { id: "accepted", label: "Approved", color: "var(--grass-9)" },
+];
 
 type Metric = {
   all: {
@@ -623,16 +754,34 @@ function ProjectPieChart(props: { metric: Metric }) {
   );
 }
 
+type EvolutionChartKey = {
+  id: string;
+  label: string;
+  color: string;
+};
+
+function getProjectChartKeys(
+  projects: { id: string; name: string }[],
+): EvolutionChartKey[] {
+  return projects.map((project, index) => ({
+    id: `projects.${project.id}`,
+    label: project.name,
+    color: getChartColorFromIndex(index),
+  }));
+}
+
 function EvolutionChart(props: {
-  metric: Metric;
+  series: { ts: number }[];
+  keys: EvolutionChartKey[];
   from: Date;
   to: Date;
   groupBy: TimeSeriesGroupBy;
+  legend?: boolean;
 }) {
-  const { metric, from, to, groupBy } = props;
-  const chartConfig = metric.projects.reduce<ChartConfig>((config, project) => {
-    config[`projects.${project.id}`] = {
-      label: project.name,
+  const { series, keys, from, to, groupBy } = props;
+  const chartConfig = keys.reduce<ChartConfig>((config, key) => {
+    config[key.id] = {
+      label: key.label,
     };
     return config;
   }, {});
@@ -651,7 +800,7 @@ function EvolutionChart(props: {
       <AreaChart
         margin={{ left: -12, right: 12 }}
         accessibilityLayer
-        data={metric.series}
+        data={series}
         syncId="evolution"
       >
         <CartesianGrid vertical={false} strokeDasharray="5 5" />
@@ -722,16 +871,16 @@ function EvolutionChart(props: {
             />
           }
         />
-        {metric.projects.map((project, index) => {
-          const color = getChartColorFromIndex(index);
+        {props.legend ? <ChartLegend content={<ChartLegendContent />} /> : null}
+        {keys.map((key) => {
           return (
             <Area
-              key={project.id}
-              dataKey={`projects.${project.id}`}
+              key={key.id}
+              dataKey={key.id}
               type="monotone"
-              fill={color}
+              fill={key.color}
               fillOpacity={0.4}
-              stroke={color}
+              stroke={key.color}
               stackId="group"
             />
           );

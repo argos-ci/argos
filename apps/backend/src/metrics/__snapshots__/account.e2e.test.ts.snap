@@ -3,443 +3,695 @@
 exports[`getAccountBuildMetrics > with groupBy day > with projectIds > returns the count of builds 1`] = `
 [
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606780800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606867200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606953600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607040000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607126400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607212800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607299200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607385600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607472000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607558400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607644800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607731200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607817600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607904000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607990400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608076800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608163200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608249600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608336000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608422400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608508800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608595200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608681600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608768000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608854400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608940800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609027200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609113600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609200000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609286400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609372800000,
   },
   {
+    "accepted": 1,
+    "changesDetected": 1,
+    "noChanges": 1,
     "projects": {
       "1000000": 2,
     },
+    "rejected": 0,
     "total": 2,
     "ts": 1609459200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 1,
+    "noChanges": 0,
     "projects": {
       "1000000": 1,
     },
+    "rejected": 1,
     "total": 1,
     "ts": 1609545600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 1,
+    "noChanges": 0,
     "projects": {
       "1000000": 1,
     },
+    "rejected": 0,
     "total": 1,
     "ts": 1609632000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609718400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609804800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609891200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609977600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610064000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610150400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610236800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610323200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610409600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610496000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610582400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610668800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610755200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610841600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610928000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611014400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611100800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611187200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611273600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611360000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611446400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611532800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611619200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611705600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611792000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611878400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611964800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612051200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -448,9 +700,13 @@ exports[`getAccountBuildMetrics > with groupBy day > with projectIds > returns t
 
 exports[`getAccountBuildMetrics > with groupBy day > with projectIds > returns the count of builds 2`] = `
 {
+  "accepted": 1,
+  "changesDetected": 3,
+  "noChanges": 1,
   "projects": {
     "1000000": 4,
   },
+  "rejected": 1,
   "total": 4,
 }
 `;
@@ -458,443 +714,695 @@ exports[`getAccountBuildMetrics > with groupBy day > with projectIds > returns t
 exports[`getAccountBuildMetrics > with groupBy day > without projectIds > returns the count of builds 1`] = `
 [
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606780800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606867200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606953600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607040000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607126400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607212800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607299200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607385600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607472000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607558400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607644800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607731200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607817600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607904000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607990400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608076800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608163200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608249600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608336000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608422400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608508800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608595200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608681600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608768000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608854400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608940800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609027200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609113600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609200000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609286400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609372800000,
   },
   {
+    "accepted": 1,
+    "changesDetected": 1,
+    "noChanges": 1,
     "projects": {
       "1000000": 2,
     },
+    "rejected": 0,
     "total": 2,
     "ts": 1609459200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 1,
+    "noChanges": 0,
     "projects": {
       "1000000": 1,
     },
+    "rejected": 1,
     "total": 1,
     "ts": 1609545600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 1,
+    "noChanges": 0,
     "projects": {
       "1000000": 1,
     },
+    "rejected": 0,
     "total": 1,
     "ts": 1609632000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609718400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609804800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609891200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609977600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610064000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610150400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610236800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610323200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610409600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610496000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610582400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610668800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610755200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610841600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610928000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611014400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611100800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611187200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611273600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611360000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611446400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611532800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611619200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611705600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611792000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611878400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611964800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612051200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -903,9 +1411,13 @@ exports[`getAccountBuildMetrics > with groupBy day > without projectIds > return
 
 exports[`getAccountBuildMetrics > with groupBy day > without projectIds > returns the count of builds 2`] = `
 {
+  "accepted": 1,
+  "changesDetected": 3,
+  "noChanges": 1,
   "projects": {
     "1000000": 4,
   },
+  "rejected": 1,
   "total": 4,
 }
 `;
@@ -913,23 +1425,35 @@ exports[`getAccountBuildMetrics > with groupBy day > without projectIds > return
 exports[`getAccountBuildMetrics > with groupBy month > with projectIds > returns the count of builds 1`] = `
 [
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606780800000,
   },
   {
+    "accepted": 1,
+    "changesDetected": 3,
+    "noChanges": 1,
     "projects": {
       "1000000": 4,
     },
+    "rejected": 1,
     "total": 4,
     "ts": 1609459200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -938,9 +1462,13 @@ exports[`getAccountBuildMetrics > with groupBy month > with projectIds > returns
 
 exports[`getAccountBuildMetrics > with groupBy month > with projectIds > returns the count of builds 2`] = `
 {
+  "accepted": 1,
+  "changesDetected": 3,
+  "noChanges": 1,
   "projects": {
     "1000000": 4,
   },
+  "rejected": 1,
   "total": 4,
 }
 `;
@@ -948,23 +1476,35 @@ exports[`getAccountBuildMetrics > with groupBy month > with projectIds > returns
 exports[`getAccountBuildMetrics > with groupBy month > without projectIds > returns the count of builds 1`] = `
 [
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606780800000,
   },
   {
+    "accepted": 1,
+    "changesDetected": 3,
+    "noChanges": 1,
     "projects": {
       "1000000": 4,
     },
+    "rejected": 1,
     "total": 4,
     "ts": 1609459200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -973,9 +1513,13 @@ exports[`getAccountBuildMetrics > with groupBy month > without projectIds > retu
 
 exports[`getAccountBuildMetrics > with groupBy month > without projectIds > returns the count of builds 2`] = `
 {
+  "accepted": 1,
+  "changesDetected": 3,
+  "noChanges": 1,
   "projects": {
     "1000000": 4,
   },
+  "rejected": 1,
   "total": 4,
 }
 `;
@@ -983,72 +1527,112 @@ exports[`getAccountBuildMetrics > with groupBy month > without projectIds > retu
 exports[`getAccountBuildMetrics > with groupBy week > with projectIds > returns the count of builds 1`] = `
 [
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606694400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607299200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607904000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608508800000,
   },
   {
+    "accepted": 1,
+    "changesDetected": 3,
+    "noChanges": 1,
     "projects": {
       "1000000": 4,
     },
+    "rejected": 1,
     "total": 4,
     "ts": 1609113600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609718400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610323200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610928000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611532800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -1057,9 +1641,13 @@ exports[`getAccountBuildMetrics > with groupBy week > with projectIds > returns 
 
 exports[`getAccountBuildMetrics > with groupBy week > with projectIds > returns the count of builds 2`] = `
 {
+  "accepted": 1,
+  "changesDetected": 3,
+  "noChanges": 1,
   "projects": {
     "1000000": 4,
   },
+  "rejected": 1,
   "total": 4,
 }
 `;
@@ -1067,72 +1655,112 @@ exports[`getAccountBuildMetrics > with groupBy week > with projectIds > returns 
 exports[`getAccountBuildMetrics > with groupBy week > without projectIds > returns the count of builds 1`] = `
 [
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1606694400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607299200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1607904000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1608508800000,
   },
   {
+    "accepted": 1,
+    "changesDetected": 3,
+    "noChanges": 1,
     "projects": {
       "1000000": 4,
     },
+    "rejected": 1,
     "total": 4,
     "ts": 1609113600000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1609718400000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610323200000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1610928000000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1611532800000,
   },
   {
+    "accepted": 0,
+    "changesDetected": 0,
+    "noChanges": 0,
     "projects": {
       "1000000": 0,
     },
+    "rejected": 0,
     "total": 0,
     "ts": 1612137600000,
   },
@@ -1141,9 +1769,13 @@ exports[`getAccountBuildMetrics > with groupBy week > without projectIds > retur
 
 exports[`getAccountBuildMetrics > with groupBy week > without projectIds > returns the count of builds 2`] = `
 {
+  "accepted": 1,
+  "changesDetected": 3,
+  "noChanges": 1,
   "projects": {
     "1000000": 4,
   },
+  "rejected": 1,
   "total": 4,
 }
 `;

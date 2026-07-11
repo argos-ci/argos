@@ -93,6 +93,33 @@ export const typeDefs = gql`
     projects: JSONObject!
   }
 
+  type AccountBuildsMetricDataPoint {
+    ts: Timestamp!
+    total: Int!
+    projects: JSONObject!
+    "Builds concluded with changes detected"
+    changesDetected: Int!
+    "Builds concluded with no changes"
+    noChanges: Int!
+    "Builds with changes detected, accepted by a reviewer"
+    accepted: Int!
+    "Builds with changes detected, rejected by a reviewer"
+    rejected: Int!
+  }
+
+  type AccountBuildsMetricData {
+    total: Int!
+    projects: JSONObject!
+    "Builds concluded with changes detected"
+    changesDetected: Int!
+    "Builds concluded with no changes"
+    noChanges: Int!
+    "Builds with changes detected, accepted by a reviewer"
+    accepted: Int!
+    "Builds with changes detected, rejected by a reviewer"
+    rejected: Int!
+  }
+
   type AccountScreenshotMetrics {
     series: [AccountMetricDataPoint!]!
     all: AccountMetricData!
@@ -100,8 +127,8 @@ export const typeDefs = gql`
   }
 
   type AccountBuildsMetrics {
-    series: [AccountMetricDataPoint!]!
-    all: AccountMetricData!
+    series: [AccountBuildsMetricDataPoint!]!
+    all: AccountBuildsMetricData!
     projects: [Project!]!
   }
 
