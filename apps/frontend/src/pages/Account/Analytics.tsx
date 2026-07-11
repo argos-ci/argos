@@ -848,6 +848,7 @@ function Sparkline(props: {
             </linearGradient>
           </defs>
           <ChartTooltip
+            isAnimationActive={false}
             cursor={{ strokeDasharray: "3 3" }}
             position={{ y: -56 }}
             allowEscapeViewBox={{ y: true }}
@@ -866,7 +867,7 @@ function Sparkline(props: {
             dataKey="total"
             type="monotone"
             stroke={props.color}
-            strokeWidth={1.5}
+            strokeWidth={1}
             fill={`url(#${gradientId})`}
             dot={false}
             isAnimationActive={false}
@@ -1157,6 +1158,7 @@ function EvolutionChart(props: {
           }}
         />
         <ChartTooltip
+          isAnimationActive={false}
           content={
             <ChartTooltipContent
               labelFormatter={(_value, payload) => {
