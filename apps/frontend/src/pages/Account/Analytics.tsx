@@ -1,10 +1,16 @@
-import { Suspense, useCallback, useEffect, useMemo } from "react";
+import { Suspense, useCallback, useEffect, useId, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
-import { FileDownIcon } from "lucide-react";
+import {
+  FileDownIcon,
+  GitCompareArrowsIcon,
+  ImagesIcon,
+  LayersIcon,
+  ThumbsUpIcon,
+} from "lucide-react";
 import moment from "moment";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
@@ -20,7 +26,10 @@ import {
 } from "recharts";
 
 import { graphql } from "@/gql";
-import { TimeSeriesGroupBy } from "@/gql/graphql";
+import {
+  TimeSeriesGroupBy,
+  type AccountUsage_AccountQuery,
+} from "@/gql/graphql";
 import { Card } from "@/ui/Card";
 import {
   ChartConfig,
@@ -233,18 +242,43 @@ function Charts(props: {
   });
 
   const metrics = data.account?.metrics;
-  const concludedBuilds = metrics
-    ? metrics.builds.all.changesDetected + metrics.builds.all.noChanges
-    : 0;
-  const reviewedBuilds = metrics
-    ? metrics.builds.all.accepted + metrics.builds.all.rejected
-    : 0;
+  if (!metrics) {
+    return <Navigate to="/" />;
+  }
 
-  const screenshotByBuildSeries: Metric | null = useMemo(() => {
-    if (!metrics) {
-      return null;
-    }
+  return (
+    <AnalyticsDashboard
+      accountSlug={accountSlug}
+      metrics={metrics}
+      from={from}
+      to={to}
+      groupBy={groupBy}
+    />
+  );
+}
 
+type DashboardMetrics = NonNullable<
+  NonNullable<AccountUsage_AccountQuery["account"]>["metrics"]
+>;
+
+/**
+ * The presentational analytics dashboard. Kept free of data fetching so it can
+ * be rendered in isolation (e.g. Storybook) with fixture metrics.
+ */
+export function AnalyticsDashboard(props: {
+  accountSlug: string;
+  metrics: DashboardMetrics;
+  from: Date;
+  to: Date;
+  groupBy: TimeSeriesGroupBy;
+}) {
+  const { accountSlug, metrics, from, to, groupBy } = props;
+  const concludedBuilds =
+    metrics.builds.all.changesDetected + metrics.builds.all.noChanges;
+  const reviewedBuilds =
+    metrics.builds.all.accepted + metrics.builds.all.rejected;
+
+  const screenshotByBuildSeries: Metric = useMemo(() => {
     const series = metrics.screenshots.series.reduce<Metric["series"]>(
       (acc, serie, index) => {
         const screenshots = serie;
@@ -291,22 +325,143 @@ function Charts(props: {
     };
   }, [metrics]);
 
-  if (data && !metrics) {
-    return <Navigate to="/" />;
-  }
+  const groupByLabel = GroupByLabels[groupBy].toLowerCase();
+  const buildsPerPeriod = metrics.builds.series.length
+    ? Math.round(metrics.builds.all.total / metrics.builds.series.length)
+    : 0;
+  const screenshotsPerPeriod = metrics.screenshots.series.length
+    ? Math.round(
+        metrics.screenshots.all.total / metrics.screenshots.series.length,
+      )
+    : 0;
+  const screenshotsPerBuild = metrics.builds.all.total
+    ? Math.round(metrics.screenshots.all.total / metrics.builds.all.total)
+    : 0;
 
   return (
-    <div className="grid grid-cols-12 gap-6 lg:flex-row">
-      <Card className="group col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader className="flex items-start justify-between gap-6">
-          <div>
-            <ChartCardDescription>Builds</ChartCardDescription>
-            <Count count={metrics?.builds.all.total ?? null} />
-          </div>
-          <Tooltip content="Export to CSV">
-            <IconButton
+    <div className="flex flex-col gap-10">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile
+          icon={LayersIcon}
+          color="primary"
+          label="Builds"
+          value={metrics?.builds.all.total ?? null}
+          hint={
+            buildsPerPeriod !== null
+              ? `${buildsPerPeriod.toLocaleString()} avg / ${groupByLabel}`
+              : null
+          }
+          visual={
+            metrics && metrics.builds.all.total > 0 ? (
+              <Sparkline data={metrics.builds.series} color="var(--violet-9)" />
+            ) : null
+          }
+        />
+        <StatTile
+          icon={ImagesIcon}
+          color="storybook"
+          label="Screenshots"
+          value={metrics?.screenshots.all.total ?? null}
+          hint={
+            screenshotsPerPeriod !== null
+              ? `${screenshotsPerPeriod.toLocaleString()} avg / ${groupByLabel}`
+              : null
+          }
+          visual={
+            metrics && metrics.screenshots.all.total > 0 ? (
+              <Sparkline
+                data={metrics.screenshots.series}
+                color="var(--pink-9)"
+              />
+            ) : null
+          }
+        />
+        <StatTile
+          icon={GitCompareArrowsIcon}
+          color="warning"
+          label="Change rate"
+          value={
+            metrics && concludedBuilds > 0
+              ? metrics.builds.all.changesDetected / concludedBuilds
+              : metrics
+                ? null
+                : undefined
+          }
+          format="percent"
+          hint={
+            metrics && concludedBuilds > 0
+              ? `${metrics.builds.all.changesDetected.toLocaleString()} of ${concludedBuilds.toLocaleString()} builds`
+              : "No completed builds yet"
+          }
+          visual={
+            metrics && concludedBuilds > 0 ? (
+              <SplitBar
+                segments={[
+                  {
+                    label: "Changes detected",
+                    value: metrics.builds.all.changesDetected,
+                    color: STATUS_COLORS.changesDetected,
+                  },
+                  {
+                    label: "No changes",
+                    value: metrics.builds.all.noChanges,
+                    color: STATUS_COLORS.noChanges,
+                  },
+                ]}
+              />
+            ) : null
+          }
+        />
+        <StatTile
+          icon={ThumbsUpIcon}
+          color="success"
+          label="Approval rate"
+          value={
+            metrics && reviewedBuilds > 0
+              ? metrics.builds.all.accepted / reviewedBuilds
+              : metrics
+                ? null
+                : undefined
+          }
+          format="percent"
+          hint={
+            metrics && reviewedBuilds > 0
+              ? `${metrics.builds.all.accepted.toLocaleString()} of ${reviewedBuilds.toLocaleString()} reviewed`
+              : "No builds reviewed yet"
+          }
+          visual={
+            metrics && reviewedBuilds > 0 ? (
+              <SplitBar
+                segments={[
+                  {
+                    label: "Approved",
+                    value: metrics.builds.all.accepted,
+                    color: STATUS_COLORS.accepted,
+                  },
+                  {
+                    label: "Rejected",
+                    value: metrics.builds.all.rejected,
+                    color: STATUS_COLORS.rejected,
+                  },
+                ]}
+              />
+            ) : null
+          }
+        />
+      </div>
+
+      <Section
+        title="Activity"
+        description="How much visual testing ran over the period."
+      >
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Builds"
+          description="Builds created, by project."
+          action={
+            <ExportButton
               isDisabled={!metrics}
-              onPress={() => {
+              onExport={() => {
                 invariant(metrics);
                 exportToCSV({
                   metric: metrics.builds,
@@ -328,13 +483,10 @@ function Charts(props: {
                   ],
                 });
               }}
-            >
-              <FileDownIcon />
-            </IconButton>
-          </Tooltip>
-        </ChartCardHeader>
-        <ChartCardBody>
-          {metrics?.builds ? (
+            />
+          }
+        >
+          {metrics ? (
             metrics.builds.all.total === 0 ? (
               <EmptyStateBuilds />
             ) : (
@@ -347,18 +499,15 @@ function Charts(props: {
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <Card className="col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader className="flex items-start justify-between gap-6">
-          <div>
-            <ChartCardDescription>Screenshots</ChartCardDescription>
-            <Count count={metrics?.screenshots.all.total ?? null} />
-          </div>
-          <Tooltip content="Export to CSV">
-            <IconButton
+        </ChartCard>
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Screenshots"
+          description="Screenshots captured, by project."
+          action={
+            <ExportButton
               isDisabled={!metrics}
-              onPress={() => {
+              onExport={() => {
                 invariant(metrics);
                 exportToCSV({
                   metric: metrics.screenshots,
@@ -371,12 +520,9 @@ function Charts(props: {
                   }),
                 });
               }}
-            >
-              <FileDownIcon />
-            </IconButton>
-          </Tooltip>
-        </ChartCardHeader>
-        <ChartCardBody>
+            />
+          }
+        >
           {metrics ? (
             metrics.screenshots.all.total === 0 ? (
               <EmptyStateScreenshots />
@@ -390,26 +536,18 @@ function Charts(props: {
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <Card className="col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader>
-          <ChartCardDescription>Changes detected</ChartCardDescription>
-          <div className="flex items-baseline gap-2">
-            <Count
-              count={metrics ? metrics.builds.all.changesDetected : null}
-            />
-            {metrics && concludedBuilds > 0 ? (
-              <span className="text-low text-sm font-medium">
-                {formatPercent(
-                  metrics.builds.all.changesDetected / concludedBuilds,
-                )}{" "}
-                of completed builds
-              </span>
-            ) : null}
-          </div>
-        </ChartCardHeader>
-        <ChartCardBody>
+        </ChartCard>
+      </Section>
+
+      <Section
+        title="Build outcomes"
+        description="What builds concluded, and how reviewers responded."
+      >
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Changes detected"
+          description="Completed builds, split by conclusion."
+        >
           {metrics ? (
             concludedBuilds === 0 ? (
               <EmptyStateBuilds />
@@ -424,22 +562,12 @@ function Charts(props: {
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <Card className="col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader>
-          <ChartCardDescription>Reviewed builds</ChartCardDescription>
-          <div className="flex items-baseline gap-2">
-            <Count count={metrics ? reviewedBuilds : null} />
-            {metrics && reviewedBuilds > 0 ? (
-              <span className="text-low text-sm font-medium">
-                {formatPercent(metrics.builds.all.accepted / reviewedBuilds)}{" "}
-                approved
-              </span>
-            ) : null}
-          </div>
-        </ChartCardHeader>
-        <ChartCardBody>
+        </ChartCard>
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Reviewed builds"
+          description="Builds with changes, split by review decision."
+        >
           {metrics ? (
             reviewedBuilds === 0 ? (
               <EmptyStateReviews />
@@ -454,13 +582,18 @@ function Charts(props: {
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <Card className="col-span-12 flex flex-col lg:col-span-4">
-        <ChartCardHeader>
-          <ChartCardHeading>Screenshots by Project</ChartCardHeading>
-        </ChartCardHeader>
-        <ChartCardBody>
+        </ChartCard>
+      </Section>
+
+      <Section
+        title="Breakdown"
+        description="Where screenshots come from, and how dense each build is."
+      >
+        <ChartCard
+          className="col-span-12 lg:col-span-5"
+          title="Screenshots by project"
+          description="Share of screenshots across projects."
+        >
           {metrics ? (
             metrics.screenshots.all.total > 0 ? (
               <ProjectPieChart metric={metrics.screenshots} />
@@ -468,61 +601,16 @@ function Charts(props: {
               <EmptyStateScreenshots />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <div className="col-span-12 flex flex-col gap-[inherit] lg:col-span-3">
-        <Card className="p-6">
-          <ChartCardHeading className="mb-4">
-            Usage by {GroupByLabels[groupBy]}
-          </ChartCardHeading>
-          <div className="flex flex-col gap-4">
-            <div>
-              <ChartCardDescription>Builds</ChartCardDescription>
-              <Count
-                count={
-                  metrics
-                    ? Math.round(
-                        metrics.builds.all.total / metrics.builds.series.length,
-                      )
-                    : null
-                }
-              />
-            </div>
-            <div>
-              <ChartCardDescription>Screenshots</ChartCardDescription>
-              <Count
-                count={
-                  metrics
-                    ? Math.round(
-                        metrics.screenshots.all.total /
-                          metrics.screenshots.series.length,
-                      )
-                    : null
-                }
-              />
-            </div>
-          </div>
-        </Card>
-      </div>
-      <Card className="col-span-12 flex flex-col lg:col-span-5">
-        <ChartCardHeader>
-          <ChartCardHeading className="mb-4">
-            Screenshots by Build
-          </ChartCardHeading>
-          <ChartCardDescription>Screenshots</ChartCardDescription>
-          <Count
-            count={
-              metrics
-                ? metrics.screenshots.all.total
-                  ? Math.round(
-                      metrics.screenshots.all.total / metrics.builds.all.total,
-                    )
-                  : 0
-                : null
-            }
-          />
-        </ChartCardHeader>
-        <ChartCardBody>
+        </ChartCard>
+        <ChartCard
+          className="col-span-12 lg:col-span-7"
+          title="Screenshots per build"
+          description={
+            screenshotsPerBuild !== null
+              ? `${screenshotsPerBuild.toLocaleString()} on average across the period.`
+              : "Average screenshots captured per build."
+          }
+        >
           {screenshotByBuildSeries ? (
             screenshotByBuildSeries.all.total === 0 ? (
               <EmptyStateScreenshots />
@@ -536,8 +624,8 @@ function Charts(props: {
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
+        </ChartCard>
+      </Section>
     </div>
   );
 }
@@ -626,26 +714,26 @@ function EmptyStateReviews() {
   );
 }
 
-function formatPercent(ratio: number) {
-  return ratio.toLocaleString(navigator.language, {
-    style: "percent",
-    maximumFractionDigits: 0,
-  });
-}
-
 // Colors match the build status colors (warning / success / danger).
+const STATUS_COLORS = {
+  changesDetected: "var(--orange-9)",
+  noChanges: "var(--grass-9)",
+  accepted: "var(--grass-9)",
+  rejected: "var(--tomato-9)",
+};
+
 const BuildOutcomeChartKeys: EvolutionChartKey[] = [
   {
     id: "changesDetected",
     label: "Changes detected",
-    color: "var(--orange-9)",
+    color: STATUS_COLORS.changesDetected,
   },
-  { id: "noChanges", label: "No changes", color: "var(--grass-9)" },
+  { id: "noChanges", label: "No changes", color: STATUS_COLORS.noChanges },
 ];
 
 const BuildReviewChartKeys: EvolutionChartKey[] = [
-  { id: "rejected", label: "Rejected", color: "var(--tomato-9)" },
-  { id: "accepted", label: "Approved", color: "var(--grass-9)" },
+  { id: "rejected", label: "Rejected", color: STATUS_COLORS.rejected },
+  { id: "accepted", label: "Approved", color: STATUS_COLORS.accepted },
 ];
 
 type Metric = {
@@ -661,49 +749,179 @@ type Metric = {
   }[];
 };
 
-function ChartCardHeader(props: {
-  children: React.ReactNode;
-  className?: string;
+const StatTileChipStyles: Record<StatTileColor, string> = {
+  primary: "bg-primary-ui text-primary-low",
+  storybook: "bg-storybook-ui text-storybook-low",
+  warning: "bg-warning-ui text-warning-low",
+  success: "bg-success-ui text-success-low",
+};
+
+type StatTileColor = "primary" | "storybook" | "warning" | "success";
+
+/**
+ * A single KPI in the summary band: an icon, a headline value, a supporting
+ * line, and an optional inline visual (sparkline or split bar).
+ *
+ * `value` is `undefined` while loading (skeleton), `null` when there is no
+ * meaningful figure to show (rendered as an em dash), otherwise the number.
+ */
+function StatTile(props: {
+  icon: React.ComponentType<{ className?: string }>;
+  color: StatTileColor;
+  label: string;
+  value: number | null | undefined;
+  format?: "number" | "percent";
+  hint?: React.ReactNode;
+  visual?: React.ReactNode;
 }) {
-  return <div className={clsx("p-6", props.className)}>{props.children}</div>;
+  const { icon: Icon, value, format = "number" } = props;
+  const isLoading = value === undefined;
+  return (
+    <Card className="flex flex-col gap-4 p-5">
+      <div className="flex items-center gap-2.5">
+        <div
+          className={clsx(
+            "flex size-7 shrink-0 items-center justify-center rounded-md",
+            StatTileChipStyles[props.color],
+          )}
+        >
+          <Icon className="size-4" />
+        </div>
+        <span className="text-low text-sm font-medium">{props.label}</span>
+      </div>
+      <div>
+        <div className="relative text-3xl font-black tabular-nums">
+          {value === undefined ? (
+            <div className="bg-subtle h-[1em] w-24 rounded-sm" />
+          ) : value === null ? (
+            <span className="text-low">—</span>
+          ) : format === "percent" ? (
+            <NumberFlow
+              value={value}
+              format={{ style: "percent", maximumFractionDigits: 0 }}
+            />
+          ) : (
+            <NumberFlow value={value} />
+          )}
+        </div>
+        {props.hint ? (
+          <p className="text-low mt-1 h-4 text-sm">
+            {isLoading ? null : props.hint}
+          </p>
+        ) : null}
+      </div>
+      {props.visual ? <div className="mt-auto">{props.visual}</div> : null}
+    </Card>
+  );
 }
 
-function Count(props: { count: number | null }) {
-  const isLoading = props.count === null;
+function Sparkline(props: {
+  data: { ts: number; total: number }[];
+  color: string;
+}) {
+  const gradientId = useId();
   return (
-    <div className="relative text-4xl font-black">
-      <NumberFlow
-        value={props.count ?? 0}
-        className={isLoading ? "invisible" : undefined}
-      />
+    <div className="h-9 w-full">
+      <ChartContainer config={{}} className="size-full">
+        <AreaChart
+          data={props.data}
+          margin={{ top: 2, bottom: 0, left: 0, right: 0 }}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={props.color} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={props.color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            dataKey="total"
+            type="monotone"
+            stroke={props.color}
+            strokeWidth={1.5}
+            fill={`url(#${gradientId})`}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ChartContainer>
+    </div>
+  );
+}
 
-      {isLoading && (
-        <div className="bg-subtle absolute top-2 left-0 h-[1em] w-32 rounded-sm" />
+function SplitBar(props: {
+  segments: { label: string; value: number; color: string }[];
+}) {
+  const total = props.segments.reduce((sum, segment) => sum + segment.value, 0);
+  return (
+    <div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
+      {props.segments.map((segment) =>
+        segment.value > 0 ? (
+          <div
+            key={segment.label}
+            className="h-full first:rounded-l-full last:rounded-r-full"
+            style={{
+              width: `${(segment.value / total) * 100}%`,
+              backgroundColor: segment.color,
+            }}
+            aria-label={`${segment.label}: ${segment.value}`}
+          />
+        ) : null,
       )}
     </div>
   );
 }
 
-function ChartCardHeading(props: {
+/**
+ * A titled group of chart cards laid out on a 12-column grid.
+ */
+function Section(props: {
+  title: string;
+  description: string;
   children: React.ReactNode;
-  className?: string;
 }) {
   return (
-    <h2 className={clsx("text-2xl font-bold", props.className)}>
-      {props.children}
-    </h2>
+    <section className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-base font-semibold">{props.title}</h2>
+        <p className="text-low text-sm">{props.description}</p>
+      </div>
+      <div className="grid grid-cols-12 gap-6">{props.children}</div>
+    </section>
   );
 }
 
-function ChartCardDescription(props: { children: React.ReactNode }) {
-  return <p className="text-low text-sm font-medium">{props.children}</p>;
+function ChartCard(props: {
+  className?: string;
+  title: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className={clsx("flex flex-col", props.className)}>
+      <div className="flex items-start justify-between gap-4 p-5 pb-0">
+        <div>
+          <h3 className="font-semibold">{props.title}</h3>
+          {props.description ? (
+            <p className="text-low text-sm">{props.description}</p>
+          ) : null}
+        </div>
+        {props.action ? <div className="shrink-0">{props.action}</div> : null}
+      </div>
+      <div className="flex min-h-72 flex-1 items-center justify-center p-5">
+        {props.children}
+      </div>
+    </Card>
+  );
 }
 
-function ChartCardBody(props: { children: React.ReactNode }) {
+function ExportButton(props: { isDisabled: boolean; onExport: () => void }) {
   return (
-    <div className="flex min-h-80 flex-1 items-center justify-center p-6 pt-0">
-      {props.children}
-    </div>
+    <Tooltip content="Export to CSV">
+      <IconButton isDisabled={props.isDisabled} onPress={props.onExport}>
+        <FileDownIcon />
+      </IconButton>
+    </Tooltip>
   );
 }
 
@@ -741,16 +959,34 @@ function ProjectPieChart(props: { metric: Metric }) {
     return acc;
   }, []);
   return (
-    <ChartContainer config={chartConfig} className="size-full">
-      <PieChart>
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel />}
-        />
-        <Pie data={data} dataKey="screenshots" nameKey="project" />
-        <ChartLegend content={<ChartLegendContent />} />
-      </PieChart>
-    </ChartContainer>
+    <div className="relative size-full">
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-[calc(50%+1.25rem)] flex-col items-center">
+        <span className="text-2xl font-black tabular-nums">
+          {props.metric.all.total.toLocaleString(navigator.language, {
+            notation: "compact",
+          })}
+        </span>
+        <span className="text-low text-xs">screenshots</span>
+      </div>
+      <ChartContainer config={chartConfig} className="size-full">
+        <PieChart>
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent hideLabel />}
+          />
+          <Pie
+            data={data}
+            dataKey="screenshots"
+            nameKey="project"
+            innerRadius="55%"
+            outerRadius="80%"
+            paddingAngle={2}
+            strokeWidth={2}
+          />
+          <ChartLegend content={<ChartLegendContent nameKey="project" />} />
+        </PieChart>
+      </ChartContainer>
+    </div>
   );
 }
 
@@ -882,6 +1118,7 @@ function EvolutionChart(props: {
               fillOpacity={0.4}
               stroke={key.color}
               stackId="group"
+              isAnimationActive={false}
             />
           );
         })}
