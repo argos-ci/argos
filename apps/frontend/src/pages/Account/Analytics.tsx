@@ -1,18 +1,34 @@
-import { Suspense, useCallback, useEffect, useMemo } from "react";
+import { Suspense, useCallback, useEffect, useId, useMemo } from "react";
 import { useSuspenseQuery } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import NumberFlow from "@number-flow/react";
 import clsx from "clsx";
-import { FileDownIcon } from "lucide-react";
+import {
+  FileDownIcon,
+  GitCompareArrowsIcon,
+  ImagesIcon,
+  LayersIcon,
+  SearchIcon,
+  ThumbsUpIcon,
+} from "lucide-react";
 import moment from "moment";
-import { Heading, Text } from "react-aria-components";
+import { useFilter } from "react-aria";
+import {
+  Autocomplete,
+  Heading,
+  Input,
+  MenuTrigger,
+  SearchField,
+  Text,
+} from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { Navigate, useSearchParams } from "react-router-dom";
 import {
   Area,
   AreaChart,
   CartesianGrid,
+  Label,
   Pie,
   PieChart,
   XAxis,
@@ -20,7 +36,11 @@ import {
 } from "recharts";
 
 import { graphql } from "@/gql";
-import { TimeSeriesGroupBy } from "@/gql/graphql";
+import {
+  TimeSeriesGroupBy,
+  type AccountUsage_AccountQuery,
+} from "@/gql/graphql";
+import { Badge } from "@/ui/Badge";
 import { Card } from "@/ui/Card";
 import {
   ChartConfig,
@@ -42,6 +62,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { ListBox, ListBoxItem, ListBoxItemLabel } from "@/ui/ListBox";
+import { Menu, MenuItem } from "@/ui/Menu";
 import { PageLoader } from "@/ui/PageLoader";
 import { Popover } from "@/ui/Popover";
 import { Select, SelectButton } from "@/ui/Select";
@@ -55,11 +76,19 @@ const AccountQuery = graphql(`
     $from: DateTime!
     $to: DateTime!
     $groupBy: TimeSeriesGroupBy!
+    $projectIds: [ID!]
   ) {
     account(slug: $slug) {
       id
       permissions
-      metrics(input: { from: $from, to: $to, groupBy: $groupBy }) {
+      metrics(
+        input: {
+          from: $from
+          to: $to
+          groupBy: $groupBy
+          projectIds: $projectIds
+        }
+      ) {
         screenshots {
           all {
             total
@@ -79,11 +108,19 @@ const AccountQuery = graphql(`
           all {
             total
             projects
+            changesDetected
+            noChanges
+            accepted
+            rejected
           }
           series {
             ts
             total
             projects
+            changesDetected
+            noChanges
+            accepted
+            rejected
           }
           projects {
             id
@@ -141,6 +178,22 @@ export function Component() {
     [setSearchParams],
   );
 
+  const projectNames = parseProjectNames(searchParams);
+  const setProjectNames = useCallback(
+    (names: string[]) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (names.length === 0) {
+          next.delete("projects");
+        } else {
+          next.set("projects", names.join(","));
+        }
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+
   useEffect(() => {
     setPeriod(period);
   }, [setPeriod, period]);
@@ -161,6 +214,13 @@ export function Component() {
           </PageHeaderContent>
           <PageHeaderActions>
             <div className="flex items-center gap-2">
+              <Suspense fallback={null}>
+                <ProjectFilter
+                  accountSlug={accountSlug}
+                  value={projectNames}
+                  onChange={setProjectNames}
+                />
+              </Suspense>
               <PeriodSelect value={period} onChange={setPeriod} />
               {period === "custom" && customPeriod ? (
                 <DateRangePicker
@@ -200,6 +260,7 @@ export function Component() {
             accountSlug={accountSlug}
             period={period}
             customPeriod={customPeriod}
+            projectNames={projectNames}
           />
         </Suspense>
       </PageContainer>
@@ -211,9 +272,21 @@ function Charts(props: {
   accountSlug: string;
   period: Period;
   customPeriod: { from: Date; to: Date } | null;
+  projectNames: string[];
 }) {
-  const { accountSlug, period, customPeriod } = props;
+  const { accountSlug, period, customPeriod, projectNames } = props;
   const { from, to, groupBy } = getPeriodSettings(period, customPeriod);
+
+  // The metrics input takes project ids; resolve the names from the URL.
+  // Deduplicated with the ProjectFilter query by Apollo cache.
+  const { data: projectsData } = useSuspenseQuery(ProjectsQuery, {
+    variables: { slug: accountSlug },
+  });
+  const accountProjects = projectsData.account?.projects.edges ?? [];
+  const projectIds = projectNames.flatMap((name) => {
+    const project = accountProjects.find((project) => project.name === name);
+    return project ? [project.id] : [];
+  });
 
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: {
@@ -221,16 +294,48 @@ function Charts(props: {
       from: from.toISOString(),
       to: to.toISOString(),
       groupBy,
+      projectIds: projectIds.length > 0 ? projectIds : null,
     },
   });
 
   const metrics = data.account?.metrics;
+  if (!metrics) {
+    return <Navigate to="/" />;
+  }
 
-  const screenshotByBuildSeries: Metric | null = useMemo(() => {
-    if (!metrics) {
-      return null;
-    }
+  return (
+    <AnalyticsDashboard
+      accountSlug={accountSlug}
+      metrics={metrics}
+      from={from}
+      to={to}
+      groupBy={groupBy}
+    />
+  );
+}
 
+type DashboardMetrics = NonNullable<
+  NonNullable<AccountUsage_AccountQuery["account"]>["metrics"]
+>;
+
+/**
+ * The presentational analytics dashboard. Kept free of data fetching so it can
+ * be rendered in isolation (e.g. Storybook) with fixture metrics.
+ */
+export function AnalyticsDashboard(props: {
+  accountSlug: string;
+  metrics: DashboardMetrics;
+  from: Date;
+  to: Date;
+  groupBy: TimeSeriesGroupBy;
+}) {
+  const { accountSlug, metrics, from, to, groupBy } = props;
+  const concludedBuilds =
+    metrics.builds.all.changesDetected + metrics.builds.all.noChanges;
+  const reviewedBuilds =
+    metrics.builds.all.accepted + metrics.builds.all.rejected;
+
+  const screenshotByBuildSeries: Metric = useMemo(() => {
     const series = metrics.screenshots.series.reduce<Metric["series"]>(
       (acc, serie, index) => {
         const screenshots = serie;
@@ -277,22 +382,150 @@ function Charts(props: {
     };
   }, [metrics]);
 
-  if (data && !metrics) {
-    return <Navigate to="/" />;
-  }
+  const groupByLabel = GroupByLabels[groupBy].toLowerCase();
+  const buildsPerPeriod = metrics.builds.series.length
+    ? Math.round(metrics.builds.all.total / metrics.builds.series.length)
+    : 0;
+  const screenshotsPerPeriod = metrics.screenshots.series.length
+    ? Math.round(
+        metrics.screenshots.all.total / metrics.screenshots.series.length,
+      )
+    : 0;
+  const screenshotsPerBuild = metrics.builds.all.total
+    ? Math.round(metrics.screenshots.all.total / metrics.builds.all.total)
+    : 0;
 
   return (
-    <div className="grid grid-cols-12 gap-6 lg:flex-row">
-      <Card className="group col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader className="flex items-start justify-between gap-6">
-          <div>
-            <ChartCardDescription>Builds</ChartCardDescription>
-            <Count count={metrics?.builds.all.total ?? null} />
-          </div>
-          <Tooltip content="Export to CSV">
-            <IconButton
+    <div className="flex flex-col gap-10">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile
+          icon={LayersIcon}
+          color="primary"
+          label="Builds"
+          value={metrics?.builds.all.total ?? null}
+          hint={
+            buildsPerPeriod !== null
+              ? `${buildsPerPeriod.toLocaleString()} avg / ${groupByLabel}`
+              : null
+          }
+          visual={
+            metrics && metrics.builds.all.total > 0 ? (
+              <Sparkline
+                label="Builds"
+                data={metrics.builds.series}
+                color="var(--violet-9)"
+                groupBy={groupBy}
+              />
+            ) : null
+          }
+        />
+        <StatTile
+          icon={ImagesIcon}
+          color="storybook"
+          label="Screenshots"
+          value={metrics?.screenshots.all.total ?? null}
+          hint={
+            screenshotsPerPeriod !== null
+              ? `${screenshotsPerPeriod.toLocaleString()} avg / ${groupByLabel}`
+              : null
+          }
+          visual={
+            metrics && metrics.screenshots.all.total > 0 ? (
+              <Sparkline
+                label="Screenshots"
+                data={metrics.screenshots.series}
+                color="var(--pink-9)"
+                groupBy={groupBy}
+              />
+            ) : null
+          }
+        />
+        <StatTile
+          icon={GitCompareArrowsIcon}
+          color="warning"
+          label="Change rate"
+          value={
+            metrics && concludedBuilds > 0
+              ? metrics.builds.all.changesDetected / concludedBuilds
+              : metrics
+                ? null
+                : undefined
+          }
+          format="percent"
+          hint={
+            metrics && concludedBuilds > 0
+              ? `${metrics.builds.all.changesDetected.toLocaleString()} of ${concludedBuilds.toLocaleString()} builds`
+              : "No completed builds yet"
+          }
+          visual={
+            metrics && concludedBuilds > 0 ? (
+              <SplitBar
+                segments={[
+                  {
+                    label: "Changes detected",
+                    value: metrics.builds.all.changesDetected,
+                    color: STATUS_COLORS.changesDetected,
+                  },
+                  {
+                    label: "No changes",
+                    value: metrics.builds.all.noChanges,
+                    color: STATUS_COLORS.noChanges,
+                  },
+                ]}
+              />
+            ) : null
+          }
+        />
+        <StatTile
+          icon={ThumbsUpIcon}
+          color="success"
+          label="Approval rate"
+          value={
+            metrics && reviewedBuilds > 0
+              ? metrics.builds.all.accepted / reviewedBuilds
+              : metrics
+                ? null
+                : undefined
+          }
+          format="percent"
+          hint={
+            metrics && reviewedBuilds > 0
+              ? `${metrics.builds.all.accepted.toLocaleString()} of ${reviewedBuilds.toLocaleString()} reviewed`
+              : "No builds reviewed yet"
+          }
+          visual={
+            metrics && reviewedBuilds > 0 ? (
+              <SplitBar
+                segments={[
+                  {
+                    label: "Approved",
+                    value: metrics.builds.all.accepted,
+                    color: STATUS_COLORS.accepted,
+                  },
+                  {
+                    label: "Rejected",
+                    value: metrics.builds.all.rejected,
+                    color: STATUS_COLORS.rejected,
+                  },
+                ]}
+              />
+            ) : null
+          }
+        />
+      </div>
+
+      <Section
+        title="Activity"
+        description="How much visual testing ran over the period."
+      >
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Builds"
+          description="Builds created, by project."
+          action={
+            <ExportButton
               isDisabled={!metrics}
-              onPress={() => {
+              onExport={() => {
                 invariant(metrics);
                 exportToCSV({
                   metric: metrics.builds,
@@ -303,41 +536,45 @@ function Charts(props: {
                     to,
                     groupBy,
                   }),
+                  extraColumns: [
+                    {
+                      label: "Changes detected",
+                      get: (serie) => serie.changesDetected,
+                    },
+                    { label: "No changes", get: (serie) => serie.noChanges },
+                    { label: "Approved", get: (serie) => serie.accepted },
+                    { label: "Rejected", get: (serie) => serie.rejected },
+                  ],
                 });
               }}
-            >
-              <FileDownIcon />
-            </IconButton>
-          </Tooltip>
-        </ChartCardHeader>
-        <ChartCardBody>
-          {metrics?.builds ? (
+            />
+          }
+        >
+          {metrics ? (
             metrics.builds.all.total === 0 ? (
               <EmptyStateBuilds />
             ) : (
               <EvolutionChart
-                metric={metrics.builds}
+                series={metrics.builds.series}
+                keys={getProjectChartKeys(metrics.builds.projects)}
                 from={from}
                 to={to}
                 groupBy={groupBy}
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <Card className="col-span-12 flex flex-col lg:col-span-6">
-        <ChartCardHeader className="flex items-start justify-between gap-6">
-          <div>
-            <ChartCardDescription>Screenshots</ChartCardDescription>
-            <Count count={metrics?.screenshots.all.total ?? null} />
-          </div>
-          <Tooltip content="Export to CSV">
-            <IconButton
+        </ChartCard>
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Screenshots"
+          description="Screenshots captured, by project."
+          action={
+            <ExportButton
               isDisabled={!metrics}
-              onPress={() => {
+              onExport={() => {
                 invariant(metrics);
                 exportToCSV({
-                  metric: metrics.builds,
+                  metric: metrics.screenshots,
                   name: getCSVName({
                     account: accountSlug,
                     unit: "screenshots",
@@ -347,31 +584,80 @@ function Charts(props: {
                   }),
                 });
               }}
-            >
-              <FileDownIcon />
-            </IconButton>
-          </Tooltip>
-        </ChartCardHeader>
-        <ChartCardBody>
+            />
+          }
+        >
           {metrics ? (
             metrics.screenshots.all.total === 0 ? (
               <EmptyStateScreenshots />
             ) : (
               <EvolutionChart
-                metric={metrics.screenshots}
+                series={metrics.screenshots.series}
+                keys={getProjectChartKeys(metrics.screenshots.projects)}
                 from={from}
                 to={to}
                 groupBy={groupBy}
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <Card className="col-span-12 flex flex-col lg:col-span-4">
-        <ChartCardHeader>
-          <ChartCardHeading>Screenshots by Project</ChartCardHeading>
-        </ChartCardHeader>
-        <ChartCardBody>
+        </ChartCard>
+      </Section>
+
+      <Section
+        title="Build outcomes"
+        description="What builds concluded, and how reviewers responded."
+      >
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Changes detected"
+          description="Completed builds, split by conclusion."
+        >
+          {metrics ? (
+            concludedBuilds === 0 ? (
+              <EmptyStateBuilds />
+            ) : (
+              <EvolutionChart
+                series={metrics.builds.series}
+                keys={BuildOutcomeChartKeys}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+                legend
+              />
+            )
+          ) : null}
+        </ChartCard>
+        <ChartCard
+          className="col-span-12 lg:col-span-6"
+          title="Reviewed builds"
+          description="Builds with changes, split by review decision."
+        >
+          {metrics ? (
+            reviewedBuilds === 0 ? (
+              <EmptyStateReviews />
+            ) : (
+              <EvolutionChart
+                series={metrics.builds.series}
+                keys={BuildReviewChartKeys}
+                from={from}
+                to={to}
+                groupBy={groupBy}
+                legend
+              />
+            )
+          ) : null}
+        </ChartCard>
+      </Section>
+
+      <Section
+        title="Breakdown"
+        description="Where screenshots come from, and how dense each build is."
+      >
+        <ChartCard
+          className="col-span-12 lg:col-span-5"
+          title="Screenshots by project"
+          description="Share of screenshots across projects."
+        >
           {metrics ? (
             metrics.screenshots.all.total > 0 ? (
               <ProjectPieChart metric={metrics.screenshots} />
@@ -379,75 +665,31 @@ function Charts(props: {
               <EmptyStateScreenshots />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
-      <div className="col-span-12 flex flex-col gap-[inherit] lg:col-span-3">
-        <Card className="p-6">
-          <ChartCardHeading className="mb-4">
-            Usage by {GroupByLabels[groupBy]}
-          </ChartCardHeading>
-          <div className="flex flex-col gap-4">
-            <div>
-              <ChartCardDescription>Builds</ChartCardDescription>
-              <Count
-                count={
-                  metrics
-                    ? Math.round(
-                        metrics.builds.all.total / metrics.builds.series.length,
-                      )
-                    : null
-                }
-              />
-            </div>
-            <div>
-              <ChartCardDescription>Screenshots</ChartCardDescription>
-              <Count
-                count={
-                  metrics
-                    ? Math.round(
-                        metrics.screenshots.all.total /
-                          metrics.screenshots.series.length,
-                      )
-                    : null
-                }
-              />
-            </div>
-          </div>
-        </Card>
-      </div>
-      <Card className="col-span-12 flex flex-col lg:col-span-5">
-        <ChartCardHeader>
-          <ChartCardHeading className="mb-4">
-            Screenshots by Build
-          </ChartCardHeading>
-          <ChartCardDescription>Screenshots</ChartCardDescription>
-          <Count
-            count={
-              metrics
-                ? metrics.screenshots.all.total
-                  ? Math.round(
-                      metrics.screenshots.all.total / metrics.builds.all.total,
-                    )
-                  : 0
-                : null
-            }
-          />
-        </ChartCardHeader>
-        <ChartCardBody>
+        </ChartCard>
+        <ChartCard
+          className="col-span-12 lg:col-span-7"
+          title="Screenshots per build"
+          description={
+            screenshotsPerBuild !== null
+              ? `${screenshotsPerBuild.toLocaleString()} on average across the period.`
+              : "Average screenshots captured per build."
+          }
+        >
           {screenshotByBuildSeries ? (
             screenshotByBuildSeries.all.total === 0 ? (
               <EmptyStateScreenshots />
             ) : (
               <EvolutionChart
-                metric={screenshotByBuildSeries}
+                series={screenshotByBuildSeries.series}
+                keys={getProjectChartKeys(screenshotByBuildSeries.projects)}
                 from={from}
                 to={to}
                 groupBy={groupBy}
               />
             )
           ) : null}
-        </ChartCardBody>
-      </Card>
+        </ChartCard>
+      </Section>
     </div>
   );
 }
@@ -465,11 +707,20 @@ function getCSVName(props: {
   return `${account}-${unit}-${fromStr}-${toStr}-${groupBy}.csv`;
 }
 
-function exportToCSV(props: { metric: Metric; name: string }) {
-  const { metric } = props;
+function exportToCSV<TSerie extends Metric["series"][number]>(props: {
+  metric: Omit<Metric, "series"> & { series: TSerie[] };
+  name: string;
+  extraColumns?: { label: string; get: (serie: TSerie) => number }[];
+}) {
+  const { metric, extraColumns = [] } = props;
 
   const rows: (string | number)[][] = [
-    ["Date", "Total", ...metric.projects.map((p) => p.name)],
+    [
+      "Date",
+      "Total",
+      ...metric.projects.map((p) => p.name),
+      ...extraColumns.map((column) => column.label),
+    ],
   ];
 
   metric.series.forEach((serie) => {
@@ -477,6 +728,7 @@ function exportToCSV(props: { metric: Metric; name: string }) {
       new Date(serie.ts).toISOString(),
       serie.total,
       ...metric.projects.map((p) => serie.projects[p.id] ?? 0),
+      ...extraColumns.map((column) => column.get(serie)),
     ];
     rows.push(row);
   });
@@ -517,6 +769,37 @@ function EmptyStateBuilds() {
   );
 }
 
+function EmptyStateReviews() {
+  return (
+    <EmptyState
+      title="No reviews"
+      description="No builds have been reviewed for this period."
+    />
+  );
+}
+
+// Colors match the build status colors (warning / success / danger).
+const STATUS_COLORS = {
+  changesDetected: "var(--orange-9)",
+  noChanges: "var(--grass-9)",
+  accepted: "var(--grass-9)",
+  rejected: "var(--tomato-9)",
+};
+
+const BuildOutcomeChartKeys: EvolutionChartKey[] = [
+  {
+    id: "changesDetected",
+    label: "Changes detected",
+    color: STATUS_COLORS.changesDetected,
+  },
+  { id: "noChanges", label: "No changes", color: STATUS_COLORS.noChanges },
+];
+
+const BuildReviewChartKeys: EvolutionChartKey[] = [
+  { id: "rejected", label: "Rejected", color: STATUS_COLORS.rejected },
+  { id: "accepted", label: "Approved", color: STATUS_COLORS.accepted },
+];
+
 type Metric = {
   all: {
     total: number;
@@ -530,49 +813,226 @@ type Metric = {
   }[];
 };
 
-function ChartCardHeader(props: {
-  children: React.ReactNode;
-  className?: string;
+const StatTileChipStyles: Record<StatTileColor, string> = {
+  primary: "bg-primary-ui text-primary-low",
+  storybook: "bg-storybook-ui text-storybook-low",
+  warning: "bg-warning-ui text-warning-low",
+  success: "bg-success-ui text-success-low",
+};
+
+type StatTileColor = "primary" | "storybook" | "warning" | "success";
+
+/**
+ * A single KPI in the summary band: an icon, a headline value, a supporting
+ * line, and an optional inline visual (sparkline or split bar).
+ *
+ * `value` is `undefined` while loading (skeleton), `null` when there is no
+ * meaningful figure to show (rendered as an em dash), otherwise the number.
+ */
+function StatTile(props: {
+  icon: React.ComponentType<{ className?: string }>;
+  color: StatTileColor;
+  label: string;
+  value: number | null | undefined;
+  format?: "number" | "percent";
+  hint?: React.ReactNode;
+  visual?: React.ReactNode;
 }) {
-  return <div className={clsx("p-6", props.className)}>{props.children}</div>;
+  const { icon: Icon, value, format = "number" } = props;
+  const isLoading = value === undefined;
+  return (
+    <Card className="flex flex-col gap-4 p-5">
+      <div className="flex items-center gap-2.5">
+        <div
+          className={clsx(
+            "flex size-7 shrink-0 items-center justify-center rounded-md",
+            StatTileChipStyles[props.color],
+          )}
+        >
+          <Icon className="size-4" />
+        </div>
+        <span className="text-low text-sm font-medium">{props.label}</span>
+      </div>
+      <div>
+        <div className="relative text-3xl leading-none font-black tabular-nums">
+          {value === undefined ? (
+            <div className="bg-subtle h-[1em] w-24 rounded-sm" />
+          ) : value === null ? (
+            <span className="text-low">—</span>
+          ) : format === "percent" ? (
+            <NumberFlow
+              value={value}
+              format={{ style: "percent", maximumFractionDigits: 0 }}
+            />
+          ) : (
+            <NumberFlow value={value} />
+          )}
+        </div>
+        {props.hint ? (
+          <p className="text-low mt-0.5 h-4 text-sm">
+            {isLoading ? null : props.hint}
+          </p>
+        ) : null}
+      </div>
+      {props.visual ? <div className="mt-auto">{props.visual}</div> : null}
+    </Card>
+  );
 }
 
-function Count(props: { count: number | null }) {
-  const isLoading = props.count === null;
+function Sparkline(props: {
+  label: string;
+  data: { ts: number; total: number }[];
+  color: string;
+  groupBy: TimeSeriesGroupBy;
+}) {
+  const { groupBy } = props;
+  const gradientId = useId();
   return (
-    <div className="relative text-4xl font-black">
-      <NumberFlow
-        value={props.count ?? 0}
-        className={isLoading ? "invisible" : undefined}
-      />
-
-      {isLoading && (
-        <div className="bg-subtle absolute top-2 left-0 h-[1em] w-32 rounded-sm" />
-      )}
+    <div className="h-9 w-full">
+      <ChartContainer
+        config={{ total: { label: props.label } }}
+        className="size-full"
+      >
+        <AreaChart
+          data={props.data}
+          margin={{ top: 2, bottom: 0, left: 0, right: 0 }}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={props.color} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={props.color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <ChartTooltip
+            isAnimationActive={false}
+            cursor={{ strokeDasharray: "3 3" }}
+            position={{ y: -56 }}
+            allowEscapeViewBox={{ y: true }}
+            content={
+              <ChartTooltipContent
+                color={props.color}
+                labelFormatter={(_value, payload) => {
+                  const firstItem = payload[0];
+                  invariant(firstItem, "payload[0] is undefined");
+                  return formatSeriesDateLabel(firstItem.payload.ts, groupBy);
+                }}
+              />
+            }
+          />
+          <Area
+            dataKey="total"
+            type="monotone"
+            stroke={props.color}
+            strokeWidth={1}
+            fill={`url(#${gradientId})`}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ChartContainer>
     </div>
   );
 }
 
-function ChartCardHeading(props: {
-  children: React.ReactNode;
-  className?: string;
+function SplitBar(props: {
+  segments: { label: string; value: number; color: string }[];
 }) {
+  const total = props.segments.reduce((sum, segment) => sum + segment.value, 0);
   return (
-    <h2 className={clsx("text-2xl font-bold", props.className)}>
-      {props.children}
-    </h2>
+    <Tooltip
+      delay={0}
+      placement="top"
+      disableAnimation
+      content={
+        <div className="flex min-w-40 flex-col gap-1 py-0.5">
+          {props.segments.map((segment) => (
+            <div key={segment.label} className="flex items-center gap-1.5">
+              <div
+                className="size-2 shrink-0 rounded-xs"
+                style={{ backgroundColor: segment.color }}
+              />
+              <span className="text-low">{segment.label}</span>
+              <span className="ml-auto font-medium tabular-nums">
+                {segment.value.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      }
+    >
+      {/* Padding enlarges the hover target beyond the 6px bar. */}
+      <div className="-my-1.5 w-full cursor-default py-1.5">
+        <div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
+          {props.segments.map((segment) =>
+            segment.value > 0 ? (
+              <div
+                key={segment.label}
+                className="h-full first:rounded-l-full last:rounded-r-full"
+                style={{
+                  width: `${(segment.value / total) * 100}%`,
+                  backgroundColor: segment.color,
+                }}
+                aria-label={`${segment.label}: ${segment.value}`}
+              />
+            ) : null,
+          )}
+        </div>
+      </div>
+    </Tooltip>
   );
 }
 
-function ChartCardDescription(props: { children: React.ReactNode }) {
-  return <p className="text-low text-sm font-medium">{props.children}</p>;
+/**
+ * A titled group of chart cards laid out on a 12-column grid.
+ */
+function Section(props: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-base font-semibold">{props.title}</h2>
+        <p className="text-low text-sm">{props.description}</p>
+      </div>
+      <div className="grid grid-cols-12 gap-6">{props.children}</div>
+    </section>
+  );
 }
 
-function ChartCardBody(props: { children: React.ReactNode }) {
+function ChartCard(props: {
+  className?: string;
+  title: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex min-h-80 flex-1 items-center justify-center p-6 pt-0">
-      {props.children}
-    </div>
+    <Card className={clsx("flex flex-col", props.className)}>
+      <div className="flex items-start justify-between gap-4 p-5 pb-0">
+        <div>
+          <h3 className="font-semibold">{props.title}</h3>
+          {props.description ? (
+            <p className="text-low text-sm">{props.description}</p>
+          ) : null}
+        </div>
+        {props.action ? <div className="shrink-0">{props.action}</div> : null}
+      </div>
+      <div className="flex min-h-72 flex-1 items-center justify-center p-5">
+        {props.children}
+      </div>
+    </Card>
+  );
+}
+
+function ExportButton(props: { isDisabled: boolean; onExport: () => void }) {
+  return (
+    <Tooltip content="Export to CSV">
+      <IconButton isDisabled={props.isDisabled} onPress={props.onExport}>
+        <FileDownIcon />
+      </IconButton>
+    </Tooltip>
   );
 }
 
@@ -586,17 +1046,6 @@ function EmptyState(props: { title: string; description: string }) {
 }
 
 function ProjectPieChart(props: { metric: Metric }) {
-  const chartConfig = props.metric.projects.reduce<ChartConfig>(
-    (config, project, index) => {
-      config[project.name] = {
-        label: project.name,
-        count: props.metric.all.projects[project.id],
-        color: getChartColorFromIndex(index),
-      };
-      return config;
-    },
-    { screenshots: { label: "Screenshots" } },
-  );
   const data = props.metric.projects.reduce<
     { project: string; screenshots: number; fill: string }[]
   >((acc, project, index) => {
@@ -610,29 +1059,103 @@ function ProjectPieChart(props: { metric: Metric }) {
     return acc;
   }, []);
   return (
-    <ChartContainer config={chartConfig} className="size-full">
-      <PieChart>
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel />}
-        />
-        <Pie data={data} dataKey="screenshots" nameKey="project" />
-        <ChartLegend content={<ChartLegendContent />} />
-      </PieChart>
-    </ChartContainer>
+    <div className="flex size-full flex-col">
+      {/* The legend lives outside the SVG: when it participates in the
+          chart layout, the pie ring shifts up but the center label viewBox
+          does not, leaving the label off-center. */}
+      <ChartContainer config={{}} className="min-h-0 flex-1">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="screenshots"
+            nameKey="project"
+            innerRadius="55%"
+            outerRadius="80%"
+            paddingAngle={2}
+            strokeWidth={2}
+            isAnimationActive={false}
+          >
+            <Label
+              content={({ viewBox }) => {
+                if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
+                  return null;
+                }
+                const cx = Number(viewBox.cx);
+                const cy = Number(viewBox.cy);
+                return (
+                  <text x={cx} y={cy} textAnchor="middle">
+                    <tspan
+                      x={cx}
+                      y={cy - 4}
+                      className="fill-(--text-color-default) text-2xl font-black tabular-nums"
+                    >
+                      {props.metric.all.total.toLocaleString(
+                        navigator.language,
+                        { notation: "compact" },
+                      )}
+                    </tspan>
+                    <tspan
+                      x={cx}
+                      y={cy + 14}
+                      className="fill-(--text-color-low) text-xs"
+                    >
+                      screenshots
+                    </tspan>
+                  </text>
+                );
+              }}
+            />
+          </Pie>
+        </PieChart>
+      </ChartContainer>
+      <div className="flex flex-wrap items-start justify-center gap-x-6 gap-y-2 pt-3 text-xs">
+        {props.metric.projects.map((project, index) => (
+          <div key={project.id}>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="size-2 shrink-0 rounded-xs"
+                style={{ backgroundColor: getChartColorFromIndex(index) }}
+              />
+              {project.name}
+            </div>
+            <div className="mt-1 text-base font-bold tabular-nums">
+              {props.metric.all.projects[project.id]?.toLocaleString()}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
+type EvolutionChartKey = {
+  id: string;
+  label: string;
+  color: string;
+};
+
+function getProjectChartKeys(
+  projects: { id: string; name: string }[],
+): EvolutionChartKey[] {
+  return projects.map((project, index) => ({
+    id: `projects.${project.id}`,
+    label: project.name,
+    color: getChartColorFromIndex(index),
+  }));
+}
+
 function EvolutionChart(props: {
-  metric: Metric;
+  series: { ts: number }[];
+  keys: EvolutionChartKey[];
   from: Date;
   to: Date;
   groupBy: TimeSeriesGroupBy;
+  legend?: boolean;
 }) {
-  const { metric, from, to, groupBy } = props;
-  const chartConfig = metric.projects.reduce<ChartConfig>((config, project) => {
-    config[`projects.${project.id}`] = {
-      label: project.name,
+  const { series, keys, from, to, groupBy } = props;
+  const chartConfig = keys.reduce<ChartConfig>((config, key) => {
+    config[key.id] = {
+      label: key.label,
     };
     return config;
   }, {});
@@ -651,7 +1174,7 @@ function EvolutionChart(props: {
       <AreaChart
         margin={{ left: -12, right: 12 }}
         accessibilityLayer
-        data={metric.series}
+        data={series}
         syncId="evolution"
       >
         <CartesianGrid vertical={false} strokeDasharray="5 5" />
@@ -692,47 +1215,29 @@ function EvolutionChart(props: {
           }}
         />
         <ChartTooltip
+          isAnimationActive={false}
           content={
             <ChartTooltipContent
               labelFormatter={(_value, payload) => {
                 const firstItem = payload[0];
                 invariant(firstItem, "payload[0] is undefined");
-                const date = new Date(firstItem.payload.ts);
-                switch (groupBy) {
-                  case TimeSeriesGroupBy.Day:
-                    return date.toLocaleDateString(navigator.language, {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  case TimeSeriesGroupBy.Week: {
-                    const startOfWeek = moment(date)
-                      .startOf("week")
-                      .format("MMM D");
-                    const endOfWeek = moment(date)
-                      .endOf("week")
-                      .format("MMM D");
-                    return `${startOfWeek} - ${endOfWeek}`;
-                  }
-                  case TimeSeriesGroupBy.Month:
-                    return date.toLocaleDateString(navigator.language, {
-                      month: "short",
-                    });
-                }
+                return formatSeriesDateLabel(firstItem.payload.ts, groupBy);
               }}
             />
           }
         />
-        {metric.projects.map((project, index) => {
-          const color = getChartColorFromIndex(index);
+        {props.legend ? <ChartLegend content={<ChartLegendContent />} /> : null}
+        {keys.map((key) => {
           return (
             <Area
-              key={project.id}
-              dataKey={`projects.${project.id}`}
+              key={key.id}
+              dataKey={key.id}
               type="monotone"
-              fill={color}
+              fill={key.color}
               fillOpacity={0.4}
-              stroke={color}
+              stroke={key.color}
               stackId="group"
+              isAnimationActive={false}
             />
           );
         })}
@@ -798,6 +1303,160 @@ const GroupByLabels: Record<TimeSeriesGroupBy, string> = {
   [TimeSeriesGroupBy.Month]: "Month",
 };
 
+function formatSeriesDateLabel(ts: number, groupBy: TimeSeriesGroupBy) {
+  const date = new Date(ts);
+  switch (groupBy) {
+    case TimeSeriesGroupBy.Day:
+      return date.toLocaleDateString(navigator.language, {
+        month: "short",
+        day: "numeric",
+      });
+    case TimeSeriesGroupBy.Week: {
+      const startOfWeek = moment(date).startOf("week").format("MMM D");
+      const endOfWeek = moment(date).endOf("week").format("MMM D");
+      return `${startOfWeek} - ${endOfWeek}`;
+    }
+    case TimeSeriesGroupBy.Month:
+      return date.toLocaleDateString(navigator.language, {
+        month: "short",
+      });
+  }
+}
+
+const ProjectsQuery = graphql(`
+  query AccountAnalyticsProjects_account($slug: String!) {
+    account(slug: $slug) {
+      id
+      projects(first: 100, after: 0) {
+        edges {
+          id
+          name
+        }
+      }
+    }
+  }
+`);
+
+function parseProjectNames(searchParams: URLSearchParams): string[] {
+  const value = searchParams.get("projects");
+  if (!value) {
+    return [];
+  }
+  return value.split(",").filter(Boolean);
+}
+
+function ProjectFilter(props: {
+  accountSlug: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const { data } = useSuspenseQuery(ProjectsQuery, {
+    variables: { slug: props.accountSlug },
+  });
+  const projects = data.account?.projects.edges ?? [];
+  if (projects.length < 2) {
+    return null;
+  }
+  return (
+    <ProjectFilterMenu
+      projects={projects}
+      value={props.value}
+      onChange={props.onChange}
+    />
+  );
+}
+
+/**
+ * Number of projects above which the project filter shows a search field.
+ */
+const PROJECT_SEARCH_THRESHOLD = 5;
+
+/**
+ * The project filter UI, decoupled from data fetching so it can be rendered
+ * in isolation (e.g. Storybook).
+ */
+export function ProjectFilterMenu(props: {
+  projects: { id: string; name: string }[];
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const { contains } = useFilter({ sensitivity: "base" });
+  const projects = [...props.projects].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  const selected = props.value.filter((name) =>
+    projects.some((project) => project.name === name),
+  );
+  const label =
+    selected.length === 0
+      ? "All projects"
+      : selected.length === 1
+        ? selected[0]
+        : `${selected.length} projects`;
+  const searchable = projects.length > PROJECT_SEARCH_THRESHOLD;
+  const menu = (
+    <Menu
+      aria-label="Projects"
+      selectionMode="multiple"
+      selectedKeys={selected}
+      className={searchable ? "max-h-72" : undefined}
+      renderEmptyState={() => (
+        <div className="text-low px-3 py-1.5 text-sm">No projects found</div>
+      )}
+      onSelectionChange={(keys) => {
+        if (keys === "all") {
+          return;
+        }
+        props.onChange(
+          projects
+            .filter((project) => keys.has(project.name))
+            .map((project) => project.name),
+        );
+      }}
+    >
+      {projects.map((project) => (
+        <MenuItem key={project.id} id={project.name} textValue={project.name}>
+          {project.name}
+        </MenuItem>
+      ))}
+    </Menu>
+  );
+  return (
+    <MenuTrigger>
+      <SelectButton className="shrink-0 text-sm whitespace-nowrap">
+        {label}
+        {selected.length > 1 ? (
+          <Badge>
+            {selected.length}/{projects.length}
+          </Badge>
+        ) : null}
+      </SelectButton>
+      <Popover>
+        {searchable ? (
+          <Autocomplete filter={contains}>
+            <div className="flex w-56 flex-col">
+              <SearchField
+                aria-label="Search projects"
+                autoFocus
+                className="flex items-center gap-2 border-b px-3 py-2"
+              >
+                <SearchIcon className="text-low size-4 shrink-0" />
+                <Input
+                  placeholder="Search projects…"
+                  className="placeholder:text-placeholder search-cancel:hidden w-full bg-transparent text-sm outline-hidden"
+                />
+              </SearchField>
+              {menu}
+            </div>
+          </Autocomplete>
+        ) : (
+          menu
+        )}
+      </Popover>
+    </MenuTrigger>
+  );
+}
+
 function PeriodSelect(props: {
   value: Period;
   onChange: (value: Period) => void;
@@ -808,7 +1467,7 @@ function PeriodSelect(props: {
       value={props.value}
       onChange={(value) => props.onChange(value as Period)}
     >
-      <SelectButton className="w-full text-sm">
+      <SelectButton className="w-full shrink-0 text-sm whitespace-nowrap">
         {PeriodLabels[props.value]}
       </SelectButton>
       <Popover>

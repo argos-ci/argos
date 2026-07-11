@@ -129,9 +129,26 @@ export async function getAccountBuildMetrics(input: {
     SELECT
       date_trunc(:groupBy, b."createdAt") AS date,
       p.id AS "projectId",
-      COUNT(b.id) AS value
+      COUNT(b.id) AS value,
+      COUNT(b.id) FILTER (WHERE b.conclusion = 'changes-detected') AS "changesDetected",
+      COUNT(b.id) FILTER (WHERE b.conclusion = 'no-changes') AS "noChanges",
+      COUNT(b.id) FILTER (WHERE b.conclusion = 'changes-detected' AND r.approved AND NOT r.rejected) AS accepted,
+      COUNT(b.id) FILTER (WHERE b.conclusion = 'changes-detected' AND r.rejected) AS rejected
     FROM builds b
     LEFT JOIN projects p ON b."projectId" = p.id
+    LEFT JOIN LATERAL (
+      SELECT
+        bool_or(lr.state = 'approved') AS approved,
+        bool_or(lr.state = 'rejected') AS rejected
+      FROM (
+        SELECT DISTINCT ON (br."userId") br.state, br."dismissedAt"
+        FROM build_reviews br
+        WHERE br."buildId" = b.id
+        ORDER BY br."userId", br."createdAt" DESC, br.id DESC
+      ) lr
+      WHERE lr."dismissedAt" IS NULL
+        AND lr.state IN ('approved', 'rejected')
+    ) r ON TRUE
     WHERE p."accountId" = :accountId
       AND b."createdAt" >= date_trunc(:groupBy, :from::timestamp)
       AND b."createdAt" <= :to
@@ -154,7 +171,11 @@ export async function getAccountBuildMetrics(input: {
   SELECT
     s.date,
     jsonb_object_agg(a."projectId", COALESCE(a.value, 0))
-      FILTER (WHERE a."projectId" IS NOT NULL) AS counts
+      FILTER (WHERE a."projectId" IS NOT NULL) AS counts,
+    COALESCE(SUM(a."changesDetected"), 0)::int AS "changesDetected",
+    COALESCE(SUM(a."noChanges"), 0)::int AS "noChanges",
+    COALESCE(SUM(a.accepted), 0)::int AS accepted,
+    COALESCE(SUM(a.rejected), 0)::int AS rejected
   FROM series s
   LEFT JOIN aggregated a
     ON s.date = a.date
@@ -169,7 +190,14 @@ export async function getAccountBuildMetrics(input: {
   }
   const [result, inputProjects] = await Promise.all([
     knex.raw<{
-      rows: { date: number; counts: Record<string, number> | null }[];
+      rows: {
+        date: number;
+        counts: Record<string, number> | null;
+        changesDetected: number;
+        noChanges: number;
+        accepted: number;
+        rejected: number;
+      }[];
     }>(query, {
       accountId: input.accountId,
       projectIds: input.projectIds,
@@ -203,21 +231,40 @@ export async function getAccountBuildMetrics(input: {
       ts: new Date(row.date).getTime(),
       projects: projectCounts,
       total,
+      changesDetected: row.changesDetected,
+      noChanges: row.noChanges,
+      accepted: row.accepted,
+      rejected: row.rejected,
     };
   });
 
   const all = series.reduce<{
     total: number;
     projects: Record<string, number>;
+    changesDetected: number;
+    noChanges: number;
+    accepted: number;
+    rejected: number;
   }>(
     (acc, serie) => {
       acc.total += serie.total;
+      acc.changesDetected += serie.changesDetected;
+      acc.noChanges += serie.noChanges;
+      acc.accepted += serie.accepted;
+      acc.rejected += serie.rejected;
       Object.entries(serie.projects).forEach(([projectId, count]) => {
         acc.projects[projectId] = (acc.projects[projectId] ?? 0) + count;
       });
       return acc;
     },
-    { total: 0, projects: {} },
+    {
+      total: 0,
+      projects: {},
+      changesDetected: 0,
+      noChanges: 0,
+      accepted: 0,
+      rejected: 0,
+    },
   );
 
   return { series, all, projects };

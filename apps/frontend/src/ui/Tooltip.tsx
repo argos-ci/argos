@@ -24,6 +24,7 @@ export type TooltipProps = {
   variant?: TooltipVariant;
   placement?: RACTooltipProps["placement"];
   disableHoverableContent?: boolean;
+  disableAnimation?: boolean;
   isOpen?: TooltipTriggerComponentProps["isOpen"];
   onOpenChange?: TooltipTriggerComponentProps["onOpenChange"];
   delay?: TooltipTriggerComponentProps["delay"];
@@ -72,6 +73,7 @@ type TooltipOverlayProps = RACTooltipProps & {
   ref?: React.Ref<HTMLDivElement>;
   variant?: TooltipVariant;
   disableHoverableContent?: boolean;
+  disableAnimation?: boolean;
   children: React.ReactNode;
 };
 
@@ -79,6 +81,7 @@ function TooltipOverlay({
   className,
   variant = "default",
   disableHoverableContent = true,
+  disableAnimation = false,
   children,
   ...props
 }: TooltipOverlayProps) {
@@ -92,7 +95,7 @@ function TooltipOverlay({
         clsx(
           "bg-subtle text-default overflow-hidden rounded-md border shadow-md",
           disableHoverableContent && "pointer-events-none",
-          getTooltipAnimationClassName(props),
+          !disableAnimation && getTooltipAnimationClassName(props),
           variantClassName,
           className,
         )
@@ -146,6 +149,7 @@ export function Tooltip(props: TooltipProps) {
         variant={props.variant}
         placement={props.placement}
         disableHoverableContent={props.disableHoverableContent}
+        disableAnimation={props.disableAnimation}
       >
         {props.content}
       </TooltipOverlay>
