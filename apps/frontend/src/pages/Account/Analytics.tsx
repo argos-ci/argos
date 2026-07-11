@@ -178,15 +178,15 @@ export function Component() {
     [setSearchParams],
   );
 
-  const projectIds = parseProjectIds(searchParams);
-  const setProjectIds = useCallback(
-    (ids: string[]) => {
+  const projectNames = parseProjectNames(searchParams);
+  const setProjectNames = useCallback(
+    (names: string[]) => {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
-        if (ids.length === 0) {
+        if (names.length === 0) {
           next.delete("projects");
         } else {
-          next.set("projects", ids.join(","));
+          next.set("projects", names.join(","));
         }
         return next;
       });
@@ -217,8 +217,8 @@ export function Component() {
               <Suspense fallback={null}>
                 <ProjectFilter
                   accountSlug={accountSlug}
-                  value={projectIds}
-                  onChange={setProjectIds}
+                  value={projectNames}
+                  onChange={setProjectNames}
                 />
               </Suspense>
               <PeriodSelect value={period} onChange={setPeriod} />
@@ -260,7 +260,7 @@ export function Component() {
             accountSlug={accountSlug}
             period={period}
             customPeriod={customPeriod}
-            projectIds={projectIds}
+            projectNames={projectNames}
           />
         </Suspense>
       </PageContainer>
@@ -272,10 +272,21 @@ function Charts(props: {
   accountSlug: string;
   period: Period;
   customPeriod: { from: Date; to: Date } | null;
-  projectIds: string[];
+  projectNames: string[];
 }) {
-  const { accountSlug, period, customPeriod, projectIds } = props;
+  const { accountSlug, period, customPeriod, projectNames } = props;
   const { from, to, groupBy } = getPeriodSettings(period, customPeriod);
+
+  // The metrics input takes project ids; resolve the names from the URL.
+  // Deduplicated with the ProjectFilter query by Apollo cache.
+  const { data: projectsData } = useSuspenseQuery(ProjectsQuery, {
+    variables: { slug: accountSlug },
+  });
+  const accountProjects = projectsData.account?.projects.edges ?? [];
+  const projectIds = projectNames.flatMap((name) => {
+    const project = accountProjects.find((project) => project.name === name);
+    return project ? [project.id] : [];
+  });
 
   const { data } = useSuspenseQuery(AccountQuery, {
     variables: {
@@ -929,7 +940,7 @@ function SplitBar(props: {
   const total = props.segments.reduce((sum, segment) => sum + segment.value, 0);
   return (
     <Tooltip
-      delay={150}
+      delay={0}
       placement="top"
       disableAnimation
       content={
@@ -1326,7 +1337,7 @@ const ProjectsQuery = graphql(`
   }
 `);
 
-function parseProjectIds(searchParams: URLSearchParams): string[] {
+function parseProjectNames(searchParams: URLSearchParams): string[] {
   const value = searchParams.get("projects");
   if (!value) {
     return [];
@@ -1373,14 +1384,14 @@ export function ProjectFilterMenu(props: {
   const projects = [...props.projects].sort((a, b) =>
     a.name.localeCompare(b.name),
   );
-  const selected = props.value.filter((id) =>
-    projects.some((project) => project.id === id),
+  const selected = props.value.filter((name) =>
+    projects.some((project) => project.name === name),
   );
   const label =
     selected.length === 0
       ? "All projects"
       : selected.length === 1
-        ? projects.find((project) => project.id === selected[0])?.name
+        ? selected[0]
         : `${selected.length} projects`;
   const searchable = projects.length > PROJECT_SEARCH_THRESHOLD;
   const menu = (
@@ -1398,13 +1409,13 @@ export function ProjectFilterMenu(props: {
         }
         props.onChange(
           projects
-            .filter((project) => keys.has(project.id))
-            .map((project) => project.id),
+            .filter((project) => keys.has(project.name))
+            .map((project) => project.name),
         );
       }}
     >
       {projects.map((project) => (
-        <MenuItem key={project.id} id={project.id} textValue={project.name}>
+        <MenuItem key={project.id} id={project.name} textValue={project.name}>
           {project.name}
         </MenuItem>
       ))}
