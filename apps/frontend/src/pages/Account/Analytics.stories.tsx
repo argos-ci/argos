@@ -5,8 +5,10 @@ import { TimeSeriesGroupBy } from "@/gql/graphql";
 import { AnalyticsDashboard } from "./Analytics";
 
 const PROJECTS = [
-  { __typename: "Project" as const, id: "1", name: "website" },
-  { __typename: "Project" as const, id: "2", name: "design-system" },
+  { __typename: "Project" as const, id: "1", name: "argos" },
+  { __typename: "Project" as const, id: "2", name: "argos-ci.com" },
+  { __typename: "Project" as const, id: "3", name: "argos-javascript" },
+  { __typename: "Project" as const, id: "4", name: "storybook" },
 ];
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -31,13 +33,41 @@ function buildFixture() {
     projects: {} as Record<string, number>,
   };
 
+  // Builds per project per bucket, roughly matching real relative volumes.
+  const buildWeights: Record<string, number> = {
+    "1": 6,
+    "2": 2,
+    "3": 3,
+    "4": 2,
+  };
+  // Screenshots per build for each project.
+  const screenshotWeights: Record<string, number> = {
+    "1": 42,
+    "2": 27,
+    "3": 31,
+    "4": 55,
+  };
+
   for (let i = 0; i < POINTS; i++) {
     const ts = START + i * DAY;
     // Deterministic wave so the charts look alive without randomness.
     const wave = 1 + Math.sin(i / 3) * 0.5;
-    const p1 = Math.round(6 * wave) + 2;
-    const p2 = Math.round(3 * wave) + 1;
-    const total = p1 + p2;
+    const buildCounts: Record<string, number> = {};
+    const screenshotCounts: Record<string, number> = {};
+    let total = 0;
+    let sTotal = 0;
+    for (const project of PROJECTS) {
+      const builds = Math.round(buildWeights[project.id]! * wave) + 1;
+      const screenshots = builds * screenshotWeights[project.id]!;
+      buildCounts[project.id] = builds;
+      screenshotCounts[project.id] = screenshots;
+      total += builds;
+      sTotal += screenshots;
+      buildsAll.projects[project.id] =
+        (buildsAll.projects[project.id] ?? 0) + builds;
+      screenshotsAll.projects[project.id] =
+        (screenshotsAll.projects[project.id] ?? 0) + screenshots;
+    }
     const changesDetected = Math.round(total * 0.35);
     const noChanges = total - changesDetected;
     const accepted = Math.round(changesDetected * 0.7);
@@ -50,32 +80,25 @@ function buildFixture() {
       __typename: "AccountBuildsMetricDataPoint" as const,
       ts,
       total,
-      projects: { "1": p1, "2": p2 },
+      projects: buildCounts,
       changesDetected,
       noChanges,
       accepted,
       rejected,
     });
     buildsAll.total += total;
-    buildsAll.projects["1"] = (buildsAll.projects["1"] ?? 0) + p1;
-    buildsAll.projects["2"] = (buildsAll.projects["2"] ?? 0) + p2;
     buildsAll.changesDetected += changesDetected;
     buildsAll.noChanges += noChanges;
     buildsAll.accepted += accepted;
     buildsAll.rejected += rejected;
 
-    const s1 = p1 * 42;
-    const s2 = p2 * 27;
-    const sTotal = s1 + s2;
     screenshotsSeries.push({
       __typename: "AccountMetricDataPoint" as const,
       ts,
       total: sTotal,
-      projects: { "1": s1, "2": s2 },
+      projects: screenshotCounts,
     });
     screenshotsAll.total += sTotal;
-    screenshotsAll.projects["1"] = (screenshotsAll.projects["1"] ?? 0) + s1;
-    screenshotsAll.projects["2"] = (screenshotsAll.projects["2"] ?? 0) + s2;
   }
 
   return {

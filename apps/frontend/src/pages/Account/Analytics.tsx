@@ -988,17 +988,6 @@ function EmptyState(props: { title: string; description: string }) {
 }
 
 function ProjectPieChart(props: { metric: Metric }) {
-  const chartConfig = props.metric.projects.reduce<ChartConfig>(
-    (config, project, index) => {
-      config[project.name] = {
-        label: project.name,
-        count: props.metric.all.projects[project.id],
-        color: getChartColorFromIndex(index),
-      };
-      return config;
-    },
-    { screenshots: { label: "Screenshots" } },
-  );
   const data = props.metric.projects.reduce<
     { project: string; screenshots: number; fill: string }[]
   >((acc, project, index) => {
@@ -1012,51 +1001,72 @@ function ProjectPieChart(props: { metric: Metric }) {
     return acc;
   }, []);
   return (
-    <ChartContainer config={chartConfig} className="size-full">
-      <PieChart>
-        <Pie
-          data={data}
-          dataKey="screenshots"
-          nameKey="project"
-          innerRadius="55%"
-          outerRadius="80%"
-          paddingAngle={2}
-          strokeWidth={2}
-          isAnimationActive={false}
-        >
-          <Label
-            content={({ viewBox }) => {
-              if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
-                return null;
-              }
-              const cx = Number(viewBox.cx);
-              const cy = Number(viewBox.cy);
-              return (
-                <text x={cx} y={cy} textAnchor="middle">
-                  <tspan
-                    x={cx}
-                    y={cy - 4}
-                    className="fill-(--text-color-default) text-2xl font-black tabular-nums"
-                  >
-                    {props.metric.all.total.toLocaleString(navigator.language, {
-                      notation: "compact",
-                    })}
-                  </tspan>
-                  <tspan
-                    x={cx}
-                    y={cy + 14}
-                    className="fill-(--text-color-low) text-xs"
-                  >
-                    screenshots
-                  </tspan>
-                </text>
-              );
-            }}
-          />
-        </Pie>
-        <ChartLegend content={<ChartLegendContent nameKey="project" />} />
-      </PieChart>
-    </ChartContainer>
+    <div className="flex size-full flex-col">
+      {/* The legend lives outside the SVG: when it participates in the
+          chart layout, the pie ring shifts up but the center label viewBox
+          does not, leaving the label off-center. */}
+      <ChartContainer config={{}} className="min-h-0 flex-1">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="screenshots"
+            nameKey="project"
+            innerRadius="55%"
+            outerRadius="80%"
+            paddingAngle={2}
+            strokeWidth={2}
+            isAnimationActive={false}
+          >
+            <Label
+              content={({ viewBox }) => {
+                if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
+                  return null;
+                }
+                const cx = Number(viewBox.cx);
+                const cy = Number(viewBox.cy);
+                return (
+                  <text x={cx} y={cy} textAnchor="middle">
+                    <tspan
+                      x={cx}
+                      y={cy - 4}
+                      className="fill-(--text-color-default) text-2xl font-black tabular-nums"
+                    >
+                      {props.metric.all.total.toLocaleString(
+                        navigator.language,
+                        { notation: "compact" },
+                      )}
+                    </tspan>
+                    <tspan
+                      x={cx}
+                      y={cy + 14}
+                      className="fill-(--text-color-low) text-xs"
+                    >
+                      screenshots
+                    </tspan>
+                  </text>
+                );
+              }}
+            />
+          </Pie>
+        </PieChart>
+      </ChartContainer>
+      <div className="flex flex-wrap items-start justify-center gap-x-6 gap-y-2 pt-3 text-xs">
+        {props.metric.projects.map((project, index) => (
+          <div key={project.id}>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="size-2 shrink-0 rounded-xs"
+                style={{ backgroundColor: getChartColorFromIndex(index) }}
+              />
+              {project.name}
+            </div>
+            <div className="mt-1 text-base font-bold tabular-nums">
+              {props.metric.all.projects[project.id]?.toLocaleString()}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
