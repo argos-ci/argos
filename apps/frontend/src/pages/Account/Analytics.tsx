@@ -19,6 +19,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Label,
   Pie,
   PieChart,
   XAxis,
@@ -353,7 +354,12 @@ export function AnalyticsDashboard(props: {
           }
           visual={
             metrics && metrics.builds.all.total > 0 ? (
-              <Sparkline data={metrics.builds.series} color="var(--violet-9)" />
+              <Sparkline
+                label="Builds"
+                data={metrics.builds.series}
+                color="var(--violet-9)"
+                groupBy={groupBy}
+              />
             ) : null
           }
         />
@@ -370,8 +376,10 @@ export function AnalyticsDashboard(props: {
           visual={
             metrics && metrics.screenshots.all.total > 0 ? (
               <Sparkline
+                label="Screenshots"
                 data={metrics.screenshots.series}
                 color="var(--pink-9)"
+                groupBy={groupBy}
               />
             ) : null
           }
@@ -790,7 +798,7 @@ function StatTile(props: {
         <span className="text-low text-sm font-medium">{props.label}</span>
       </div>
       <div>
-        <div className="relative text-3xl font-black tabular-nums">
+        <div className="relative text-3xl leading-none font-black tabular-nums">
           {value === undefined ? (
             <div className="bg-subtle h-[1em] w-24 rounded-sm" />
           ) : value === null ? (
@@ -805,7 +813,7 @@ function StatTile(props: {
           )}
         </div>
         {props.hint ? (
-          <p className="text-low mt-1 h-4 text-sm">
+          <p className="text-low mt-0.5 h-4 text-sm">
             {isLoading ? null : props.hint}
           </p>
         ) : null}
@@ -816,13 +824,19 @@ function StatTile(props: {
 }
 
 function Sparkline(props: {
+  label: string;
   data: { ts: number; total: number }[];
   color: string;
+  groupBy: TimeSeriesGroupBy;
 }) {
+  const { groupBy } = props;
   const gradientId = useId();
   return (
     <div className="h-9 w-full">
-      <ChartContainer config={{}} className="size-full">
+      <ChartContainer
+        config={{ total: { label: props.label } }}
+        className="size-full"
+      >
         <AreaChart
           data={props.data}
           margin={{ top: 2, bottom: 0, left: 0, right: 0 }}
@@ -833,6 +847,21 @@ function Sparkline(props: {
               <stop offset="100%" stopColor={props.color} stopOpacity={0} />
             </linearGradient>
           </defs>
+          <ChartTooltip
+            cursor={{ strokeDasharray: "3 3" }}
+            position={{ y: -56 }}
+            allowEscapeViewBox={{ y: true }}
+            content={
+              <ChartTooltipContent
+                color={props.color}
+                labelFormatter={(_value, payload) => {
+                  const firstItem = payload[0];
+                  invariant(firstItem, "payload[0] is undefined");
+                  return formatSeriesDateLabel(firstItem.payload.ts, groupBy);
+                }}
+              />
+            }
+          />
           <Area
             dataKey="total"
             type="monotone"
@@ -853,21 +882,45 @@ function SplitBar(props: {
 }) {
   const total = props.segments.reduce((sum, segment) => sum + segment.value, 0);
   return (
-    <div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
-      {props.segments.map((segment) =>
-        segment.value > 0 ? (
-          <div
-            key={segment.label}
-            className="h-full first:rounded-l-full last:rounded-r-full"
-            style={{
-              width: `${(segment.value / total) * 100}%`,
-              backgroundColor: segment.color,
-            }}
-            aria-label={`${segment.label}: ${segment.value}`}
-          />
-        ) : null,
-      )}
-    </div>
+    <Tooltip
+      delay={150}
+      placement="top"
+      content={
+        <div className="flex min-w-40 flex-col gap-1 py-0.5">
+          {props.segments.map((segment) => (
+            <div key={segment.label} className="flex items-center gap-1.5">
+              <div
+                className="size-2 shrink-0 rounded-xs"
+                style={{ backgroundColor: segment.color }}
+              />
+              <span className="text-low">{segment.label}</span>
+              <span className="ml-auto font-medium tabular-nums">
+                {segment.value.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      }
+    >
+      {/* Padding enlarges the hover target beyond the 6px bar. */}
+      <div className="-my-1.5 w-full cursor-default py-1.5">
+        <div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
+          {props.segments.map((segment) =>
+            segment.value > 0 ? (
+              <div
+                key={segment.label}
+                className="h-full first:rounded-l-full last:rounded-r-full"
+                style={{
+                  width: `${(segment.value / total) * 100}%`,
+                  backgroundColor: segment.color,
+                }}
+                aria-label={`${segment.label}: ${segment.value}`}
+              />
+            ) : null,
+          )}
+        </div>
+      </div>
+    </Tooltip>
   );
 }
 
@@ -959,34 +1012,51 @@ function ProjectPieChart(props: { metric: Metric }) {
     return acc;
   }, []);
   return (
-    <div className="relative size-full">
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-[calc(50%+1.25rem)] flex-col items-center">
-        <span className="text-2xl font-black tabular-nums">
-          {props.metric.all.total.toLocaleString(navigator.language, {
-            notation: "compact",
-          })}
-        </span>
-        <span className="text-low text-xs">screenshots</span>
-      </div>
-      <ChartContainer config={chartConfig} className="size-full">
-        <PieChart>
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent hideLabel />}
+    <ChartContainer config={chartConfig} className="size-full">
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="screenshots"
+          nameKey="project"
+          innerRadius="55%"
+          outerRadius="80%"
+          paddingAngle={2}
+          strokeWidth={2}
+          isAnimationActive={false}
+        >
+          <Label
+            content={({ viewBox }) => {
+              if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) {
+                return null;
+              }
+              const cx = Number(viewBox.cx);
+              const cy = Number(viewBox.cy);
+              return (
+                <text x={cx} y={cy} textAnchor="middle">
+                  <tspan
+                    x={cx}
+                    y={cy - 4}
+                    className="fill-(--text-color-default) text-2xl font-black tabular-nums"
+                  >
+                    {props.metric.all.total.toLocaleString(navigator.language, {
+                      notation: "compact",
+                    })}
+                  </tspan>
+                  <tspan
+                    x={cx}
+                    y={cy + 14}
+                    className="fill-(--text-color-low) text-xs"
+                  >
+                    screenshots
+                  </tspan>
+                </text>
+              );
+            }}
           />
-          <Pie
-            data={data}
-            dataKey="screenshots"
-            nameKey="project"
-            innerRadius="55%"
-            outerRadius="80%"
-            paddingAngle={2}
-            strokeWidth={2}
-          />
-          <ChartLegend content={<ChartLegendContent nameKey="project" />} />
-        </PieChart>
-      </ChartContainer>
-    </div>
+        </Pie>
+        <ChartLegend content={<ChartLegendContent nameKey="project" />} />
+      </PieChart>
+    </ChartContainer>
   );
 }
 
@@ -1082,27 +1152,7 @@ function EvolutionChart(props: {
               labelFormatter={(_value, payload) => {
                 const firstItem = payload[0];
                 invariant(firstItem, "payload[0] is undefined");
-                const date = new Date(firstItem.payload.ts);
-                switch (groupBy) {
-                  case TimeSeriesGroupBy.Day:
-                    return date.toLocaleDateString(navigator.language, {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  case TimeSeriesGroupBy.Week: {
-                    const startOfWeek = moment(date)
-                      .startOf("week")
-                      .format("MMM D");
-                    const endOfWeek = moment(date)
-                      .endOf("week")
-                      .format("MMM D");
-                    return `${startOfWeek} - ${endOfWeek}`;
-                  }
-                  case TimeSeriesGroupBy.Month:
-                    return date.toLocaleDateString(navigator.language, {
-                      month: "short",
-                    });
-                }
+                return formatSeriesDateLabel(firstItem.payload.ts, groupBy);
               }}
             />
           }
@@ -1183,6 +1233,26 @@ const GroupByLabels: Record<TimeSeriesGroupBy, string> = {
   [TimeSeriesGroupBy.Week]: "Week",
   [TimeSeriesGroupBy.Month]: "Month",
 };
+
+function formatSeriesDateLabel(ts: number, groupBy: TimeSeriesGroupBy) {
+  const date = new Date(ts);
+  switch (groupBy) {
+    case TimeSeriesGroupBy.Day:
+      return date.toLocaleDateString(navigator.language, {
+        month: "short",
+        day: "numeric",
+      });
+    case TimeSeriesGroupBy.Week: {
+      const startOfWeek = moment(date).startOf("week").format("MMM D");
+      const endOfWeek = moment(date).endOf("week").format("MMM D");
+      return `${startOfWeek} - ${endOfWeek}`;
+    }
+    case TimeSeriesGroupBy.Month:
+      return date.toLocaleDateString(navigator.language, {
+        month: "short",
+      });
+  }
+}
 
 function PeriodSelect(props: {
   value: Period;
