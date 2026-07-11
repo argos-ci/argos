@@ -6,9 +6,15 @@ import type { PartialModelObject, TransactionOrKnex } from "objection";
 import { transaction } from "@/database";
 import { Build, BuildShard, File, Screenshot, Test } from "@/database/models";
 import { ARGOS_STORYBOOK_SDK_NAME } from "@/util/argos-sdk";
-import { boom } from "@/util/error";
 
 import { getUnknownFileKeys } from "./file";
+
+/**
+ * Escape a value to be used as a literal prefix in a SQL `LIKE` pattern.
+ */
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
 
 const getOrCreateTests = async ({
   projectId,
@@ -119,102 +125,125 @@ export async function insertFilesAndScreenshots(
         .ignore();
     }
 
-    const [files, tests, existing] = await Promise.all([
+    const screenshotNames = params.screenshots.map(
+      (screenshot) => screenshot.name,
+    );
+
+    const [files, existing] = await Promise.all([
       File.query(trx)
         .select("id", "key", "type")
         .whereIn("key", [...screenshotKeys, ...pwTraceKeys]),
-      getOrCreateTests({
-        projectId: params.build.projectId,
-        buildName: params.build.name,
-        screenshotNames: params.screenshots.map(
-          (screenshot) => screenshot.name,
-        ),
-        trx,
-      }),
       Screenshot.query(trx)
         .select("name", "s3Id")
         .where("screenshotBucketId", params.build.compareScreenshotBucketId)
-        .whereIn(
-          "name",
-          params.screenshots.map((screenshot) => screenshot.name),
-        ),
+        .where((qb) => {
+          // Match the uploaded names and any indexed variant (`name-1`, …)
+          // already stored, so we know which name slots are taken.
+          for (const name of screenshotNames) {
+            qb.orWhere("name", name).orWhere(
+              "name",
+              "like",
+              `${escapeLikePattern(name)}-%`,
+            );
+          }
+        }),
     ]);
 
     // A build can be uploaded across several requests, and a request can be
-    // retried. A screenshot already stored with the same file is considered
-    // already inserted by a previous (retried) request and is skipped, making
-    // the insert idempotent. A screenshot stored with a different file is a real
-    // conflict: the same name was uploaded for two different screenshots.
+    // retried. Screenshots are identified by their name within the bucket. A
+    // name already stored with the same file is considered inserted by a
+    // previous (retried) request and is skipped, keeping the insert idempotent.
+    // A name already stored with a different file is not an error: the
+    // screenshot is kept under a new name suffixed with an index (`name-1`,
+    // `name-2`, …), similar to how we resolve account slugs.
     const existingKeyByName = new Map(
       existing.map((screenshot) => [screenshot.name, screenshot.s3Id]),
     );
-    const conflicts: string[] = [];
-    const screenshotsToInsert = params.screenshots.filter((screenshot) => {
-      const existingKey = existingKeyByName.get(screenshot.name);
-      if (existingKey === undefined) {
-        return true;
+    const screenshotsToInsert = params.screenshots.reduce<
+      (InsertFilesAndScreenshotsParams["screenshots"][number] & {
+        resolvedName: string;
+      })[]
+    >((acc, screenshot) => {
+      let index = 0;
+      let name = screenshot.name;
+      // Resolve a free name, or skip if this exact screenshot (same file) is
+      // already stored under one of the candidate names (idempotent retry).
+      while (true) {
+        const existingKey = existingKeyByName.get(name);
+        if (existingKey === undefined) {
+          break;
+        }
+        if (existingKey === screenshot.key) {
+          return acc;
+        }
+        index += 1;
+        name = `${screenshot.name}-${index}`;
       }
-      if (existingKey !== screenshot.key) {
-        conflicts.push(screenshot.name);
-      }
-      return false;
+      // Reserve the resolved name so other screenshots in the same batch don't
+      // reuse it.
+      existingKeyByName.set(name, screenshot.key);
+      acc.push({ ...screenshot, resolvedName: name });
+      return acc;
+    }, []);
+
+    if (screenshotsToInsert.length === 0) {
+      return { all: 0, storybook: 0 };
+    }
+
+    const tests = await getOrCreateTests({
+      projectId: params.build.projectId,
+      buildName: params.build.name,
+      screenshotNames: screenshotsToInsert.map(
+        (screenshot) => screenshot.resolvedName,
+      ),
+      trx,
     });
 
-    if (conflicts.length > 0) {
-      throw boom(
-        400,
-        `Screenshots already uploaded for ${conflicts.join(
-          ", ",
-        )}. Please ensure to not upload a screenshot with the same name multiple times.`,
-      );
-    }
-
     // Insert screenshots
-    if (screenshotsToInsert.length > 0) {
-      await Screenshot.query(trx).insert(
-        screenshotsToInsert.map(
-          (screenshot): PartialModelObject<Screenshot> => {
-            const file = files.find((f) => f.key === screenshot.key);
-            invariant(file, `File not found for key ${screenshot.key}`);
+    await Screenshot.query(trx).insert(
+      screenshotsToInsert.map((screenshot): PartialModelObject<Screenshot> => {
+        const file = files.find((f) => f.key === screenshot.key);
+        invariant(file, `File not found for key ${screenshot.key}`);
 
-            const test = tests.find((t) => t.name === screenshot.name);
-            invariant(test, `Test not found for screenshot ${screenshot.name}`);
+        const test = tests.find((t) => t.name === screenshot.resolvedName);
+        invariant(
+          test,
+          `Test not found for screenshot ${screenshot.resolvedName}`,
+        );
 
-            const pwTraceFile = (() => {
-              if (screenshot.pwTraceKey) {
-                const pwTraceFile = files.find(
-                  (f) => f.key === screenshot.pwTraceKey,
-                );
-                invariant(
-                  pwTraceFile,
-                  `File not found for key ${screenshot.pwTraceKey}`,
-                );
-                invariant(
-                  pwTraceFile.type === "playwrightTrace",
-                  `File ${screenshot.pwTraceKey} is not a playwright trace`,
-                );
-                return pwTraceFile;
-              }
-              return null;
-            })();
+        const pwTraceFile = (() => {
+          if (screenshot.pwTraceKey) {
+            const pwTraceFile = files.find(
+              (f) => f.key === screenshot.pwTraceKey,
+            );
+            invariant(
+              pwTraceFile,
+              `File not found for key ${screenshot.pwTraceKey}`,
+            );
+            invariant(
+              pwTraceFile.type === "playwrightTrace",
+              `File ${screenshot.pwTraceKey} is not a playwright trace`,
+            );
+            return pwTraceFile;
+          }
+          return null;
+        })();
 
-            return {
-              screenshotBucketId: params.build.compareScreenshotBucketId,
-              name: screenshot.name,
-              s3Id: screenshot.key,
-              fileId: file.id,
-              testId: test.id,
-              metadata: screenshot.metadata ?? null,
-              playwrightTraceFileId: pwTraceFile?.id ?? null,
-              buildShardId: params.shard?.id ?? null,
-              threshold: screenshot.threshold ?? null,
-              baseName: screenshot.baseName ?? null,
-              parentName: screenshot.parentName ?? null,
-            };
-          },
-        ),
-      );
-    }
+        return {
+          screenshotBucketId: params.build.compareScreenshotBucketId,
+          name: screenshot.resolvedName,
+          s3Id: screenshot.key,
+          fileId: file.id,
+          testId: test.id,
+          metadata: screenshot.metadata ?? null,
+          playwrightTraceFileId: pwTraceFile?.id ?? null,
+          buildShardId: params.shard?.id ?? null,
+          threshold: screenshot.threshold ?? null,
+          baseName: screenshot.baseName ?? null,
+          parentName: screenshot.parentName ?? null,
+        };
+      }),
+    );
 
     return {
       all: screenshotsToInsert.length,
