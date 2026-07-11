@@ -6,6 +6,7 @@ import cypressIcon from "./logos/cypress.svg";
 import playwrightIcon from "./logos/playwright.svg";
 import puppeteerIcon from "./logos/puppeteer.svg";
 import storybookIcon from "./logos/storybook.svg";
+import vitestIcon from "./logos/vitest.svg";
 
 type AutomationLibrary = {
   label: string;
@@ -27,6 +28,8 @@ const automationLibraries: Record<string, AutomationLibrary> = {
   storybook: { label: "Storybook", icon: storybookIcon },
   "@storybook/test-runner": { label: "Storybook", icon: storybookIcon },
   "@storybook/addon-vitest": { label: "Storybook", icon: storybookIcon },
+  vitest: { label: "Vitest", icon: vitestIcon },
+  "@vitest/browser-playwright": { label: "Vitest", icon: vitestIcon },
   webdriverio: { label: "WebdriverIO" },
   selenium: { label: "Selenium" },
 };
