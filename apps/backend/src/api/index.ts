@@ -17,6 +17,7 @@ import { exchangeGitHubActionsTokenlessToken } from "./handlers/exchangeGitHubAc
 import { finalizeBuilds } from "./handlers/finalizeBuilds";
 import { finalizeDeployment } from "./handlers/finalizeDeployment";
 import { findBaseline } from "./handlers/findBaseline";
+import { getAccountAnalytics } from "./handlers/getAccountAnalytics";
 import { getAuthProject } from "./handlers/getAuthProject";
 import { getBuild } from "./handlers/getBuild";
 import { getBuildDiffs } from "./handlers/getBuildDiffs";
@@ -91,6 +92,7 @@ registerHandler(router, finalizeBuilds);
 registerHandler(router, findBaseline);
 registerHandler(router, finalizeDeployment);
 registerHandler(router, getDeployment);
+registerHandler(router, getAccountAnalytics);
 registerHandler(router, getMe);
 registerHandler(router, getAuthProject);
 registerHandler(router, getBuild);

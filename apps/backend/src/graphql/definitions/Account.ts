@@ -20,8 +20,8 @@ import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { getGitlabClient, getGitlabClientFromAccount } from "@/gitlab";
 import {
-  getAccountBuildMetrics,
-  getAccountScreenshotMetrics,
+  getAccountMetrics,
+  InvalidAccountMetricsInputError,
 } from "@/metrics/account";
 import { sendNotification } from "@/notification";
 import { boltApp } from "@/slack/app";
@@ -46,9 +46,6 @@ import { badUserInput, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const METRICS_MAX_RANGE_DAYS = 365;
-
 export const typeDefs = gql`
   type AccountAvatar {
     url(size: Int!): String
@@ -138,7 +135,8 @@ export const typeDefs = gql`
   }
 
   input AccountMetricsInput {
-    projectIds: [ID!]
+    "Filter by project names."
+    projectNames: [String!]
     from: DateTime!
     to: DateTime
     groupBy: TimeSeriesGroupBy!
@@ -431,43 +429,22 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     return ctx.loaders.GithubAccount.load(account.githubAccountId);
   },
   metrics: async (account, args) => {
-    const now = new Date();
-    const from = args.input.from;
-    const to = args.input.to ?? now;
-
-    if (from.getTime() > to.getTime()) {
-      throw badUserInput("`from` must be before `to`.", {
-        field: ["from", "to"],
+    try {
+      return await getAccountMetrics({
+        accountId: account.id,
+        projectNames: args.input.projectNames,
+        from: args.input.from,
+        to: args.input.to,
+        groupBy: args.input.groupBy,
       });
-    }
-
-    const durationDays = Math.floor(
-      (to.getTime() - from.getTime()) / DAY_IN_MS,
-    );
-    if (durationDays > METRICS_MAX_RANGE_DAYS) {
-      throw badUserInput(
-        `Date range cannot exceed ${METRICS_MAX_RANGE_DAYS} days.`,
-        {
+    } catch (error) {
+      if (error instanceof InvalidAccountMetricsInputError) {
+        throw badUserInput(error.message, {
           field: ["from", "to"],
-        },
-      );
+        });
+      }
+      throw error;
     }
-
-    const params = {
-      accountId: account.id,
-      projectIds: args.input.projectIds,
-      from,
-      to,
-      groupBy: args.input.groupBy,
-    };
-    const [screenshots, builds] = await Promise.all([
-      getAccountScreenshotMetrics(params),
-      getAccountBuildMetrics(params),
-    ]);
-    return {
-      screenshots,
-      builds,
-    };
   },
   canExtendTrial: async (account) => {
     const manager = account.$getSubscriptionManager();

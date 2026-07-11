@@ -1,18 +1,106 @@
+import { invariant } from "@argos/util/invariant";
+
 import { knex } from "@/database";
 import { Project } from "@/database/models";
 
-type GroupBy = "month" | "week" | "day";
+type AccountMetricsGroupBy = "month" | "week" | "day";
+
+type AccountMetricsFilter = {
+  accountId: string;
+  projectNames?: string[] | null | undefined;
+};
+
+type AccountMetricsAggregationInput = {
+  accountId: string;
+  projectIds?: string[] | null | undefined;
+  projectFilterApplied?: boolean | undefined;
+  from: Date;
+  to: Date;
+  groupBy: AccountMetricsGroupBy;
+};
+
+export type GetAccountMetricsInput = AccountMetricsFilter & {
+  from: Date;
+  to?: Date | null | undefined;
+  groupBy: AccountMetricsGroupBy;
+};
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const ACCOUNT_METRICS_MAX_RANGE_DAYS = 365;
+
+export class InvalidAccountMetricsInputError extends Error {}
+
+function hasProjectFilter(input: AccountMetricsAggregationInput) {
+  if (input.projectFilterApplied !== undefined) {
+    return input.projectFilterApplied;
+  }
+  return (
+    input.projectIds !== null &&
+    input.projectIds !== undefined &&
+    input.projectIds.length > 0
+  );
+}
+
+async function resolveProjectIds(input: AccountMetricsFilter) {
+  if (!input.projectNames || input.projectNames.length === 0) {
+    return { projectIds: undefined, projectFilterApplied: false };
+  }
+
+  const projects = await Project.query()
+    .select("id")
+    .where("accountId", input.accountId)
+    .whereIn("name", input.projectNames);
+
+  return {
+    projectIds: projects.map((project) => project.id),
+    projectFilterApplied: true,
+  };
+}
+
+/**
+ * Get all account metrics, resolving project names before aggregating them.
+ *
+ * This is the shared entry point for GraphQL and the REST API. The lower-level
+ * functions remain available for callers that already have project IDs.
+ */
+export async function getAccountMetrics(input: GetAccountMetricsInput) {
+  const to = input.to ?? new Date();
+
+  if (input.from.getTime() > to.getTime()) {
+    throw new InvalidAccountMetricsInputError("`from` must be before `to`.");
+  }
+
+  const durationDays = Math.floor(
+    (to.getTime() - input.from.getTime()) / DAY_IN_MS,
+  );
+  if (durationDays > ACCOUNT_METRICS_MAX_RANGE_DAYS) {
+    throw new InvalidAccountMetricsInputError(
+      `Date range cannot exceed ${ACCOUNT_METRICS_MAX_RANGE_DAYS} days.`,
+    );
+  }
+
+  const projectFilter = await resolveProjectIds(input);
+  const params: AccountMetricsAggregationInput = {
+    accountId: input.accountId,
+    ...projectFilter,
+    from: input.from,
+    to,
+    groupBy: input.groupBy,
+  };
+  const [screenshots, builds] = await Promise.all([
+    getAccountScreenshotMetrics(params),
+    getAccountBuildMetrics(params),
+  ]);
+
+  return { screenshots, builds };
+}
 
 /**
  * Get the number of screenshots by projects over time.
  */
-export async function getAccountScreenshotMetrics(input: {
-  accountId: string;
-  projectIds?: string[] | undefined | null;
-  from: Date;
-  to: Date;
-  groupBy: GroupBy;
-}) {
+export async function getAccountScreenshotMetrics(
+  input: AccountMetricsAggregationInput,
+) {
   const interval = `1 ${input.groupBy}`;
   const query = `
   WITH aggregated AS (
@@ -25,7 +113,7 @@ export async function getAccountScreenshotMetrics(input: {
     WHERE p."accountId" = :accountId
       AND sb."createdAt" >= date_trunc(:groupBy, :from::timestamp)
       AND sb."createdAt" <= :to
-      ${input.projectIds && input.projectIds.length > 0 ? `AND sb."projectId" = any(:projectIds)` : ""}
+      ${hasProjectFilter(input) ? `AND sb."projectId" = any(:projectIds)` : ""}
     GROUP BY date, p.id
   ),
   non_zero_projects AS (
@@ -54,8 +142,10 @@ export async function getAccountScreenshotMetrics(input: {
   `;
 
   const projectsQuery = Project.query().where("accountId", input.accountId);
-  if (input.projectIds && input.projectIds.length > 0) {
-    projectsQuery.whereIn("id", input.projectIds);
+  if (hasProjectFilter(input)) {
+    const projectIds = input.projectIds;
+    invariant(projectIds, "project IDs are required when filtering metrics");
+    projectsQuery.whereIn("id", projectIds);
   }
   const [result, inputProjects] = await Promise.all([
     knex.raw<{
@@ -116,13 +206,9 @@ export async function getAccountScreenshotMetrics(input: {
 /**
  * Get the number of builds by projects over time.
  */
-export async function getAccountBuildMetrics(input: {
-  accountId: string;
-  projectIds?: string[] | undefined | null;
-  from: Date;
-  to: Date;
-  groupBy: GroupBy;
-}) {
+export async function getAccountBuildMetrics(
+  input: AccountMetricsAggregationInput,
+) {
   const interval = `1 ${input.groupBy}`;
   const query = `
     WITH aggregated AS (
@@ -152,7 +238,7 @@ export async function getAccountBuildMetrics(input: {
     WHERE p."accountId" = :accountId
       AND b."createdAt" >= date_trunc(:groupBy, :from::timestamp)
       AND b."createdAt" <= :to
-      ${input.projectIds && input.projectIds.length > 0 ? `AND b."projectId" = any(:projectIds)` : ""}
+      ${hasProjectFilter(input) ? `AND b."projectId" = any(:projectIds)` : ""}
     GROUP BY date, p.id
   ),
   non_zero_projects AS (
@@ -185,8 +271,10 @@ export async function getAccountBuildMetrics(input: {
   `;
 
   const projectsQuery = Project.query().where("accountId", input.accountId);
-  if (input.projectIds && input.projectIds.length > 0) {
-    projectsQuery.whereIn("id", input.projectIds);
+  if (hasProjectFilter(input)) {
+    const projectIds = input.projectIds;
+    invariant(projectIds, "project IDs are required when filtering metrics");
+    projectsQuery.whereIn("id", projectIds);
   }
   const [result, inputProjects] = await Promise.all([
     knex.raw<{

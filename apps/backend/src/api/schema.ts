@@ -16,6 +16,7 @@ import { exchangeGitHubActionsTokenlessTokenOperation } from "./handlers/exchang
 import { finalizeBuildsOperation } from "./handlers/finalizeBuilds";
 import { finalizeDeploymentOperation } from "./handlers/finalizeDeployment";
 import { findBaselineOperation } from "./handlers/findBaseline";
+import { getAccountAnalyticsOperation } from "./handlers/getAccountAnalytics";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
 import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
@@ -82,6 +83,12 @@ export const zodSchema = {
       "x-page-icon": "folder-open",
     },
     {
+      name: "Analytics",
+      description:
+        "Retrieve account-level build and screenshot metrics over time.",
+      "x-page-icon": "chart-no-axes-combined",
+    },
+    {
       name: "Builds",
       description:
         "Create, finalize, update, and inspect visual testing builds, including their screenshot diffs. This is the core of the visual testing workflow.",
@@ -111,6 +118,9 @@ export const zodSchema = {
   },
   security: [{ projectToken: [] }],
   paths: {
+    "/accounts/{accountSlug}/analytics": {
+      get: getAccountAnalyticsOperation,
+    },
     "/builds": {
       post: createBuildOperation,
     },
