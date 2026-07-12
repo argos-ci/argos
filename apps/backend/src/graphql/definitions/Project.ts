@@ -34,6 +34,7 @@ import { getInstallationOctokit } from "@/github/client";
 import { formatGlProject, getGitlabClientFromAccount } from "@/gitlab";
 import { getOrCreateGithubRepository } from "@/graphql/services/github";
 import { HTTPError } from "@/util/error";
+import { safeParseTestId } from "@/util/test-id";
 
 import {
   IBuildStatus,
@@ -43,7 +44,7 @@ import {
   IResolvers,
 } from "../__generated__/resolver-types";
 import { deleteProject, getAdminProject } from "../services/project";
-import { queryActiveTests, safeParseTestId } from "../services/test";
+import { queryActiveTests } from "../services/test";
 import { badUserInput, forbidden, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
 

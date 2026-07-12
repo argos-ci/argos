@@ -12,7 +12,7 @@ import {
 } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
-import { formatTestChangeId } from "@/graphql/services/test";
+import { formatTestChangeId } from "@/util/test-id";
 
 import { createTestHandlerApp } from "../test-util";
 import { ignoreChange, unignoreChange } from "./ignoreChange";

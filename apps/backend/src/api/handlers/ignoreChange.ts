@@ -9,14 +9,11 @@ import {
 } from "@/database/services/ignored-change";
 import { IMetricsPeriod } from "@/graphql/__generated__/resolver-types";
 import {
-  formatTestChangeId,
-  safeParseTestChangeId,
-} from "@/graphql/services/test";
-import {
   getChangesTotalOccurrences,
   getStartDateFromPeriod,
 } from "@/metrics/test";
 import { boom } from "@/util/error";
+import { formatTestChangeId, safeParseTestChangeId } from "@/util/test-id";
 
 import { getProjectForAuth } from "../auth/project";
 import { ChangeSchema } from "../schema/primitives/change";

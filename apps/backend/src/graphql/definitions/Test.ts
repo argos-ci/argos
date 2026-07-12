@@ -7,17 +7,17 @@ import {
   unignoreChange as unignoreTestChange,
 } from "@/database/services/ignored-change";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
-
-import {
-  type IResolvers,
-  type ITestMetrics,
-} from "../__generated__/resolver-types";
 import {
   formatTestChangeId,
   formatTestId,
   safeParseTestChangeId,
   type TestChangeIdPayload,
-} from "../services/test";
+} from "@/util/test-id";
+
+import {
+  type IResolvers,
+  type ITestMetrics,
+} from "../__generated__/resolver-types";
 import { badUserInput, forbidden, notFound } from "../util";
 import { paginateResult } from "./PageInfo";
 

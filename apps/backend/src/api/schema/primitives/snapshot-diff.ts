@@ -8,9 +8,9 @@ import {
   ScreenshotDiff,
   type File as FileModel,
 } from "@/database/models";
-import { formatTestChangeId, formatTestId } from "@/graphql/services/test";
 import { getChangesTotalOccurrences, getTestAllMetrics } from "@/metrics/test";
 import { getPublicFileUrl, getPublicUrl, getTwicPicsUrl } from "@/storage";
+import { formatTestChangeId, formatTestId } from "@/util/test-id";
 
 import { ChangeSchema } from "./change";
 
