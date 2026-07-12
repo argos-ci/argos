@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
@@ -340,14 +341,17 @@ async function runChangeMutaton(
 
   const denial = await getChangeMutationDenial(project, user);
 
-  if (denial === "forbidden") {
-    throw forbidden(
-      "You do not have permission to ignore test changes in this project",
-    );
-  }
-
-  if (denial === "ignore-disabled") {
-    throw badUserInput("The ignore feature is disabled for this project.");
+  switch (denial) {
+    case "forbidden":
+      throw forbidden(
+        "You do not have permission to ignore test changes in this project",
+      );
+    case "ignore-disabled":
+      throw badUserInput("The ignore feature is disabled for this project.");
+    case null:
+      break;
+    default:
+      assertNever(denial);
   }
 
   invariant(user, "User should be defined because of permissions check");

@@ -1,3 +1,4 @@
+import { assertNever } from "@argos/util/assertNever";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
@@ -130,11 +131,15 @@ async function resolveChangeMutation(input: {
   }
 
   const denial = await getChangeMutationDenial(project, auth.user);
-  if (denial === "forbidden") {
-    throw boom(403, "You do not have permission to ignore changes");
-  }
-  if (denial === "ignore-disabled") {
-    throw boom(400, "The ignore feature is disabled for this project");
+  switch (denial) {
+    case "forbidden":
+      throw boom(403, "You do not have permission to ignore changes");
+    case "ignore-disabled":
+      throw boom(400, "The ignore feature is disabled for this project");
+    case null:
+      break;
+    default:
+      assertNever(denial);
   }
 
   return {
