@@ -11,7 +11,9 @@ import {
   DialogTitle,
   useOverlayTriggerState,
 } from "@/ui/Dialog";
+import { toast } from "@/ui/Toaster";
 
+import { useBuildDiffState } from "./BuildDiffState";
 import {
   useAcknowledgeMarkedDiff,
   useBuildReviewAPI,
@@ -81,13 +83,19 @@ function ReapplyPreviousApprovalsButton(props: {
   const { branchApprovedDiffs } = props;
   const api = useBuildReviewAPI();
   const reviewState = useBuildReviewState();
+  // After reapplying, land on the first diff that still needs a review,
+  // starting from the top of the list. The next diff has to be resolved after
+  // the approvals are applied — resolving it now would still see the reapplied
+  // diffs as pending and navigate to one of them.
   const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff({
-    fromIndex: 0,
+    fromIndex: -1,
+    resolveNextDiffOnAck: true,
   });
   invariant(
     reviewState,
     "Review state should exist if this dialog is displayed",
   );
+  const { stats, isSubsetBuild } = useBuildDiffState();
   const { close } = useOverlayTriggerState();
   return (
     <Button
@@ -106,6 +114,24 @@ function ReapplyPreviousApprovalsButton(props: {
             {},
           ),
         }));
+        const count = branchApprovedDiffs.length;
+        const total = stats
+          ? stats.added + stats.changed + (isSubsetBuild ? 0 : stats.removed)
+          : null;
+        const remaining = total !== null ? Math.max(0, total - count) : null;
+        toast.success(
+          count === 1
+            ? "1 previous approval reapplied"
+            : `${count} previous approvals reapplied`,
+          {
+            description:
+              remaining === null
+                ? undefined
+                : remaining === 0
+                  ? "All changes are reviewed — you're ready to submit your review."
+                  : `${remaining === 1 ? "1 change" : `${remaining} changes`} left to review — taking you to the first one.`,
+          },
+        );
         acknowledge();
         close();
       }}

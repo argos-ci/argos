@@ -267,8 +267,8 @@ export function useHasNextDiff() {
 
 export interface UseGetNextDiffOptions {
   /**
-   * The index to start searching from.
-   * Default to the active diff index.
+   * The search starts after this index; pass -1 to search from the top of
+   * the list. Default to the active diff index.
    */
   fromIndex?: number;
 }
@@ -277,13 +277,12 @@ export function useGetNextDiff(
   predicate?: (diff: Diff) => boolean,
   options?: UseGetNextDiffOptions,
 ) {
-  const hasNextDiff = useHasNextDiff();
   const { searchMode } = useSearchModeState();
   const { diffs, activeDiff, expanded } = useBuildDiffState();
   const activeDiffIndex = useActiveDiffIndex();
   const fromIndex = options?.fromIndex ?? activeDiffIndex;
   return useEventCallback(() => {
-    if (!hasNextDiff) {
+    if (fromIndex >= diffs.length - 1) {
       return null;
     }
 

@@ -102,16 +102,30 @@ export function useBuildReviewAPI(): BuildReviewAPI | null {
 /**
  * Acknowledge the current diff and move to the next diff or show the review dialog.
  */
-export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
+export function useAcknowledgeMarkedDiff(
+  options?: UseGetNextDiffOptions & {
+    /**
+     * Resolve the next diff once the status update has landed instead of
+     * snapshotting it at plan time. Required when marking several diffs at
+     * once: a plan-time snapshot still sees them as pending and would
+     * navigate to one of them.
+     */
+    resolveNextDiffOnAck?: boolean;
+  },
+) {
   const getDiffStatus = useGetDiffEvaluationStatus();
+  const reviewStatus = useReviewStatus();
+  const { setActiveDiff, isSubsetBuild, diffs, isLoading } =
+    useBuildDiffState();
   const getNextDiff = useGetNextDiff((diff) => {
     if (!getDiffStatus) {
       return false;
     }
-    return getDiffStatus(diff.id) === EvaluationStatus.Pending;
+    return (
+      checkDiffCanBeReviewed(diff.status, { isSubsetBuild }) &&
+      getDiffStatus(diff.id) === EvaluationStatus.Pending
+    );
   }, options);
-  const reviewStatus = useReviewStatus();
-  const { setActiveDiff, isSubsetBuild } = useBuildDiffState();
   const reviewDialog = useReviewDialog();
   const state = use(BuildReviewStateContext);
   const diffStatuses = state?.diffStatuses ?? null;
@@ -132,20 +146,40 @@ export function useAcknowledgeMarkedDiff(options?: UseGetNextDiffOptions) {
     }
   });
 
+  const resolveNextDiffOnAck = options?.resolveNextDiffOnAck ?? false;
+
   const acknowledge = useEventCallback(() => {
-    acknowledgeNextDiff(nextDiffRef.current);
+    // With `resolveNextDiffOnAck`, the updated statuses and re-sorted list are
+    // committed by the time this runs, so the next diff is computed against
+    // them rather than read from the plan-time snapshot.
+    acknowledgeNextDiff(
+      resolveNextDiffOnAck ? getNextDiff() : nextDiffRef.current,
+    );
   });
 
   useEffect(() => {
     if (diffStatusesRef.current && diffStatuses !== diffStatusesRef.current) {
+      // In resolve-on-ack mode the next diff to review may simply not be
+      // loaded yet — hold the acknowledgment until more of the list arrives
+      // (`diffs` is a dependency) or it is fully loaded.
+      if (resolveNextDiffOnAck && isLoading && !getNextDiff()) {
+        return;
+      }
       diffStatusesRef.current = null;
       acknowledge();
     }
-  }, [diffStatuses, acknowledge]);
+  }, [
+    diffStatuses,
+    acknowledge,
+    resolveNextDiffOnAck,
+    isLoading,
+    getNextDiff,
+    diffs,
+  ]);
 
   const planAck = useEventCallback(() => {
     diffStatusesRef.current = diffStatuses;
-    nextDiffRef.current = getNextDiff();
+    nextDiffRef.current = resolveNextDiffOnAck ? null : getNextDiff();
   });
 
   // Snapshot the next diff to review *now* — before marking re-sorts the list —
