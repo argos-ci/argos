@@ -81,8 +81,13 @@ function ReapplyPreviousApprovalsButton(props: {
   const { branchApprovedDiffs } = props;
   const api = useBuildReviewAPI();
   const reviewState = useBuildReviewState();
+  // After reapplying, land on the first diff that still needs a review,
+  // starting from the top of the list. The next diff has to be resolved after
+  // the approvals are applied — resolving it now would still see the reapplied
+  // diffs as pending and navigate to one of them.
   const [checkIsPending, acknowledge] = useAcknowledgeMarkedDiff({
-    fromIndex: 0,
+    fromIndex: -1,
+    resolveNextDiffOnAck: true,
   });
   invariant(
     reviewState,
