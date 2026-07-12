@@ -4,7 +4,7 @@ import { knex } from "@/database";
 import type { File, Test } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
-import { upsertTestStats } from "./test";
+import { getChangesTotalOccurrences, upsertTestStats } from "./test";
 
 describe("upsertTestStats", () => {
   let test: Test;
@@ -136,5 +136,64 @@ describe("upsertTestStats", () => {
         value: 2,
       });
     });
+  });
+});
+
+describe("getChangesTotalOccurrences", () => {
+  let test: Test;
+
+  beforeEach(async () => {
+    await setupDatabase();
+    test = await factory.Test.create();
+
+    // Two occurrences of "aa" on 2025-06-01, one on 2025-06-10, and one
+    // occurrence of "bb" on 2025-06-10.
+    await knex("test_stats_fingerprints").insert([
+      {
+        testId: test.id,
+        fingerprint: "aa",
+        date: new Date("2025-06-01T00:00:00.000Z"),
+        value: 2,
+      },
+      {
+        testId: test.id,
+        fingerprint: "aa",
+        date: new Date("2025-06-10T00:00:00.000Z"),
+        value: 1,
+      },
+      {
+        testId: test.id,
+        fingerprint: "bb",
+        date: new Date("2025-06-10T00:00:00.000Z"),
+        value: 1,
+      },
+    ]);
+  });
+
+  it("returns an empty array for no changes", async () => {
+    await expect(getChangesTotalOccurrences([], {})).resolves.toEqual([]);
+  });
+
+  it("sums occurrences per change, aligned to the input order", async () => {
+    const result = await getChangesTotalOccurrences(
+      [
+        { testId: test.id, fingerprint: "aa" },
+        { testId: test.id, fingerprint: "bb" },
+        { testId: test.id, fingerprint: "missing" },
+      ],
+      {},
+    );
+    expect(result).toEqual([3, 1, 0]);
+  });
+
+  it("only counts occurrences on or after `from`", async () => {
+    const result = await getChangesTotalOccurrences(
+      [
+        { testId: test.id, fingerprint: "aa" },
+        { testId: test.id, fingerprint: "bb" },
+      ],
+      { from: new Date("2025-06-05T00:00:00.000Z") },
+    );
+    expect(result).toEqual([1, 1]);
   });
 });

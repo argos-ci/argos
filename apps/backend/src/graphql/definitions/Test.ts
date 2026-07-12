@@ -1,14 +1,11 @@
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { transaction } from "@/database";
+import { Project, ScreenshotDiff, type User } from "@/database/models";
 import {
-  AuditTrail,
-  IgnoredChange,
-  Project,
-  ScreenshotDiff,
-  type User,
-} from "@/database/models";
+  ignoreChange as ignoreTestChange,
+  unignoreChange as unignoreTestChange,
+} from "@/database/services/ignored-change";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
 
 import {
@@ -271,32 +268,12 @@ export const resolvers: IResolvers = {
           user: ctx.auth?.user ?? null,
         },
         async ({ changeIdPayload, project, user }) => {
-          const isIgnored = Boolean(
-            await IgnoredChange.query().findOne({
-              projectId: project.id,
-              fingerprint: changeIdPayload.fingerprint,
-              testId: changeIdPayload.testId,
-            }),
-          );
-          if (!isIgnored) {
-            await transaction(async (trx) => {
-              await Promise.all([
-                IgnoredChange.query(trx).insert({
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  fingerprint: changeIdPayload.fingerprint,
-                }),
-                AuditTrail.query(trx).insert({
-                  date: new Date().toISOString(),
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  userId: user.id,
-                  fingerprint: changeIdPayload.fingerprint,
-                  action: "files.ignored",
-                }),
-              ]);
-            });
-          }
+          await ignoreTestChange({
+            projectId: project.id,
+            testId: changeIdPayload.testId,
+            fingerprint: changeIdPayload.fingerprint,
+            userId: user.id,
+          });
         },
       );
     },
@@ -308,34 +285,12 @@ export const resolvers: IResolvers = {
           user: ctx.auth?.user ?? null,
         },
         async ({ changeIdPayload, project, user }) => {
-          const isIgnored = Boolean(
-            await IgnoredChange.query().findOne({
-              projectId: project.id,
-              testId: changeIdPayload.testId,
-              fingerprint: changeIdPayload.fingerprint,
-            }),
-          );
-          if (isIgnored) {
-            await transaction(async (trx) => {
-              await Promise.all([
-                IgnoredChange.query(trx)
-                  .where({
-                    projectId: project.id,
-                    testId: changeIdPayload.testId,
-                    fingerprint: changeIdPayload.fingerprint,
-                  })
-                  .delete(),
-                AuditTrail.query(trx).insert({
-                  date: new Date().toISOString(),
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  userId: user.id,
-                  fingerprint: changeIdPayload.fingerprint,
-                  action: "files.unignored",
-                }),
-              ]);
-            });
-          }
+          await unignoreTestChange({
+            projectId: project.id,
+            testId: changeIdPayload.testId,
+            fingerprint: changeIdPayload.fingerprint,
+            userId: user.id,
+          });
         },
       );
     },
