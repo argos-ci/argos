@@ -120,7 +120,11 @@ function withEmphasis<T extends ToastCreator>(create: T): T {
  * already visible emphasizes it with a zoom animation.
  */
 export const toast: typeof sonnerToast = Object.assign(
-  withEmphasis(sonnerToast),
+  // Sonner's bare `toast()` skips its `create()` logic: with an explicit id
+  // it appends duplicate entries and never revives a dismissed id, so
+  // `getToasts()` misses it once it has been dismissed. `message()` renders
+  // the same untyped toast but goes through `create()`.
+  withEmphasis(sonnerToast.message),
   {
     success: withEmphasis(sonnerToast.success),
     info: withEmphasis(sonnerToast.info),
