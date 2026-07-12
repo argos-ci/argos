@@ -1,3 +1,5 @@
+import { UniqueViolationError } from "objection";
+
 import { transaction } from "@/database";
 import { AuditTrail, IgnoredChange } from "@/database/models";
 
@@ -35,19 +37,30 @@ export async function ignoreChange(input: ChangeIdentity): Promise<void> {
   if (await isChangeIgnored({ projectId, testId, fingerprint })) {
     return;
   }
-  await transaction(async (trx) => {
-    await Promise.all([
-      IgnoredChange.query(trx).insert({ projectId, testId, fingerprint }),
-      AuditTrail.query(trx).insert({
-        date: new Date().toISOString(),
-        projectId,
-        testId,
-        userId,
-        fingerprint,
-        action: "files.ignored",
-      }),
-    ]);
-  });
+  try {
+    await transaction(async (trx) => {
+      await Promise.all([
+        IgnoredChange.query(trx).insert({ projectId, testId, fingerprint }),
+        AuditTrail.query(trx).insert({
+          date: new Date().toISOString(),
+          projectId,
+          testId,
+          userId,
+          fingerprint,
+          action: "files.ignored",
+        }),
+      ]);
+    });
+  } catch (error) {
+    // A concurrent request can ignore the same change between the check above
+    // and the insert. The composite primary key rejects the duplicate; the
+    // whole transaction (including the audit trail) rolls back, so the losing
+    // request is a clean no-op rather than a 500.
+    if (error instanceof UniqueViolationError) {
+      return;
+    }
+    throw error;
+  }
 }
 
 /**
