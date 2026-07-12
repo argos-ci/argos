@@ -4,6 +4,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 import type { AuthPATPayload } from "@/auth/payload";
 import { Test } from "@/database/models";
 import {
+  getChangeMutationDenial,
   ignoreChange as ignoreTestChange,
   unignoreChange as unignoreTestChange,
 } from "@/database/services/ignored-change";
@@ -128,12 +129,11 @@ async function resolveChangeMutation(input: {
     throw boom(404, "Change not found");
   }
 
-  const permissions = await project.$getPermissions(auth.user);
-  if (!permissions.includes("review")) {
+  const denial = await getChangeMutationDenial(project, auth.user);
+  if (denial === "forbidden") {
     throw boom(403, "You do not have permission to ignore changes");
   }
-
-  if (!project.$getIgnoreConfig().enabled) {
+  if (denial === "ignore-disabled") {
     throw boom(400, "The ignore feature is disabled for this project");
   }
 

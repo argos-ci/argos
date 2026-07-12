@@ -3,6 +3,7 @@ import gqlTag from "graphql-tag";
 
 import { Project, ScreenshotDiff, type User } from "@/database/models";
 import {
+  getChangeMutationDenial,
   ignoreChange as ignoreTestChange,
   unignoreChange as unignoreTestChange,
 } from "@/database/services/ignored-change";
@@ -337,19 +338,19 @@ async function runChangeMutaton(
     throw notFound("Project not found");
   }
 
-  const permissions = await project.$getPermissions(user);
+  const denial = await getChangeMutationDenial(project, user);
 
-  if (!permissions.includes("review")) {
+  if (denial === "forbidden") {
     throw forbidden(
       "You do not have permission to ignore test changes in this project",
     );
   }
 
-  invariant(user, "User should be defined because of permissions check");
-
-  if (!project.$getIgnoreConfig().enabled) {
+  if (denial === "ignore-disabled") {
     throw badUserInput("The ignore feature is disabled for this project.");
   }
+
+  invariant(user, "User should be defined because of permissions check");
 
   await run({ changeIdPayload, project, user });
 
