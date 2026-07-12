@@ -20,5 +20,3 @@ export const ChangeSchema = z
       "A test change: a specific visual difference (fingerprint) of a test that can be ignored to silence flaky changes.",
     id: "Change",
   });
-
-export type SerializedChange = z.infer<typeof ChangeSchema>;
