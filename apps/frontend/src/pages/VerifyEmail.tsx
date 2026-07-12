@@ -1,13 +1,13 @@
 import { useMutation } from "@apollo/client/react";
 import { Helmet } from "react-helmet";
 import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
 
 import { Layout } from "@/containers/Layout";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import { Code } from "@/ui/Code";
 import { Container } from "@/ui/Container";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 export function Component() {

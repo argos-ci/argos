@@ -10,7 +10,6 @@ import {
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { useAtom, useAtomValue } from "jotai/react";
-import { toast } from "sonner";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
@@ -28,6 +27,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
+import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 

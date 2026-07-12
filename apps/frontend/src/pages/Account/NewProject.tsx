@@ -5,7 +5,6 @@ import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 import { ConnectRepository } from "@/containers/Project/ConnectRepository";
 import { graphql } from "@/gql";
@@ -21,6 +20,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { Separator } from "@/ui/Separator";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { useAccountParams } from "./AccountParams";

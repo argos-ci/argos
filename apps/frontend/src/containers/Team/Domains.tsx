@@ -1,7 +1,6 @@
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { toast } from "sonner";
 
 import { graphql, type DocumentType } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -30,6 +29,7 @@ import { FormTextInput } from "@/ui/FormTextInput";
 import { IconButton } from "@/ui/IconButton";
 import { List, ListRow } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
+import { toast } from "@/ui/Toaster";
 
 const _TeamFragment = graphql(`
   fragment TeamDomains_Team on Team {

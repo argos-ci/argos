@@ -2,13 +2,13 @@ import { useApolloClient } from "@apollo/client/react";
 import { clsx } from "clsx";
 import { SmilePlusIcon } from "lucide-react";
 import { Button } from "react-aria-components";
-import { toast } from "sonner";
 
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { EmojiPickerPopover, EmojiPickerTrigger } from "@/ui/EmojiPicker";
 import { IconButton } from "@/ui/IconButton";
+import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 import { formatNameListText } from "@/util/nameList";

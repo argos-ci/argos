@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useFormState, type Control, type FieldValues } from "react-hook-form";
-import { toast } from "sonner";
+
+import { toast } from "@/ui/Toaster";
 
 import { ErrorMessage } from "./ErrorMessage";
 

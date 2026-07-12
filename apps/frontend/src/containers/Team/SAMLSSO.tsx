@@ -16,7 +16,6 @@ import {
   type Control,
   type SubmitHandler,
 } from "react-hook-form";
-import { toast } from "sonner";
 import z from "zod";
 
 import { CONTACT_HREF } from "@/constants";
@@ -53,6 +52,7 @@ import { Popover } from "@/ui/Popover";
 import { Separator } from "@/ui/Separator";
 import { Switch } from "@/ui/Switch";
 import { TextInput, TextInputAddon, TextInputGroup } from "@/ui/TextInput";
+import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { getErrorMessage } from "@/util/error";

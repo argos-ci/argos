@@ -352,6 +352,34 @@
   }
 }
 
+/*
+ * Sonner only hides the content of collapsed (stacked) toasts when they are
+ * styled; replicate it for our unstyled toasts. Kept out of any layer so it
+ * competes with the stylesheet sonner injects at runtime.
+ */
+[data-sonner-toast][data-expanded="false"][data-front="false"] > * {
+  opacity: 0;
+}
+
+/*
+ * Restate sonner's toast transition list to add `scale`, which the Toaster
+ * toggles through the `toast-emphasized` class when a toast is triggered
+ * again while visible. The selector is doubled to win over the stylesheet
+ * sonner injects at runtime.
+ */
+[data-sonner-toast][data-sonner-toast] {
+  transition:
+    transform 0.4s,
+    opacity 0.4s,
+    height 0.4s,
+    box-shadow 0.2s,
+    scale 0.25s;
+}
+
+[data-sonner-toast].toast-emphasized {
+  scale: 1.05;
+}
+
 @layer base {
   *,
   ::after,

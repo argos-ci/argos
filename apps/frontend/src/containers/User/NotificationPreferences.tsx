@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import { Switch } from "@/ui/Switch";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 const _AccountFragment = graphql(`

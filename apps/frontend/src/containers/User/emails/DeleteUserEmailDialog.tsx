@@ -1,5 +1,4 @@
 import { useMutation } from "@apollo/client/react";
-import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
@@ -13,6 +12,7 @@ import {
   useOverlayTriggerState,
 } from "@/ui/Dialog";
 import { ErrorMessage } from "@/ui/ErrorMessage";
+import { toast } from "@/ui/Toaster";
 
 type DeleteUserEmailDialogProps = {
   email: string;

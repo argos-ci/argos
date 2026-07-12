@@ -6,8 +6,8 @@ import {
   Link as RACLink,
   LinkProps as RACLinkProps,
 } from "react-aria-components";
-import { toast } from "sonner";
 
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { Loader } from "./Loader";

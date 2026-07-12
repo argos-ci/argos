@@ -1,7 +1,6 @@
 import { useApolloClient } from "@apollo/client/react";
 import { InfoIcon } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { logout } from "@/containers/Auth";
@@ -22,6 +21,7 @@ import { FormCheckbox } from "@/ui/FormCheckbox";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { toast } from "@/ui/Toaster";
 
 const AddUserEmailMutation = graphql(`
   mutation AddUserEmailMutation($email: String!) {

@@ -1,6 +1,5 @@
 import { useApolloClient, useMutation } from "@apollo/client/react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { ProjectGitRepository_ProjectFragment } from "@/gql/graphql";
@@ -10,6 +9,7 @@ import { Form } from "@/ui/Form";
 import { FormCardFooter } from "@/ui/FormCardFooter";
 import { FormSwitch } from "@/ui/FormSwitch";
 import { Link } from "@/ui/Link";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { RepositoryIcons } from "../Repository";

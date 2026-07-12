@@ -11,7 +11,6 @@ import {
 import moment from "moment";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "react-aria-components";
-import { toast } from "sonner";
 import { useClipboard } from "use-clipboard-copy";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
@@ -28,6 +27,7 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { IconButton } from "@/ui/IconButton";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
+import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
