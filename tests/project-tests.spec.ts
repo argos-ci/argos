@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 
 import { createTestChangeScenario } from "../apps/backend/src/database/seeds";
-import { formatTestId } from "../apps/backend/src/graphql/services/test";
+import { formatTestId } from "../apps/backend/src/util/test-id";
 import { loggedTest } from "./logged-test";
 import { ensureTeamOwner, screenshot } from "./util";
 
