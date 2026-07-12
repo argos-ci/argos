@@ -1,6 +1,5 @@
 import { useId, useState } from "react";
 import { MessageSquarePlusIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -8,6 +7,7 @@ import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { MOD } from "@/ui/Editor/EditorToolbar.shortcuts";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
+import { toast } from "@/ui/Toaster";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
 import { useMentionableUsers } from "../sidebar/MentionableUsersContext";

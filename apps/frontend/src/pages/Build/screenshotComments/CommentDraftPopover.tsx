@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
-import { toast } from "sonner";
 
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";
+import { toast } from "@/ui/Toaster";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 
 import { ReviewCommentSubmitButton } from "../ReviewCommentSubmitButton";

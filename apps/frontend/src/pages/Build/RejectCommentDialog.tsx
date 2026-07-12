@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
-import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
@@ -26,6 +25,7 @@ import {
 import { Editor, type EditorValue } from "@/ui/Editor/Editor";
 import { hasEditorContent } from "@/ui/Editor/util";
 import { Modal, ModalActionContext } from "@/ui/Modal";
+import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 import * as sessionStorage from "@/util/session-storage";

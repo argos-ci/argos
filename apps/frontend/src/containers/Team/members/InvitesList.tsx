@@ -9,7 +9,6 @@ import {
   MoreVerticalIcon,
 } from "lucide-react";
 import { Heading, MenuTrigger, Text } from "react-aria-components";
-import { toast } from "sonner";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { TeamMemberLabel } from "@/containers/UserList";
@@ -23,6 +22,7 @@ import { List, ListLoadMore, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
+import { toast } from "@/ui/Toaster";
 
 import { InviteDialog } from "./InviteDialog";
 import { SearchFilter } from "./SearchFilter";

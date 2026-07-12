@@ -1,6 +1,5 @@
 import { useApolloClient } from "@apollo/client/react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import {
@@ -16,6 +15,7 @@ import { Form } from "@/ui/Form";
 import { FormRootError } from "@/ui/FormRootError";
 import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
+import { toast } from "@/ui/Toaster";
 
 const UpdateUserAccessTokenMutation = graphql(`
   mutation UpdateUserAccessToken($input: UpdateUserAccessTokenInput!) {

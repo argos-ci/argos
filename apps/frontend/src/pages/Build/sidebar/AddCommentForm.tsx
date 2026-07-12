@@ -4,12 +4,12 @@ import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import { EyeOffIcon } from "lucide-react";
 import { Button } from "react-aria-components";
-import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
 import { StandaloneEditor } from "@/ui/Editor/StandaloneEditor";
+import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useAltKeyHeld } from "@/ui/useAltKeyHeld";
 import { getErrorMessage } from "@/util/error";

@@ -1,7 +1,8 @@
 import { useId, useState } from "react";
 import clsx from "clsx";
 import { ArrowUpIcon } from "lucide-react";
-import { toast } from "sonner";
+
+import { toast } from "@/ui/Toaster";
 
 import { Button } from "../Button";
 import { HotkeyTooltip } from "../HotkeyTooltip";

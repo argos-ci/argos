@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import { MonitorIcon, SmartphoneIcon } from "lucide-react";
 import moment from "moment";
 import { Button as RACButton } from "react-aria-components";
-import { toast } from "sonner";
 
 import { logout } from "@/containers/Auth";
 import { DocumentType, graphql } from "@/gql";
@@ -24,6 +23,7 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListRow } from "@/ui/List";
 import { Modal } from "@/ui/Modal";
 import { Time } from "@/ui/Time";
+import { toast } from "@/ui/Toaster";
 
 import { EmailAuth } from "./providers/EmailAuth";
 import { GitHubAuth } from "./providers/GitHubAuth";

@@ -1,8 +1,8 @@
 import { useMutation } from "@apollo/client/react";
-import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 type SendUserEmailVerificationButtonProps = {

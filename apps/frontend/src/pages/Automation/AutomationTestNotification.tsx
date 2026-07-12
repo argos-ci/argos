@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { CheckIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
 import { handleFormError } from "@/ui/Form";
+import { toast } from "@/ui/Toaster";
 
 import type { AutomationForm } from "./AutomationForm";
 

@@ -2,7 +2,6 @@ import { useApolloClient } from "@apollo/client/react";
 import { invariant } from "@argos/util/invariant";
 import { MoreVerticalIcon, PlusIcon } from "lucide-react";
 import { DialogTrigger, MenuTrigger } from "react-aria-components";
-import { toast } from "sonner";
 
 import { DocumentType, graphql } from "@/gql";
 import { Button, ButtonIcon } from "@/ui/Button";
@@ -20,6 +19,7 @@ import { List, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemTooltip } from "@/ui/Menu";
 import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { AddUserEmailDialog } from "./emails/AddUserEmailDialog";

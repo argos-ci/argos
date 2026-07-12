@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 
 import { useProjectPermission } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
@@ -26,6 +25,7 @@ import type { MentionUser } from "@/ui/Editor/mention";
 import { IconButton } from "@/ui/IconButton";
 import { Panel, PanelHeader, PanelTitle } from "@/ui/Panel";
 import { Time } from "@/ui/Time";
+import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useLiveRef } from "@/ui/useLiveRef";
 import { getMentionUser, getUserCardData, UserHoverCard } from "@/ui/UserCard";

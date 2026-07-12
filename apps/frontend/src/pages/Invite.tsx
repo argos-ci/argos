@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 
 import { useIsLoggedIn } from "@/containers/Auth";
 import {
@@ -15,6 +14,7 @@ import {
 import { graphql } from "@/gql";
 import { Button, type ButtonProps } from "@/ui/Button";
 import { PageLoader } from "@/ui/PageLoader";
+import { toast } from "@/ui/Toaster";
 import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "./Account/AccountParams";

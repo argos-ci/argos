@@ -3,7 +3,6 @@ import { invariant } from "@argos/util/invariant";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircleIcon } from "lucide-react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { DocumentType, graphql } from "@/gql";
@@ -24,6 +23,7 @@ import { FormSubmit } from "@/ui/FormSubmit";
 import { FormTextInput } from "@/ui/FormTextInput";
 import { Label } from "@/ui/Label";
 import { Separator } from "@/ui/Separator";
+import { toast } from "@/ui/Toaster";
 
 import { MemberLevelSelect } from "./MemberLevelSelect";
 

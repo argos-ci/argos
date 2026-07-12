@@ -7,7 +7,6 @@ import type {
   SupportedLanguages,
 } from "@pierre/diffs/react";
 import { useAtomValue } from "jotai/react";
-import { toast } from "sonner";
 
 import { useAuthTokenPayload } from "@/containers/Auth";
 import { CommentsEnabledContext } from "@/containers/Build/CommentsContext";
@@ -18,6 +17,7 @@ import { DocumentType, graphql } from "@/gql";
 import { ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
 import { type EditorValue } from "@/ui/Editor/Editor";
+import { toast } from "@/ui/Toaster";
 import { getMentionUser } from "@/ui/UserCard";
 import { getErrorMessage } from "@/util/error";
 

@@ -29,7 +29,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useObjectRef } from "react-aria";
-import { toast } from "sonner";
 import { useClipboard } from "use-clipboard-copy";
 
 import { DocumentType, graphql } from "@/gql";
@@ -49,6 +48,7 @@ import {
 } from "@/ui/Menu";
 import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
+import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { useEventCallback } from "@/ui/useEventCallback";
 import { useResizeObserver } from "@/ui/useResizeObserver";
