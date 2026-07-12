@@ -214,6 +214,55 @@ export async function getTestAllMetrics(
 }
 
 /**
+ * Get the total number of occurrences for a set of test changes (each a
+ * `testId` + `fingerprint` pair) over a period. Occurrences are read from the
+ * daily-bucketed `test_stats_fingerprints` table.
+ *
+ * Returns a result aligned to the input order (`0` when a change has no
+ * recorded occurrence in the period).
+ */
+export async function getChangesTotalOccurrences(
+  changes: { testId: string; fingerprint: string }[],
+  options: { from?: Date | undefined },
+): Promise<number[]> {
+  if (changes.length === 0) {
+    return [];
+  }
+
+  const { from = new Date(0) } = options;
+
+  const result = await knex.raw<{
+    rows: { testId: string; fingerprint: string; total: string }[];
+  }>(
+    `
+    SELECT tsf."testId", tsf."fingerprint", sum(tsf.value) as total
+    FROM test_stats_fingerprints tsf
+    WHERE (tsf."testId"::text, tsf."fingerprint") IN (
+      SELECT * FROM unnest(:testIds::text[], :fingerprints::text[]) AS t("testId", "fingerprint")
+    )
+      AND tsf."date" >= :from::timestamp
+    GROUP BY tsf."testId", tsf."fingerprint"
+    `,
+    {
+      testIds: changes.map((change) => change.testId),
+      fingerprints: changes.map((change) => change.fingerprint),
+      from: from.toISOString(),
+    },
+  );
+
+  const totalByKey = new Map(
+    result.rows.map((row) => [
+      `${row.testId}|${row.fingerprint}`,
+      Number(row.total),
+    ]),
+  );
+
+  return changes.map(
+    (change) => totalByKey.get(`${change.testId}|${change.fingerprint}`) ?? 0,
+  );
+}
+
+/**
  * Get the changes metrics for a test.
  */
 export async function getTestSeriesMetrics(input: {

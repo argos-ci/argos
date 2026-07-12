@@ -2,11 +2,13 @@ import type { ScreenshotMetadata } from "@argos/schemas/screenshot-metadata";
 import { invariant } from "@argos/util/invariant";
 import { test as base, describe, expect } from "vitest";
 
-import type {
-  Build,
-  Project,
-  ScreenshotBucket,
-  ScreenshotDiff,
+import { knex } from "@/database";
+import {
+  IgnoredChange,
+  type Build,
+  type Project,
+  type ScreenshotBucket,
+  type ScreenshotDiff,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
@@ -308,8 +310,12 @@ const test = base.extend<{
 describe("api/schema/primitives/snapshot-diff", () => {
   test("serializes a changed diff with nested snapshots and diff URL", async ({
     changedDiff,
+    project,
   }) => {
-    const [serialized] = await serializeSnapshotDiffs([changedDiff]);
+    const [serialized] = await serializeSnapshotDiffs([changedDiff], {
+      project,
+      metricsFrom: new Date(0),
+    });
     invariant(serialized, "Expected changed diff to serialize");
 
     expect(serialized).toMatchObject({
@@ -341,8 +347,11 @@ describe("api/schema/primitives/snapshot-diff", () => {
     expect(serialized.head?.url).toContain("changed-compare-file-key");
   });
 
-  test("serializes a pending diff", async ({ pendingDiff }) => {
-    const [serialized] = await serializeSnapshotDiffs([pendingDiff]);
+  test("serializes a pending diff", async ({ pendingDiff, project }) => {
+    const [serialized] = await serializeSnapshotDiffs([pendingDiff], {
+      project,
+      metricsFrom: new Date(0),
+    });
     invariant(serialized, "Expected pending diff to serialize");
 
     expect(serialized.status).toBe("pending");
@@ -352,8 +361,12 @@ describe("api/schema/primitives/snapshot-diff", () => {
 
   test("serializes a removed diff and falls back to the base snapshot name", async ({
     removedDiff,
+    project,
   }) => {
-    const [serialized] = await serializeSnapshotDiffs([removedDiff]);
+    const [serialized] = await serializeSnapshotDiffs([removedDiff], {
+      project,
+      metricsFrom: new Date(0),
+    });
     invariant(serialized, "Expected removed diff to serialize");
 
     expect(serialized).toMatchObject({
@@ -369,11 +382,12 @@ describe("api/schema/primitives/snapshot-diff", () => {
   test("serializes failure and retryFailure added diffs", async ({
     failureDiff,
     retryFailureDiff,
+    project,
   }) => {
-    const [failure, retryFailure] = await serializeSnapshotDiffs([
-      failureDiff,
-      retryFailureDiff,
-    ]);
+    const [failure, retryFailure] = await serializeSnapshotDiffs(
+      [failureDiff, retryFailureDiff],
+      { project, metricsFrom: new Date(0) },
+    );
     invariant(failure, "Expected failure diff to serialize");
     invariant(retryFailure, "Expected retry failure diff to serialize");
 
@@ -388,8 +402,12 @@ describe("api/schema/primitives/snapshot-diff", () => {
 
   test("falls back to public URLs and default content type when files are missing", async ({
     noFileDiff,
+    project,
   }) => {
-    const [serialized] = await serializeSnapshotDiffs([noFileDiff]);
+    const [serialized] = await serializeSnapshotDiffs([noFileDiff], {
+      project,
+      metricsFrom: new Date(0),
+    });
     invariant(serialized, "Expected no-file diff to serialize");
 
     expect(serialized.status).toBe("changed");
@@ -408,5 +426,95 @@ describe("api/schema/primitives/snapshot-diff", () => {
     });
     expect(serialized.base?.url).toContain("fallback-base-key");
     expect(serialized.head?.url).toContain("fallback-compare-key");
+  });
+
+  test("exposes the test metrics and change data of a diff", async ({
+    factory,
+    build,
+    buckets,
+    project,
+  }) => {
+    const fingerprint = "a1b2c3d4e5f6";
+    const testModel = await factory.Test.create({
+      projectId: project.id,
+      name: "flaky.png",
+      buildName: "web",
+    });
+    const [baseScreenshot, compareScreenshot] =
+      await factory.Screenshot.createMany(2, [
+        {
+          screenshotBucketId: buckets.base.id,
+          testId: testModel.id,
+          name: "flaky.png",
+        },
+        {
+          screenshotBucketId: buckets.compare.id,
+          testId: testModel.id,
+          name: "flaky.png",
+        },
+      ]);
+    invariant(baseScreenshot && compareScreenshot);
+    const diff = await factory.ScreenshotDiff.create({
+      buildId: build.id,
+      baseScreenshotId: baseScreenshot.id,
+      compareScreenshotId: compareScreenshot.id,
+      testId: testModel.id,
+      fingerprint,
+      score: 0.42,
+      ignored: false,
+    });
+
+    // Seed the stats used to derive the test's flakiness metrics and the
+    // change's occurrence count: the test ran in 2 builds and changed once.
+    await Promise.all([
+      knex("test_stats_builds").insert({
+        testId: testModel.id,
+        date: new Date("2025-06-01T00:00:00.000Z"),
+        value: 2,
+      }),
+      knex("test_stats_fingerprints").insert({
+        testId: testModel.id,
+        fingerprint,
+        date: new Date("2025-06-01T00:00:00.000Z"),
+        value: 1,
+      }),
+      IgnoredChange.query().insert({
+        projectId: project.id,
+        testId: testModel.id,
+        fingerprint,
+      }),
+    ]);
+
+    const loadedDiff = await diff
+      .$query()
+      .withGraphFetched(
+        "[baseScreenshot.file, compareScreenshot.file, file, test]",
+      );
+
+    const [serialized] = await serializeSnapshotDiffs([loadedDiff], {
+      project,
+      metricsFrom: new Date(0),
+    });
+    invariant(serialized, "Expected diff to serialize");
+
+    expect(serialized.test).toMatchObject({
+      id: expect.any(String),
+      name: "flaky.png",
+      buildName: "web",
+      metrics: {
+        total: 2,
+        changes: 1,
+        uniqueChanges: 1,
+        stability: 0.5,
+        consistency: 1,
+        flakiness: 0.25,
+      },
+    });
+
+    expect(serialized.change).toEqual({
+      id: expect.any(String),
+      ignored: true,
+      occurrences: 1,
+    });
   });
 });

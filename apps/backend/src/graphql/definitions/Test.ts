@@ -1,26 +1,25 @@
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
 
-import { transaction } from "@/database";
+import { Project, ScreenshotDiff, type User } from "@/database/models";
 import {
-  AuditTrail,
-  IgnoredChange,
-  Project,
-  ScreenshotDiff,
-  type User,
-} from "@/database/models";
+  getChangeMutationDenial,
+  ignoreChange as ignoreTestChange,
+  unignoreChange as unignoreTestChange,
+} from "@/database/services/ignored-change";
 import { getStartDateFromPeriod, getTestSeriesMetrics } from "@/metrics/test";
-
-import {
-  type IResolvers,
-  type ITestMetrics,
-} from "../__generated__/resolver-types";
 import {
   formatTestChangeId,
   formatTestId,
   safeParseTestChangeId,
   type TestChangeIdPayload,
-} from "../services/test";
+} from "@/util/test-id";
+
+import {
+  type IResolvers,
+  type ITestMetrics,
+} from "../__generated__/resolver-types";
 import { badUserInput, forbidden, notFound } from "../util";
 import { paginateResult } from "./PageInfo";
 
@@ -271,32 +270,12 @@ export const resolvers: IResolvers = {
           user: ctx.auth?.user ?? null,
         },
         async ({ changeIdPayload, project, user }) => {
-          const isIgnored = Boolean(
-            await IgnoredChange.query().findOne({
-              projectId: project.id,
-              fingerprint: changeIdPayload.fingerprint,
-              testId: changeIdPayload.testId,
-            }),
-          );
-          if (!isIgnored) {
-            await transaction(async (trx) => {
-              await Promise.all([
-                IgnoredChange.query(trx).insert({
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  fingerprint: changeIdPayload.fingerprint,
-                }),
-                AuditTrail.query(trx).insert({
-                  date: new Date().toISOString(),
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  userId: user.id,
-                  fingerprint: changeIdPayload.fingerprint,
-                  action: "files.ignored",
-                }),
-              ]);
-            });
-          }
+          await ignoreTestChange({
+            projectId: project.id,
+            testId: changeIdPayload.testId,
+            fingerprint: changeIdPayload.fingerprint,
+            userId: user.id,
+          });
         },
       );
     },
@@ -308,34 +287,12 @@ export const resolvers: IResolvers = {
           user: ctx.auth?.user ?? null,
         },
         async ({ changeIdPayload, project, user }) => {
-          const isIgnored = Boolean(
-            await IgnoredChange.query().findOne({
-              projectId: project.id,
-              testId: changeIdPayload.testId,
-              fingerprint: changeIdPayload.fingerprint,
-            }),
-          );
-          if (isIgnored) {
-            await transaction(async (trx) => {
-              await Promise.all([
-                IgnoredChange.query(trx)
-                  .where({
-                    projectId: project.id,
-                    testId: changeIdPayload.testId,
-                    fingerprint: changeIdPayload.fingerprint,
-                  })
-                  .delete(),
-                AuditTrail.query(trx).insert({
-                  date: new Date().toISOString(),
-                  projectId: project.id,
-                  testId: changeIdPayload.testId,
-                  userId: user.id,
-                  fingerprint: changeIdPayload.fingerprint,
-                  action: "files.unignored",
-                }),
-              ]);
-            });
-          }
+          await unignoreTestChange({
+            projectId: project.id,
+            testId: changeIdPayload.testId,
+            fingerprint: changeIdPayload.fingerprint,
+            userId: user.id,
+          });
         },
       );
     },
@@ -382,19 +339,22 @@ async function runChangeMutaton(
     throw notFound("Project not found");
   }
 
-  const permissions = await project.$getPermissions(user);
+  const denial = await getChangeMutationDenial(project, user);
 
-  if (!permissions.includes("review")) {
-    throw forbidden(
-      "You do not have permission to ignore test changes in this project",
-    );
+  switch (denial) {
+    case "forbidden":
+      throw forbidden(
+        "You do not have permission to ignore test changes in this project",
+      );
+    case "ignore-disabled":
+      throw badUserInput("The ignore feature is disabled for this project.");
+    case null:
+      break;
+    default:
+      assertNever(denial);
   }
 
   invariant(user, "User should be defined because of permissions check");
-
-  if (!project.$getIgnoreConfig().enabled) {
-    throw badUserInput("The ignore feature is disabled for this project.");
-  }
 
   await run({ changeIdPayload, project, user });
 

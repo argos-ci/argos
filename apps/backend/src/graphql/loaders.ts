@@ -47,7 +47,7 @@ import {
   getAppOctokit,
   GhApiInstallation,
 } from "@/github";
-import { getTestAllMetrics } from "@/metrics/test";
+import { getChangesTotalOccurrences, getTestAllMetrics } from "@/metrics/test";
 
 import { ITestStatus } from "./__generated__/resolver-types";
 
@@ -987,17 +987,9 @@ function createTestChangeStatsLoader(): (
       async (pairs) => {
         const fingerprints = [...new Set(pairs.map((p) => p.fingerprint))];
 
-        const totalOccurrencesQuery = knex.raw<{
-          rows: { fingerprint: string; total: number }[];
-        }>(
-          `
-            SELECT tsf."fingerprint", sum(tsf.value) as total FROM test_stats_fingerprints tsf
-                WHERE tsf."testId" = :testId
-                AND tsf."fingerprint" = any(:fingerprints)
-                AND tsf."date" >= :from
-                GROUP BY tsf."fingerprint"
-          `,
-          { testId, fingerprints, from },
+        const totalOccurrencesQuery = getChangesTotalOccurrences(
+          fingerprints.map((fingerprint) => ({ testId, fingerprint })),
+          { from: new Date(from) },
         );
 
         const diffQuery = ScreenshotDiff.query()
@@ -1020,7 +1012,7 @@ function createTestChangeStatsLoader(): (
           .clone()
           .orderBy("screenshot_diffs.createdAt", "asc");
 
-        const [lastSeenRows, firstSeenRows, totalOccurrencesRows] =
+        const [lastSeenRows, firstSeenRows, totalOccurrences] =
           await Promise.all([
             lastSeenQuery,
             firstSeenQuery,
@@ -1028,9 +1020,9 @@ function createTestChangeStatsLoader(): (
           ]);
 
         const totalOccurrencesMap = new Map(
-          totalOccurrencesRows.rows.map((row) => [
-            row.fingerprint,
-            Number(row.total),
+          fingerprints.map((fingerprint, index) => [
+            fingerprint,
+            totalOccurrences[index] ?? 0,
           ]),
         );
         const lastSeenMap = new Map(

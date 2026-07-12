@@ -17,9 +17,9 @@ import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
-import { getBuildDiffs } from "./getBuildDiffs";
+import { listBuildDiffs } from "./listBuildDiffs";
 
-const app = createTestHandlerApp(getBuildDiffs);
+const app = createTestHandlerApp(listBuildDiffs);
 const screenshotMetadata = {
   url: "https://argos-ci.com",
   viewport: { width: 800, height: 600 },
@@ -132,7 +132,7 @@ const test = base.extend<{
   },
 });
 
-const getBuildDiffsPath = ({
+const listBuildDiffsPath = ({
   owner,
   project,
   buildNumber,
@@ -142,7 +142,7 @@ const getBuildDiffsPath = ({
   buildNumber: number;
 }) => `/projects/${owner}/${project}/builds/${buildNumber}/diffs`;
 
-describe("getBuildDiffs", () => {
+describe("listBuildDiffs", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
   });
@@ -151,7 +151,7 @@ describe("getBuildDiffs", () => {
     test("returns 401 status code", async () => {
       await request(app)
         .get(
-          getBuildDiffsPath({ owner: "acme", project: "web", buildNumber: 1 }),
+          listBuildDiffsPath({ owner: "acme", project: "web", buildNumber: 1 }),
         )
         .set("Authorization", "Bearer invalid-token")
         .expect((res) => {
@@ -179,7 +179,7 @@ describe("getBuildDiffs", () => {
 
       await request(app)
         .get(
-          getBuildDiffsPath({
+          listBuildDiffsPath({
             owner: "acme",
             project: otherProject.name,
             buildNumber: foreignBuild.number,
@@ -205,7 +205,7 @@ describe("getBuildDiffs", () => {
     }) => {
       const res = await request(app)
         .get(
-          getBuildDiffsPath({
+          listBuildDiffsPath({
             owner: "acme",
             project: project.name,
             buildNumber: build.number,
@@ -282,7 +282,7 @@ describe("getBuildDiffs", () => {
 
       const res = await request(app)
         .get(
-          getBuildDiffsPath({
+          listBuildDiffsPath({
             owner: account.slug,
             project: project.name,
             buildNumber: build.number,
@@ -443,7 +443,7 @@ describe("getBuildDiffs", () => {
       }) => {
         const res = await request(app)
           .get(
-            getBuildDiffsPath({
+            listBuildDiffsPath({
               owner: "acme",
               project: project.name,
               buildNumber: build.number,
@@ -469,7 +469,7 @@ describe("getBuildDiffs", () => {
       }) => {
         const res = await request(app)
           .get(
-            getBuildDiffsPath({
+            listBuildDiffsPath({
               owner: "acme",
               project: project.name,
               buildNumber: build.number,
@@ -556,7 +556,7 @@ describe("getBuildDiffs", () => {
 
       const res = await request(app)
         .get(
-          getBuildDiffsPath({
+          listBuildDiffsPath({
             owner: "acme",
             project: project.name,
             buildNumber: build.number,

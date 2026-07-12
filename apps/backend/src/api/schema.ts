@@ -19,12 +19,16 @@ import { findBaselineOperation } from "./handlers/findBaseline";
 import { getAccountAnalyticsOperation } from "./handlers/getAccountAnalytics";
 import { getAuthProjectOperation } from "./handlers/getAuthProject";
 import { getBuildOperation } from "./handlers/getBuild";
-import { getBuildDiffsOperation } from "./handlers/getBuildDiffs";
 import { getCommentOperation } from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getMeOperation } from "./handlers/getMe";
 import { getProjectOperation } from "./handlers/getProject";
 import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
+import {
+  ignoreChangeOperation,
+  unignoreChangeOperation,
+} from "./handlers/ignoreChange";
+import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listCommentsOperation } from "./handlers/listComments";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { removeCommentReactionOperation } from "./handlers/removeCommentReaction";
@@ -173,7 +177,13 @@ export const zodSchema = {
       get: getBuildOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}/diffs": {
-      get: getBuildDiffsOperation,
+      get: listBuildDiffsOperation,
+    },
+    "/projects/{owner}/{project}/changes/{changeId}/ignore": {
+      post: ignoreChangeOperation,
+    },
+    "/projects/{owner}/{project}/changes/{changeId}/unignore": {
+      post: unignoreChangeOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews": {
       get: listReviewsOperation,

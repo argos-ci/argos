@@ -5,10 +5,12 @@ import { createTestApp } from "@/web/test-util";
 import { CreateAPIHandler, registerHandler } from "./util";
 
 /**
- * Create a test app with the given handler.
+ * Create a test app with the given handler(s).
  */
-export function createTestHandlerApp(create: CreateAPIHandler): Express {
+export function createTestHandlerApp(...creates: CreateAPIHandler[]): Express {
   const router = Router();
-  registerHandler(router, create);
+  for (const create of creates) {
+    registerHandler(router, create);
+  }
   return createTestApp(router);
 }
