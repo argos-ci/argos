@@ -2,9 +2,11 @@ import { isAllowedRedirectUri } from "@argos/util/url";
 import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express, { Router, type Request, type Response } from "express";
+import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 
 import { OAuthClient } from "@/database/models";
+import { createRedisStore } from "@/util/rate-limit";
 
 import { consumeAuthorizationCode } from "./authorization-code";
 import {
@@ -242,53 +244,77 @@ const RegistrationSchema = z.object({
     .optional(),
 });
 
-oauthApiRouter.post("/register", async (req: Request, res: Response) => {
-  const parsed = RegistrationSchema.safeParse(req.body);
-  if (!parsed.success) {
-    sendError(res, 400, "invalid_request", "Invalid client metadata.");
-    return;
-  }
-  const meta = parsed.data;
-  if (!meta.redirect_uris.every(isAllowedRedirectUri)) {
+/**
+ * Dynamic Client Registration is unauthenticated (RFC 7591), so cap it per IP
+ * to prevent anonymous clients from spamming the `oauth_clients` table.
+ */
+const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  store: createRedisStore("oauth-register"),
+  handler: (_req, res) => {
     sendError(
       res,
-      400,
+      429,
       "invalid_request",
-      "redirect_uris must use https, a loopback http address, or a private-use scheme.",
+      "Too many client registrations. Try again later.",
     );
-    return;
-  }
-
-  const { client, clientSecret, registrationAccessToken } =
-    await createDynamicClient({
-      clientName: meta.client_name,
-      redirectUris: meta.redirect_uris,
-      clientUri: meta.client_uri ?? null,
-      logoUri: meta.logo_uri ?? null,
-      softwareId: meta.software_id ?? null,
-      grantTypes: meta.grant_types,
-      responseTypes: meta.response_types,
-      scope: meta.scope ?? null,
-      tokenEndpointAuthMethod: meta.token_endpoint_auth_method,
-    });
-
-  res.status(201).json({
-    client_id: client.clientId,
-    ...(clientSecret ? { client_secret: clientSecret } : {}),
-    client_id_issued_at: Math.floor(
-      new Date(client.createdAt).getTime() / 1000,
-    ),
-    client_secret_expires_at: 0,
-    client_name: client.clientName,
-    redirect_uris: client.redirectUris,
-    grant_types: client.grantTypes,
-    response_types: client.responseTypes,
-    token_endpoint_auth_method: client.tokenEndpointAuthMethod,
-    ...(client.scope ? { scope: client.scope } : {}),
-    registration_access_token: registrationAccessToken,
-    registration_client_uri: `${getOAuthIssuer()}/oauth/register/${client.clientId}`,
-  });
+  },
 });
+
+oauthApiRouter.post(
+  "/register",
+  registrationLimiter,
+  async (req: Request, res: Response) => {
+    const parsed = RegistrationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendError(res, 400, "invalid_request", "Invalid client metadata.");
+      return;
+    }
+    const meta = parsed.data;
+    if (!meta.redirect_uris.every(isAllowedRedirectUri)) {
+      sendError(
+        res,
+        400,
+        "invalid_request",
+        "redirect_uris must use https, a loopback http address, or a private-use scheme.",
+      );
+      return;
+    }
+
+    const { client, clientSecret, registrationAccessToken } =
+      await createDynamicClient({
+        clientName: meta.client_name,
+        redirectUris: meta.redirect_uris,
+        clientUri: meta.client_uri ?? null,
+        logoUri: meta.logo_uri ?? null,
+        softwareId: meta.software_id ?? null,
+        grantTypes: meta.grant_types,
+        responseTypes: meta.response_types,
+        scope: meta.scope ?? null,
+        tokenEndpointAuthMethod: meta.token_endpoint_auth_method,
+      });
+
+    res.status(201).json({
+      client_id: client.clientId,
+      ...(clientSecret ? { client_secret: clientSecret } : {}),
+      client_id_issued_at: Math.floor(
+        new Date(client.createdAt).getTime() / 1000,
+      ),
+      client_secret_expires_at: 0,
+      client_name: client.clientName,
+      redirect_uris: client.redirectUris,
+      grant_types: client.grantTypes,
+      response_types: client.responseTypes,
+      token_endpoint_auth_method: client.tokenEndpointAuthMethod,
+      ...(client.scope ? { scope: client.scope } : {}),
+      registration_access_token: registrationAccessToken,
+      registration_client_uri: `${getOAuthIssuer()}/oauth/register/${client.clientId}`,
+    });
+  },
+);
 
 oauthApiRouter.post("/introspect", async (req: Request, res: Response) => {
   // Introspection is for resource servers, which authenticate as a confidential
