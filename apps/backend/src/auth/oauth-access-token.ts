@@ -4,6 +4,7 @@ import { invariant } from "@argos/util/invariant";
 import { waitUntil } from "@/api/request-context";
 import { Account, OAuthAccessToken, OAuthGrant } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
+import { getApiResourceUrl } from "@/oauth/metadata";
 
 import { boom } from "../util/error";
 import type { AuthOAuthPayload } from "./payload";
@@ -36,6 +37,12 @@ export async function getAuthPayloadFromOAuthAccessToken(
   }
   if (new Date(accessToken.expiresAt) <= new Date()) {
     throw boom(401, "Access token has expired");
+  }
+  // Audience binding (RFC 8707): a token issued for another resource server
+  // (e.g. a future MCP server) must not be accepted by the REST API. Tokens
+  // with no bound resource are unscoped and accepted everywhere.
+  if (accessToken.resource && accessToken.resource !== getApiResourceUrl()) {
+    throw boom(401, "Access token was not issued for this resource");
   }
 
   const { grant } = accessToken;

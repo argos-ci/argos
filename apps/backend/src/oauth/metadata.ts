@@ -20,7 +20,7 @@ function getApiOrigin(): string {
 }
 
 /** The canonical resource identifier (audience) for the REST API. */
-function getApiResourceUrl(): string {
+export function getApiResourceUrl(): string {
   return `${getApiOrigin()}/v2`;
 }
 

@@ -12,6 +12,7 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { consumeAuthorizationCode } from "@/oauth/authorization-code";
+import { getApiResourceUrl } from "@/oauth/metadata";
 import { issueTokens, revokeGrant, rotateRefreshToken } from "@/oauth/tokens";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -250,6 +251,42 @@ describe("OAuth authorization flow", () => {
       .where({ oauthGrantId: grant.id })
       .whereNull("revokedAt");
     expect(live).toHaveLength(1);
+  });
+
+  it("rejects an access token bound to a different resource (audience)", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const client = await createTestClient();
+    const grant = await OAuthGrant.query().insertAndFetch({
+      userId: userAccount.userId!,
+      oauthClientId: client.id,
+      scopes: ["profile"],
+      lastUsedAt: null,
+      revokedAt: null,
+    });
+    await OAuthGrantAccount.query().insert({
+      oauthGrantId: grant.id,
+      accountId: userAccount.id,
+    });
+
+    // A token bound to another resource server must not authenticate here.
+    const foreign = await issueTokens({
+      grantId: grant.id,
+      scopes: ["profile"],
+      resource: "https://mcp.example/other",
+    });
+    await expect(
+      getAuthPayloadFromOAuthAccessToken(foreign.accessToken),
+    ).rejects.toThrow();
+
+    // A token bound to this API's resource authenticates fine.
+    const bound = await issueTokens({
+      grantId: grant.id,
+      scopes: ["profile"],
+      resource: getApiResourceUrl(),
+    });
+    const auth = await getAuthPayloadFromOAuthAccessToken(bound.accessToken);
+    expect(auth.type).toBe("oauth");
   });
 
   it("revoking a grant invalidates its access tokens", async () => {
