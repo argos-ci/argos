@@ -8,6 +8,7 @@ import {
   OAuthClient,
   OAuthGrant,
   OAuthGrantAccount,
+  OAuthRefreshToken,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { consumeAuthorizationCode } from "@/oauth/authorization-code";
@@ -204,6 +205,51 @@ describe("OAuth authorization flow", () => {
     await expect(
       getAuthPayloadFromOAuthAccessToken(rotated.tokens.accessToken),
     ).rejects.toThrow();
+  });
+
+  it("only lets one concurrent rotation of the same refresh token win", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const client = await createTestClient();
+    const grant = await OAuthGrant.query().insertAndFetch({
+      userId: userAccount.userId!,
+      oauthClientId: client.id,
+      scopes: ["profile"],
+      lastUsedAt: null,
+      revokedAt: null,
+    });
+    await OAuthGrantAccount.query().insert({
+      oauthGrantId: grant.id,
+      accountId: userAccount.id,
+    });
+    const initial = await issueTokens({
+      grantId: grant.id,
+      scopes: ["profile"],
+      resource: null,
+    });
+
+    // Two requests present the same refresh token at the same time: exactly one
+    // must succeed, and only one new refresh token may exist for the grant.
+    const [a, b] = await Promise.all([
+      rotateRefreshToken({
+        refreshToken: initial.refreshToken,
+        clientId: client.clientId,
+        requestedScopes: null,
+        resource: null,
+      }),
+      rotateRefreshToken({
+        refreshToken: initial.refreshToken,
+        clientId: client.clientId,
+        requestedScopes: null,
+        resource: null,
+      }),
+    ]);
+
+    expect([a.ok, b.ok].filter(Boolean)).toHaveLength(1);
+    const live = await OAuthRefreshToken.query()
+      .where({ oauthGrantId: grant.id })
+      .whereNull("revokedAt");
+    expect(live).toHaveLength(1);
   });
 
   it("revoking a grant invalidates its access tokens", async () => {

@@ -16,6 +16,12 @@ const REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 export const ACCESS_TOKEN_TTL_SECONDS = ACCESS_TOKEN_TTL_MS / 1000;
 
+/**
+ * Thrown inside the rotation transaction when a concurrent request already
+ * rotated the same refresh token, so this transaction must roll back.
+ */
+class RefreshTokenRaceError extends Error {}
+
 export type IssuedTokens = {
   accessToken: string;
   refreshToken: string;
@@ -133,18 +139,37 @@ export async function rotateRefreshToken(params: {
 
   const resource = params.resource ?? existing.resource;
 
-  const result = await transaction(async (trx) => {
-    const pair = await insertTokenPair(trx, {
-      grantId: grant.id,
-      scopes,
-      resource,
+  let result: Awaited<ReturnType<typeof insertTokenPair>>;
+  try {
+    result = await transaction(async (trx) => {
+      const pair = await insertTokenPair(trx, {
+        grantId: grant.id,
+        scopes,
+        resource,
+      });
+      // Atomically claim the rotation: only the request that flips this row
+      // from "live" to "rotated" wins. A concurrent rotation of the same token
+      // updates 0 rows and is rolled back, so one refresh token can only ever
+      // yield a single new pair (and a replay still trips reuse detection).
+      const rotated = await OAuthRefreshToken.query(trx)
+        .patch({
+          revokedAt: new Date().toISOString(),
+          replacedByTokenId: pair.refreshTokenId,
+        })
+        .where({ id: existing.id })
+        .whereNull("replacedByTokenId")
+        .whereNull("revokedAt");
+      if (rotated === 0) {
+        throw new RefreshTokenRaceError();
+      }
+      return pair;
     });
-    await OAuthRefreshToken.query(trx).findById(existing.id).patch({
-      revokedAt: new Date().toISOString(),
-      replacedByTokenId: pair.refreshTokenId,
-    });
-    return pair;
-  });
+  } catch (error) {
+    if (error instanceof RefreshTokenRaceError) {
+      return { ok: false, error: "invalid_grant" };
+    }
+    throw error;
+  }
 
   return {
     ok: true,
