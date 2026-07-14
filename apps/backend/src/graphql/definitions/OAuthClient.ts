@@ -6,6 +6,7 @@ import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
 import { getKnownApp } from "@/oauth/known-apps";
 import { isOAuthScope, OAUTH_SCOPES, parseScopeString } from "@/oauth/scopes";
+import { revokeGrantTokens } from "@/oauth/tokens";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { getAccessibleAccounts } from "../services/account";
@@ -181,6 +182,12 @@ export const resolvers: IResolvers = {
               lastUsedAt: null,
               revokedAt: null,
             });
+        // Re-consent redefines scopes/orgs: revoke the grant's existing tokens
+        // so previously-issued (possibly broader) ones stop working now instead
+        // of lingering until they expire.
+        if (existing) {
+          await revokeGrantTokens(saved.id, trx);
+        }
         // Replace the granted organizations with the freshly-consented set.
         await OAuthGrantAccount.query(trx)
           .where("oauthGrantId", saved.id)

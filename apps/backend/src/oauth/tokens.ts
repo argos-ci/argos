@@ -183,16 +183,16 @@ export async function rotateRefreshToken(params: {
 }
 
 /**
- * Revoke a whole grant: flip its master switch and revoke its live tokens. Used
- * by the "revoke application" settings action and by refresh-reuse detection.
+ * Revoke all live access + refresh tokens for a grant, leaving the grant itself
+ * untouched. Used on re-consent so previously-issued (possibly broader) tokens
+ * stop working immediately rather than lingering until they expire.
  */
-export async function revokeGrant(
+export async function revokeGrantTokens(
   grantId: string,
   trx?: TransactionOrKnex,
 ): Promise<void> {
   const now = new Date().toISOString();
   await transaction(trx, async (t) => {
-    await OAuthGrant.query(t).findById(grantId).patch({ revokedAt: now });
     await OAuthAccessToken.query(t)
       .patch({ revokedAt: now })
       .where({ oauthGrantId: grantId })
@@ -201,6 +201,22 @@ export async function revokeGrant(
       .patch({ revokedAt: now })
       .where({ oauthGrantId: grantId })
       .whereNull("revokedAt");
+  });
+}
+
+/**
+ * Revoke a whole grant: flip its master switch and revoke its live tokens. Used
+ * by the "revoke application" settings action and by refresh-reuse detection.
+ */
+export async function revokeGrant(
+  grantId: string,
+  trx?: TransactionOrKnex,
+): Promise<void> {
+  await transaction(trx, async (t) => {
+    await OAuthGrant.query(t)
+      .findById(grantId)
+      .patch({ revokedAt: new Date().toISOString() });
+    await revokeGrantTokens(grantId, t);
   });
 }
 

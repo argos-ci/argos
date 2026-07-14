@@ -124,6 +124,62 @@ describe("OAuth authorization flow", () => {
     expect(auth.scope.map((a) => a.id)).toEqual([userAccount.id]);
   });
 
+  it("revokes previously-issued tokens when the user re-consents", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const client = await createTestClient();
+    const grant = await OAuthGrant.query().insertAndFetch({
+      userId: userAccount.userId!,
+      oauthClientId: client.id,
+      scopes: ["profile", "projects:read"],
+      lastUsedAt: null,
+      revokedAt: null,
+    });
+    await OAuthGrantAccount.query().insert({
+      oauthGrantId: grant.id,
+      accountId: userAccount.id,
+    });
+    // A broad token from the first authorization.
+    const old = await issueTokens({
+      grantId: grant.id,
+      scopes: ["profile", "projects:read"],
+      resource: null,
+    });
+    await getAuthPayloadFromOAuthAccessToken(old.accessToken);
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user: userAccount.user!, account: userAccount },
+    );
+
+    // Re-consent, this time dropping projects:read.
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: AuthorizeMutation,
+        variables: {
+          input: {
+            clientId: client.clientId,
+            redirectUri: ACTUAL_REDIRECT,
+            scopes: ["profile"],
+            accountIds: [userAccount.id],
+            codeChallenge: "challenge",
+            codeChallengeMethod: "S256",
+          },
+        },
+      });
+    expectNoGraphQLError(res);
+
+    // The old broad token is dead, but the grant itself stays active.
+    await expect(
+      getAuthPayloadFromOAuthAccessToken(old.accessToken),
+    ).rejects.toThrow();
+    const refreshed = await OAuthGrant.query().findById(grant.id);
+    expect(refreshed?.revokedAt).toBeNull();
+    expect(refreshed?.scopes).toEqual(["profile"]);
+  });
+
   it("rejects an unregistered redirect_uri at consent", async () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
