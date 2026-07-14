@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useApolloClient, useQuery } from "@apollo/client/react";
+import { isHttpUri, isSafeUri } from "@argos/util/url";
 import {
   Building2Icon,
   CheckCheckIcon,
@@ -218,7 +219,7 @@ function ConsentForm(props: {
         },
       });
       const redirectUri = result.data?.authorizeOAuthConsent.redirectUri;
-      if (!redirectUri) {
+      if (!redirectUri || !isSafeUri(redirectUri)) {
         setStatus("error");
         return;
       }
@@ -394,14 +395,18 @@ function ConsentForm(props: {
               : `Authorize ${consent.client.name}`}
           </Button>
           <LinkButton
-            href={buildDenyUrl(params.redirectUri, params.state)}
+            href={
+              isSafeUri(params.redirectUri)
+                ? buildDenyUrl(params.redirectUri, params.state)
+                : "/"
+            }
             variant="secondary"
             size="large"
             className="w-full justify-center"
           >
             Cancel
           </LinkButton>
-          {consent.client.homepage && (
+          {consent.client.homepage && isHttpUri(consent.client.homepage) && (
             <p className="text-low text-center text-xs">
               Learn more about{" "}
               <a

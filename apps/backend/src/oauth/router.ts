@@ -1,3 +1,4 @@
+import { isAllowedRedirectUri } from "@argos/util/url";
 import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express, { Router, type Request, type Response } from "express";
@@ -240,26 +241,6 @@ const RegistrationSchema = z.object({
     .enum(["none", "client_secret_basic", "client_secret_post"])
     .optional(),
 });
-
-function isAllowedRedirectUri(uri: string): boolean {
-  let url: URL;
-  try {
-    url = new URL(uri);
-  } catch {
-    return false;
-  }
-  // https anywhere; http only for loopback; any non-http (private-use) scheme
-  // for native apps (e.g. vscode://).
-  if (url.protocol === "https:") {
-    return true;
-  }
-  if (url.protocol === "http:") {
-    return ["localhost", "127.0.0.1", "::1"].includes(
-      url.hostname.toLowerCase(),
-    );
-  }
-  return true;
-}
 
 oauthApiRouter.post("/register", async (req: Request, res: Response) => {
   const parsed = RegistrationSchema.safeParse(req.body);
