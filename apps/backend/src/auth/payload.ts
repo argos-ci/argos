@@ -26,3 +26,18 @@ export type AuthPATPayload = {
   user: User;
   scope: Account[];
 };
+
+export type AuthOAuthPayload = {
+  type: "oauth";
+  /** The authenticated user's personal account. */
+  account: Account;
+  user: User;
+  /** Accounts the token is allowed to act on (re-validated per request). */
+  scope: Account[];
+  /** Granted OAuth scope strings carried by this access token. */
+  oauthScopes: string[];
+  /** Public identifier of the OAuth client that holds the token. */
+  clientId: string;
+  /** Id of the `oauth_grants` row backing this token. */
+  grantId: string;
+};

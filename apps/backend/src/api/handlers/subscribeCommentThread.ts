@@ -21,7 +21,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const PathParams = z.object({
@@ -39,7 +39,7 @@ export const subscribeCommentThreadOperation = {
   description:
     "Subscribe the authenticated user to a comment thread to receive notifications about new replies.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: PathParams },
   responses: {
     "200": {
@@ -64,7 +64,7 @@ export const unsubscribeCommentThreadOperation = {
   description:
     "Unsubscribe the authenticated user from a comment thread's notifications.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: PathParams },
   responses: {
     "200": {

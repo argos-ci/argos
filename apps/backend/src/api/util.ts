@@ -15,6 +15,7 @@ import {
 } from "zod-openapi";
 
 import logger from "@/logger";
+import { getProtectedResourceMetadataUrl } from "@/oauth/metadata";
 import { boom, HTTPError } from "@/util/error";
 import { asyncHandler } from "@/web/util";
 
@@ -158,6 +159,15 @@ export const errorHandler: ErrorRequestHandler = (
       error,
       reportToSentry: false, // There is already a middleware handling this
     });
+  }
+
+  if (statusCode === 401) {
+    // MCP/OAuth handshake: tell clients where to find the Protected Resource
+    // Metadata so they can discover the authorization server (RFC 9728).
+    res.set(
+      "WWW-Authenticate",
+      `Bearer resource_metadata="${getProtectedResourceMetadataUrl()}"`,
+    );
   }
 
   res.status(statusCode).json({ error: message, details });

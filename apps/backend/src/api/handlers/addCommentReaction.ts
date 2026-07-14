@@ -18,7 +18,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const AddReactionBodySchema = z.object({
@@ -31,7 +31,7 @@ export const addCommentReactionOperation = {
   description:
     "Add an emoji reaction to a comment on behalf of the authenticated user.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

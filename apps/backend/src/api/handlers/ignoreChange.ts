@@ -2,7 +2,7 @@ import { assertNever } from "@argos/util/assertNever";
 import { z } from "zod";
 import { ZodOpenApiOperationObject } from "zod-openapi";
 
-import type { AuthPATPayload } from "@/auth/payload";
+import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
 import { Test } from "@/database/models";
 import {
   getChangeMutationDenial,
@@ -28,7 +28,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const ChangeId = z.string().meta({
@@ -52,7 +52,7 @@ export const ignoreChangeOperation = {
   description:
     "Ignore a test change so its diffs no longer require review and are automatically approved on future builds. Use it to silence a change that has been identified as flaky.",
   tags: ["Changes"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["reviews:write"]),
   requestParams: {
     path: IgnorePathParams,
     query: IgnoreQueryParams,
@@ -80,7 +80,7 @@ export const unignoreChangeOperation = {
   description:
     "Stop ignoring a test change so its diffs require review again on future builds.",
   tags: ["Changes"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["reviews:write"]),
   requestParams: {
     path: IgnorePathParams,
     query: IgnoreQueryParams,
@@ -108,7 +108,7 @@ export const unignoreChangeOperation = {
  * that the caller may review and that the ignore feature is enabled.
  */
 async function resolveChangeMutation(input: {
-  auth: AuthPATPayload;
+  auth: AuthPATPayload | AuthOAuthPayload;
   params: { owner: string; project: string; changeId: string };
 }) {
   const { auth, params } = input;

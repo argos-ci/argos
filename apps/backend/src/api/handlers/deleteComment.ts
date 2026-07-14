@@ -16,7 +16,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const deleteCommentOperation = {
@@ -25,7 +25,7 @@ export const deleteCommentOperation = {
   description:
     "Delete a comment on a build. Only the comment's author can delete it.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

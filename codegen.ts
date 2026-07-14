@@ -43,6 +43,7 @@ const config: CodegenConfig = {
           AccountSubscription: "../../database/models/index.js#Subscription",
           AutoInvite: "../../database/services/team-domain.js#AutoInvite",
           AuditTrail: "../../database/models/index.js#AuditTrail",
+          AuthorizedApp: "../../database/models/index.js#OAuthGrant",
           AutomationRule: "../../database/models/index.js#AutomationRule",
           AutomationRun: "../../database/models/index.js#AutomationRun",
           AutomationActionRun:
@@ -65,6 +66,7 @@ const config: CodegenConfig = {
           GlApiNamespace: "../../gitlab/index.js#GlApiNamespace",
           GlApiProject: "../../gitlab/index.js#GlApiProject",
           GoogleUser: "../../database/models/index.js#GoogleUser",
+          OAuthClient: "../../database/models/index.js#OAuthClient",
           Plan: "../../database/models/index.js#Plan",
           ProjectContributor: "../../database/models/index.js#ProjectUser",
           Screenshot: "../../database/models/index.js#Screenshot",

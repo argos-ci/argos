@@ -1,6 +1,6 @@
 import { invariant } from "@argos/util/invariant";
 
-import type { AuthPATPayload } from "@/auth/payload";
+import type { AuthOAuthPayload, AuthPATPayload } from "@/auth/payload";
 import { getCommentThreadRoot } from "@/comment/thread";
 import { Build, Comment, type User } from "@/database/models";
 import { boom } from "@/util/error";
@@ -12,9 +12,9 @@ type BuildActionPermission = "view" | "review" | "review_dismiss";
 
 /**
  * Load the build addressed by `{owner}/{project}/builds/{buildNumber}` for a
- * personal-access-token caller, enforcing the rules shared by every
- * review/comment endpoint: the token must be scoped to the owner account, and
- * the build must exist. These routes declare `personalAccessTokenAuth`, so the
+ * user caller (personal access token or OAuth), enforcing the rules shared by
+ * every review/comment endpoint: the token must be scoped to the owner account,
+ * and the build must exist. These routes accept a PAT or an OAuth token, so the
  * global handler resolves and type-checks the auth; pass `req.ctx.auth()` and
  * the build load runs in parallel with authentication.
  *
@@ -22,9 +22,9 @@ type BuildActionPermission = "view" | "review" | "review_dismiss";
  * callers can check permissions and serialize without a second round-trip).
  */
 export async function loadBuildForPatAuth(
-  authPromise: Promise<AuthPATPayload>,
+  authPromise: Promise<AuthPATPayload | AuthOAuthPayload>,
   params: { owner: string; project: string; buildNumber: number },
-): Promise<{ auth: AuthPATPayload; build: Build }> {
+): Promise<{ auth: AuthPATPayload | AuthOAuthPayload; build: Build }> {
   const [auth, build] = await Promise.all([
     authPromise,
     Build.query()

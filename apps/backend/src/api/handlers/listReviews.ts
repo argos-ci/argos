@@ -17,7 +17,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const listReviewsOperation = {
@@ -25,7 +25,7 @@ export const listReviewsOperation = {
   summary: "List the reviews submitted on a build",
   description: "List the reviews submitted on a build, with pagination.",
   tags: ["Reviews"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["projects:read"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

@@ -10,6 +10,7 @@ import { clearSessionCookies, readSessionCookie } from "@/auth/session-cookie";
 import config from "@/config";
 import { getGoogleAuthUrl } from "@/google";
 import { apolloServer, createApolloMiddleware } from "@/graphql";
+import { mountOAuthServer } from "@/oauth/router";
 import { getSlackMiddleware } from "@/slack";
 import { boom } from "@/util/error";
 import { createRedisStore } from "@/util/rate-limit";
@@ -190,6 +191,11 @@ export const installAppRouter = async (app: express.Application) => {
   router.use(samlAuthRouter);
 
   router.use(deploymentAccessRouter);
+
+  // OAuth 2.1 Authorization Server (metadata + /oauth/*). Mounted before the
+  // static handler and SPA catch-all so `GET /oauth/authorize` still falls
+  // through to the SPA consent page.
+  mountOAuthServer(router);
 
   router.use(getSlackMiddleware());
 

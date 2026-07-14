@@ -19,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const dismissReviewOperation = {
@@ -28,7 +28,7 @@ export const dismissReviewOperation = {
   description:
     "Dismiss a previously submitted review on a build, clearing its effect on the build's review status.",
   tags: ["Reviews"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["reviews:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

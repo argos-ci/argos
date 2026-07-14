@@ -19,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const getCommentOperation = {
@@ -27,7 +27,7 @@ export const getCommentOperation = {
   summary: "Get a single comment on a build",
   description: "Retrieve a single comment on a build by its ID.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:read"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

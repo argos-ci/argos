@@ -14,7 +14,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const listCommentsOperation = {
@@ -22,7 +22,7 @@ export const listCommentsOperation = {
   summary: "List the comments on a build",
   description: "List the comments on a build, with pagination.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:read"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

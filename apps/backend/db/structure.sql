@@ -1479,6 +1479,213 @@ ALTER SEQUENCE public.notification_workflows_id_seq OWNED BY public.notification
 
 
 --
+-- Name: oauth_access_tokens; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oauth_access_tokens (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "oauthGrantId" bigint NOT NULL,
+    "tokenHash" character varying(64) NOT NULL,
+    scopes jsonb NOT NULL,
+    resource character varying(255),
+    "expiresAt" timestamp with time zone NOT NULL,
+    "lastUsedAt" timestamp with time zone,
+    "revokedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.oauth_access_tokens OWNER TO postgres;
+
+--
+-- Name: oauth_access_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oauth_access_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oauth_access_tokens_id_seq OWNER TO postgres;
+
+--
+-- Name: oauth_access_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oauth_access_tokens_id_seq OWNED BY public.oauth_access_tokens.id;
+
+
+--
+-- Name: oauth_clients; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oauth_clients (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "clientId" character varying(255) NOT NULL,
+    "clientSecretHash" character varying(64),
+    "clientName" character varying(255) NOT NULL,
+    "clientUri" character varying(255),
+    "logoUri" character varying(255),
+    "redirectUris" jsonb NOT NULL,
+    "grantTypes" jsonb NOT NULL,
+    "responseTypes" jsonb NOT NULL,
+    scope text,
+    "tokenEndpointAuthMethod" character varying(255) DEFAULT 'none'::character varying NOT NULL,
+    "softwareId" character varying(255),
+    "isFirstParty" boolean DEFAULT false NOT NULL,
+    "knownAppId" character varying(255),
+    verified boolean DEFAULT false NOT NULL,
+    "createdByUserId" bigint,
+    "registrationAccessTokenHash" character varying(64)
+);
+
+
+ALTER TABLE public.oauth_clients OWNER TO postgres;
+
+--
+-- Name: oauth_clients_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oauth_clients_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oauth_clients_id_seq OWNER TO postgres;
+
+--
+-- Name: oauth_clients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oauth_clients_id_seq OWNED BY public.oauth_clients.id;
+
+
+--
+-- Name: oauth_grant_accounts; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oauth_grant_accounts (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "oauthGrantId" bigint NOT NULL,
+    "accountId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.oauth_grant_accounts OWNER TO postgres;
+
+--
+-- Name: oauth_grant_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oauth_grant_accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oauth_grant_accounts_id_seq OWNER TO postgres;
+
+--
+-- Name: oauth_grant_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oauth_grant_accounts_id_seq OWNED BY public.oauth_grant_accounts.id;
+
+
+--
+-- Name: oauth_grants; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oauth_grants (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "userId" bigint NOT NULL,
+    "oauthClientId" bigint NOT NULL,
+    scopes jsonb NOT NULL,
+    "lastUsedAt" timestamp with time zone,
+    "revokedAt" timestamp with time zone
+);
+
+
+ALTER TABLE public.oauth_grants OWNER TO postgres;
+
+--
+-- Name: oauth_grants_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oauth_grants_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oauth_grants_id_seq OWNER TO postgres;
+
+--
+-- Name: oauth_grants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oauth_grants_id_seq OWNED BY public.oauth_grants.id;
+
+
+--
+-- Name: oauth_refresh_tokens; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.oauth_refresh_tokens (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "oauthGrantId" bigint NOT NULL,
+    "tokenHash" character varying(64) NOT NULL,
+    scopes jsonb NOT NULL,
+    resource character varying(255),
+    "expiresAt" timestamp with time zone NOT NULL,
+    "revokedAt" timestamp with time zone,
+    "replacedByTokenId" bigint
+);
+
+
+ALTER TABLE public.oauth_refresh_tokens OWNER TO postgres;
+
+--
+-- Name: oauth_refresh_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.oauth_refresh_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.oauth_refresh_tokens_id_seq OWNER TO postgres;
+
+--
+-- Name: oauth_refresh_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.oauth_refresh_tokens_id_seq OWNED BY public.oauth_refresh_tokens.id;
+
+
+--
 -- Name: plans; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2628,6 +2835,41 @@ ALTER TABLE ONLY public.notification_workflows ALTER COLUMN id SET DEFAULT nextv
 
 
 --
+-- Name: oauth_access_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_access_tokens ALTER COLUMN id SET DEFAULT nextval('public.oauth_access_tokens_id_seq'::regclass);
+
+
+--
+-- Name: oauth_clients id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_clients ALTER COLUMN id SET DEFAULT nextval('public.oauth_clients_id_seq'::regclass);
+
+
+--
+-- Name: oauth_grant_accounts id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grant_accounts ALTER COLUMN id SET DEFAULT nextval('public.oauth_grant_accounts_id_seq'::regclass);
+
+
+--
+-- Name: oauth_grants id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grants ALTER COLUMN id SET DEFAULT nextval('public.oauth_grants_id_seq'::regclass);
+
+
+--
+-- Name: oauth_refresh_tokens id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_refresh_tokens ALTER COLUMN id SET DEFAULT nextval('public.oauth_refresh_tokens_id_seq'::regclass);
+
+
+--
 -- Name: plans id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3197,6 +3439,94 @@ ALTER TABLE ONLY public.notification_workflow_recipients
 
 ALTER TABLE ONLY public.notification_workflows
     ADD CONSTRAINT notification_workflows_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_access_tokens oauth_access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_access_tokens
+    ADD CONSTRAINT oauth_access_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_access_tokens oauth_access_tokens_tokenhash_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_access_tokens
+    ADD CONSTRAINT oauth_access_tokens_tokenhash_unique UNIQUE ("tokenHash");
+
+
+--
+-- Name: oauth_clients oauth_clients_clientid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_clients
+    ADD CONSTRAINT oauth_clients_clientid_unique UNIQUE ("clientId");
+
+
+--
+-- Name: oauth_clients oauth_clients_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_clients
+    ADD CONSTRAINT oauth_clients_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_clients oauth_clients_registrationaccesstokenhash_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_clients
+    ADD CONSTRAINT oauth_clients_registrationaccesstokenhash_unique UNIQUE ("registrationAccessTokenHash");
+
+
+--
+-- Name: oauth_grant_accounts oauth_grant_accounts_oauthgrantid_accountid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grant_accounts
+    ADD CONSTRAINT oauth_grant_accounts_oauthgrantid_accountid_unique UNIQUE ("oauthGrantId", "accountId");
+
+
+--
+-- Name: oauth_grant_accounts oauth_grant_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grant_accounts
+    ADD CONSTRAINT oauth_grant_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_grants oauth_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grants
+    ADD CONSTRAINT oauth_grants_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_grants oauth_grants_userid_oauthclientid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grants
+    ADD CONSTRAINT oauth_grants_userid_oauthclientid_unique UNIQUE ("userId", "oauthClientId");
+
+
+--
+-- Name: oauth_refresh_tokens oauth_refresh_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_refresh_tokens
+    ADD CONSTRAINT oauth_refresh_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_refresh_tokens oauth_refresh_tokens_tokenhash_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_refresh_tokens
+    ADD CONSTRAINT oauth_refresh_tokens_tokenhash_unique UNIQUE ("tokenHash");
 
 
 --
@@ -3851,6 +4181,34 @@ CREATE INDEX notification_workflow_recipients_userid_index ON public.notificatio
 --
 
 CREATE INDEX notification_workflow_recipients_workflowid_index ON public.notification_workflow_recipients USING btree ("workflowId");
+
+
+--
+-- Name: oauth_access_tokens_oauthgrantid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX oauth_access_tokens_oauthgrantid_index ON public.oauth_access_tokens USING btree ("oauthGrantId");
+
+
+--
+-- Name: oauth_clients_createdbyuserid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX oauth_clients_createdbyuserid_index ON public.oauth_clients USING btree ("createdByUserId");
+
+
+--
+-- Name: oauth_grants_userid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX oauth_grants_userid_index ON public.oauth_grants USING btree ("userId");
+
+
+--
+-- Name: oauth_refresh_tokens_oauthgrantid_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX oauth_refresh_tokens_oauthgrantid_index ON public.oauth_refresh_tokens USING btree ("oauthGrantId");
 
 
 --
@@ -4651,6 +5009,70 @@ ALTER TABLE ONLY public.notification_workflow_recipients
 
 
 --
+-- Name: oauth_access_tokens oauth_access_tokens_oauthgrantid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_access_tokens
+    ADD CONSTRAINT oauth_access_tokens_oauthgrantid_foreign FOREIGN KEY ("oauthGrantId") REFERENCES public.oauth_grants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_clients oauth_clients_createdbyuserid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_clients
+    ADD CONSTRAINT oauth_clients_createdbyuserid_foreign FOREIGN KEY ("createdByUserId") REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: oauth_grant_accounts oauth_grant_accounts_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grant_accounts
+    ADD CONSTRAINT oauth_grant_accounts_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_grant_accounts oauth_grant_accounts_oauthgrantid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grant_accounts
+    ADD CONSTRAINT oauth_grant_accounts_oauthgrantid_foreign FOREIGN KEY ("oauthGrantId") REFERENCES public.oauth_grants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_grants oauth_grants_oauthclientid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grants
+    ADD CONSTRAINT oauth_grants_oauthclientid_foreign FOREIGN KEY ("oauthClientId") REFERENCES public.oauth_clients(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_grants oauth_grants_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_grants
+    ADD CONSTRAINT oauth_grants_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_refresh_tokens oauth_refresh_tokens_oauthgrantid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_refresh_tokens
+    ADD CONSTRAINT oauth_refresh_tokens_oauthgrantid_foreign FOREIGN KEY ("oauthGrantId") REFERENCES public.oauth_grants(id) ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_refresh_tokens oauth_refresh_tokens_replacedbytokenid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.oauth_refresh_tokens
+    ADD CONSTRAINT oauth_refresh_tokens_replacedbytokenid_foreign FOREIGN KEY ("replacedByTokenId") REFERENCES public.oauth_refresh_tokens(id) ON DELETE SET NULL;
+
+
+--
 -- Name: project_domains project_domains_projectid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5201,3 +5623,5 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026062
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260627120000_add-screenshots-has-parent-index.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260628120000_build-review-automatic.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260709120000_github-installation-token-text.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714120000_oauth.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714130000_seed-argos-cli-oauth-client.js', 1, NOW());

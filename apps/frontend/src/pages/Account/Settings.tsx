@@ -30,6 +30,7 @@ import { UserAuth } from "@/containers/User/Auth";
 import { UserDelete } from "@/containers/User/Delete";
 import { UserEmails } from "@/containers/User/Emails";
 import { UserNotificationPreferences } from "@/containers/User/NotificationPreferences";
+import { OAuthApps } from "@/containers/User/OAuthApps";
 import { UserAccessTokens } from "@/containers/User/UserAccessTokens";
 import { graphql } from "@/gql";
 import { AccountPermission } from "@/gql/graphql";
@@ -77,6 +78,7 @@ const AccountQuery = graphql(`
       ...UserEmail_Account
       ...UserNotificationPreferences_Account
       ...UserAccessTokens_Account
+      ...OAuthApps_Account
     }
   }
 `);
@@ -228,6 +230,11 @@ function PageContent() {
       element: isUser && hasAdminPermission && (
         <UserAccessTokens account={account} />
       ),
+    },
+    {
+      name: "Applications",
+      slug: "applications",
+      element: isUser && hasAdminPermission && <OAuthApps account={account} />,
     },
     {
       name: "Members",
