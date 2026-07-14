@@ -23,7 +23,7 @@ import {
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListEmpty, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Modal } from "@/ui/Modal";
+import { Modal, useModalAction } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
@@ -77,7 +77,8 @@ function RevokeAppDialog(props: {
 }) {
   const { accountId, id, name } = props;
   const state = useOverlayTriggerState();
-  const [revoke, { loading, error }] = useMutation(RevokeOAuthGrantMutation, {
+  const [isPending, startDialogAction] = useModalAction();
+  const [revoke, { error }] = useMutation(RevokeOAuthGrantMutation, {
     variables: { input: { id } },
     update(cache) {
       const userId = cache.identify({ __typename: "User", id: accountId });
@@ -96,10 +97,6 @@ function RevokeAppDialog(props: {
         },
       });
     },
-    onCompleted: () => {
-      state.close();
-      toast.success("Access revoked");
-    },
   });
 
   return (
@@ -115,11 +112,21 @@ function RevokeAppDialog(props: {
         {error && (
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         )}
-        <DialogDismiss isDisabled={loading}>Cancel</DialogDismiss>
+        <DialogDismiss>Cancel</DialogDismiss>
         <Button
           variant="destructive"
-          isPending={loading}
-          onPress={() => revoke()}
+          isPending={isPending}
+          onPress={() =>
+            startDialogAction(async () => {
+              try {
+                await revoke();
+                state.close();
+                toast.success("Access revoked");
+              } catch {
+                // Surfaced via the mutation's `error` state above.
+              }
+            })
+          }
         >
           Revoke access
         </Button>
@@ -176,7 +183,7 @@ function OAuthAppList(props: {
             columns,
           )}
         >
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-3">
             <OAuthAppLogo
               name={app.client.name}
               knownAppId={app.client.knownAppId}
@@ -184,17 +191,17 @@ function OAuthAppList(props: {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="truncate font-medium">{app.client.name}</span>
-                {app.client.verified && <VerifiedBadge />}
+                {app.client.verified && <VerifiedBadge scale="xs" />}
               </div>
               <div className="text-low mt-0.5 text-xs">
                 Authorized <Time date={app.createdAt} />
               </div>
             </div>
           </div>
-          <div className="text-low min-w-0 truncate text-xs">
+          <div className="text-low min-w-0 text-xs">
             {formatList(app.scopes)}
           </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
             {app.accounts.map((account) => (
               <span
                 key={account.id}

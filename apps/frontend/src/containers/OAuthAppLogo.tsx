@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import { BadgeCheckIcon } from "lucide-react";
 
-import { Chip } from "@/ui/Chip";
+import { Chip, type ChipProps } from "@/ui/Chip";
 
 import {
   ArgosCliLogo,
@@ -74,9 +74,9 @@ export function OAuthAppLogo(props: {
 }
 
 /** Badge marking a verified, well-known OAuth application. */
-export function VerifiedBadge() {
+export function VerifiedBadge(props: Pick<ChipProps, "scale">) {
   return (
-    <Chip color="success" scale="sm" icon={BadgeCheckIcon}>
+    <Chip color="success" icon={BadgeCheckIcon} {...props}>
       Verified
     </Chip>
   );

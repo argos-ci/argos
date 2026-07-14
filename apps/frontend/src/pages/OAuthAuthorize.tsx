@@ -6,6 +6,7 @@ import {
   CheckCircleIcon,
   FolderIcon,
   ImageIcon,
+  LockIcon,
   MessageSquareIcon,
   UserIcon,
   type LucideIcon,
@@ -27,7 +28,7 @@ import { CheckboxGroupField } from "@/ui/CheckboxGroup";
 import { Container } from "@/ui/Container";
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Form } from "@/ui/Form";
-import { Label } from "@/ui/Label";
+import { Tooltip } from "@/ui/Tooltip";
 
 const ConsentQuery = graphql(`
   query OAuthAuthorize_Consent(
@@ -127,6 +128,12 @@ type ScopeGroup = {
 };
 
 /**
+ * Scopes the user cannot uncheck. `profile` (identity) is always granted so the
+ * application knows who authorized it — downgrading it would break every flow.
+ */
+const REQUIRED_SCOPES = new Set<string>(["profile"]);
+
+/**
  * Group requested scopes by their resource (the part before `:`) so the consent
  * screen shows one icon + heading per resource rather than a flat list. First-
  * seen order is preserved (the backend already returns scopes in a stable order).
@@ -180,7 +187,13 @@ function ConsentForm(props: {
       });
       return;
     }
-    if (data.scopes.length === 0) {
+    // Required scopes (e.g. profile) aren't toggleable checkboxes, so add them
+    // back explicitly — react-aria drops values with no checkbox on change.
+    const requiredScopes = consent.scopes
+      .map((scope) => scope.scope)
+      .filter((scope) => REQUIRED_SCOPES.has(scope));
+    const scopes = Array.from(new Set([...requiredScopes, ...data.scopes]));
+    if (scopes.length === 0) {
       form.setError("scopes", {
         type: "validate",
         message: "Select at least one permission to grant",
@@ -195,7 +208,7 @@ function ConsentForm(props: {
           input: {
             clientId: params.clientId,
             redirectUri: params.redirectUri,
-            scopes: data.scopes,
+            scopes,
             accountIds,
             state: params.state,
             codeChallenge: params.codeChallenge,
@@ -228,7 +241,7 @@ function ConsentForm(props: {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-6 pb-8">
       <div className="flex items-center gap-3">
         <BrandShield className="w-12" />
         <span className="text-low text-2xl">→</span>
@@ -242,7 +255,7 @@ function ConsentForm(props: {
       <div className="text-center">
         <h1 className="flex items-center justify-center gap-2 text-2xl font-semibold">
           Authorize {consent.client.name}
-          {consent.client.verified && <VerifiedBadge />}
+          {consent.client.verified && <VerifiedBadge scale="sm" />}
         </h1>
         <p className="text-low mt-1 text-sm">
           Signed in as{" "}
@@ -252,85 +265,120 @@ function ConsentForm(props: {
 
       <Form form={form} onSubmit={onSubmit} className="w-full">
         <Card className="w-full">
-          <CardBody className="flex flex-col gap-4">
-            <div>
-              <div className="text-sm font-medium">
-                {consent.client.name} is requesting access to:
-              </div>
-              <p className="text-low mt-0.5 text-xs">
+          <CardBody className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm">
+                <span className="text-default font-medium">
+                  {consent.client.name}
+                </span>{" "}
+                will be able to:
+              </p>
+              <p className="text-low text-xs">
                 Uncheck anything you don’t want to grant.
               </p>
-              <CheckboxGroupField
-                control={form.control}
-                name="scopes"
-                className="mt-3"
-              >
+            </div>
+
+            <CheckboxGroupField control={form.control} name="scopes">
+              <div className="flex flex-col gap-4">
                 {groupScopes(consent.scopes).map((group) => {
                   const Icon = group.icon;
                   return (
-                    <div key={group.key} className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2 text-sm font-medium">
+                    <section key={group.key} className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
                         <Icon className="text-low size-4 shrink-0" />
-                        {group.label}
+                        <span className="text-sm font-semibold">
+                          {group.label}
+                        </span>
                       </div>
-                      <div className="flex flex-col gap-1.5 pl-6">
-                        {group.scopes.map((scope) => (
-                          <Checkbox key={scope.scope} value={scope.scope}>
-                            <span className="flex flex-col gap-0.5">
-                              <span className="text-sm">{scope.title}</span>
-                              <span className="text-low text-xs">
+                      <div className="flex flex-col gap-2 pl-6">
+                        {group.scopes.map((scope) => {
+                          // Required scopes (e.g. profile) can't be unchecked:
+                          // show a lock with a tooltip instead of a checkbox.
+                          if (REQUIRED_SCOPES.has(scope.scope)) {
+                            return (
+                              <div
+                                key={scope.scope}
+                                className="flex items-center gap-2"
+                              >
+                                <Tooltip
+                                  content={`${consent.client.name} always needs your profile to know who authorized it, so it can’t be turned off.`}
+                                >
+                                  <button
+                                    type="button"
+                                    aria-label="Always granted"
+                                    className="text-low focus-visible:ring-primary flex size-4 shrink-0 cursor-help items-center justify-center rounded-sm outline-none focus-visible:ring-2"
+                                  >
+                                    <LockIcon className="size-3.5" />
+                                  </button>
+                                </Tooltip>
+                                <span className="text-sm">
+                                  {scope.description}
+                                </span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <Checkbox key={scope.scope} value={scope.scope}>
+                              <span className="text-sm">
                                 {scope.description}
                               </span>
-                            </span>
-                          </Checkbox>
-                        ))}
+                            </Checkbox>
+                          );
+                        })}
                       </div>
-                    </div>
+                    </section>
                   );
                 })}
-              </CheckboxGroupField>
-              {form.formState.errors.scopes && (
-                <ErrorMessage className="mt-2">
-                  {form.formState.errors.scopes.message}
-                </ErrorMessage>
-              )}
-            </div>
+              </div>
+            </CheckboxGroupField>
+            {form.formState.errors.scopes && (
+              <ErrorMessage>
+                {form.formState.errors.scopes.message}
+              </ErrorMessage>
+            )}
 
-            {isSingleAccount ? (
-              <div>
-                <Label>Organization</Label>
-                <div className="flex items-center gap-2 text-sm">
-                  <AccountAvatar avatar={me.avatar} className="size-4" />
-                  {me.name ?? me.slug}{" "}
+            <div className="border-default border-t" />
+
+            <section className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Building2Icon className="text-low size-4 shrink-0" />
+                <span className="text-sm font-semibold">Accounts</span>
+              </div>
+              {isSingleAccount ? (
+                <div className="flex items-center gap-2 pl-6 text-sm">
+                  <AccountAvatar avatar={me.avatar} className="size-5" />
+                  <span>{me.name ?? me.slug}</span>
                   <span className="text-low">@{me.slug}</span>
                 </div>
-              </div>
-            ) : (
-              <div>
-                <Label>Organizations this application can access</Label>
-                <CheckboxGroupField
-                  control={form.control}
-                  name="accountIds"
-                  isInvalid={Boolean(form.formState.errors.accountIds)}
-                >
-                  {availableAccounts.map((account) => (
-                    <Checkbox key={account.id} value={account.id}>
-                      <AccountAvatar
-                        avatar={account.avatar}
-                        className="size-4"
-                      />
-                      {account.name ?? account.slug}{" "}
-                      <span className="text-low">@{account.slug}</span>
-                    </Checkbox>
-                  ))}
-                </CheckboxGroupField>
-                {form.formState.errors.accountIds && (
-                  <ErrorMessage className="mt-2">
-                    {form.formState.errors.accountIds.message}
-                  </ErrorMessage>
-                )}
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col gap-2 pl-6">
+                  <p className="text-low text-xs">
+                    Choose which accounts {consent.client.name} can access.
+                  </p>
+                  <CheckboxGroupField control={form.control} name="accountIds">
+                    {availableAccounts.map((account) => (
+                      <Checkbox key={account.id} value={account.id}>
+                        <AccountAvatar
+                          avatar={account.avatar}
+                          className="size-5"
+                        />
+                        <span className="text-sm">
+                          {account.name ?? account.slug}
+                        </span>
+                        <span className="text-low text-sm">
+                          @{account.slug}
+                        </span>
+                      </Checkbox>
+                    ))}
+                  </CheckboxGroupField>
+                  {form.formState.errors.accountIds && (
+                    <ErrorMessage>
+                      {form.formState.errors.accountIds.message}
+                    </ErrorMessage>
+                  )}
+                </div>
+              )}
+            </section>
           </CardBody>
         </Card>
 
@@ -495,7 +543,7 @@ export function Component() {
       <Helmet>
         <title>Authorize application</title>
       </Helmet>
-      <Container className="mt-12 max-w-md px-4">
+      <Container className="mt-12 max-w-xl px-4">
         <AuthorizeLoader params={params} />
       </Container>
     </>

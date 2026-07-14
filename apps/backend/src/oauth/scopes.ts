@@ -10,8 +10,7 @@
 export const OAUTH_SCOPES = {
   profile: {
     title: "Profile",
-    description:
-      "Read your Argos profile and the list of organizations you belong to.",
+    description: "Read your Argos profile and the list of teams you belong to.",
   },
   "projects:read": {
     title: "Read projects",
