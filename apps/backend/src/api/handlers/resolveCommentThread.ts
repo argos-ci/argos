@@ -86,7 +86,10 @@ export const resolveCommentThread: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/resolve",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,
@@ -112,7 +115,10 @@ export const unresolveCommentThread: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/unresolve",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

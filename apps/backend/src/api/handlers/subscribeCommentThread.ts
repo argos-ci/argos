@@ -88,7 +88,10 @@ export const subscribeCommentThread: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,
@@ -117,7 +120,10 @@ export const unsubscribeCommentThread: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

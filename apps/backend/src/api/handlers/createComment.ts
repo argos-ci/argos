@@ -112,7 +112,10 @@ export const createComment: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

@@ -56,7 +56,10 @@ export const deleteComment: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       const comment = await getBuildComment({
         commentId: params.commentId,
