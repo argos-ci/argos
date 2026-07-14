@@ -6,7 +6,7 @@ import { getCommentPermissions } from "@/comment/permissions";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { boom } from "@/util/error";
 
-import { getBuildComment, loadBuildForPatAuth } from "../auth/build";
+import { getBuildComment, loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   CommentBodyInputSchema,
@@ -73,7 +73,7 @@ export const updateComment: CreateAPIHandler = ({ patch }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
 
       const comment = await getBuildComment({
         commentId: params.commentId,

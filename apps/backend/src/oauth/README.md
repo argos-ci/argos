@@ -15,15 +15,15 @@ authenticated user is already allowed to do.
 The AS lives on the app origin (`config.server.url`). The RS is the REST API
 (`config.api.baseUrl` + `/v2`) today; a future MCP server is another RS.
 
-| Endpoint                                          | Purpose                                      |
-| ------------------------------------------------- | -------------------------------------------- |
-| `GET  /.well-known/oauth-authorization-server`    | AS metadata (RFC 8414)                       |
-| `GET  {api}/.well-known/oauth-protected-resource` | Protected Resource Metadata (RFC 9728)       |
-| `GET  /oauth/authorize`                           | Consent screen (SPA; `pages/OAuthAuthorize`) |
-| `POST /oauth/token`                               | `authorization_code` + `refresh_token`       |
-| `POST /oauth/register`                            | Dynamic Client Registration (RFC 7591)       |
-| `POST /oauth/introspect`                          | Token introspection (RFC 7662)               |
-| `POST /oauth/revoke`                              | Token revocation (RFC 7009)                  |
+| Endpoint                                          | Purpose                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------ |
+| `GET  /.well-known/oauth-authorization-server`    | AS metadata (RFC 8414)                                             |
+| `GET  {api}/.well-known/oauth-protected-resource` | Protected Resource Metadata (RFC 9728)                             |
+| `GET  /oauth/authorize`                           | Consent screen (SPA; `apps/frontend/src/pages/OAuthAuthorize.tsx`) |
+| `POST /oauth/token`                               | `authorization_code` + `refresh_token`                             |
+| `POST /oauth/register`                            | Dynamic Client Registration (RFC 7591)                             |
+| `POST /oauth/introspect`                          | Token introspection (RFC 7662)                                     |
+| `POST /oauth/revoke`                              | Token revocation (RFC 7009)                                        |
 
 PKCE (`S256`) is **mandatory**. Access tokens are short-lived (1h); refresh
 tokens rotate and reuse of a rotated token revokes the whole grant.

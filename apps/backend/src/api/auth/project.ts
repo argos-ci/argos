@@ -72,7 +72,7 @@ export function assertProjectAccess(
     // identical for both.
     case "pat":
     case "oauth": {
-      // PAT scopes are stored as accounts, but callers may identify the
+      // PAT/OAuth scopes are stored as accounts, but callers may identify the
       // authorized account either with its public slug or with an internal
       // identifier field that is already slug-shaped.
       if (

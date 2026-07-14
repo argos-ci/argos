@@ -6,7 +6,7 @@ import { removeCommentReaction as removeCommentReactionService } from "@/comment
 import {
   assertBuildPermission,
   getBuildComment,
-  loadBuildForPatAuth,
+  loadBuildForUserAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -61,7 +61,7 @@ export const removeCommentReaction: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
       const { params, query } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
 
       await assertBuildPermission({
         build,

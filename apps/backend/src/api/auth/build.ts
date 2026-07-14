@@ -21,7 +21,7 @@ type BuildActionPermission = "view" | "review" | "review_dismiss";
  * Returns the resolved auth and the build (with `project.account` fetched so
  * callers can check permissions and serialize without a second round-trip).
  */
-export async function loadBuildForPatAuth(
+export async function loadBuildForUserAuth(
   authPromise: Promise<AuthPATPayload | AuthOAuthPayload>,
   params: { owner: string; project: string; buildNumber: number },
 ): Promise<{ auth: AuthPATPayload | AuthOAuthPayload; build: Build }> {
@@ -53,7 +53,7 @@ export async function loadBuildForPatAuth(
 /**
  * Assert the user holds a project permission on the build's project, throwing a
  * 403 with the given message otherwise. The build must have `project` fetched
- * (as returned by {@link loadBuildForPatAuth}).
+ * (as returned by {@link loadBuildForUserAuth}).
  */
 export async function assertBuildPermission(input: {
   build: Build;

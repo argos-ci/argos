@@ -3,7 +3,7 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { getVisibleBuildComments } from "@/comment/getVisibleBuildComments";
 
-import { assertBuildPermission, loadBuildForPatAuth } from "../auth/build";
+import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComments } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -52,7 +52,7 @@ export const listComments: CreateAPIHandler = ({ get }) => {
   get(
     "/projects/{owner}/{project}/builds/{buildNumber}/comments",
     async (req, res) => {
-      const { auth, build } = await loadBuildForPatAuth(
+      const { auth, build } = await loadBuildForUserAuth(
         req.ctx.auth(),
         req.ctx.params,
       );

@@ -5,7 +5,7 @@ import { deleteBuildComment } from "@/comment/deleteBuildComment";
 import { getCommentPermissions } from "@/comment/permissions";
 import { boom } from "@/util/error";
 
-import { getBuildComment, loadBuildForPatAuth } from "../auth/build";
+import { getBuildComment, loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -56,7 +56,7 @@ export const deleteComment: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(req.ctx.auth(), params);
 
       const comment = await getBuildComment({
         commentId: params.commentId,
