@@ -105,7 +105,7 @@ type ConsentData = NonNullable<
 >;
 type Me = NonNullable<DocumentType<typeof ConsentQuery>["me"]>;
 
-type Inputs = { accountIds: string[] };
+type Inputs = { accountIds: string[]; scopes: string[] };
 
 type ConsentScope = ConsentData["scopes"][number];
 
@@ -162,8 +162,13 @@ function ConsentForm(props: {
   const isSingleAccount = availableAccounts.length === 1;
 
   const form = useForm<Inputs>({
-    // Default to the personal account only — teams are opt-in (least privilege).
-    defaultValues: { accountIds: [me.id] },
+    defaultValues: {
+      // Default to the personal account only — teams are opt-in (least privilege).
+      accountIds: [me.id],
+      // All requested scopes are checked by default; the user may uncheck any to
+      // grant a narrower set (OAuth 2.1 / RFC 6749 §3.3 downscoping).
+      scopes: consent.scopes.map((scope) => scope.scope),
+    },
   });
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -175,6 +180,13 @@ function ConsentForm(props: {
       });
       return;
     }
+    if (data.scopes.length === 0) {
+      form.setError("scopes", {
+        type: "validate",
+        message: "Select at least one permission to grant",
+      });
+      return;
+    }
     setStatus("loading");
     try {
       const result = await apollo.mutate({
@@ -183,7 +195,7 @@ function ConsentForm(props: {
           input: {
             clientId: params.clientId,
             redirectUri: params.redirectUri,
-            scopes: consent.scopes.map((scope) => scope.scope),
+            scopes: data.scopes,
             accountIds,
             state: params.state,
             codeChallenge: params.codeChallenge,
@@ -245,26 +257,43 @@ function ConsentForm(props: {
               <div className="text-sm font-medium">
                 {consent.client.name} is requesting access to:
               </div>
-              <ul className="mt-3 flex flex-col gap-4">
+              <p className="text-low mt-0.5 text-xs">
+                Uncheck anything you don’t want to grant.
+              </p>
+              <CheckboxGroupField
+                control={form.control}
+                name="scopes"
+                className="mt-3"
+              >
                 {groupScopes(consent.scopes).map((group) => {
                   const Icon = group.icon;
                   return (
-                    <li key={group.key} className="flex items-start gap-3">
-                      <Icon className="text-low mt-0.5 size-4 shrink-0" />
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-sm font-medium">
-                          {group.label}
-                        </span>
+                    <div key={group.key} className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Icon className="text-low size-4 shrink-0" />
+                        {group.label}
+                      </div>
+                      <div className="flex flex-col gap-1.5 pl-6">
                         {group.scopes.map((scope) => (
-                          <span key={scope.scope} className="text-low text-sm">
-                            • {scope.description}
-                          </span>
+                          <Checkbox key={scope.scope} value={scope.scope}>
+                            <span className="flex flex-col gap-0.5">
+                              <span className="text-sm">{scope.title}</span>
+                              <span className="text-low text-xs">
+                                {scope.description}
+                              </span>
+                            </span>
+                          </Checkbox>
                         ))}
                       </div>
-                    </li>
+                    </div>
                   );
                 })}
-              </ul>
+              </CheckboxGroupField>
+              {form.formState.errors.scopes && (
+                <ErrorMessage className="mt-2">
+                  {form.formState.errors.scopes.message}
+                </ErrorMessage>
+              )}
             </div>
 
             {isSingleAccount ? (
