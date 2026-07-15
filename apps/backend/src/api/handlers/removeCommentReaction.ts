@@ -6,7 +6,7 @@ import { removeCommentReaction as removeCommentReactionService } from "@/comment
 import {
   assertBuildPermission,
   getBuildComment,
-  loadBuildForPatAuth,
+  loadBuildForUserAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -18,7 +18,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const removeCommentReactionOperation = {
@@ -27,7 +27,7 @@ export const removeCommentReactionOperation = {
   description:
     "Remove an emoji reaction previously added by the authenticated user from a comment.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -61,7 +61,10 @@ export const removeCommentReaction: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
       const { params, query } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

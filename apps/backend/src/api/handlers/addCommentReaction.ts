@@ -6,7 +6,7 @@ import { addCommentReaction as addCommentReactionService } from "@/comment/addCo
 import {
   assertBuildPermission,
   getBuildComment,
-  loadBuildForPatAuth,
+  loadBuildForUserAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -18,7 +18,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const AddReactionBodySchema = z.object({
@@ -31,7 +31,7 @@ export const addCommentReactionOperation = {
   description:
     "Add an emoji reaction to a comment on behalf of the authenticated user.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -70,7 +70,10 @@ export const addCommentReaction: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/reactions",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

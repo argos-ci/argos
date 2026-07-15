@@ -15,7 +15,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const DateTimeSchema = z.iso
@@ -126,7 +126,7 @@ export const getAccountAnalyticsOperation = {
   description:
     "Retrieve build and screenshot metrics for an account. The personal access token must be scoped to the account.",
   tags: ["Analytics"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["projects:read"]),
   requestParams: {
     path: z.object({
       accountSlug: AccountSlug.meta({

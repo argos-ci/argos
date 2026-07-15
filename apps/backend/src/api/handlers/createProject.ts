@@ -16,7 +16,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const CreateProjectBodySchema = z.object({
@@ -36,7 +36,7 @@ export const createProjectOperation = {
   description:
     "Create a new project in an account you administer. The authenticated personal access token must be scoped to the target account, and the acting user must be an administrator of it.",
   tags: ["Projects"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["projects:write"]),
   requestBody: {
     required: true,
     content: {

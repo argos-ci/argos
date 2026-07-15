@@ -5,7 +5,7 @@ import { dismissBuildReview } from "@/build/dismissBuildReview";
 import { BuildReview } from "@/database/models";
 import { boom } from "@/util/error";
 
-import { assertBuildPermission, loadBuildForPatAuth } from "../auth/build";
+import { assertBuildPermission, loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   BuildReviewSchema,
@@ -19,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const dismissReviewOperation = {
@@ -28,7 +28,7 @@ export const dismissReviewOperation = {
   description:
     "Dismiss a previously submitted review on a build, clearing its effect on the build's review status.",
   tags: ["Reviews"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["reviews:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -59,7 +59,10 @@ export const dismissReview: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/reviews/{reviewId}/dismiss",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

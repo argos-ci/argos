@@ -4,14 +4,21 @@ import {
   getAuthHeaderFromExpressReq,
   parseBearerFromHeader,
 } from "@/auth/auth-header";
+import { getAuthPayloadFromOAuthAccessToken } from "@/auth/oauth-access-token";
 import type {
+  AuthOAuthPayload,
   AuthPATPayload,
   AuthProjectPayload,
   AuthSessionPayload,
 } from "@/auth/payload";
 import { getAuthProjectPayloadFromBearerToken } from "@/auth/project";
 import { getAuthPayloadFromUserAccessToken } from "@/auth/user-access-token";
-import { Project, UserAccessToken, type Account } from "@/database/models";
+import {
+  OAuthAccessToken,
+  Project,
+  UserAccessToken,
+  type Account,
+} from "@/database/models";
 import { boom } from "@/util/error";
 
 /**
@@ -29,7 +36,8 @@ export type AuthAttributes = {
  * asserted attribute. No-op when either side is absent.
  */
 export function assertAuthAttributes(
-  auth: AuthSessionPayload | AuthPATPayload | AuthProjectPayload,
+  auth:
+    AuthSessionPayload | AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
   attributes: AuthAttributes | undefined,
 ): void {
   if (!attributes) {
@@ -47,7 +55,7 @@ export function assertAuthAttributes(
 }
 
 export function assertProjectAccess(
-  auth: AuthPATPayload | AuthProjectPayload,
+  auth: AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
   params: {
     projectId: string | null;
     account: { slug: string } | { id: string };
@@ -60,8 +68,11 @@ export function assertProjectAccess(
       }
       break;
     }
-    case "pat": {
-      // PAT scopes are stored as accounts, but callers may identify the
+    // PAT and OAuth both carry an account scope; the account-membership check is
+    // identical for both.
+    case "pat":
+    case "oauth": {
+      // PAT/OAuth scopes are stored as accounts, but callers may identify the
       // authorized account either with its public slug or with an internal
       // identifier field that is already slug-shaped.
       if (
@@ -88,15 +99,17 @@ export async function getAuthPayloadFromExpressReq(
 ) {
   const authHeader = getAuthHeaderFromExpressReq(request);
   const bearer = parseBearerFromHeader(authHeader);
-  const auth = UserAccessToken.isValidUserAccessToken(bearer)
-    ? await getAuthPayloadFromUserAccessToken(bearer)
-    : await getAuthProjectPayloadFromBearerToken(bearer);
+  const auth = OAuthAccessToken.isOAuthAccessToken(bearer)
+    ? await getAuthPayloadFromOAuthAccessToken(bearer)
+    : UserAccessToken.isValidUserAccessToken(bearer)
+      ? await getAuthPayloadFromUserAccessToken(bearer)
+      : await getAuthProjectPayloadFromBearerToken(bearer);
   assertAuthAttributes(auth, attributes);
   return auth;
 }
 
 export async function getProjectForAuth(
-  authPromise: Promise<AuthPATPayload | AuthProjectPayload>,
+  authPromise: Promise<AuthPATPayload | AuthProjectPayload | AuthOAuthPayload>,
   params: {
     owner: string;
     project: string;
@@ -142,10 +155,10 @@ export async function getProjectForAuth(
  * still check the user's role on it (e.g. `account.$getPermissions`).
  */
 export function getAccountForAuth(
-  auth: AuthPATPayload | AuthProjectPayload,
+  auth: AuthPATPayload | AuthProjectPayload | AuthOAuthPayload,
   params: { slug: string },
 ): Account {
-  if (auth.type !== "pat") {
+  if (auth.type !== "pat" && auth.type !== "oauth") {
     throw boom(401);
   }
   const account = auth.scope.find((account) => account.slug === params.slug);

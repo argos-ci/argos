@@ -16,7 +16,17 @@
 import type { Request } from "express";
 import type { ZodOpenApiSecuritySchemeObject } from "zod-openapi";
 
-import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
+import type {
+  AuthOAuthPayload,
+  AuthPATPayload,
+  AuthProjectPayload,
+} from "@/auth/payload";
+import { getOAuthIssuer } from "@/oauth/metadata";
+import {
+  OAUTH_SCOPE_LIST,
+  OAUTH_SCOPES,
+  type OAuthScope,
+} from "@/oauth/scopes";
 import { boom } from "@/util/error";
 
 import { getAuthPayloadFromExpressReq } from "./auth/project";
@@ -63,10 +73,32 @@ export const securitySchemes = {
       "reviewing builds and posting comments.",
     ].join("\n"),
   },
+  oauth2: {
+    type: "oauth2",
+    description: [
+      "Authenticate as a **user** via an OAuth 2.1 access token obtained",
+      "through the authorization-code (+ PKCE) flow. Used by the CLI and by",
+      "MCP clients/agents. The token acts on behalf of the authorizing user,",
+      "limited to the granted scopes and organizations.",
+    ].join("\n"),
+    flows: {
+      authorizationCode: {
+        authorizationUrl: `${getOAuthIssuer()}/oauth/authorize`,
+        tokenUrl: `${getOAuthIssuer()}/oauth/token`,
+        refreshUrl: `${getOAuthIssuer()}/oauth/token`,
+        scopes: Object.fromEntries(
+          OAUTH_SCOPE_LIST.map((scope) => [
+            scope,
+            OAUTH_SCOPES[scope].description,
+          ]),
+        ),
+      },
+    },
+  },
 } satisfies Record<string, ZodOpenApiSecuritySchemeObject>;
 
 /** Name of a declared security scheme. */
-type SecurityScheme = "projectToken" | "personalAccessToken";
+type SecurityScheme = "projectToken" | "personalAccessToken" | "oauth2";
 
 /**
  * A security requirement list, structurally an OpenAPI `SecurityRequirementObject[]`
@@ -80,7 +112,8 @@ type SecurityRequirement<TAuth> = Record<string, string[]>[] & {
 };
 
 /** The auth payload for an endpoint whose requirement isn't statically known. */
-type UnknownAuth = AuthProjectPayload | AuthPATPayload | null;
+type UnknownAuth =
+  AuthProjectPayload | AuthPATPayload | AuthOAuthPayload | null;
 
 /**
  * Authenticate with a **project token**. Used by the build and deployment
@@ -106,6 +139,17 @@ export const personalAccessTokenAuth: SecurityRequirement<AuthPATPayload> = [
 export const anyTokenAuth: SecurityRequirement<
   AuthProjectPayload | AuthPATPayload
 > = [{ projectToken: [] }, { personalAccessToken: [] }];
+
+/**
+ * Accept **either** a personal access token or an OAuth access token with the
+ * given scopes. Used by user-action endpoints as OAuth is rolled out alongside
+ * personal access tokens.
+ */
+export function patOrOAuthAuth(
+  scopes: OAuthScope[],
+): SecurityRequirement<AuthPATPayload | AuthOAuthPayload> {
+  return [{ personalAccessToken: [] }, { oauth2: scopes }];
+}
 
 /**
  * **No authentication.** Used by public endpoints and by the token-exchange
@@ -137,7 +181,32 @@ export type AuthFromSecurity<TSecurity> = TSecurity extends {
 const AUTH_TYPE_TO_SCHEME = {
   project: "projectToken",
   pat: "personalAccessToken",
+  oauth: "oauth2",
 } as const satisfies Record<string, SecurityScheme>;
+
+/**
+ * Enforce that an OAuth token holds all scopes required by at least one of the
+ * operation's `oauth2` requirements (OR semantics across requirements).
+ */
+function assertOAuthScopes(
+  auth: AuthOAuthPayload,
+  security: readonly Record<string, unknown>[],
+): void {
+  const held = new Set(auth.oauthScopes);
+  const oauthRequirements = security
+    .map((requirement) => requirement["oauth2"])
+    .filter((value): value is string[] => Array.isArray(value));
+  const satisfied = oauthRequirements.some((required) =>
+    required.every((scope) => held.has(scope)),
+  );
+  if (!satisfied) {
+    const needed = oauthRequirements[0] ?? [];
+    throw boom(
+      403,
+      `Insufficient scope. This endpoint requires: ${needed.join(", ")}.`,
+    );
+  }
+}
 
 function unauthorizedMessage(allowedSchemes: Set<string>): string {
   if (
@@ -163,7 +232,7 @@ function unauthorizedMessage(allowedSchemes: Set<string>): string {
 export async function authenticateRequest(
   request: Request,
   security: readonly Record<string, unknown>[] | undefined,
-): Promise<AuthProjectPayload | AuthPATPayload | null> {
+): Promise<AuthProjectPayload | AuthPATPayload | AuthOAuthPayload | null> {
   if (!security || security.length === 0) {
     return null;
   }
@@ -176,6 +245,10 @@ export async function authenticateRequest(
 
   if (!allowedSchemes.has(AUTH_TYPE_TO_SCHEME[auth.type])) {
     throw boom(401, unauthorizedMessage(allowedSchemes));
+  }
+
+  if (auth.type === "oauth") {
+    assertOAuthScopes(auth, security);
   }
 
   return auth;

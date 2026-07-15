@@ -7,7 +7,7 @@ import { boom } from "@/util/error";
 import {
   assertBuildPermission,
   getBuildComment,
-  loadBuildForPatAuth,
+  loadBuildForUserAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -19,7 +19,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const getCommentOperation = {
@@ -27,7 +27,7 @@ export const getCommentOperation = {
   summary: "Get a single comment on a build",
   description: "Retrieve a single comment on a build by its ID.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:read"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -58,7 +58,10 @@ export const getComment: CreateAPIHandler = ({ get }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

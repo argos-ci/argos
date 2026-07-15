@@ -15,7 +15,7 @@ import { boom } from "@/util/error";
 import {
   assertBuildPermission,
   getBuildCommentThread,
-  loadBuildForPatAuth,
+  loadBuildForUserAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
@@ -32,7 +32,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const CreateCommentBodySchema = z.object({
@@ -58,7 +58,7 @@ export const createCommentOperation = {
   description:
     "Post a comment on a build. Start a new thread, reply to an existing one with `threadId`, optionally anchor the comment to a screenshot diff, or attach it to your pending review with `addToReview`.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -112,7 +112,10 @@ export const createComment: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,

@@ -6,7 +6,7 @@ import { getCommentPermissions } from "@/comment/permissions";
 import { updateBuildComment } from "@/comment/updateBuildComment";
 import { boom } from "@/util/error";
 
-import { getBuildComment, loadBuildForPatAuth } from "../auth/build";
+import { getBuildComment, loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import {
   CommentBodyInputSchema,
@@ -21,7 +21,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const UpdateCommentBodySchema = z.object({
@@ -34,7 +34,7 @@ export const updateCommentOperation = {
   description:
     "Update the body of a comment on a build. Only the comment's author can edit it.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -73,7 +73,10 @@ export const updateComment: CreateAPIHandler = ({ patch }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params, body: input } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       const comment = await getBuildComment({
         commentId: params.commentId,

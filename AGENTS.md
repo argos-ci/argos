@@ -30,6 +30,47 @@ All checks must pass.
 - Avoid `as` type assertions; prefer proper typing, type guards, or
   `satisfies`. `as const` is fine.
 
+## Dialogs (frontend)
+
+Build dialogs with `Modal` + `Dialog` from `@/ui`. `Modal` owns a pending state
+(`ModalActionContext`) that blocks dismissal while an action is in flight — never
+manage a separate `loading` boolean for that.
+
+- **Form dialogs** (create/edit): wrap the body in `<Form>` with a `<FormSubmit>`.
+  `Form` flags the modal pending during submit automatically and routes server
+  errors through `handleFormError`; `FormSubmit` shows the spinner. Close on
+  success with `useOverlayTriggerState().close()`.
+- **Action dialogs** (confirm/delete/revoke — not a form): drive the mutation with
+  `useModalAction()` so it gets the same pending-blocks-dismiss behavior:
+
+  ```tsx
+  const state = useOverlayTriggerState();
+  const [isPending, startDialogAction] = useModalAction();
+  const [mutate, { error }] = useMutation(/* … */);
+  // …
+  <Button
+    variant="destructive"
+    isPending={isPending}
+    onPress={() =>
+      startDialogAction(async () => {
+        try {
+          await mutate();
+          state.close();
+          toast.success("Access revoked");
+        } catch {
+          // surfaced via the mutation's `error` state
+        }
+      })
+    }
+  >
+    Revoke access
+  </Button>;
+  ```
+
+  `DialogDismiss` auto-disables while pending. Use `role="alertdialog"` for
+  confirmations, `variant="destructive"` for destructive actions, and
+  `toast.success(...)` on completion.
+
 ## Testing (Vitest)
 
 - Tests live next to the code

@@ -5,7 +5,7 @@ import { deleteBuildComment } from "@/comment/deleteBuildComment";
 import { getCommentPermissions } from "@/comment/permissions";
 import { boom } from "@/util/error";
 
-import { getBuildComment, loadBuildForPatAuth } from "../auth/build";
+import { getBuildComment, loadBuildForUserAuth } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
@@ -16,7 +16,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const deleteCommentOperation = {
@@ -25,7 +25,7 @@ export const deleteCommentOperation = {
   description:
     "Delete a comment on a build. Only the comment's author can delete it.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,
@@ -56,7 +56,10 @@ export const deleteComment: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       const comment = await getBuildComment({
         commentId: params.commentId,

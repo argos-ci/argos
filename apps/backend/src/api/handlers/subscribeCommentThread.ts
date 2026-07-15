@@ -9,7 +9,7 @@ import {
 import {
   assertBuildPermission,
   getBuildCommentThread,
-  loadBuildForPatAuth,
+  loadBuildForUserAuth,
 } from "../auth/build";
 import { BuildNumber } from "../schema/primitives/build";
 import { CommentSchema, serializeComment } from "../schema/primitives/comment";
@@ -21,7 +21,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { personalAccessTokenAuth } from "../security";
+import { patOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const PathParams = z.object({
@@ -39,7 +39,7 @@ export const subscribeCommentThreadOperation = {
   description:
     "Subscribe the authenticated user to a comment thread to receive notifications about new replies.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: PathParams },
   responses: {
     "200": {
@@ -64,7 +64,7 @@ export const unsubscribeCommentThreadOperation = {
   description:
     "Unsubscribe the authenticated user from a comment thread's notifications.",
   tags: ["Comments"],
-  security: personalAccessTokenAuth,
+  security: patOrOAuthAuth(["comments:write"]),
   requestParams: { path: PathParams },
   responses: {
     "200": {
@@ -88,7 +88,10 @@ export const subscribeCommentThread: CreateAPIHandler = ({ post }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,
@@ -117,7 +120,10 @@ export const unsubscribeCommentThread: CreateAPIHandler = ({ delete: del }) => {
     "/projects/{owner}/{project}/builds/{buildNumber}/comments/{commentId}/subscription",
     async (req, res) => {
       const { params } = req.ctx;
-      const { auth, build } = await loadBuildForPatAuth(req.ctx.auth(), params);
+      const { auth, build } = await loadBuildForUserAuth(
+        req.ctx.auth(),
+        params,
+      );
 
       await assertBuildPermission({
         build,
