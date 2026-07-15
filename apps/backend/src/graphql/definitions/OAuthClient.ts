@@ -6,7 +6,6 @@ import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
 import { getKnownApp } from "@/oauth/known-apps";
 import { isOAuthScope, OAUTH_SCOPES, parseScopeString } from "@/oauth/scopes";
-import { revokeGrantTokens } from "@/oauth/tokens";
 
 import type { IResolvers } from "../__generated__/resolver-types";
 import { getAccessibleAccounts } from "../services/account";
@@ -166,32 +165,19 @@ export const resolvers: IResolvers = {
         throw badUserInput("One or more organizations are not accessible");
       }
 
+      // Every authorization mints its own grant (and its own refresh-token
+      // family), so concurrent logins under one user — e.g. a laptop and a CI
+      // machine both running `argos login` — each get an independent session
+      // instead of revoking one another. A prior grant stays valid until its
+      // tokens expire or the user revokes that session in settings.
       const grant = await transaction(async (trx) => {
-        const existing = await OAuthGrant.query(trx).findOne({
+        const saved = await OAuthGrant.query(trx).insertAndFetch({
           userId,
           oauthClientId: client.id,
+          scopes: requestedScopes,
+          lastUsedAt: null,
+          revokedAt: null,
         });
-        const saved = existing
-          ? await existing
-              .$query(trx)
-              .patchAndFetch({ scopes: requestedScopes, revokedAt: null })
-          : await OAuthGrant.query(trx).insertAndFetch({
-              userId,
-              oauthClientId: client.id,
-              scopes: requestedScopes,
-              lastUsedAt: null,
-              revokedAt: null,
-            });
-        // Re-consent redefines scopes/orgs: revoke the grant's existing tokens
-        // so previously-issued (possibly broader) ones stop working now instead
-        // of lingering until they expire.
-        if (existing) {
-          await revokeGrantTokens(saved.id, trx);
-        }
-        // Replace the granted organizations with the freshly-consented set.
-        await OAuthGrantAccount.query(trx)
-          .where("oauthGrantId", saved.id)
-          .delete();
         await OAuthGrantAccount.query(trx).insert(
           accessibleAccounts.map((account) => ({
             oauthGrantId: saved.id,

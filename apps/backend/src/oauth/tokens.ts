@@ -184,10 +184,9 @@ export async function rotateRefreshToken(params: {
 
 /**
  * Revoke all live access + refresh tokens for a grant, leaving the grant itself
- * untouched. Used on re-consent so previously-issued (possibly broader) tokens
- * stop working immediately rather than lingering until they expire.
+ * untouched. Helper behind `revokeGrant`.
  */
-export async function revokeGrantTokens(
+async function revokeGrantTokens(
   grantId: string,
   trx?: TransactionOrKnex,
 ): Promise<void> {

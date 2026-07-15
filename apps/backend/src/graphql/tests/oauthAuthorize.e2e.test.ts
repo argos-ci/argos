@@ -124,28 +124,10 @@ describe("OAuth authorization flow", () => {
     expect(auth.scope.map((a) => a.id)).toEqual([userAccount.id]);
   });
 
-  it("revokes previously-issued tokens when the user re-consents", async () => {
+  it("mints an independent grant per authorization, leaving prior sessions alive", async () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
-    const grant = await OAuthGrant.query().insertAndFetch({
-      userId: userAccount.userId!,
-      oauthClientId: client.id,
-      scopes: ["profile", "projects:read"],
-      lastUsedAt: null,
-      revokedAt: null,
-    });
-    await OAuthGrantAccount.query().insert({
-      oauthGrantId: grant.id,
-      accountId: userAccount.id,
-    });
-    // A broad token from the first authorization.
-    const old = await issueTokens({
-      grantId: grant.id,
-      scopes: ["profile", "projects:read"],
-      resource: null,
-    });
-    await getAuthPayloadFromOAuthAccessToken(old.accessToken);
 
     const app = await createApolloServerApp(
       apolloServer,
@@ -153,31 +135,110 @@ describe("OAuth authorization flow", () => {
       { user: userAccount.user!, account: userAccount },
     );
 
-    // Re-consent, this time dropping projects:read.
-    const res = await request(app)
-      .post("/graphql")
-      .send({
-        query: AuthorizeMutation,
-        variables: {
-          input: {
-            clientId: client.clientId,
-            redirectUri: ACTUAL_REDIRECT,
-            scopes: ["profile"],
-            accountIds: [userAccount.id],
-            codeChallenge: "challenge",
-            codeChallengeMethod: "S256",
+    // Run the consent mutation and resolve it down to the created grant.
+    const authorize = async () => {
+      const codeVerifier = "s".repeat(64);
+      const codeChallenge = createHash("sha256")
+        .update(codeVerifier)
+        .digest("base64url");
+      const res = await request(app)
+        .post("/graphql")
+        .send({
+          query: AuthorizeMutation,
+          variables: {
+            input: {
+              clientId: client.clientId,
+              redirectUri: ACTUAL_REDIRECT,
+              scopes: ["profile", "projects:read"],
+              accountIds: [userAccount.id],
+              codeChallenge,
+              codeChallengeMethod: "S256",
+            },
           },
-        },
+        });
+      expectNoGraphQLError(res);
+      const code = new URL(
+        res.body.data.authorizeOAuthConsent.redirectUri,
+      ).searchParams.get("code");
+      const payload = await consumeAuthorizationCode({
+        code: code!,
+        codeVerifier,
+        clientId: client.clientId,
+        redirectUri: ACTUAL_REDIRECT,
       });
-    expectNoGraphQLError(res);
+      expect(payload).not.toBeNull();
+      return payload!;
+    };
 
-    // The old broad token is dead, but the grant itself stays active.
-    await expect(
-      getAuthPayloadFromOAuthAccessToken(old.accessToken),
-    ).rejects.toThrow();
-    const refreshed = await OAuthGrant.query().findById(grant.id);
-    expect(refreshed?.revokedAt).toBeNull();
-    expect(refreshed?.scopes).toEqual(["profile"]);
+    // Machine A logs in and gets a token.
+    const a = await authorize();
+    const aTokens = await issueTokens({
+      grantId: a.grantId,
+      scopes: ["profile", "projects:read"],
+      resource: null,
+    });
+    await getAuthPayloadFromOAuthAccessToken(aTokens.accessToken);
+
+    // Machine B logs in under the same user + client.
+    const b = await authorize();
+
+    // Each login is its own grant, so B does not disturb A.
+    expect(b.grantId).not.toBe(a.grantId);
+    expect(
+      await OAuthGrant.query().where({ userId: userAccount.userId! }),
+    ).toHaveLength(2);
+
+    // Machine A's token keeps working after B logs in.
+    const auth = await getAuthPayloadFromOAuthAccessToken(aTokens.accessToken);
+    expect(auth.grantId).toBe(a.grantId);
+  });
+
+  it("keeps a sibling session alive when another session refreshes (ARG-466)", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const client = await createTestClient();
+
+    // Two independent sessions (grants) for the same user + client.
+    const openSession = async () => {
+      const grant = await OAuthGrant.query().insertAndFetch({
+        userId: userAccount.userId!,
+        oauthClientId: client.id,
+        scopes: ["profile"],
+        lastUsedAt: null,
+        revokedAt: null,
+      });
+      await OAuthGrantAccount.query().insert({
+        oauthGrantId: grant.id,
+        accountId: userAccount.id,
+      });
+      return issueTokens({
+        grantId: grant.id,
+        scopes: ["profile"],
+        resource: null,
+      });
+    };
+    const a = await openSession();
+    const b = await openSession();
+
+    // Machine B refreshes, rotating only its own refresh-token family.
+    const rotated = await rotateRefreshToken({
+      refreshToken: b.refreshToken,
+      clientId: client.clientId,
+      requestedScopes: null,
+      resource: null,
+    });
+    expect(rotated.ok).toBe(true);
+
+    // Machine A is untouched: its access token still authenticates and its
+    // refresh token still rotates.
+    await getAuthPayloadFromOAuthAccessToken(a.accessToken);
+    const aRotated = await rotateRefreshToken({
+      refreshToken: a.refreshToken,
+      clientId: client.clientId,
+      requestedScopes: null,
+      resource: null,
+    });
+    expect(aRotated.ok).toBe(true);
   });
 
   it("rejects an unregistered redirect_uri at consent", async () => {

@@ -3506,14 +3506,6 @@ ALTER TABLE ONLY public.oauth_grants
 
 
 --
--- Name: oauth_grants oauth_grants_userid_oauthclientid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.oauth_grants
-    ADD CONSTRAINT oauth_grants_userid_oauthclientid_unique UNIQUE ("userId", "oauthClientId");
-
-
---
 -- Name: oauth_refresh_tokens oauth_refresh_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5625,3 +5617,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026062
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260709120000_github-installation-token-text.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714120000_oauth.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714130000_seed-argos-cli-oauth-client.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260715120000_oauth-grants-per-device.js', 1, NOW());
