@@ -12,29 +12,29 @@ export type BuildsFilters = {
   /**
    * Filter by exact build name.
    */
-  name?: string | null;
+  name?: string | null | undefined;
   /**
    * Filter by build type (builds without a type always match).
    */
-  type?: BuildType[] | null;
+  type?: BuildType[] | null | undefined;
   /**
    * Filter by aggregated build status.
    */
-  status?: BuildAggregatedStatus[] | null;
+  status?: BuildAggregatedStatus[] | null | undefined;
   /**
    * Search in build name, branch (substring) and commit (prefix, when the
    * input looks like a SHA).
    */
-  search?: string | null;
+  search?: string | null | undefined;
   /**
    * Filter by exact head branch.
    */
-  branch?: string | null;
+  branch?: string | null | undefined;
   /**
    * Filter by exact head commit: matches `prHeadCommit`, or the compare
    * screenshot bucket commit when `prHeadCommit` is not set.
    */
-  commit?: string | null;
+  commit?: string | null | undefined;
 };
 
 /**
