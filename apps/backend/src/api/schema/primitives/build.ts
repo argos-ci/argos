@@ -13,6 +13,7 @@ import {
   NotificationPayloadSchema,
 } from "@/build-notification";
 import { Build, BuildNotification, ScreenshotBucket } from "@/database/models";
+import { queryBuilds } from "@/database/services/build";
 
 import { PageParamsSchema } from "./pagination";
 import { Sha1HashSchema } from "./sha";
@@ -20,6 +21,10 @@ import { Sha1HashSchema } from "./sha";
 export const BuildListParamsSchema = PageParamsSchema.extend({
   head: z.string().min(1).optional(),
   headSha: Sha1HashSchema.optional(),
+  search: z.string().min(1).optional().meta({
+    description:
+      "Search builds by name, branch (substring) or commit (prefix).",
+  }),
   distinctName: z
     .string()
     .optional()
@@ -48,28 +53,11 @@ export async function listBuilds(
   },
   params: z.infer<typeof BuildListParamsSchema>,
 ) {
-  const { head, headSha, distinctName, page, perPage } = params;
-  const filterQuery = Build.query()
-    .select("builds.id")
-    .where("builds.projectId", ctx.projectId);
-
-  if (head || headSha) {
-    filterQuery.joinRelated("compareScreenshotBucket");
-  }
-
-  if (head) {
-    filterQuery.where("compareScreenshotBucket.branch", head);
-  }
-
-  if (headSha) {
-    filterQuery.where((qb) => {
-      qb.where("builds.prHeadCommit", headSha).orWhere((subquery) => {
-        subquery
-          .whereNull("builds.prHeadCommit")
-          .where("compareScreenshotBucket.commit", headSha);
-      });
-    });
-  }
+  const { head, headSha, search, distinctName, page, perPage } = params;
+  const filterQuery = queryBuilds({
+    projectId: ctx.projectId,
+    filters: { branch: head, commit: headSha, search },
+  }).select("builds.id");
 
   if (distinctName) {
     filterQuery

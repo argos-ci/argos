@@ -82,6 +82,7 @@ export const resolvers: IResolvers = {
           pageInfo: {
             hasNextPage: projects.paginationInfo.total > args.page * 100,
             totalCount: projects.paginationInfo.total,
+            isEmpty: projects.paginationInfo.total === 0,
           },
         };
       } catch (error) {
@@ -94,6 +95,7 @@ export const resolvers: IResolvers = {
               pageInfo: {
                 hasNextPage: false,
                 totalCount: 0,
+                isEmpty: true,
               },
             };
           }

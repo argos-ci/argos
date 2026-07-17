@@ -468,6 +468,7 @@ export const resolvers: IResolvers = {
           pageInfo: {
             hasNextPage: false,
             totalCount: result.length,
+            isEmpty: result.length === 0,
           },
         };
       } catch (error) {

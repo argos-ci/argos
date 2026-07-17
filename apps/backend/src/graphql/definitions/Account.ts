@@ -320,7 +320,10 @@ export const commonAccountResolvers: IResolvers["Team"] = {
       user: auth.user,
     });
     if (projectIds.length === 0) {
-      return { pageInfo: { totalCount: 0, hasNextPage: false }, edges: [] };
+      return {
+        pageInfo: { totalCount: 0, hasNextPage: false, isEmpty: true },
+        edges: [],
+      };
     }
     const result = await queryActiveTests({
       projectIds,
@@ -410,6 +413,7 @@ export const commonAccountResolvers: IResolvers["Team"] = {
         pageInfo: {
           hasNextPage: false,
           totalCount: namespaces.length,
+          isEmpty: namespaces.length === 0,
         },
       };
     } catch {

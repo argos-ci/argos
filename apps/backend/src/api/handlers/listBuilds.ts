@@ -3,13 +3,13 @@ import { ZodOpenApiOperationObject } from "zod-openapi";
 
 import { getProjectForAuth } from "../auth/project";
 import {
+  BuildListParamsSchema,
   BuildSchema,
-  listBuilds,
+  listBuilds as listBuildsQuery,
   serializeBuilds,
 } from "../schema/primitives/build";
-import { PageParamsSchema, paginated } from "../schema/primitives/pagination";
+import { paginated } from "../schema/primitives/pagination";
 import { AccountSlug, ProjectName } from "../schema/primitives/project";
-import { Sha1HashSchema } from "../schema/primitives/sha";
 import {
   forbidden,
   invalidParameters,
@@ -20,32 +20,11 @@ import {
 import { anyTokenAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
-const GetProjectBuildsParams = PageParamsSchema.extend({
-  head: z.string().min(1).optional(),
-  headSha: Sha1HashSchema.optional(),
-  distinctName: z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === "true") {
-        return true;
-      }
-      if (v === "false") {
-        return false;
-      }
-      return null;
-    })
-    .meta({
-      description:
-        "Only return the latest builds created, unique by name and commit.",
-    }),
-});
-
-export const getProjectBuildsOperation = {
-  operationId: "getProjectBuilds",
+export const listBuildsOperation = {
+  operationId: "listBuilds",
   summary: "List a project's builds",
   description:
-    "List the builds of a project, most recent first. Results are paginated. Use `distinctName` to return only the latest build per name and commit.",
+    "List the builds of a project, most recent first. Results are paginated. Use `search` to match builds by name, branch or commit, and `distinctName` to return only the latest build per name and commit.",
   tags: ["Builds"],
   security: anyTokenAuth,
   requestParams: {
@@ -53,7 +32,7 @@ export const getProjectBuildsOperation = {
       owner: AccountSlug,
       project: ProjectName,
     }),
-    query: GetProjectBuildsParams,
+    query: BuildListParamsSchema,
   },
   responses: {
     "200": {
@@ -72,11 +51,14 @@ export const getProjectBuildsOperation = {
   },
 } satisfies ZodOpenApiOperationObject;
 
-export const getProjectBuilds: CreateAPIHandler = ({ get }) => {
+export const listBuilds: CreateAPIHandler = ({ get }) => {
   get("/projects/{owner}/{project}/builds", async (req, res) => {
     const { page, perPage } = req.ctx.query;
     const project = await getProjectForAuth(req.ctx.auth(), req.ctx.params);
-    const builds = await listBuilds({ projectId: project.id }, req.ctx.query);
+    const builds = await listBuildsQuery(
+      { projectId: project.id },
+      req.ctx.query,
+    );
     const results = await serializeBuilds(builds.results);
     res.send({
       results,

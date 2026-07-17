@@ -7,9 +7,9 @@ import type { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
-import { getProjectBuilds } from "./getProjectBuilds";
+import { listBuilds } from "./listBuilds";
 
-const app = createTestHandlerApp(getProjectBuilds);
+const app = createTestHandlerApp(listBuilds);
 
 const test = base.extend<{
   account: Account;
@@ -30,7 +30,7 @@ const test = base.extend<{
   },
 });
 
-describe("getProjectBuilds", () => {
+describe("listBuilds", () => {
   beforeAll(() => {
     z.globalRegistry.clear();
   });
@@ -234,6 +234,50 @@ describe("getProjectBuilds", () => {
         branch: "feature",
         sha: "2".repeat(40),
       },
+    ]);
+  });
+
+  test("applies the search filter", async ({ project }) => {
+    const [mainBucket, featureBucket] =
+      await factory.ScreenshotBucket.createMany(2, [
+        {
+          projectId: project.id,
+          branch: "main",
+          commit: "1".repeat(40),
+        },
+        {
+          projectId: project.id,
+          branch: "feat/search-box",
+          commit: "2".repeat(40),
+        },
+      ]);
+    invariant(mainBucket);
+    invariant(featureBucket);
+
+    const [, featureBuild] = await factory.Build.createMany(2, [
+      {
+        projectId: project.id,
+        compareScreenshotBucketId: mainBucket.id,
+      },
+      {
+        projectId: project.id,
+        compareScreenshotBucketId: featureBucket.id,
+      },
+    ]);
+    invariant(featureBuild);
+
+    const res = await request(app)
+      .get("/projects/acme/web/builds?search=search-box")
+      .set("Authorization", "Bearer the-awesome-token")
+      .expect(200);
+
+    expect(res.body.pageInfo).toEqual({
+      total: 1,
+      page: 1,
+      perPage: 30,
+    });
+    expect(res.body.results.map((build: { id: string }) => build.id)).toEqual([
+      featureBuild.id,
     ]);
   });
 });
