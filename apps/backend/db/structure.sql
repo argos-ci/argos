@@ -18,6 +18,34 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: btree_gin; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS btree_gin WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION btree_gin; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION btree_gin IS 'support for indexing common datatypes in GIN';
+
+
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+--
 -- Name: build_notifications_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -3987,6 +4015,13 @@ CREATE INDEX builds_projectid_comparescreenshotbucketid_name_createdat_idx ON pu
 
 
 --
+-- Name: builds_projectid_createdat_number_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_projectid_createdat_number_idx ON public.builds USING btree ("projectId", "createdAt" DESC, number DESC);
+
+
+--
 -- Name: builds_projectid_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4005,6 +4040,13 @@ CREATE INDEX builds_projectid_name_createdat_idx ON public.builds USING btree ("
 --
 
 CREATE INDEX builds_projectid_prheadcommit_name_createdat_idx ON public.builds USING btree ("projectId", "prHeadCommit", name, "createdAt" DESC) INCLUDE (id, "compareScreenshotBucketId") WHERE ("prHeadCommit" IS NOT NULL);
+
+
+--
+-- Name: builds_projectid_prheadcommit_pattern_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX builds_projectid_prheadcommit_pattern_idx ON public.builds USING btree ("projectId", "prHeadCommit" varchar_pattern_ops) WHERE ("prHeadCommit" IS NOT NULL);
 
 
 --
@@ -4285,6 +4327,20 @@ CREATE INDEX screenshot_buckets_createdat ON public.screenshot_buckets USING btr
 --
 
 CREATE INDEX screenshot_buckets_name_index ON public.screenshot_buckets USING btree (name);
+
+
+--
+-- Name: screenshot_buckets_projectid_branch_trgm_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_projectid_branch_trgm_idx ON public.screenshot_buckets USING gin ("projectId", branch public.gin_trgm_ops);
+
+
+--
+-- Name: screenshot_buckets_projectid_commit_pattern_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX screenshot_buckets_projectid_commit_pattern_idx ON public.screenshot_buckets USING btree ("projectId", commit varchar_pattern_ops);
 
 
 --
@@ -5618,3 +5674,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026070
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714120000_oauth.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714130000_seed-argos-cli-oauth-client.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260715120000_oauth-grants-per-device.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260717120000_build-search-indexes.js', 1, NOW());

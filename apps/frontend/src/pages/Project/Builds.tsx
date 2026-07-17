@@ -14,8 +14,8 @@ import {
 import { invariant } from "@argos/util/invariant";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
-import { BoxesIcon } from "lucide-react";
-import { useQueryStates } from "nuqs";
+import { BoxesIcon, SearchIcon } from "lucide-react";
+import { parseAsString, useQueryStates } from "nuqs";
 import { Heading, Text } from "react-aria-components";
 import { useResolvedPath } from "react-router-dom";
 
@@ -39,6 +39,7 @@ import {
   PageHeaderContent,
 } from "@/ui/Layout";
 import { List, ListRowLink, ListRowLoader } from "@/ui/List";
+import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { Truncable } from "@/ui/Truncable";
 import { useEventCallback } from "@/ui/useEventCallback";
@@ -88,7 +89,7 @@ const ProjectBuildsQuery = graphql(`
       id
       builds(first: $first, after: $after, filters: $filters) {
         pageInfo {
-          totalCount
+          isEmpty
           hasNextPage
         }
         edges {
@@ -298,6 +299,7 @@ const filtersSchema = {
   name: BuildNameFilterParser,
   type: BuildTypeFilterParser,
   status: BuildStatusFilterParser,
+  search: parseAsString,
 };
 
 function PageContent(props: {
@@ -317,6 +319,7 @@ function PageContent(props: {
       name: deferredFilters.name,
       status: Array.from(deferredFilters.status),
       type: Array.from(deferredFilters.type),
+      search: deferredFilters.search || undefined,
     };
   }, [deferredFilters]);
   const { fetchMore, data: projectBuildsData } = useSuspenseQuery(
@@ -377,7 +380,7 @@ function PageContent(props: {
     return <NotFound />;
   }
 
-  if (builds.pageInfo.totalCount === 0 && !hasFilters) {
+  if (builds.pageInfo.isEmpty && !hasFilters) {
     if (hasReviewerPermission) {
       return (
         <PageContainer>
@@ -429,10 +432,24 @@ function PageContent(props: {
               onChange={(name) => setFilters({ name })}
             />
           )}
+          <TextInputGroup className="w-64">
+            <TextInputIcon>
+              <SearchIcon />
+            </TextInputIcon>
+            <TextInput
+              type="search"
+              placeholder="Search branch, commit…"
+              scale="sm"
+              value={filters.search ?? ""}
+              onChange={(event) =>
+                setFilters({ search: event.target.value || null })
+              }
+            />
+          </TextInputGroup>
         </PageHeaderActions>
       </PageHeader>
       <div className="relative flex-1">
-        {hasFilters && builds.pageInfo.totalCount === 0 ? (
+        {hasFilters && builds.pageInfo.isEmpty ? (
           <EmptyState>
             <EmptyStateIcon>
               <BoxesIcon strokeWidth={1} />

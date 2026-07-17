@@ -1,3 +1,5 @@
+import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
+import type { BuildType } from "@argos/schemas/build-type";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import gqlTag from "graphql-tag";
@@ -8,7 +10,6 @@ import {
   Account,
   AutomationRule,
   Build,
-  BUILD_EXPIRATION_DELAY_MS,
   Deployment,
   GithubInstallation,
   GitlabProject,
@@ -18,6 +19,7 @@ import {
   Screenshot,
   User,
 } from "@/database/models";
+import { queryBuilds } from "@/database/services/build";
 import {
   checkProjectName,
   createProject as createProjectService,
@@ -126,6 +128,8 @@ export const typeDefs = gql`
     name: String
     type: [BuildType!]
     status: [BuildStatus!]
+    "Search in build name, branch and commit"
+    search: String
   }
 
   input TestsFilterInput {
@@ -519,6 +523,31 @@ function fromGraphQLDeploymentAuth(
   }
 }
 
+function fromGraphQLBuildStatus(status: IBuildStatus): BuildAggregatedStatus {
+  switch (status) {
+    case IBuildStatus.Accepted:
+      return "accepted";
+    case IBuildStatus.Rejected:
+      return "rejected";
+    case IBuildStatus.NoChanges:
+      return "no-changes";
+    case IBuildStatus.ChangesDetected:
+      return "changes-detected";
+    case IBuildStatus.Pending:
+      return "pending";
+    case IBuildStatus.Progress:
+      return "progress";
+    case IBuildStatus.Aborted:
+      return "aborted";
+    case IBuildStatus.Expired:
+      return "expired";
+    case IBuildStatus.Error:
+      return "error";
+    default:
+      assertNever(status);
+  }
+}
+
 export const resolvers: IResolvers = {
   Project: {
     buildsCount: async (project, _args, ctx) => {
@@ -558,97 +587,41 @@ export const resolvers: IResolvers = {
       return ctx.loaders.LatestProductionDeploymentByProject.load(project.id);
     },
     builds: async (project, { first, after, filters }) => {
-      const result = await Build.query()
-        .where({ projectId: project.id })
-        .where((query) => {
-          if (filters?.name) {
-            query.where("name", filters.name);
-          }
-          const type = filters?.type;
-          if (type) {
-            query.where((qb) => {
-              qb.whereIn("type", type).orWhereNull("type");
-            });
-          }
-          const status = filters?.status;
-          if (status) {
-            query.where((qb) => {
-              // Job status check
-              if (!status.includes(IBuildStatus.Aborted)) {
-                qb.whereNot("jobStatus", "aborted");
-              }
+      const query = queryBuilds({
+        projectId: project.id,
+        filters: {
+          name: filters?.name,
+          type: filters?.type as BuildType[] | null | undefined,
+          status: filters?.status?.map(fromGraphQLBuildStatus),
+          search: filters?.search,
+        },
+      });
 
-              if (!status.includes(IBuildStatus.Error)) {
-                qb.whereNot("jobStatus", "error");
-              }
-
-              if (!status.includes(IBuildStatus.Expired)) {
-                qb.whereNot((qb) => {
-                  qb.whereIn("jobStatus", ["progress", "pending"]).whereRaw(
-                    `now() - "builds"."createdAt" > interval '${BUILD_EXPIRATION_DELAY_MS} milliseconds'`,
-                  );
-                });
-              }
-
-              if (!status.includes(IBuildStatus.Progress)) {
-                qb.whereNot((qb) => {
-                  qb.where((qb) =>
-                    // Job is in progress
-                    // or job is complete without a conclusion, we assume it's in progress
-                    qb
-                      .where("jobStatus", "progress")
-                      .orWhere((qb) =>
-                        qb
-                          .where("jobStatus", "complete")
-                          .whereNull("conclusion"),
-                      ),
-                  ).whereRaw(
-                    `now() - "builds"."createdAt" < interval '${BUILD_EXPIRATION_DELAY_MS} milliseconds'`,
-                  );
-                });
-              }
-
-              if (!status.includes(IBuildStatus.Pending)) {
-                qb.whereNot((qb) => {
-                  qb.where("jobStatus", "pending").whereRaw(
-                    `now() - "builds"."createdAt" < interval '${BUILD_EXPIRATION_DELAY_MS} milliseconds'`,
-                  );
-                });
-              }
-
-              if (!status.includes(IBuildStatus.Accepted)) {
-                qb.whereNotExists(Build.acceptedReviewQuery());
-              }
-
-              if (!status.includes(IBuildStatus.Rejected)) {
-                qb.whereNotExists(Build.rejectedReviewQuery());
-              }
-
-              if (!status.includes(IBuildStatus.ChangesDetected)) {
-                qb.where((qb) => {
-                  qb.whereNot("conclusion", "changes-detected")
-                    .orWhereNull("conclusion")
-                    .orWhereExists(Build.submittedReviewQuery());
-                });
-              }
-
-              if (!status.includes(IBuildStatus.NoChanges)) {
-                qb.where((qb) => {
-                  qb.whereNot("conclusion", "no-changes")
-                    .orWhereNull("conclusion")
-                    .orWhereExists(Build.submittedReviewQuery());
-                });
-              }
-            });
-          }
-        })
+      // Fetch one extra row to know if there is a next page instead of
+      // running an expensive `count(*)` on every page.
+      const rows = await query
+        .clone()
         .orderBy([
           { column: "createdAt", order: "desc" },
           { column: "number", order: "desc" },
         ])
-        .range(after, after + first - 1);
+        .offset(after)
+        .limit(first + 1);
 
-      return paginateResult({ result, first, after });
+      const hasNextPage = rows.length > first;
+      const edges = hasNextPage ? rows.slice(0, first) : rows;
+
+      return {
+        pageInfo: {
+          hasNextPage,
+          isEmpty: after === 0 && edges.length === 0,
+          // Counting builds is expensive on large projects, only pay for it
+          // when the field is requested (graphql-js invokes function
+          // properties lazily in its default resolver).
+          totalCount: (() => query.resultSize()) as unknown as number,
+        },
+        edges,
+      };
     },
     build: async (project, args, ctx) => {
       const build = await Build.query().findOne({

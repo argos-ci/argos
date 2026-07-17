@@ -92,6 +92,7 @@ export const resolvers: IResolvers = {
           pageInfo: {
             hasNextPage: false,
             totalCount: 0,
+            isEmpty: true,
           },
         };
       }
@@ -102,6 +103,7 @@ export const resolvers: IResolvers = {
           hasNextPage:
             ghRepositories.data.total_count > args.page * reposPerPage,
           totalCount: ghRepositories.data.total_count,
+          isEmpty: ghRepositories.data.total_count === 0,
         },
       };
     },

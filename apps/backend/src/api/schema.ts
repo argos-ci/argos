@@ -23,12 +23,12 @@ import { getCommentOperation } from "./handlers/getComment";
 import { getDeploymentOperation } from "./handlers/getDeployment";
 import { getMeOperation } from "./handlers/getMe";
 import { getProjectOperation } from "./handlers/getProject";
-import { getProjectBuildsOperation } from "./handlers/getProjectBuilds";
 import {
   ignoreChangeOperation,
   unignoreChangeOperation,
 } from "./handlers/ignoreChange";
 import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
+import { listBuildsOperation } from "./handlers/listBuilds";
 import { listCommentsOperation } from "./handlers/listComments";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { removeCommentReactionOperation } from "./handlers/removeCommentReaction";
@@ -171,7 +171,7 @@ export const zodSchema = {
       get: getProjectOperation,
     },
     "/projects/{owner}/{project}/builds": {
-      get: getProjectBuildsOperation,
+      get: listBuildsOperation,
     },
     "/projects/{owner}/{project}/builds/{buildNumber}": {
       get: getBuildOperation,
