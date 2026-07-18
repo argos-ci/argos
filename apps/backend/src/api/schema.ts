@@ -2,6 +2,7 @@ import { createDocument, ZodOpenApiObject } from "zod-openapi";
 
 import config from "@/config";
 import { isMcpEligible } from "@/mcp/eligibility";
+import { getMcpResourceUrl } from "@/oauth/metadata";
 
 import { addCommentReactionOperation } from "./handlers/addCommentReaction";
 import { createBuildOperation } from "./handlers/createBuild";
@@ -59,6 +60,9 @@ export const zodSchema = {
     },
     termsOfService: "https://argos-ci.com/terms",
   },
+  // Advertise the MCP server to GitBook and other tooling reading the spec;
+  // per-operation availability is stamped via `x-gitbook-mcp`.
+  "x-gitbook-mcp-url": getMcpResourceUrl(),
   externalDocs: {
     description: "Argos API reference",
     url: "https://argos-ci.com/docs/api-reference",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { schema } from "@/api/schema";
+import { getMcpResourceUrl } from "@/oauth/metadata";
 
 import { buildMcpTools, mcpTools } from "./tools";
 
@@ -199,5 +200,11 @@ describe("x-gitbook-mcp stamping", () => {
       Record<string, unknown> | undefined;
     expect(exchangeCliToken).toBeDefined();
     expect(exchangeCliToken!["x-gitbook-mcp"]).toBeUndefined();
+  });
+
+  it("advertises the MCP server URL at the document root", () => {
+    expect((schema as unknown as Record<string, unknown>)["x-gitbook-mcp-url"]).toBe(
+      getMcpResourceUrl(),
+    );
   });
 });
