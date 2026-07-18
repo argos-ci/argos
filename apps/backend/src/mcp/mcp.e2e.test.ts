@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { test as base, describe, expect } from "vitest";
+import { test as base, describe, expect, vi } from "vitest";
 
 import {
   Account,
@@ -13,11 +13,14 @@ import {
 } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
+import { notifyDiscord } from "@/discord";
 import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
 import type { OAuthScope } from "@/oauth/scopes";
 import { issueTokens } from "@/oauth/tokens";
 
 import { mcpRouter } from "./router";
+
+vi.mock("@/discord", () => ({ notifyDiscord: vi.fn(() => Promise.resolve()) }));
 
 const app = express();
 app.use(mcpRouter);
@@ -229,6 +232,9 @@ describe("MCP server", () => {
     });
     const project = await Project.query().findOne({ name: "mcp-created" });
     expect(project).toBeDefined();
+    // Proves the module mock intercepts through the loopback dispatch — a
+    // real Discord webhook must never fire from tests.
+    expect(vi.mocked(notifyDiscord)).toHaveBeenCalled();
   });
 
   test("rejects invalid tool arguments", async ({ patToken }) => {

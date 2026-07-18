@@ -157,9 +157,24 @@ export async function callTool(
       }
       return textResult(JSON.stringify({ success: true }));
     }
+    if (!tool.outputSchema) {
+      return { content: [{ type: "text", text: payload }] };
+    }
+    let structuredContent: Record<string, unknown>;
+    try {
+      structuredContent = JSON.parse(payload) as Record<string, unknown>;
+    } catch {
+      // A 2xx body that isn't parseable JSON can't satisfy the declared
+      // output schema; return a clean error instead of throwing out of the
+      // tool handler.
+      return textResult(
+        `${tool.name} returned a response that could not be parsed as JSON.`,
+        true,
+      );
+    }
     return {
       content: [{ type: "text", text: payload }],
-      ...(tool.outputSchema ? { structuredContent: JSON.parse(payload) } : {}),
+      structuredContent,
     };
   }
 
