@@ -9,6 +9,7 @@ import {
 import { hashToken } from "@/database/services/crypto";
 import { transaction } from "@/database/transaction";
 
+import { isKnownResource } from "./metadata";
 import { isOAuthScope, type OAuthScope } from "./scopes";
 
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -84,7 +85,7 @@ export async function issueTokens(params: {
 
 export type RefreshResult =
   | { ok: true; tokens: IssuedTokens }
-  | { ok: false; error: "invalid_grant" | "invalid_scope" };
+  | { ok: false; error: "invalid_grant" | "invalid_scope" | "invalid_target" };
 
 /**
  * Rotate a refresh token: validate it, issue a new pair, and mark the old token
@@ -137,6 +138,10 @@ export async function rotateRefreshToken(params: {
     scopes = params.requestedScopes;
   }
 
+  // RFC 8707: only issue tokens for resources we actually serve.
+  if (params.resource && !isKnownResource(params.resource)) {
+    return { ok: false, error: "invalid_target" };
+  }
   const resource = params.resource ?? existing.resource;
 
   let result: Awaited<ReturnType<typeof insertTokenPair>>;
@@ -231,8 +236,9 @@ export type IntrospectionResult = {
 };
 
 /**
- * RFC 7662 token introspection, for resource servers (e.g. the future MCP
- * server) that validate access tokens out-of-process.
+ * RFC 7662 token introspection, for resource servers that validate access
+ * tokens out-of-process. (The MCP server validates in-process and does not
+ * need it.)
  */
 export async function introspectToken(
   token: string,

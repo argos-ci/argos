@@ -12,7 +12,7 @@ import {
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { consumeAuthorizationCode } from "@/oauth/authorization-code";
-import { getApiResourceUrl } from "@/oauth/metadata";
+import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
 import { issueTokens, revokeGrant, rotateRefreshToken } from "@/oauth/tokens";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -191,6 +191,122 @@ describe("OAuth authorization flow", () => {
     // Machine A's token keeps working after B logs in.
     const auth = await getAuthPayloadFromOAuthAccessToken(aTokens.accessToken);
     expect(auth.grantId).toBe(a.grantId);
+  });
+
+  it("rejects a consent for a resource we do not serve (RFC 8707)", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const client = await createTestClient();
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user: userAccount.user!, account: userAccount },
+    );
+
+    const codeVerifier = "s".repeat(64);
+    const codeChallenge = createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: AuthorizeMutation,
+        variables: {
+          input: {
+            clientId: client.clientId,
+            redirectUri: ACTUAL_REDIRECT,
+            scopes: ["profile"],
+            accountIds: [userAccount.id],
+            codeChallenge,
+            codeChallengeMethod: "S256",
+            resource: "https://evil.example",
+          },
+        },
+      });
+    expect(res.body.errors?.[0]?.message).toBe("Unknown resource");
+  });
+
+  it("accepts a consent bound to the MCP resource", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    const client = await createTestClient();
+
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      { user: userAccount.user!, account: userAccount },
+    );
+
+    const codeVerifier = "s".repeat(64);
+    const codeChallenge = createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: AuthorizeMutation,
+        variables: {
+          input: {
+            clientId: client.clientId,
+            redirectUri: ACTUAL_REDIRECT,
+            scopes: ["profile"],
+            accountIds: [userAccount.id],
+            codeChallenge,
+            codeChallengeMethod: "S256",
+            resource: getMcpResourceUrl(),
+          },
+        },
+      });
+    expectNoGraphQLError(res);
+    const code = new URL(
+      res.body.data.authorizeOAuthConsent.redirectUri,
+    ).searchParams.get("code");
+    const payload = await consumeAuthorizationCode({
+      code: code!,
+      codeVerifier,
+      clientId: client.clientId,
+      redirectUri: ACTUAL_REDIRECT,
+    });
+    expect(payload?.resource).toBe(getMcpResourceUrl());
+  });
+
+  it("refuses to rotate a refresh token onto an unknown resource (invalid_target)", async () => {
+    const userAccount = await factory.UserAccount.create();
+    const client = await createTestClient();
+    const grant = await OAuthGrant.query().insertAndFetch({
+      userId: userAccount.userId!,
+      oauthClientId: client.id,
+      scopes: ["profile"],
+      lastUsedAt: null,
+      revokedAt: null,
+    });
+    await OAuthGrantAccount.query().insert({
+      oauthGrantId: grant.id,
+      accountId: userAccount.id,
+    });
+    const tokens = await issueTokens({
+      grantId: grant.id,
+      scopes: ["profile"],
+      resource: null,
+    });
+
+    const rotated = await rotateRefreshToken({
+      refreshToken: tokens.refreshToken,
+      clientId: client.clientId,
+      requestedScopes: null,
+      resource: "https://evil.example",
+    });
+    expect(rotated).toEqual({ ok: false, error: "invalid_target" });
+
+    // The refused rotation must not have consumed the refresh token.
+    const retried = await rotateRefreshToken({
+      refreshToken: tokens.refreshToken,
+      clientId: client.clientId,
+      requestedScopes: null,
+      resource: getMcpResourceUrl(),
+    });
+    expect(retried.ok).toBe(true);
   });
 
   it("keeps a sibling session alive when another session refreshes (ARG-466)", async () => {

@@ -1,5 +1,6 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { Request } from "express";
 
 import { waitUntil } from "@/api/request-context";
 import { Account, OAuthAccessToken, OAuthGrant } from "@/database/models";
@@ -10,6 +11,31 @@ import { boom } from "../util/error";
 import type { AuthOAuthPayload } from "./payload";
 
 /**
+ * Request-scoped marker listing the resource identifiers (RFC 8707 audiences)
+ * accepted by the surface handling the request. Symbol-keyed so it can only be
+ * set by our own middleware, never by external input. Absent on public REST
+ * API requests, which keep the strict default audience.
+ */
+const kAcceptedOAuthResources = Symbol("acceptedOAuthResources");
+
+export function markAcceptedOAuthResources(
+  request: Request,
+  resources: readonly string[],
+): void {
+  (request as MarkedRequest)[kAcceptedOAuthResources] = resources;
+}
+
+export function getAcceptedOAuthResources(
+  request: Request,
+): readonly string[] | undefined {
+  return (request as MarkedRequest)[kAcceptedOAuthResources];
+}
+
+type MarkedRequest = Request & {
+  [kAcceptedOAuthResources]?: readonly string[];
+};
+
+/**
  * Resolve an OAuth access token to an auth payload.
  *
  * Like personal access tokens, the token's account scope is re-validated
@@ -18,6 +44,7 @@ import type { AuthOAuthPayload } from "./payload";
  */
 export async function getAuthPayloadFromOAuthAccessToken(
   token: string,
+  options?: { acceptedResources?: readonly string[] | undefined },
 ): Promise<AuthOAuthPayload> {
   if (!OAuthAccessToken.isOAuthAccessToken(token)) {
     throw boom(400, "Invalid OAuth access token");
@@ -38,10 +65,15 @@ export async function getAuthPayloadFromOAuthAccessToken(
   if (new Date(accessToken.expiresAt) <= new Date()) {
     throw boom(401, "Access token has expired");
   }
-  // Audience binding (RFC 8707): a token issued for another resource server
-  // (e.g. a future MCP server) must not be accepted by the REST API. Tokens
-  // with no bound resource are unscoped and accepted everywhere.
-  if (accessToken.resource && accessToken.resource !== getApiResourceUrl()) {
+  // Audience binding (RFC 8707): a token issued for another resource must not
+  // be accepted here. The REST API only accepts its own audience; the MCP
+  // server marks its requests as also accepting the MCP audience. Tokens with
+  // no bound resource are unscoped and accepted everywhere.
+  const acceptedResources = options?.acceptedResources ?? [getApiResourceUrl()];
+  if (
+    accessToken.resource &&
+    !acceptedResources.includes(accessToken.resource)
+  ) {
     throw boom(401, "Access token was not issued for this resource");
   }
 

@@ -1,16 +1,24 @@
 import { invariant } from "@argos/util/invariant";
+import express from "express";
 import request from "supertest";
 import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
-import type {
-  Account,
-  Build,
-  Project,
-  ScreenshotBucket,
+import {
+  OAuthClient,
+  OAuthGrant,
+  OAuthGrantAccount,
+  type Account,
+  type Build,
+  type Project,
+  type ScreenshotBucket,
 } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
+import type { OAuthScope } from "@/oauth/scopes";
+import { issueTokens } from "@/oauth/tokens";
 
+import { openAPIRouter } from "../index";
 import { createTestHandlerApp } from "../test-util";
 import { getBuild } from "./getBuild";
 
@@ -136,6 +144,111 @@ describe("getBuild", () => {
           },
         });
       });
+  });
+
+  describe("with an OAuth access token", () => {
+    // The full router: OAuth scope failures surface through the shared
+    // `errorHandler`, unlike `createTestHandlerApp`'s bare fallback.
+    const oauthApp = express();
+    oauthApp.use(openAPIRouter);
+
+    async function createOAuthAccessToken(
+      account: Account,
+      scopes: OAuthScope[],
+      options?: { resource?: string },
+    ) {
+      const user = await factory.User.create();
+      await factory.UserAccount.create({ userId: user.id });
+      invariant(account.teamId);
+      await factory.TeamUser.create({
+        teamId: account.teamId,
+        userId: user.id,
+      });
+      const client = await OAuthClient.query().insertAndFetch({
+        clientId: "test-client",
+        clientName: "Test Client",
+        redirectUris: ["http://localhost/callback"],
+        grantTypes: ["authorization_code", "refresh_token"],
+        responseTypes: ["code"],
+        tokenEndpointAuthMethod: "none",
+        isFirstParty: false,
+        verified: false,
+      });
+      const grant = await OAuthGrant.query().insertAndFetch({
+        userId: user.id,
+        oauthClientId: client.id,
+        scopes,
+        lastUsedAt: null,
+        revokedAt: null,
+      });
+      await OAuthGrantAccount.query().insert({
+        oauthGrantId: grant.id,
+        accountId: account.id,
+      });
+      const tokens = await issueTokens({
+        grantId: grant.id,
+        scopes,
+        resource: options?.resource ?? null,
+      });
+      return tokens.accessToken;
+    }
+
+    test("returns a build with the projects:read scope", async ({
+      account,
+      build,
+    }) => {
+      const token = await createOAuthAccessToken(account, ["projects:read"]);
+      await request(oauthApp)
+        .get(`/projects/acme/web/builds/${build.number}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.id).toBe(build.id);
+        });
+    });
+
+    test("returns 403 without the projects:read scope", async ({
+      account,
+      build,
+    }) => {
+      const token = await createOAuthAccessToken(account, ["profile"]);
+      await request(oauthApp)
+        .get(`/projects/acme/web/builds/${build.number}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(403)
+        .expect((res) => {
+          expect(res.body.error).toContain("Insufficient scope");
+        });
+    });
+
+    test("accepts a token bound to the REST API resource", async ({
+      account,
+      build,
+    }) => {
+      const token = await createOAuthAccessToken(account, ["projects:read"], {
+        resource: getApiResourceUrl(),
+      });
+      await request(oauthApp)
+        .get(`/projects/acme/web/builds/${build.number}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+    });
+
+    test("rejects a token bound to the MCP resource (audience isolation)", async ({
+      account,
+      build,
+    }) => {
+      const token = await createOAuthAccessToken(account, ["projects:read"], {
+        resource: getMcpResourceUrl(),
+      });
+      await request(oauthApp)
+        .get(`/projects/acme/web/builds/${build.number}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(401)
+        .expect((res) => {
+          expect(res.body.error).toContain("not issued for this resource");
+        });
+    });
   });
 
   test("returns a build without base info and uses the compare bucket sha when prHeadCommit is null", async ({

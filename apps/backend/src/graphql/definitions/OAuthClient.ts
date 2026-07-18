@@ -5,6 +5,7 @@ import { transaction } from "@/database/transaction";
 import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
 import { getKnownApp } from "@/oauth/known-apps";
+import { isKnownResource } from "@/oauth/metadata";
 import { isOAuthScope, OAUTH_SCOPES, parseScopeString } from "@/oauth/scopes";
 
 import type { IResolvers } from "../__generated__/resolver-types";
@@ -155,6 +156,11 @@ export const resolvers: IResolvers = {
         if (!requestedScopes.every((scope) => allowed.has(scope))) {
           throw badUserInput("Requested scope is not allowed for this client");
         }
+      }
+
+      // RFC 8707: only issue tokens for resources we actually serve.
+      if (resource && !isKnownResource(resource)) {
+        throw badUserInput("Unknown resource");
       }
 
       const accessibleAccounts = await getAccessibleAccounts({

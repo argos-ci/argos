@@ -23,7 +23,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { anyTokenAuth } from "../security";
+import { anyTokenOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 const ListBuildDiffsParams = PageParamsSchema.extend({
@@ -53,7 +53,7 @@ export const listBuildDiffsOperation = {
   description:
     "List the screenshot diffs of a build, with pagination. Each diff compares a baseline screenshot to the one captured by the build. Each diff also carries its test's flakiness metrics and, when it is a change, its ignore state and occurrence count — so you can tell whether a change is worth reviewing or is just a flaky one. Use `needsReview` to return only the diffs that require review.",
   tags: ["Builds"],
-  security: anyTokenAuth,
+  security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

@@ -7,10 +7,12 @@ import { pinoHttp } from "pino-http";
 
 import config from "@/config";
 import logger from "@/logger";
+import { mcpRouter } from "@/mcp/router";
 
 import { installApiRouter } from "./api";
 import { installAppRouter } from "./app-router";
 import { jsonErrorHandler } from "./middlewares/errorHandler";
+import { subdomain } from "./util";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -75,6 +77,7 @@ export const createApp = async (): Promise<express.Express> => {
 
   await installAppRouter(app);
   installApiRouter(app);
+  app.use(subdomain(mcpRouter, "mcp"));
 
   Sentry.setupExpressErrorHandler(app);
   app.use(jsonErrorHandler());

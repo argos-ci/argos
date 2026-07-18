@@ -17,7 +17,7 @@ import {
   serverError,
   unauthorized,
 } from "../schema/util/error";
-import { anyTokenAuth } from "../security";
+import { anyTokenOrOAuthAuth } from "../security";
 import { CreateAPIHandler } from "../util";
 
 export const listBuildsOperation = {
@@ -26,7 +26,7 @@ export const listBuildsOperation = {
   description:
     "List the builds of a project, most recent first. Results are paginated. Use `search` to match builds by name, branch or commit, and `distinctName` to return only the latest build per name and commit.",
   tags: ["Builds"],
-  security: anyTokenAuth,
+  security: anyTokenOrOAuthAuth(["projects:read"]),
   requestParams: {
     path: z.object({
       owner: AccountSlug,

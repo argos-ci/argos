@@ -107,7 +107,12 @@ export const BuildNumber = z
 export const BuildSchema = z
   .object({
     id: BuildIdSchema,
-    number: BuildNumber,
+    // Not `BuildNumber`: that schema parses the *path parameter* (a string
+    // transformed into a number) and cannot describe a response field.
+    number: z.int().min(1).meta({
+      description: "The build number",
+      example: 42,
+    }),
     head: BuildGitReferenceSchema.meta({
       description: "The head reference of the build",
     }),

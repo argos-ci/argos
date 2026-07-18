@@ -1,6 +1,7 @@
 import { createDocument, ZodOpenApiObject } from "zod-openapi";
 
 import config from "@/config";
+import { isMcpEligible } from "@/mcp/eligibility";
 
 import { addCommentReactionOperation } from "./handlers/addCommentReaction";
 import { createBuildOperation } from "./handlers/createBuild";
@@ -223,5 +224,27 @@ export const zodSchema = {
   },
 } satisfies ZodOpenApiObject;
 
-export const schema: ReturnType<typeof createDocument> =
-  createDocument(zodSchema);
+/**
+ * Stamp `x-gitbook-mcp` on every operation exposed on the MCP server. The
+ * marker is *computed* from each operation's declared `security` (the same
+ * predicate the MCP server derives its tools from), never set by hand, so the
+ * published OpenAPI document can't get out of sync with the MCP tool surface.
+ */
+function markMcpOperations(
+  document: ReturnType<typeof createDocument>,
+): ReturnType<typeof createDocument> {
+  const methods = ["get", "post", "put", "patch", "delete"] as const;
+  for (const pathItem of Object.values(document.paths ?? {})) {
+    for (const method of methods) {
+      const operation = pathItem[method];
+      if (operation && isMcpEligible(operation)) {
+        Object.assign(operation, { "x-gitbook-mcp": true });
+      }
+    }
+  }
+  return document;
+}
+
+export const schema: ReturnType<typeof createDocument> = markMcpOperations(
+  createDocument(zodSchema),
+);

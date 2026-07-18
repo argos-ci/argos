@@ -30,6 +30,24 @@ export function getProtectedResourceMetadataUrl(): string {
 }
 
 /**
+ * The canonical resource identifier (audience) for the MCP server, which lives
+ * on its own subdomain (e.g. `https://mcp.argos-ci.com`).
+ */
+export function getMcpResourceUrl(): string {
+  return trimTrailingSlash(config.get("mcp.baseUrl"));
+}
+
+/** URL of the MCP server's Protected Resource Metadata document. */
+export function getMcpProtectedResourceMetadataUrl(): string {
+  return `${getMcpResourceUrl()}/.well-known/oauth-protected-resource`;
+}
+
+/** Resource identifiers (RFC 8707 audiences) the Authorization Server issues tokens for. */
+export function isKnownResource(resource: string): boolean {
+  return [getApiResourceUrl(), getMcpResourceUrl()].includes(resource);
+}
+
+/**
  * RFC 8414 Authorization Server Metadata.
  */
 export function getAuthorizationServerMetadata() {
@@ -55,8 +73,8 @@ export function getAuthorizationServerMetadata() {
 }
 
 /**
- * RFC 9728 Protected Resource Metadata. Defaults to the REST API resource; a
- * future MCP server can pass its own resource identifier.
+ * RFC 9728 Protected Resource Metadata. Defaults to the REST API resource;
+ * the MCP server passes its own resource identifier.
  */
 export function getProtectedResourceMetadata(resource?: string) {
   return {
