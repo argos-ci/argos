@@ -231,7 +231,10 @@ describe("getBuild", () => {
       await request(oauthApp)
         .get(`/projects/acme/web/builds/${build.number}`)
         .set("Authorization", `Bearer ${token}`)
-        .expect(200);
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.id).toBe(build.id);
+        });
     });
 
     test("rejects a token bound to the MCP resource (audience isolation)", async ({

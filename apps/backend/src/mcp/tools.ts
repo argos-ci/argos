@@ -181,6 +181,7 @@ function buildTool(
       `MCP tool ${name}: schema cannot be represented as JSON Schema: ${
         error instanceof Error ? error.message : String(error)
       }`,
+      { cause: error },
     );
   }
 
