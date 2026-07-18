@@ -145,6 +145,16 @@ export async function callTool(
 
   if (response.ok) {
     if (!payload) {
+      // No response body (e.g. a 204). When the tool declares an output
+      // schema the MCP SDK requires a matching `structuredContent`, so an
+      // empty body is an anomaly we surface as an error rather than letting
+      // the SDK throw on a missing structured result.
+      if (tool.outputSchema) {
+        return textResult(
+          `${tool.name} returned an empty response body but declares structured output.`,
+          true,
+        );
+      }
       return textResult(JSON.stringify({ success: true }));
     }
     return {
