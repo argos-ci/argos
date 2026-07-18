@@ -152,6 +152,14 @@ describe("MCP server", () => {
     expect(res.body.authorization_servers).toHaveLength(1);
   });
 
+  test("mirrors the authorization server metadata for legacy MCP clients", async () => {
+    const res = await request(app)
+      .get("/.well-known/oauth-authorization-server")
+      .expect(200);
+    expect(res.body.issuer).toMatch(/^https?:\/\//);
+    expect(res.body.token_endpoint).toBe(`${res.body.issuer}/oauth/token`);
+  });
+
   test("redirects humans to the documentation", async () => {
     const res = await request(app).get("/").set("Accept", "text/html");
     expect(res.status).toBe(302);

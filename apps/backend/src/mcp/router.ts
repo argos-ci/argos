@@ -24,6 +24,7 @@ import { markAcceptedOAuthResources } from "@/auth/oauth-access-token";
 import config from "@/config";
 import {
   getApiResourceUrl,
+  getAuthorizationServerMetadata,
   getMcpProtectedResourceMetadataUrl,
   getMcpResourceUrl,
   getProtectedResourceMetadata,
@@ -56,6 +57,13 @@ router.use(
 // RFC 9728 Protected Resource Metadata for the MCP server.
 router.get("/.well-known/oauth-protected-resource", (_req, res) => {
   res.json(getProtectedResourceMetadata(getMcpResourceUrl()));
+});
+
+// RFC 8414 Authorization Server Metadata, mirrored on the MCP origin: MCP
+// clients on the pre-2025-06-18 authorization spec look it up here instead of
+// following the Protected Resource Metadata to the AS.
+router.get("/.well-known/oauth-authorization-server", (_req, res) => {
+  res.json(getAuthorizationServerMetadata());
 });
 
 // Humans and non-MCP clients land here (the MCP protocol only POSTs).
