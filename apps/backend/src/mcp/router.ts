@@ -36,6 +36,9 @@ const MCP_DOCS_URL = "https://argos-ci.com/docs/agents/mcp-server";
 
 const router: Router = Router();
 
+// Permissive CORS is intentional: the MCP endpoint is a public API consumed
+// by arbitrary MCP clients, authenticated with bearer tokens and no cookies —
+// the same policy as the /oauth/* endpoints.
 router.use(
   cors({
     origin: "*",

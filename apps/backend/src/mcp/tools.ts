@@ -17,9 +17,7 @@ import type { OAuthScope } from "@/oauth/scopes";
 
 import { isMcpEligible, type XMcpExtension } from "./eligibility";
 
-export type { XMcpExtension };
-
-export type McpHttpMethod = "get" | "post" | "put" | "patch" | "delete";
+type McpHttpMethod = "get" | "post" | "put" | "patch" | "delete";
 
 const HTTP_METHODS: McpHttpMethod[] = ["get", "post", "put", "patch", "delete"];
 

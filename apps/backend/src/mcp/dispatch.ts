@@ -21,6 +21,8 @@ import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
 import type { McpToolDefinition } from "./tools";
 
 function createInternalApp(): express.Express {
+  // No rate limiter here on purpose: this app binds to the loopback interface
+  // and is only reachable through the MCP endpoint, which is rate-limited.
   const app = express();
   app.use((req, _res, next) => {
     // Tool calls come from the MCP server, so tokens bound to either the MCP
