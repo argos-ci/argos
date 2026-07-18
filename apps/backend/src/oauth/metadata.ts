@@ -42,9 +42,21 @@ export function getMcpProtectedResourceMetadataUrl(): string {
   return `${getMcpResourceUrl()}/.well-known/oauth-protected-resource`;
 }
 
+/**
+ * Normalize an RFC 8707 resource identifier for comparison and storage.
+ * Clients canonicalize URLs (e.g. `new URL(...)` appends a trailing slash to
+ * an origin), so `https://mcp.argos-ci.com/` and `https://mcp.argos-ci.com`
+ * must identify the same resource.
+ */
+export function normalizeResource(resource: string): string {
+  return trimTrailingSlash(resource);
+}
+
 /** Resource identifiers (RFC 8707 audiences) the Authorization Server issues tokens for. */
 export function isKnownResource(resource: string): boolean {
-  return [getApiResourceUrl(), getMcpResourceUrl()].includes(resource);
+  return [getApiResourceUrl(), getMcpResourceUrl()].includes(
+    normalizeResource(resource),
+  );
 }
 
 /**

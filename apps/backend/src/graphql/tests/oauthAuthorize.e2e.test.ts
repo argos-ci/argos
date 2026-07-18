@@ -227,7 +227,7 @@ describe("OAuth authorization flow", () => {
     expect(res.body.errors?.[0]?.message).toBe("Unknown resource");
   });
 
-  it("accepts a consent bound to the MCP resource", async () => {
+  it("accepts a consent bound to the canonicalized MCP resource and normalizes it", async () => {
     const userAccount = await factory.UserAccount.create();
     await userAccount.$fetchGraph("user");
     const client = await createTestClient();
@@ -254,7 +254,9 @@ describe("OAuth authorization flow", () => {
             accountIds: [userAccount.id],
             codeChallenge,
             codeChallengeMethod: "S256",
-            resource: getMcpResourceUrl(),
+            // MCP clients canonicalize the server URL, adding a trailing
+            // slash — the exact form Claude Code sends.
+            resource: `${getMcpResourceUrl()}/`,
           },
         },
       });

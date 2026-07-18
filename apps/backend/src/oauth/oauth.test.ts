@@ -13,6 +13,7 @@ import {
   getMcpResourceUrl,
   getProtectedResourceMetadata,
   isKnownResource,
+  normalizeResource,
 } from "./metadata";
 import {
   isOAuthScope,
@@ -181,5 +182,13 @@ describe("metadata", () => {
     expect(isKnownResource(getMcpResourceUrl())).toBe(true);
     expect(isKnownResource("https://evil.example")).toBe(false);
     expect(isKnownResource("")).toBe(false);
+  });
+
+  it("normalizes canonicalized resource URLs (trailing slash)", () => {
+    // MCP clients canonicalize the server URL: `new URL(origin)` appends "/".
+    expect(isKnownResource(`${getMcpResourceUrl()}/`)).toBe(true);
+    expect(normalizeResource(`${getMcpResourceUrl()}/`)).toBe(
+      getMcpResourceUrl(),
+    );
   });
 });

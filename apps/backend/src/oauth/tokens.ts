@@ -9,7 +9,7 @@ import {
 import { hashToken } from "@/database/services/crypto";
 import { transaction } from "@/database/transaction";
 
-import { isKnownResource } from "./metadata";
+import { isKnownResource, normalizeResource } from "./metadata";
 import { isOAuthScope, type OAuthScope } from "./scopes";
 
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -142,7 +142,9 @@ export async function rotateRefreshToken(params: {
   if (params.resource && !isKnownResource(params.resource)) {
     return { ok: false, error: "invalid_target" };
   }
-  const resource = params.resource ?? existing.resource;
+  const resource = params.resource
+    ? normalizeResource(params.resource)
+    : existing.resource;
 
   let result: Awaited<ReturnType<typeof insertTokenPair>>;
   try {

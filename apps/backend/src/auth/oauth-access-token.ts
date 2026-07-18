@@ -5,7 +5,7 @@ import type { Request } from "express";
 import { waitUntil } from "@/api/request-context";
 import { Account, OAuthAccessToken, OAuthGrant } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
-import { getApiResourceUrl } from "@/oauth/metadata";
+import { getApiResourceUrl, normalizeResource } from "@/oauth/metadata";
 
 import { boom } from "../util/error";
 import type { AuthOAuthPayload } from "./payload";
@@ -87,11 +87,14 @@ export async function getAuthPayloadFromOAuthAccessToken(
   // Audience binding (RFC 8707): a token issued for another resource must not
   // be accepted here. The REST API only accepts its own audience; the MCP
   // server marks its requests as also accepting the MCP audience. Tokens with
-  // no bound resource are unscoped and accepted everywhere.
+  // no bound resource are unscoped and accepted everywhere. Comparison is
+  // normalized: clients canonicalize resource URLs (trailing slash).
   const acceptedResources = options?.acceptedResources ?? [getApiResourceUrl()];
   if (
     accessToken.resource &&
-    !acceptedResources.includes(accessToken.resource)
+    !acceptedResources
+      .map(normalizeResource)
+      .includes(normalizeResource(accessToken.resource))
   ) {
     throw boom(401, "Access token was not issued for this resource");
   }

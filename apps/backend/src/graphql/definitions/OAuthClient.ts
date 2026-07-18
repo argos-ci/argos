@@ -5,7 +5,7 @@ import { transaction } from "@/database/transaction";
 import { createAuthorizationCode } from "@/oauth/authorization-code";
 import { getClientByClientId, validateRedirectUri } from "@/oauth/clients";
 import { getKnownApp } from "@/oauth/known-apps";
-import { isKnownResource } from "@/oauth/metadata";
+import { isKnownResource, normalizeResource } from "@/oauth/metadata";
 import { isOAuthScope, OAUTH_SCOPES, parseScopeString } from "@/oauth/scopes";
 
 import type { IResolvers } from "../__generated__/resolver-types";
@@ -201,7 +201,7 @@ export const resolvers: IResolvers = {
         scopes: requestedScopes,
         accountIds: accessibleAccounts.map((account) => account.id),
         codeChallenge,
-        resource: resource ?? null,
+        resource: resource ? normalizeResource(resource) : null,
       });
 
       const url = new URL(redirectUri);

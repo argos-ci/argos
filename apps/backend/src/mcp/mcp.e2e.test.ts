@@ -298,6 +298,18 @@ describe("MCP server", () => {
     expect(res.status).toBe(200);
   });
 
+  test("accepts OAuth tokens with a canonicalized (trailing-slash) resource", async ({
+    userAccount,
+  }) => {
+    const token = await createOAuthAccessToken({
+      userAccount,
+      scopes: ["profile"],
+      resource: `${getMcpResourceUrl()}/`,
+    });
+    const res = await rpc(token, "tools/list");
+    expect(res.status).toBe(200);
+  });
+
   test("rejects OAuth tokens bound to a foreign resource", async ({
     userAccount,
   }) => {
