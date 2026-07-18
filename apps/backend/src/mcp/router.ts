@@ -12,6 +12,7 @@
  * referencing the Protected Resource Metadata, which is what triggers the MCP
  * client authorization flow (DCR + consent).
  */
+import { invariant } from "@argos/util/invariant";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import cors from "cors";
@@ -119,11 +120,13 @@ router.post(
   express.json({ limit: "1mb" }),
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
+    // `authenticate` runs first and rejects any request without a resolvable
+    // bearer, so the header is guaranteed to be present here.
     const authorization = req.headers.authorization;
-    if (!authorization) {
-      sendUnauthorized(res, "Authentication required");
-      return;
-    }
+    invariant(
+      authorization,
+      "authenticated MCP request without a bearer token",
+    );
     // Stateless mode (no `sessionIdGenerator`): a fresh server + transport
     // pair per request, so concurrent requests never collide and no session
     // state has to be replicated across instances.
