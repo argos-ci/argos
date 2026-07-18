@@ -32,7 +32,7 @@ import { createRedisStore } from "@/util/rate-limit";
 import { asyncHandler } from "../web/util";
 import { createMcpServer } from "./server";
 
-const MCP_DOCS_URL = "https://argos-ci.com/docs/sdks-reference/argos-mcp";
+const MCP_DOCS_URL = "https://argos-ci.com/docs/agents/mcp-server";
 
 const router: Router = Router();
 
