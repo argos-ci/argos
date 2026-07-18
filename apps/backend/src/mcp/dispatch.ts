@@ -53,7 +53,7 @@ let internalBaseUrl: Promise<string> | null = null;
 
 /** Lazily start the loopback dispatch server, once per process. */
 function getInternalBaseUrl(): Promise<string> {
-  internalBaseUrl ??= new Promise((resolve, reject) => {
+  internalBaseUrl ??= new Promise<string>((resolve, reject) => {
     const server = createServer(createInternalApp());
     // Never keep the process alive because of the dispatch server.
     server.unref();
@@ -62,6 +62,11 @@ function getInternalBaseUrl(): Promise<string> {
       const { port } = server.address() as AddressInfo;
       resolve(`http://127.0.0.1:${port}`);
     });
+  }).catch((error: unknown) => {
+    // Don't cache the failure: clearing the memo lets the next call retry
+    // instead of every future tool call awaiting the same rejected promise.
+    internalBaseUrl = null;
+    throw error;
   });
   return internalBaseUrl;
 }
