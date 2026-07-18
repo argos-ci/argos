@@ -27,6 +27,7 @@ describe("buildMcpTools", () => {
         "listBuildDiffs",
         "listBuilds",
         "listComments",
+        "listProjects",
         "listReviews",
         "removeCommentReaction",
         "resolveCommentThread",

@@ -8,13 +8,14 @@ import { disconnectGitHubAuth } from "@/auth/github";
 import { disconnectGitLabAuth } from "@/auth/gitlab";
 import { disconnectGoogleAuth } from "@/auth/google";
 import { startSession } from "@/auth/login";
-import { Account, Project } from "@/database/models";
+import { Account } from "@/database/models";
 import {
   authenticateWithEmail,
   checkAccountSlug,
   requestEmailSignin,
   requestEmailSignup,
 } from "@/database/services/account";
+import { queryAccountProjects } from "@/database/services/project";
 import { getSpendLimitThreshold } from "@/database/services/spend-limit";
 import { hasAutoInviteForUser } from "@/database/services/team-domain";
 import { isValidPgBigInt } from "@/database/util/biginteger";
@@ -37,10 +38,7 @@ import {
 import type { Context } from "../context";
 import { getAdminAccount } from "../services/account";
 import { getAccountAvatar } from "../services/avatar";
-import {
-  applyProjectVisibility,
-  getVisibleProjectIds,
-} from "../services/project";
+import { getVisibleProjectIds } from "../services/project";
 import { queryActiveTests } from "../services/test";
 import { badUserInput, unauthenticated } from "../util";
 import { paginateResult } from "./PageInfo";
@@ -290,20 +288,11 @@ export const commonAccountResolvers: IResolvers["Team"] = {
     if (!auth) {
       throw unauthenticated();
     }
-    const query = applyProjectVisibility(
-      Project.query()
-        .where("accountId", account.id)
-        // Sort by most recently created project or build
-        .orderByRaw(
-          `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
-        )
-        .range(args.after, args.after + args.first - 1),
-      { account, user: auth.user },
-    );
+    const query = queryAccountProjects({ account, user: auth.user });
     if (!query) {
       throw unauthenticated();
     }
-    const result = await query;
+    const result = await query.range(args.after, args.after + args.first - 1);
     return paginateResult({
       after: args.after,
       first: args.first,

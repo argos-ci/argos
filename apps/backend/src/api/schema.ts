@@ -31,6 +31,7 @@ import {
 import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
 import { listCommentsOperation } from "./handlers/listComments";
+import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { removeCommentReactionOperation } from "./handlers/removeCommentReaction";
 import {
@@ -125,6 +126,9 @@ export const zodSchema = {
   paths: {
     "/accounts/{accountSlug}/analytics": {
       get: getAccountAnalyticsOperation,
+    },
+    "/accounts/{accountSlug}/projects": {
+      get: listProjectsOperation,
     },
     "/builds": {
       post: createBuildOperation,
