@@ -15,7 +15,10 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 
 import { openAPIRouter } from "@/api/index";
-import { markAcceptedOAuthResources } from "@/auth/oauth-access-token";
+import {
+  markAcceptedOAuthResources,
+  markSkipUsageTracking,
+} from "@/auth/oauth-access-token";
 import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
 
 import type { McpToolDefinition } from "./tools";
@@ -28,6 +31,9 @@ function createInternalApp(): express.Express {
     // Tool calls come from the MCP server, so tokens bound to either the MCP
     // resource or the REST API resource are acceptable.
     markAcceptedOAuthResources(req, [getMcpResourceUrl(), getApiResourceUrl()]);
+    // The outer MCP request already authenticated the same bearer and recorded
+    // its usage, so skip the redundant `lastUsedAt` writes on this re-auth.
+    markSkipUsageTracking(req);
     next();
   });
   app.use(openAPIRouter);

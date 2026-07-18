@@ -31,8 +31,24 @@ export function getAcceptedOAuthResources(
   return (request as MarkedRequest)[kAcceptedOAuthResources];
 }
 
+/**
+ * Request-scoped marker telling the token resolvers to skip `lastUsedAt`
+ * bookkeeping. Set on the MCP loopback dispatch requests, whose outer request
+ * has already recorded usage, so a single tool call doesn't write it twice.
+ */
+const kSkipUsageTracking = Symbol("skipUsageTracking");
+
+export function markSkipUsageTracking(request: Request): void {
+  (request as MarkedRequest)[kSkipUsageTracking] = true;
+}
+
+export function getSkipUsageTracking(request: Request): boolean {
+  return (request as MarkedRequest)[kSkipUsageTracking] === true;
+}
+
 type MarkedRequest = Request & {
   [kAcceptedOAuthResources]?: readonly string[];
+  [kSkipUsageTracking]?: boolean;
 };
 
 /**
@@ -44,7 +60,10 @@ type MarkedRequest = Request & {
  */
 export async function getAuthPayloadFromOAuthAccessToken(
   token: string,
-  options?: { acceptedResources?: readonly string[] | undefined },
+  options?: {
+    acceptedResources?: readonly string[] | undefined;
+    trackUsage?: boolean | undefined;
+  },
 ): Promise<AuthOAuthPayload> {
   if (!OAuthAccessToken.isOAuthAccessToken(token)) {
     throw boom(400, "Invalid OAuth access token");
@@ -119,16 +138,19 @@ export async function getAuthPayloadFromOAuthAccessToken(
     );
   }
 
-  // Bookkeeping — see the note in `getAuthPayloadFromUserAccessToken`.
-  const now = new Date().toISOString();
-  await waitUntil(
-    Promise.all([
-      OAuthAccessToken.query()
-        .patch({ lastUsedAt: now })
-        .findById(accessToken.id),
-      OAuthGrant.query().patch({ lastUsedAt: now }).findById(grant.id),
-    ]),
-  );
+  // Bookkeeping — see the note in `getAuthPayloadFromUserAccessToken`. Skipped
+  // when the caller already recorded usage (the MCP loopback re-auth).
+  if (options?.trackUsage !== false) {
+    const now = new Date().toISOString();
+    await waitUntil(
+      Promise.all([
+        OAuthAccessToken.query()
+          .patch({ lastUsedAt: now })
+          .findById(accessToken.id),
+        OAuthGrant.query().patch({ lastUsedAt: now }).findById(grant.id),
+      ]),
+    );
+  }
 
   return {
     type: "oauth",

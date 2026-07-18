@@ -7,6 +7,7 @@ import {
 import {
   getAcceptedOAuthResources,
   getAuthPayloadFromOAuthAccessToken,
+  getSkipUsageTracking,
 } from "@/auth/oauth-access-token";
 import type {
   AuthOAuthPayload,
@@ -102,12 +103,14 @@ export async function getAuthPayloadFromExpressReq(
 ) {
   const authHeader = getAuthHeaderFromExpressReq(request);
   const bearer = parseBearerFromHeader(authHeader);
+  const trackUsage = !getSkipUsageTracking(request);
   const auth = OAuthAccessToken.isOAuthAccessToken(bearer)
     ? await getAuthPayloadFromOAuthAccessToken(bearer, {
         acceptedResources: getAcceptedOAuthResources(request),
+        trackUsage,
       })
     : UserAccessToken.isValidUserAccessToken(bearer)
-      ? await getAuthPayloadFromUserAccessToken(bearer)
+      ? await getAuthPayloadFromUserAccessToken(bearer, { trackUsage })
       : await getAuthProjectPayloadFromBearerToken(bearer);
   assertAuthAttributes(auth, attributes);
   return auth;
