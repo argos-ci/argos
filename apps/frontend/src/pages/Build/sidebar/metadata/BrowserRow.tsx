@@ -1,7 +1,5 @@
-import { lazy, Suspense } from "react";
 import { checkIsNonNullable } from "@argos/util/checkIsNonNullable";
 import { invariant } from "@argos/util/invariant";
-import { GlobeIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useBuildHotkey } from "@/containers/Build/BuildHotkeys";
@@ -11,6 +9,7 @@ import { HotkeyTooltip } from "@/ui/HotkeyTooltip";
 import { Tooltip } from "@/ui/Tooltip";
 
 import type { Diff } from "../../BuildDiffState";
+import { BrowserIcon } from "../../metadata/browser/BrowserIcon";
 import { getBrowserLabel } from "../../metadata/browser/browserLabels";
 import { MetadataRow } from "./MetadataRow";
 import {
@@ -20,21 +19,6 @@ import {
   useGetDiffPath,
   type MetadataBrowser,
 } from "./utils";
-
-const LazyBrowserIcon = lazy(() =>
-  import("../../metadata/browser/BrowserIcon").then((mod) => ({
-    default: mod.BrowserIcon,
-  })),
-);
-
-function BrowserIcon(props: { browser: MetadataBrowser; className?: string }) {
-  const { browser, ...rest } = props;
-  return (
-    <Suspense fallback={<GlobeIcon aria-busy {...rest} />}>
-      <LazyBrowserIcon browser={browser} {...rest} />
-    </Suspense>
-  );
-}
 
 export function BrowserRow(props: { diff: Diff; siblingDiffs: Diff[] }) {
   const { diff, siblingDiffs } = props;
