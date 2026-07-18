@@ -13,6 +13,8 @@ import { mcpTools } from "./tools";
 
 const MCP_INSTRUCTIONS = `Argos is a visual testing platform: CI uploads screenshots as "builds", Argos diffs them against a baseline, and users review and approve or reject the detected changes.
 
+Call "getMe" first: it returns the authenticated user and the accounts (personal and teams) the token can access, whose slugs are the "owner" used by the other tools.
+
 Projects are identified by an "owner" (account slug) and a "project" (project name), as in the URL https://app.argos-ci.com/{owner}/{project}. Builds are identified by their per-project "buildNumber". List endpoints are paginated with "page" and "perPage" arguments.`;
 
 /**

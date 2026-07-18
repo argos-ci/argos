@@ -201,6 +201,14 @@ describe("MCP server", () => {
       id: userAccount.id,
       slug: "jane-doe",
       name: "Jane Doe",
+      accounts: [
+        {
+          id: userAccount.id,
+          slug: "jane-doe",
+          name: "Jane Doe",
+          type: "user",
+        },
+      ],
     });
   });
 
