@@ -31,6 +31,18 @@ export function isSafeUri(uri: string): boolean {
   return url !== null && !DANGEROUS_URI_SCHEMES.has(url.protocol.toLowerCase());
 }
 
+/**
+ * Remove all trailing slashes from a URL. Implemented without a regex to keep
+ * matching linear-time on untrusted input (CWE-1333).
+ */
+export function trimTrailingSlash(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === "/") {
+    end -= 1;
+  }
+  return url.slice(0, end);
+}
+
 /** Whether a URL is a plain web link (http/https). */
 export function isHttpUri(uri: string): boolean {
   const url = tryParseUrl(uri);
