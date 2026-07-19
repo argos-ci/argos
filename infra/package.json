@@ -13,15 +13,15 @@
     "lint": "eslint --max-warnings 0 ."
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1081.0",
-    "@aws-sdk/lib-dynamodb": "^3.1081.0",
+    "@aws-sdk/client-dynamodb": "^3.1090.0",
+    "@aws-sdk/lib-dynamodb": "^3.1090.0",
     "aws-cdk-lib": "^2.261.0",
-    "constructs": "^10.6.0"
+    "constructs": "^10.7.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.162",
     "@types/node": "catalog:",
-    "aws-cdk": "^2.1129.0",
+    "aws-cdk": "^2.1132.0",
     "zod": "catalog:"
   }
 }

@@ -1,6 +1,7 @@
 {
   "name": "@argos/root",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "turbo run watch-build watch-server watch-codegen --concurrency 100",
     "build": "turbo run build",
@@ -28,12 +29,12 @@
   },
   "repository": "github:argos-ci/argos",
   "engines": {
-    "node": "24"
+    "node": "26"
   },
-  "packageManager": "pnpm@11.10.0+sha512.0b7f8b98060031904c017e3a41eb187a16d40eeb829b95c4f8cb03681761fc4ab53dd219115b9b447f4dce1a05a214764461e7d3703392a9f32f9511ce8c86c8",
+  "packageManager": "pnpm@11.15.0+sha512.266f8957a30d2be6e9468e5e66bcdedd35a794175f71b067ba8504d686cce1d0c0f429b33c323c3c569ad4891e667574a49ff71d1b89a22cc66f13c65818c578",
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.17.3",
-    "@argos-ci/playwright": "^7.3.0",
+    "@argos-ci/playwright": "^7.3.6",
     "@argos/eslint-config": "workspace:*",
     "@graphql-codegen/cli": "^7.2.0",
     "@graphql-codegen/client-preset": "^6.1.0",
@@ -43,18 +44,18 @@
     "@graphql-codegen/typescript-resolvers": "^6.1.0",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@parcel/watcher": "^2.5.6",
-    "@playwright/test": "1.61.0",
+    "@playwright/test": "1.61.1",
     "@swc/cli": "^0.8.1",
     "@swc/core": "^1.15.43",
     "@types/node": "catalog:",
     "chokidar": "^5.0.0",
     "eslint": "catalog:",
-    "knip": "^6.25.0",
-    "prettier": "^3.9.4",
-    "prettier-plugin-tailwindcss": "^0.8.0",
+    "knip": "^6.27.0",
+    "prettier": "^3.9.5",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "smee-client": "^5.0.0",
-    "turbo": "^2.10.4",
-    "typescript": "^6.0.3",
+    "turbo": "^2.10.5",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
 }
