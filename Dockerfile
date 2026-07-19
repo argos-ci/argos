@@ -4,7 +4,7 @@ ARG TURBO_TEAM
 FROM node:26-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN npm install -g corepack@latest --force && corepack enable
 
 FROM base AS build
 ARG TURBO_TEAM
