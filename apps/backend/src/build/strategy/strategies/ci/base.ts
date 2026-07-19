@@ -9,7 +9,11 @@ import {
 
 import type { CIStrategyContext } from ".";
 import type { GetBaseResult } from "../../types";
-import { getBaseBucketForBuildAndCommit, getBucketFromCommits } from "./query";
+import {
+  getBaseBucketForBuildAndCommit,
+  getBucketFromCommits,
+  getSameCommitBaseBucket,
+} from "./query";
 import { GithubStrategy } from "./strategies/github";
 import { GitlabStrategy } from "./strategies/gitlab";
 import type { MergeBaseStrategy } from "./types";
@@ -28,6 +32,30 @@ export type GetCIBaseArgs = {
  * Get merge base from a CI strategy.
  */
 export async function getCIBase(args: GetCIBaseArgs): GetBaseResult {
+  const base = await resolveCIBase(args);
+
+  if (base.baseBucket) {
+    return base;
+  }
+
+  // No baseline was found, the build would be an orphan. As a last resort, we
+  // compare with a previous approved build on the same commit and branch. This
+  // happens when running Argos twice without committing (typically while
+  // setting up Argos): the second build is compared with the first one instead
+  // of being an orphan.
+  const sameCommitBucket = await getSameCommitBaseBucket(
+    args.build,
+    args.compareScreenshotBucket,
+  );
+
+  return { ...base, baseBucket: sameCommitBucket };
+}
+
+/**
+ * Resolve the base bucket of a build from the git history (merge base and
+ * ancestor commits).
+ */
+async function resolveCIBase(args: GetCIBaseArgs): GetBaseResult {
   const { build, compareScreenshotBucket, project, pullRequest, context } =
     args;
 

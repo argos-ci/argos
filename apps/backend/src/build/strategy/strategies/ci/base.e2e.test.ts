@@ -81,6 +81,37 @@ async function createBaseline(project: Project, commit: string) {
   return bucket;
 }
 
+/**
+ * Create a completed build on a given commit and branch, to test the
+ * same-commit fallback.
+ */
+async function createSameCommitBuild(
+  project: Project,
+  input: {
+    commit?: string;
+    branch?: string;
+    type?: "check" | "orphan" | "reference";
+  } = {},
+) {
+  const { commit = HEAD_COMMIT, branch = "feature", type = "orphan" } = input;
+  const bucket = await factory.ScreenshotBucket.create({
+    projectId: project.id,
+    name: "default",
+    mode: "ci",
+    commit,
+    branch,
+  });
+  const build = await factory.Build.create({
+    projectId: project.id,
+    compareScreenshotBucketId: bucket.id,
+    name: "default",
+    mode: "ci",
+    type,
+    jobStatus: "complete",
+  });
+  return { bucket, build };
+}
+
 describe("#getCIBase (no git provider)", () => {
   beforeEach(async () => {
     await setupDatabase();
@@ -167,5 +198,117 @@ describe("#getCIBase (no git provider)", () => {
     expect(
       result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
     ).toBe(baseBucket.id);
+  });
+
+  describe("same commit and branch fallback", () => {
+    test("compares with a previous orphan build on the same commit and branch", async ({
+      args,
+      project,
+    }) => {
+      const { bucket } = await createSameCommitBuild(project);
+
+      const result = await getCIBase(args);
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(bucket.id);
+      expect(result.baseBranch).toBe("main");
+      expect(result.baseBranchResolvedFrom).toBe("project");
+    });
+
+    test("uses the latest build when several exist on the same commit and branch", async ({
+      args,
+      project,
+    }) => {
+      await createSameCommitBuild(project);
+      const { bucket: latestBucket } = await createSameCommitBuild(project);
+
+      const result = await getCIBase(args);
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(latestBucket.id);
+    });
+
+    test("ignores builds on the same commit but another branch", async ({
+      args,
+      project,
+    }) => {
+      await createSameCommitBuild(project, { branch: "other" });
+
+      const result = await getCIBase(args);
+      expect(result.baseBucket).toBeNull();
+    });
+
+    test("ignores builds on the same branch but another commit", async ({
+      args,
+      project,
+    }) => {
+      await createSameCommitBuild(project, {
+        commit: "8888888888888888888888888888888888888888",
+      });
+
+      const result = await getCIBase(args);
+      expect(result.baseBucket).toBeNull();
+    });
+
+    test("ignores non-approved check builds on the same commit and branch", async ({
+      args,
+      project,
+    }) => {
+      await createSameCommitBuild(project, { type: "check" });
+
+      const result = await getCIBase(args);
+      expect(result.baseBucket).toBeNull();
+    });
+
+    test("uses an approved check build on the same commit and branch", async ({
+      args,
+      project,
+    }) => {
+      const { bucket, build: checkBuild } = await createSameCommitBuild(
+        project,
+        { type: "check" },
+      );
+      await factory.BuildReview.create({
+        buildId: checkBuild.id,
+        state: "approved",
+      });
+
+      const result = await getCIBase(args);
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(bucket.id);
+    });
+
+    test("ignores rejected builds on the same commit and branch", async ({
+      args,
+      project,
+    }) => {
+      const { build: orphanBuild } = await createSameCommitBuild(project);
+      await factory.BuildReview.create({
+        buildId: orphanBuild.id,
+        state: "rejected",
+      });
+
+      const result = await getCIBase(args);
+      expect(result.baseBucket).toBeNull();
+    });
+
+    test("prefers the regular baseline over the same-commit fallback", async ({
+      args,
+      build,
+      project,
+    }) => {
+      const ancestorCommit = "9999999999999999999999999999999999999999";
+      const ancestorBucket = await createBaseline(project, ancestorCommit);
+      await createSameCommitBuild(project);
+      await build
+        .$query()
+        .patch({ parentCommits: [HEAD_COMMIT, ancestorCommit] });
+
+      const result = await getCIBase(args);
+      expect(
+        result.baseBucket && "id" in result.baseBucket && result.baseBucket.id,
+      ).toBe(ancestorBucket.id);
+    });
   });
 });
