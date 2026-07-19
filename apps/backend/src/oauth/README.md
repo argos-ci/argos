@@ -1,9 +1,8 @@
 # OAuth 2.1 Authorization Server
 
 Argos is its own OAuth 2.1 **Authorization Server** (AS) and **Resource Server**
-(RS). This powers the CLI login and is compatible with the
-[MCP authorization spec](https://modelcontextprotocol.io/docs/tutorials/security/authorization.md)
-so the future MCP server can plug in without further AS work.
+(RS). This powers the CLI login and the MCP server (`src/mcp/`), following the
+[MCP authorization spec](https://modelcontextprotocol.io/docs/tutorials/security/authorization.md).
 
 Tokens are **opaque and hashed at rest** (like personal access tokens and
 sessions — no JWT). Every request re-validates the token's account scope against
@@ -12,13 +11,15 @@ authenticated user is already allowed to do.
 
 ## Endpoints
 
-The AS lives on the app origin (`config.server.url`). The RS is the REST API
-(`config.api.baseUrl` + `/v2`) today; a future MCP server is another RS.
+The AS lives on the app origin (`config.server.url`). There are two RSs: the
+REST API (`config.api.baseUrl` + `/v2`) and the MCP server (`config.mcp.baseUrl`,
+see `src/mcp/README.md`), each serving its own Protected Resource Metadata.
 
 | Endpoint                                          | Purpose                                                            |
 | ------------------------------------------------- | ------------------------------------------------------------------ |
 | `GET  /.well-known/oauth-authorization-server`    | AS metadata (RFC 8414)                                             |
 | `GET  {api}/.well-known/oauth-protected-resource` | Protected Resource Metadata (RFC 9728)                             |
+| `GET  {mcp}/.well-known/oauth-protected-resource` | Protected Resource Metadata of the MCP server (RFC 9728)           |
 | `GET  /oauth/authorize`                           | Consent screen (SPA; `apps/frontend/src/pages/OAuthAuthorize.tsx`) |
 | `POST /oauth/token`                               | `authorization_code` + `refresh_token`                             |
 | `POST /oauth/register`                            | Dynamic Client Registration (RFC 7591)                             |

@@ -1,13 +1,55 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import type { Request } from "express";
 
 import { waitUntil } from "@/api/request-context";
 import { Account, OAuthAccessToken, OAuthGrant } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
-import { getApiResourceUrl } from "@/oauth/metadata";
+import { getApiResourceUrl, normalizeResource } from "@/oauth/metadata";
 
 import { boom } from "../util/error";
 import type { AuthOAuthPayload } from "./payload";
+
+/**
+ * Request-scoped marker listing the resource identifiers (RFC 8707 audiences)
+ * accepted by the surface handling the request. Symbol-keyed so it can only be
+ * set by our own middleware, never by external input. Absent on public REST
+ * API requests, which keep the strict default audience.
+ */
+const kAcceptedOAuthResources = Symbol("acceptedOAuthResources");
+
+export function markAcceptedOAuthResources(
+  request: Request,
+  resources: readonly string[],
+): void {
+  (request as MarkedRequest)[kAcceptedOAuthResources] = resources;
+}
+
+export function getAcceptedOAuthResources(
+  request: Request,
+): readonly string[] | undefined {
+  return (request as MarkedRequest)[kAcceptedOAuthResources];
+}
+
+/**
+ * Request-scoped marker telling the token resolvers to skip `lastUsedAt`
+ * bookkeeping. Set on the MCP loopback dispatch requests, whose outer request
+ * has already recorded usage, so a single tool call doesn't write it twice.
+ */
+const kSkipUsageTracking = Symbol("skipUsageTracking");
+
+export function markSkipUsageTracking(request: Request): void {
+  (request as MarkedRequest)[kSkipUsageTracking] = true;
+}
+
+export function getSkipUsageTracking(request: Request): boolean {
+  return (request as MarkedRequest)[kSkipUsageTracking] === true;
+}
+
+type MarkedRequest = Request & {
+  [kAcceptedOAuthResources]?: readonly string[];
+  [kSkipUsageTracking]?: boolean;
+};
 
 /**
  * Resolve an OAuth access token to an auth payload.
@@ -18,6 +60,10 @@ import type { AuthOAuthPayload } from "./payload";
  */
 export async function getAuthPayloadFromOAuthAccessToken(
   token: string,
+  options?: {
+    acceptedResources?: readonly string[] | undefined;
+    trackUsage?: boolean | undefined;
+  },
 ): Promise<AuthOAuthPayload> {
   if (!OAuthAccessToken.isOAuthAccessToken(token)) {
     throw boom(400, "Invalid OAuth access token");
@@ -38,10 +84,18 @@ export async function getAuthPayloadFromOAuthAccessToken(
   if (new Date(accessToken.expiresAt) <= new Date()) {
     throw boom(401, "Access token has expired");
   }
-  // Audience binding (RFC 8707): a token issued for another resource server
-  // (e.g. a future MCP server) must not be accepted by the REST API. Tokens
-  // with no bound resource are unscoped and accepted everywhere.
-  if (accessToken.resource && accessToken.resource !== getApiResourceUrl()) {
+  // Audience binding (RFC 8707): a token issued for another resource must not
+  // be accepted here. The REST API only accepts its own audience; the MCP
+  // server marks its requests as also accepting the MCP audience. Tokens with
+  // no bound resource are unscoped and accepted everywhere. Comparison is
+  // normalized: clients canonicalize resource URLs (trailing slash).
+  const acceptedResources = options?.acceptedResources ?? [getApiResourceUrl()];
+  if (
+    accessToken.resource &&
+    !acceptedResources
+      .map(normalizeResource)
+      .includes(normalizeResource(accessToken.resource))
+  ) {
     throw boom(401, "Access token was not issued for this resource");
   }
 
@@ -87,16 +141,19 @@ export async function getAuthPayloadFromOAuthAccessToken(
     );
   }
 
-  // Bookkeeping — see the note in `getAuthPayloadFromUserAccessToken`.
-  const now = new Date().toISOString();
-  await waitUntil(
-    Promise.all([
-      OAuthAccessToken.query()
-        .patch({ lastUsedAt: now })
-        .findById(accessToken.id),
-      OAuthGrant.query().patch({ lastUsedAt: now }).findById(grant.id),
-    ]),
-  );
+  // Bookkeeping — see the note in `getAuthPayloadFromUserAccessToken`. Skipped
+  // when the caller already recorded usage (the MCP loopback re-auth).
+  if (options?.trackUsage !== false) {
+    const now = new Date().toISOString();
+    await waitUntil(
+      Promise.all([
+        OAuthAccessToken.query()
+          .patch({ lastUsedAt: now })
+          .findById(accessToken.id),
+        OAuthGrant.query().patch({ lastUsedAt: now }).findById(grant.id),
+      ]),
+    );
+  }
 
   return {
     type: "oauth",

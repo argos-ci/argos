@@ -46,6 +46,7 @@ type OAuthErrorCode =
   | "invalid_client"
   | "invalid_grant"
   | "invalid_scope"
+  | "invalid_target"
   | "unauthorized_client"
   | "unsupported_grant_type"
   | "server_error";
@@ -209,7 +210,9 @@ oauthApiRouter.post("/token", async (req: Request, res: Response) => {
         result.error,
         result.error === "invalid_scope"
           ? "Requested scope exceeds the original grant."
-          : "Invalid or expired refresh token.",
+          : result.error === "invalid_target"
+            ? "Unknown resource."
+            : "Invalid or expired refresh token.",
       );
       return;
     }

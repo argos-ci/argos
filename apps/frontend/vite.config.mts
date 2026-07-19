@@ -94,6 +94,16 @@ export default defineConfig((args) => {
                   target: "https://app.argos-ci.dev:4001",
                   secure: false,
                 },
+              // OAuth Authorization Server endpoints. `/oauth/authorize` is
+              // NOT proxied: it is the consent page, an SPA route.
+              "^/oauth/(token|register|introspect|revoke)$": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
+              "/.well-known": {
+                target: "https://app.argos-ci.dev:4001",
+                secure: false,
+              },
             },
           }
         : undefined,

@@ -5,7 +5,7 @@ import type { AuthPATPayload, AuthProjectPayload } from "@/auth/payload";
 
 import { getAuthPayloadFromExpressReq } from "./auth/project";
 import {
-  anyTokenAuth,
+  anyTokenOrOAuthAuth,
   authenticateRequest,
   noAuth,
   personalAccessTokenAuth,
@@ -54,9 +54,10 @@ describe("security definitions", () => {
   it("declares the expected requirement shapes", () => {
     expect(projectTokenAuth).toEqual([{ projectToken: [] }]);
     expect(personalAccessTokenAuth).toEqual([{ personalAccessToken: [] }]);
-    expect(anyTokenAuth).toEqual([
+    expect(anyTokenOrOAuthAuth(["projects:read"])).toEqual([
       { projectToken: [] },
       { personalAccessToken: [] },
+      { oauth2: ["projects:read"] },
     ]);
     expect(noAuth).toEqual([]);
   });
@@ -103,13 +104,15 @@ describe("authenticateRequest", () => {
   });
 
   it("accepts either token kind on an any-token endpoint", async () => {
+    const security = anyTokenOrOAuthAuth(["projects:read"]);
+
     resolveAs(patPayload);
-    await expect(authenticateRequest(request, anyTokenAuth)).resolves.toBe(
+    await expect(authenticateRequest(request, security)).resolves.toBe(
       patPayload,
     );
 
     resolveAs(projectPayload);
-    await expect(authenticateRequest(request, anyTokenAuth)).resolves.toBe(
+    await expect(authenticateRequest(request, security)).resolves.toBe(
       projectPayload,
     );
   });

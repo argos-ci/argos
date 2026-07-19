@@ -55,7 +55,10 @@ const test = base.extend<{
 });
 
 describe("getMe", () => {
-  test("returns the authenticated user", async ({ userAccount, patToken }) => {
+  test("returns the authenticated user and its accessible accounts", async ({
+    userAccount,
+    patToken,
+  }) => {
     await request(app)
       .get("/me")
       .set("Authorization", `Bearer ${patToken}`)
@@ -65,7 +68,53 @@ describe("getMe", () => {
           id: userAccount.id,
           slug: "jane-doe",
           name: "Jane Doe",
+          accounts: [
+            {
+              id: userAccount.id,
+              slug: "jane-doe",
+              name: "Jane Doe",
+              type: "user",
+            },
+          ],
         });
+      });
+  });
+
+  test("includes team accounts the token is scoped to", async ({
+    user,
+    userAccount,
+  }) => {
+    const teamAccount = await factory.TeamAccount.create({
+      slug: "acme",
+      name: "ACME",
+    });
+    await factory.TeamUser.create({
+      teamId: teamAccount.teamId!,
+      userId: user.id,
+    });
+    const token = `arp_${"t".repeat(36)}`;
+    const userAccessToken = await factory.UserAccessToken.create({
+      userId: user.id,
+      token: hashToken(token),
+    });
+    await UserAccessTokenScope.query().insert([
+      { userAccessTokenId: userAccessToken.id, accountId: userAccount.id },
+      { userAccessTokenId: userAccessToken.id, accountId: teamAccount.id },
+    ]);
+
+    await request(app)
+      .get("/me")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .expect((res) => {
+        expect(
+          res.body.accounts.map((account: { slug: string }) => account.slug),
+        ).toEqual(expect.arrayContaining(["jane-doe", "acme"]));
+        expect(
+          res.body.accounts.find(
+            (account: { slug: string }) => account.slug === "acme",
+          ),
+        ).toMatchObject({ type: "team", name: "ACME" });
       });
   });
 

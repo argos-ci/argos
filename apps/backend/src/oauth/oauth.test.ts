@@ -7,8 +7,13 @@ import {
 } from "./clients";
 import { resolveKnownApp } from "./known-apps";
 import {
+  getApiResourceUrl,
   getAuthorizationServerMetadata,
+  getMcpProtectedResourceMetadataUrl,
+  getMcpResourceUrl,
   getProtectedResourceMetadata,
+  isKnownResource,
+  normalizeResource,
 } from "./metadata";
 import {
   isOAuthScope,
@@ -159,5 +164,31 @@ describe("metadata", () => {
     expect(prm.resource).toMatch(/\/v2$/);
     expect(prm.authorization_servers).toEqual([as.issuer]);
     expect(prm.scopes_supported).toEqual(OAUTH_SCOPE_LIST);
+  });
+
+  it("exposes the MCP server as its own protected resource", () => {
+    const prm = getProtectedResourceMetadata(getMcpResourceUrl());
+    const as = getAuthorizationServerMetadata();
+    expect(prm.resource).toBe(getMcpResourceUrl());
+    expect(prm.resource).not.toBe(getApiResourceUrl());
+    expect(prm.authorization_servers).toEqual([as.issuer]);
+    expect(getMcpProtectedResourceMetadataUrl()).toBe(
+      `${getMcpResourceUrl()}/.well-known/oauth-protected-resource`,
+    );
+  });
+
+  it("recognizes only the resources we actually serve", () => {
+    expect(isKnownResource(getApiResourceUrl())).toBe(true);
+    expect(isKnownResource(getMcpResourceUrl())).toBe(true);
+    expect(isKnownResource("https://evil.example")).toBe(false);
+    expect(isKnownResource("")).toBe(false);
+  });
+
+  it("normalizes canonicalized resource URLs (trailing slash)", () => {
+    // MCP clients canonicalize the server URL: `new URL(origin)` appends "/".
+    expect(isKnownResource(`${getMcpResourceUrl()}/`)).toBe(true);
+    expect(normalizeResource(`${getMcpResourceUrl()}/`)).toBe(
+      getMcpResourceUrl(),
+    );
   });
 });

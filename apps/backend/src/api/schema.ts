@@ -1,6 +1,8 @@
 import { createDocument, ZodOpenApiObject } from "zod-openapi";
 
 import config from "@/config";
+import { isMcpEligible } from "@/mcp/eligibility";
+import { getMcpResourceUrl } from "@/oauth/metadata";
 
 import { addCommentReactionOperation } from "./handlers/addCommentReaction";
 import { createBuildOperation } from "./handlers/createBuild";
@@ -30,6 +32,7 @@ import {
 import { listBuildDiffsOperation } from "./handlers/listBuildDiffs";
 import { listBuildsOperation } from "./handlers/listBuilds";
 import { listCommentsOperation } from "./handlers/listComments";
+import { listProjectsOperation } from "./handlers/listProjects";
 import { listReviewsOperation } from "./handlers/listReviews";
 import { removeCommentReactionOperation } from "./handlers/removeCommentReaction";
 import {
@@ -57,6 +60,9 @@ export const zodSchema = {
     },
     termsOfService: "https://argos-ci.com/terms",
   },
+  // Advertise the MCP server to GitBook and other tooling reading the spec;
+  // per-operation availability is stamped via `x-gitbook-mcp`.
+  "x-gitbook-mcp-url": getMcpResourceUrl(),
   externalDocs: {
     description: "Argos API reference",
     url: "https://argos-ci.com/docs/api-reference",
@@ -124,6 +130,9 @@ export const zodSchema = {
   paths: {
     "/accounts/{accountSlug}/analytics": {
       get: getAccountAnalyticsOperation,
+    },
+    "/accounts/{accountSlug}/projects": {
+      get: listProjectsOperation,
     },
     "/builds": {
       post: createBuildOperation,
@@ -223,5 +232,27 @@ export const zodSchema = {
   },
 } satisfies ZodOpenApiObject;
 
-export const schema: ReturnType<typeof createDocument> =
-  createDocument(zodSchema);
+/**
+ * Stamp `x-gitbook-mcp` on every operation exposed on the MCP server. The
+ * marker is *computed* from each operation's declared `security` (the same
+ * predicate the MCP server derives its tools from), never set by hand, so the
+ * published OpenAPI document can't get out of sync with the MCP tool surface.
+ */
+function markMcpOperations(
+  document: ReturnType<typeof createDocument>,
+): ReturnType<typeof createDocument> {
+  const methods = ["get", "post", "put", "patch", "delete"] as const;
+  for (const pathItem of Object.values(document.paths ?? {})) {
+    for (const method of methods) {
+      const operation = pathItem[method];
+      if (operation && isMcpEligible(operation)) {
+        Object.assign(operation, { "x-gitbook-mcp": true });
+      }
+    }
+  }
+  return document;
+}
+
+export const schema: ReturnType<typeof createDocument> = markMcpOperations(
+  createDocument(zodSchema),
+);

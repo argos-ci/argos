@@ -133,12 +133,19 @@ export const personalAccessTokenAuth: SecurityRequirement<AuthPATPayload> = [
 ];
 
 /**
- * Accept **either** a project token or a personal access token. Used by
- * read-only endpoints that are reachable from both CI and a user.
+ * Accept a project token, a personal access token, or an OAuth access token
+ * with the given scopes. Used by read-only endpoints that are reachable from
+ * CI, a user, and OAuth clients (CLI, MCP agents).
  */
-export const anyTokenAuth: SecurityRequirement<
-  AuthProjectPayload | AuthPATPayload
-> = [{ projectToken: [] }, { personalAccessToken: [] }];
+export function anyTokenOrOAuthAuth(
+  scopes: OAuthScope[],
+): SecurityRequirement<AuthProjectPayload | AuthPATPayload | AuthOAuthPayload> {
+  return [
+    { projectToken: [] },
+    { personalAccessToken: [] },
+    { oauth2: scopes },
+  ];
+}
 
 /**
  * Accept **either** a personal access token or an OAuth access token with the

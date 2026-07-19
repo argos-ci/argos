@@ -13,6 +13,7 @@ import type { AuthPATPayload } from "./payload";
  */
 export async function getAuthPayloadFromUserAccessToken(
   token: string,
+  options?: { trackUsage?: boolean | undefined },
 ): Promise<AuthPATPayload> {
   if (!UserAccessToken.isValidUserAccessToken(token)) {
     throw boom(400, "Invalid user access token");
@@ -71,12 +72,15 @@ export async function getAuthPayloadFromUserAccessToken(
   // Refreshing `lastUsedAt` is bookkeeping, not part of the auth decision, so
   // don't make the request wait on it: within an API request it runs in the
   // background (awaited before the response is flushed), and elsewhere it runs
-  // directly.
-  await waitUntil(
-    UserAccessToken.query()
-      .patch({ lastUsedAt: new Date().toISOString() })
-      .findById(userAccessToken.id),
-  );
+  // directly. Skipped when the caller already recorded usage (the MCP loopback
+  // re-auth).
+  if (options?.trackUsage !== false) {
+    await waitUntil(
+      UserAccessToken.query()
+        .patch({ lastUsedAt: new Date().toISOString() })
+        .findById(userAccessToken.id),
+    );
+  }
 
   return { type: "pat", account: user.account, user, scope: scopeAccounts };
 }

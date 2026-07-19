@@ -1,11 +1,15 @@
 import { ProjectNameSchema } from "@argos/schemas/project";
+import { assertNever } from "@argos/util/assertNever";
 import * as Sentry from "@sentry/node";
+import type { QueryBuilder } from "objection";
 
 import { notifyDiscord } from "@/discord";
 import { boom } from "@/util/error";
 
 import type { Account } from "../models/Account";
 import { Project } from "../models/Project";
+import { ProjectUser } from "../models/ProjectUser";
+import { TeamUser } from "../models/TeamUser";
 import type { User } from "../models/User";
 
 const RESERVED_PROJECT_NAMES = ["new", "settings"];
@@ -44,6 +48,92 @@ export const resolveProjectName = async (args: {
 
   return name;
 };
+
+/**
+ * Apply the project-visibility rules for a user to a `Project` query, returning
+ * the filtered query — or `null` when the user can see no project at all, so the
+ * caller can decide whether to throw or return an empty result.
+ *
+ * This is the single source of truth shared by the GraphQL API
+ * (`Account.projects`, `getVisibleProjectIds`) and the public REST API
+ * (`GET /accounts/{accountSlug}/projects`):
+ * - staff see every project
+ * - on a user account, only the owner
+ * - on a team, owners/members see all; contributors see projects they are a
+ *   contributor on (or that expose a default user level)
+ */
+export function applyProjectVisibility<R>(
+  query: QueryBuilder<Project, R>,
+  args: { account: Account; user: { id: string; staff: boolean } },
+): QueryBuilder<Project, R> | null {
+  const { account, user } = args;
+
+  // Staff can view all projects
+  if (user.staff) {
+    return query;
+  }
+
+  switch (account.type) {
+    case "user":
+      return account.userId === user.id ? query : null;
+    case "team": {
+      const teamUserQuery = TeamUser.query().where({
+        teamId: account.teamId,
+        userId: user.id,
+      });
+      return query.where((qb) => {
+        // User is a team member or owner
+        qb.whereExists(
+          teamUserQuery
+            .select(1)
+            .clone()
+            .whereIn("userLevel", ["owner", "member"]),
+        ).orWhere((qb) => {
+          // User is a contributor
+          qb.whereExists(
+            teamUserQuery.select(1).clone().where("userLevel", "contributor"),
+          ).where((qb) => {
+            // And is a contributor to the project
+            qb.whereExists(
+              ProjectUser.query()
+                .select(1)
+                .whereRaw(`projects.id = project_users."projectId"`)
+                .where("userId", user.id),
+            )
+              // Or where there is a default user level set on the project
+              .orWhereNotNull("projects.defaultUserLevel");
+          });
+        });
+      });
+    }
+    default:
+      return assertNever(account.type);
+  }
+}
+
+/**
+ * Query the projects of an account visible to a user, most recently active
+ * first (latest created project or build). Returns `null` when the user can
+ * see no project at all. Callers apply their own pagination.
+ *
+ * Shared by the GraphQL API (`Account.projects`) and the public REST API
+ * (`GET /accounts/{accountSlug}/projects`) so both list the exact same
+ * projects in the exact same order.
+ */
+export function queryAccountProjects(args: {
+  account: Account;
+  user: { id: string; staff: boolean };
+}): QueryBuilder<Project, Project[]> | null {
+  return applyProjectVisibility(
+    Project.query()
+      .where("accountId", args.account.id)
+      // Sort by most recently created project or build
+      .orderByRaw(
+        `greatest(projects."createdAt", (select max("createdAt") from builds where builds."projectId" = projects.id)) desc`,
+      ),
+    args,
+  );
+}
 
 /** Where a project creation originated, used in the creation notification. */
 export type ProjectCreationSource = "GitHub" | "GitLab" | null;

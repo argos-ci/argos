@@ -1,6 +1,5 @@
-import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
-import { QueryBuilder, TransactionOrKnex } from "objection";
+import { TransactionOrKnex } from "objection";
 
 import {
   Account,
@@ -23,6 +22,7 @@ import {
   Test,
   User,
 } from "@/database/models";
+import { applyProjectVisibility } from "@/database/services/project";
 import { transaction } from "@/database/transaction";
 import { isValidPgBigInt } from "@/database/util/biginteger";
 import { sendNotification } from "@/notification";
@@ -89,67 +89,6 @@ export async function getAdminProject(args: {
   const permissions = await project.$getPermissions(args.user);
   invariant(permissions.includes("admin"), "not admin");
   return project;
-}
-
-/**
- * Apply the project-visibility rules for a user to a `Project` query, returning
- * the filtered query — or `null` when the user can see no project at all, so the
- * caller can decide whether to throw or return an empty result.
- *
- * This is the single source of truth shared by the `Account.projects` resolver
- * and {@link getVisibleProjectIds}:
- * - staff see every project
- * - on a user account, only the owner
- * - on a team, owners/members see all; contributors see projects they are a
- *   contributor on (or that expose a default user level)
- */
-export function applyProjectVisibility<R>(
-  query: QueryBuilder<Project, R>,
-  args: { account: Account; user: { id: string; staff: boolean } },
-): QueryBuilder<Project, R> | null {
-  const { account, user } = args;
-
-  // Staff can view all projects
-  if (user.staff) {
-    return query;
-  }
-
-  switch (account.type) {
-    case "user":
-      return account.userId === user.id ? query : null;
-    case "team": {
-      const teamUserQuery = TeamUser.query().where({
-        teamId: account.teamId,
-        userId: user.id,
-      });
-      return query.where((qb) => {
-        // User is a team member or owner
-        qb.whereExists(
-          teamUserQuery
-            .select(1)
-            .clone()
-            .whereIn("userLevel", ["owner", "member"]),
-        ).orWhere((qb) => {
-          // User is a contributor
-          qb.whereExists(
-            teamUserQuery.select(1).clone().where("userLevel", "contributor"),
-          ).where((qb) => {
-            // And is a contributor to the project
-            qb.whereExists(
-              ProjectUser.query()
-                .select(1)
-                .whereRaw(`projects.id = project_users."projectId"`)
-                .where("userId", user.id),
-            )
-              // Or where there is a default user level set on the project
-              .orWhereNotNull("projects.defaultUserLevel");
-          });
-        });
-      });
-    }
-    default:
-      return assertNever(account.type);
-  }
 }
 
 /**

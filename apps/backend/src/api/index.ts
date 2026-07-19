@@ -28,6 +28,7 @@ import { ignoreChange, unignoreChange } from "./handlers/ignoreChange";
 import { listBuildDiffs } from "./handlers/listBuildDiffs";
 import { listBuilds } from "./handlers/listBuilds";
 import { listComments } from "./handlers/listComments";
+import { listProjects } from "./handlers/listProjects";
 import { listReviews } from "./handlers/listReviews";
 import { removeCommentReaction } from "./handlers/removeCommentReaction";
 import {
@@ -102,6 +103,7 @@ registerHandler(router, ignoreChange);
 registerHandler(router, unignoreChange);
 registerHandler(router, getProject);
 registerHandler(router, listBuilds);
+registerHandler(router, listProjects);
 registerHandler(router, resolveDeploymentDomain);
 registerHandler(router, updateBuild);
 

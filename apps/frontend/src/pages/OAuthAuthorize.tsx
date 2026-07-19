@@ -171,8 +171,9 @@ function ConsentForm(props: {
 
   const form = useForm<Inputs>({
     defaultValues: {
-      // Default to the personal account only — teams are opt-in (least privilege).
-      accountIds: [me.id],
+      // All accessible accounts are checked by default; the user may uncheck
+      // any to narrow the grant.
+      accountIds: availableAccounts.map((account) => account.id),
       // All requested scopes are checked by default; the user may uncheck any to
       // grant a narrower set (OAuth 2.1 / RFC 6749 §3.3 downscoping).
       scopes: consent.scopes.map((scope) => scope.scope),

@@ -156,6 +156,14 @@ export function createConfig() {
         },
       },
     },
+    mcp: {
+      baseUrl: {
+        doc: "The MCP server base URL",
+        format: String,
+        default: "https://mcp.argos-ci.dev:4001",
+        env: "MCP_BASE_URL",
+      },
+    },
     api: {
       baseUrl: {
         doc: "The API base URL",

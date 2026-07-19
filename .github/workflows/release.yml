@@ -223,6 +223,7 @@ jobs:
           environment-variables: |
             NODE_ENV=production
             API_BASE_URL=https://api.argos-ci.com
+            MCP_BASE_URL=https://mcp.argos-ci.com
             SERVER_URL=https://app.argos-ci.com
             SENTRY_RELEASE_VERSION=${{ github.sha }}
           secrets: |
