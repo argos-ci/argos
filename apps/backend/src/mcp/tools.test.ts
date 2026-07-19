@@ -203,8 +203,8 @@ describe("x-gitbook-mcp stamping", () => {
   });
 
   it("advertises the MCP server URL at the document root", () => {
-    expect((schema as unknown as Record<string, unknown>)["x-gitbook-mcp-url"]).toBe(
-      getMcpResourceUrl(),
-    );
+    expect(
+      (schema as unknown as Record<string, unknown>)["x-gitbook-mcp-url"],
+    ).toBe(getMcpResourceUrl());
   });
 });
