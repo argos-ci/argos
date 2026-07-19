@@ -224,7 +224,7 @@ jobs:
           BUILD_MODE: production
 
       - name: Run Playwright tests
-        uses: docker://mcr.microsoft.com/playwright:v1.61.0-jammy
+        uses: docker://mcr.microsoft.com/playwright:v1.61.1-jammy
         with:
           # Fix for Firefox, HOME=/root is required to avoid permission issues
           # https://github.com/microsoft/playwright/issues/6500

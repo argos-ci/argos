@@ -5,7 +5,7 @@ import { test } from "@playwright/test";
 import { screenshot } from "./util";
 
 const templatesDir = path.resolve(
-  __dirname,
+  import.meta.dirname,
   "../apps/backend/src/email/templates",
 );
 const templateFiles = fs

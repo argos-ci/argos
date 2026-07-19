@@ -5,7 +5,7 @@ import { test } from "@playwright/test";
 import { screenshot } from "./util";
 
 const notificationsDir = path.resolve(
-  __dirname,
+  import.meta.dirname,
   "../apps/backend/src/notification/handlers",
 );
 const notificationFiles = fs
