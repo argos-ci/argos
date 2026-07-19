@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
 
-import { isAllowedRedirectUri, isHttpUri, isSafeUri } from "./url";
+import {
+  isAllowedRedirectUri,
+  isHttpUri,
+  isSafeUri,
+  trimTrailingSlash,
+} from "./url";
+
+describe("#trimTrailingSlash", () => {
+  it("removes a single trailing slash", () => {
+    expect(trimTrailingSlash("https://x.com/")).toBe("https://x.com");
+  });
+
+  it("removes multiple trailing slashes", () => {
+    expect(trimTrailingSlash("https://x.com///")).toBe("https://x.com");
+  });
+
+  it("leaves URLs without trailing slashes untouched", () => {
+    expect(trimTrailingSlash("https://x.com/v2")).toBe("https://x.com/v2");
+    expect(trimTrailingSlash("")).toBe("");
+  });
+
+  it("handles slash-only strings", () => {
+    expect(trimTrailingSlash("///")).toBe("");
+  });
+});
 
 describe("#isSafeUri", () => {
   it("accepts http(s) and custom app schemes", () => {

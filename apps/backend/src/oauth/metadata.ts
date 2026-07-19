@@ -1,10 +1,8 @@
+import { trimTrailingSlash } from "@argos/util/url";
+
 import config from "@/config";
 
 import { OAUTH_SCOPE_LIST } from "./scopes";
-
-function trimTrailingSlash(url: string): string {
-  return url.replace(/\/+$/, "");
-}
 
 /**
  * The OAuth issuer / Authorization Server base URL (the app origin, where login
