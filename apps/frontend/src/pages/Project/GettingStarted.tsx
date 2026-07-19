@@ -91,7 +91,13 @@ const FRAMEWORKS: Framework[] = [
   {
     id: "playwright",
     name: "Playwright",
-    logo: <AutomationLibraryIcon name="playwright" className={logoClassName} aria-hidden />,
+    logo: (
+      <AutomationLibraryIcon
+        name="playwright"
+        className={logoClassName}
+        aria-hidden
+      />
+    ),
     docsURL: "https://argos-ci.com/docs/quickstart/playwright-quickstart",
     requiresCIEnv: true,
     getCommand: (token) => `ARGOS_TOKEN=${token} CI=true npx playwright test`,
@@ -108,7 +114,13 @@ ${this.getCommand(token)}`;
   {
     id: "vitest",
     name: "Vitest",
-    logo: <AutomationLibraryIcon name="vitest" className={logoClassName} aria-hidden />,
+    logo: (
+      <AutomationLibraryIcon
+        name="vitest"
+        className={logoClassName}
+        aria-hidden
+      />
+    ),
     docsURL: "https://argos-ci.com/docs/quickstart/vitest-quickstart",
     requiresCIEnv: true,
     getCommand: (token) => `ARGOS_TOKEN=${token} CI=true npx vitest run`,
@@ -125,7 +137,13 @@ ${this.getCommand(token)}`;
   {
     id: "storybook",
     name: "Storybook",
-    logo: <AutomationLibraryIcon name="storybook" className={logoClassName} aria-hidden />,
+    logo: (
+      <AutomationLibraryIcon
+        name="storybook"
+        className={logoClassName}
+        aria-hidden
+      />
+    ),
     docsURL: "https://argos-ci.com/docs/quickstart/storybook-quickstart",
     requiresCIEnv: true,
     getCommand: (token) =>
@@ -143,7 +161,13 @@ ${this.getCommand(token)}`;
   {
     id: "cypress",
     name: "Cypress",
-    logo: <AutomationLibraryIcon name="cypress" className={logoClassName} aria-hidden />,
+    logo: (
+      <AutomationLibraryIcon
+        name="cypress"
+        className={logoClassName}
+        aria-hidden
+      />
+    ),
     docsURL: "https://argos-ci.com/docs/quickstart/cypress-quickstart",
     requiresCIEnv: true,
     getCommand: (token) => `ARGOS_TOKEN=${token} CI=true npx cypress run`,
@@ -161,7 +185,11 @@ ${this.getCommand(token)}`;
     id: "webdriverio",
     name: "WebdriverIO",
     logo: (
-      <AutomationLibraryIcon name="webdriverio" className={logoClassName} aria-hidden />
+      <AutomationLibraryIcon
+        name="webdriverio"
+        className={logoClassName}
+        aria-hidden
+      />
     ),
     docsURL: "https://argos-ci.com/docs/quickstart/webdriverio-quickstart",
     requiresCIEnv: false,
