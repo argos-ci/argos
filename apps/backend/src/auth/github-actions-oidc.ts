@@ -1,5 +1,5 @@
 import { createPublicKey } from "node:crypto";
-import type { JsonWebKey } from "node:crypto";
+import type { webcrypto } from "node:crypto";
 import jwt from "jsonwebtoken";
 import z from "zod";
 
@@ -49,10 +49,11 @@ export type GitHubActionsOidcClaims = z.infer<
   typeof GitHubActionsOidcClaimsSchema
 >;
 
-function toJsonWebKey(jwk: z.infer<typeof JsonWebKeySchema>): JsonWebKey {
-  const key: JsonWebKey = {
+function toJsonWebKey(
+  jwk: z.infer<typeof JsonWebKeySchema>,
+): webcrypto.JsonWebKey {
+  const key: webcrypto.JsonWebKey = {
     e: jwk.e,
-    kid: jwk.kid,
     kty: jwk.kty,
     n: jwk.n,
   };
