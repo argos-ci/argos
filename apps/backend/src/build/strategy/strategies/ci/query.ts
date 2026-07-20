@@ -127,6 +127,25 @@ function queryBaseBucket(build: Build, options?: QueryBaseBucketOptions) {
 }
 
 /**
+ * Get the base bucket from a previous approved build on the same commit and
+ * branch as the compared bucket.
+ *
+ * Used as a last resort when no other baseline is found: two builds run on the
+ * same commit and branch (typically while setting up Argos locally) are
+ * compared with each other instead of both ending up orphans.
+ */
+export async function getSameCommitBaseBucket(
+  build: Build,
+  compareScreenshotBucket: ScreenshotBucket,
+) {
+  const bucket = await queryBaseBucket(build, { approved: true }).findOne({
+    commit: compareScreenshotBucket.commit,
+    branch: compareScreenshotBucket.branch,
+  });
+  return bucket ?? null;
+}
+
+/**
  * Get the bucket from a list of commits, ordered by the order of the commits.
  */
 export async function getBucketFromCommits(args: {

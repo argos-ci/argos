@@ -27,6 +27,17 @@
             "command": "jq -r '.tool_input.file_path // empty' | { read -r f && [ -n \"$f\" ] && pnpm exec prettier --write --ignore-unknown \"$f\"; } 2>/dev/null || true"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{ cd \"${CLAUDE_PROJECT_DIR:-.}\" && files=$({ git diff --name-only HEAD -- 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | grep -E '\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|json|css|scss|md|mdx|ya?ml|gql|graphql|html)$' | sort -u | head -50) && [ -n \"$files\" ] && printf '%s\\n' \"$files\" | tr '\\n' '\\0' | xargs -0 pnpm exec prettier --write --cache --ignore-unknown --log-level=error; } 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Formatting changed files"
+          }
+        ]
       }
     ]
   }

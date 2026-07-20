@@ -91,6 +91,7 @@ const ProjectBuildsQuery = graphql(`
         pageInfo {
           isEmpty
           hasNextPage
+          totalCount
         }
         edges {
           id
@@ -380,14 +381,15 @@ function PageContent(props: {
     return <NotFound />;
   }
 
-  if (builds.pageInfo.isEmpty && !hasFilters) {
+  // Until a project has two builds (a first one and one compared with it),
+  // guide reviewers through the onboarding instead of showing the list.
+  if (builds.pageInfo.totalCount < 2 && !hasFilters) {
     if (hasReviewerPermission) {
-      return (
-        <PageContainer>
-          <GettingStarted project={project} />
-        </PageContainer>
-      );
-    } else {
+      // GettingStarted owns its scroll container: the project route sets a
+      // fixed-height page, so the content must scroll internally.
+      return <GettingStarted project={project} />;
+    }
+    if (builds.pageInfo.isEmpty) {
       return (
         <PageContainer>
           <EmptyState>

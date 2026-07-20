@@ -1,16 +1,21 @@
+import { clsx } from "clsx";
 import { FlaskConicalIcon } from "lucide-react";
 
 import { capitalize } from "@/util/string";
 
+import cypressDarkIcon from "./logos/cypress-dark.svg";
 import cypressIcon from "./logos/cypress.svg";
 import playwrightIcon from "./logos/playwright.svg";
 import puppeteerIcon from "./logos/puppeteer.svg";
 import storybookIcon from "./logos/storybook.svg";
 import vitestIcon from "./logos/vitest.svg";
+import webdriverioIcon from "./logos/webdriverio.svg";
 
 type AutomationLibrary = {
   label: string;
   icon?: string;
+  /** Alternative logo used in dark mode when the default one is illegible. */
+  darkIcon?: string;
 };
 
 /**
@@ -23,14 +28,14 @@ const automationLibraries: Record<string, AutomationLibrary> = {
   "@playwright/test": { label: "Playwright", icon: playwrightIcon },
   playwright: { label: "Playwright", icon: playwrightIcon },
   "playwright-core": { label: "Playwright", icon: playwrightIcon },
-  cypress: { label: "Cypress", icon: cypressIcon },
+  cypress: { label: "Cypress", icon: cypressIcon, darkIcon: cypressDarkIcon },
   puppeteer: { label: "Puppeteer", icon: puppeteerIcon },
   storybook: { label: "Storybook", icon: storybookIcon },
   "@storybook/test-runner": { label: "Storybook", icon: storybookIcon },
   "@storybook/addon-vitest": { label: "Storybook", icon: storybookIcon },
   vitest: { label: "Vitest", icon: vitestIcon },
   "@vitest/browser-playwright": { label: "Vitest", icon: vitestIcon },
-  webdriverio: { label: "WebdriverIO" },
+  webdriverio: { label: "WebdriverIO", icon: webdriverioIcon },
   selenium: { label: "Selenium" },
 };
 
@@ -46,9 +51,27 @@ export function AutomationLibraryIcon(
     },
 ) {
   const { name, ...rest } = props;
-  const icon = automationLibraries[name.toLowerCase()]?.icon;
-  if (!icon) {
+  const library = automationLibraries[name.toLowerCase()];
+  if (!library?.icon) {
     return <FlaskConicalIcon {...rest} />;
   }
-  return <img src={icon} alt={name} {...rest} />;
+  if (library.darkIcon) {
+    return (
+      <>
+        <img
+          src={library.icon}
+          alt={name}
+          {...rest}
+          className={clsx(rest.className, "dark:hidden")}
+        />
+        <img
+          src={library.darkIcon}
+          alt={name}
+          {...rest}
+          className={clsx(rest.className, "hidden dark:block")}
+        />
+      </>
+    );
+  }
+  return <img src={library.icon} alt={name} {...rest} />;
 }
