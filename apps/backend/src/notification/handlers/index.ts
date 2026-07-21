@@ -13,6 +13,7 @@ import * as review_submitted from "./review_submitted";
 import * as saml_certificate_expiration from "./saml_certificate_expiration";
 import * as slack_automation_action_unavailable from "./slack_automation_action_unavailable";
 import * as spend_limit from "./spend_limit";
+import * as trial_ended from "./trial_ended";
 import * as welcome from "./welcome";
 
 export const notificationHandlers = [
@@ -29,6 +30,7 @@ export const notificationHandlers = [
   review_submitted.handler,
   saml_certificate_expiration.handler,
   spend_limit.handler,
+  trial_ended.handler,
   welcome.handler,
   slack_automation_action_unavailable.handler,
 ] satisfies NotificationHandler[];

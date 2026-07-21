@@ -1,5 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
+import { captureException } from "@sentry/node";
+import { NotFoundError } from "objection";
 import Stripe from "stripe";
 import { z } from "zod";
 
@@ -7,6 +9,8 @@ import config from "@/config";
 import { Account, Plan, Subscription } from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
 import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
+import { sendNotification } from "@/notification";
+import { redisLock } from "@/util/redis";
 
 export type { Stripe };
 
@@ -370,6 +374,197 @@ export async function cancelStripeSubscription(subscriptionId: string) {
   await stripe.subscriptions.cancel(subscriptionId);
 }
 
+/**
+ * Check if a subscription status is one we can charge additional screenshots
+ * for.
+ */
+function checkIsBillableStatus(status: Subscription["status"]): boolean {
+  return status === "active" || status === "past_due";
+}
+
+/**
+ * End the trial period of a subscription immediately.
+ */
+async function endStripeTrial(
+  argosSubscription: Subscription,
+): Promise<Subscription> {
+  invariant(
+    argosSubscription.stripeSubscriptionId,
+    "not a stripe subscription",
+  );
+  const stripeSubscription = await stripe.subscriptions.update(
+    argosSubscription.stripeSubscriptionId,
+    { trial_end: "now" },
+  );
+  // Ending a trial opens a new Stripe billing period. `startDate` is synced
+  // from `current_period_start`, which resets the included screenshots so the
+  // screenshots consumed during the trial are not counted against the first
+  // billed period. The status change is announced by the caller, outside the
+  // lock.
+  return updateArgosSubscriptionFromStripe(
+    argosSubscription,
+    stripeSubscription,
+    { notifyStatusUpdate: false },
+  );
+}
+
+/**
+ * End the trial period of an account that went over its included screenshots.
+ * Stripe never bills the usage consumed during a trial period, so ending the
+ * trial is the only way to make the additional screenshots billable.
+ *
+ * Returns `false` when the trial can't be ended, meaning the usage must stay
+ * blocked.
+ */
+export async function endTrialToUnlockUsage(
+  account: Account,
+): Promise<boolean> {
+  const manager = account.$getSubscriptionManager();
+  const subscription = await manager.getActiveSubscription();
+
+  if (!subscription) {
+    return false;
+  }
+
+  // Cheap pre-checks on the memoized row, to avoid acquiring the lock for
+  // builds that can't convert anyway. They are re-validated on a fresh row
+  // inside the lock.
+  if (subscription.provider !== "stripe" || !subscription.paymentMethodFilled) {
+    return false;
+  }
+
+  try {
+    const { unlocked, synced } = await redisLock.acquire(
+      ["endStripeTrial", subscription.id],
+      async () => {
+        // Read the subscription again inside the lock: a concurrent build may
+        // have converted the trial, and the caller holds a memoized row that
+        // can be stale. Every guard below is evaluated on this fresh row.
+        const freshSubscription = await Subscription.query()
+          .findById(subscription.id)
+          .throwIfNotFound();
+
+        if (freshSubscription.status !== "trialing") {
+          // The trial is already over, the build that converted it owns the
+          // notifications. Usage is billable again only if the subscription
+          // is still one we can charge, a canceled or unpaid one must keep
+          // the build blocked.
+          return {
+            unlocked: checkIsBillableStatus(freshSubscription.status),
+            synced: null,
+          };
+        }
+
+        // Without a payment method we have no way to bill the additional
+        // screenshots, so the trial can't be converted.
+        if (
+          freshSubscription.provider !== "stripe" ||
+          !freshSubscription.paymentMethodFilled
+        ) {
+          return { unlocked: false, synced: null };
+        }
+
+        invariant(
+          freshSubscription.stripeSubscriptionId,
+          "stripe subscriptions have a stripeSubscriptionId",
+        );
+
+        // Stripe is the source of truth: if a previous attempt ended the
+        // trial but failed before syncing it back (lock timeout, crash), or
+        // if the trial reached its natural end and the webhook has not landed
+        // yet, the subscription must be synced, not ended again.
+        const stripeSubscription = await stripe.subscriptions.retrieve(
+          freshSubscription.stripeSubscriptionId,
+        );
+
+        // Notifications are deferred to after the lock: they involve Discord,
+        // a transaction and a job publish, none of which should extend the
+        // lock hold, budgeted for the Stripe calls only.
+        const synced =
+          stripeSubscription.status === "trialing"
+            ? await endStripeTrial(freshSubscription)
+            : await updateArgosSubscriptionFromStripe(
+                freshSubscription,
+                stripeSubscription,
+                { notifyStatusUpdate: false },
+              );
+
+        return { unlocked: checkIsBillableStatus(synced.status), synced };
+      },
+      // The task can run two Stripe calls, keep the timeout well clear of
+      // third-party latency: past it, the lock rejects while the task keeps
+      // running, and the conversion would be reported as a failure.
+      { timeout: 60000 },
+    );
+
+    if (synced) {
+      // The fresh row said "trialing", so whatever the trial ended into, the
+      // transition has never been announced. A transient failure here must
+      // not fail the build that triggered the conversion.
+      await Promise.all([
+        notifySubscriptionStatusUpdate({
+          provider: "stripe",
+          status: synced.status,
+          previousStatus: "trialing",
+          account,
+        }).catch((error) => captureException(error)),
+        synced.status === "active"
+          ? notifyTrialEnded(account, synced).catch((error) =>
+              captureException(error),
+            )
+          : null,
+      ]);
+    }
+
+    return unlocked;
+  } catch (error) {
+    // Deterministic errors (unmapped Stripe product, malformed price
+    // metadata, deleted subscription) would fail open on every build,
+    // silently granting unlimited unbilled usage: surface them instead.
+    if (error instanceof NotFoundError || error instanceof z.ZodError) {
+      throw error;
+    }
+    // The conversion is best effort: a Stripe or Redis outage must not take
+    // build creation down. Let the build through, the usage stays on the free
+    // trial pricing and the next build retries the conversion.
+    captureException(error, { extra: { accountId: account.id } });
+    return true;
+  }
+}
+
+/**
+ * Tell the account owners that their trial has been converted, they are now
+ * being charged for the screenshots they take.
+ */
+async function notifyTrialEnded(
+  account: Account,
+  subscription: Subscription,
+): Promise<void> {
+  // The account's subscription manager memoized the pre-conversion
+  // subscription, so the plan and the quota are resolved from the fresh row
+  // instead of going through the manager.
+  const [plan, recipients] = await Promise.all([
+    subscription.$relatedQuery("plan"),
+    account.$getOwnerIds(),
+  ]);
+
+  if (recipients.length === 0) {
+    return;
+  }
+
+  await sendNotification({
+    type: "trial_ended",
+    data: {
+      accountName: account.name,
+      accountSlug: account.slug,
+      planName: plan.displayName,
+      includedScreenshots:
+        subscription.includedScreenshots ?? plan.includedScreenshots,
+    },
+    recipients,
+  });
+}
+
 async function getArgosSubscriptionFromStripeSubscriptionId(
   stripeSubscriptionId: string,
 ) {
@@ -557,12 +752,20 @@ async function updateSubscriptionsFromCustomer(
 async function updateArgosSubscriptionFromStripe(
   argosSubscription: Subscription,
   stripeSubscription: Stripe.Subscription,
+  options?: {
+    /**
+     * Set to false when the caller announces the status change itself, to
+     * keep the notification out of a lock's critical section.
+     */
+    notifyStatusUpdate?: boolean;
+  },
 ): Promise<Subscription> {
+  const notifyStatusUpdate = options?.notifyStatusUpdate ?? true;
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
   const [updatedSubscription] = await Promise.all([
     argosSubscription.$query().patchAndFetch(data),
     (async () => {
-      if (data.status !== argosSubscription.status) {
+      if (notifyStatusUpdate && data.status !== argosSubscription.status) {
         const account = await Account.query()
           .findById(argosSubscription.accountId)
           .throwIfNotFound();

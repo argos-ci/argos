@@ -14,6 +14,7 @@ import {
 import { subscribeBuildPullRequestCreator } from "@/database/services/build-notification-subscription";
 import { checkIsBlockedBySpendLimit } from "@/database/services/spend-limit";
 import { getOrCreatePullRequest } from "@/github-pull-request/create";
+import { endTrialToUnlockUsage } from "@/stripe";
 import { boom } from "@/util/error";
 import { redisLock } from "@/util/redis";
 
@@ -59,11 +60,19 @@ export async function createBuild(params: {
     case null: {
       break;
     }
-    case "trialing":
+    case "trialing": {
+      // The screenshots consumed during a trial period are never billed by
+      // Stripe. Once the included ones are exhausted, the trial is ended to
+      // make the usage billable, which also starts a fresh billing period.
+      const trialEnded = await endTrialToUnlockUsage(account);
+      if (trialEnded) {
+        break;
+      }
       throw boom(
         402,
         `You have reached the maximum screenshot capacity of your ${plan ? `${plan.displayName} Plan` : "Plan"} trial. Please upgrade your Plan.`,
       );
+    }
     case "flat-rate":
       throw boom(
         402,
