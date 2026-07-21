@@ -16,7 +16,9 @@ const baseUrl = config.get("server.url");
 
 export const handler = defineNotificationHandler({
   type: "trial_ended",
-  // Announcing a charge is transactional, it must not be opt-out-able.
+  // Announcing a charge is transactional: "account" is a non-configurable
+  // category, so recipients can't opt out of it and the email carries no
+  // preferences link.
   category: "account",
   schema: z.object({
     accountName: z.string().nullish(),
