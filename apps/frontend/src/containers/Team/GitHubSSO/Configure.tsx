@@ -11,6 +11,10 @@ import {
 
 import { GITHUB_SSO_PRICING } from "@/constants";
 import { GithubInstallationsSelect } from "@/containers/GithubInstallationsSelect";
+import {
+  AddOnsPricingTable,
+  type AddOnsPricingTableTeam,
+} from "@/containers/Team/AddOnsPricingTable";
 import { graphql } from "@/gql";
 import { Button } from "@/ui/Button";
 import {
@@ -160,7 +164,7 @@ function getButtonLabel(priced: boolean) {
 }
 
 function ActiveConfigureSSOForm(props: {
-  teamAccountId: string;
+  team: AddOnsPricingTableTeam;
   priced: boolean;
 }) {
   const form = useForm<FormInputs>({
@@ -174,7 +178,7 @@ function ActiveConfigureSSOForm(props: {
     await client.mutate({
       mutation: EnableGitHubSSOMutation,
       variables: {
-        teamAccountId: props.teamAccountId,
+        teamAccountId: props.team.id,
         ghInstallationId: Number(inputs.ghInstallationId),
       },
       refetchQueries: ["TeamMembers_teamMembers"],
@@ -193,7 +197,7 @@ function ActiveConfigureSSOForm(props: {
         <GitHubInstallationsSelectControl
           control={form.control}
           name="ghInstallationId"
-          teamAccountId={props.teamAccountId}
+          teamAccountId={props.team.id}
         />
         {props.priced ? (
           <>
@@ -203,15 +207,7 @@ function ActiveConfigureSSOForm(props: {
               invoice and your credit card will be charged at the end of your
               next billing cycle.
             </div>
-            <div className="text-low my-2 flex justify-between font-bold">
-              <div>GitHub Single Sign-On</div>
-              <div>${GITHUB_SSO_PRICING} / month</div>
-            </div>
-            <hr className="my-2 border-0 border-t" />
-            <div className="my-2 flex justify-between font-bold">
-              <div>Total</div>
-              <div>${GITHUB_SSO_PRICING} / month</div>
-            </div>
+            <AddOnsPricingTable team={props.team} enabling="github-sso" />
           </>
         ) : (
           <div className="my-8">
@@ -231,16 +227,16 @@ function ActiveConfigureSSOForm(props: {
   );
 }
 
-function ActiveConfigureSSO(props: { teamAccountId: string; priced: boolean }) {
+function ActiveConfigureSSO(props: {
+  team: AddOnsPricingTableTeam;
+  priced: boolean;
+}) {
   return (
     <DialogTrigger>
       <Button>{getButtonLabel(props.priced)}</Button>
       <Modal>
         <Dialog size="medium">
-          <ActiveConfigureSSOForm
-            teamAccountId={props.teamAccountId}
-            priced={props.priced}
-          />
+          <ActiveConfigureSSOForm team={props.team} priced={props.priced} />
         </Dialog>
       </Modal>
     </DialogTrigger>
@@ -248,7 +244,7 @@ function ActiveConfigureSSO(props: { teamAccountId: string; priced: boolean }) {
 }
 
 export function ConfigureGitHubSSO(props: {
-  teamAccountId: string;
+  team: AddOnsPricingTableTeam;
   priced: boolean;
   disabledReason: React.ReactNode;
 }) {
@@ -262,10 +258,5 @@ export function ConfigureGitHubSSO(props: {
     );
   }
 
-  return (
-    <ActiveConfigureSSO
-      teamAccountId={props.teamAccountId}
-      priced={props.priced}
-    />
-  );
+  return <ActiveConfigureSSO team={props.team} priced={props.priced} />;
 }

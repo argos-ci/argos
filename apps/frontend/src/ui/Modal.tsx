@@ -1,11 +1,21 @@
-import { createContext, use, useMemo, useState } from "react";
+import {
+  createContext,
+  use,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { clsx } from "clsx";
 import {
   ModalOverlay,
   ModalOverlayProps,
   ModalRenderProps,
+  OverlayTriggerStateContext,
   Modal as RACModal,
 } from "react-aria-components";
+
+import { useEventCallback } from "./useEventCallback";
 
 const overlayStyles = (props: ModalRenderProps) =>
   clsx(
@@ -30,48 +40,25 @@ export const ModalActionContext = createContext<ActionContextValue | null>(
   null,
 );
 
-/**
- * Run an imperative dialog action (e.g. a mutation on a confirm button — not a
- * form submit) while flagging the modal as pending, so it can't be dismissed
- * mid-action. For form dialogs use `<Form>`, which wires this up automatically.
- * Must be used within a Modal.
- *
- * @example
- * const state = useOverlayTriggerState();
- * const [isPending, startDialogAction] = useModalAction();
- * const [mutate] = useMutation(...);
- * // ...
- * <Button
- *   isPending={isPending}
- *   onPress={() =>
- *     startDialogAction(async () => {
- *       await mutate();
- *       state.close();
- *     })
- *   }
- * />
- */
-export function useModalAction() {
-  const context = use(ModalActionContext);
-  if (!context) {
-    throw new Error("useModalAction must be used within a Modal");
-  }
-  const startDialogAction = (action: () => Promise<void>) => {
-    context.setIsPending(true);
-    return action().finally(() => {
-      context.setIsPending(false);
-    });
-  };
-  return [context.isPending, startDialogAction] as const;
-}
-
 export type ModalProps = ModalOverlayProps;
 
 export function Modal(props: ModalProps) {
   const { children, ...rest } = props;
   const [isPending, setIsPending] = useState(false);
-  const actionContextValue = useMemo(
-    () => ({ isPending, setIsPending }),
+  // Once the dialog close has been requested while pending, we keep the modal
+  // pending while it's closing: resetting the state would re-enable its
+  // content during the exit animation.
+  const closeRequestedRef = useRef(false);
+  const actionContextValue: ActionContextValue = useMemo(
+    () => ({
+      isPending,
+      setIsPending: (isPending) => {
+        if (!isPending && closeRequestedRef.current) {
+          return;
+        }
+        setIsPending(isPending);
+      },
+    }),
     [isPending],
   );
   const isDismissable = isPending ? false : props.isDismissable;
@@ -89,9 +76,72 @@ export function Modal(props: ModalProps) {
           isDismissable={isDismissable}
           isKeyboardDismissDisabled={isPending}
         >
-          {children}
+          {(renderProps) => (
+            <ModalCloseTracker
+              onOpen={() => {
+                closeRequestedRef.current = false;
+                setIsPending(false);
+              }}
+              onCloseRequested={() => {
+                closeRequestedRef.current = true;
+              }}
+            >
+              {typeof children === "function"
+                ? children(renderProps)
+                : children}
+            </ModalCloseTracker>
+          )}
         </RACModal>
       </ModalOverlay>
     </ModalActionContext.Provider>
+  );
+}
+
+/**
+ * Intercept close requests made through the overlay trigger state (Dialog
+ * render prop `close`, `DialogDismiss`, `useOverlayTriggerState().close()`)
+ * so the Modal knows the dialog is closing.
+ */
+function ModalCloseTracker(props: {
+  onOpen: () => void;
+  onCloseRequested: () => void;
+  children: React.ReactNode;
+}) {
+  const state = use(OverlayTriggerStateContext);
+  const onOpen = useEventCallback(props.onOpen);
+  const onCloseRequested = useEventCallback(props.onCloseRequested);
+  // The tracker mounts each time the modal opens and stays mounted during the
+  // exit animation, so mounting marks a fresh dialog session.
+  useEffect(() => {
+    onOpen();
+  }, [onOpen]);
+  const wrappedState = useMemo(() => {
+    if (!state) {
+      return state;
+    }
+    return {
+      ...state,
+      setOpen: (isOpen: boolean) => {
+        if (!isOpen) {
+          onCloseRequested();
+        }
+        state.setOpen(isOpen);
+      },
+      close: () => {
+        onCloseRequested();
+        state.close();
+      },
+      toggle: () => {
+        if (state.isOpen) {
+          onCloseRequested();
+        }
+        state.toggle();
+      },
+    };
+  }, [state, onCloseRequested]);
+  return (
+    <OverlayTriggerStateContext.Provider value={wrappedState}>
+      {props.children}
+    </OverlayTriggerStateContext.Provider>
   );
 }

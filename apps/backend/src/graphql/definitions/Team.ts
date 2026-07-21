@@ -143,6 +143,7 @@ export const typeDefs = gql`
     teamDomains: [TeamDomain!]!
     ssoGithubAccount: GithubAccount
     samlSso: TeamSamlConfig
+    samlPurchased: Boolean!
     samlSpEntityId: String!
     samlAcsUrl: String!
     samlMetadataUrl: String!
@@ -296,6 +297,14 @@ export const typeDefs = gql`
     teamAccountId: ID!
   }
 
+  input EnableSAMLSSOOnTeamInput {
+    teamAccountId: ID!
+  }
+
+  input DisableSAMLSSOOnTeamInput {
+    teamAccountId: ID!
+  }
+
   input SetTeamDefaultUserLevelInput {
     teamAccountId: ID!
     level: TeamDefaultUserLevel!
@@ -364,6 +373,10 @@ export const typeDefs = gql`
     enableGitHubSSOOnTeam(input: EnableGitHubSSOOnTeamInput!): Team!
     "Disable GitHub SSO"
     disableGitHubSSOOnTeam(input: DisableGitHubSSOOnTeamInput!): Team!
+    "Enable SAML SSO"
+    enableSAMLSSOOnTeam(input: EnableSAMLSSOOnTeamInput!): Team!
+    "Disable SAML SSO"
+    disableSAMLSSOOnTeam(input: DisableSAMLSSOOnTeamInput!): Team!
     "Set team default user level"
     setTeamDefaultUserLevel(input: SetTeamDefaultUserLevelInput!): Team!
     "Reset invite link"
@@ -388,6 +401,71 @@ export const typeDefs = gql`
     ): ImportTeamSamlMetadataResult!
   }
 `;
+
+/**
+ * Add a Stripe product to a subscription if it's not already part of it.
+ */
+async function addStripeProductToSubscription(input: {
+  stripeSubscriptionId: string;
+  productId: string;
+}) {
+  const { stripeSubscriptionId, productId } = input;
+  const [stripeSubscription, stripeProduct] = await Promise.all([
+    stripe.subscriptions.retrieve(stripeSubscriptionId),
+    stripe.products.retrieve(productId),
+  ]);
+
+  invariant(
+    stripeSubscription,
+    `Subscription ${stripeSubscriptionId} not found`,
+  );
+  invariant(stripeProduct, `Product ${productId} not found`);
+  invariant(
+    typeof stripeProduct.default_price === "string",
+    "Product default_price is undefined",
+  );
+
+  const alreadyBought = stripeSubscription.items.data.some(
+    (item) => item.price.product === stripeProduct.id,
+  );
+
+  // If the user has not already bought the product, we will add it to the subscription
+  if (!alreadyBought) {
+    await stripe.subscriptionItems.create({
+      subscription: stripeSubscriptionId,
+      price: stripeProduct.default_price,
+    });
+  }
+}
+
+/**
+ * Remove a Stripe product from a subscription if it's part of it.
+ */
+async function removeStripeProductFromSubscription(input: {
+  stripeSubscriptionId: string;
+  productId: string;
+}) {
+  const { stripeSubscriptionId, productId } = input;
+  const [stripeSubscription, stripeProduct] = await Promise.all([
+    stripe.subscriptions.retrieve(stripeSubscriptionId),
+    stripe.products.retrieve(productId),
+  ]);
+
+  invariant(
+    stripeSubscription,
+    `Subscription ${stripeSubscriptionId} not found`,
+  );
+  invariant(stripeProduct, `Product ${productId} not found`);
+
+  const item = stripeSubscription.items.data.find(
+    (item) => item.price.product === stripeProduct.id,
+  );
+
+  // If the user has bought the product, we will remove it from the subscription
+  if (item) {
+    await stripe.subscriptionItems.del(item.id);
+  }
+}
 
 export const resolvers: IResolvers = {
   TeamGithubMember: {
@@ -669,6 +747,15 @@ export const resolvers: IResolvers = {
         accountId: account.id,
       });
       return samlConfig ?? null;
+    },
+    samlPurchased: async (account, _args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+      invariant(account.teamId);
+      const team = await ctx.loaders.Team.load(account.teamId);
+      invariant(team);
+      return team.samlPurchased;
     },
     samlSpEntityId: (account) => {
       const values = getTeamSamlPublicValues(account.slug);
@@ -1392,35 +1479,10 @@ export const resolvers: IResolvers = {
           throw forbidden("GitHub SSO is not available on your current plan");
         }
 
-        const [stripeSubscription, stripeProduct] = await Promise.all([
-          stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
-          stripe.products.retrieve(config.get("stripe.githubSSOProductId")),
-        ]);
-
-        invariant(
-          stripeSubscription,
-          `Subscription ${subscription.stripeSubscriptionId} not found`,
-        );
-        invariant(
-          stripeProduct,
-          `Product ${config.get("stripe.githubSSOProductId")} not found`,
-        );
-        invariant(
-          typeof stripeProduct.default_price === "string",
-          "Product default_price is undefined",
-        );
-
-        const alreadyBought = stripeSubscription.items.data.some(
-          (item) => item.price.product === stripeProduct.id,
-        );
-
-        // If the user has not already bought the SSO product, we will add it to the subscription
-        if (!alreadyBought) {
-          await stripe.subscriptionItems.create({
-            subscription: subscription.stripeSubscriptionId,
-            price: stripeProduct.default_price,
-          });
-        }
+        await addStripeProductToSubscription({
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          productId: config.get("stripe.githubSSOProductId"),
+        });
       }
 
       // Enable SSO and add members in a transaction
@@ -1453,34 +1515,106 @@ export const resolvers: IResolvers = {
       const subscription = await manager.getActiveSubscription();
 
       if (subscription?.stripeSubscriptionId) {
-        const [stripeSubscription, stripeProduct] = await Promise.all([
-          stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
-          stripe.products.retrieve(config.get("stripe.githubSSOProductId")),
-        ]);
-
-        invariant(
-          stripeSubscription,
-          `Subscription ${subscription.stripeSubscriptionId} not found`,
-        );
-
-        invariant(
-          stripeProduct,
-          `Product ${config.get("stripe.githubSSOProductId")} not found`,
-        );
-
-        const item = stripeSubscription.items.data.find(
-          (item) => item.price.product === stripeProduct.id,
-        );
-
-        // If the user has bought the SSO product, we will remove it from the subscription
-        if (item) {
-          await stripe.subscriptionItems.del(item.id);
-        }
+        await removeStripeProductFromSubscription({
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          productId: config.get("stripe.githubSSOProductId"),
+        });
       }
 
       await Team.query().findById(teamAccount.teamId).patch({
         ssoGithubAccountId: null,
       });
+
+      return teamAccount;
+    },
+    enableSAMLSSOOnTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      const { teamId } = teamAccount;
+      invariant(teamId, "Account teamId is undefined");
+
+      const manager = teamAccount.$getSubscriptionManager();
+      const [plan, subscriptionStatus, subscription] = await Promise.all([
+        manager.getPlan(),
+        manager.getSubscriptionStatus(),
+        manager.getActiveSubscription(),
+      ]);
+
+      if (subscriptionStatus !== "active") {
+        throw forbidden("A valid subscription is required to enable SAML SSO");
+      }
+
+      const priced = !plan?.samlIncluded;
+
+      if (priced) {
+        if (!subscription) {
+          throw forbidden(
+            "A valid subscription is required to enable SAML SSO",
+          );
+        }
+
+        if (!subscription.stripeSubscriptionId) {
+          throw forbidden("SAML SSO is not available on your current plan");
+        }
+
+        await addStripeProductToSubscription({
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          productId: config.get("stripe.samlSSOProductId"),
+        });
+      }
+
+      await Team.query().findById(teamId).patch({
+        samlPurchased: true,
+      });
+
+      return teamAccount;
+    },
+    disableSAMLSSOOnTeam: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      const teamAccount = await getAdminAccount({
+        id: args.input.teamAccountId,
+        user: ctx.auth.user,
+      });
+
+      invariant(teamAccount.teamId, "Account teamId is undefined");
+
+      const manager = teamAccount.$getSubscriptionManager();
+      const [plan, subscription] = await Promise.all([
+        manager.getPlan(),
+        manager.getActiveSubscription(),
+      ]);
+
+      if (subscription?.stripeSubscriptionId) {
+        await removeStripeProductFromSubscription({
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          productId: config.get("stripe.samlSSOProductId"),
+        });
+      }
+
+      await Team.query().findById(teamAccount.teamId).patch({
+        samlPurchased: false,
+      });
+
+      // Without access to SAML, members can no longer login with it,
+      // so we stop enforcing it to avoid locking them out.
+      if (!plan?.samlIncluded) {
+        await TeamSamlConfig.query()
+          .where({ accountId: teamAccount.id })
+          .patch({
+            enforced: false,
+            enforcedAt: null,
+          });
+      }
 
       return teamAccount;
     },
@@ -1725,7 +1859,9 @@ export const resolvers: IResolvers = {
       });
 
       if (!(await checkHasAccessToSAML(teamAccount))) {
-        throw forbidden("SAML SSO is only available on Enterprise plan.");
+        throw forbidden(
+          "SAML SSO is not included in your plan. Enable the SAML SSO add-on to use it.",
+        );
       }
 
       const existing = await TeamSamlConfig.query().findOne({
@@ -1806,7 +1942,9 @@ export const resolvers: IResolvers = {
       });
 
       if (!(await checkHasAccessToSAML(teamAccount))) {
-        throw forbidden("SAML SSO is only available on Enterprise plan.");
+        throw forbidden(
+          "SAML SSO is not included in your plan. Enable the SAML SSO add-on to use it.",
+        );
       }
 
       return parseIdpMetadataXml(args.input.metadataXml);

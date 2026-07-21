@@ -19,6 +19,7 @@ import {
 } from "@/ui/Card";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -46,6 +47,7 @@ const _TeamFragment = graphql(`
       id
       ...GithubAccountLink_GithubAccount
     }
+    ...AddOnsPricingTable_Team
   }
 `);
 
@@ -57,50 +59,49 @@ const DisableGitHubSSOMutation = graphql(`
   }
 `);
 
-const DisableButton = memo(function DisableButton(props: {
-  teamAccountId: string;
-}) {
-  const [disable, { error, loading }] = useMutation(DisableGitHubSSOMutation, {
-    variables: {
-      teamAccountId: props.teamAccountId,
-    },
-    optimisticResponse: {
-      disableGitHubSSOOnTeam: {
-        id: props.teamAccountId,
-        ssoGithubAccount: null,
-      } as TeamGitHubSso_TeamFragment,
-    },
-    refetchQueries: ["TeamMembers_teamMembers"],
-  });
-  return (
-    <DialogTrigger>
-      <Button variant="secondary">Disable</Button>
-      <Modal>
-        <Dialog>
-          <DialogBody confirm>
-            <DialogTitle>Disable GitHub Single Sign-On</DialogTitle>
-            <DialogText>
-              Team members will no longer be synchronized from your GitHub
-              organization.
-            </DialogText>
-          </DialogBody>
-          <DialogFooter>
-            {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
-            <DialogDismiss>Cancel</DialogDismiss>
-            <Button
-              isDisabled={loading}
-              onPress={() => {
-                disable().catch(() => {});
-              }}
-            >
-              Disable
-            </Button>
-          </DialogFooter>
-        </Dialog>
-      </Modal>
-    </DialogTrigger>
-  );
-});
+export const DisableGitHubSSOButton = memo(
+  function DisableGitHubSSOButton(props: { teamAccountId: string }) {
+    const [disable, { error }] = useMutation(DisableGitHubSSOMutation, {
+      variables: {
+        teamAccountId: props.teamAccountId,
+      },
+      optimisticResponse: {
+        disableGitHubSSOOnTeam: {
+          id: props.teamAccountId,
+          ssoGithubAccount: null,
+        } as TeamGitHubSso_TeamFragment,
+      },
+      refetchQueries: ["TeamMembers_teamMembers"],
+    });
+    return (
+      <DialogTrigger>
+        <Button variant="secondary">Disable</Button>
+        <Modal>
+          <Dialog role="alertdialog">
+            <DialogBody>
+              <DialogTitle>Disable GitHub Single Sign-On</DialogTitle>
+              <DialogText>
+                Team members will no longer be synchronized from your GitHub
+                organization.
+              </DialogText>
+            </DialogBody>
+            <DialogFooter>
+              {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
+              <DialogDismiss>Cancel</DialogDismiss>
+              <DialogActionButton
+                onAction={async () => {
+                  await disable().catch(() => {});
+                }}
+              >
+                Disable
+              </DialogActionButton>
+            </DialogFooter>
+          </Dialog>
+        </Modal>
+      </DialogTrigger>
+    );
+  },
+);
 
 export function TeamGitHubSSO(props: {
   team: DocumentType<typeof _TeamFragment>;
@@ -141,10 +142,10 @@ export function TeamGitHubSSO(props: {
           </div>
         )}
         {team.ssoGithubAccount ? (
-          <DisableButton teamAccountId={team.id} />
+          <DisableGitHubSSOButton teamAccountId={team.id} />
         ) : (
           <ConfigureGitHubSSO
-            teamAccountId={team.id}
+            team={team}
             priced={priced}
             disabledReason={
               !hasActiveSubscription

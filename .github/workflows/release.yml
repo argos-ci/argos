@@ -256,6 +256,7 @@ jobs:
             REDIS_URL=/production/redis_url
             RESEND_API_KEY=/production/resend_api_key
             RESEND_WEBHOOK_SECRET=/production/resend_webhook_secret
+            SAML_SSO_STRIPE_PRODUCT_ID=/production/saml_sso_stripe_product_id
             SCREENSHOT_STRIPE_PRODUCT_ID=/production/screenshot_stripe_product_id
             SENTRY_AUTH_TOKEN=/production/sentry_auth_token
             SENTRY_CLIENT_DSN=/production/sentry_client_dsn

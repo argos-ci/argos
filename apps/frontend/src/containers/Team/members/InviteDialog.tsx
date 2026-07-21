@@ -11,6 +11,7 @@ import { Button, ButtonIcon } from "@/ui/Button";
 import { CopyButton } from "@/ui/CopyButton";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -220,7 +221,7 @@ function ResetInviteLinkButton(props: {
 }) {
   const client = useApolloClient();
   return (
-    <Button
+    <DialogActionButton
       onAction={async () => {
         await client.mutate({
           mutation: ResetInviteLinkMutation,
@@ -233,6 +234,6 @@ function ResetInviteLinkButton(props: {
       isDisabled={props.isDisabled}
     >
       Reset Invite Link
-    </Button>
+    </DialogActionButton>
   );
 }

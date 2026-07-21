@@ -18,7 +18,11 @@ import {
 } from "react-hook-form";
 import z from "zod";
 
-import { CONTACT_HREF } from "@/constants";
+import { SAML_SSO_PRICING } from "@/constants";
+import {
+  DisableSAMLSSOAddOnButton,
+  EnableSAMLSSOAddOnButton,
+} from "@/containers/Team/SAMLSSOAddOn";
 import { DocumentType, graphql } from "@/gql";
 import { Button, LinkButton } from "@/ui/Button";
 import {
@@ -66,6 +70,8 @@ const _TeamFragment = graphql(`
       displayName
       samlIncluded
     }
+    samlPurchased
+    ...SAMLSSOAddOn_Team
     samlSpEntityId
     samlAcsUrl
     samlMetadataUrl
@@ -132,6 +138,7 @@ export function TeamSAMLSSO(props: {
 }) {
   const { team } = props;
   const hasSamlIncluded = team.plan?.samlIncluded;
+  const hasSamlAccess = hasSamlIncluded || team.samlPurchased;
   const apolloClient = useApolloClient();
   const toggleEnable = (enabled: boolean) => {
     invariant(team.samlSso);
@@ -187,7 +194,7 @@ export function TeamSAMLSSO(props: {
               </div>
               <div className="flex items-center gap-3">
                 <DialogTrigger>
-                  <Button variant="secondary" isDisabled={!hasSamlIncluded}>
+                  <Button variant="secondary" isDisabled={!hasSamlAccess}>
                     Manage
                   </Button>
                   <Modal>
@@ -288,7 +295,7 @@ export function TeamSAMLSSO(props: {
               </p>
             </div>
             <DialogTrigger>
-              <Button variant="secondary" isDisabled={!hasSamlIncluded}>
+              <Button variant="secondary" isDisabled={!hasSamlAccess}>
                 Configure
               </Button>
               <Modal>
@@ -312,15 +319,15 @@ export function TeamSAMLSSO(props: {
       ) : (
         <CardFooter className="flex items-center justify-between gap-4">
           <div>
-            SAML is only available on the{" "}
-            <Link href="https://argos-ci.com/pricing" target="_blank">
-              Enterprise plan
-            </Link>
-            .
+            This feature is available as part of the SAML SSO add-on,{" "}
+            {team.samlPurchased ? "enabled" : "available"} for an additional{" "}
+            <strong>${SAML_SSO_PRICING} per month</strong>.
           </div>
-          <LinkButton href={CONTACT_HREF} target="_blank">
-            Contact Sales
-          </LinkButton>
+          {team.samlPurchased ? (
+            <DisableSAMLSSOAddOnButton teamAccountId={team.id} />
+          ) : (
+            <EnableSAMLSSOAddOnButton team={team} />
+          )}
         </CardFooter>
       )}
     </Card>

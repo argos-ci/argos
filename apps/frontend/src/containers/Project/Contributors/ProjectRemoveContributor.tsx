@@ -55,8 +55,8 @@ export const LeaveProjectDialog = memo(
       },
     );
     return (
-      <Dialog size="medium">
-        <DialogBody confirm>
+      <Dialog size="medium" role="alertdialog">
+        <DialogBody>
           <DialogTitle>Remove me as contributor</DialogTitle>
           <DialogText>
             You are about to remove you as contributor of the project{" "}
@@ -120,8 +120,8 @@ export const RemoveFromProjectDialog = memo(
       },
     );
     return (
-      <Dialog size="medium">
-        <DialogBody confirm>
+      <Dialog size="medium" role="alertdialog">
+        <DialogBody>
           <DialogTitle>Remove Project contributor</DialogTitle>
           <DialogText>
             You are about to remove the following Project contributor, are you

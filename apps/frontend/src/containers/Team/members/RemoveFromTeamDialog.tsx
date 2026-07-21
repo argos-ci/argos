@@ -83,8 +83,8 @@ export const RemoveFromTeamDialog = memo(
       },
     );
     return (
-      <Dialog>
-        <DialogBody confirm>
+      <Dialog role="alertdialog">
+        <DialogBody>
           <DialogTitle>Remove Team Member</DialogTitle>
           <DialogText>
             You are about to remove the following Team Member, are you sure you

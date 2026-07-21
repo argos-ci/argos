@@ -2340,6 +2340,7 @@ CREATE TABLE public.teams (
     "inviteSecret" character varying(255),
     "ssoGithubAccountId" bigint,
     "defaultUserLevel" text NOT NULL,
+    "samlPurchased" boolean DEFAULT false NOT NULL,
     CONSTRAINT "teams_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['member'::text, 'contributor'::text])))
 );
 
@@ -5675,3 +5676,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026071
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260714130000_seed-argos-cli-oauth-client.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260715120000_oauth-grants-per-device.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260717120000_build-search-indexes.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260721120000_saml-purchased.js', 1, NOW());

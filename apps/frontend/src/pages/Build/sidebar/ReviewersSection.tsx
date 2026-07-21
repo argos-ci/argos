@@ -24,9 +24,9 @@ import { useProjectPermissions } from "@/containers/Project/PermissionsContext";
 import { DocumentType, graphql } from "@/gql";
 import { BuildStatus, BuildType, ProjectPermission } from "@/gql/graphql";
 import { useProjectParams } from "@/pages/Project/ProjectParams";
-import { Button } from "@/ui/Button";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -219,15 +219,14 @@ export function ReviewersSection(props: { build: Build }) {
             setReviewToDismiss(null);
           }
         }}
-        isDismissable={!dismissReviewState.loading}
+        isDismissable
       >
         {reviewToDismiss ? (
           <DismissReviewDialog
             review={reviewToDismiss}
-            loading={dismissReviewState.loading}
             error={dismissReviewState.error}
-            onDismiss={() => {
-              dismissReview({
+            onDismiss={async () => {
+              await dismissReview({
                 variables: {
                   input: {
                     reviewId: reviewToDismiss.id,
@@ -438,16 +437,15 @@ function ReviewActionsMenu(props: { review: Review; onDismiss: () => void }) {
 
 function DismissReviewDialog(props: {
   review: Review;
-  loading: boolean;
   error: unknown;
-  onDismiss: () => void;
+  onDismiss: () => Promise<void>;
 }) {
   const reviewerName =
     props.review.user?.name || props.review.user?.slug || "this user";
 
   return (
-    <Dialog size="medium">
-      <DialogBody confirm>
+    <Dialog size="medium" role="alertdialog">
+      <DialogBody>
         <DialogTitle>Dismiss review</DialogTitle>
         <DialogText>
           Dismissing <strong>{reviewerName}</strong>&apos;s review can affect
@@ -458,14 +456,10 @@ function DismissReviewDialog(props: {
         {props.error ? (
           <ErrorMessage>{getErrorMessage(props.error)}</ErrorMessage>
         ) : null}
-        <DialogDismiss isDisabled={props.loading}>Cancel</DialogDismiss>
-        <Button
-          isDisabled={props.loading}
-          variant="destructive"
-          onPress={props.onDismiss}
-        >
+        <DialogDismiss>Cancel</DialogDismiss>
+        <DialogActionButton variant="destructive" onAction={props.onDismiss}>
           Dismiss review
-        </Button>
+        </DialogActionButton>
       </DialogFooter>
     </Dialog>
   );
