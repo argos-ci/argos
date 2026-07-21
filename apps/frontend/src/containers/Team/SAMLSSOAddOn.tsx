@@ -110,9 +110,12 @@ function EnableSAMLSSODialog(props: {
             <DialogDismiss>Cancel</DialogDismiss>
             <DialogActionButton
               onAction={async () => {
-                await enable()
-                  .then(() => close())
-                  .catch(() => {});
+                try {
+                  await enable();
+                  close();
+                } catch {
+                  // Ignore
+                }
               }}
             >
               Confirm and Pay

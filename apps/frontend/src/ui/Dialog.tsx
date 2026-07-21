@@ -134,6 +134,7 @@ export function DialogActionButton(
   return (
     <Button
       {...rest}
+      isPending={actionContext.isPending ?? undefined}
       onAction={async () => {
         actionContext.setIsPending(true);
         try {

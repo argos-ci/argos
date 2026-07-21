@@ -49,10 +49,10 @@ export function Modal(props: ModalProps) {
   // pending while it's closing: resetting the state would re-enable its
   // content during the exit animation.
   const closeRequestedRef = useRef(false);
-  const actionContextValue = useMemo(
+  const actionContextValue: ActionContextValue = useMemo(
     () => ({
       isPending,
-      setIsPending: (isPending: boolean) => {
+      setIsPending: (isPending) => {
         if (!isPending && closeRequestedRef.current) {
           return;
         }
