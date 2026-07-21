@@ -1245,9 +1245,9 @@ export async function seed() {
     },
     {
       name: "pro",
-      includedScreenshots: 15000,
+      includedScreenshots: 35000,
       githubPlanId: null,
-      stripeProductId: "prod_Njgin72JdGT9Yu",
+      stripeProductId: "prod_T1xSYCXWLyCxCH",
       usageBased: true,
       githubSsoIncluded: true,
       fineGrainedAccessControlIncluded: true,

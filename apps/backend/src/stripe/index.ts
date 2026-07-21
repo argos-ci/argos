@@ -516,14 +516,18 @@ export async function updateStripeUsage(input: {
  * Get the reference Pro plan used for subscription.
  */
 export async function getStripeProPlanOrThrow(): Promise<Plan> {
-  return Plan.query()
-    .findOne({
-      name: "pro",
-      usageBased: true,
-      // We have a legacy Pro plan that includes 15K
-      includedScreenshots: 35000,
-    })
-    .throwIfNotFound();
+  const plan = await Plan.query().findOne({
+    name: "pro",
+    usageBased: true,
+    // We have a legacy Pro plan that includes 15K
+    includedScreenshots: 35000,
+  });
+
+  if (!plan) {
+    throw new Error("Pro plan not found in database");
+  }
+
+  return plan;
 }
 
 async function updateSubscriptionsFromCustomer(

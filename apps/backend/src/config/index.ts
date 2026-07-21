@@ -380,7 +380,7 @@ export function createConfig() {
         doc: "SAML SSO Stripe product ID",
         format: String,
         env: "SAML_SSO_STRIPE_PRODUCT_ID",
-        default: "prod_SAML_SSO_PLACEHOLDER",
+        default: "prod_UvaZbxEF2tntAv",
       },
       screenshotProductId: {
         doc: "Additional screenshots Stripe product ID",
