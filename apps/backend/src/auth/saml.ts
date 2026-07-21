@@ -3,7 +3,7 @@ import * as samlify from "samlify";
 import z from "zod";
 
 import config from "@/config";
-import type { Account, TeamSamlConfig } from "@/database/models";
+import { Team, type Account, type TeamSamlConfig } from "@/database/models";
 import { generateRandomString } from "@/database/services/crypto";
 import { boom } from "@/util/error";
 import { getRedisClient } from "@/util/redis/client";
@@ -446,7 +446,16 @@ export async function parseAndValidateSamlLoginResponse(args: {
 
 export async function checkHasAccessToSAML(account: Account) {
   const plan = await account.$getSubscriptionManager().getPlan();
-  return plan?.samlIncluded ?? false;
+  if (plan?.samlIncluded) {
+    return true;
+  }
+  if (!account.teamId) {
+    return false;
+  }
+  const team = await Team.query()
+    .select("samlPurchased")
+    .findById(account.teamId);
+  return team?.samlPurchased ?? false;
 }
 
 function getStringLocation(location: string | object) {

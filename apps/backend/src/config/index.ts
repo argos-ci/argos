@@ -376,6 +376,12 @@ export function createConfig() {
         env: "GITHUB_SSO_STRIPE_PRODUCT_ID",
         default: "prod_PZKO1PwFyJfJyU",
       },
+      samlSSOProductId: {
+        doc: "SAML SSO Stripe product ID",
+        format: String,
+        env: "SAML_SSO_STRIPE_PRODUCT_ID",
+        default: "prod_SAML_SSO_PLACEHOLDER",
+      },
       screenshotProductId: {
         doc: "Additional screenshots Stripe product ID",
         format: String,

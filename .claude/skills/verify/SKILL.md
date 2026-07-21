@@ -60,6 +60,10 @@ CI works because it runs inside `mcr.microsoft.com/playwright:v1.61.0-jammy`.
 
 ## Useful facts
 
+- Seeding an active Stripe subscription: `subscriptions` has a
+  `check_stripe_fields` constraint — `provider: "stripe"` requires
+  `stripeSubscriptionId` (any string) AND `subscriberId` (a `users.id`,
+  not an account id).
 - Build scenario: build 6 = "changes detected" (2 failures, 6 changed,
   8 added, 2 removed, 2 unchanged), build 7 = accepted, build 8 = rejected.
   All buckets branch `main`, bucket name `default`.

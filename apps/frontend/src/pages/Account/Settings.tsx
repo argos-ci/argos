@@ -18,6 +18,7 @@ import { useAuthTokenPayload } from "@/containers/Auth";
 import { SettingsLayout, SettingsPage } from "@/containers/Layout";
 import { PlanCard } from "@/containers/PlanCard";
 import { TeamAccessRole } from "@/containers/Team/AccessRole";
+import { TeamAddOns } from "@/containers/Team/AddOns";
 import { TeamDelete } from "@/containers/Team/Delete";
 import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
@@ -66,6 +67,7 @@ const AccountQuery = graphql(`
       ...AccountChangeName_Account
       ...AccountChangeSlug_Account
       ...PlanCard_Account
+      ...TeamAddOns_Team
       ...AccountGitLab_Account
       ...TeamGitHubSSO_Team
       ...TeamSAMLSSO_Team
@@ -199,6 +201,7 @@ function PageContent() {
       element: (
         <>
           {hasAdminPermission && <PlanCard account={account} />}
+          {isTeam && hasAdminPermission && <TeamAddOns team={account} />}
           {isTeam && account.subscription ? (
             <TeamSpendManagement account={account} />
           ) : null}

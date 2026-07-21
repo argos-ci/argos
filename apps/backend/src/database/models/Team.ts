@@ -33,6 +33,7 @@ export class Team extends Model {
         properties: {
           inviteSecret: { type: ["null", "string"] },
           ssoGithubAccountId: { type: ["null", "string"] },
+          samlPurchased: { type: "boolean" },
           defaultUserLevel: { type: "string", enum: ["member", "contributor"] },
         },
       },
@@ -41,6 +42,7 @@ export class Team extends Model {
 
   inviteSecret!: string | null;
   ssoGithubAccountId!: string | null;
+  samlPurchased!: boolean;
   defaultUserLevel!: "member" | "contributor";
 
   static override get relationMappings(): RelationMappings {
