@@ -37,6 +37,7 @@ const _TeamFragment = graphql(`
       id
     }
     ...SAMLSSOAddOn_Team
+    ...AddOnsPricingTable_Team
   }
 `);
 
@@ -76,7 +77,7 @@ export function TeamAddOns(props: {
                 <DisableGitHubSSOButton teamAccountId={team.id} />
               ) : (
                 <ConfigureGitHubSSO
-                  teamAccountId={team.id}
+                  team={team}
                   priced={!githubSsoIncluded}
                   disabledReason={
                     !hasActiveSubscription

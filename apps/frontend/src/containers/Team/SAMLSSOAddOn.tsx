@@ -1,6 +1,7 @@
 import { useMutation } from "@apollo/client/react";
 
 import { SAML_SSO_PRICING } from "@/constants";
+import { AddOnsPricingTable } from "@/containers/Team/AddOnsPricingTable";
 import { DocumentType, graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
@@ -28,6 +29,7 @@ const _TeamFragment = graphql(`
       samlIncluded
       usageBased
     }
+    ...AddOnsPricingTable_Team
   }
 `);
 
@@ -73,16 +75,18 @@ export function EnableSAMLSSOAddOnButton(props: {
     <DialogTrigger>
       <Button>Enable</Button>
       <Modal>
-        <EnableSAMLSSODialog teamAccountId={team.id} />
+        <EnableSAMLSSODialog team={team} />
       </Modal>
     </DialogTrigger>
   );
 }
 
-function EnableSAMLSSODialog(props: { teamAccountId: string }) {
+function EnableSAMLSSODialog(props: {
+  team: DocumentType<typeof _TeamFragment>;
+}) {
   const [enable, { error, loading }] = useMutation(EnableSAMLSSOMutation, {
     variables: {
-      teamAccountId: props.teamAccountId,
+      teamAccountId: props.team.id,
     },
     refetchQueries: ["AccountSettings_account"],
   });
@@ -98,18 +102,7 @@ function EnableSAMLSSODialog(props: { teamAccountId: string }) {
               subscription and your credit card will be charged at the end of
               your next billing cycle.
             </DialogText>
-            <div className="text-low my-2 flex justify-between font-bold">
-              <div>SAML SSO</div>
-              <div>${SAML_SSO_PRICING} / month</div>
-            </div>
-            <hr className="my-2 border-0 border-t" />
-            <div className="my-2 flex justify-between font-bold">
-              <div>Total</div>
-              <div>${SAML_SSO_PRICING} / month</div>
-            </div>
-            <p className="text-low mt-2 text-right text-sm">
-              * Plus applicable tax and fees
-            </p>
+            <AddOnsPricingTable team={props.team} enabling="saml-sso" />
           </DialogBody>
           <DialogFooter>
             {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}

@@ -46,6 +46,7 @@ const _TeamFragment = graphql(`
       id
       ...GithubAccountLink_GithubAccount
     }
+    ...AddOnsPricingTable_Team
   }
 `);
 
@@ -91,8 +92,8 @@ export const DisableGitHubSSOButton = memo(
               <DialogDismiss>Cancel</DialogDismiss>
               <Button
                 isDisabled={loading}
-                onPress={() => {
-                  disable().catch(() => {});
+                onPress={async () => {
+                  await disable().catch(() => {});
                 }}
               >
                 Disable
@@ -147,7 +148,7 @@ export function TeamGitHubSSO(props: {
           <DisableGitHubSSOButton teamAccountId={team.id} />
         ) : (
           <ConfigureGitHubSSO
-            teamAccountId={team.id}
+            team={team}
             priced={priced}
             disabledReason={
               !hasActiveSubscription
