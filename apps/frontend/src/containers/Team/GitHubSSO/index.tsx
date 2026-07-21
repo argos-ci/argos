@@ -19,6 +19,7 @@ import {
 } from "@/ui/Card";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -60,21 +61,18 @@ const DisableGitHubSSOMutation = graphql(`
 
 export const DisableGitHubSSOButton = memo(
   function DisableGitHubSSOButton(props: { teamAccountId: string }) {
-    const [disable, { error, loading }] = useMutation(
-      DisableGitHubSSOMutation,
-      {
-        variables: {
-          teamAccountId: props.teamAccountId,
-        },
-        optimisticResponse: {
-          disableGitHubSSOOnTeam: {
-            id: props.teamAccountId,
-            ssoGithubAccount: null,
-          } as TeamGitHubSso_TeamFragment,
-        },
-        refetchQueries: ["TeamMembers_teamMembers"],
+    const [disable, { error }] = useMutation(DisableGitHubSSOMutation, {
+      variables: {
+        teamAccountId: props.teamAccountId,
       },
-    );
+      optimisticResponse: {
+        disableGitHubSSOOnTeam: {
+          id: props.teamAccountId,
+          ssoGithubAccount: null,
+        } as TeamGitHubSso_TeamFragment,
+      },
+      refetchQueries: ["TeamMembers_teamMembers"],
+    });
     return (
       <DialogTrigger>
         <Button variant="secondary">Disable</Button>
@@ -90,14 +88,13 @@ export const DisableGitHubSSOButton = memo(
             <DialogFooter>
               {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
               <DialogDismiss>Cancel</DialogDismiss>
-              <Button
-                isDisabled={loading}
+              <DialogActionButton
                 onAction={async () => {
                   await disable().catch(() => {});
                 }}
               >
                 Disable
-              </Button>
+              </DialogActionButton>
             </DialogFooter>
           </Dialog>
         </Modal>

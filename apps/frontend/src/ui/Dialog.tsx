@@ -118,6 +118,34 @@ export function DialogDismiss(props: {
   );
 }
 
+/**
+ * Run an asynchronous action from a dialog button. While the action is
+ * running, the button is pending and the modal is flagged as pending: it can't
+ * be dismissed (Escape / backdrop) and `DialogDismiss` buttons are disabled.
+ * Must be used within a Modal. For form dialogs use `<Form>`, which wires this
+ * up automatically.
+ */
+export function DialogActionButton(
+  props: ButtonProps & { onAction: NonNullable<ButtonProps["onAction"]> },
+) {
+  const { onAction, ...rest } = props;
+  const actionContext = use(ModalActionContext);
+  invariant(actionContext, "DialogActionButton must be used within a Modal");
+  return (
+    <Button
+      {...rest}
+      onAction={async () => {
+        actionContext.setIsPending(true);
+        try {
+          await onAction();
+        } finally {
+          actionContext.setIsPending(false);
+        }
+      }}
+    />
+  );
+}
+
 type DialogProps = RACDialogProps & {
   ref?: React.Ref<HTMLDivElement>;
   size?: "auto" | "medium";
@@ -143,6 +171,7 @@ export function Dialog({
         className={clsx(
           className,
           "relative max-h-[inherit] max-w-full focus:outline-hidden",
+          role === "alertdialog" && size === "auto" ? "w-xl" : null,
           size === "medium" && "w-xl",
           scrollable === false ? "overflow-hidden" : "overflow-auto",
         )}

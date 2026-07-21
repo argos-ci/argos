@@ -8,10 +8,10 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { OAuthAppLogo, VerifiedBadge } from "@/containers/OAuthAppLogo";
 import { ProviderMenuButton } from "@/containers/User/ui";
 import { DocumentType, graphql } from "@/gql";
-import { Button } from "@/ui/Button";
 import { Card, CardBody, CardParagraph, CardTitle } from "@/ui/Card";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -23,7 +23,7 @@ import {
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { List, ListEmpty, ListHeaderRow, ListRow } from "@/ui/List";
 import { Menu, MenuItem, MenuItemIcon } from "@/ui/Menu";
-import { Modal, useModalAction } from "@/ui/Modal";
+import { Modal } from "@/ui/Modal";
 import { Popover } from "@/ui/Popover";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
@@ -77,7 +77,6 @@ function RevokeAppDialog(props: {
 }) {
   const { accountId, id, name } = props;
   const state = useOverlayTriggerState();
-  const [isPending, startDialogAction] = useModalAction();
   const [revoke, { error }] = useMutation(RevokeOAuthGrantMutation, {
     variables: { input: { id } },
     update(cache) {
@@ -113,23 +112,20 @@ function RevokeAppDialog(props: {
           <ErrorMessage className="flex-1">{error.message}</ErrorMessage>
         )}
         <DialogDismiss>Cancel</DialogDismiss>
-        <Button
+        <DialogActionButton
           variant="destructive"
-          isPending={isPending}
-          onPress={() =>
-            startDialogAction(async () => {
-              try {
-                await revoke();
-                state.close();
-                toast.success("Access revoked");
-              } catch {
-                // Surfaced via the mutation's `error` state above.
-              }
-            })
-          }
+          onAction={async () => {
+            try {
+              await revoke();
+              state.close();
+              toast.success("Access revoked");
+            } catch {
+              // Surfaced via the mutation's `error` state above.
+            }
+          }}
         >
           Revoke access
-        </Button>
+        </DialogActionButton>
       </DialogFooter>
     </Dialog>
   );

@@ -1,4 +1,4 @@
-import { createContext, use, useMemo, useState } from "react";
+import { createContext, useMemo, useState } from "react";
 import { clsx } from "clsx";
 import {
   ModalOverlay,
@@ -29,41 +29,6 @@ interface ActionContextValue {
 export const ModalActionContext = createContext<ActionContextValue | null>(
   null,
 );
-
-/**
- * Run an imperative dialog action (e.g. a mutation on a confirm button — not a
- * form submit) while flagging the modal as pending, so it can't be dismissed
- * mid-action. For form dialogs use `<Form>`, which wires this up automatically.
- * Must be used within a Modal.
- *
- * @example
- * const state = useOverlayTriggerState();
- * const [isPending, startDialogAction] = useModalAction();
- * const [mutate] = useMutation(...);
- * // ...
- * <Button
- *   isPending={isPending}
- *   onPress={() =>
- *     startDialogAction(async () => {
- *       await mutate();
- *       state.close();
- *     })
- *   }
- * />
- */
-export function useModalAction() {
-  const context = use(ModalActionContext);
-  if (!context) {
-    throw new Error("useModalAction must be used within a Modal");
-  }
-  const startDialogAction = (action: () => Promise<void>) => {
-    context.setIsPending(true);
-    return action().finally(() => {
-      context.setIsPending(false);
-    });
-  };
-  return [context.isPending, startDialogAction] as const;
-}
 
 export type ModalProps = ModalOverlayProps;
 

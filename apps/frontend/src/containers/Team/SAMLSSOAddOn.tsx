@@ -7,6 +7,7 @@ import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
+  DialogActionButton,
   DialogBody,
   DialogDismiss,
   DialogFooter,
@@ -84,7 +85,7 @@ export function EnableSAMLSSOAddOnButton(props: {
 function EnableSAMLSSODialog(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
-  const [enable, { error, loading }] = useMutation(EnableSAMLSSOMutation, {
+  const [enable, { error }] = useMutation(EnableSAMLSSOMutation, {
     variables: {
       teamAccountId: props.team.id,
     },
@@ -107,16 +108,15 @@ function EnableSAMLSSODialog(props: {
           <DialogFooter>
             {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
             <DialogDismiss>Cancel</DialogDismiss>
-            <Button
-              isDisabled={loading}
-              onPress={() => {
-                enable()
+            <DialogActionButton
+              onAction={async () => {
+                await enable()
                   .then(() => close())
                   .catch(() => {});
               }}
             >
               Confirm and Pay
-            </Button>
+            </DialogActionButton>
           </DialogFooter>
         </>
       )}
@@ -125,7 +125,7 @@ function EnableSAMLSSODialog(props: {
 }
 
 export function DisableSAMLSSOAddOnButton(props: { teamAccountId: string }) {
-  const [disable, { error, loading }] = useMutation(DisableSAMLSSOMutation, {
+  const [disable, { error }] = useMutation(DisableSAMLSSOMutation, {
     variables: {
       teamAccountId: props.teamAccountId,
     },
@@ -148,16 +148,15 @@ export function DisableSAMLSSOAddOnButton(props: { teamAccountId: string }) {
               <DialogFooter>
                 {error && <ErrorMessage>{getErrorMessage(error)}</ErrorMessage>}
                 <DialogDismiss>Cancel</DialogDismiss>
-                <Button
-                  isDisabled={loading}
-                  onPress={() => {
-                    disable()
+                <DialogActionButton
+                  onAction={async () => {
+                    await disable()
                       .then(() => close())
                       .catch(() => {});
                   }}
                 >
                   Disable
-                </Button>
+                </DialogActionButton>
               </DialogFooter>
             </>
           )}
