@@ -565,13 +565,10 @@ export class Account extends Model {
 
       if (usageBased) {
         if (activeSubscription?.status === "trialing") {
-          // If trialing and a payment method is filled
-          // then we allow the user to go over capacity
-          if (activeSubscription.paymentMethodFilled) {
-            return null;
-          }
-          // If trialing and a payment method is not filled
-          // then we don't allow the user to go over capacity
+          // Stripe never bills the usage consumed during a trial period, so
+          // going over capacity has to be reported whether or not a payment
+          // method is filled. Builds end the trial to unlock the usage when a
+          // payment method is filled, and are rejected otherwise.
           return consumptionRatio > 1 ? "trialing" : null;
         }
         // If the plan is usage based, and the user is not trialing

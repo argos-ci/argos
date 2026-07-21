@@ -174,6 +174,106 @@ describe("Account", () => {
     });
   });
 
+  describe("#checkIsOutOfCapacity", () => {
+    async function createUsageBasedTrial(props: {
+      accountId: string;
+      paymentMethodFilled: boolean;
+    }) {
+      const plan = await factory.Plan.create({
+        usageBased: true,
+        includedScreenshots: 10,
+      });
+      return factory.Subscription.create({
+        planId: plan.id,
+        accountId: props.accountId,
+        status: "trialing",
+        paymentMethodFilled: props.paymentMethodFilled,
+      });
+    }
+
+    it("returns null when the trial stays within the included screenshots", async ({
+      fixture,
+    }) => {
+      await createUsageBasedTrial({
+        accountId: fixture.account.id,
+        paymentMethodFilled: true,
+      });
+      await fixture.bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 10,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      await expect(manager.checkIsOutOfCapacity()).resolves.toBeNull();
+    });
+
+    // Stripe never bills the usage consumed during a trial period, so a filled
+    // payment method must not unlock it on its own.
+    it("returns trialing when the trial goes over capacity with a payment method", async ({
+      fixture,
+    }) => {
+      await createUsageBasedTrial({
+        accountId: fixture.account.id,
+        paymentMethodFilled: true,
+      });
+      await fixture.bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 11,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      await expect(manager.checkIsOutOfCapacity()).resolves.toBe("trialing");
+    });
+
+    it("returns trialing when the trial goes over capacity without a payment method", async ({
+      fixture,
+    }) => {
+      await createUsageBasedTrial({
+        accountId: fixture.account.id,
+        paymentMethodFilled: false,
+      });
+      await fixture.bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 11,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      await expect(manager.checkIsOutOfCapacity()).resolves.toBe("trialing");
+    });
+
+    it("returns null when an active usage based plan goes over capacity", async ({
+      fixture,
+    }) => {
+      const plan = await factory.Plan.create({
+        usageBased: true,
+        includedScreenshots: 10,
+      });
+      await factory.Subscription.create({
+        planId: plan.id,
+        accountId: fixture.account.id,
+        status: "active",
+      });
+      await fixture.bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 100,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      await expect(manager.checkIsOutOfCapacity()).resolves.toBeNull();
+    });
+
+    it("returns flat-rate when a flat rate plan goes over capacity", async ({
+      fixture,
+    }) => {
+      await factory.Subscription.create({
+        planId: fixture.plans[1]!.id,
+        accountId: fixture.account.id,
+      });
+      await fixture.bucket1.$query().patch({
+        complete: true,
+        screenshotCount: 12,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      await expect(manager.checkIsOutOfCapacity()).resolves.toBe("flat-rate");
+    });
+  });
+
   describe("#getPlan", () => {
     describe("with subscription", () => {
       it("returns subscription plan", async ({ fixture }) => {

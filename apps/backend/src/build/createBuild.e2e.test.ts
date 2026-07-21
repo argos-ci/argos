@@ -1,13 +1,26 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import type Stripe from "stripe";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Project } from "@/database/models";
+import type { Project, Subscription } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import * as notification from "@/notification";
+import { stripe } from "@/stripe";
+import {
+  ENDED_TRIAL_STRIPE_SUBSCRIPTION,
+  TRIAL_STRIPE_PRODUCT_ID,
+  TRIAL_STRIPE_SUBSCRIPTION_ID,
+  TRIALING_STRIPE_SUBSCRIPTION,
+} from "@/stripe/fixtures/trial-subscription";
 
 import { createBuild } from "./createBuild";
 
 describe("build", () => {
   beforeEach(async () => {
     await setupDatabase();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe("createBuild", () => {
@@ -21,6 +34,115 @@ describe("build", () => {
       project = await factory.Project.create({
         accountId: account.id,
         githubRepositoryId: null,
+      });
+    });
+
+    describe("with an over-capacity trialing subscription", () => {
+      let trialProject: Project;
+      let trialSubscription: Subscription;
+
+      beforeEach(async () => {
+        const [team, user, plan] = await Promise.all([
+          factory.Team.create(),
+          factory.User.create(),
+          factory.Plan.create({
+            usageBased: true,
+            includedScreenshots: 10,
+            stripeProductId: TRIAL_STRIPE_PRODUCT_ID,
+          }),
+        ]);
+        const trialAccount = await factory.TeamAccount.create({
+          teamId: team.id,
+        });
+        await factory.TeamUser.create({
+          teamId: team.id,
+          userId: user.id,
+          userLevel: "owner",
+        });
+        trialSubscription = await factory.Subscription.create({
+          accountId: trialAccount.id,
+          planId: plan.id,
+          subscriberId: user.id,
+          provider: "stripe",
+          stripeSubscriptionId: TRIAL_STRIPE_SUBSCRIPTION_ID,
+          status: "trialing",
+          paymentMethodFilled: true,
+        });
+        trialProject = await factory.Project.create({
+          accountId: trialAccount.id,
+          githubRepositoryId: null,
+        });
+        await factory.ScreenshotBucket.create({
+          projectId: trialProject.id,
+          complete: true,
+          screenshotCount: 11,
+        });
+      });
+
+      function createTrialBuild() {
+        return createBuild({
+          project: trialProject,
+          prHeadCommit: null,
+          prNumber: null,
+          argosSdk: "@argos-ci/core@3.2.0",
+          baseBranch: "main",
+          baseCommit: null,
+          commit: "7c96c8120dc539201c9ef3e2db8a1671585ac69e",
+          branch: "main",
+          runAttempt: null,
+          runId: null,
+          ciProvider: "github-actions",
+          mode: "ci",
+          buildName: null,
+          parallel: null,
+          parentCommits: null,
+          skipped: null,
+          mergeQueue: false,
+          subset: false,
+        });
+      }
+
+      it("ends the trial and creates the build", async () => {
+        vi.spyOn(stripe.subscriptions, "retrieve").mockResolvedValue(
+          TRIALING_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+        );
+        const update = vi
+          .spyOn(stripe.subscriptions, "update")
+          .mockResolvedValue(
+            ENDED_TRIAL_STRIPE_SUBSCRIPTION as Stripe.Response<Stripe.Subscription>,
+          );
+        const send = vi
+          .spyOn(notification, "sendNotification")
+          .mockResolvedValue(undefined);
+
+        const build = await createTrialBuild();
+
+        expect(build.id).toBeDefined();
+        expect(update).toHaveBeenCalledWith(TRIAL_STRIPE_SUBSCRIPTION_ID, {
+          trial_end: "now",
+        });
+        const subscription = await trialSubscription.$query();
+        expect(subscription.status).toBe("active");
+        expect(send).toHaveBeenCalledWith(
+          expect.objectContaining({ type: "trial_ended" }),
+        );
+      });
+
+      it("rejects the build when no payment method is filled", async () => {
+        // Rejected mocks so a guard regression fails fast instead of calling
+        // the live Stripe API.
+        const update = vi
+          .spyOn(stripe.subscriptions, "update")
+          .mockRejectedValue(new Error("update must not be called"));
+        vi.spyOn(stripe.subscriptions, "retrieve").mockRejectedValue(
+          new Error("retrieve must not be called"),
+        );
+        await trialSubscription.$query().patch({ paymentMethodFilled: false });
+
+        await expect(createTrialBuild()).rejects.toThrow(
+          "You have reached the maximum screenshot capacity",
+        );
+        expect(update).not.toHaveBeenCalled();
       });
     });
 
