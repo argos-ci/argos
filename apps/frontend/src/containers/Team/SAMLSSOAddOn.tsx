@@ -135,10 +135,10 @@ export function DisableSAMLSSOAddOnButton(props: { teamAccountId: string }) {
     <DialogTrigger>
       <Button variant="secondary">Disable</Button>
       <Modal>
-        <Dialog>
+        <Dialog role="alertdialog">
           {({ close }) => (
             <>
-              <DialogBody confirm>
+              <DialogBody>
                 <DialogTitle>Disable SAML Single Sign-On</DialogTitle>
                 <DialogText>
                   Team members will no longer be able to sign in with SAML and

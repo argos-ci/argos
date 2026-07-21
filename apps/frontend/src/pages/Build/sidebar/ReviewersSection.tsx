@@ -446,8 +446,8 @@ function DismissReviewDialog(props: {
     props.review.user?.name || props.review.user?.slug || "this user";
 
   return (
-    <Dialog size="medium">
-      <DialogBody confirm>
+    <Dialog size="medium" role="alertdialog">
+      <DialogBody>
         <DialogTitle>Dismiss review</DialogTitle>
         <DialogText>
           Dismissing <strong>{reviewerName}</strong>&apos;s review can affect

@@ -45,8 +45,8 @@ export const Default: Story = {
       <DialogTrigger>
         <Button variant="destructive">Delete Project</Button>
         <Modal isDismissable>
-          <Dialog>
-            <DialogBody confirm>
+          <Dialog role="alertdialog">
+            <DialogBody>
               <DialogTitle>Delete Project</DialogTitle>
               <DialogText>
                 This action cannot be undone. All data will be permanently

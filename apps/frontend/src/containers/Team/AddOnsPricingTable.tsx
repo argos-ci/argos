@@ -1,3 +1,5 @@
+import clsx from "clsx";
+
 import { GITHUB_SSO_PRICING, SAML_SSO_PRICING } from "@/constants";
 import { DocumentType, graphql } from "@/gql";
 
@@ -52,7 +54,10 @@ export function AddOnsPricingTable(props: {
       {rows.map((row) => (
         <div
           key={row.key}
-          className="text-low my-2 flex justify-between font-bold"
+          className={clsx(
+            "text-low my-2 flex justify-between",
+            enabling === row.key && "font-bold",
+          )}
         >
           <div>{row.label}</div>
           <div>${row.price} / month</div>

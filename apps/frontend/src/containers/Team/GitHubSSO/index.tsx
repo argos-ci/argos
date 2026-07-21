@@ -79,8 +79,8 @@ export const DisableGitHubSSOButton = memo(
       <DialogTrigger>
         <Button variant="secondary">Disable</Button>
         <Modal>
-          <Dialog>
-            <DialogBody confirm>
+          <Dialog role="alertdialog">
+            <DialogBody>
               <DialogTitle>Disable GitHub Single Sign-On</DialogTitle>
               <DialogText>
                 Team members will no longer be synchronized from your GitHub
@@ -92,7 +92,7 @@ export const DisableGitHubSSOButton = memo(
               <DialogDismiss>Cancel</DialogDismiss>
               <Button
                 isDisabled={loading}
-                onPress={async () => {
+                onAction={async () => {
                   await disable().catch(() => {});
                 }}
               >

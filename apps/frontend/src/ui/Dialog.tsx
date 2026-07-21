@@ -1,4 +1,4 @@
-import { ComponentPropsWithRef, use, useState } from "react";
+import { ComponentPropsWithRef, createContext, use, useState } from "react";
 import { invariant } from "@argos/util/invariant";
 import { clsx } from "clsx";
 import {
@@ -15,12 +15,20 @@ import { usePersistentValue } from "./usePersistentValue";
 
 export { DialogTrigger } from "react-aria-components";
 
+type DialogRole = NonNullable<RACDialogProps["role"]>;
+
+const DialogRoleContext = createContext<DialogRole>("dialog");
+
 export function DialogFooter(props: ComponentPropsWithRef<"div">) {
+  const role = use(DialogRoleContext);
   return (
     <div
       {...props}
       className={clsx(
-        "bg-subtle flex items-center justify-end gap-4 border-t p-4",
+        "bg-subtle flex items-center gap-4 border-t p-4",
+        role === "alertdialog"
+          ? "flex-wrap justify-center *:[[role=alert]]:basis-full *:[[role=alert]]:text-center"
+          : "justify-end",
         props.className,
       )}
     />
@@ -31,15 +39,16 @@ export function DialogText(props: ComponentPropsWithRef<"p">) {
   return <p {...props} className={clsx("my-4 text-base", props.className)} />;
 }
 
-export function DialogBody(
-  props: ComponentPropsWithRef<"div"> & {
-    confirm?: boolean;
-  },
-) {
+export function DialogBody(props: ComponentPropsWithRef<"div">) {
+  const role = use(DialogRoleContext);
   return (
     <div
       {...props}
-      className={clsx("p-4", props.confirm && "text-center", props.className)}
+      className={clsx(
+        "p-4",
+        role === "alertdialog" && "text-center",
+        props.className,
+      )}
     />
   );
 }
@@ -125,17 +134,20 @@ export function Dialog({
   scrollable = true,
   ...props
 }: DialogProps) {
-  const { ref, ...rest } = props;
+  const { ref, role, ...rest } = props;
   return (
-    <RACDialog
-      ref={ref}
-      className={clsx(
-        className,
-        "relative max-h-[inherit] max-w-full focus:outline-hidden",
-        size === "medium" && "w-xl",
-        scrollable === false ? "overflow-hidden" : "overflow-auto",
-      )}
-      {...rest}
-    />
+    <DialogRoleContext value={role ?? "dialog"}>
+      <RACDialog
+        ref={ref}
+        role={role}
+        className={clsx(
+          className,
+          "relative max-h-[inherit] max-w-full focus:outline-hidden",
+          size === "medium" && "w-xl",
+          scrollable === false ? "overflow-hidden" : "overflow-auto",
+        )}
+        {...rest}
+      />
+    </DialogRoleContext>
   );
 }

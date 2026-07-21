@@ -38,8 +38,8 @@ export const LeaveTeamDialog = memo(
     });
     const navigate = useNavigate();
     return (
-      <Dialog>
-        <DialogBody confirm>
+      <Dialog role="alertdialog">
+        <DialogBody>
           <DialogTitle>Leave Team</DialogTitle>
           <DialogText>
             You are about to leave <strong>{props.teamName}</strong>.<br />
