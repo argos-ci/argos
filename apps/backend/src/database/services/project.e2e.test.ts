@@ -1,12 +1,12 @@
 import { invariant } from "@argos/util/invariant";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Project } from "@/database/models";
+import { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import { notifyDiscord } from "@/discord";
 import { HTTPError } from "@/util/error";
 
-import { createProject } from "./project";
+import { createProject, notifyProjectTransfer } from "./project";
 
 // The Discord webhook is configured in the test env; stub it so creating a
 // project here doesn't post a real notification.
@@ -169,5 +169,75 @@ describe("createProject service", () => {
     );
     expect(error.message).toBe("Name is already used by another project");
     expect(error.code).toBe("PROJECT_NAME_INVALID");
+  });
+});
+
+describe("notifyProjectTransfer service", () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await setupDatabase();
+  });
+
+  /**
+   * Transfer `project` between the two given accounts, keeping the arguments
+   * the resolver would pass.
+   */
+  async function transfer(input: {
+    previousAccount: Account;
+    targetAccount: Account;
+  }) {
+    const project = await factory.Project.create({
+      accountId: input.targetAccount.id,
+      name: "shared-project",
+    });
+
+    await notifyProjectTransfer({
+      project,
+      previousAccount: input.previousAccount,
+      previousName: "side-project",
+      targetAccount: input.targetAccount,
+      email: "jane@example.com",
+    });
+  }
+
+  it("notifies when a project moves from a personal account to a team", async () => {
+    await transfer({
+      previousAccount: await factory.UserAccount.create(),
+      targetAccount: await factory.TeamAccount.create(),
+    });
+
+    expect(vi.mocked(notifyDiscord)).toHaveBeenCalledOnce();
+    // Both names are reported: a transfer can rename the project on the way.
+    const { content } = vi.mocked(notifyDiscord).mock.calls[0]![0];
+    expect(content).toContain("side-project");
+    expect(content).toContain("shared-project");
+    expect(content).toContain("jane@example.com");
+  });
+
+  it("stays silent when a project moves from a team to a personal account", async () => {
+    await transfer({
+      previousAccount: await factory.TeamAccount.create(),
+      targetAccount: await factory.UserAccount.create(),
+    });
+
+    expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
+  });
+
+  it("stays silent when a project moves between two teams", async () => {
+    await transfer({
+      previousAccount: await factory.TeamAccount.create(),
+      targetAccount: await factory.TeamAccount.create(),
+    });
+
+    expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
+  });
+
+  it("stays silent when a project moves between two personal accounts", async () => {
+    await transfer({
+      previousAccount: await factory.UserAccount.create(),
+      targetAccount: await factory.UserAccount.create(),
+    });
+
+    expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
   });
 });
