@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
+import { notifyDiscord } from "@/discord";
 import { HTTPError } from "@/util/error";
 
 import { createProject } from "./project";
@@ -49,6 +50,7 @@ async function expectHttpError(promise: Promise<unknown>, statusCode: number) {
 
 describe("createProject service", () => {
   beforeEach(async () => {
+    vi.clearAllMocks();
     await setupDatabase();
   });
 
@@ -81,6 +83,28 @@ describe("createProject service", () => {
     });
 
     expect(project.name).toBe("my-project");
+  });
+
+  it("notifies Discord when a team account creates a project", async () => {
+    const { teamAccount, user } = await createTeamOwner();
+
+    await createProject({ account: teamAccount, user, name: "my-project" });
+
+    expect(vi.mocked(notifyDiscord)).toHaveBeenCalledOnce();
+  });
+
+  it("does not notify Discord when a personal account creates a project", async () => {
+    const userAccount = await factory.UserAccount.create();
+    await userAccount.$fetchGraph("user");
+    invariant(userAccount.user, "user not fetched");
+
+    await createProject({
+      account: userAccount,
+      user: userAccount.user,
+      name: "my-project",
+    });
+
+    expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
   });
 
   it("throws 403 when the user is not an admin of the account", async () => {

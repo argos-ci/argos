@@ -248,9 +248,10 @@ describe("MCP server", () => {
     });
     const project = await Project.query().findOne({ name: "mcp-created" });
     expect(project).toBeDefined();
-    // Proves the module mock intercepts through the loopback dispatch — a
-    // real Discord webhook must never fire from tests.
-    expect(vi.mocked(notifyDiscord)).toHaveBeenCalled();
+    // `jane-doe` is a personal account, which no longer triggers a project
+    // creation notification. The module mock above is what guarantees a real
+    // Discord webhook can never fire from tests.
+    expect(vi.mocked(notifyDiscord)).not.toHaveBeenCalled();
   });
 
   test("rejects invalid tool arguments", async ({ patToken }) => {
