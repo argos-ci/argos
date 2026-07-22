@@ -46,9 +46,9 @@ import { Time } from "@/ui/Time";
 import { getAccountURL } from "./Account/AccountParams";
 import { getMailtoUrl, getOnboardingEmail } from "./StaffTrials.email";
 
-const StaffTeamCohortQuery = graphql(`
-  query StaffTrials_staffTeamCohort($days: Int!) {
-    staffTeamCohort(days: $days) {
+const TrialPipelineQuery = graphql(`
+  query StaffTrials_staffTrialPipeline($days: Int!) {
+    staffTrialPipeline(days: $days) {
       id
       createdAt
       slug
@@ -91,9 +91,9 @@ const SetTeamStaffContactMutation = graphql(`
   }
 `);
 
-type CohortItem = DocumentType<
-  typeof StaffTeamCohortQuery
->["staffTeamCohort"][number];
+type PipelineTeam = DocumentType<
+  typeof TrialPipelineQuery
+>["staffTrialPipeline"][number];
 
 const now = new Date();
 
@@ -135,7 +135,7 @@ type SortKey =
  * comparator covers every column; teams that never reached a step sort together
  * at one end, which is the point of sorting on it.
  */
-function getSortValue(team: CohortItem, key: SortKey): string | number {
+function getSortValue(team: PipelineTeam, key: SortKey): string | number {
   switch (key) {
     case "team":
       return (team.name || team.slug).toLowerCase();
@@ -163,7 +163,7 @@ function getSortValue(team: CohortItem, key: SortKey): string | number {
   }
 }
 
-function checkTeamMatchesSearch(team: CohortItem, search: string) {
+function checkTeamMatchesSearch(team: PipelineTeam, search: string) {
   if (!search) {
     return true;
   }
@@ -177,10 +177,10 @@ function checkTeamMatchesSearch(team: CohortItem, search: string) {
 }
 
 function sortTeams(
-  teams: CohortItem[],
+  teams: PipelineTeam[],
   key: SortKey,
   direction: SortDirection,
-): CohortItem[] {
+): PipelineTeam[] {
   const factor = direction === "asc" ? 1 : -1;
 
   return [...teams].sort((a, b) => {
@@ -195,7 +195,7 @@ function sortTeams(
   });
 }
 
-function StatusCell(props: { team: CohortItem }) {
+function StatusCell(props: { team: PipelineTeam }) {
   const { team } = props;
   const status = team.subscriptionStatus ?? "none";
   const daysRemaining = team.subscription?.trialDaysRemaining;
@@ -258,7 +258,7 @@ function StepIcon(props: { reached: boolean; label: string; title?: string }) {
  * producing one is a failure, not a blank: something is misconfigured and no
  * diff will ever come out of it. Having built nothing yet is just silence.
  */
-function CheckBuildCell(props: { team: CohortItem }) {
+function CheckBuildCell(props: { team: PipelineTeam }) {
   const { team } = props;
 
   if (team.firstComparisonAt) {
@@ -285,7 +285,7 @@ function CheckBuildCell(props: { team: CohortItem }) {
   return <StepIcon reached={false} label="Check build" />;
 }
 
-function PaymentCell(props: { team: CohortItem }) {
+function PaymentCell(props: { team: PipelineTeam }) {
   const { subscription } = props.team;
 
   if (!subscription) {
@@ -339,7 +339,7 @@ function LastActivityCell(props: { date: string | null | undefined }) {
   );
 }
 
-function ContactCell(props: { team: CohortItem }) {
+function ContactCell(props: { team: PipelineTeam }) {
   const { team } = props;
   const [setContact, { loading }] = useMutation(SetTeamStaffContactMutation);
   const { subject, body } = getOnboardingEmail({
@@ -400,7 +400,7 @@ function ContactCell(props: { team: CohortItem }) {
   );
 }
 
-function CohortRow(props: { team: CohortItem; index: number }) {
+function PipelineRow(props: { team: PipelineTeam; index: number }) {
   const { team, index } = props;
   const teamURL = getAccountURL({ accountSlug: team.slug });
 
@@ -472,8 +472,8 @@ const COLUMNS: {
   { key: "contacted", label: "Contacted", align: "center" },
 ];
 
-function CohortTable(props: {
-  teams: CohortItem[];
+function PipelineTable(props: {
+  teams: PipelineTeam[];
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
@@ -509,7 +509,7 @@ function CohortTable(props: {
         </thead>
         <tbody>
           {props.teams.map((team, index) => (
-            <CohortRow key={team.id} team={team} index={index} />
+            <PipelineRow key={team.id} team={team} index={index} />
           ))}
         </tbody>
       </table>
@@ -518,7 +518,7 @@ function CohortTable(props: {
 }
 
 /** A trial that quietly ran out is as much a loss as an explicit cancelation. */
-function checkIsLost(team: CohortItem) {
+function checkIsLost(team: PipelineTeam) {
   return (
     team.subscriptionStatus === "canceled" ||
     team.subscriptionStatus === "trial_expired"
@@ -532,7 +532,7 @@ function formatShare(value: number, total: number) {
   return `${Math.round((value / total) * 100)}% of ${total}`;
 }
 
-function CohortSummary(props: { teams: CohortItem[] }) {
+function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const { teams } = props;
   const activated = teams.filter((team) => team.firstComparisonAt).length;
   const lost = teams.filter(checkIsLost).length;
@@ -592,7 +592,7 @@ function StaffTrialsList() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const { data, loading, error } = useQuery(StaffTeamCohortQuery, {
+  const { data, loading, error } = useQuery(TrialPipelineQuery, {
     variables: { days },
   });
 
@@ -609,17 +609,17 @@ function StaffTrialsList() {
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
-  // The summary describes the window, so it stays on the whole cohort: an
+  // The summary describes the window, so it stays on every team in it: an
   // activation rate computed over search results would mean nothing.
-  const cohort = useMemo(
-    () => sortTeams(data?.staffTeamCohort ?? [], sortKey, sortDirection),
-    [data?.staffTeamCohort, sortKey, sortDirection],
+  const allTeams = useMemo(
+    () => sortTeams(data?.staffTrialPipeline ?? [], sortKey, sortDirection),
+    [data?.staffTrialPipeline, sortKey, sortDirection],
   );
 
   const visibleTeams = useMemo(
     () =>
-      cohort.filter((team) => checkTeamMatchesSearch(team, normalizedSearch)),
-    [cohort, normalizedSearch],
+      allTeams.filter((team) => checkTeamMatchesSearch(team, normalizedSearch)),
+    [allTeams, normalizedSearch],
   );
 
   if (error) {
@@ -672,8 +672,8 @@ function StaffTrialsList() {
         <PageLoader />
       ) : (
         <>
-          <CohortSummary teams={cohort} />
-          <CohortTable
+          <PipelineSummary teams={allTeams} />
+          <PipelineTable
             teams={visibleTeams}
             sortKey={sortKey}
             sortDirection={sortDirection}
@@ -681,7 +681,7 @@ function StaffTrialsList() {
           />
           {normalizedSearch ? (
             <div className="text-low mt-3 text-sm">
-              Showing {visibleTeams.length} of {cohort.length} teams
+              Showing {visibleTeams.length} of {allTeams.length} teams
             </div>
           ) : null}
         </>

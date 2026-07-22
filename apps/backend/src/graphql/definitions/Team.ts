@@ -369,7 +369,7 @@ export const typeDefs = gql`
     "List all teams (staff only)"
     staffTeams: [Team!]!
     "List teams created within the last \`days\` days, newest first (staff only)"
-    staffTeamCohort(days: Int! = 30): [Team!]!
+    staffTrialPipeline(days: Int! = 30): [Team!]!
     "List all teams the authenticated user can join based on verified email domains"
     autoInvites: [AutoInvite!]!
   }
@@ -967,7 +967,7 @@ export const resolvers: IResolvers = {
         .whereNull("userId")
         .orderByRaw("coalesce(name, slug) asc");
     },
-    staffTeamCohort: async (_root, args, ctx) => {
+    staffTrialPipeline: async (_root, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
       }
@@ -980,7 +980,7 @@ export const resolvers: IResolvers = {
         throw badUserInput("`days` must be at least 1.");
       }
 
-      // Newest first: the cohort is read as a feed of what just happened, not
+      // Newest first: the list is read as a feed of what just happened, not
       // as a directory.
       return Account.query()
         .whereNotNull("teamId")

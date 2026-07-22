@@ -9,9 +9,9 @@ import { apolloServer, createApolloMiddleware } from "../apollo";
 import { expectNoGraphQLError } from "../testing";
 import { createApolloServerApp } from "./util";
 
-const StaffTeamCohortQuery = `
-  query StaffTeamCohort($days: Int!) {
-    staffTeamCohort(days: $days) {
+const TrialPipelineQuery = `
+  query StaffTrialPipeline($days: Int!) {
+    staffTrialPipeline(days: $days) {
       id
       slug
       projectsCount
@@ -36,7 +36,7 @@ async function createViewer(options: { staff: boolean }) {
   return { userAccount, user: userAccount.user };
 }
 
-async function queryCohort(
+async function queryPipeline(
   auth: Awaited<ReturnType<typeof createViewer>>,
   days: number,
 ) {
@@ -51,23 +51,23 @@ async function queryCohort(
 
   return request(app)
     .post("/graphql")
-    .send({ query: StaffTeamCohortQuery, variables: { days } });
+    .send({ query: TrialPipelineQuery, variables: { days } });
 }
 
 /**
- * Pick a team out of the cohort by id. Creating a build pulls a whole factory
+ * Pick a team out of the result by id. Creating a build pulls a whole factory
  * chain behind it — screenshot bucket, project, and its own team account — so
- * the cohort holds incidental teams and position is not a safe way to index it.
+ * the result holds incidental teams and position is not a safe way to index it.
  */
 function findEntry(res: request.Response, teamId: string) {
-  const entry = res.body.data.staffTeamCohort.find(
+  const entry = res.body.data.staffTrialPipeline.find(
     (team: { id: string }) => team.id === teamId,
   );
-  invariant(entry, `team ${teamId} missing from the cohort`);
+  invariant(entry, `team ${teamId} missing from the pipeline`);
   return entry;
 }
 
-describe("GraphQL staffTeamCohort", () => {
+describe("GraphQL staffTrialPipeline", () => {
   beforeEach(async () => {
     await setupDatabase();
   });
@@ -76,7 +76,7 @@ describe("GraphQL staffTeamCohort", () => {
     const viewer = await createViewer({ staff: false });
     await factory.TeamAccount.create();
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expect(res.body.errors[0].extensions.code).toBe("FORBIDDEN");
   });
@@ -97,14 +97,14 @@ describe("GraphQL staffTeamCohort", () => {
       createdAt: moment().subtract(1, "days").toISOString(),
     });
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
-    expect(res.body.data.staffTeamCohort.map((team: any) => team.slug)).toEqual(
-      [newest.slug, recent.slug],
-    );
     expect(
-      res.body.data.staffTeamCohort.map((team: any) => team.id),
+      res.body.data.staffTrialPipeline.map((team: any) => team.slug),
+    ).toEqual([newest.slug, recent.slug]);
+    expect(
+      res.body.data.staffTrialPipeline.map((team: any) => team.id),
     ).not.toContain(old.id);
   });
 
@@ -113,7 +113,7 @@ describe("GraphQL staffTeamCohort", () => {
     const team = await factory.TeamAccount.create();
     await factory.Project.create({ accountId: team.id });
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);
@@ -133,7 +133,7 @@ describe("GraphQL staffTeamCohort", () => {
     const project = await factory.Project.create({ accountId: team.id });
     await factory.Build.create({ projectId: project.id, type: "orphan" });
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);
@@ -163,7 +163,7 @@ describe("GraphQL staffTeamCohort", () => {
       createdAt: moment().subtract(1, "days").toISOString(),
     });
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);
@@ -201,7 +201,7 @@ describe("GraphQL staffTeamCohort", () => {
       stats: { ...stats, total: 30 },
     });
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
     expect(findEntry(res, team.id).screenshotsCount).toBe(42);
@@ -213,7 +213,7 @@ describe("GraphQL staffTeamCohort", () => {
     const project = await factory.Project.create({ accountId: team.id });
     await factory.Build.createMany(3, { projectId: project.id, type: "check" });
 
-    const res = await queryCohort(viewer, 30);
+    const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);

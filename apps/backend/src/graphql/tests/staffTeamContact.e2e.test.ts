@@ -11,7 +11,7 @@ import { createApolloServerApp } from "./util";
 
 const TeamContactQuery = `
   query TeamContact($days: Int!) {
-    staffTeamCohort(days: $days) {
+    staffTrialPipeline(days: $days) {
       id
       staffOwners {
         id
@@ -75,10 +75,10 @@ async function createApp(auth: Awaited<ReturnType<typeof createViewer>>) {
 }
 
 function findTeam(res: request.Response, teamId: string) {
-  const entry = res.body.data.staffTeamCohort.find(
+  const entry = res.body.data.staffTrialPipeline.find(
     (team: { id: string }) => team.id === teamId,
   );
-  invariant(entry, `team ${teamId} missing from the cohort`);
+  invariant(entry, `team ${teamId} missing from the pipeline`);
   return entry;
 }
 
@@ -116,7 +116,7 @@ describe("GraphQL staff team contact", () => {
       .post("/graphql")
       .send({ query: TeamContactQuery, variables: { days: 30 } });
 
-    // Owner emails are personal data — the cohort itself is staff-gated, but
+    // Owner emails are personal data — the query itself is staff-gated, but
     // the field must refuse on its own too.
     expect(res.body.errors[0].extensions.code).toBe("FORBIDDEN");
   });
