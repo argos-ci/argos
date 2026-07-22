@@ -2,10 +2,8 @@
 -- PostgreSQL database dump
 --
 
-\restrict jqIa7cNlQHz8N5lw6msnXYQ58h3oigabf4dFHUWhMk3zegTJP05iTKX7AxTJHjE
-
--- Dumped from database version 17.9
--- Dumped by pg_dump version 17.9 (Homebrew)
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1858,12 +1856,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
-    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
+    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
@@ -5455,8 +5453,6 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict jqIa7cNlQHz8N5lw6msnXYQ58h3oigabf4dFHUWhMk3zegTJP05iTKX7AxTJHjE
 
 -- Knex migrations
 

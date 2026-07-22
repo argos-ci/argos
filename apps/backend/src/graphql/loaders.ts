@@ -709,10 +709,12 @@ type TeamOwner = {
 function createTeamOwnersByTeamIdLoader() {
   return new DataLoader<string, TeamOwner[]>(async (teamIds) => {
     // The display name lives on the owner's personal account, the address on
-    // the user, so both are joined in one pass.
+    // the user, so both are joined in one pass. The account join is left: an
+    // owner without one still has an address, and dropping them would silently
+    // shorten the recipient list.
     const rows = await TeamUser.query()
       .join("users", "users.id", "team_users.userId")
-      .join("accounts", "accounts.userId", "users.id")
+      .leftJoin("accounts", "accounts.userId", "users.id")
       .select(
         "team_users.teamId",
         "users.id as userId",

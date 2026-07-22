@@ -359,37 +359,31 @@ function StaffTeamsTable(props: {
         </colgroup>
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
-            <th className="px-4 py-3 text-left">
-              <SortHeader
-                label="Team"
-                sortKey="team"
-                activeSortKey={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-                className="text-left"
-              />
-            </th>
-            <th className="px-4 py-3 text-left">
-              <SortHeader
-                label="Created"
-                sortKey="createdAt"
-                activeSortKey={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-                className="text-left"
-              />
-            </th>
+            <SortHeader
+              label="Team"
+              sortKey="team"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="text-left"
+            />
+            <SortHeader
+              label="Created"
+              sortKey="createdAt"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="text-left"
+            />
             <th className="px-4 py-3 text-left">Subscription</th>
-            <th className="px-4 py-3 text-right">
-              <SortHeader
-                label="Members"
-                sortKey="members"
-                activeSortKey={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-                className="text-right"
-              />
-            </th>
+            <SortHeader
+              label="Members"
+              sortKey="members"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="text-right"
+            />
             <th className="px-4 py-3 text-right">Links</th>
             <th className="px-4 py-3 text-right">Actions</th>
           </tr>

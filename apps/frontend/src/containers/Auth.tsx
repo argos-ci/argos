@@ -20,7 +20,8 @@ type AuthAccount = {
   id: string;
   slug: string;
   name: string | null;
-  staff: boolean;
+  /** Null when the server declined to reveal it, which is never for `me`. */
+  staff: boolean | null;
 };
 
 /**
@@ -66,6 +67,8 @@ export const AuthContextProvider = ({
   // the hint says we're logged out, so anonymous pages render immediately.
   const { data, loading } = useQuery(MeQuery, { skip: !loggedInHint });
 
+  // Passed through unchanged: rebuilding the object here would give the
+  // context a new identity on every render.
   const account = data?.me ?? null;
 
   useEffect(() => {

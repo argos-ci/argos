@@ -128,8 +128,8 @@ export const typeDefs = gql`
     role(accountSlug: String!, projectName: String!): TeamUserLevel
     "Whether the account is a real person or an automated account (e.g. the Argos bot)."
     type: UserType!
-    "Whether the user has staff privileges. Readable only by the user themselves."
-    staff: Boolean!
+    "Whether the user has staff privileges. Readable only by the user themselves, null otherwise."
+    staff: Boolean
   }
 
   enum UserType {
@@ -543,12 +543,13 @@ export const resolvers: IResolvers = {
       }
       return listActiveSessions(account.userId);
     },
-    staff: async (account, _args, ctx) => {
-      invariant(account.userId, "account.userId is undefined");
+    staff: (account, _args, ctx) => {
       // Who works at Argos is not public: staff accounts hold elevated
-      // permissions, so the flag is readable only by its owner.
-      if (ctx.auth?.user.id !== account.userId) {
-        throw forbidden();
+      // permissions, so the flag is readable only by its owner. Null rather
+      // than an error — the field is selected inside the auth bootstrap query,
+      // where a thrown error would nullify `me` and log the user out.
+      if (!ctx.auth || ctx.auth.user.id !== account.userId) {
+        return null;
       }
       return ctx.auth.user.staff;
     },

@@ -88,7 +88,7 @@ describe("GraphQL User.staff", () => {
     expect(res.body.data.me.staff).toBe(false);
   });
 
-  it("refuses to reveal whether a teammate is staff", async () => {
+  it("hides whether a teammate is staff", async () => {
     const viewer = await createViewer({ staff: false });
     const other = await createViewer({ staff: true });
 
@@ -112,7 +112,22 @@ describe("GraphQL User.staff", () => {
         variables: { teamAccountId: teamAccount.id },
       });
 
-    // Who holds elevated permissions must not leak, even to teammates.
-    expect(res.body.errors[0].extensions.code).toBe("FORBIDDEN");
+    // Who holds elevated permissions must not leak, even to teammates. The
+    // field returns null rather than erroring: it is selected in the auth
+    // bootstrap query, where an error would nullify `me` and log the user out.
+    expectNoGraphQLError(res);
+    const members: { user: { id: string; staff: boolean | null } }[] =
+      res.body.data.teamById.members.edges;
+    const self = members.find(
+      (member) => member.user.id === viewer.userAccount.id,
+    );
+    const teammate = members.find(
+      (member) => member.user.id === other.userAccount.id,
+    );
+
+    // The viewer reads their own flag...
+    expect(self?.user.staff).toBe(false);
+    // ...but the staff teammate's is hidden, not merely falsy.
+    expect(teammate?.user.staff).toBeNull();
   });
 });

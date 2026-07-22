@@ -66,6 +66,13 @@ import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 
+/**
+ * Upper bound on the trial pipeline window. Each returned team drives an
+ * aggregate over `projects` joined to `builds`, so an unbounded window would
+ * scan the whole build history.
+ */
+const MAX_TRIAL_PIPELINE_DAYS = 365;
+
 export const typeDefs = gql`
   enum TeamMembersOrderBy {
     DATE
@@ -976,19 +983,27 @@ export const resolvers: IResolvers = {
         throw forbidden();
       }
 
-      if (args.days < 1) {
-        throw badUserInput("`days` must be at least 1.");
+      if (args.days < 1 || args.days > MAX_TRIAL_PIPELINE_DAYS) {
+        throw badUserInput(
+          `\`days\` must be between 1 and ${MAX_TRIAL_PIPELINE_DAYS}.`,
+        );
       }
 
       // Newest first: the list is read as a feed of what just happened, not
       // as a directory.
-      return Account.query()
-        .whereNotNull("teamId")
-        .whereNull("userId")
-        .whereRaw(`accounts."createdAt" >= now() - make_interval(days => ?)`, [
-          args.days,
-        ])
-        .orderBy("createdAt", "desc");
+      return (
+        Account.query()
+          .whereNotNull("teamId")
+          .whereNull("userId")
+          .whereRaw(
+            `accounts."createdAt" >= now() - make_interval(days => ?)`,
+            [args.days],
+          )
+          .orderBy("createdAt", "desc")
+          // Total order: teams sharing a timestamp would otherwise come back in
+          // an arbitrary order from one execution to the next.
+          .orderBy("id", "desc")
+      );
     },
     teamInvite: async (_root, args) => {
       const team = await Team.query()
@@ -1024,6 +1039,12 @@ export const resolvers: IResolvers = {
       const teamAccount = await Account.query()
         .findById(args.input.teamAccountId)
         .throwIfNotFound();
+
+      // The field is declared as `Team!`: handing back a personal account here
+      // would resolve as `User` and break the response against the schema.
+      if (!teamAccount.teamId) {
+        throw badUserInput("Account is not a team.");
+      }
 
       return teamAccount.$query().patchAndFetch({
         staffContactedAt: args.input.contacted

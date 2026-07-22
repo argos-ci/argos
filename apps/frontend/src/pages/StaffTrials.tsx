@@ -19,11 +19,7 @@ import { Helmet } from "react-helmet";
 
 import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
-import {
-  PeriodSelect,
-  usePeriodState,
-  type PeriodsDefinition,
-} from "@/containers/PeriodSelect";
+import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
@@ -95,29 +91,26 @@ type PipelineTeam = DocumentType<
   typeof TrialPipelineQuery
 >["staffTrialPipeline"][number];
 
-const now = new Date();
-
-const TRIAL_PERIODS = {
-  last7Days: {
-    from: moment(now).subtract(7, "days").startOf("day").toDate(),
-    label: "Last 7 days",
-  },
-  last30Days: {
-    from: moment(now).subtract(30, "days").startOf("day").toDate(),
-    label: "Last 30 days",
-  },
-  last90Days: {
-    from: moment(now).subtract(90, "days").startOf("day").toDate(),
-    label: "Last 90 days",
-  },
-} satisfies PeriodsDefinition;
-
-/** The resolver takes a day count, the picker works on named periods. */
-const PERIOD_DAYS: Record<keyof typeof TRIAL_PERIODS, number> = {
+/**
+ * The resolver takes a day count, the picker works on named periods — so the
+ * day count is the source, and `PeriodsDefinition` is derived from it. Holding
+ * the two side by side let them drift apart silently.
+ */
+const PERIOD_DAYS = {
   last7Days: 7,
   last30Days: 30,
   last90Days: 90,
-};
+} as const;
+
+const TRIAL_PERIODS = Object.fromEntries(
+  Object.entries(PERIOD_DAYS).map(([key, days]) => [
+    key,
+    {
+      from: moment().subtract(days, "days").startOf("day").toDate(),
+      label: `Last ${days} days`,
+    },
+  ]),
+) as Record<keyof typeof PERIOD_DAYS, { from: Date; label: string }>;
 
 type SortKey =
   | "team"
@@ -312,14 +305,6 @@ function PaymentCell(props: { team: PipelineTeam }) {
 }
 
 /**
- * Opens a drafted onboarding email in the staff member's own mail client, and
- * records that the team was reached out to.
- *
- * The mark is set on click rather than on send — the browser cannot know
- * whether the draft was actually sent — so it stays a toggle: clicking the
- * marker again clears it if the draft was abandoned.
- */
-/**
  * When the team last built. Cumulative counters say how much a team did, never
  * when — so a team that ran twelve builds three weeks ago and one that ran
  * twelve today read identically without this.
@@ -339,9 +324,19 @@ function LastActivityCell(props: { date: string | null | undefined }) {
   );
 }
 
+/**
+ * Opens a drafted onboarding email in the staff member's own mail client, and
+ * records that the team was reached out to.
+ *
+ * The mark is set on click rather than on send — the browser cannot know
+ * whether the draft was actually sent — so it stays a toggle: clicking the
+ * marker again clears it if the draft was abandoned.
+ */
 function ContactCell(props: { team: PipelineTeam }) {
   const { team } = props;
-  const [setContact, { loading }] = useMutation(SetTeamStaffContactMutation);
+  const [setContact, { loading, error }] = useMutation(
+    SetTeamStaffContactMutation,
+  );
   const { subject, body } = getOnboardingEmail({
     owners: team.staffOwners,
     buildsCount: team.buildsCount,
@@ -351,12 +346,11 @@ function ContactCell(props: { team: PipelineTeam }) {
   const contactedAt = team.staffContactedAt;
 
   const markContacted = (contacted: boolean) => {
+    // Rejection is caught so a failed mark never breaks the draft that just
+    // opened; `error` below is what tells the user it did not stick.
     setContact({
       variables: { teamAccountId: team.id, contacted },
-    }).catch(() => {
-      // The mutation surfaces its own errors; a failed mark must not break the
-      // draft that just opened.
-    });
+    }).catch(() => {});
   };
 
   return (
@@ -383,14 +377,18 @@ function ContactCell(props: { team: PipelineTeam }) {
       )}
       <span
         title={
-          contactedAt
-            ? `Contacted on ${new Date(contactedAt).toLocaleDateString()}`
-            : "Not contacted yet"
+          error
+            ? `Could not save: ${error.message}`
+            : contactedAt
+              ? `Contacted on ${new Date(contactedAt).toLocaleDateString()}`
+              : "Not contacted yet"
         }
       >
         <Switch
           size="sm"
           aria-label="Onboarding email sent"
+          aria-invalid={error ? true : undefined}
+          className={error ? "ring-danger rounded-full ring-2" : undefined}
           isSelected={Boolean(contactedAt)}
           isDisabled={loading}
           onChange={markContacted}
@@ -492,18 +490,15 @@ function PipelineTable(props: {
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
             {COLUMNS.map((column) => (
-              <th
+              <SortHeader
                 key={column.key}
-                className={clsx("px-4 py-3", ALIGN_CLASS_NAMES[column.align])}
-              >
-                <SortHeader
-                  label={column.label}
-                  sortKey={column.key}
-                  activeSortKey={props.sortKey}
-                  direction={props.sortDirection}
-                  onSort={props.onSort}
-                />
-              </th>
+                label={column.label}
+                sortKey={column.key}
+                activeSortKey={props.sortKey}
+                direction={props.sortDirection}
+                onSort={props.onSort}
+                className={ALIGN_CLASS_NAMES[column.align]}
+              />
             ))}
           </tr>
         </thead>

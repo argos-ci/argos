@@ -168,6 +168,22 @@ describe("GraphQL staff team contact", () => {
     expect(account?.staffContactedAt).not.toBeNull();
   });
 
+  it("refuses to mark an account that is not a team", async () => {
+    const viewer = await createViewer({ staff: true });
+    const app = await createApp(viewer);
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: SetContactMutation,
+        // The viewer's own personal account: the field is declared `Team!`, so
+        // returning it would break the response against the schema.
+        variables: { teamAccountId: viewer.userAccount.id, contacted: true },
+      });
+
+    expect(res.body.errors[0].extensions.code).toBe("BAD_USER_INPUT");
+  });
+
   it("refuses to let a non-staff user mark a team", async () => {
     const viewer = await createViewer({ staff: false });
     const { teamAccount } = await createTeamWithOwners(1);
