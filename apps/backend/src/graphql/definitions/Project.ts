@@ -1114,18 +1114,20 @@ export const resolvers: IResolvers = {
         accountId: targetAccountId,
       });
 
-      // Load both accounts before patching: `patchAndFetch` mutates the
-      // instance in place, overwriting the source account id and the old name.
-      const [previousAccount, targetAccount] = await Promise.all([
-        ctx.loaders.Account.load(project.accountId),
-        ctx.loaders.Account.load(targetAccountId),
-      ]);
+      // Capture the source account id and name before patching: `patchAndFetch`
+      // mutates the instance in place, overwriting both.
+      const previousAccountId = project.accountId;
       const previousName = project.name;
 
-      const transferredProject = await project.$query().patchAndFetch({
-        accountId: targetAccountId,
-        name: args.input.name,
-      });
+      const [previousAccount, targetAccount, transferredProject] =
+        await Promise.all([
+          ctx.loaders.Account.load(previousAccountId),
+          ctx.loaders.Account.load(targetAccountId),
+          project.$query().patchAndFetch({
+            accountId: targetAccountId,
+            name: args.input.name,
+          }),
+        ]);
 
       if (previousAccount && targetAccount) {
         await notifyProjectTransfer({
