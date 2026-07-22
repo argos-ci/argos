@@ -332,7 +332,9 @@ function LastActivityCell(props: { date: string | null | undefined }) {
   return (
     <>
       <Time date={props.date} format="ll" tooltip="title" />
-      <div className="text-low text-xs">{moment(props.date).fromNow()}</div>
+      <div className="text-low text-xs">
+        <Time date={props.date} tooltip="none" />
+      </div>
     </>
   );
 }
@@ -418,7 +420,7 @@ function CohortRow(props: { team: CohortItem; index: number }) {
       <td className="p-4 text-sm whitespace-nowrap">
         <Time date={team.createdAt} format="ll" tooltip="title" />
         <div className="text-low text-xs">
-          {moment(team.createdAt).fromNow()}
+          <Time date={team.createdAt} tooltip="none" />
         </div>
       </td>
       <td className="p-4 text-sm whitespace-nowrap">
