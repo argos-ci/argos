@@ -205,6 +205,10 @@ export async function createProject(input: {
  * visibility into project creation regardless of the surface it came from
  * (GraphQL, the public API, or a Git provider import). Notification failures are
  * swallowed and reported to Sentry — they must never break project creation.
+ *
+ * Only team accounts are notified: personal accounts create too many projects
+ * for the channel to stay readable, and none of them are actionable. Their
+ * volume belongs to the dashboard, not to a notification.
  */
 export async function notifyProjectCreation(input: {
   project: Project;
@@ -212,6 +216,10 @@ export async function notifyProjectCreation(input: {
   email: string | null;
   source: ProjectCreationSource;
 }) {
+  if (input.account.type !== "team") {
+    return;
+  }
+
   await notifyDiscord({
     content: `
 New project from ${input.account.name} (${input.email ?? "unknown email"}) ${
