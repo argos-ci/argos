@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.5
--- Dumped by pg_dump version 17.5 (Homebrew)
+\restrict jqIa7cNlQHz8N5lw6msnXYQ58h3oigabf4dFHUWhMk3zegTJP05iTKX7AxTJHjE
+
+-- Dumped from database version 17.9
+-- Dumped by pg_dump version 17.9 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -124,6 +126,7 @@ CREATE TABLE public.accounts (
     "githubLightInstallationId" bigint,
     "meteredSpendLimitByPeriod" integer,
     "blockWhenSpendLimitIsReached" boolean DEFAULT false NOT NULL,
+    "staffContactedAt" timestamp with time zone,
     CONSTRAINT accounts_only_one_owner CHECK ((num_nonnulls("userId", "teamId") = 1))
 );
 
@@ -1855,12 +1858,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
+    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
-    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
@@ -5453,6 +5456,8 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
+\unrestrict jqIa7cNlQHz8N5lw6msnXYQ58h3oigabf4dFHUWhMk3zegTJP05iTKX7AxTJHjE
+
 -- Knex migrations
 
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20161217154940_init.js', 1, NOW());
@@ -5677,3 +5682,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026071
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260715120000_oauth-grants-per-device.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260717120000_build-search-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260721120000_saml-purchased.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260722120000_account-staff-contacted-at.js', 1, NOW());

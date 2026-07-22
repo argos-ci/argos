@@ -632,6 +632,117 @@ function createAccountLastBuildDateByAccountIdLoader() {
   });
 }
 
+/**
+ * What an account has done since it was created: how much it built, and when it
+ * first got a check build — one compared to a baseline, as opposed to an orphan
+ * one. That last date is the moment the account first sees a visual diff, which
+ * is what Argos is for, and the clearest marker that it activated.
+ */
+type AccountActivation = {
+  projectsCount: number;
+  buildsCount: number;
+  screenshotsCount: number;
+  firstComparisonAt: Date | null;
+};
+
+const EMPTY_ACCOUNT_ACTIVATION: AccountActivation = {
+  projectsCount: 0,
+  buildsCount: 0,
+  screenshotsCount: 0,
+  firstComparisonAt: null,
+};
+
+function createAccountActivationByAccountIdLoader() {
+  return new DataLoader<string, AccountActivation>(async (accountIds) => {
+    // Left join so accounts that created projects but never built still get a
+    // row. `count(distinct)` is required on projects: the join to builds
+    // multiplies project rows.
+    const rows = await Project.query()
+      .leftJoin("builds", "builds.projectId", "projects.id")
+      .select("projects.accountId")
+      .select(
+        knex.raw(`count(distinct projects.id) as "projectsCount"`),
+        knex.raw(`count(builds.id) as "buildsCount"`),
+        knex.raw(
+          `sum(coalesce((builds.stats->>'total')::int, 0)) as "screenshotsCount"`,
+        ),
+        knex.raw(
+          `min(builds."createdAt") filter (where builds.type = 'check') as "firstComparisonAt"`,
+        ),
+      )
+      .whereIn("projects.accountId", accountIds as string[])
+      .groupBy("projects.accountId");
+
+    const activationByAccountId = new Map<string, AccountActivation>();
+    for (const row of rows as unknown as Array<{
+      accountId: string | number;
+      projectsCount: string | number;
+      buildsCount: string | number;
+      screenshotsCount: string | number | null;
+      firstComparisonAt: string | Date | null;
+    }>) {
+      activationByAccountId.set(String(row.accountId), {
+        projectsCount: Number(row.projectsCount) || 0,
+        buildsCount: Number(row.buildsCount) || 0,
+        screenshotsCount: Number(row.screenshotsCount) || 0,
+        firstComparisonAt: row.firstComparisonAt
+          ? new Date(row.firstComparisonAt)
+          : null,
+      });
+    }
+
+    return accountIds.map(
+      (accountId) =>
+        activationByAccountId.get(String(accountId)) ??
+        EMPTY_ACCOUNT_ACTIVATION,
+    );
+  });
+}
+
+/** An owner of a team, as needed to write to them. */
+type TeamOwner = {
+  id: string;
+  name: string | null;
+  email: string | null;
+};
+
+function createTeamOwnersByTeamIdLoader() {
+  return new DataLoader<string, TeamOwner[]>(async (teamIds) => {
+    // The display name lives on the owner's personal account, the address on
+    // the user, so both are joined in one pass.
+    const rows = await TeamUser.query()
+      .join("users", "users.id", "team_users.userId")
+      .join("accounts", "accounts.userId", "users.id")
+      .select(
+        "team_users.teamId",
+        "users.id as userId",
+        "users.email",
+        "accounts.name",
+      )
+      .whereIn("team_users.teamId", teamIds as string[])
+      .where("team_users.userLevel", "owner");
+
+    const ownersByTeamId = new Map<string, TeamOwner[]>();
+    for (const row of rows as unknown as Array<{
+      teamId: string | number;
+      userId: string | number;
+      email: string | null;
+      name: string | null;
+    }>) {
+      const teamId = String(row.teamId);
+      const owners = ownersByTeamId.get(teamId) ?? [];
+      owners.push({
+        id: String(row.userId),
+        name: row.name,
+        email: row.email,
+      });
+      ownersByTeamId.set(teamId, owners);
+    }
+
+    return teamIds.map((teamId) => ownersByTeamId.get(String(teamId)) ?? []);
+  });
+}
+
 function createAccountSubscriptionStatusByAccountIdLoader() {
   return new DataLoader<string, AccountSubscriptionStatus | null>(
     async (accountIds) => {
@@ -1331,6 +1442,8 @@ export const createLoaders = () => ({
     createAccountLast30DaysScreenshotsByAccountIdLoader(),
   AccountLastBuildDateByAccountId:
     createAccountLastBuildDateByAccountIdLoader(),
+  AccountActivationByAccountId: createAccountActivationByAccountIdLoader(),
+  TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),

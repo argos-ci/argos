@@ -11,6 +11,7 @@ import {
   MoonIcon,
   PlusCircleIcon,
   SettingsIcon,
+  ShieldUserIcon,
   SunIcon,
 } from "lucide-react";
 import { Button as RACButton, SubmenuTrigger } from "react-aria-components";
@@ -182,6 +183,17 @@ function UserMenu() {
             </MenuItemIcon>
             Settings
           </MenuItem>
+          {authPayload.account.staff ? (
+            <>
+              <MenuSeparator />
+              <MenuItem href="/staff">
+                <MenuItemIcon>
+                  <ShieldUserIcon />
+                </MenuItemIcon>
+                Staff
+              </MenuItem>
+            </>
+          ) : null}
           <MenuSeparator />
           <ColorModeSubmenu />
           <MenuSeparator />

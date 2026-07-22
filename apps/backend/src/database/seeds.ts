@@ -34,6 +34,7 @@ export async function createUserAccount(input: {
   slug: string;
   name: string;
   githubId?: number;
+  staff?: boolean;
   /**
    * @default "user"
    */
@@ -44,6 +45,7 @@ export async function createUserAccount(input: {
     (async () => {
       const user = await User.query().insertAndFetch({
         email: input.email,
+        staff: input.staff ?? false,
         type,
       });
       await UserEmail.query().insert({
@@ -1261,12 +1263,14 @@ export async function seed() {
       name: "Greg Bergé",
       slug: "gregberge",
       githubId: 266302,
+      staff: true,
     }),
     createUserAccount({
       email: "jeremy@smooth-code.com",
       name: "Jeremy Sfez",
       slug: "jsfez",
       githubId: 15954562,
+      staff: true,
     }),
     createUserAccount({
       email: "argos-bot@no-reply.argos-ci.com",

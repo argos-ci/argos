@@ -286,9 +286,30 @@ export const router: ReturnType<typeof createBrowserRouter> =
               lazy: () => import("./pages/Teams"),
             },
             {
+              // Kept so bookmarks to the former staff directory keep working.
               path: "teams/all",
+              element: <Navigate to="/staff/teams" replace={true} />,
+            },
+            {
+              path: "staff",
               HydrateFallback,
-              lazy: () => import("./pages/StaffTeams"),
+              lazy: () => import("./pages/Staff"),
+              children: [
+                {
+                  index: true,
+                  element: <Navigate to="teams" replace={true} />,
+                },
+                {
+                  path: "teams",
+                  HydrateFallback,
+                  lazy: () => import("./pages/StaffTeams"),
+                },
+                {
+                  path: "trials",
+                  HydrateFallback,
+                  lazy: () => import("./pages/StaffTrials"),
+                },
+              ],
             },
             {
               path: ":accountSlug/:projectName",

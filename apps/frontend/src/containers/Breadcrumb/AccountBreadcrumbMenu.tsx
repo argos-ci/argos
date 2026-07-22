@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client/react";
-import { PlusCircleIcon } from "lucide-react";
+import { PlusCircleIcon, ShieldUserIcon } from "lucide-react";
 import { MenuSection } from "react-aria-components";
 import { matchPath, useLocation } from "react-router-dom";
 
@@ -21,6 +21,7 @@ const MeQuery = graphql(`
   query AccountBreadcrumbMenu_me {
     me {
       id
+      staff
       ...AccountBreadcrumbMenu_Account
       teams {
         id
@@ -86,6 +87,23 @@ export function AccountBreadcrumbMenu() {
           Create a Team
         </MenuItem>
       </MenuSection>
+      {data?.me?.staff ? (
+        <MenuSection>
+          <MenuTitle>Staff</MenuTitle>
+          <MenuItem href="/staff/teams">
+            <MenuItemIcon>
+              <ShieldUserIcon />
+            </MenuItemIcon>
+            All teams
+          </MenuItem>
+          <MenuItem href="/staff/trials">
+            <MenuItemIcon>
+              <ShieldUserIcon />
+            </MenuItemIcon>
+            Trials
+          </MenuItem>
+        </MenuSection>
+      ) : null}
     </Menu>
   );
 }

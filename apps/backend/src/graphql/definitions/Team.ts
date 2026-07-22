@@ -125,6 +125,16 @@ export const typeDefs = gql`
     membersCount: Int!
     last30DaysScreenshots: Int!
     lastBuildDate: DateTime
+    projectsCount: Int!
+    buildsCount: Int!
+    "Screenshots uploaded since the team was created"
+    screenshotsCount: Int!
+    "When the team got its first build compared to a baseline"
+    firstComparisonAt: DateTime
+    "Owners of the team, with their email address. Staff only."
+    staffOwners: [StaffTeamOwner!]!
+    "When a staff member reached out to the team, null if never. Staff only."
+    staffContactedAt: DateTime
     githubMembers(
       after: Int = 0
       first: Int = 30
@@ -150,6 +160,18 @@ export const typeDefs = gql`
     samlSsoUrl: String!
     defaultUserLevel: TeamDefaultUserLevel!
     githubLightInstallation: GithubInstallation
+  }
+
+  "An owner of a team, as needed to write to them. Staff only."
+  type StaffTeamOwner {
+    id: ID!
+    name: String
+    email: String
+  }
+
+  input SetTeamStaffContactInput {
+    teamAccountId: ID!
+    contacted: Boolean!
   }
 
   type TeamSamlConfig {
@@ -346,6 +368,8 @@ export const typeDefs = gql`
     teamInvite(secret: String!): Team
     "List all teams (staff only)"
     staffTeams: [Team!]!
+    "List teams created within the last \`days\` days, newest first (staff only)"
+    staffTeamCohort(days: Int! = 30): [Team!]!
     "List all teams the authenticated user can join based on verified email domains"
     autoInvites: [AutoInvite!]!
   }
@@ -353,6 +377,8 @@ export const typeDefs = gql`
   extend type Mutation {
     "Create a team"
     createTeam(input: CreateTeamInput!): CreateTeamResult!
+    "Record or clear that a staff member reached out to a team (staff only)"
+    setTeamStaffContact(input: SetTeamStaffContactInput!): Team!
     "Leave a team"
     leaveTeam(input: LeaveTeamInput!): Boolean!
     "Remove a user from a team"
@@ -624,6 +650,47 @@ export const resolvers: IResolvers = {
     },
     lastBuildDate: async (account, _args, ctx) => {
       return ctx.loaders.AccountLastBuildDateByAccountId.load(account.id);
+    },
+    projectsCount: async (account, _args, ctx) => {
+      const activation = await ctx.loaders.AccountActivationByAccountId.load(
+        account.id,
+      );
+      return activation.projectsCount;
+    },
+    buildsCount: async (account, _args, ctx) => {
+      const activation = await ctx.loaders.AccountActivationByAccountId.load(
+        account.id,
+      );
+      return activation.buildsCount;
+    },
+    screenshotsCount: async (account, _args, ctx) => {
+      const activation = await ctx.loaders.AccountActivationByAccountId.load(
+        account.id,
+      );
+      return activation.screenshotsCount;
+    },
+    staffOwners: async (account, _args, ctx) => {
+      // Owner addresses are personal data: staff only, never exposed to the
+      // team's own members through this field.
+      if (!ctx.auth?.user.staff) {
+        throw forbidden();
+      }
+      invariant(account.teamId, "not a team account");
+      return ctx.loaders.TeamOwnersByTeamId.load(account.teamId);
+    },
+    staffContactedAt: async (account, _args, ctx) => {
+      if (!ctx.auth?.user.staff) {
+        throw forbidden();
+      }
+      return account.staffContactedAt
+        ? new Date(account.staffContactedAt)
+        : null;
+    },
+    firstComparisonAt: async (account, _args, ctx) => {
+      const activation = await ctx.loaders.AccountActivationByAccountId.load(
+        account.id,
+      );
+      return activation.firstComparisonAt;
     },
     githubMembers: async (account, args, ctx) => {
       if (!ctx.auth) {
@@ -900,6 +967,29 @@ export const resolvers: IResolvers = {
         .whereNull("userId")
         .orderByRaw("coalesce(name, slug) asc");
     },
+    staffTeamCohort: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      if (!ctx.auth.user.staff) {
+        throw forbidden();
+      }
+
+      if (args.days < 1) {
+        throw badUserInput("`days` must be at least 1.");
+      }
+
+      // Newest first: the cohort is read as a feed of what just happened, not
+      // as a directory.
+      return Account.query()
+        .whereNotNull("teamId")
+        .whereNull("userId")
+        .whereRaw(`accounts."createdAt" >= now() - make_interval(days => ?)`, [
+          args.days,
+        ])
+        .orderBy("createdAt", "desc");
+    },
     teamInvite: async (_root, args) => {
       const team = await Team.query()
         .withGraphFetched("account")
@@ -922,6 +1012,25 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
+    setTeamStaffContact: async (_root, args, ctx) => {
+      if (!ctx.auth) {
+        throw unauthenticated();
+      }
+
+      if (!ctx.auth.user.staff) {
+        throw forbidden();
+      }
+
+      const teamAccount = await Account.query()
+        .findById(args.input.teamAccountId)
+        .throwIfNotFound();
+
+      return teamAccount.$query().patchAndFetch({
+        staffContactedAt: args.input.contacted
+          ? new Date().toISOString()
+          : null,
+      });
+    },
     createTeam: async (_root, args, ctx) => {
       const { auth } = ctx;
 

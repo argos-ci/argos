@@ -1,7 +1,6 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import clsx from "clsx";
 import { SearchIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
@@ -21,6 +20,7 @@ import {
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
+import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 
@@ -104,7 +104,6 @@ type TeamProjectItem = NonNullable<
 
 type SortKey = "team" | "createdAt" | "members";
 
-type SortDirection = "asc" | "desc";
 const PAGE_SIZE = 100;
 
 function checkTeamMatchesSearch(team: TeamItem, search: string) {
@@ -122,28 +121,6 @@ function checkTeamMatchesSearch(team: TeamItem, search: string) {
 
 function getSubscriptionLabel(status: string | null | undefined) {
   return status ? status.replaceAll("_", " ") : "none";
-}
-
-function SortHeader(props: {
-  label: string;
-  sortKey: SortKey;
-  activeSortKey: SortKey;
-  direction: SortDirection;
-  onSort: (key: SortKey) => void;
-  className?: string;
-}) {
-  const isActive = props.activeSortKey === props.sortKey;
-  const arrow = isActive ? (props.direction === "asc" ? "↑" : "↓") : "↕";
-
-  return (
-    <button
-      type="button"
-      className={clsx("whitespace-nowrap", props.className)}
-      onClick={() => props.onSort(props.sortKey)}
-    >
-      {props.label} {arrow}
-    </button>
-  );
 }
 
 function StaffMembersPanel(props: { members: TeamMemberItem[] }) {

@@ -20,6 +20,7 @@ type AuthAccount = {
   id: string;
   slug: string;
   name: string | null;
+  staff: boolean;
 };
 
 /**
@@ -50,6 +51,7 @@ const MeQuery = graphql(`
       id
       slug
       name
+      staff
     }
   }
 `);
