@@ -213,6 +213,7 @@ export async function notifyProjectCreation(input: {
   source: ProjectCreationSource;
 }) {
   await notifyDiscord({
+    channel: "growth",
     content: `
 New project from ${input.account.name} (${input.email ?? "unknown email"}) ${
       input.source

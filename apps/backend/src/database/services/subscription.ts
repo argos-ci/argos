@@ -85,6 +85,7 @@ export async function notifySubscriptionStatusUpdate(args: {
 
   try {
     await notifyDiscord({
+      channel: "head",
       content: [
         `${providerName} • ${statusMessage}`,
         reason ? `📝 Reason: ${reason}` : "",

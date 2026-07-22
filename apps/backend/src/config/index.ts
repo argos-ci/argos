@@ -497,11 +497,17 @@ export function createConfig() {
       },
     },
     discord: {
-      webhookUrl: {
-        doc: "Discord Webhook URL",
+      headWebhookUrl: {
+        doc: "Discord Webhook URL for the head channel",
         format: String,
         default: "",
-        env: "DISCORD_WEBHOOK_URL",
+        env: "DISCORD_HEAD_WEBHOOK_URL",
+      },
+      growthWebhookUrl: {
+        doc: "Discord Webhook URL for the growth channel",
+        format: String,
+        default: "",
+        env: "DISCORD_GROWTH_WEBHOOK_URL",
       },
     },
     google: {

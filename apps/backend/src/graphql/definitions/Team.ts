@@ -1061,6 +1061,7 @@ export const resolvers: IResolvers = {
       });
 
       await notifyDiscord({
+        channel: "head",
         content:
           `Trial extended for ${teamAccount.name} (${teamUrl}) (by ${auth.user.email})`.trim(),
       }).catch((error) => {
