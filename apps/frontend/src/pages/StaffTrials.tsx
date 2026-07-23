@@ -7,6 +7,7 @@ import {
   CheckIcon,
   CircleCheckIcon,
   CircleXIcon,
+  CreditCardIcon,
   ImagesIcon,
   MailIcon,
   MinusIcon,
@@ -41,6 +42,7 @@ import { Switch } from "@/ui/Switch";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 import { toast } from "@/ui/Toaster";
+import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "./Account/AccountParams";
@@ -154,7 +156,6 @@ type SortKey =
   | "createdAt"
   | "status"
   | "lastActivity"
-  | "bankInfo"
   | "checkBuild"
   | "builds"
   | "screenshots"
@@ -173,8 +174,6 @@ function getSortValue(team: PipelineTeam, key: SortKey): string | number {
       return new Date(team.createdAt).getTime();
     case "status":
       return team.subscriptionStatus ?? "";
-    case "bankInfo":
-      return team.subscription?.paymentMethodFilled ? 1 : 0;
     // Ranked worst-first so sorting ascending surfaces the teams that build
     // without ever producing a comparison.
     case "checkBuild":
@@ -245,10 +244,25 @@ function StatusCell(props: { team: PipelineTeam }) {
     return (
       <div className="whitespace-nowrap">
         <span className="font-medium">trial</span>
+        {subscriptionStatus ===
+          AccountSubscriptionStatus.TrialingWithPaymentMethod && (
+          <Tooltip content="Payment method filled">
+            <CreditCardIcon
+              className="text-success-low ml-1 inline-block size-4"
+              aria-label="Payment method filled"
+            />
+          </Tooltip>
+        )}
+
         {daysRemaining != null && (
-          <span className={isEndingUnpaid ? "text-warning-low" : "text-low"}>
+          <span
+            className={clsx(
+              "text-xs",
+              isEndingUnpaid ? "text-warning-low" : "text-low",
+            )}
+          >
             {" "}
-            · {daysRemaining}d left
+            • {daysRemaining}d left
           </span>
         )}
       </div>
@@ -322,54 +336,6 @@ function CheckBuildCell(props: { team: PipelineTeam }) {
   return <StepIcon reached={false} label="Check build" />;
 }
 
-function PaymentCell(props: { team: PipelineTeam }) {
-  const { subscription } = props.team;
-
-  if (!subscription) {
-    return (
-      <div className="flex justify-center">
-        <span className="text-low" title="No subscription">
-          ·
-        </span>
-      </div>
-    );
-  }
-
-  // GitHub Marketplace subscriptions are created with the flag forced on, so a
-  // check there means "billed through GitHub", not "entered a card".
-  const isGithub = subscription.provider !== "stripe";
-
-  return (
-    <StepIcon
-      reached={subscription.paymentMethodFilled}
-      label="Payment method"
-      title={isGithub ? "Billed through GitHub Marketplace" : undefined}
-    />
-  );
-}
-
-/**
- * When the team last built. Cumulative counters say how much a team did, never
- * when — so a team that ran twelve builds three weeks ago and one that ran
- * twelve today read identically without this.
- */
-function LastActivityCell(props: { date: string | null | undefined }) {
-  if (!props.date) {
-    return <span className="text-low">Never</span>;
-  }
-
-  return (
-    <>
-      <div className="truncate">
-        <Time date={props.date} format="ll" tooltip="title" />
-      </div>
-      <div className="text-low truncate text-xs">
-        <Time date={props.date} tooltip="none" />
-      </div>
-    </>
-  );
-}
-
 /**
  * Opens a drafted onboarding email in the staff member's own mail client, and
  * records that the team was reached out to.
@@ -405,26 +371,21 @@ function ContactCell(props: { team: PipelineTeam }) {
 
   return (
     <div className="flex items-center justify-center gap-1">
-      {mailtoUrl ? (
-        <LinkButton
-          href={mailtoUrl}
-          variant="secondary"
-          size="small"
-          iconOnly
-          aria-label="Draft onboarding email"
-          onPress={() => {
-            if (!contactedAt) {
-              markContacted(true);
-            }
-          }}
-        >
-          <MailIcon />
-        </LinkButton>
-      ) : (
-        <span className="text-low text-sm" title="No owner email on file">
-          —
-        </span>
-      )}
+      <LinkButton
+        href={mailtoUrl || undefined}
+        variant="secondary"
+        size="small"
+        iconOnly
+        aria-label="Draft onboarding email"
+        onPress={() => {
+          if (!contactedAt) {
+            markContacted(true);
+          }
+        }}
+      >
+        <MailIcon />
+      </LinkButton>
+
       <span
         title={
           contactedAt
@@ -457,26 +418,17 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
             <Link href={teamURL} className="truncate font-medium">
               {team.name || team.slug}
             </Link>
-            <div className="text-low truncate">{team.slug}</div>
           </div>
         </div>
       </td>
-      <td className="p-4 text-sm">
-        <div className="truncate">
-          <Time date={team.createdAt} format="ll" tooltip="title" />
-        </div>
-        <div className="text-low truncate text-xs">
-          <Time date={team.createdAt} tooltip="none" />
-        </div>
+      <td className="truncate p-4 text-sm">
+        <Time date={team.createdAt} />
       </td>
-      <td className="p-4 text-sm">
-        <LastActivityCell date={team.lastBuildDate} />
+      <td className="truncate p-4 text-sm">
+        {team.lastBuildDate && <Time date={team.lastBuildDate} />}
       </td>
       <td className="p-4 text-sm">
         <StatusCell team={team} />
-      </td>
-      <td className="p-4">
-        <PaymentCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
         {team.staff.buildsCount.toLocaleString()}
@@ -513,28 +465,27 @@ const COLUMNS: {
   align: keyof typeof ALIGN_CLASS_NAMES;
   width: string;
 }[] = [
-  { key: "team", label: "Team", align: "left", width: "w-[17%]" },
-  { key: "createdAt", label: "Created", align: "left", width: "w-[11%]" },
+  { key: "team", label: "Team", align: "left", width: "w-[20%]" },
+  { key: "createdAt", label: "Created", align: "left", width: "w-[12%]" },
   {
     key: "lastActivity",
     label: "Last activity",
     align: "left",
     width: "w-[12%]",
   },
-  { key: "status", label: "Status", align: "left", width: "w-[12%]" },
-  { key: "bankInfo", label: "Bank info", align: "center", width: "w-[9%]" },
+  { key: "status", label: "Status", align: "left", width: "w-[9%]" },
   { key: "builds", label: "Builds", align: "right", width: "w-[9%]" },
   {
     key: "checkBuild",
     label: "Check build",
     align: "center",
-    width: "w-[10%]",
+    width: "w-[9%]",
   },
   {
     key: "screenshots",
     label: "Screenshots",
     align: "right",
-    width: "w-[11%]",
+    width: "w-[9%]",
   },
   { key: "contacted", label: "Contacted", align: "center", width: "w-[9%]" },
 ];
