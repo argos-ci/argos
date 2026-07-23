@@ -3,17 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Account, Project } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
-import { notifyDiscord } from "@/discord";
+import * as discord from "@/discord";
 import { HTTPError } from "@/util/error";
 
 import { createProject, notifyProjectTransfer } from "./project";
 
-// The Discord webhook is configured in the test env; stub it so creating a
-// project here doesn't post a real notification.
-vi.mock("@/discord", async (importActual) => ({
-  ...(await importActual<typeof import("@/discord")>()),
-  notifyDiscord: vi.fn(() => Promise.resolve()),
-}));
+// Real notifications are already disabled in tests (the webhook client is off);
+// spy on the sender only to assert what would have been posted.
+const notifyDiscord = vi
+  .spyOn(discord, "notifyDiscord")
+  .mockResolvedValue(undefined);
 
 /**
  * Create a team account with an owner (admin) user and its personal account.
