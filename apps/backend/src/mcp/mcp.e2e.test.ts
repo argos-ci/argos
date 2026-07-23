@@ -20,7 +20,10 @@ import { issueTokens } from "@/oauth/tokens";
 
 import { mcpRouter } from "./router";
 
-vi.mock("@/discord", () => ({ notifyDiscord: vi.fn(() => Promise.resolve()) }));
+vi.mock("@/discord", async (importActual) => ({
+  ...(await importActual<typeof import("@/discord")>()),
+  notifyDiscord: vi.fn(() => Promise.resolve()),
+}));
 
 const app = express();
 app.use(mcpRouter);

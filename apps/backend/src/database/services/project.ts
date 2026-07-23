@@ -3,7 +3,7 @@ import { assertNever } from "@argos/util/assertNever";
 import * as Sentry from "@sentry/node";
 import type { QueryBuilder } from "objection";
 
-import { notifyDiscord } from "@/discord";
+import { formatDiscordLink, getProjectUrl, notifyDiscord } from "@/discord";
 import { boom } from "@/util/error";
 
 import type { Account } from "../models/Account";
@@ -220,14 +220,21 @@ export async function notifyProjectCreation(input: {
     return;
   }
 
+  const projectLink = formatDiscordLink(
+    `${input.account.slug} / ${input.project.name}`,
+    getProjectUrl(input.account.slug, input.project.name),
+  );
+
   await notifyDiscord({
     content: `
-New project from ${input.account.name} (${input.email ?? "unknown email"}) ${
+New project from ${input.account.displayName} (${
+      input.email ?? "unknown email"
+    }) ${
       input.source
         ? `imported from ${input.source}`
         : "created without a Git provider"
     }:
-${input.account.slug} / ${input.project.name}
+${projectLink}
 `.trim(),
   }).catch((error) => {
     Sentry.captureException(error);
@@ -257,10 +264,15 @@ export async function notifyProjectTransfer(input: {
     return;
   }
 
+  const targetLink = formatDiscordLink(
+    `${input.targetAccount.slug} / ${input.project.name}`,
+    getProjectUrl(input.targetAccount.slug, input.project.name),
+  );
+
   await notifyDiscord({
     content: `
 Project transferred to a team by ${input.email ?? "unknown email"}:
-${input.previousAccount.slug} / ${input.previousName} → ${input.targetAccount.slug} / ${input.project.name}
+${input.previousAccount.slug} / ${input.previousName} → ${targetLink}
 `.trim(),
   }).catch((error) => {
     Sentry.captureException(error);

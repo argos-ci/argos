@@ -11,7 +11,10 @@ import { createApolloServerApp } from "./util";
 
 // The Discord webhook is configured in the test env; stub it so transferring a
 // project here doesn't post a real notification.
-vi.mock("@/discord", () => ({ notifyDiscord: vi.fn(() => Promise.resolve()) }));
+vi.mock("@/discord", async (importActual) => ({
+  ...(await importActual<typeof import("@/discord")>()),
+  notifyDiscord: vi.fn(() => Promise.resolve()),
+}));
 
 const TransferProjectMutation = `
   mutation TransferProject($input: TransferProjectInput!) {
