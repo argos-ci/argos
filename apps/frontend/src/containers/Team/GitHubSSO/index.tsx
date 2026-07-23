@@ -1,6 +1,5 @@
 import { memo } from "react";
 import { useMutation } from "@apollo/client/react";
-import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
@@ -28,6 +27,7 @@ import {
 import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Modal } from "@/ui/Modal";
 import { getErrorMessage } from "@/util/error";
+import { getAddOnBlockedReason } from "@/util/subscription";
 
 import { ConfigureGitHubSSO } from "./Configure";
 
@@ -39,8 +39,13 @@ const _TeamFragment = graphql(`
       displayName
       usageBased
       githubSsoIncluded
+      interval
     }
     subscriptionStatus
+    subscription {
+      id
+      provider
+    }
     ssoGithubAccount {
       id
       ...GithubAccountLink_GithubAccount
@@ -105,11 +110,15 @@ export function TeamGitHubSSO(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const hasActiveSubscription = checkIsActiveSubscriptionStatus(
-    team.subscriptionStatus,
-  );
   const priced = !team.plan?.githubSsoIncluded;
-  const usageBased = team.plan?.usageBased;
+  const disabledReason = getAddOnBlockedReason({
+    status: team.subscriptionStatus,
+    provider: team.subscription?.provider,
+    interval: team.plan?.interval,
+    includedInPlan: !priced,
+    usageBased: Boolean(team.plan?.usageBased),
+    featureName: "GitHub SSO",
+  });
   return (
     <Card>
       <CardBody>
@@ -146,13 +155,7 @@ export function TeamGitHubSSO(props: {
           <ConfigureGitHubSSO
             team={team}
             priced={priced}
-            disabledReason={
-              !hasActiveSubscription
-                ? "You must have an active subscription to enable GitHub SSO."
-                : priced && !usageBased
-                  ? "This feature is not available on your current plan, please contact us."
-                  : undefined
-            }
+            disabledReason={disabledReason ?? undefined}
           />
         )}
       </CardFooter>

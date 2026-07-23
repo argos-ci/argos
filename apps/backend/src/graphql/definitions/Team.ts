@@ -18,6 +18,8 @@ import {
   checkIsActiveSubscriptionStatus,
   GithubAccountMember,
   GithubInstallation,
+  Plan,
+  Subscription,
   Team,
   TeamDomain,
   TeamInvite,
@@ -400,6 +402,35 @@ export const typeDefs = gql`
     ): ImportTeamSamlMetadataResult!
   }
 `;
+
+/**
+ * Whether add-ons can be billed onto this subscription.
+ *
+ * They ride as extra products on a Stripe subscription, so a forced plan (which
+ * has no subscription at all) and a GitHub Marketplace one have nothing to
+ * carry them — however healthy their plan is otherwise.
+ *
+ * Narrows `stripeSubscriptionId` so callers can bill without asserting.
+ */
+function checkCanBillAddOns(
+  subscription: Subscription | null,
+): subscription is Subscription & { stripeSubscriptionId: string } {
+  return (
+    subscription !== null &&
+    subscription.provider === "stripe" &&
+    subscription.stripeSubscriptionId !== null
+  );
+}
+
+/**
+ * Whether the plan is billed yearly.
+ *
+ * Add-on products are priced monthly and Stripe refuses items whose interval
+ * differs from the rest of the subscription, so a yearly plan cannot take one.
+ */
+function checkIsYearlyPlan(plan: Plan | null): boolean {
+  return plan?.interval === "year";
+}
 
 /**
  * Add a Stripe product to a subscription if it's not already part of it.
@@ -1456,12 +1487,16 @@ export const resolvers: IResolvers = {
       const priced = !plan?.githubSsoIncluded;
 
       if (priced) {
-        if (!subscription) {
-          throw forbidden("A valid subscription is required to enable SSO");
+        if (!checkCanBillAddOns(subscription)) {
+          throw forbidden(
+            "Your plan does not allow enabling GitHub SSO, please contact us.",
+          );
         }
 
-        if (!subscription.stripeSubscriptionId) {
-          throw forbidden("GitHub SSO is not available on your current plan");
+        if (checkIsYearlyPlan(plan)) {
+          throw forbidden(
+            "GitHub SSO cannot be added to a yearly plan, please contact us.",
+          );
         }
 
         await addStripeProductToSubscription({
@@ -1539,14 +1574,16 @@ export const resolvers: IResolvers = {
       const priced = !plan?.samlIncluded;
 
       if (priced) {
-        if (!subscription) {
+        if (!checkCanBillAddOns(subscription)) {
           throw forbidden(
-            "A valid subscription is required to enable SAML SSO",
+            "Your plan does not allow enabling SAML SSO, please contact us.",
           );
         }
 
-        if (!subscription.stripeSubscriptionId) {
-          throw forbidden("SAML SSO is not available on your current plan");
+        if (checkIsYearlyPlan(plan)) {
+          throw forbidden(
+            "SAML SSO cannot be added to a yearly plan, please contact us.",
+          );
         }
 
         await addStripeProductToSubscription({
