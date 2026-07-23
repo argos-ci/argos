@@ -11,6 +11,7 @@ import config from "@/config";
 import { getGoogleAuthUrl } from "@/google";
 import { apolloServer, createApolloMiddleware } from "@/graphql";
 import { mountOAuthServer } from "@/oauth/router";
+import { installSkillsRoutes } from "@/skills/router";
 import { getSlackMiddleware } from "@/slack";
 import { boom } from "@/util/error";
 import { createRedisStore } from "@/util/rate-limit";
@@ -196,6 +197,11 @@ export const installAppRouter = async (app: express.Application) => {
   // static handler and SPA catch-all so `GET /oauth/authorize` still falls
   // through to the SPA consent page.
   mountOAuthServer(router);
+
+  // Agent-skills discovery (`npx skills add https://argos-ci.com`). Mounted
+  // before the static handler and SPA catch-all so `/.well-known/agent-skills/*`
+  // returns the index / repo redirects instead of the SPA shell.
+  installSkillsRoutes(router);
 
   router.use(getSlackMiddleware());
 

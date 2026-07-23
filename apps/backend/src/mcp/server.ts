@@ -6,7 +6,14 @@
  * Schema for `tools/list` and validates arguments and structured results, so
  * MCP clients get the exact same validation the REST API applies.
  */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { trimTrailingSlash } from "@argos/util/url";
+import {
+  McpServer,
+  ResourceTemplate,
+} from "@modelcontextprotocol/sdk/server/mcp.js";
+
+import config from "@/config";
+import { getSkillFileUrl, getSkills } from "@/skills/registry";
 
 import { callTool } from "./dispatch";
 import { mcpTools } from "./tools";
@@ -42,5 +49,72 @@ export function createMcpServer(context: { authorization: string }): McpServer {
     );
   }
 
+  registerSkillResources(server);
+
   return server;
+}
+
+/**
+ * Expose the published Argos skills (from `argos-javascript`, the same source
+ * `npx skills add` installs) as MCP resources, so an MCP client on
+ * `mcp.argos-ci.com` discovers them via `resources/list` and reads a
+ * `SKILL.md` on demand.
+ *
+ * Registration is a single lazy resource template: servers are created per
+ * request, so the skills must never be fetched at creation time — the registry
+ * (cached, stale-on-error) is only hit when a client actually calls
+ * `resources/list` or `resources/read`.
+ */
+function registerSkillResources(server: McpServer): void {
+  const appOrigin = trimTrailingSlash(config.get("server.url"));
+  // The canonical, dereferenceable location — the same URL `npx skills add`
+  // resolves — even though the content is fetched from the repo on read.
+  const skillUri = (name: string) =>
+    `${appOrigin}/.well-known/agent-skills/${name}/SKILL.md`;
+
+  server.registerResource(
+    "skill",
+    new ResourceTemplate(skillUri("{skill}"), {
+      // A listing failure degrades to "no skills" instead of erroring the
+      // whole resources/list call.
+      list: async () => {
+        const skills = await getSkills().catch(() => []);
+        return {
+          resources: skills.map((skill) => ({
+            uri: skillUri(skill.name),
+            name: skill.name,
+            description: skill.description,
+            mimeType: "text/markdown",
+          })),
+        };
+      },
+    }),
+    {
+      title: "Argos agent skills",
+      description:
+        "Installable agent skills published by Argos (also served at /.well-known/agent-skills).",
+      mimeType: "text/markdown",
+    },
+    async (uri, variables) => {
+      const name = String(variables["skill"]);
+      const skills = await getSkills();
+      const skill = skills.find((s) => s.name === name);
+      if (!skill) {
+        throw new Error(`Unknown Argos skill: ${name}`);
+      }
+      const response = await fetch(getSkillFileUrl(skill.name, "SKILL.md"));
+      if (!response.ok) {
+        throw new Error(`Failed to load the "${name}" skill`);
+      }
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "text/markdown",
+            text: await response.text(),
+          },
+        ],
+      };
+    },
+  );
 }
