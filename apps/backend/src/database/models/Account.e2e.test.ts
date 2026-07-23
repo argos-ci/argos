@@ -2,7 +2,7 @@ import { test as base, describe, expect } from "vitest";
 
 import type { ScreenshotBucket } from ".";
 import { factory, setupDatabase } from "../testing";
-import { Account } from "./Account";
+import { Account, checkIsActiveSubscriptionStatus } from "./Account";
 import { Plan } from "./Plan";
 
 type Fixtures = {
@@ -334,7 +334,7 @@ describe("Account", () => {
       expect(status).toBeNull();
     });
 
-    it("returns active for trialing subscription with payment method", async ({
+    it("returns trialing_with_payment_method for a carded trial", async ({
       fixture,
     }) => {
       await factory.Subscription.create({
@@ -344,8 +344,23 @@ describe("Account", () => {
         paymentMethodFilled: true,
       });
       const manager = fixture.account.$getSubscriptionManager();
+      // The card unlocks access, it does not end the trial.
       const status = await manager.getSubscriptionStatus();
-      expect(status).toBe("active");
+      expect(status).toBe("trialing_with_payment_method");
+    });
+
+    it("returns trialing for a trial without a payment method", async ({
+      fixture,
+    }) => {
+      await factory.Subscription.create({
+        planId: fixture.plans[1]!.id,
+        accountId: fixture.account.id,
+        status: "trialing",
+        paymentMethodFilled: false,
+      });
+      const manager = fixture.account.$getSubscriptionManager();
+      const status = await manager.getSubscriptionStatus();
+      expect(status).toBe("trialing");
     });
 
     it("returns trial_expired when previous paid trial ended", async ({
@@ -393,6 +408,24 @@ describe("Account", () => {
       const manager = fixture.account.$getSubscriptionManager();
       const status = await manager.getSubscriptionStatus();
       expect(status).toBe("canceled");
+    });
+  });
+
+  describe("checkIsActiveSubscriptionStatus", () => {
+    it("accepts the statuses that unlock team features", () => {
+      expect(checkIsActiveSubscriptionStatus("active")).toBe(true);
+      expect(
+        checkIsActiveSubscriptionStatus("trialing_with_payment_method"),
+      ).toBe(true);
+    });
+
+    it("rejects a trial with no payment method, and every other status", () => {
+      expect(checkIsActiveSubscriptionStatus("trialing")).toBe(false);
+      expect(checkIsActiveSubscriptionStatus("past_due")).toBe(false);
+      expect(checkIsActiveSubscriptionStatus("unpaid")).toBe(false);
+      expect(checkIsActiveSubscriptionStatus("canceled")).toBe(false);
+      expect(checkIsActiveSubscriptionStatus("trial_expired")).toBe(false);
+      expect(checkIsActiveSubscriptionStatus(null)).toBe(false);
     });
   });
 
@@ -444,7 +477,9 @@ describe("Account", () => {
 
       expect(statuses.get(fixture.vipAccount.id)).toBe("active");
       expect(statuses.get(userAccount.id)).toBeNull();
-      expect(statuses.get(trialingAccount.id)).toBe("active");
+      expect(statuses.get(trialingAccount.id)).toBe(
+        "trialing_with_payment_method",
+      );
       expect(statuses.get(pastDueAccount.id)).toBe("past_due");
       expect(statuses.get(trialExpiredAccount.id)).toBe("trial_expired");
       expect(statuses.get(fixture.account.id)).toBe("canceled");

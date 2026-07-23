@@ -1,9 +1,9 @@
 import { useMutation } from "@apollo/client/react";
+import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 
 import { SAML_SSO_PRICING } from "@/constants";
 import { AddOnsPricingTable } from "@/containers/Team/AddOnsPricingTable";
 import { DocumentType, graphql } from "@/gql";
-import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Dialog,
@@ -56,8 +56,9 @@ export function EnableSAMLSSOAddOnButton(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const hasActiveSubscription =
-    team.subscriptionStatus === AccountSubscriptionStatus.Active;
+  const hasActiveSubscription = checkIsActiveSubscriptionStatus(
+    team.subscriptionStatus,
+  );
   const disabledReason = !hasActiveSubscription
     ? "You must have an active subscription to enable SAML SSO."
     : !team.plan?.usageBased

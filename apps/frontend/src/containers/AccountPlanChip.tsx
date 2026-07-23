@@ -1,3 +1,5 @@
+import { assertNever } from "@argos/util/assertNever";
+
 import { DocumentType, graphql } from "@/gql";
 import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Chip, ChipColor } from "@/ui/Chip";
@@ -24,6 +26,7 @@ export const AccountPlanChip = (props: {
           ? { color: "info", children: account.plan.displayName }
           : null;
       case AccountSubscriptionStatus.Trialing:
+      case AccountSubscriptionStatus.TrialingWithPaymentMethod:
         return {
           color: "info",
           children: `${account.plan?.displayName} Trial`,
@@ -32,8 +35,15 @@ export const AccountPlanChip = (props: {
         return { color: "danger", children: "Past Due" };
       case null:
         return { color: "neutral", children: "Hobby" };
-      default:
+      case AccountSubscriptionStatus.Canceled:
+      case AccountSubscriptionStatus.TrialExpired:
+      case AccountSubscriptionStatus.Unpaid:
+      case AccountSubscriptionStatus.Incomplete:
+      case AccountSubscriptionStatus.IncompleteExpired:
+      case AccountSubscriptionStatus.Paused:
         return null;
+      default:
+        assertNever(account.subscriptionStatus);
     }
   })();
   if (!chipProps) {

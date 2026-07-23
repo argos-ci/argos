@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
+import { checkIsTrialingSubscriptionStatus } from "@argos/schemas/subscription-status";
 import clsx from "clsx";
 import {
   CheckIcon,
@@ -22,6 +23,7 @@ import { AuthGuard } from "@/containers/AuthGuard";
 import { PeriodSelect, usePeriodState } from "@/containers/PeriodSelect";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
+import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { LinkButton } from "@/ui/Button";
 import {
@@ -225,37 +227,44 @@ function sortTeams(
 
 function StatusCell(props: { team: PipelineTeam }) {
   const { team } = props;
-  const status = team.subscriptionStatus ?? "none";
+  const { subscriptionStatus } = team;
   const daysRemaining = team.subscription?.trialDaysRemaining;
 
-  if (status === "trialing" && daysRemaining != null) {
+  // A running trial reads as "trial" whether or not its countdown has synced
+  // back from Stripe. Falling through would print the raw status, which is far
+  // wider than the column.
+  if (checkIsTrialingSubscriptionStatus(subscriptionStatus)) {
     // A trial about to end with no card on file is the one that needs a nudge;
     // one that already has a card will convert on its own.
     const isEndingUnpaid =
-      daysRemaining <= 3 && !team.subscription?.paymentMethodFilled;
+      daysRemaining != null &&
+      daysRemaining <= 3 &&
+      subscriptionStatus !==
+        AccountSubscriptionStatus.TrialingWithPaymentMethod;
 
     return (
       <div className="whitespace-nowrap">
         <span className="font-medium">trial</span>
-        <span className={isEndingUnpaid ? "text-warning-low" : "text-low"}>
-          {" "}
-          · {daysRemaining}d left
-        </span>
+        {daysRemaining != null && (
+          <span className={isEndingUnpaid ? "text-warning-low" : "text-low"}>
+            {" "}
+            · {daysRemaining}d left
+          </span>
+        )}
       </div>
     );
   }
-
-  const isLost = status === "canceled" || status === "trial_expired";
 
   return (
     <span
       className={clsx(
         "font-medium whitespace-nowrap",
-        isLost && "text-danger-low",
-        status === "active" && "text-success-low",
+        checkIsLost(team) && "text-danger-low",
+        subscriptionStatus === AccountSubscriptionStatus.Active &&
+          "text-success-low",
       )}
     >
-      {status.replaceAll("_", " ")}
+      {(subscriptionStatus ?? "none").replaceAll("_", " ")}
     </span>
   );
 }
@@ -575,8 +584,8 @@ function PipelineTable(props: {
 /** A trial that quietly ran out is as much a loss as an explicit cancelation. */
 function checkIsLost(team: PipelineTeam) {
   return (
-    team.subscriptionStatus === "canceled" ||
-    team.subscriptionStatus === "trial_expired"
+    team.subscriptionStatus === AccountSubscriptionStatus.Canceled ||
+    team.subscriptionStatus === AccountSubscriptionStatus.TrialExpired
   );
 }
 
@@ -592,9 +601,10 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const activated = teams.filter((team) => team.staff.firstComparisonAt).length;
   const lost = teams.filter(checkIsLost).length;
   // Within this window every team starts on a trial, so an active subscription
-  // means the trial converted.
+  // means the trial converted. A carded trial is not one yet: it reports as
+  // `trialing_with_payment_method` until it actually ends.
   const converted = teams.filter(
-    (team) => team.subscriptionStatus === "active",
+    (team) => team.subscriptionStatus === AccountSubscriptionStatus.Active,
   ).length;
 
   // Teams still trialing have neither converted nor churned yet. Counting them

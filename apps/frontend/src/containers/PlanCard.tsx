@@ -47,7 +47,6 @@ const _PlanCardFragment = graphql(`
 
     subscription {
       id
-      paymentMethodFilled
       trialDaysRemaining
       endDate
       provider
@@ -84,6 +83,7 @@ function PlanStatus(props: {
   account: DocumentType<typeof _PlanCardFragment>;
 }) {
   const { account } = props;
+
   switch (account.subscriptionStatus) {
     case AccountSubscriptionStatus.TrialExpired: {
       return (
@@ -92,7 +92,8 @@ function PlanStatus(props: {
         </CardParagraph>
       );
     }
-    case AccountSubscriptionStatus.Trialing: {
+    case AccountSubscriptionStatus.Trialing:
+    case AccountSubscriptionStatus.TrialingWithPaymentMethod: {
       invariant(
         account.subscription,
         "If trialing, subscription must be defined",
@@ -112,31 +113,43 @@ function PlanStatus(props: {
           </CardParagraph>
         );
       }
+      const carded =
+        account.subscriptionStatus ===
+        AccountSubscriptionStatus.TrialingWithPaymentMethod;
       const daysRemaining = account.subscription.trialDaysRemaining;
+      // Null once the trial end date is passed and Stripe has not synced the
+      // new status back yet.
+      const countdown =
+        daysRemaining === 1
+          ? "Your trial ends today."
+          : daysRemaining
+            ? `Your trial ends in ${daysRemaining} days.`
+            : null;
       return (
         <>
           <CardParagraph>
             Your team is on the <AccountPlanChip account={props.account} />{" "}
             plan.
           </CardParagraph>
-          <CardParagraph>
-            {daysRemaining === 1 ? (
-              <>
-                <strong>Your trial ends today.</strong>{" "}
-              </>
-            ) : daysRemaining ? (
-              <>
-                <strong>Your trial ends in {daysRemaining} days.</strong>{" "}
-              </>
-            ) : null}
-            <StripePortalLink
-              stripeCustomerId={account.stripeCustomerId}
-              accountId={account.id}
-            >
-              Add a payment method
-            </StripePortalLink>{" "}
-            to retain access to team features.
-          </CardParagraph>
+          {/* A carded trial with no countdown left has nothing to say: it
+              needs no action, and there is no date to announce. */}
+          {(countdown || !carded) && (
+            <CardParagraph>
+              {countdown ? <strong>{countdown}</strong> : null}
+              {!carded && (
+                <>
+                  {countdown ? " " : null}
+                  <StripePortalLink
+                    stripeCustomerId={account.stripeCustomerId}
+                    accountId={account.id}
+                  >
+                    Add a payment method
+                  </StripePortalLink>{" "}
+                  to retain access to team features.
+                </>
+              )}
+            </CardParagraph>
+          )}
         </>
       );
     }
@@ -193,12 +206,20 @@ function PlanStatus(props: {
         </CardParagraph>
       );
     }
+    case AccountSubscriptionStatus.Canceled:
+    case AccountSubscriptionStatus.Unpaid:
+    case AccountSubscriptionStatus.Incomplete:
+    case AccountSubscriptionStatus.IncompleteExpired:
+    case AccountSubscriptionStatus.Paused: {
+      return (
+        <CardParagraph>
+          No active plan. Subscribe to Pro plan to use Team features.
+        </CardParagraph>
+      );
+    }
+    default:
+      assertNever(account.subscriptionStatus);
   }
-  return (
-    <CardParagraph>
-      No active plan. Subscribe to Pro plan to use Team features.
-    </CardParagraph>
-  );
 }
 
 function ConsumptionBlock({

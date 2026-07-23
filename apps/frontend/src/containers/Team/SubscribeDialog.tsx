@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@apollo/client/react";
+import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 
 import { AccountSelector } from "@/containers/AccountSelector";
 import { graphql } from "@/gql";
-import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { getAccountURL } from "@/pages/Account/AccountParams";
 import { Button, ButtonProps } from "@/ui/Button";
 import {
@@ -52,12 +52,11 @@ export function TeamSubscribeDialog({
   const hasSubscribedToTrial = Boolean(data?.me?.hasSubscribedToTrial);
   const teams = data?.me ? data.me.teams : null;
   const team = teams?.find((a) => a.id === accountId);
+  // Teams that already have a plan sink to the bottom and cannot be picked.
   const sortedTeams = teams
     ? Array.from(teams).sort((a, b) => {
-        const aActive =
-          a.subscriptionStatus === AccountSubscriptionStatus.Active;
-        const bActive =
-          b.subscriptionStatus === AccountSubscriptionStatus.Active;
+        const aActive = checkIsActiveSubscriptionStatus(a.subscriptionStatus);
+        const bActive = checkIsActiveSubscriptionStatus(b.subscriptionStatus);
         if (aActive && !bActive) {
           return 1;
         }
@@ -69,9 +68,7 @@ export function TeamSubscribeDialog({
     : null;
   const disabledAccountIds = teams
     ? teams
-        .filter(
-          (a) => a.subscriptionStatus === AccountSubscriptionStatus.Active,
-        )
+        .filter((a) => checkIsActiveSubscriptionStatus(a.subscriptionStatus))
         .map((a) => a.id)
     : [];
 
