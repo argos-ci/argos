@@ -39,6 +39,7 @@ const _TeamFragment = graphql(`
       displayName
       usageBased
       githubSsoIncluded
+      interval
     }
     subscriptionStatus
     subscription {
@@ -113,6 +114,7 @@ export function TeamGitHubSSO(props: {
   const disabledReason = getAddOnBlockedReason({
     status: team.subscriptionStatus,
     provider: team.subscription?.provider,
+    interval: team.plan?.interval,
     includedInPlan: !priced,
     usageBased: Boolean(team.plan?.usageBased),
     featureName: "GitHub SSO",

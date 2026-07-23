@@ -3,6 +3,7 @@ import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-sta
 import {
   AccountSubscriptionProvider,
   AccountSubscriptionStatus,
+  PlanInterval,
 } from "@/gql/graphql";
 
 /**
@@ -19,11 +20,19 @@ import {
 export function getAddOnBlockedReason(args: {
   status: AccountSubscriptionStatus | null | undefined;
   provider: AccountSubscriptionProvider | null | undefined;
+  interval: PlanInterval | null | undefined;
   includedInPlan: boolean;
   usageBased: boolean;
   featureName: string;
 }): string | null {
-  const { status, provider, includedInPlan, usageBased, featureName } = args;
+  const {
+    status,
+    provider,
+    interval,
+    includedInPlan,
+    usageBased,
+    featureName,
+  } = args;
 
   if (!checkIsActiveSubscriptionStatus(status)) {
     return `You must have an active subscription to enable ${featureName}.`;
@@ -38,6 +47,12 @@ export function getAddOnBlockedReason(args: {
   // them — both are healthy plans that simply have nothing to bill against.
   if (provider !== AccountSubscriptionProvider.Stripe) {
     return `Your plan does not allow enabling ${featureName}, please contact us.`;
+  }
+
+  // Add-on products are priced monthly, and Stripe refuses items whose interval
+  // differs from the rest of the subscription.
+  if (interval === PlanInterval.Year) {
+    return `${featureName} cannot be added to a yearly plan, please contact us.`;
   }
 
   if (!usageBased) {

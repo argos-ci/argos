@@ -18,6 +18,7 @@ import {
   checkIsActiveSubscriptionStatus,
   GithubAccountMember,
   GithubInstallation,
+  Plan,
   Subscription,
   Team,
   TeamDomain,
@@ -419,6 +420,16 @@ function checkCanBillAddOns(
     subscription.provider === "stripe" &&
     subscription.stripeSubscriptionId !== null
   );
+}
+
+/**
+ * Whether the plan is billed yearly.
+ *
+ * Add-on products are priced monthly and Stripe refuses items whose interval
+ * differs from the rest of the subscription, so a yearly plan cannot take one.
+ */
+function checkIsYearlyPlan(plan: Plan | null): boolean {
+  return plan?.interval === "year";
 }
 
 /**
@@ -1482,6 +1493,12 @@ export const resolvers: IResolvers = {
           );
         }
 
+        if (checkIsYearlyPlan(plan)) {
+          throw forbidden(
+            "GitHub SSO cannot be added to a yearly plan, please contact us.",
+          );
+        }
+
         await addStripeProductToSubscription({
           stripeSubscriptionId: subscription.stripeSubscriptionId,
           productId: config.get("stripe.githubSSOProductId"),
@@ -1560,6 +1577,12 @@ export const resolvers: IResolvers = {
         if (!checkCanBillAddOns(subscription)) {
           throw forbidden(
             "Your plan does not allow enabling SAML SSO, please contact us.",
+          );
+        }
+
+        if (checkIsYearlyPlan(plan)) {
+          throw forbidden(
+            "SAML SSO cannot be added to a yearly plan, please contact us.",
           );
         }
 

@@ -33,6 +33,7 @@ const _TeamFragment = graphql(`
       id
       samlIncluded
       usageBased
+      interval
     }
     ...AddOnsPricingTable_Team
   }
@@ -64,6 +65,7 @@ export function EnableSAMLSSOAddOnButton(props: {
     getAddOnBlockedReason({
       status: team.subscriptionStatus,
       provider: team.subscription?.provider,
+      interval: team.plan?.interval,
       includedInPlan: Boolean(team.plan?.samlIncluded),
       usageBased: Boolean(team.plan?.usageBased),
       featureName: "SAML SSO",
