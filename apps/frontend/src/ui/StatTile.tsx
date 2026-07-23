@@ -1,15 +1,26 @@
+import { ComponentPropsWithRef } from "react";
 import NumberFlow from "@number-flow/react";
 import { clsx } from "clsx";
 
 import { Card } from "./Card";
 
-export type StatTileColor = "primary" | "storybook" | "warning" | "success";
+type StatTileColor = "primary" | "storybook" | "warning" | "success";
 
 const StatTileChipStyles: Record<StatTileColor, string> = {
   primary: "bg-primary-ui text-primary-low",
   storybook: "bg-storybook-ui text-storybook-low",
   warning: "bg-warning-ui text-warning-low",
   success: "bg-success-ui text-success-low",
+};
+
+type StatTileProps = ComponentPropsWithRef<"div"> & {
+  icon: React.ComponentType<{ className?: string }>;
+  color: StatTileColor;
+  label: string;
+  value: number | null | undefined;
+  format?: "number" | "percent";
+  hint?: React.ReactNode;
+  visual?: React.ReactNode;
 };
 
 /**
@@ -19,29 +30,29 @@ const StatTileChipStyles: Record<StatTileColor, string> = {
  * `value` is `undefined` while loading (skeleton), `null` when there is no
  * meaningful figure to show (rendered as an em dash), otherwise the number.
  */
-export function StatTile(props: {
-  icon: React.ComponentType<{ className?: string }>;
-  color: StatTileColor;
-  label: string;
-  value: number | null | undefined;
-  format?: "number" | "percent";
-  hint?: React.ReactNode;
-  visual?: React.ReactNode;
-}) {
-  const { icon: Icon, value, format = "number" } = props;
+export function StatTile({
+  icon: Icon,
+  color,
+  label,
+  value,
+  format = "number",
+  hint,
+  visual,
+  ...rest
+}: StatTileProps) {
   const isLoading = value === undefined;
   return (
-    <Card className="flex flex-col gap-4 p-5">
+    <Card {...rest} className={clsx("flex flex-col gap-4 p-5", rest.className)}>
       <div className="flex items-center gap-2.5">
         <div
           className={clsx(
             "flex size-7 shrink-0 items-center justify-center rounded-md",
-            StatTileChipStyles[props.color],
+            StatTileChipStyles[color],
           )}
         >
           <Icon className="size-4" />
         </div>
-        <span className="text-low text-sm font-medium">{props.label}</span>
+        <span className="text-low text-sm font-medium">{label}</span>
       </div>
       <div>
         <div className="relative text-3xl leading-none font-black tabular-nums">
@@ -58,13 +69,13 @@ export function StatTile(props: {
             <NumberFlow value={value} />
           )}
         </div>
-        {props.hint ? (
+        {hint ? (
           <p className="text-low mt-0.5 h-4 text-sm">
-            {isLoading ? null : props.hint}
+            {isLoading ? null : hint}
           </p>
         ) : null}
       </div>
-      {props.visual ? <div className="mt-auto">{props.visual}</div> : null}
+      {visual ? <div className="mt-auto">{visual}</div> : null}
     </Card>
   );
 }
