@@ -20,7 +20,7 @@ type AuthAccount = {
   id: string;
   slug: string;
   name: string | null;
-  /** Null when the server declined to reveal it, which is never for `me`. */
+  /** Nullable in the schema, but never null for `me` — the viewer owns it. */
   staff: boolean | null;
 };
 

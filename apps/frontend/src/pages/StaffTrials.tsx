@@ -38,6 +38,8 @@ import { StatTile } from "@/ui/StatTile";
 import { Switch } from "@/ui/Switch";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
+import { toast } from "@/ui/Toaster";
+import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "./Account/AccountParams";
 import { getMailtoUrl, getOnboardingEmail } from "./StaffTrials.email";
@@ -97,14 +99,30 @@ const SetTeamStaffContactMutation = graphql(`
   }
 `);
 
-type PipelineTeam = DocumentType<
+type PipelineTeamNode = DocumentType<
   typeof TrialPipelineQuery
 >["staffTrialPipeline"][number];
 
 /**
+ * A team with its staff block resolved.
+ *
+ * `Team.staff` is nullable because non-staff must not read it, but this page
+ * is only reachable through `staffTrialPipeline`, which refuses non-staff
+ * outright. Narrowing once here keeps every cell below honest instead of
+ * defaulting missing counts to zero, which would render as real data.
+ */
+type PipelineTeam = PipelineTeamNode & {
+  staff: NonNullable<PipelineTeamNode["staff"]>;
+};
+
+function checkHasStaffData(team: PipelineTeamNode): team is PipelineTeam {
+  return team.staff !== null;
+}
+
+/**
  * The resolver takes a day count, the picker works on named periods — so the
- * day count is the source, and `PeriodsDefinition` is derived from it. Holding
- * the two side by side let them drift apart silently.
+ * day count is the source, and the picker definition is derived from it.
+ * Holding the two side by side let them drift apart silently.
  */
 const PERIOD_DAYS = {
   last7Days: 7,
@@ -112,15 +130,22 @@ const PERIOD_DAYS = {
   last90Days: 90,
 } as const;
 
-const TRIAL_PERIODS = Object.fromEntries(
-  Object.entries(PERIOD_DAYS).map(([key, days]) => [
-    key,
-    {
-      from: moment().subtract(days, "days").startOf("day").toDate(),
-      label: `Last ${days} days`,
-    },
-  ]),
-) as Record<keyof typeof PERIOD_DAYS, { from: Date; label: string }>;
+/**
+ * Built per render rather than once at module load: `from` is a date relative
+ * to now, and a tab left open overnight would otherwise keep resolving the
+ * window against the day it was first opened.
+ */
+function getTrialPeriods() {
+  return Object.fromEntries(
+    Object.entries(PERIOD_DAYS).map(([key, days]) => [
+      key,
+      {
+        from: moment().subtract(days, "days").startOf("day").toDate(),
+        label: `Last ${days} days`,
+      },
+    ]),
+  ) as Record<keyof typeof PERIOD_DAYS, { from: Date; label: string }>;
+}
 
 type SortKey =
   | "team"
@@ -151,18 +176,18 @@ function getSortValue(team: PipelineTeam, key: SortKey): string | number {
     // Ranked worst-first so sorting ascending surfaces the teams that build
     // without ever producing a comparison.
     case "checkBuild":
-      if (team.staff?.firstComparisonAt) {
+      if (team.staff.firstComparisonAt) {
         return 2;
       }
-      return (team.staff?.buildsCount ?? 0) > 0 ? 0 : 1;
+      return team.staff.buildsCount > 0 ? 0 : 1;
     case "lastActivity":
       return team.lastBuildDate ? new Date(team.lastBuildDate).getTime() : 0;
     case "builds":
-      return team.staff?.buildsCount ?? 0;
+      return team.staff.buildsCount;
     case "screenshots":
-      return team.staff?.screenshotsCount ?? 0;
+      return team.staff.screenshotsCount;
     case "contacted":
-      return team.staff?.contact ? 1 : 0;
+      return team.staff.contact ? 1 : 0;
   }
 }
 
@@ -264,21 +289,21 @@ function StepIcon(props: { reached: boolean; label: string; title?: string }) {
 function CheckBuildCell(props: { team: PipelineTeam }) {
   const { team } = props;
 
-  if (team.staff?.firstComparisonAt) {
+  if (team.staff.firstComparisonAt) {
     return (
       <StepIcon
         reached
         label="Check build"
-        title={new Date(team.staff?.firstComparisonAt).toLocaleString()}
+        title={new Date(team.staff.firstComparisonAt).toLocaleString()}
       />
     );
   }
 
-  if ((team.staff?.buildsCount ?? 0) > 0) {
+  if (team.staff.buildsCount > 0) {
     return (
       <div
         className="flex justify-center"
-        title={`${team.staff?.buildsCount ?? 0} builds, none compared to a baseline`}
+        title={`${team.staff.buildsCount} builds, none compared to a baseline`}
       >
         <XIcon className="text-danger-low size-4" aria-label="No check build" />
       </div>
@@ -344,27 +369,27 @@ function LastActivityCell(props: { date: string | null | undefined }) {
  */
 function ContactCell(props: { team: PipelineTeam }) {
   const { team } = props;
-  const [setContact, { loading, error }] = useMutation(
-    SetTeamStaffContactMutation,
-  );
+  const [setContact, { loading }] = useMutation(SetTeamStaffContactMutation);
   const { subject, body } = getOnboardingEmail({
-    owners: team.staff?.owners ?? [],
-    buildsCount: team.staff?.buildsCount ?? 0,
-    hasCheckBuild: Boolean(team.staff?.firstComparisonAt),
+    owners: team.staff.owners,
+    buildsCount: team.staff.buildsCount,
+    hasCheckBuild: Boolean(team.staff.firstComparisonAt),
   });
   const mailtoUrl = getMailtoUrl({
-    owners: team.staff?.owners ?? [],
+    owners: team.staff.owners,
     subject,
     body,
   });
-  const contactedAt = team.staff?.contact?.date ?? null;
+  const contactedAt = team.staff.contact?.date ?? null;
 
   const markContacted = (contacted: boolean) => {
-    // Rejection is caught so a failed mark never breaks the draft that just
-    // opened; `error` below is what tells the user it did not stick.
-    setContact({
-      variables: { teamAccountId: team.id, contacted },
-    }).catch(() => {});
+    // Caught so a failed mark never breaks the draft that just opened, and
+    // toasted so it cannot pass for a switch that simply refused to move.
+    setContact({ variables: { teamAccountId: team.id, contacted } }).catch(
+      (error: unknown) => {
+        toast.error(getErrorMessage(error));
+      },
+    );
   };
 
   return (
@@ -391,18 +416,14 @@ function ContactCell(props: { team: PipelineTeam }) {
       )}
       <span
         title={
-          error
-            ? `Could not save: ${error.message}`
-            : contactedAt
-              ? `Contacted on ${new Date(contactedAt).toLocaleDateString()}`
-              : "Not contacted yet"
+          contactedAt
+            ? `Contacted on ${new Date(contactedAt).toLocaleDateString()}`
+            : "Not contacted yet"
         }
       >
         <Switch
           size="sm"
           aria-label="Onboarding email sent"
-          aria-invalid={error ? true : undefined}
-          className={error ? "ring-danger rounded-full ring-2" : undefined}
           isSelected={Boolean(contactedAt)}
           isDisabled={loading}
           onChange={markContacted}
@@ -445,13 +466,13 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
         <PaymentCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
-        {(team.staff?.buildsCount ?? 0).toLocaleString()}
+        {team.staff.buildsCount.toLocaleString()}
       </td>
       <td className="p-4">
         <CheckBuildCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
-        {(team.staff?.screenshotsCount ?? 0).toLocaleString()}
+        {team.staff.screenshotsCount.toLocaleString()}
       </td>
       <td className="p-4">
         <ContactCell team={team} />
@@ -543,9 +564,7 @@ function formatShare(value: number, total: number) {
 
 function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const { teams } = props;
-  const activated = teams.filter(
-    (team) => team.staff?.firstComparisonAt,
-  ).length;
+  const activated = teams.filter((team) => team.staff.firstComparisonAt).length;
   const lost = teams.filter(checkIsLost).length;
   // Within this window every team starts on a trial, so an active subscription
   // means the trial converted.
@@ -595,7 +614,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
 function StaffTrialsList() {
   const periodState = usePeriodState({
     defaultValue: "last30Days",
-    definition: TRIAL_PERIODS,
+    definition: getTrialPeriods(),
     paramName: "period",
   });
   const days = PERIOD_DAYS[periodState.value];
@@ -623,7 +642,12 @@ function StaffTrialsList() {
   // The summary describes the window, so it stays on every team in it: an
   // activation rate computed over search results would mean nothing.
   const allTeams = useMemo(
-    () => sortTeams(data?.staffTrialPipeline ?? [], sortKey, sortDirection),
+    () =>
+      sortTeams(
+        (data?.staffTrialPipeline ?? []).filter(checkHasStaffData),
+        sortKey,
+        sortDirection,
+      ),
     [data?.staffTrialPipeline, sortKey, sortDirection],
   );
 

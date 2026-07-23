@@ -128,7 +128,7 @@ export const typeDefs = gql`
     role(accountSlug: String!, projectName: String!): TeamUserLevel
     "Whether the account is a real person or an automated account (e.g. the Argos bot)."
     type: UserType!
-    "Whether the user has staff privileges. Readable only by the user themselves, null otherwise."
+    "Whether the user has staff privileges. Readable only by the user themselves — selecting it on anyone else is an error."
     staff: Boolean
   }
 
@@ -545,11 +545,13 @@ export const resolvers: IResolvers = {
     },
     staff: (account, _args, ctx) => {
       // Who works at Argos is not public: staff accounts hold elevated
-      // permissions, so the flag is readable only by its owner. Null rather
-      // than an error — the field is selected inside the auth bootstrap query,
-      // where a thrown error would nullify `me` and log the user out.
+      // permissions, so the flag is readable only by its owner. It throws
+      // rather than returning null, which would be indistinguishable from a
+      // genuine `false`. The field is nullable so the error stays contained:
+      // it is selected in the auth bootstrap query, where nullifying `me`
+      // would log the user out.
       if (!ctx.auth || ctx.auth.user.id !== account.userId) {
-        return null;
+        throw forbidden();
       }
       return ctx.auth.user.staff;
     },

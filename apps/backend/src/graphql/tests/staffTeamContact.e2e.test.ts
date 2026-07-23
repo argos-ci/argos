@@ -49,6 +49,22 @@ const SetContactMutation = `
   }
 `;
 
+const TeamStaffBlockQuery = `
+  query TeamStaffBlock($id: ID!) {
+    teamById(id: $id) {
+      id
+      ... on Team {
+        staff {
+          buildsCount
+          owners {
+            email
+          }
+        }
+      }
+    }
+  }
+`;
+
 async function createViewer(options: { staff: boolean }) {
   const userAccount = await factory.UserAccount.create();
   await userAccount.$fetchGraph("user");
@@ -151,21 +167,7 @@ describe("GraphQL staff team contact", () => {
     const res = await request(app)
       .post("/graphql")
       .send({
-        query: `
-          query TeamStaffBlock($id: ID!) {
-            teamById(id: $id) {
-              id
-              ... on Team {
-                staff {
-                  buildsCount
-                  owners {
-                    email
-                  }
-                }
-              }
-            }
-          }
-        `,
+        query: TeamStaffBlockQuery,
         variables: { id: teamAccount.id },
       });
 
@@ -173,6 +175,45 @@ describe("GraphQL staff team contact", () => {
     // whole — counts included. One guard covers every field under it.
     expectNoGraphQLError(res);
     expect(res.body.data.teamById.staff).toBeNull();
+  });
+
+  it("withholds the team itself from a user who is not on it", async () => {
+    const viewer = await createViewer({ staff: false });
+    const { teamAccount } = await createTeamWithOwners(1);
+    const app = await createApp(viewer);
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: TeamStaffBlockQuery,
+        variables: { id: teamAccount.id },
+      });
+
+    // The node is out of reach entirely, so the staff block never comes into
+    // play — a stronger guarantee than nulling the block.
+    expectNoGraphQLError(res);
+    expect(res.body.data.teamById).toBeNull();
+  });
+
+  it("withholds the team itself from an anonymous visitor", async () => {
+    const { teamAccount } = await createTeamWithOwners(1);
+    const app = await createApolloServerApp(
+      apolloServer,
+      createApolloMiddleware,
+      null,
+    );
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: TeamStaffBlockQuery,
+        variables: { id: teamAccount.id },
+      });
+
+    // No session at all: nothing resolves, and the optional chaining in the
+    // guard must not blow up on the missing auth either.
+    expectNoGraphQLError(res);
+    expect(res.body.data.teamById).toBeNull();
   });
 
   it("records who reached out, then clears it", async () => {

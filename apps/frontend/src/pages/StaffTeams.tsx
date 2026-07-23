@@ -349,14 +349,8 @@ function StaffTeamsTable(props: {
   return (
     <div className="overflow-x-auto rounded-sm border">
       <table className="w-full min-w-245 table-fixed border-collapse">
-        <colgroup>
-          <col style={{ width: "27%" }} />
-          <col style={{ width: "16%" }} />
-          <col style={{ width: "14%" }} />
-          <col style={{ width: "10%" }} />
-          <col style={{ width: "21%" }} />
-          <col style={{ width: "12%" }} />
-        </colgroup>
+        {/* Widths live on the headers rather than in a `colgroup`: the
+            positional mapping broke silently whenever a column moved. */}
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
             <SortHeader
@@ -365,7 +359,7 @@ function StaffTeamsTable(props: {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="text-left"
+              className="w-[27%] text-left"
             />
             <SortHeader
               label="Created"
@@ -373,19 +367,19 @@ function StaffTeamsTable(props: {
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="text-left"
+              className="w-[16%] text-left"
             />
-            <th className="px-4 py-3 text-left">Subscription</th>
+            <th className="w-[14%] px-4 py-3 text-left">Subscription</th>
             <SortHeader
               label="Members"
               sortKey="members"
               activeSortKey={sortKey}
               direction={sortDirection}
               onSort={onSort}
-              className="text-right"
+              className="w-[10%] text-right"
             />
-            <th className="px-4 py-3 text-right">Links</th>
-            <th className="px-4 py-3 text-right">Actions</th>
+            <th className="w-[21%] px-4 py-3 text-right">Links</th>
+            <th className="w-[12%] px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody>

@@ -4,7 +4,38 @@ import gqlTag from "graphql-tag";
 import { Account, StaffTeamContact } from "@/database/models";
 
 import type { IResolvers } from "../__generated__/resolver-types";
+import type { Context } from "../context";
+import type { AccountActivation } from "../loaders";
 import { badUserInput, forbidden, unauthenticated } from "../util";
+
+/** Every staff entry point opens with this — the check lives in one place. */
+function assertStaff(ctx: Context): asserts ctx is Context & {
+  auth: NonNullable<Context["auth"]>;
+} {
+  if (!ctx.auth) {
+    throw unauthenticated();
+  }
+  if (!ctx.auth.user.staff) {
+    throw forbidden();
+  }
+}
+
+/**
+ * Reads one field off the activation aggregate. The loader batches and caches,
+ * so selecting all four costs a single query.
+ */
+function activationField<Key extends keyof AccountActivation>(key: Key) {
+  return async (
+    account: { id: string },
+    _args: unknown,
+    ctx: Context,
+  ): Promise<AccountActivation[Key]> => {
+    const activation = await ctx.loaders.AccountActivationByAccountId.load(
+      account.id,
+    );
+    return activation[key];
+  };
+}
 
 const { gql } = gqlTag;
 
@@ -77,37 +108,18 @@ export const resolvers: IResolvers = {
     staff: (account, _args, ctx) => {
       // The only guard on staff data: `TeamStaffInfo` resolves against the
       // account, so returning null here withholds every field under it.
-      if (!ctx.auth?.user.staff) {
+      // `teamId` is checked too, so the fields below never have to.
+      if (!ctx.auth?.user.staff || !account.teamId) {
         return null;
       }
       return account;
     },
   },
   TeamStaffInfo: {
-    projectsCount: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.projectsCount;
-    },
-    buildsCount: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.buildsCount;
-    },
-    screenshotsCount: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.screenshotsCount;
-    },
-    firstComparisonAt: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.firstComparisonAt;
-    },
+    projectsCount: activationField("projectsCount"),
+    buildsCount: activationField("buildsCount"),
+    screenshotsCount: activationField("screenshotsCount"),
+    firstComparisonAt: activationField("firstComparisonAt"),
     owners: async (account, _args, ctx) => {
       invariant(account.teamId, "not a team account");
       return ctx.loaders.TeamOwnersByTeamId.load(account.teamId);
@@ -129,13 +141,7 @@ export const resolvers: IResolvers = {
   },
   Query: {
     staffTeams: async (_root, _args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
+      assertStaff(ctx);
 
       return Account.query()
         .whereNotNull("teamId")
@@ -143,13 +149,7 @@ export const resolvers: IResolvers = {
         .orderByRaw("coalesce(name, slug) asc");
     },
     staffTrialPipeline: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
+      assertStaff(ctx);
 
       if (args.days < 1 || args.days > MAX_TRIAL_PIPELINE_DAYS) {
         throw badUserInput(
@@ -171,13 +171,7 @@ export const resolvers: IResolvers = {
   },
   Mutation: {
     setTeamStaffContact: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
+      assertStaff(ctx);
 
       const teamAccount = await Account.query()
         .findById(args.input.teamAccountId)

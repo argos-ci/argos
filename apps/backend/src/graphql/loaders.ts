@@ -639,7 +639,7 @@ function createAccountLastBuildDateByAccountIdLoader() {
  * one. That last date is the moment the account first sees a visual diff, which
  * is what Argos is for, and the clearest marker that it activated.
  */
-type AccountActivation = {
+export type AccountActivation = {
   projectsCount: number;
   buildsCount: number;
   screenshotsCount: number;
