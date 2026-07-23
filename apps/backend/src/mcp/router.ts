@@ -138,7 +138,7 @@ router.post(
     // Stateless mode (no `sessionIdGenerator`): a fresh server + transport
     // pair per request, so concurrent requests never collide and no session
     // state has to be replicated across instances.
-    const server = await createMcpServer({ authorization });
+    const server = createMcpServer({ authorization });
     const transport = new StreamableHTTPServerTransport({
       enableJsonResponse: true,
     });

@@ -7,12 +7,12 @@
  */
 import { parse as parseYaml } from "yaml";
 
-export const SKILLS_REPO = "argos-ci/argos-javascript";
-export const SKILLS_REF = "main";
+const SKILLS_REPO = "argos-ci/argos-javascript";
+const SKILLS_REF = "main";
 const SKILLS_ROOT = "skills";
 
 /** Canonical raw content base: `${RAW_BASE}/<name>/<file>`. */
-export const RAW_BASE = `https://raw.githubusercontent.com/${SKILLS_REPO}/${SKILLS_REF}/${SKILLS_ROOT}`;
+const RAW_BASE = `https://raw.githubusercontent.com/${SKILLS_REPO}/${SKILLS_REF}/${SKILLS_ROOT}`;
 
 /** GitHub tree API — called at most once per cache window to enumerate files. */
 const TREE_URL = `https://api.github.com/repos/${SKILLS_REPO}/git/trees/${SKILLS_REF}?recursive=1`;

@@ -174,12 +174,9 @@ describe("well-known routes", () => {
 });
 
 describe("MCP resources", () => {
-  beforeEach(() => {
-    stubFetch(happyFetch);
-  });
-
   it("lists the skills as resources and reads their SKILL.md", async () => {
-    const server = await createMcpServer({ authorization: "Bearer test" });
+    const fetchMock = stubFetch(happyFetch);
+    const server = createMcpServer({ authorization: "Bearer test" });
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "test", version: "0" });
@@ -189,6 +186,10 @@ describe("MCP resources", () => {
     ]);
 
     try {
+      // Server creation is lazy: the skills repo is only contacted once a
+      // client actually asks for resources.
+      expect(fetchMock).not.toHaveBeenCalled();
+
       const { resources } = await client.listResources();
       const byName = new Map(resources.map((r) => [r.name, r]));
       expect([...byName.keys()]).toEqual(

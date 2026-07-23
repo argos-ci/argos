@@ -7,7 +7,10 @@
  * MCP clients get the exact same validation the REST API applies.
  */
 import { trimTrailingSlash } from "@argos/util/url";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  McpServer,
+  ResourceTemplate,
+} from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import config from "@/config";
 import { getSkillFileUrl, getSkills } from "@/skills/registry";
@@ -25,9 +28,7 @@ Projects are identified by an "owner" (account slug) and a "project" (project na
  * Create an MCP server bound to the caller's authorization. One instance per
  * request (the transport is stateless).
  */
-export async function createMcpServer(context: {
-  authorization: string;
-}): Promise<McpServer> {
+export function createMcpServer(context: { authorization: string }): McpServer {
   const server = new McpServer(
     { name: "argos", title: "Argos", version: "2.0.0" },
     { instructions: MCP_INSTRUCTIONS },
@@ -48,7 +49,7 @@ export async function createMcpServer(context: {
     );
   }
 
-  await registerSkillResources(server);
+  registerSkillResources(server);
 
   return server;
 }
@@ -56,36 +57,64 @@ export async function createMcpServer(context: {
 /**
  * Expose the published Argos skills (from `argos-javascript`, the same source
  * `npx skills add` installs) as MCP resources, so an MCP client on
- * `mcp.argos-ci.com` discovers them via `resources/list` and reads the
- * `SKILL.md` on demand. Never fail server creation if the skills can't load.
+ * `mcp.argos-ci.com` discovers them via `resources/list` and reads a
+ * `SKILL.md` on demand.
+ *
+ * Registration is a single lazy resource template: servers are created per
+ * request, so the skills must never be fetched at creation time — the registry
+ * (cached, stale-on-error) is only hit when a client actually calls
+ * `resources/list` or `resources/read`.
  */
-async function registerSkillResources(server: McpServer): Promise<void> {
-  const skills = await getSkills().catch(() => []);
+function registerSkillResources(server: McpServer): void {
   const appOrigin = trimTrailingSlash(config.get("server.url"));
-  for (const skill of skills) {
-    // The canonical, dereferenceable location — the same URL `npx skills add`
-    // resolves — even though the content is fetched from the repo below.
-    const uri = `${appOrigin}/.well-known/agent-skills/${skill.name}/SKILL.md`;
-    server.registerResource(
-      skill.name,
-      uri,
-      {
-        title: skill.name,
-        description: skill.description,
-        mimeType: "text/markdown",
-      },
-      async (resourceUri) => {
-        const response = await fetch(getSkillFileUrl(skill.name, "SKILL.md"));
+  // The canonical, dereferenceable location — the same URL `npx skills add`
+  // resolves — even though the content is fetched from the repo on read.
+  const skillUri = (name: string) =>
+    `${appOrigin}/.well-known/agent-skills/${name}/SKILL.md`;
+
+  server.registerResource(
+    "skill",
+    new ResourceTemplate(skillUri("{skill}"), {
+      // A listing failure degrades to "no skills" instead of erroring the
+      // whole resources/list call.
+      list: async () => {
+        const skills = await getSkills().catch(() => []);
         return {
-          contents: [
-            {
-              uri: resourceUri.href,
-              mimeType: "text/markdown",
-              text: response.ok ? await response.text() : "",
-            },
-          ],
+          resources: skills.map((skill) => ({
+            uri: skillUri(skill.name),
+            name: skill.name,
+            description: skill.description,
+            mimeType: "text/markdown",
+          })),
         };
       },
-    );
-  }
+    }),
+    {
+      title: "Argos agent skills",
+      description:
+        "Installable agent skills published by Argos (also served at /.well-known/agent-skills).",
+      mimeType: "text/markdown",
+    },
+    async (uri, variables) => {
+      const name = String(variables["skill"]);
+      const skills = await getSkills();
+      const skill = skills.find((s) => s.name === name);
+      if (!skill) {
+        throw new Error(`Unknown Argos skill: ${name}`);
+      }
+      const response = await fetch(getSkillFileUrl(skill.name, "SKILL.md"));
+      if (!response.ok) {
+        throw new Error(`Failed to load the "${name}" skill`);
+      }
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "text/markdown",
+            text: await response.text(),
+          },
+        ],
+      };
+    },
+  );
 }
