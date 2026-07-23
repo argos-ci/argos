@@ -1,5 +1,5 @@
 import request from "supertest";
-import { test as base, beforeAll, describe, expect, vi } from "vitest";
+import { test as base, beforeAll, describe, expect } from "vitest";
 import z from "zod";
 
 import {
@@ -13,10 +13,6 @@ import { factory, setupDatabase } from "@/database/testing";
 
 import { createTestHandlerApp } from "../test-util";
 import { createProject } from "./createProject";
-
-// The Discord webhook is configured in the test env; stub it so creating a
-// project here doesn't post a real notification.
-vi.mock("@/discord", () => ({ notifyDiscord: vi.fn(() => Promise.resolve()) }));
 
 const app = createTestHandlerApp(createProject);
 

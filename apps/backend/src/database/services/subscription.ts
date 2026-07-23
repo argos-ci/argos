@@ -1,7 +1,7 @@
 import { assertNever } from "@argos/util/assertNever";
 import { captureException } from "@sentry/node";
 
-import { notifyDiscord } from "@/discord";
+import { formatDiscordLink, getAccountUrl, notifyDiscord } from "@/discord";
 
 import { Account, type Subscription } from "../models";
 
@@ -73,23 +73,12 @@ export async function notifySubscriptionStatusUpdate(args: {
   const providerName = getProviderName(provider);
   const statusMessage = getStatusMessage({ status, previousStatus });
 
-  const teamLink = `[View Team](<https://app.argos-ci.com/${account.slug}>)`;
-
-  const links = [teamLink];
-
-  if (provider === "stripe" && account.stripeCustomerId) {
-    links.push(
-      `[View in Stripe](<https://dashboard.stripe.com/customers/${account.stripeCustomerId}>)`,
-    );
-  }
-
   try {
     await notifyDiscord({
       content: [
         `${providerName} • ${statusMessage}`,
         reason ? `📝 Reason: ${reason}` : "",
-        `👤 *${account.displayName}* (ID: ${account.id})`,
-        `🔗 ${links.join(" • ")}`,
+        ...formatAccountLines(account, provider),
       ]
         .filter(Boolean)
         .join("\n"),
@@ -97,4 +86,53 @@ export async function notifySubscriptionStatusUpdate(args: {
   } catch (error) {
     captureException(error);
   }
+}
+
+/**
+ * Notify that a trialing team has added its payment method, so it will convert
+ * to a paid subscription instead of being canceled when the trial ends.
+ */
+export async function notifyPaymentMethodAdded(args: {
+  provider: Subscription["provider"];
+  account: Account;
+}) {
+  const { provider, account } = args;
+  const providerName = getProviderName(provider);
+
+  try {
+    await notifyDiscord({
+      content: [
+        `${providerName} • 💳 Payment method added during trial`,
+        ...formatAccountLines(account, provider),
+      ].join("\n"),
+    });
+  } catch (error) {
+    captureException(error);
+  }
+}
+
+/**
+ * Build the shared account identity used by every subscription notification:
+ * the team name linked to the team in the app (the name falls back to the slug
+ * so it is never "null"), and, for Stripe, a link to the customer in the Stripe
+ * dashboard.
+ */
+function formatAccountLines(
+  account: Account,
+  provider: Subscription["provider"],
+): string[] {
+  const lines = [
+    `👤 ${formatDiscordLink(account.displayName, getAccountUrl(account.slug))} (ID: ${account.id})`,
+  ];
+
+  if (provider === "stripe" && account.stripeCustomerId) {
+    lines.push(
+      `🔗 ${formatDiscordLink(
+        "View in Stripe",
+        `https://dashboard.stripe.com/customers/${account.stripeCustomerId}`,
+      )}`,
+    );
+  }
+
+  return lines;
 }

@@ -36,7 +36,7 @@ import {
   normalizeTeamDomain,
   type AutoInvite,
 } from "@/database/services/team-domain";
-import { notifyDiscord } from "@/discord";
+import { formatDiscordLink, notifyDiscord } from "@/discord";
 import { sendEmailTemplate } from "@/email/send-email-template";
 import { getAppOctokit, getInstallationOctokit } from "@/github/client";
 import {
@@ -1078,7 +1078,7 @@ export const resolvers: IResolvers = {
 
       await notifyDiscord({
         content:
-          `Trial extended for ${teamAccount.name} (${teamUrl}) (by ${auth.user.email})`.trim(),
+          `Trial extended for ${formatDiscordLink(teamAccount.displayName, teamUrl)} (by ${auth.user.email ?? "unknown email"})`.trim(),
       }).catch((error) => {
         captureException(error);
       });

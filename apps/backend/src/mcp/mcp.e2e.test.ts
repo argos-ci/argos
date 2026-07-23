@@ -13,14 +13,18 @@ import {
 } from "@/database/models";
 import { hashToken } from "@/database/services/crypto";
 import { factory, setupDatabase } from "@/database/testing";
-import { notifyDiscord } from "@/discord";
+import * as discord from "@/discord";
 import { getApiResourceUrl, getMcpResourceUrl } from "@/oauth/metadata";
 import type { OAuthScope } from "@/oauth/scopes";
 import { issueTokens } from "@/oauth/tokens";
 
 import { mcpRouter } from "./router";
 
-vi.mock("@/discord", () => ({ notifyDiscord: vi.fn(() => Promise.resolve()) }));
+// Real notifications are already disabled in tests (the webhook client is off);
+// spy on the sender only to assert it is not called.
+const notifyDiscord = vi
+  .spyOn(discord, "notifyDiscord")
+  .mockResolvedValue(undefined);
 
 const app = express();
 app.use(mcpRouter);

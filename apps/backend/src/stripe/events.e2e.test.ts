@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Plan } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 import * as discord from "@/discord";
 
@@ -8,6 +9,9 @@ import {
   CANCEL_SUBSCRIPTION_EVENT_PAYLOAD,
   CANCELLATION_FEEDBACK_UPDATED_SUBSCRIPTION_EVENT_PAYLOAD,
   STRIPE_PRODUCT_ID,
+  TRIALING_CUSTOMER_ID,
+  TRIALING_SUBSCRIPTION_ID,
+  TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD,
 } from "./fixtures/cancel-subscription-event-payload";
 import { handleStripeEvent, stripe } from "./index";
 
@@ -74,6 +78,54 @@ describe("handleStripeEvent", () => {
       const content = send.mock.calls[0][0].content;
       expect(content).toContain("Subscription canceled");
       expect(content).toContain("Reason: The price jump was too sporadic.");
+    });
+  });
+
+  describe("payment_method.attached", () => {
+    it("notifies when a trialing team adds its payment method", async () => {
+      const send = vi
+        .spyOn(discord, "notifyDiscord")
+        .mockResolvedValue(undefined);
+      vi.spyOn(stripe.subscriptions, "list").mockResolvedValue({
+        data: [TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD],
+      } as unknown as Stripe.Response<Stripe.ApiList<Stripe.Subscription>>);
+
+      const plan = await Plan.query()
+        .findOne({ stripeProductId: STRIPE_PRODUCT_ID })
+        .throwIfNotFound();
+      const [user, account] = await Promise.all([
+        factory.User.create(),
+        // No name: the notification must fall back to the slug, never "null".
+        factory.TeamAccount.create({
+          name: null,
+          stripeCustomerId: TRIALING_CUSTOMER_ID,
+        }),
+      ]);
+      await factory.Subscription.create({
+        accountId: account.id,
+        subscriberId: user.id,
+        planId: plan.id,
+        provider: "stripe",
+        stripeSubscriptionId: TRIALING_SUBSCRIPTION_ID,
+        status: "trialing",
+        paymentMethodFilled: false,
+      });
+
+      await handleStripeEvent({
+        type: "payment_method.attached",
+        data: {
+          object: { customer: TRIALING_CUSTOMER_ID },
+        } as unknown as Stripe.PaymentMethodAttachedEvent.Data,
+      });
+
+      expect(send).toHaveBeenCalledOnce();
+      if (send.mock.calls[0] === undefined) {
+        throw new Error("Expected notifyDiscord to be called with arguments");
+      }
+      const content = send.mock.calls[0][0].content;
+      expect(content).toContain("Payment method added during trial");
+      expect(content).not.toContain("null");
+      expect(content).toContain(account.slug);
     });
   });
 });

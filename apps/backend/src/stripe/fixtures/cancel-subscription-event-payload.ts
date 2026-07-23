@@ -53,6 +53,24 @@ const cancellationFeedbackUpdatedSubscription = {
   },
 } as unknown as Stripe.Subscription;
 
+export const TRIALING_CUSTOMER_ID = "cus_trialing_test";
+export const TRIALING_SUBSCRIPTION_ID = "sub_trialing_test";
+
+/**
+ * A trialing subscription that now has a payment method attached: the trial is
+ * still running, but it will convert to paid instead of being canceled.
+ */
+export const TRIALING_SUBSCRIPTION_WITH_PAYMENT_METHOD = {
+  ...subscription,
+  id: TRIALING_SUBSCRIPTION_ID,
+  status: "trialing",
+  customer: TRIALING_CUSTOMER_ID,
+  default_payment_method: "pm_trialing_test",
+  cancel_at: null,
+  ended_at: null,
+  trial_end: 1900000000,
+} as unknown as Stripe.Subscription;
+
 export const CANCEL_SUBSCRIPTION_EVENT_PAYLOAD = {
   id: "evt_test",
   object: "event",

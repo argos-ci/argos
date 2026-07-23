@@ -8,7 +8,10 @@ import { z } from "zod";
 import config from "@/config";
 import { Account, Plan, Subscription } from "@/database/models";
 import { computeAdditionalScreenshots } from "@/database/services/additional-screenshots";
-import { notifySubscriptionStatusUpdate } from "@/database/services/subscription";
+import {
+  notifyPaymentMethodAdded,
+  notifySubscriptionStatusUpdate,
+} from "@/database/services/subscription";
 import { sendNotification } from "@/notification";
 import { redisLock } from "@/util/redis";
 
@@ -766,6 +769,14 @@ async function updateArgosSubscriptionFromStripe(
 ): Promise<Subscription> {
   const notifyStatusUpdate = options?.notifyStatusUpdate ?? true;
   const data = await getArgosSubscriptionDataFromStripe(stripeSubscription);
+  // A trial that gains a payment method without changing status: the team is
+  // still trialing, but it will now convert to paid instead of being canceled
+  // at the end of the trial.
+  const paymentMethodAddedDuringTrial =
+    data.status === "trialing" &&
+    argosSubscription.status === "trialing" &&
+    data.paymentMethodFilled &&
+    !argosSubscription.paymentMethodFilled;
   const [updatedSubscription] = await Promise.all([
     argosSubscription.$query().patchAndFetch(data),
     (async () => {
@@ -779,6 +790,11 @@ async function updateArgosSubscriptionFromStripe(
           previousStatus: argosSubscription.status,
           account,
         });
+      } else if (notifyStatusUpdate && paymentMethodAddedDuringTrial) {
+        const account = await Account.query()
+          .findById(argosSubscription.accountId)
+          .throwIfNotFound();
+        await notifyPaymentMethodAdded({ provider: "stripe", account });
       }
     })(),
   ]);
