@@ -126,7 +126,6 @@ export class Account extends Model {
             anyOf: [{ type: "null" }, { type: "integer", minimum: 0 }],
           },
           blockWhenSpendLimitIsReached: { type: "boolean" },
-          staffContactedAt: { type: ["string", "null"] },
         },
       },
     ],
@@ -145,8 +144,6 @@ export class Account extends Model {
   githubLightInstallationId!: string | null;
   meteredSpendLimitByPeriod!: number | null;
   blockWhenSpendLimitIsReached!: boolean;
-  /** When an Argos staff member last reached out to this account's owners. */
-  staffContactedAt!: string | null;
 
   override $formatDatabaseJson(json: Pojo) {
     json = super.$formatDatabaseJson(json);

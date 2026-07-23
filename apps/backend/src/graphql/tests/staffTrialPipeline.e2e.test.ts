@@ -14,10 +14,12 @@ const TrialPipelineQuery = `
     staffTrialPipeline(days: $days) {
       id
       slug
-      projectsCount
-      buildsCount
-      screenshotsCount
-      firstComparisonAt
+      staff {
+        projectsCount
+        buildsCount
+        screenshotsCount
+        firstComparisonAt
+      }
     }
   }
 `;
@@ -119,12 +121,10 @@ describe("GraphQL staffTrialPipeline", () => {
     const entry = findEntry(res, team.id);
     expect(entry).toMatchObject({
       id: team.id,
-      projectsCount: 1,
-      buildsCount: 0,
-      screenshotsCount: 0,
+      staff: { projectsCount: 1, buildsCount: 0, screenshotsCount: 0 },
     });
     // No build means no comparison either.
-    expect(entry.firstComparisonAt).toBeNull();
+    expect(entry.staff.firstComparisonAt).toBeNull();
   });
 
   it("does not count an orphan build as a comparison", async () => {
@@ -137,9 +137,9 @@ describe("GraphQL staffTrialPipeline", () => {
 
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);
-    expect(entry.buildsCount).toBe(1);
+    expect(entry.staff.buildsCount).toBe(1);
     // An orphan build has no baseline: the team has not seen a diff yet.
-    expect(entry.firstComparisonAt).toBeNull();
+    expect(entry.staff.firstComparisonAt).toBeNull();
   });
 
   it("reports the first check build as the first comparison", async () => {
@@ -167,11 +167,11 @@ describe("GraphQL staffTrialPipeline", () => {
 
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);
-    expect(entry.buildsCount).toBe(3);
+    expect(entry.staff.buildsCount).toBe(3);
     // The earliest *check* build wins — not the earlier orphan one, nor the
     // later check.
     expect(
-      moment(entry.firstComparisonAt).isSame(
+      moment(entry.staff.firstComparisonAt).isSame(
         moment().subtract(3, "days"),
         "day",
       ),
@@ -204,7 +204,7 @@ describe("GraphQL staffTrialPipeline", () => {
     const res = await queryPipeline(viewer, 30);
 
     expectNoGraphQLError(res);
-    expect(findEntry(res, team.id).screenshotsCount).toBe(42);
+    expect(findEntry(res, team.id).staff.screenshotsCount).toBe(42);
   });
 
   it("counts projects once even when they have many builds", async () => {
@@ -218,7 +218,7 @@ describe("GraphQL staffTrialPipeline", () => {
     expectNoGraphQLError(res);
     const entry = findEntry(res, team.id);
     // The join to builds multiplies project rows; the count must stay at 1.
-    expect(entry.projectsCount).toBe(1);
-    expect(entry.buildsCount).toBe(3);
+    expect(entry.staff.projectsCount).toBe(1);
+    expect(entry.staff.buildsCount).toBe(3);
   });
 });

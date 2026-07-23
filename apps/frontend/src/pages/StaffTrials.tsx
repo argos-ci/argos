@@ -51,15 +51,20 @@ const TrialPipelineQuery = graphql(`
       name
       subscriptionStatus
       lastBuildDate
-      buildsCount
-      firstComparisonAt
-      screenshotsCount
-      staffOwners {
-        id
-        name
-        email
+      staff {
+        buildsCount
+        screenshotsCount
+        firstComparisonAt
+        owners {
+          id
+          name
+          email
+        }
+        contact {
+          id
+          date
+        }
       }
-      staffContactedAt
       avatar {
         ...AccountAvatarFragment
       }
@@ -82,7 +87,12 @@ const SetTeamStaffContactMutation = graphql(`
       input: { teamAccountId: $teamAccountId, contacted: $contacted }
     ) {
       id
-      staffContactedAt
+      staff {
+        contact {
+          id
+          date
+        }
+      }
     }
   }
 `);
@@ -141,18 +151,18 @@ function getSortValue(team: PipelineTeam, key: SortKey): string | number {
     // Ranked worst-first so sorting ascending surfaces the teams that build
     // without ever producing a comparison.
     case "checkBuild":
-      if (team.firstComparisonAt) {
+      if (team.staff?.firstComparisonAt) {
         return 2;
       }
-      return team.buildsCount > 0 ? 0 : 1;
+      return (team.staff?.buildsCount ?? 0) > 0 ? 0 : 1;
     case "lastActivity":
       return team.lastBuildDate ? new Date(team.lastBuildDate).getTime() : 0;
     case "builds":
-      return team.buildsCount;
+      return team.staff?.buildsCount ?? 0;
     case "screenshots":
-      return team.screenshotsCount;
+      return team.staff?.screenshotsCount ?? 0;
     case "contacted":
-      return team.staffContactedAt ? 1 : 0;
+      return team.staff?.contact ? 1 : 0;
   }
 }
 
@@ -254,21 +264,21 @@ function StepIcon(props: { reached: boolean; label: string; title?: string }) {
 function CheckBuildCell(props: { team: PipelineTeam }) {
   const { team } = props;
 
-  if (team.firstComparisonAt) {
+  if (team.staff?.firstComparisonAt) {
     return (
       <StepIcon
         reached
         label="Check build"
-        title={new Date(team.firstComparisonAt).toLocaleString()}
+        title={new Date(team.staff?.firstComparisonAt).toLocaleString()}
       />
     );
   }
 
-  if (team.buildsCount > 0) {
+  if ((team.staff?.buildsCount ?? 0) > 0) {
     return (
       <div
         className="flex justify-center"
-        title={`${team.buildsCount} builds, none compared to a baseline`}
+        title={`${team.staff?.buildsCount ?? 0} builds, none compared to a baseline`}
       >
         <XIcon className="text-danger-low size-4" aria-label="No check build" />
       </div>
@@ -338,12 +348,16 @@ function ContactCell(props: { team: PipelineTeam }) {
     SetTeamStaffContactMutation,
   );
   const { subject, body } = getOnboardingEmail({
-    owners: team.staffOwners,
-    buildsCount: team.buildsCount,
-    hasCheckBuild: Boolean(team.firstComparisonAt),
+    owners: team.staff?.owners ?? [],
+    buildsCount: team.staff?.buildsCount ?? 0,
+    hasCheckBuild: Boolean(team.staff?.firstComparisonAt),
   });
-  const mailtoUrl = getMailtoUrl({ owners: team.staffOwners, subject, body });
-  const contactedAt = team.staffContactedAt;
+  const mailtoUrl = getMailtoUrl({
+    owners: team.staff?.owners ?? [],
+    subject,
+    body,
+  });
+  const contactedAt = team.staff?.contact?.date ?? null;
 
   const markContacted = (contacted: boolean) => {
     // Rejection is caught so a failed mark never breaks the draft that just
@@ -431,13 +445,13 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
         <PaymentCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
-        {team.buildsCount.toLocaleString()}
+        {(team.staff?.buildsCount ?? 0).toLocaleString()}
       </td>
       <td className="p-4">
         <CheckBuildCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
-        {team.screenshotsCount.toLocaleString()}
+        {(team.staff?.screenshotsCount ?? 0).toLocaleString()}
       </td>
       <td className="p-4">
         <ContactCell team={team} />
@@ -529,7 +543,9 @@ function formatShare(value: number, total: number) {
 
 function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const { teams } = props;
-  const activated = teams.filter((team) => team.firstComparisonAt).length;
+  const activated = teams.filter(
+    (team) => team.staff?.firstComparisonAt,
+  ).length;
   const lost = teams.filter(checkIsLost).length;
   // Within this window every team starts on a trial, so an active subscription
   // means the trial converted.

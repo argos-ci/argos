@@ -2,7 +2,7 @@ import { invariant } from "@argos/util/invariant";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Account } from "@/database/models";
+import { StaffTeamContact } from "@/database/models";
 import { factory, setupDatabase } from "@/database/testing";
 
 import { apolloServer, createApolloMiddleware } from "../apollo";
@@ -13,12 +13,20 @@ const TeamContactQuery = `
   query TeamContact($days: Int!) {
     staffTrialPipeline(days: $days) {
       id
-      staffOwners {
-        id
-        name
-        email
+      staff {
+        owners {
+          id
+          name
+          email
+        }
+        contact {
+          id
+          date
+          user {
+            id
+          }
+        }
       }
-      staffContactedAt
     }
   }
 `;
@@ -29,7 +37,14 @@ const SetContactMutation = `
       input: { teamAccountId: $teamAccountId, contacted: $contacted }
     ) {
       id
-      staffContactedAt
+      staff {
+        contact {
+          id
+          user {
+            id
+          }
+        }
+      }
     }
   }
 `;
@@ -98,16 +113,16 @@ describe("GraphQL staff team contact", () => {
 
     expectNoGraphQLError(res);
     const entry = findTeam(res, teamAccount.id);
-    expect(entry.staffOwners).toHaveLength(2);
-    expect(entry.staffOwners[0].email).toEqual(expect.stringContaining("@"));
+    expect(entry.staff.owners).toHaveLength(2);
+    expect(entry.staff.owners[0].email).toEqual(expect.stringContaining("@"));
     expect(
-      entry.staffOwners.map((owner: { name: string }) => owner.name),
+      entry.staff.owners.map((owner: { name: string }) => owner.name),
     ).toEqual(expect.arrayContaining(["Owner 0", "Owner 1"]));
     // Never contacted yet.
-    expect(entry.staffContactedAt).toBeNull();
+    expect(entry.staff.contact).toBeNull();
   });
 
-  it("refuses to expose owner addresses to non-staff users", async () => {
+  it("hides the whole staff block from non-staff users", async () => {
     const viewer = await createViewer({ staff: false });
     await createTeamWithOwners(1);
     const app = await createApp(viewer);
@@ -116,9 +131,48 @@ describe("GraphQL staff team contact", () => {
       .post("/graphql")
       .send({ query: TeamContactQuery, variables: { days: 30 } });
 
-    // Owner emails are personal data — the query itself is staff-gated, but
-    // the field must refuse on its own too.
+    // The pipeline query is staff-gated, so this one errors before reaching
+    // the field. `Team.staff` returning null on its own is covered below.
     expect(res.body.errors[0].extensions.code).toBe("FORBIDDEN");
+  });
+
+  it("withholds the staff block from a team's own member", async () => {
+    const viewer = await createViewer({ staff: false });
+    const { teamAccount } = await createTeamWithOwners(1);
+    invariant(teamAccount.teamId, "team account has no team");
+    invariant(viewer.userAccount.userId, "account has no user");
+    await factory.TeamUser.create({
+      teamId: teamAccount.teamId,
+      userId: viewer.userAccount.userId,
+      userLevel: "owner",
+    });
+    const app = await createApp(viewer);
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({
+        query: `
+          query TeamStaffBlock($id: ID!) {
+            teamById(id: $id) {
+              id
+              ... on Team {
+                staff {
+                  buildsCount
+                  owners {
+                    email
+                  }
+                }
+              }
+            }
+          }
+        `,
+        variables: { id: teamAccount.id },
+      });
+
+    // A member reaching a team they belong to gets the block nulled as a
+    // whole — counts included. One guard covers every field under it.
+    expectNoGraphQLError(res);
+    expect(res.body.data.teamById.staff).toBeNull();
   });
 
   it("records who reached out, then clears it", async () => {
@@ -134,9 +188,10 @@ describe("GraphQL staff team contact", () => {
       });
 
     expectNoGraphQLError(marked);
-    expect(
-      marked.body.data.setTeamStaffContact.staffContactedAt,
-    ).not.toBeNull();
+    // The record names who reached out, not just when.
+    expect(marked.body.data.setTeamStaffContact.staff.contact.user.id).toBe(
+      viewer.userAccount.id,
+    );
 
     const cleared = await request(app)
       .post("/graphql")
@@ -146,7 +201,7 @@ describe("GraphQL staff team contact", () => {
       });
 
     expectNoGraphQLError(cleared);
-    expect(cleared.body.data.setTeamStaffContact.staffContactedAt).toBeNull();
+    expect(cleared.body.data.setTeamStaffContact.staff.contact).toBeNull();
   });
 
   it("stays marked when clicked twice", async () => {
@@ -164,8 +219,12 @@ describe("GraphQL staff team contact", () => {
       expectNoGraphQLError(res);
     }
 
-    const account = await Account.query().findById(teamAccount.id);
-    expect(account?.staffContactedAt).not.toBeNull();
+    // The unique constraint would otherwise blow up on the second click.
+    const contacts = await StaffTeamContact.query().where(
+      "teamId",
+      teamAccount.teamId!,
+    );
+    expect(contacts).toHaveLength(1);
   });
 
   it("refuses to mark an account that is not a team", async () => {

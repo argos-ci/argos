@@ -66,13 +66,6 @@ import { paginateResult } from "./PageInfo";
 
 const { gql } = gqlTag;
 
-/**
- * Upper bound on the trial pipeline window. Each returned team drives an
- * aggregate over `projects` joined to `builds`, so an unbounded window would
- * scan the whole build history.
- */
-const MAX_TRIAL_PIPELINE_DAYS = 365;
-
 export const typeDefs = gql`
   enum TeamMembersOrderBy {
     DATE
@@ -132,16 +125,6 @@ export const typeDefs = gql`
     membersCount: Int!
     last30DaysScreenshots: Int!
     lastBuildDate: DateTime
-    projectsCount: Int!
-    buildsCount: Int!
-    "Screenshots uploaded since the team was created"
-    screenshotsCount: Int!
-    "When the team got its first build compared to a baseline"
-    firstComparisonAt: DateTime
-    "Owners of the team, with their email address. Staff only."
-    staffOwners: [StaffTeamOwner!]!
-    "When a staff member reached out to the team, null if never. Staff only."
-    staffContactedAt: DateTime
     githubMembers(
       after: Int = 0
       first: Int = 30
@@ -167,18 +150,6 @@ export const typeDefs = gql`
     samlSsoUrl: String!
     defaultUserLevel: TeamDefaultUserLevel!
     githubLightInstallation: GithubInstallation
-  }
-
-  "An owner of a team, as needed to write to them. Staff only."
-  type StaffTeamOwner {
-    id: ID!
-    name: String
-    email: String
-  }
-
-  input SetTeamStaffContactInput {
-    teamAccountId: ID!
-    contacted: Boolean!
   }
 
   type TeamSamlConfig {
@@ -373,10 +344,6 @@ export const typeDefs = gql`
     invite(secret: String!): TeamInvite
     "Get a team invite (global to team) by its secret"
     teamInvite(secret: String!): Team
-    "List all teams (staff only)"
-    staffTeams: [Team!]!
-    "List teams created within the last \`days\` days, newest first (staff only)"
-    staffTrialPipeline(days: Int! = 30): [Team!]!
     "List all teams the authenticated user can join based on verified email domains"
     autoInvites: [AutoInvite!]!
   }
@@ -384,8 +351,6 @@ export const typeDefs = gql`
   extend type Mutation {
     "Create a team"
     createTeam(input: CreateTeamInput!): CreateTeamResult!
-    "Record or clear that a staff member reached out to a team (staff only)"
-    setTeamStaffContact(input: SetTeamStaffContactInput!): Team!
     "Leave a team"
     leaveTeam(input: LeaveTeamInput!): Boolean!
     "Remove a user from a team"
@@ -658,47 +623,6 @@ export const resolvers: IResolvers = {
     lastBuildDate: async (account, _args, ctx) => {
       return ctx.loaders.AccountLastBuildDateByAccountId.load(account.id);
     },
-    projectsCount: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.projectsCount;
-    },
-    buildsCount: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.buildsCount;
-    },
-    screenshotsCount: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.screenshotsCount;
-    },
-    staffOwners: async (account, _args, ctx) => {
-      // Owner addresses are personal data: staff only, never exposed to the
-      // team's own members through this field.
-      if (!ctx.auth?.user.staff) {
-        throw forbidden();
-      }
-      invariant(account.teamId, "not a team account");
-      return ctx.loaders.TeamOwnersByTeamId.load(account.teamId);
-    },
-    staffContactedAt: async (account, _args, ctx) => {
-      if (!ctx.auth?.user.staff) {
-        throw forbidden();
-      }
-      return account.staffContactedAt
-        ? new Date(account.staffContactedAt)
-        : null;
-    },
-    firstComparisonAt: async (account, _args, ctx) => {
-      const activation = await ctx.loaders.AccountActivationByAccountId.load(
-        account.id,
-      );
-      return activation.firstComparisonAt;
-    },
     githubMembers: async (account, args, ctx) => {
       if (!ctx.auth) {
         throw unauthenticated();
@@ -960,51 +884,6 @@ export const resolvers: IResolvers = {
 
       return getAutoInvitesForUser({ userId: ctx.auth.user.id });
     },
-    staffTeams: async (_root, _args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
-
-      return Account.query()
-        .whereNotNull("teamId")
-        .whereNull("userId")
-        .orderByRaw("coalesce(name, slug) asc");
-    },
-    staffTrialPipeline: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
-
-      if (args.days < 1 || args.days > MAX_TRIAL_PIPELINE_DAYS) {
-        throw badUserInput(
-          `\`days\` must be between 1 and ${MAX_TRIAL_PIPELINE_DAYS}.`,
-        );
-      }
-
-      // Newest first: the list is read as a feed of what just happened, not
-      // as a directory.
-      return (
-        Account.query()
-          .whereNotNull("teamId")
-          .whereNull("userId")
-          .whereRaw(
-            `accounts."createdAt" >= now() - make_interval(days => ?)`,
-            [args.days],
-          )
-          .orderBy("createdAt", "desc")
-          // Total order: teams sharing a timestamp would otherwise come back in
-          // an arbitrary order from one execution to the next.
-          .orderBy("id", "desc")
-      );
-    },
     teamInvite: async (_root, args) => {
       const team = await Team.query()
         .withGraphFetched("account")
@@ -1027,31 +906,6 @@ export const resolvers: IResolvers = {
     },
   },
   Mutation: {
-    setTeamStaffContact: async (_root, args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
-
-      const teamAccount = await Account.query()
-        .findById(args.input.teamAccountId)
-        .throwIfNotFound();
-
-      // The field is declared as `Team!`: handing back a personal account here
-      // would resolve as `User` and break the response against the schema.
-      if (!teamAccount.teamId) {
-        throw badUserInput("Account is not a team.");
-      }
-
-      return teamAccount.$query().patchAndFetch({
-        staffContactedAt: args.input.contacted
-          ? new Date().toISOString()
-          : null,
-      });
-    },
     createTeam: async (_root, args, ctx) => {
       const { auth } = ctx;
 

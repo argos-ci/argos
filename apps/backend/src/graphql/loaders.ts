@@ -37,6 +37,7 @@ import {
   ScreenshotBucket,
   ScreenshotDiff,
   SlackInstallation,
+  StaffTeamContact,
   Team,
   TeamUser,
   Test,
@@ -745,6 +746,19 @@ function createTeamOwnersByTeamIdLoader() {
   });
 }
 
+function createStaffTeamContactByTeamIdLoader() {
+  return new DataLoader<string, StaffTeamContact | null>(async (teamIds) => {
+    const contacts = await StaffTeamContact.query().whereIn(
+      "teamId",
+      teamIds as string[],
+    );
+    const contactByTeamId = new Map(
+      contacts.map((contact) => [contact.teamId, contact]),
+    );
+    return teamIds.map((teamId) => contactByTeamId.get(String(teamId)) ?? null);
+  });
+}
+
 function createAccountSubscriptionStatusByAccountIdLoader() {
   return new DataLoader<string, AccountSubscriptionStatus | null>(
     async (accountIds) => {
@@ -1446,6 +1460,7 @@ export const createLoaders = () => ({
     createAccountLastBuildDateByAccountIdLoader(),
   AccountActivationByAccountId: createAccountActivationByAccountIdLoader(),
   TeamOwnersByTeamId: createTeamOwnersByTeamIdLoader(),
+  StaffTeamContactByTeamId: createStaffTeamContactByTeamIdLoader(),
   AccountSubscriptionStatusByAccountId:
     createAccountSubscriptionStatusByAccountIdLoader(),
   BuildPublishedComments: createBuildPublishedCommentsLoader(),
