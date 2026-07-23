@@ -233,3 +233,36 @@ ${input.account.slug} / ${input.project.name}
     Sentry.captureException(error);
   });
 }
+
+/**
+ * Notify a Discord channel that a project moved from a personal account to a
+ * team, which is the moment a side project turns into something a team relies
+ * on. Only that direction is notified: team to personal, or any transfer
+ * between accounts of the same kind, carries no such signal.
+ *
+ * Notification failures are swallowed and reported to Sentry — they must never
+ * break the transfer itself.
+ */
+export async function notifyProjectTransfer(input: {
+  project: Project;
+  previousAccount: Account;
+  previousName: string;
+  targetAccount: Account;
+  email: string | null;
+}) {
+  if (
+    input.previousAccount.type !== "user" ||
+    input.targetAccount.type !== "team"
+  ) {
+    return;
+  }
+
+  await notifyDiscord({
+    content: `
+Project transferred to a team by ${input.email ?? "unknown email"}:
+${input.previousAccount.slug} / ${input.previousName} → ${input.targetAccount.slug} / ${input.project.name}
+`.trim(),
+  }).catch((error) => {
+    Sentry.captureException(error);
+  });
+}

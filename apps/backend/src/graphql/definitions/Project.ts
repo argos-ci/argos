@@ -24,6 +24,7 @@ import {
   checkProjectName,
   createProject as createProjectService,
   notifyProjectCreation,
+  notifyProjectTransfer,
   resolveProjectName,
 } from "@/database/services/project";
 import { upsertProductionInternalProjectDomain } from "@/database/services/project-domain";
@@ -1112,10 +1113,33 @@ export const resolvers: IResolvers = {
         name: args.input.name,
         accountId: targetAccountId,
       });
-      return project.$query().patchAndFetch({
-        accountId: targetAccountId,
-        name: args.input.name,
-      });
+
+      // Capture the source account id and name before patching: `patchAndFetch`
+      // mutates the instance in place, overwriting both.
+      const previousAccountId = project.accountId;
+      const previousName = project.name;
+
+      const [previousAccount, targetAccount, transferredProject] =
+        await Promise.all([
+          ctx.loaders.Account.load(previousAccountId),
+          ctx.loaders.Account.load(targetAccountId),
+          project.$query().patchAndFetch({
+            accountId: targetAccountId,
+            name: args.input.name,
+          }),
+        ]);
+
+      if (previousAccount && targetAccount) {
+        await notifyProjectTransfer({
+          project: transferredProject,
+          previousAccount,
+          previousName,
+          targetAccount,
+          email: ctx.auth?.user.email ?? null,
+        });
+      }
+
+      return transferredProject;
     },
     deleteProject: async (_root, args, ctx) => {
       const project = await Project.query().findById(args.id).select("id");
