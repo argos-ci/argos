@@ -7,6 +7,12 @@ on:
       - main
   workflow_dispatch:
 
+# Serialize releases: a concurrent deploy to the same ECS service supersedes
+# the in-flight one, which the deploy action reports as a failure.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
