@@ -7,7 +7,12 @@ import { SlackChannel } from "@/database/models";
 
 import { deleteInstallation, slackInstallationQuery } from "./helpers";
 import { notifySlackChannelAction } from "./notify";
-import { matchBuildPath, unfurlBuild } from "./unfurl";
+import {
+  matchBuildPath,
+  matchTestPath,
+  unfurlBuild,
+  unfurlTest,
+} from "./unfurl";
 
 export function registerEvents(boltApp: Bolt.App) {
   boltApp.event("app_uninstalled", async ({ context }) => {
@@ -110,13 +115,15 @@ export function registerEvents(boltApp: Bolt.App) {
           if (urlObj.origin !== config.get("server.url")) {
             return null;
           }
-          const match = matchBuildPath(urlObj.pathname);
-          if (match) {
-            const buildInfo = await unfurlBuild(match.params, auth);
-            if (!buildInfo) {
-              return null;
-            }
-            return [link.url, buildInfo];
+          const buildMatch = matchBuildPath(urlObj.pathname);
+          if (buildMatch) {
+            const attachment = await unfurlBuild(buildMatch.params, auth);
+            return attachment ? [link.url, attachment] : null;
+          }
+          const testMatch = matchTestPath(urlObj.pathname);
+          if (testMatch) {
+            const attachment = await unfurlTest(testMatch.params, auth);
+            return attachment ? [link.url, attachment] : null;
           }
           return null;
         },
