@@ -20,11 +20,27 @@ type SyncCtx = {
   octokit: Exclude<Awaited<ReturnType<typeof getInstallationOctokit>>, null>;
 };
 
-async function linkInstallationRepositories(
-  installationId: string,
+/**
+ * Reconcile the repositories linked to an installation.
+ *
+ * A repository belongs to a single GitHub account, and an account has a single
+ * installation per app (`main` / `light`). The installation we just synced
+ * listed its repositories through the GitHub API, so for those repositories it
+ * is the authoritative installation: any link held by another installation of
+ * the same app is stale and gets evicted. This is what keeps a repository from
+ * ending up with two active installations after it is transferred to another
+ * account or the app is uninstalled and reinstalled (getting a new GitHub id).
+ *
+ * Exported for testing.
+ */
+export async function linkInstallationRepositories(
+  installation: GithubInstallation,
   repositories: GithubRepository[],
   trx: TransactionOrKnex,
 ) {
+  const installationId = installation.id;
+  const repositoryIds = repositories.map((repository) => repository.id);
+
   const links = await GithubRepositoryInstallation.query(trx).where({
     githubInstallationId: installationId,
   });
@@ -44,7 +60,7 @@ async function linkInstallationRepositories(
   );
 
   await Promise.all([
-    // Link repositories
+    // Link repositories accessible to this installation.
     toLink.length > 0
       ? GithubRepositoryInstallation.query(trx).insert(
           toLink.map((repository) => ({
@@ -53,7 +69,7 @@ async function linkInstallationRepositories(
           })),
         )
       : null,
-    // Unlink repositories
+    // Unlink repositories no longer accessible to this installation.
     toUnlink.length > 0
       ? GithubRepositoryInstallation.query(trx)
           .whereIn(
@@ -62,16 +78,50 @@ async function linkInstallationRepositories(
           )
           .delete()
       : null,
-    // Unlink projects if repository no longer have a valid installation
-    toUnlink.length > 0
-      ? Project.query(trx)
+    // Evict stale links held by another installation of the same app: a
+    // repository can only be served by a single active installation per app.
+    repositoryIds.length > 0
+      ? GithubRepositoryInstallation.query(trx)
+          .whereIn("githubRepositoryId", repositoryIds)
+          .whereNot("githubInstallationId", installationId)
           .whereIn(
-            "githubRepositoryId",
-            toUnlink.map(({ githubRepositoryId }) => githubRepositoryId),
+            "githubInstallationId",
+            GithubInstallation.query(trx)
+              .select("id")
+              .where({ app: installation.app }),
           )
-          .patch({ githubRepositoryId: null })
+          .delete()
       : null,
   ]);
+
+  // Detach projects whose repository is no longer served by any active
+  // installation. We recompute this after the mutations above, because a
+  // repository dropped by this installation may still be served by another one
+  // (e.g. the `main` + `light` pair, or a newer installation), in which case
+  // the project must stay linked.
+  if (toUnlink.length > 0) {
+    const droppedRepositoryIds = toUnlink.map(
+      ({ githubRepositoryId }) => githubRepositoryId,
+    );
+    const stillLinkedRows = await GithubRepositoryInstallation.query(trx)
+      .whereIn("githubRepositoryId", droppedRepositoryIds)
+      .whereIn(
+        "githubInstallationId",
+        GithubInstallation.query(trx).select("id").where({ deleted: false }),
+      )
+      .select("githubRepositoryId");
+    const stillLinked = new Set(
+      stillLinkedRows.map((row) => row.githubRepositoryId),
+    );
+    const orphanRepositoryIds = droppedRepositoryIds.filter(
+      (id) => !stillLinked.has(id),
+    );
+    if (orphanRepositoryIds.length > 0) {
+      await Project.query(trx)
+        .whereIn("githubRepositoryId", orphanRepositoryIds)
+        .patch({ githubRepositoryId: null });
+    }
+  }
 }
 
 function extractOwnersFromRepositories(repositories: ApiRepository[]) {
@@ -274,7 +324,7 @@ export async function synchronizeInstallation(installationId: string) {
   // we delete the installation
   if (!octokit) {
     await transaction(async (trx) => {
-      await linkInstallationRepositories(installationId, [], trx);
+      await linkInstallationRepositories(installation, [], trx);
     });
     return;
   }
@@ -289,6 +339,6 @@ export async function synchronizeInstallation(installationId: string) {
   await transaction(async (trx) => {
     const accounts = await saveAccounts(apiRepositories, trx);
     const repositories = await saveRepositories(accounts, apiRepositories, trx);
-    await linkInstallationRepositories(installationId, repositories, trx);
+    await linkInstallationRepositories(installation, repositories, trx);
   });
 }

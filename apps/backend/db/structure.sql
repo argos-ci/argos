@@ -3428,6 +3428,14 @@ ALTER TABLE ONLY public.github_repository_installations
 
 
 --
+-- Name: github_repository_installations github_repository_installations_repo_installation_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.github_repository_installations
+    ADD CONSTRAINT github_repository_installations_repo_installation_unique UNIQUE ("githubRepositoryId", "githubInstallationId");
+
+
+--
 -- Name: github_synchronizations github_synchronizations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5757,3 +5765,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026071
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260717120000_build-search-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260721120000_saml-purchased.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723120000_staff-team-contacts.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723130000_github-repository-installation-unique.js', 1, NOW());
