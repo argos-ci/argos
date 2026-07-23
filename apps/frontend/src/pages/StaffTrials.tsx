@@ -351,8 +351,10 @@ function LastActivityCell(props: { date: string | null | undefined }) {
 
   return (
     <>
-      <Time date={props.date} format="ll" tooltip="title" />
-      <div className="text-low text-xs">
+      <div className="truncate">
+        <Time date={props.date} format="ll" tooltip="title" />
+      </div>
+      <div className="text-low truncate text-xs">
         <Time date={props.date} tooltip="none" />
       </div>
     </>
@@ -450,13 +452,15 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
           </div>
         </div>
       </td>
-      <td className="p-4 text-sm whitespace-nowrap">
-        <Time date={team.createdAt} format="ll" tooltip="title" />
-        <div className="text-low text-xs">
+      <td className="p-4 text-sm">
+        <div className="truncate">
+          <Time date={team.createdAt} format="ll" tooltip="title" />
+        </div>
+        <div className="text-low truncate text-xs">
           <Time date={team.createdAt} tooltip="none" />
         </div>
       </td>
-      <td className="p-4 text-sm whitespace-nowrap">
+      <td className="p-4 text-sm">
         <LastActivityCell date={team.lastBuildDate} />
       </td>
       <td className="p-4 text-sm">
@@ -489,20 +493,41 @@ const ALIGN_CLASS_NAMES = {
   right: "text-right",
 } as const;
 
+/**
+ * Widths are fixed rather than left to the content: the two date columns render
+ * a formatted date, so their natural width follows the calendar — every column
+ * after them would shift on the day a month name gets longer.
+ */
 const COLUMNS: {
   key: SortKey;
   label: string;
   align: keyof typeof ALIGN_CLASS_NAMES;
+  width: string;
 }[] = [
-  { key: "team", label: "Team", align: "left" },
-  { key: "createdAt", label: "Created", align: "left" },
-  { key: "lastActivity", label: "Last activity", align: "left" },
-  { key: "status", label: "Status", align: "left" },
-  { key: "bankInfo", label: "Bank info", align: "center" },
-  { key: "builds", label: "Builds", align: "right" },
-  { key: "checkBuild", label: "Check build", align: "center" },
-  { key: "screenshots", label: "Screenshots", align: "right" },
-  { key: "contacted", label: "Contacted", align: "center" },
+  { key: "team", label: "Team", align: "left", width: "w-[17%]" },
+  { key: "createdAt", label: "Created", align: "left", width: "w-[11%]" },
+  {
+    key: "lastActivity",
+    label: "Last activity",
+    align: "left",
+    width: "w-[12%]",
+  },
+  { key: "status", label: "Status", align: "left", width: "w-[12%]" },
+  { key: "bankInfo", label: "Bank info", align: "center", width: "w-[9%]" },
+  { key: "builds", label: "Builds", align: "right", width: "w-[9%]" },
+  {
+    key: "checkBuild",
+    label: "Check build",
+    align: "center",
+    width: "w-[10%]",
+  },
+  {
+    key: "screenshots",
+    label: "Screenshots",
+    align: "right",
+    width: "w-[11%]",
+  },
+  { key: "contacted", label: "Contacted", align: "center", width: "w-[9%]" },
 ];
 
 function PipelineTable(props: {
@@ -521,7 +546,7 @@ function PipelineTable(props: {
 
   return (
     <div className="overflow-x-auto rounded-sm border">
-      <table className="w-full min-w-250 border-collapse">
+      <table className="w-full min-w-300 table-fixed border-collapse">
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
             {COLUMNS.map((column) => (
@@ -532,7 +557,7 @@ function PipelineTable(props: {
                 activeSortKey={props.sortKey}
                 direction={props.sortDirection}
                 onSort={props.onSort}
-                className={ALIGN_CLASS_NAMES[column.align]}
+                className={clsx(column.width, ALIGN_CLASS_NAMES[column.align])}
               />
             ))}
           </tr>
@@ -580,6 +605,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
   return (
     <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
       <StatTile
+        data-visual-test="transparent"
         icon={UsersIcon}
         color="primary"
         label="New teams"
@@ -587,6 +613,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         hint={`${teams.length - decided} still trialing`}
       />
       <StatTile
+        data-visual-test="transparent"
         icon={ImagesIcon}
         color="storybook"
         label="Reached check build"
@@ -594,6 +621,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         hint={formatShare(activated, teams.length)}
       />
       <StatTile
+        data-visual-test="transparent"
         icon={CircleCheckIcon}
         color="success"
         label="Converted"
@@ -601,6 +629,7 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         hint={`${formatShare(converted, decided)} decided trials`}
       />
       <StatTile
+        data-visual-test="transparent"
         icon={CircleXIcon}
         color="warning"
         label="Canceled or expired"
@@ -715,7 +744,10 @@ function StaffTrialsList() {
             onSort={onSort}
           />
           {normalizedSearch ? (
-            <div className="text-low mt-3 text-sm">
+            <div
+              className="text-low mt-3 text-sm"
+              data-visual-test="transparent"
+            >
               Showing {visibleTeams.length} of {allTeams.length} teams
             </div>
           ) : null}
