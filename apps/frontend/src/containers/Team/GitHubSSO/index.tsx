@@ -1,14 +1,12 @@
 import { memo } from "react";
 import { useMutation } from "@apollo/client/react";
+import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 import { MarkGithubIcon } from "@primer/octicons-react";
 
 import { GITHUB_SSO_PRICING } from "@/constants";
 import { GithubAccountLink } from "@/containers/GithubAccountLink";
 import { DocumentType, graphql } from "@/gql";
-import {
-  AccountSubscriptionStatus,
-  TeamGitHubSso_TeamFragment,
-} from "@/gql/graphql";
+import { TeamGitHubSso_TeamFragment } from "@/gql/graphql";
 import { Button } from "@/ui/Button";
 import {
   Card,
@@ -107,8 +105,9 @@ export function TeamGitHubSSO(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const hasActiveSubscription =
-    team.subscriptionStatus === AccountSubscriptionStatus.Active;
+  const hasActiveSubscription = checkIsActiveSubscriptionStatus(
+    team.subscriptionStatus,
+  );
   const priced = !team.plan?.githubSsoIncluded;
   const usageBased = team.plan?.usageBased;
   return (

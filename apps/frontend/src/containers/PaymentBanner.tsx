@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { useApolloClient, useSuspenseQuery } from "@apollo/client/react";
+import { checkIsTrialingSubscriptionStatus } from "@argos/schemas/subscription-status";
+import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 
 import { config } from "@/config";
@@ -115,12 +117,11 @@ export const PaymentBanner = memo(
 
     const userIsAdmin = permissions.includes(AccountPermission.Admin);
 
+    const trialing = checkIsTrialingSubscriptionStatus(subscriptionStatus);
+
     const pendingCancelAt = subscription?.endDate;
     if (pendingCancelAt) {
-      const subscriptionTypeLabel =
-        subscriptionStatus === AccountSubscriptionStatus.Trialing
-          ? "trial"
-          : "subscription";
+      const subscriptionTypeLabel = trialing ? "trial" : "subscription";
       return (
         <BannerTemplate color="warning">
           <p>
@@ -142,6 +143,7 @@ export const PaymentBanner = memo(
     switch (subscriptionStatus) {
       case AccountSubscriptionStatus.Trialing: {
         invariant(subscription, "If trialing, subscription must be defined");
+
         const daysRemaining = subscription.trialDaysRemaining;
         return (
           <BannerTemplate
@@ -239,8 +241,15 @@ export const PaymentBanner = memo(
           </BannerTemplate>
         );
       }
+      case AccountSubscriptionStatus.TrialingWithPaymentMethod:
+      case AccountSubscriptionStatus.Active:
+      case AccountSubscriptionStatus.Incomplete:
+      case AccountSubscriptionStatus.IncompleteExpired:
+      case AccountSubscriptionStatus.Paused:
+      case null:
+        return null;
+      default:
+        assertNever(subscriptionStatus);
     }
-
-    return null;
   },
 );

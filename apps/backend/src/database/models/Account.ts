@@ -1,3 +1,4 @@
+import { ACTIVE_SUBSCRIPTION_STATUSES } from "@argos/schemas/subscription-status";
 import { assertNever } from "@argos/util/assertNever";
 import { invariant } from "@argos/util/invariant";
 import { slugJsonSchema } from "@argos/util/slug";
@@ -25,8 +26,37 @@ export type AccountAvatar = {
   color: string;
 };
 
+/**
+ * Stripe's own statuses, plus the ones Argos derives: a trial that ran out
+ * (`trial_expired`), and a trial that will convert on its own because a card
+ * is already on file (`trialing_with_payment_method`).
+ *
+ * That last one is why this is not a mirror of Stripe. The card is what
+ * unlocks team features, so a carded trial grants the access of a paid plan
+ * while still being a trial — telling the two apart is the whole point of
+ * having a status of our own.
+ */
 export type AccountSubscriptionStatus =
-  Subscription["status"] | "trial_expired";
+  Subscription["status"] | "trial_expired" | "trialing_with_payment_method";
+
+/**
+ * Typed against this union on purpose: the shared list is the vocabulary, and
+ * renaming a status here has to fail to compile there rather than silently
+ * turn the predicate into a constant false.
+ */
+const ACTIVE_STATUSES = new Set<AccountSubscriptionStatus>(
+  ACTIVE_SUBSCRIPTION_STATUSES,
+);
+
+/**
+ * Whether the account may use team features, and buy the add-ons that go on
+ * top of them.
+ */
+export function checkIsActiveSubscriptionStatus(
+  status: AccountSubscriptionStatus | null | undefined,
+): boolean {
+  return status != null && ACTIVE_STATUSES.has(status);
+}
 
 type AccountSubscriptionManager = {
   getActiveSubscription(): Promise<Subscription | null>;
@@ -68,13 +98,13 @@ function computeAccountSubscriptionStatus(args: {
   }
 
   if (activeSubscription) {
-    // We consider a trialing subscription as active
-    // if the payment method is filled.
+    // A trial with a card on file is reported as its own status: it grants the
+    // access of a paid plan, and it is still a trial.
     if (
       activeSubscription.status === "trialing" &&
       activeSubscription.paymentMethodFilled
     ) {
-      return "active";
+      return "trialing_with_payment_method";
     }
     return activeSubscription.status;
   }
@@ -521,12 +551,14 @@ export class Account extends Model {
     });
 
     const getSubscriptionStatus = memoize(async () => {
-      if (this.forcedPlanId !== null) {
-        return "active";
-      }
-
-      if (this.type === "user") {
-        return null;
+      // Both fast paths skip the subscription queries entirely, so they answer
+      // from the account alone.
+      if (this.forcedPlanId !== null || this.type === "user") {
+        return computeAccountSubscriptionStatus({
+          account: this,
+          activeSubscription: null,
+          previousPaidSubscription: null,
+        });
       }
 
       const subscription = await getActiveSubscription();

@@ -15,6 +15,7 @@ import { transaction } from "@/database";
 import { isUniqueViolationError } from "@/database/error";
 import {
   Account,
+  checkIsActiveSubscriptionStatus,
   GithubAccountMember,
   GithubInstallation,
   Team,
@@ -1448,7 +1449,7 @@ export const resolvers: IResolvers = {
         manager.getActiveSubscription(),
       ]);
 
-      if (subscriptionStatus !== "active") {
+      if (!checkIsActiveSubscriptionStatus(subscriptionStatus)) {
         throw forbidden("A valid subscription is required to enable SSO");
       }
 
@@ -1531,7 +1532,7 @@ export const resolvers: IResolvers = {
         manager.getActiveSubscription(),
       ]);
 
-      if (subscriptionStatus !== "active") {
+      if (!checkIsActiveSubscriptionStatus(subscriptionStatus)) {
         throw forbidden("A valid subscription is required to enable SAML SSO");
       }
 

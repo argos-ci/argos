@@ -1,10 +1,10 @@
+import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { LockIcon } from "lucide-react";
 
 import { GITHUB_SSO_PRICING, SAML_SSO_PRICING } from "@/constants";
 import { ConfigureGitHubSSO } from "@/containers/Team/GitHubSSO/Configure";
 import { DocumentType, graphql } from "@/gql";
-import { AccountSubscriptionStatus } from "@/gql/graphql";
 import {
   Card,
   CardBody,
@@ -45,8 +45,9 @@ export function TeamAddOns(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const hasActiveSubscription =
-    team.subscriptionStatus === AccountSubscriptionStatus.Active;
+  const hasActiveSubscription = checkIsActiveSubscriptionStatus(
+    team.subscriptionStatus,
+  );
   const usageBased = Boolean(team.plan?.usageBased);
   const githubSsoIncluded = Boolean(team.plan?.githubSsoIncluded);
   const samlIncluded = Boolean(team.plan?.samlIncluded);

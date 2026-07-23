@@ -54,8 +54,12 @@ export const typeDefs = gql`
   enum AccountSubscriptionStatus {
     "Ongoing paid subscription"
     active
-    "Ongoing trial"
+    "Ongoing trial, no payment method on file yet"
     trialing
+    """
+    Ongoing trial with a payment method on file. Team features are unlocked
+    """
+    trialing_with_payment_method
     "Payment due"
     past_due
     "Post-cancelation date"
