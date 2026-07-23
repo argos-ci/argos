@@ -1,5 +1,4 @@
 import { useMutation } from "@apollo/client/react";
-import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 
 import { SAML_SSO_PRICING } from "@/constants";
 import { AddOnsPricingTable } from "@/containers/Team/AddOnsPricingTable";
@@ -19,12 +18,17 @@ import { ErrorMessage } from "@/ui/ErrorMessage";
 import { Modal } from "@/ui/Modal";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
+import { getAddOnBlockedReason } from "@/util/subscription";
 
 const _TeamFragment = graphql(`
   fragment SAMLSSOAddOn_Team on Team {
     id
     samlPurchased
     subscriptionStatus
+    subscription {
+      id
+      provider
+    }
     plan {
       id
       samlIncluded
@@ -56,14 +60,14 @@ export function EnableSAMLSSOAddOnButton(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const hasActiveSubscription = checkIsActiveSubscriptionStatus(
-    team.subscriptionStatus,
-  );
-  const disabledReason = !hasActiveSubscription
-    ? "You must have an active subscription to enable SAML SSO."
-    : !team.plan?.usageBased
-      ? "This feature is not available on your current plan, please contact us."
-      : undefined;
+  const disabledReason =
+    getAddOnBlockedReason({
+      status: team.subscriptionStatus,
+      provider: team.subscription?.provider,
+      includedInPlan: Boolean(team.plan?.samlIncluded),
+      usageBased: Boolean(team.plan?.usageBased),
+      featureName: "SAML SSO",
+    }) ?? undefined;
   if (disabledReason) {
     return (
       <Tooltip content={disabledReason}>

@@ -1,4 +1,3 @@
-import { checkIsActiveSubscriptionStatus } from "@argos/schemas/subscription-status";
 import { MarkGithubIcon } from "@primer/octicons-react";
 import { LockIcon } from "lucide-react";
 
@@ -14,6 +13,7 @@ import {
 } from "@/ui/Card";
 import { Chip } from "@/ui/Chip";
 import { Link } from "@/ui/Link";
+import { getAddOnBlockedReason } from "@/util/subscription";
 
 import { DisableGitHubSSOButton } from "./GitHubSSO";
 import {
@@ -27,6 +27,10 @@ const _TeamFragment = graphql(`
     slug
     subscriptionStatus
     samlPurchased
+    subscription {
+      id
+      provider
+    }
     plan {
       id
       githubSsoIncluded
@@ -45,14 +49,18 @@ export function TeamAddOns(props: {
   team: DocumentType<typeof _TeamFragment>;
 }) {
   const { team } = props;
-  const hasActiveSubscription = checkIsActiveSubscriptionStatus(
-    team.subscriptionStatus,
-  );
   const usageBased = Boolean(team.plan?.usageBased);
   const githubSsoIncluded = Boolean(team.plan?.githubSsoIncluded);
   const samlIncluded = Boolean(team.plan?.samlIncluded);
   const githubSsoEnabled = Boolean(team.ssoGithubAccount);
   const samlEnabled = team.samlPurchased;
+  const githubSsoBlockedReason = getAddOnBlockedReason({
+    status: team.subscriptionStatus,
+    provider: team.subscription?.provider,
+    includedInPlan: githubSsoIncluded,
+    usageBased,
+    featureName: "GitHub SSO",
+  });
   return (
     <Card>
       <CardBody>
@@ -80,13 +88,7 @@ export function TeamAddOns(props: {
                 <ConfigureGitHubSSO
                   team={team}
                   priced={!githubSsoIncluded}
-                  disabledReason={
-                    !hasActiveSubscription
-                      ? "You must have an active subscription to enable GitHub SSO."
-                      : !githubSsoIncluded && !usageBased
-                        ? "This feature is not available on your current plan, please contact us."
-                        : undefined
-                  }
+                  disabledReason={githubSsoBlockedReason ?? undefined}
                 />
               )
             }
