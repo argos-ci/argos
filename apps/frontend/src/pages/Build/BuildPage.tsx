@@ -6,6 +6,7 @@ import { ProjectIgnoreEnabledProvider } from "@/containers/Project/IgnoreContext
 import { ProjectPermissionsContext } from "@/containers/Project/PermissionsContext";
 import { graphql } from "@/gql";
 import { BuildStatus } from "@/gql/graphql";
+import { Loader } from "@/ui/Loader";
 
 import { BuildDiffProvider } from "./BuildDiffState";
 import { BuildNotFound } from "./BuildNotFound";
@@ -120,7 +121,15 @@ export const BuildPage = ({ params }: { params: BuildParams }) => {
                       build={build}
                       project={project}
                     />
-                  ) : null}
+                  ) : (
+                    // Initial load: the query is still in flight (a missing
+                    // build is caught by BuildNotFound above). Render a loader
+                    // with `aria-busy` so Argos waits for the build to render
+                    // before screenshotting, instead of catching a blank body.
+                    <div className="flex min-h-0 flex-1 items-center justify-center">
+                      <Loader className="size-16" />
+                    </div>
+                  )}
                 </div>
               </RejectCommentDialogProvider>
             </BuildReviewDialogProvider>
