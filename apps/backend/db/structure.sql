@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.5
--- Dumped by pg_dump version 17.5 (Homebrew)
+\restrict Hw0xBeHU8hD1Ejh5RupLAABxFLf9ltA5eW9vhyMJKsZHTHacvr4RpHJcu7XLeJa
+
+-- Dumped from database version 17.9
+-- Dumped by pg_dump version 17.9 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1855,12 +1857,12 @@ CREATE TABLE public.projects (
     "summaryCheck" text DEFAULT 'auto'::text NOT NULL,
     "autoApprovedBranchGlob" character varying(255),
     "defaultUserLevel" text,
+    "autoIgnore" jsonb,
     "deploymentProdBranchGlob" character varying(255),
     "deploymentEnabled" boolean DEFAULT true NOT NULL,
     "deploymentAuth" text DEFAULT 'domain-private'::text NOT NULL,
     "githubActionsOidcEnabled" boolean DEFAULT false NOT NULL,
     "tokenlessAuthEnabled" boolean DEFAULT false NOT NULL,
-    "autoIgnore" jsonb,
     "ignoreConfig" jsonb,
     CONSTRAINT "projects_defaultUserLevel_check" CHECK (("defaultUserLevel" = ANY (ARRAY['admin'::text, 'reviewer'::text, 'viewer'::text]))),
     CONSTRAINT "projects_deploymentAuth_check" CHECK (("deploymentAuth" = ANY (ARRAY['public'::text, 'domain-private'::text, 'private'::text]))),
@@ -2137,6 +2139,42 @@ ALTER SEQUENCE public.slack_installations_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.slack_installations_id_seq OWNED BY public.slack_installations.id;
+
+
+--
+-- Name: staff_team_contacts; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.staff_team_contacts (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "teamId" bigint NOT NULL,
+    "userId" bigint NOT NULL
+);
+
+
+ALTER TABLE public.staff_team_contacts OWNER TO postgres;
+
+--
+-- Name: staff_team_contacts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.staff_team_contacts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.staff_team_contacts_id_seq OWNER TO postgres;
+
+--
+-- Name: staff_team_contacts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.staff_team_contacts_id_seq OWNED BY public.staff_team_contacts.id;
 
 
 --
@@ -2962,6 +3000,13 @@ ALTER TABLE ONLY public.slack_installations ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: staff_team_contacts id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.staff_team_contacts ALTER COLUMN id SET DEFAULT nextval('public.staff_team_contacts_id_seq'::regclass);
+
+
+--
 -- Name: subscriptions id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3660,6 +3705,22 @@ ALTER TABLE ONLY public.slack_installations
 
 ALTER TABLE ONLY public.slack_installations
     ADD CONSTRAINT slack_installations_teamid_unique UNIQUE ("teamId");
+
+
+--
+-- Name: staff_team_contacts staff_team_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.staff_team_contacts
+    ADD CONSTRAINT staff_team_contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: staff_team_contacts staff_team_contacts_teamid_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.staff_team_contacts
+    ADD CONSTRAINT staff_team_contacts_teamid_unique UNIQUE ("teamId");
 
 
 --
@@ -5282,6 +5343,22 @@ ALTER TABLE ONLY public.slack_channels
 
 
 --
+-- Name: staff_team_contacts staff_team_contacts_teamid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.staff_team_contacts
+    ADD CONSTRAINT staff_team_contacts_teamid_foreign FOREIGN KEY ("teamId") REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: staff_team_contacts staff_team_contacts_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.staff_team_contacts
+    ADD CONSTRAINT staff_team_contacts_userid_foreign FOREIGN KEY ("userId") REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: subscriptions subscriptions_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5452,6 +5529,8 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict Hw0xBeHU8hD1Ejh5RupLAABxFLf9ltA5eW9vhyMJKsZHTHacvr4RpHJcu7XLeJa
 
 -- Knex migrations
 
@@ -5677,3 +5756,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026071
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260715120000_oauth-grants-per-device.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260717120000_build-search-indexes.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260721120000_saml-purchased.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723120000_staff-team-contacts.js', 1, NOW());

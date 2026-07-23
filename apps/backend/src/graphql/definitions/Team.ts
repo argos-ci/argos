@@ -344,8 +344,6 @@ export const typeDefs = gql`
     invite(secret: String!): TeamInvite
     "Get a team invite (global to team) by its secret"
     teamInvite(secret: String!): Team
-    "List all teams (staff only)"
-    staffTeams: [Team!]!
     "List all teams the authenticated user can join based on verified email domains"
     autoInvites: [AutoInvite!]!
   }
@@ -885,20 +883,6 @@ export const resolvers: IResolvers = {
       }
 
       return getAutoInvitesForUser({ userId: ctx.auth.user.id });
-    },
-    staffTeams: async (_root, _args, ctx) => {
-      if (!ctx.auth) {
-        throw unauthenticated();
-      }
-
-      if (!ctx.auth.user.staff) {
-        throw forbidden();
-      }
-
-      return Account.query()
-        .whereNotNull("teamId")
-        .whereNull("userId")
-        .orderByRaw("coalesce(name, slug) asc");
     },
     teamInvite: async (_root, args) => {
       const team = await Team.query()

@@ -1,7 +1,6 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import clsx from "clsx";
 import { SearchIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
@@ -21,6 +20,7 @@ import {
 } from "@/ui/Layout";
 import { Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
+import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 
@@ -104,7 +104,6 @@ type TeamProjectItem = NonNullable<
 
 type SortKey = "team" | "createdAt" | "members";
 
-type SortDirection = "asc" | "desc";
 const PAGE_SIZE = 100;
 
 function checkTeamMatchesSearch(team: TeamItem, search: string) {
@@ -122,28 +121,6 @@ function checkTeamMatchesSearch(team: TeamItem, search: string) {
 
 function getSubscriptionLabel(status: string | null | undefined) {
   return status ? status.replaceAll("_", " ") : "none";
-}
-
-function SortHeader(props: {
-  label: string;
-  sortKey: SortKey;
-  activeSortKey: SortKey;
-  direction: SortDirection;
-  onSort: (key: SortKey) => void;
-  className?: string;
-}) {
-  const isActive = props.activeSortKey === props.sortKey;
-  const arrow = isActive ? (props.direction === "asc" ? "↑" : "↓") : "↕";
-
-  return (
-    <button
-      type="button"
-      className={clsx("whitespace-nowrap", props.className)}
-      onClick={() => props.onSort(props.sortKey)}
-    >
-      {props.label} {arrow}
-    </button>
-  );
 }
 
 function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
@@ -372,49 +349,37 @@ function StaffTeamsTable(props: {
   return (
     <div className="overflow-x-auto rounded-sm border">
       <table className="w-full min-w-245 table-fixed border-collapse">
-        <colgroup>
-          <col style={{ width: "27%" }} />
-          <col style={{ width: "16%" }} />
-          <col style={{ width: "14%" }} />
-          <col style={{ width: "10%" }} />
-          <col style={{ width: "21%" }} />
-          <col style={{ width: "12%" }} />
-        </colgroup>
+        {/* Widths live on the headers rather than in a `colgroup`: the
+            positional mapping broke silently whenever a column moved. */}
         <thead>
           <tr className="text-low border-b text-xs font-semibold">
-            <th className="px-4 py-3 text-left">
-              <SortHeader
-                label="Team"
-                sortKey="team"
-                activeSortKey={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-                className="text-left"
-              />
-            </th>
-            <th className="px-4 py-3 text-left">
-              <SortHeader
-                label="Created"
-                sortKey="createdAt"
-                activeSortKey={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-                className="text-left"
-              />
-            </th>
-            <th className="px-4 py-3 text-left">Subscription</th>
-            <th className="px-4 py-3 text-right">
-              <SortHeader
-                label="Members"
-                sortKey="members"
-                activeSortKey={sortKey}
-                direction={sortDirection}
-                onSort={onSort}
-                className="text-right"
-              />
-            </th>
-            <th className="px-4 py-3 text-right">Links</th>
-            <th className="px-4 py-3 text-right">Actions</th>
+            <SortHeader
+              label="Team"
+              sortKey="team"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[27%] text-left"
+            />
+            <SortHeader
+              label="Created"
+              sortKey="createdAt"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[16%] text-left"
+            />
+            <th className="w-[14%] px-4 py-3 text-left">Subscription</th>
+            <SortHeader
+              label="Members"
+              sortKey="members"
+              activeSortKey={sortKey}
+              direction={sortDirection}
+              onSort={onSort}
+              className="w-[10%] text-right"
+            />
+            <th className="w-[21%] px-4 py-3 text-right">Links</th>
+            <th className="w-[12%] px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody>

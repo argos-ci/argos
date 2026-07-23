@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@apollo/client/react";
 import { OrganizationIcon } from "@primer/octicons-react";
+import { ShieldUserIcon } from "lucide-react";
 import { MenuTrigger } from "react-aria-components";
 import { useMatch, useParams } from "react-router-dom";
 
@@ -67,13 +68,32 @@ function HomeBreadcrumbLink() {
   return <AccountBreadcrumbLink accountSlug={payload.account.slug} />;
 }
 
+/**
+ * The staff area is a destination of the same nature as an account, so it
+ * takes the account's place in the breadcrumb — otherwise the trail would name
+ * a personal account while you are browsing staff tooling.
+ */
+function StaffBreadcrumbLink() {
+  return (
+    <BreadcrumbLink href="/staff" aria-current="page">
+      <BreadcrumbItemIcon>
+        <ShieldUserIcon className="size-5" />
+      </BreadcrumbItemIcon>
+      Staff
+    </BreadcrumbLink>
+  );
+}
+
 export function AccountBreadcrumbItem() {
   const { accountSlug } = useParams();
   const loggedIn = useIsLoggedIn();
+  const isStaffArea = Boolean(useMatch("/staff/*"));
 
   return (
     <BreadcrumbItem>
-      {accountSlug ? (
+      {isStaffArea ? (
+        <StaffBreadcrumbLink />
+      ) : accountSlug ? (
         <AccountBreadcrumbLink accountSlug={accountSlug} />
       ) : (
         <HomeBreadcrumbLink />
