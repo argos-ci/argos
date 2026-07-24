@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getMailtoUrl, getOnboardingEmail } from "./StaffTrials.email";
+import { getMailtoUrl, getOnboardingEmail } from "./Trials.email";
 
 const owner = { name: "Andre Dupont", email: "andre@example.com" };
 

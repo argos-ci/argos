@@ -24,7 +24,7 @@ import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
 
-import { getAccountURL } from "./Account/AccountParams";
+import { getAccountURL } from "../Account/AccountParams";
 
 const StaffTeamsQuery = graphql(`
   query StaffTeams_staffTeams {

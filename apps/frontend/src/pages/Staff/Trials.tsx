@@ -45,8 +45,8 @@ import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
-import { getAccountURL } from "./Account/AccountParams";
-import { getMailtoUrl, getOnboardingEmail } from "./StaffTrials.email";
+import { getAccountURL } from "../Account/AccountParams";
+import { getMailtoUrl, getOnboardingEmail } from "./Trials.email";
 
 const TrialPipelineQuery = graphql(`
   query StaffTrials_staffTrialPipeline($days: Int!) {
