@@ -1,7 +1,7 @@
 import { AutomationActionRun } from "@/database/models";
 import { createModelJob } from "@/job-core";
 
-import { AutomationActionSchema, getAutomationAction } from "./actions";
+import { AutomationActionSchema, processAutomationAction } from "./actions";
 import { AutomationActionFailureError } from "./automationActionError";
 
 export async function processAutomationActionRun(
@@ -11,16 +11,13 @@ export async function processAutomationActionRun(
     action: automationActionRun.action,
     actionPayload: automationActionRun.actionPayload,
   });
-  // Get the action
-  const actionDefinition = getAutomationAction(action.action);
-
   // Process the action and update the conclusion status
   try {
     await AutomationActionRun.query().findById(automationActionRun.id).patch({
       processedAt: new Date().toISOString(),
     });
-    await actionDefinition.process({
-      payload: action.actionPayload,
+    await processAutomationAction({
+      action,
       ctx: { automationActionRun },
     });
     await AutomationActionRun.query().findById(automationActionRun.id).patch({

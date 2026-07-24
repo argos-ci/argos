@@ -94,6 +94,7 @@ export const typeDefs = gql`
     gitlabBaseUrl: String
     glNamespaces: GlApiNamespaceConnection
     slackInstallation: SlackInstallation
+    msTeamsWebhooks: [MsTeamsWebhook!]!
     githubAccount: GithubAccount
     metrics(input: AccountMetricsInput!): AccountMetrics!
     meteredSpendLimitByPeriod: Int

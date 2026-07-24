@@ -6,4 +6,12 @@ export type AutomationSlackActionType = z.infer<
   typeof AutomationSlackActionTypeSchema
 >;
 
-export type AutomationActionType = AutomationSlackActionType;
+export const AutomationMsTeamsActionTypeSchema =
+  z.literal("sendMsTeamsMessage");
+
+export type AutomationMsTeamsActionType = z.infer<
+  typeof AutomationMsTeamsActionTypeSchema
+>;
+
+export type AutomationActionType =
+  AutomationSlackActionType | AutomationMsTeamsActionType;

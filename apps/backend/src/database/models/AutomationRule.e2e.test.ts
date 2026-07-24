@@ -72,9 +72,10 @@ describe("AutomationRule", () => {
             },
           ],
         }),
-      ).rejects.toThrow(
-        "then.0.action: must be equal to constant, then.0: must match exactly one schema in oneOf",
-      );
+        // Matched loosely: AJV enumerates one "must be equal to constant" per
+        // registered action, so pinning the full message would break every time
+        // an action is added.
+      ).rejects.toThrow(/then\.0: must match exactly one schema in oneOf/);
     });
   });
 });

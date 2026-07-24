@@ -24,6 +24,7 @@ import * as GlApiProject from "./GlApiProject";
 import * as GoogleUser from "./GoogleUser";
 import * as JobStatus from "./JobStatus";
 import * as MetricsPeriod from "./MetricsPeriod";
+import * as MsTeamsWebhook from "./MsTeamsWebhook";
 import * as Node from "./Node";
 import * as NotificationPreference from "./NotificationPreference";
 import * as OAuthClient from "./OAuthClient";
@@ -72,6 +73,7 @@ export const definitions: { resolvers?: object; typeDefs?: DocumentNode }[] = [
   GoogleUser,
   JobStatus,
   MetricsPeriod,
+  MsTeamsWebhook,
   Node,
   NotificationPreference,
   OAuthClient,

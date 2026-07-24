@@ -30,6 +30,7 @@ import {
   GitlabProject,
   IgnoredChange,
   Model,
+  MsTeamsWebhook,
   Plan,
   Project,
   ProjectDomain,
@@ -437,6 +438,22 @@ function createProjectTeamUserLevelLoader() {
         `${input.accountSlug}\0${input.projectName}\0${input.userId}`,
     },
   );
+}
+
+function createMsTeamsWebhooksByAccountIdLoader() {
+  return new DataLoader<string, MsTeamsWebhook[]>(async (accountIds) => {
+    const webhooks = await MsTeamsWebhook.query()
+      .whereIn("accountId", accountIds as string[])
+      .orderBy("name");
+    const webhooksMap = webhooks.reduce<Record<string, MsTeamsWebhook[]>>(
+      (map, webhook) => ({
+        ...map,
+        [webhook.accountId]: [...(map[webhook.accountId] || []), webhook],
+      }),
+      {},
+    );
+    return accountIds.map((accountId) => webhooksMap[accountId] ?? []);
+  });
 }
 
 function createAutomationRunActionRunsLoader() {
@@ -1449,6 +1466,7 @@ export const createLoaders = () => ({
   AccountFromRelation: createAccountFromRelationLoader(),
   ProjectTeamUserLevel: createProjectTeamUserLevelLoader(),
   AutomationRunActionRuns: createAutomationRunActionRunsLoader(),
+  MsTeamsWebhooksByAccountId: createMsTeamsWebhooksByAccountIdLoader(),
   Build: createModelLoader(Build),
   BuildFromCompareScreenshotBucketId:
     createBuildFromCompareScreenshotBucketIdLoader(),

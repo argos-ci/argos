@@ -24,6 +24,7 @@ import { TeamDomains } from "@/containers/Team/Domains";
 import { TeamGitHubLight } from "@/containers/Team/GitHubLight";
 import { TeamGitHubSSO } from "@/containers/Team/GitHubSSO";
 import { TeamMembers } from "@/containers/Team/members/Members";
+import { TeamMsTeams } from "@/containers/Team/MsTeams";
 import { TeamSAMLSSO } from "@/containers/Team/SAMLSSO";
 import { TeamSlack } from "@/containers/Team/Slack";
 import { TeamSpendManagement } from "@/containers/Team/SpendManagement";
@@ -62,6 +63,7 @@ const AccountQuery = graphql(`
       }
 
       ...TeamSlack_Account
+      ...TeamMsTeams_Account
       ...TeamMembers_Team
       ...TeamDelete_Team
       ...AccountChangeName_Account
@@ -257,6 +259,7 @@ function PageContent() {
       element: (
         <>
           {isTeam && <TeamSlack account={account} />}
+          {isTeam && <TeamMsTeams account={account} />}
           {isTeam && hasAdminPermission && <TeamGitHubLight team={account} />}
           {hasAdminPermission && <AccountGitLab account={account} />}
         </>

@@ -363,6 +363,17 @@ export const SlackChannel = defineFactory(models.SlackChannel, () => ({
   slackInstallationId: SlackInstallation.associate("id") as unknown as string,
 }));
 
+export const MsTeamsWebhook = defineFactory(models.MsTeamsWebhook, () => ({
+  accountId: TeamAccount.associate("id") as unknown as string,
+  name: FactoryGirl.sequence("msTeamsWebhook.name", (n) => `channel-${n}`),
+  url: FactoryGirl.sequence(
+    "msTeamsWebhook.url",
+    (n) =>
+      `https://prod-00.westeurope.logic.azure.com/workflows/wf-${n}/triggers/manual/paths/invoke`,
+  ),
+  connectedAt: new Date().toISOString(),
+}));
+
 export const AutomationRule = defineFactory(models.AutomationRule, () => ({
   active: true,
   name: FactoryGirl.sequence("automationRule.name", (n) => `rule-${n}`),

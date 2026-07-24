@@ -1,8 +1,8 @@
 import type { BuildAggregatedStatus } from "@argos/schemas/build-status";
 import { assertNever } from "@argos/util/assertNever";
-import { invariant } from "@argos/util/invariant";
 
 import { getApprovalEmoji, getBuildLabel } from "@/build/label";
+import { getRepositoryUrl } from "@/build/repository-url";
 import { getStatsMessage } from "@/build/stats";
 import {
   Build,
@@ -15,38 +15,6 @@ import {
 import { UnretryableError } from "@/job-core";
 import type { SlackMessageBlock } from "@/slack/channel";
 import { escapeSlackText } from "@/slack/message";
-
-function getRepositoryUrl(project: Project): string | null {
-  if (project.githubRepositoryId) {
-    invariant(
-      project.githubRepository,
-      "githubRepository relation is expected to be loaded",
-      UnretryableError,
-    );
-
-    invariant(
-      project.githubRepository.githubAccount,
-      "githubAccount relation not found",
-      UnretryableError,
-    );
-
-    return `https://github.com/${
-      project.githubRepository.githubAccount.login
-    }/${project.githubRepository.name}`;
-  }
-
-  if (project.gitlabProjectId) {
-    invariant(
-      project.gitlabProject,
-      "gitlabProject relation is expected to be loaded",
-      UnretryableError,
-    );
-
-    return `https://gitlab.com/${project.gitlabProject.pathWithNamespace}`;
-  }
-
-  return null;
-}
 
 export function testDisclaimerBlock(): SlackMessageBlock {
   return {

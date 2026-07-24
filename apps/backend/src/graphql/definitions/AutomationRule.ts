@@ -6,11 +6,13 @@ import { z } from "zod";
 
 import { testAutomation } from "@/automation";
 import type { AutomationActionTypeDef } from "@/automation/actions";
+import { automationAction as msTeamsAutomationAction } from "@/automation/actions/sendMsTeamsMessage";
 import { automationAction } from "@/automation/actions/sendSlackMessage";
 import {
   AutomationActionRun,
   AutomationRule,
   BuildReview,
+  MsTeamsWebhook,
   Project,
   SlackChannel,
   type SlackInstallation,
@@ -147,58 +149,92 @@ async function getActionsFromInput(args: {
   input: Array<IAutomationActionInput>;
 }) {
   const { project } = args;
-  const slackChannelActionPayloads = args.input
-    .filter((a) => a.type === "sendSlackMessage")
-    .map((action) =>
-      z
-        .object({
-          slackId: z
-            .string()
-            .max(256, { message: "Must be 256 characters or less" }),
-          name: z.string().min(1, { message: "Required" }).max(256, {
-            message: "Must be 256 characters or less",
-          }),
-        })
-        .parse(action.payload),
-    );
 
-  const actions: AutomationActionTypeDef[] = [];
+  const SlackPayload = z.object({
+    slackId: z.string().max(256, { message: "Must be 256 characters or less" }),
+    name: z.string().min(1, { message: "Required" }).max(256, {
+      message: "Must be 256 characters or less",
+    }),
+  });
 
-  if (slackChannelActionPayloads.length > 0) {
-    await project.$fetchGraph("account.slackInstallation");
+  const MsTeamsPayload = z.object({
+    webhookId: z.string().min(1, { message: "Required" }),
+  });
 
-    const slackInstallation = project.account?.slackInstallation;
+  // Resolved on first use: most rules use a single action kind.
+  let slackInstallation: SlackInstallation | null | undefined;
 
+  async function getSlackInstallation(): Promise<SlackInstallation> {
+    if (slackInstallation === undefined) {
+      await project.$fetchGraph("account.slackInstallation");
+      slackInstallation = project.account?.slackInstallation ?? null;
+    }
     if (!slackInstallation) {
       throw badUserInput(
         "Slack installation not found for the project account.",
       );
     }
+    return slackInstallation;
+  }
 
-    for (const payload of slackChannelActionPayloads) {
-      // Get or create the Slack channel by name or ID (prefer ID if available)
-      const slackChannel = payload.slackId
-        ? await getOrCreateSlackChannelBySlackId({
-            slackInstallation,
-            slackId: payload.slackId,
-          })
-        : await getOrCreateSlackChannelByName({
-            slackInstallation,
-            name: payload.name,
-          });
+  const actions: AutomationActionTypeDef[] = [];
 
-      if (!slackChannel) {
-        throw badUserInput(
-          `Slack channel "${payload.name}" not found in ${slackInstallation.teamName} workspace.`,
-        );
+  // Iterate in input order: `then` is replayed into the form as-is, so
+  // grouping by action type here would silently reorder the user's actions.
+  for (const action of args.input) {
+    switch (action.type) {
+      case "sendMsTeamsMessage": {
+        const payload = MsTeamsPayload.parse(action.payload);
+        // Scope the lookup to the project account so a rule can't target
+        // another account's webhook.
+        const webhook = await MsTeamsWebhook.query().findOne({
+          id: payload.webhookId,
+          accountId: project.accountId,
+        });
+
+        if (!webhook) {
+          throw badUserInput(
+            "Microsoft Teams webhook not found for the project account.",
+          );
+        }
+
+        actions.push({
+          action: "sendMsTeamsMessage",
+          actionPayload: { webhookId: webhook.id },
+        });
+        break;
       }
+      case "sendSlackMessage": {
+        const payload = SlackPayload.parse(action.payload);
+        const installation = await getSlackInstallation();
 
-      actions.push({
-        action: "sendSlackMessage",
-        actionPayload: {
-          channelId: slackChannel.slackId,
-        },
-      });
+        // Get or create the Slack channel by name or ID (prefer ID if available)
+        const slackChannel = payload.slackId
+          ? await getOrCreateSlackChannelBySlackId({
+              slackInstallation: installation,
+              slackId: payload.slackId,
+            })
+          : await getOrCreateSlackChannelByName({
+              slackInstallation: installation,
+              name: payload.name,
+            });
+
+        if (!slackChannel) {
+          throw badUserInput(
+            `Slack channel "${payload.name}" not found in ${installation.teamName} workspace.`,
+          );
+        }
+
+        actions.push({
+          action: "sendSlackMessage",
+          actionPayload: {
+            channelId: slackChannel.slackId,
+          },
+        });
+        break;
+      }
+      default:
+        throw badUserInput(`Unknown action type: ${action.type}`);
     }
   }
 
@@ -409,6 +445,21 @@ export const resolvers: IResolvers = {
             slackId: slackChannel.slackId,
             name: slackChannel.name,
           };
+        }
+        case "sendMsTeamsMessage": {
+          const payload = msTeamsAutomationAction.payloadSchema.parse(
+            action.actionPayload,
+          );
+          const webhook = await MsTeamsWebhook.query().findById(
+            payload.webhookId,
+          );
+          if (!webhook) {
+            // Keep the dangling id: the form schema requires a non-empty
+            // `webhookId`, so blanking it here would make the edit page throw
+            // and leave the rule unrepairable from the UI.
+            return { webhookId: payload.webhookId, name: "deleted" };
+          }
+          return { webhookId: webhook.id, name: webhook.name };
         }
         default: {
           throw new Error(`Unknown action: ${action.action}`);

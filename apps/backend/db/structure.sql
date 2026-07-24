@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Hw0xBeHU8hD1Ejh5RupLAABxFLf9ltA5eW9vhyMJKsZHTHacvr4RpHJcu7XLeJa
+\restrict AznTjDfEgUR3XLwOlFUgpq4P6iqRiyUfFZNqJSeUNfuOq3mThLogeOc4Fwa26WE
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Homebrew)
@@ -1391,6 +1391,44 @@ ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.knex_migrations_lock_index_seq OWNED BY public.knex_migrations_lock.index;
+
+
+--
+-- Name: ms_teams_webhooks; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ms_teams_webhooks (
+    id bigint NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "accountId" bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    url text NOT NULL,
+    "connectedAt" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE public.ms_teams_webhooks OWNER TO postgres;
+
+--
+-- Name: ms_teams_webhooks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ms_teams_webhooks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ms_teams_webhooks_id_seq OWNER TO postgres;
+
+--
+-- Name: ms_teams_webhooks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ms_teams_webhooks_id_seq OWNED BY public.ms_teams_webhooks.id;
 
 
 --
@@ -2881,6 +2919,13 @@ ALTER TABLE ONLY public.knex_migrations_lock ALTER COLUMN index SET DEFAULT next
 
 
 --
+-- Name: ms_teams_webhooks id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ms_teams_webhooks ALTER COLUMN id SET DEFAULT nextval('public.ms_teams_webhooks_id_seq'::regclass);
+
+
+--
 -- Name: notification_messages id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3497,6 +3542,22 @@ ALTER TABLE ONLY public.knex_migrations_lock
 
 ALTER TABLE ONLY public.knex_migrations
     ADD CONSTRAINT knex_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ms_teams_webhooks ms_teams_webhooks_accountid_name_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ms_teams_webhooks
+    ADD CONSTRAINT ms_teams_webhooks_accountid_name_unique UNIQUE ("accountId", name);
+
+
+--
+-- Name: ms_teams_webhooks ms_teams_webhooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ms_teams_webhooks
+    ADD CONSTRAINT ms_teams_webhooks_pkey PRIMARY KEY (id);
 
 
 --
@@ -5095,6 +5156,14 @@ ALTER TABLE ONLY public.ignored_changes
 
 
 --
+-- Name: ms_teams_webhooks ms_teams_webhooks_accountid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ms_teams_webhooks
+    ADD CONSTRAINT ms_teams_webhooks_accountid_foreign FOREIGN KEY ("accountId") REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: notification_messages notification_messages_userid_foreign; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5538,7 +5607,7 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Hw0xBeHU8hD1Ejh5RupLAABxFLf9ltA5eW9vhyMJKsZHTHacvr4RpHJcu7XLeJa
+\unrestrict AznTjDfEgUR3XLwOlFUgpq4P6iqRiyUfFZNqJSeUNfuOq3mThLogeOc4Fwa26WE
 
 -- Knex migrations
 
@@ -5766,3 +5835,4 @@ INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('2026071
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260721120000_saml-purchased.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723120000_staff-team-contacts.js', 1, NOW());
 INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260723130000_github-repository-installation-unique.js', 1, NOW());
+INSERT INTO public.knex_migrations(name, batch, migration_time) VALUES ('20260724120000_ms-teams-webhooks.js', 1, NOW());

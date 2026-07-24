@@ -29,6 +29,7 @@ export * from "./GitlabProject";
 export * from "./GitlabUser";
 export * from "./GoogleUser";
 export * from "./IgnoredChange";
+export * from "./MsTeamsWebhook";
 export * from "./NotificationMessage";
 export * from "./NotificationWorkflow";
 export * from "./NotificationWorkflowRecipient";
