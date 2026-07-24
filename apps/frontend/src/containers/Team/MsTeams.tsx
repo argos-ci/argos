@@ -116,11 +116,8 @@ export function TeamMsTeams(props: { account: Account }) {
           <CardTitle>Microsoft Teams</CardTitle>
           <CardParagraph>
             Post build notifications to a Microsoft Teams channel. In Teams,
-            open{" "}
-            <strong>
-              Channel settings &rsaquo; Workflows &rsaquo; Send webhook alerts
-              to a channel
-            </strong>{" "}
+            open the channel's <strong>More options</strong> menu, add a{" "}
+            <strong>Workflows &rsaquo; Send webhook alerts to a channel</strong>{" "}
             flow, then paste the URL it gives you here.
           </CardParagraph>
 
