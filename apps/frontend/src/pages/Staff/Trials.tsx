@@ -570,6 +570,20 @@ function checkIsLost(team: PipelineTeam) {
   );
 }
 
+/**
+ * Within this window every team starts on a trial, so an active subscription
+ * means the trial converted. A payment method counts too: it is the commitment,
+ * and the subscription bills itself when the trial ends — waiting for that to
+ * happen would only park the team in the undecided pile in the meantime.
+ */
+function checkIsConverted(team: PipelineTeam) {
+  return (
+    team.subscriptionStatus === AccountSubscriptionStatus.Active ||
+    team.subscriptionStatus ===
+      AccountSubscriptionStatus.TrialingWithPaymentMethod
+  );
+}
+
 function formatShare(value: number, total: number) {
   if (total === 0) {
     return "—";
@@ -577,20 +591,30 @@ function formatShare(value: number, total: number) {
   return `${Math.round((value / total) * 100)}% of ${total}`;
 }
 
+/**
+ * The denominator of both rates, glossed because the rule that fills it is not
+ * visible anywhere else: a payment method counts as converted right away, so a
+ * trial can be decided while its status column still reads `trialing`.
+ */
+function DecidedTrialsHint() {
+  return (
+    <Tooltip content="Converted or lost. A payment method counts as converted, even mid-trial.">
+      <span className="underline decoration-dotted underline-offset-2">
+        decided trials
+      </span>
+    </Tooltip>
+  );
+}
+
 function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const { teams } = props;
   const activated = teams.filter((team) => team.staff.firstComparisonAt).length;
   const lost = teams.filter(checkIsLost).length;
-  // Within this window every team starts on a trial, so an active subscription
-  // means the trial converted. A carded trial is not one yet: it reports as
-  // `trialing_with_payment_method` until it actually ends.
-  const converted = teams.filter(
-    (team) => team.subscriptionStatus === AccountSubscriptionStatus.Active,
-  ).length;
+  const converted = teams.filter(checkIsConverted).length;
 
-  // Teams still trialing have neither converted nor churned yet. Counting them
-  // in the denominator would drag both rates down for no reason other than
-  // being recent — the rates only mean something over decided trials.
+  // Teams whose outcome is still open would drag both rates down for no reason
+  // other than being recent — the rates only mean something over decided
+  // trials.
   const decided = converted + lost;
 
   return (
@@ -601,7 +625,10 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         color="primary"
         label="New teams"
         value={teams.length}
-        hint={`${teams.length - decided} still trialing`}
+        // Not "still trialing": a trial with a payment method is still running
+        // yet already decided, so that wording would contradict the status
+        // column.
+        hint={`${teams.length - decided} undecided`}
       />
       <StatTile
         data-visual-test="transparent"
@@ -617,7 +644,11 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         color="success"
         label="Converted"
         value={converted}
-        hint={`${formatShare(converted, decided)} decided trials`}
+        hint={
+          <>
+            {formatShare(converted, decided)} <DecidedTrialsHint />
+          </>
+        }
       />
       <StatTile
         data-visual-test="transparent"
@@ -625,7 +656,11 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         color="warning"
         label="Canceled or expired"
         value={lost}
-        hint={`${formatShare(lost, decided)} decided trials`}
+        hint={
+          <>
+            {formatShare(lost, decided)} <DecidedTrialsHint />
+          </>
+        }
       />
     </div>
   );
