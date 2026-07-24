@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { CombinedGraphQLErrors } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import { SearchIcon } from "lucide-react";
+import { CreditCardIcon, SearchIcon } from "lucide-react";
 import { Heading, Text } from "react-aria-components";
 import { Helmet } from "react-helmet";
 
@@ -9,6 +9,7 @@ import { AccountAvatar } from "@/containers/AccountAvatar";
 import { AuthGuard } from "@/containers/AuthGuard";
 import type { DocumentType } from "@/gql";
 import { graphql } from "@/gql";
+import { AccountSubscriptionStatus } from "@/gql/graphql";
 import { Alert, AlertText, AlertTitle } from "@/ui/Alert";
 import { Button } from "@/ui/Button";
 import {
@@ -23,8 +24,10 @@ import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { TextInput, TextInputGroup, TextInputIcon } from "@/ui/TextInput";
 import { Time } from "@/ui/Time";
+import { Tooltip } from "@/ui/Tooltip";
 
-import { getAccountURL } from "./Account/AccountParams";
+import { getAccountURL } from "../Account/AccountParams";
+import { getStripeCustomerURL } from "./stripe";
 
 const StaffTeamsQuery = graphql(`
   query StaffTeams_staffTeams {
@@ -35,6 +38,7 @@ const StaffTeamsQuery = graphql(`
       name
       membersCount
       subscriptionStatus
+      stripeCustomerId
       avatar {
         ...AccountAvatarFragment
       }
@@ -119,8 +123,29 @@ function checkTeamMatchesSearch(team: TeamItem, search: string) {
   return haystack.includes(search);
 }
 
-function getSubscriptionLabel(status: string | null | undefined) {
-  return status ? status.replaceAll("_", " ") : "none";
+/**
+ * `trialing_with_payment_method` spelled out is far wider than the column, and
+ * the only part that adds anything over "trialing" is that a card is on file —
+ * which a credit card icon says just as well.
+ */
+function SubscriptionLabel(props: { status: string | null | undefined }) {
+  const { status } = props;
+
+  if (status === AccountSubscriptionStatus.TrialingWithPaymentMethod) {
+    return (
+      <span className="whitespace-nowrap">
+        trialing
+        <Tooltip content="Payment method filled">
+          <CreditCardIcon
+            className="text-success-low ml-1 inline-block size-4"
+            aria-label="Payment method filled"
+          />
+        </Tooltip>
+      </span>
+    );
+  }
+
+  return <>{status ? status.replaceAll("_", " ") : "none"}</>;
 }
 
 function StaffMembersPanel(props: { members: TeamMemberItem[] }) {
@@ -198,7 +223,6 @@ function StaffTeamRow(props: {
 }) {
   const { team, index, isLast, isOpened, toggleMembers } = props;
   const teamURL = getAccountURL({ accountSlug: team.slug });
-  const membersSettingsURL = `${teamURL}/settings/members`;
   const analyticsURL = `${teamURL}/~/analytics`;
   const {
     data: detailsData,
@@ -249,7 +273,7 @@ function StaffTeamRow(props: {
           <Time date={team.createdAt} format="ll" tooltip="title" />
         </td>
         <td className="p-4 text-sm">
-          {getSubscriptionLabel(team.subscriptionStatus)}
+          <SubscriptionLabel status={team.subscriptionStatus} />
         </td>
         <td className="p-4 text-right text-sm tabular-nums">
           {team.membersCount}
@@ -257,8 +281,17 @@ function StaffTeamRow(props: {
         <td className="p-4 text-right text-sm">
           <div className="flex items-center justify-end gap-3 whitespace-nowrap">
             <Link href={teamURL}>Team</Link>
-            <Link href={membersSettingsURL}>Members</Link>
             <Link href={analyticsURL}>Analytics</Link>
+            {/* Only for teams that reached checkout — a link to
+                `/customers/null` would only look broken. */}
+            {team.stripeCustomerId ? (
+              <Link
+                href={getStripeCustomerURL(team.stripeCustomerId)}
+                target="_blank"
+              >
+                Stripe
+              </Link>
+            ) : null}
           </div>
         </td>
         <td className="p-4 text-right text-sm">
@@ -290,7 +323,7 @@ function StaffTeamRow(props: {
                       Subscription
                     </div>
                     <div className="font-medium">
-                      {getSubscriptionLabel(subscriptionStatus)}
+                      <SubscriptionLabel status={subscriptionStatus} />
                     </div>
                   </div>
                   <div className="bg-app rounded-sm border p-3">

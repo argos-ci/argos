@@ -14,6 +14,7 @@ import {
   SearchIcon,
   UsersIcon,
   XIcon,
+  type LucideIcon,
 } from "lucide-react";
 import moment from "moment";
 import { Heading, Text } from "react-aria-components";
@@ -34,7 +35,7 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
+import { HeadlessLink, Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
@@ -45,8 +46,10 @@ import { toast } from "@/ui/Toaster";
 import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
-import { getAccountURL } from "./Account/AccountParams";
-import { getMailtoUrl, getOnboardingEmail } from "./StaffTrials.email";
+import { getAccountURL } from "../Account/AccountParams";
+import { getStripeCustomerURL } from "./stripe";
+import stripeLogo from "./stripe.svg";
+import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
 const TrialPipelineQuery = graphql(`
   query StaffTrials_staffTrialPipeline($days: Int!) {
@@ -57,6 +60,7 @@ const TrialPipelineQuery = graphql(`
       name
       subscriptionStatus
       lastBuildDate
+      stripeCustomerId
       staff {
         buildsCount
         screenshotsCount
@@ -243,7 +247,7 @@ function StatusCell(props: { team: PipelineTeam }) {
 
     return (
       <div className="whitespace-nowrap">
-        <span className="font-medium">trial</span>
+        <span className="font-medium">trialing</span>
         {subscriptionStatus ===
           AccountSubscriptionStatus.TrialingWithPaymentMethod && (
           <Tooltip content="Payment method filled">
@@ -284,61 +288,52 @@ function StatusCell(props: { team: PipelineTeam }) {
 }
 
 /**
- * A funnel step: reached or not. The hint rides on the native `title` rather
- * than a rich tooltip — the latter makes its target focusable, which would add
- * a tab stop per icon across the whole table.
+ * Whether the team ever got a check build. Building repeatedly without ever
+ * producing one is a failure, not a blank: something is misconfigured and no
+ * diff will ever come out of it. Having built nothing yet is just silence.
  */
-function StepIcon(props: { reached: boolean; label: string; title?: string }) {
-  const Icon = props.reached ? CheckIcon : MinusIcon;
+function getCheckBuildState(staff: PipelineTeam["staff"]): {
+  Icon: LucideIcon;
+  className: string;
+  label: string;
+  hint?: string;
+} {
+  if (staff.firstComparisonAt) {
+    return {
+      Icon: CheckIcon,
+      className: "text-success-low",
+      label: "Check build",
+    };
+  }
+
+  if (staff.buildsCount > 0) {
+    return {
+      Icon: XIcon,
+      className: "text-danger-low",
+      label: "No check build",
+      hint: `${staff.buildsCount} builds, none compared to a baseline`,
+    };
+  }
+
+  return { Icon: MinusIcon, className: "text-low", label: "No check build" };
+}
+
+function CheckBuildCell(props: { team: PipelineTeam }) {
+  const { Icon, className, label, hint } = getCheckBuildState(props.team.staff);
+  const icon = (
+    <Icon className={clsx("size-4", className)} aria-label={label} />
+  );
 
   return (
-    <div className="flex justify-center" title={props.title}>
-      <Icon
-        className={clsx(
-          "size-4",
-          props.reached ? "text-success-low" : "text-low",
-        )}
-        aria-label={props.reached ? props.label : `No ${props.label}`}
-      />
+    <div className="flex justify-center">
+      {hint ? <Tooltip content={hint}>{icon}</Tooltip> : icon}
     </div>
   );
 }
 
 /**
- * Whether the team ever got a check build. Building repeatedly without ever
- * producing one is a failure, not a blank: something is misconfigured and no
- * diff will ever come out of it. Having built nothing yet is just silence.
- */
-function CheckBuildCell(props: { team: PipelineTeam }) {
-  const { team } = props;
-
-  if (team.staff.firstComparisonAt) {
-    return (
-      <StepIcon
-        reached
-        label="Check build"
-        title={new Date(team.staff.firstComparisonAt).toLocaleString()}
-      />
-    );
-  }
-
-  if (team.staff.buildsCount > 0) {
-    return (
-      <div
-        className="flex justify-center"
-        title={`${team.staff.buildsCount} builds, none compared to a baseline`}
-      >
-        <XIcon className="text-danger-low size-4" aria-label="No check build" />
-      </div>
-    );
-  }
-
-  return <StepIcon reached={false} label="Check build" />;
-}
-
-/**
- * Opens a drafted onboarding email in the staff member's own mail client, and
- * records that the team was reached out to.
+ * Opens a drafted email in the staff member's own mail client, and records that
+ * the team was reached out to.
  *
  * The mark is set on click rather than on send — the browser cannot know
  * whether the draft was actually sent — so it stays a toggle: clicking the
@@ -347,10 +342,11 @@ function CheckBuildCell(props: { team: PipelineTeam }) {
 function ContactCell(props: { team: PipelineTeam }) {
   const { team } = props;
   const [setContact, { loading }] = useMutation(SetTeamStaffContactMutation);
-  const { subject, body } = getOnboardingEmail({
+  const { subject, body } = getOutreachEmail({
     owners: team.staff.owners,
     buildsCount: team.staff.buildsCount,
     hasCheckBuild: Boolean(team.staff.firstComparisonAt),
+    isLost: checkIsLost(team),
   });
   const mailtoUrl = getMailtoUrl({
     owners: team.staff.owners,
@@ -376,7 +372,7 @@ function ContactCell(props: { team: PipelineTeam }) {
         variant="secondary"
         size="small"
         iconOnly
-        aria-label="Draft onboarding email"
+        aria-label="Draft outreach email"
         onPress={() => {
           if (!contactedAt) {
             markContacted(true);
@@ -395,13 +391,48 @@ function ContactCell(props: { team: PipelineTeam }) {
       >
         <Switch
           size="sm"
-          aria-label="Onboarding email sent"
+          aria-label="Outreach email sent"
           isSelected={Boolean(contactedAt)}
           isDisabled={loading}
           onChange={markContacted}
         />
       </span>
     </div>
+  );
+}
+
+/**
+ * Jumps straight to the customer in Stripe.
+ *
+ * Nothing is rendered without a customer id: a team that never reached checkout
+ * has no Stripe page, and a link to `/customers/null` would only look broken.
+ */
+function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
+  const { stripeCustomerId } = props;
+
+  if (!stripeCustomerId) {
+    return null;
+  }
+
+  return (
+    <Tooltip content="Open customer in Stripe">
+      <HeadlessLink
+        href={getStripeCustomerURL(stripeCustomerId)}
+        target="_blank"
+        // The generic external arrow would compete with the logo that already
+        // says "this leaves Argos for Stripe".
+        external={false}
+        aria-label="Open customer in Stripe"
+        // Pushed to the cell edge: next to the name the tile reads as a tag on
+        // the team rather than as a way out to Stripe, and following a
+        // variable-width name it lands somewhere different on every row. The
+        // logo carries its own brand color, so hover dims the whole tile rather
+        // than re-tinting it the way a monochrome icon would.
+        className="ml-auto shrink-0 opacity-75 transition hover:opacity-100"
+      >
+        <img src={stripeLogo} alt="" className="size-4 rounded-xs" />
+      </HeadlessLink>
+    </Tooltip>
   );
 }
 
@@ -413,12 +444,11 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
     <tr className={clsx("border-b", index % 2 === 0 ? "bg-app" : "bg-subtle")}>
       <td className="p-4 text-sm">
         <div className="flex min-w-0 items-center gap-3">
-          <AccountAvatar avatar={team.avatar} className="size-8" />
-          <div className="min-w-0">
-            <Link href={teamURL} className="truncate font-medium">
-              {team.name || team.slug}
-            </Link>
-          </div>
+          <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
+          <Link href={teamURL} className="truncate font-medium">
+            {team.name || team.slug}
+          </Link>
+          <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
         </div>
       </td>
       <td className="truncate p-4 text-sm">
@@ -433,7 +463,7 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
       <td className="text-low p-4 text-right text-sm tabular-nums">
         {team.staff.buildsCount.toLocaleString()}
       </td>
-      <td className="p-4">
+      <td className="p-4 text-right">
         <CheckBuildCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
@@ -479,7 +509,7 @@ const COLUMNS: {
     key: "checkBuild",
     label: "Check build",
     align: "center",
-    width: "w-[9%]",
+    width: "w-[8%]",
   },
   {
     key: "screenshots",
@@ -540,6 +570,20 @@ function checkIsLost(team: PipelineTeam) {
   );
 }
 
+/**
+ * Within this window every team starts on a trial, so an active subscription
+ * means the trial converted. A payment method counts too: it is the commitment,
+ * and the subscription bills itself when the trial ends — waiting for that to
+ * happen would only park the team in the undecided pile in the meantime.
+ */
+function checkIsConverted(team: PipelineTeam) {
+  return (
+    team.subscriptionStatus === AccountSubscriptionStatus.Active ||
+    team.subscriptionStatus ===
+      AccountSubscriptionStatus.TrialingWithPaymentMethod
+  );
+}
+
 function formatShare(value: number, total: number) {
   if (total === 0) {
     return "—";
@@ -547,20 +591,30 @@ function formatShare(value: number, total: number) {
   return `${Math.round((value / total) * 100)}% of ${total}`;
 }
 
+/**
+ * The denominator of both rates, glossed because the rule that fills it is not
+ * visible anywhere else: a payment method counts as converted right away, so a
+ * trial can be decided while its status column still reads `trialing`.
+ */
+function DecidedTrialsHint() {
+  return (
+    <Tooltip content="Converted or lost. A payment method counts as converted, even mid-trial.">
+      <span className="underline decoration-dotted underline-offset-2">
+        decided trials
+      </span>
+    </Tooltip>
+  );
+}
+
 function PipelineSummary(props: { teams: PipelineTeam[] }) {
   const { teams } = props;
   const activated = teams.filter((team) => team.staff.firstComparisonAt).length;
   const lost = teams.filter(checkIsLost).length;
-  // Within this window every team starts on a trial, so an active subscription
-  // means the trial converted. A carded trial is not one yet: it reports as
-  // `trialing_with_payment_method` until it actually ends.
-  const converted = teams.filter(
-    (team) => team.subscriptionStatus === AccountSubscriptionStatus.Active,
-  ).length;
+  const converted = teams.filter(checkIsConverted).length;
 
-  // Teams still trialing have neither converted nor churned yet. Counting them
-  // in the denominator would drag both rates down for no reason other than
-  // being recent — the rates only mean something over decided trials.
+  // Teams whose outcome is still open would drag both rates down for no reason
+  // other than being recent — the rates only mean something over decided
+  // trials.
   const decided = converted + lost;
 
   return (
@@ -571,7 +625,10 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         color="primary"
         label="New teams"
         value={teams.length}
-        hint={`${teams.length - decided} still trialing`}
+        // Not "still trialing": a trial with a payment method is still running
+        // yet already decided, so that wording would contradict the status
+        // column.
+        hint={`${teams.length - decided} undecided`}
       />
       <StatTile
         data-visual-test="transparent"
@@ -587,7 +644,11 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         color="success"
         label="Converted"
         value={converted}
-        hint={`${formatShare(converted, decided)} decided trials`}
+        hint={
+          <>
+            {formatShare(converted, decided)} <DecidedTrialsHint />
+          </>
+        }
       />
       <StatTile
         data-visual-test="transparent"
@@ -595,7 +656,11 @@ function PipelineSummary(props: { teams: PipelineTeam[] }) {
         color="warning"
         label="Canceled or expired"
         value={lost}
-        hint={`${formatShare(lost, decided)} decided trials`}
+        hint={
+          <>
+            {formatShare(lost, decided)} <DecidedTrialsHint />
+          </>
+        }
       />
     </div>
   );

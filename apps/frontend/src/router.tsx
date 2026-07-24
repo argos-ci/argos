@@ -302,12 +302,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   path: "teams",
                   HydrateFallback,
-                  lazy: () => import("./pages/StaffTeams"),
+                  lazy: () => import("./pages/Staff/Teams"),
                 },
                 {
                   path: "trials",
                   HydrateFallback,
-                  lazy: () => import("./pages/StaffTrials"),
+                  lazy: () => import("./pages/Staff/Trials"),
                 },
               ],
             },
