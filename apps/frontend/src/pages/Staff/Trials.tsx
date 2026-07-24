@@ -296,14 +296,13 @@ function getCheckBuildState(staff: PipelineTeam["staff"]): {
   Icon: LucideIcon;
   className: string;
   label: string;
-  title?: string;
+  hint?: string;
 } {
   if (staff.firstComparisonAt) {
     return {
       Icon: CheckIcon,
       className: "text-success-low",
       label: "Check build",
-      title: new Date(staff.firstComparisonAt).toLocaleString(),
     };
   }
 
@@ -312,26 +311,22 @@ function getCheckBuildState(staff: PipelineTeam["staff"]): {
       Icon: XIcon,
       className: "text-danger-low",
       label: "No check build",
-      title: `${staff.buildsCount} builds, none compared to a baseline`,
+      hint: `${staff.buildsCount} builds, none compared to a baseline`,
     };
   }
 
   return { Icon: MinusIcon, className: "text-low", label: "No check build" };
 }
 
-/**
- * The hint rides on the native `title` rather than a rich tooltip — the latter
- * makes its target focusable, which would add a tab stop per icon across the
- * whole table.
- */
 function CheckBuildCell(props: { team: PipelineTeam }) {
-  const { Icon, className, label, title } = getCheckBuildState(
-    props.team.staff,
+  const { Icon, className, label, hint } = getCheckBuildState(props.team.staff);
+  const icon = (
+    <Icon className={clsx("size-4", className)} aria-label={label} />
   );
 
   return (
-    <div className="flex justify-end" title={title}>
-      <Icon className={clsx("size-4", className)} aria-label={label} />
+    <div className="flex justify-center">
+      {hint ? <Tooltip content={hint}>{icon}</Tooltip> : icon}
     </div>
   );
 }
@@ -514,7 +509,7 @@ const COLUMNS: {
     key: "checkBuild",
     label: "Check build",
     align: "center",
-    width: "w-[9%]",
+    width: "w-[8%]",
   },
   {
     key: "screenshots",
