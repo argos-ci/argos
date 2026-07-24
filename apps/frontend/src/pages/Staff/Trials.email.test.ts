@@ -1,33 +1,36 @@
 import { describe, expect, it } from "vitest";
 
-import { getMailtoUrl, getOnboardingEmail } from "./Trials.email";
+import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
 const owner = { name: "Andre Dupont", email: "andre@example.com" };
 
-describe("getOnboardingEmail", () => {
+describe("getOutreachEmail", () => {
   it("greets a single owner by first name", () => {
-    const { body } = getOnboardingEmail({
+    const { body } = getOutreachEmail({
       owners: [owner],
       buildsCount: 0,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(body).toMatch(/^Hi Andre,/);
   });
 
   it("greets the team when there are several owners", () => {
-    const { body } = getOnboardingEmail({
+    const { body } = getOutreachEmail({
       owners: [owner, { name: "Shibili", email: "shibili@example.com" }],
       buildsCount: 0,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(body).toMatch(/^Hi team,/);
   });
 
   it("keeps hyphenated given names", () => {
-    const { body } = getOnboardingEmail({
+    const { body } = getOutreachEmail({
       owners: [{ name: "Jean-Pierre Martin", email: "jp@example.com" }],
       buildsCount: 0,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(body).toMatch(/^Hi Jean-Pierre,/);
   });
@@ -38,38 +41,42 @@ describe("getOnboardingEmail", () => {
     ["a name starting with a digit", "42 Industries"],
     ["an empty name", "   "],
   ])("falls back to a neutral greeting for %s", (_label, name) => {
-    const { body } = getOnboardingEmail({
+    const { body } = getOutreachEmail({
       owners: [{ name, email: "someone@example.com" }],
       buildsCount: 0,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(body).toMatch(/^Hi team,/);
   });
 
   it("greets by name when the owner has no name at all", () => {
-    const { body } = getOnboardingEmail({
+    const { body } = getOutreachEmail({
       owners: [{ name: null, email: "someone@example.com" }],
       buildsCount: 0,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(body).toMatch(/^Hi team,/);
   });
 
   it("offers help when the team only ever produced orphan builds", () => {
-    const email = getOnboardingEmail({
+    const email = getOutreachEmail({
       owners: [owner],
       buildsCount: 12,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(email.body).toContain("orphan builds");
-    expect(email.subject).toBe("Argos — help with your setup?");
+    expect(email.subject).toBe("Need help with Argos?");
   });
 
   it("welcomes a team that already got a check build", () => {
-    const email = getOnboardingEmail({
+    const email = getOutreachEmail({
       owners: [owner],
       buildsCount: 12,
       hasCheckBuild: true,
+      isLost: false,
     });
     expect(email.body).not.toContain("orphan builds");
     expect(email.subject).toBe("Welcome to Argos!");
@@ -77,12 +84,37 @@ describe("getOnboardingEmail", () => {
 
   it("welcomes a team that has not built yet", () => {
     // No build at all is silence, not a setup problem.
-    const email = getOnboardingEmail({
+    const email = getOutreachEmail({
       owners: [owner],
       buildsCount: 0,
       hasCheckBuild: false,
+      isLost: false,
     });
     expect(email.body).not.toContain("orphan builds");
+  });
+
+  it("asks for feedback when the team is lost", () => {
+    const email = getOutreachEmail({
+      owners: [owner],
+      buildsCount: 12,
+      hasCheckBuild: true,
+      isLost: true,
+    });
+    expect(email.subject).toBe("Quick feedback on Argos");
+    expect(email.body).toMatch(/^Hi Andre,/);
+    expect(email.body).toContain("you stopped testing Argos");
+  });
+
+  it("asks a lost team for feedback rather than about its orphan builds", () => {
+    // Onboarding help is beside the point once the trial is over.
+    const email = getOutreachEmail({
+      owners: [owner],
+      buildsCount: 12,
+      hasCheckBuild: false,
+      isLost: true,
+    });
+    expect(email.body).not.toContain("orphan builds");
+    expect(email.subject).toBe("Quick feedback on Argos");
   });
 });
 

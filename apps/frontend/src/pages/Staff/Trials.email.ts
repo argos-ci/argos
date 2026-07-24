@@ -25,23 +25,46 @@ function getGreeting(owners: Owner[]): string {
 }
 
 /**
- * The onboarding email, drafted from what the dashboard already knows.
+ * The outreach email, drafted from what the dashboard already knows.
  *
- * A team that keeps building without ever producing a check build has a setup
- * problem, and saying so is a better opener than a generic welcome. Anything
- * else gets the plain welcome.
+ * A team whose trial ran out or whose subscription was canceled is past
+ * onboarding: the only thing left worth asking for is the reason, so that email
+ * comes first whatever the build history says.
+ *
+ * Otherwise, a team that keeps building without ever producing a check build
+ * has a setup problem, and saying so is a better opener than a generic welcome.
+ * Anything else gets the plain welcome.
  */
-export function getOnboardingEmail(input: {
+export function getOutreachEmail(input: {
   owners: Owner[];
   buildsCount: number;
   hasCheckBuild: boolean;
+  isLost: boolean;
 }): { subject: string; body: string } {
   const greeting = getGreeting(input.owners);
+
+  if (input.isLost) {
+    return {
+      subject: "Quick feedback on Argos",
+      body: [
+        greeting,
+        "",
+        "I noticed that you stopped testing Argos, and I'd love to understand why.",
+        "",
+        "Were you testing a specific use case, or did you run into any blockers during setup?",
+        "",
+        "Any feedback would be greatly appreciated.",
+        "",
+        "Have a great day,",
+      ].join("\n"),
+    };
+  }
+
   const hasOnlyOrphanBuilds = input.buildsCount > 0 && !input.hasCheckBuild;
 
   if (hasOnlyOrphanBuilds) {
     return {
-      subject: "Argos — help with your setup?",
+      subject: "Need help with Argos?",
       body: [
         greeting,
         "",

@@ -14,6 +14,7 @@ import {
   SearchIcon,
   UsersIcon,
   XIcon,
+  type LucideIcon,
 } from "lucide-react";
 import moment from "moment";
 import { Heading, Text } from "react-aria-components";
@@ -34,7 +35,7 @@ import {
   PageHeaderActions,
   PageHeaderContent,
 } from "@/ui/Layout";
-import { Link } from "@/ui/Link";
+import { HeadlessLink, Link } from "@/ui/Link";
 import { PageLoader } from "@/ui/PageLoader";
 import { SortHeader, type SortDirection } from "@/ui/SortHeader";
 import { StatTile } from "@/ui/StatTile";
@@ -46,7 +47,9 @@ import { Tooltip } from "@/ui/Tooltip";
 import { getErrorMessage } from "@/util/error";
 
 import { getAccountURL } from "../Account/AccountParams";
-import { getMailtoUrl, getOnboardingEmail } from "./Trials.email";
+import { getStripeCustomerURL } from "./stripe";
+import stripeLogo from "./stripe.svg";
+import { getMailtoUrl, getOutreachEmail } from "./Trials.email";
 
 const TrialPipelineQuery = graphql(`
   query StaffTrials_staffTrialPipeline($days: Int!) {
@@ -57,6 +60,7 @@ const TrialPipelineQuery = graphql(`
       name
       subscriptionStatus
       lastBuildDate
+      stripeCustomerId
       staff {
         buildsCount
         screenshotsCount
@@ -243,7 +247,7 @@ function StatusCell(props: { team: PipelineTeam }) {
 
     return (
       <div className="whitespace-nowrap">
-        <span className="font-medium">trial</span>
+        <span className="font-medium">trialing</span>
         {subscriptionStatus ===
           AccountSubscriptionStatus.TrialingWithPaymentMethod && (
           <Tooltip content="Payment method filled">
@@ -284,61 +288,57 @@ function StatusCell(props: { team: PipelineTeam }) {
 }
 
 /**
- * A funnel step: reached or not. The hint rides on the native `title` rather
- * than a rich tooltip — the latter makes its target focusable, which would add
- * a tab stop per icon across the whole table.
+ * Whether the team ever got a check build. Building repeatedly without ever
+ * producing one is a failure, not a blank: something is misconfigured and no
+ * diff will ever come out of it. Having built nothing yet is just silence.
  */
-function StepIcon(props: { reached: boolean; label: string; title?: string }) {
-  const Icon = props.reached ? CheckIcon : MinusIcon;
+function getCheckBuildState(staff: PipelineTeam["staff"]): {
+  Icon: LucideIcon;
+  className: string;
+  label: string;
+  title?: string;
+} {
+  if (staff.firstComparisonAt) {
+    return {
+      Icon: CheckIcon,
+      className: "text-success-low",
+      label: "Check build",
+      title: new Date(staff.firstComparisonAt).toLocaleString(),
+    };
+  }
+
+  if (staff.buildsCount > 0) {
+    return {
+      Icon: XIcon,
+      className: "text-danger-low",
+      label: "No check build",
+      title: `${staff.buildsCount} builds, none compared to a baseline`,
+    };
+  }
+
+  return { Icon: MinusIcon, className: "text-low", label: "No check build" };
+}
+
+/**
+ * The hint rides on the native `title` rather than a rich tooltip — the latter
+ * makes its target focusable, which would add a tab stop per icon across the
+ * whole table.
+ */
+function CheckBuildCell(props: { team: PipelineTeam }) {
+  const { Icon, className, label, title } = getCheckBuildState(
+    props.team.staff,
+  );
 
   return (
-    <div className="flex justify-center" title={props.title}>
-      <Icon
-        className={clsx(
-          "size-4",
-          props.reached ? "text-success-low" : "text-low",
-        )}
-        aria-label={props.reached ? props.label : `No ${props.label}`}
-      />
+    <div className="flex justify-end" title={title}>
+      <Icon className={clsx("size-4", className)} aria-label={label} />
     </div>
   );
 }
 
 /**
- * Whether the team ever got a check build. Building repeatedly without ever
- * producing one is a failure, not a blank: something is misconfigured and no
- * diff will ever come out of it. Having built nothing yet is just silence.
- */
-function CheckBuildCell(props: { team: PipelineTeam }) {
-  const { team } = props;
-
-  if (team.staff.firstComparisonAt) {
-    return (
-      <StepIcon
-        reached
-        label="Check build"
-        title={new Date(team.staff.firstComparisonAt).toLocaleString()}
-      />
-    );
-  }
-
-  if (team.staff.buildsCount > 0) {
-    return (
-      <div
-        className="flex justify-center"
-        title={`${team.staff.buildsCount} builds, none compared to a baseline`}
-      >
-        <XIcon className="text-danger-low size-4" aria-label="No check build" />
-      </div>
-    );
-  }
-
-  return <StepIcon reached={false} label="Check build" />;
-}
-
-/**
- * Opens a drafted onboarding email in the staff member's own mail client, and
- * records that the team was reached out to.
+ * Opens a drafted email in the staff member's own mail client, and records that
+ * the team was reached out to.
  *
  * The mark is set on click rather than on send — the browser cannot know
  * whether the draft was actually sent — so it stays a toggle: clicking the
@@ -347,10 +347,11 @@ function CheckBuildCell(props: { team: PipelineTeam }) {
 function ContactCell(props: { team: PipelineTeam }) {
   const { team } = props;
   const [setContact, { loading }] = useMutation(SetTeamStaffContactMutation);
-  const { subject, body } = getOnboardingEmail({
+  const { subject, body } = getOutreachEmail({
     owners: team.staff.owners,
     buildsCount: team.staff.buildsCount,
     hasCheckBuild: Boolean(team.staff.firstComparisonAt),
+    isLost: checkIsLost(team),
   });
   const mailtoUrl = getMailtoUrl({
     owners: team.staff.owners,
@@ -376,7 +377,7 @@ function ContactCell(props: { team: PipelineTeam }) {
         variant="secondary"
         size="small"
         iconOnly
-        aria-label="Draft onboarding email"
+        aria-label="Draft outreach email"
         onPress={() => {
           if (!contactedAt) {
             markContacted(true);
@@ -395,13 +396,48 @@ function ContactCell(props: { team: PipelineTeam }) {
       >
         <Switch
           size="sm"
-          aria-label="Onboarding email sent"
+          aria-label="Outreach email sent"
           isSelected={Boolean(contactedAt)}
           isDisabled={loading}
           onChange={markContacted}
         />
       </span>
     </div>
+  );
+}
+
+/**
+ * Jumps straight to the customer in Stripe.
+ *
+ * Nothing is rendered without a customer id: a team that never reached checkout
+ * has no Stripe page, and a link to `/customers/null` would only look broken.
+ */
+function StripeCustomerLink(props: { stripeCustomerId: string | null }) {
+  const { stripeCustomerId } = props;
+
+  if (!stripeCustomerId) {
+    return null;
+  }
+
+  return (
+    <Tooltip content="Open customer in Stripe">
+      <HeadlessLink
+        href={getStripeCustomerURL(stripeCustomerId)}
+        target="_blank"
+        // The generic external arrow would compete with the logo that already
+        // says "this leaves Argos for Stripe".
+        external={false}
+        aria-label="Open customer in Stripe"
+        // Pushed to the cell edge: next to the name the tile reads as a tag on
+        // the team rather than as a way out to Stripe, and following a
+        // variable-width name it lands somewhere different on every row. The
+        // logo carries its own brand color, so hover dims the whole tile rather
+        // than re-tinting it the way a monochrome icon would.
+        className="ml-auto shrink-0 opacity-75 transition hover:opacity-100"
+      >
+        <img src={stripeLogo} alt="" className="size-4 rounded-xs" />
+      </HeadlessLink>
+    </Tooltip>
   );
 }
 
@@ -413,12 +449,11 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
     <tr className={clsx("border-b", index % 2 === 0 ? "bg-app" : "bg-subtle")}>
       <td className="p-4 text-sm">
         <div className="flex min-w-0 items-center gap-3">
-          <AccountAvatar avatar={team.avatar} className="size-8" />
-          <div className="min-w-0">
-            <Link href={teamURL} className="truncate font-medium">
-              {team.name || team.slug}
-            </Link>
-          </div>
+          <AccountAvatar avatar={team.avatar} className="size-8 shrink-0" />
+          <Link href={teamURL} className="truncate font-medium">
+            {team.name || team.slug}
+          </Link>
+          <StripeCustomerLink stripeCustomerId={team.stripeCustomerId} />
         </div>
       </td>
       <td className="truncate p-4 text-sm">
@@ -433,7 +468,7 @@ function PipelineRow(props: { team: PipelineTeam; index: number }) {
       <td className="text-low p-4 text-right text-sm tabular-nums">
         {team.staff.buildsCount.toLocaleString()}
       </td>
-      <td className="p-4">
+      <td className="p-4 text-right">
         <CheckBuildCell team={team} />
       </td>
       <td className="text-low p-4 text-right text-sm tabular-nums">
